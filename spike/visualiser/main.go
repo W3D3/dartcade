@@ -65,7 +65,7 @@ type DartEvent struct {
 	Type      string  `json:"type"`
 	Index     int     `json:"index,omitempty"`
 	Segment   string  `json:"segment,omitempty"`
-	Score     int     `json:"score,omitempty"`
+	Score     int     `json:"score"`
 	X         float64 `json:"x,omitempty"`
 	Y         float64 `json:"y,omitempty"`
 	HasCoords bool    `json:"hasCoords,omitempty"`
