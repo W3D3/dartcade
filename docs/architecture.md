@@ -115,11 +115,23 @@ Observed on Board Manager **1.0.7** (Raspberry Pi 4), from slopdarts' `API_STATE
   was being detected. Use `running` and `status` to tell whether detection is live.
 - **Throws stay in the snapshot** after the board stops, and after a reconnect. A snapshot
   on its own cannot tell you whether a dart is new.
-- **Bull and miss shapes were not seen live.** Enums suggest `name: "25"` or `"50"` for the
-  bull and `bed: "Outside"` for a miss. It is unclear whether `number` is `25`, `0` or
-  `null` for the bull (clients disagree). Verify this against real hardware.
-- **Maximum `numThrows`: unknown.** A normal visit is 3 darts. What happens with a 4th dart
-  before takeout is untested. This matters if a minigame wants more than 3 darts per visit.
+- **Bull payloads confirmed on hardware (2026-09-24):**
+  - 25 (outer bull): `{"name":"25","number":25,"bed":"Single","multiplier":1}`, coords r≈0.06.
+  - 50 (inner bull): not yet captured on hardware; expect `name="50"`, `number=50`,
+    `bed="Double"` or `bed="Single"` by analogy — treat as unverified.
+- **Miss / Outside payloads confirmed on hardware (2026-09-24).** Two distinct variants:
+  - **Bounce-out** (dart hit wire/board and bounced): `{"name":"Miss","number":0,"bed":"Outside","multiplier":0}`. No `coords` field. `bouncer:true` on the throw object.
+  - **Near-miss** (dart missed board, camera tracked it): `{"name":"M17","number":17,"bed":"Outside","multiplier":0}`. Has `coords` with r > 1.0. No `bouncer` field. The number is the nearest segment.
+  - `coords` is **absent on bounce-outs and must be treated as optional** on every throw.
+- **`status` transitions confirmed on hardware:**
+  - After dart 1 and 2: `status="Throw"`.
+  - After dart 3: `status="Takeout"` fires immediately, while `event` is still `"Throw detected"`. This signals the visit is complete before the hand arrives.
+  - When hand is detected: `status="Takeout in progress"`, `event="Takeout started"`.
+  - After all darts removed: `status="Throw"`, `event="Takeout finished"`, `numThrows=0`.
+  - With fewer than 3 darts in the board, `status` goes directly from `"Throw"` to `"Takeout in progress"` — the intermediate `"Takeout"` state does not appear.
+  - `Takeout started` / `Takeout finished` can fire with `numThrows=0` (spurious, board idle). Bridge must ignore takeout events when `numThrows=0`.
+- **`motion_state.isHand` fires ~33 ms before `Takeout started`** in the state frame. Use it as the earliest takeout signal. `isTakeoutFull` arrives simultaneously with `numThrows=0`, not before — it is a confirmation, not a leading indicator.
+- **Maximum `numThrows` is 3.** A 4th dart thrown before takeout is silently ignored by the Board Manager — no state frame with `numThrows=4` is ever emitted. Minigames that need more than 3 darts per visit must issue a `POST /api/reset` to clear the board mid-visit.
 
 ### 2.4 Coordinates: checked against the published samples
 
@@ -510,10 +522,10 @@ Follows this repo's conventions (see `CLAUDE.md` and `docs/adding-a-new-service.
 | # | Risk | Impact | Mitigation |
 |---|---|---|---|
 | R1 | Board Manager API is undocumented and can change without notice | Bridge breaks after a Board Manager update | Record `bm_version` and keep raw frames. Keep a contract test suite of recorded frames per version. Run a canary board on Autodarts' beta channel. |
-| R2 | Bull and miss payloads (`number` for bull, `Outside` shape) not verified | Wrong scores on bull or miss | Validate on hardware before building games (§9). |
-| R3 | Behaviour with more than 3 darts per visit unknown | Games that want more than 3 darts per visit | Test on hardware. If Board Manager caps at 3, games that need more have to require a takeout or send a reset. |
-| R4 | Detection revises darts (`dart.corrected`) | Scores change after they were shown | Refold as in §5.4, and let the UI animate the correction |
-| R5 | A dart lands while the link is down | A missed or double-counted dart | Resync baseline, then a "Did you throw X?" prompt on the controller. Never replay automatically. |
+| R2 | Bull and miss payloads (`number` for bull, `Outside` shape) not verified | Wrong scores on bull or miss | **Confirmed on hardware (2026-09-24).** Bull 25: `name="25"`,`number=25`,`bed="Single"`. Miss: two variants — bounce-out (`name="Miss"`,`number=0`, no coords, `bouncer=true`) and near-miss (`name="M<n>"`,`number=n`, coords with r>1). Bull 50 not yet captured but expected shape is known. |
+| R3 | Behaviour with more than 3 darts per visit unknown | Games that want more than 3 darts per visit | **Confirmed on hardware (2026-09-24): BM hard-caps at 3.** A 4th dart is silently ignored — `numThrows` never exceeds 3. Games needing more than 3 darts must issue `POST /api/reset` to clear the board mid-visit. |
+| R4 | Detection revises darts (`dart.corrected`) | Scores change after they were shown | No manual correction UI exists in Board Manager 1.0.7. Auto-correction (BM changing its mind on a borderline dart) not yet observed on hardware. The refold logic in §5.4 stands; this risk remains open but lower priority. |
+| R5 | A dart lands while the link is down | A missed or double-counted dart | Not yet tested on hardware. Mitigation unchanged: resync baseline, then a "Did you throw X?" prompt. |
 | R6 | Coordinate accuracy depends on calibration | Zone games feel unfair near boundaries | Pick zone boundaries on wire lines where possible, show `dart.moved` corrections, and offer a hysteresis option per game |
 | R7 | Board Manager write endpoints are unauthenticated on the LAN | A bridge with a remote command channel adds attack surface | Hard-coded allowlist (`reset`, `start`, `stop`), a per-bridge opt-in flag, commands signed with the session, rate limits |
 | R8 | Secrets in Board Manager responses (`auth.api_key`, a possible `auth` frame) | Leaking a board's cloud key | Denylist redaction in the bridge and a test that fails if `api_key` or `token` appears in anything sent out |
@@ -573,7 +585,16 @@ Web:
 - [Chrome: Local Network Access restrictions (Chrome Platform Status)](https://chromestatus.com/feature/5152728072060928)
   and [Chrome 147 LNA for WebSockets](https://myconnectionserver.visualware.com/support/v11/userguide/chrome-lna-websocket).
 
-Could not verify: official Autodarts docs (`autodarts.diy` and `developer.chrome.com` were
-blocked from this environment), release notes for Board Manager 1.x (the official
-`autodarts/releases` repo returned 404 to an unauthenticated fetch), whether an `auth` WS
-frame really exists, the bull and miss payload shapes, and the >3-dart behaviour.
+Could not verify from source code (pre-spike): official Autodarts docs, release notes for
+Board Manager 1.x, whether an `auth` WS frame really exists, bull and miss payload shapes,
+and >3-dart behaviour.
+
+**Confirmed on hardware (2026-09-24, Board Manager 1.0.7, fixtures in `fixtures/`):**
+bull 25 payload, two miss variants (bounce-out vs near-miss), `coords` absent on bounce-outs,
+`status="Takeout"` fires on the 3rd dart, `isHand` leads `Takeout started` by ~33 ms,
+`isTakeoutFull` is simultaneous with (not before) `numThrows=0`, spurious takeout events
+fire with zero darts in board, BM hard-caps at `numThrows=3` (4th dart ignored),
+local detection works without an autodarts.io match (R9), no manual correction UI in BM 1.0.7.
+
+**Still unverified:** bull 50 payload, auto-correction (dart.corrected) behaviour,
+behaviour when bridge reconnects mid-visit (R5), detection stop/start during a visit.
