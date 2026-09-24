@@ -12,9 +12,12 @@ import (
 
 // Event is one outbound adbridge/v1 event produced by the differ.
 // Data is a pointer to one of the generated schema structs.
+// RecvWall and RecvMonoNs carry the BM frame's receive timestamp for the envelope.
 type Event struct {
-	Kind string
-	Data any
+	Kind       string
+	Data       any
+	RecvWall   time.Time
+	RecvMonoNs int64
 }
 
 // State is the differ's mutable context between frames.
@@ -60,16 +63,17 @@ func toDart(t bm.BMThrow) schema.Dart {
 // plus any derived events. Always emits bm.frame first for ws/poll frames
 // so the transport can assign source_seq.
 func Process(s State, frame bm.BMFrame) (State, []Event) {
+	wall, mono := frame.RecvWall, frame.RecvMonoNs
 	switch frame.Kind {
 	case "bm_connect":
 		s.ExpectResync = true
-		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: true}}}
+		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: true}, RecvWall: wall, RecvMonoNs: mono}}
 	case "bm_reconnect":
 		s.ExpectResync = true
-		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: true}}}
+		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: true}, RecvWall: wall, RecvMonoNs: mono}}
 	case "bm_disconnect":
 		reason := "disconnected"
-		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: false, Reason: &reason}}}
+		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: false, Reason: &reason}, RecvWall: wall, RecvMonoNs: mono}}
 	case "ws", "poll":
 		switch frame.BMType {
 		case "state":
@@ -81,7 +85,7 @@ func Process(s State, frame bm.BMFrame) (State, []Event) {
 			if frame.Kind == "poll" {
 				src = schema.BmFrameDataSourcePoll
 			}
-			return s, []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}}}
+			return s, []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}, RecvWall: wall, RecvMonoNs: mono}}
 		}
 	default:
 		return s, nil
@@ -94,11 +98,12 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 		return s, nil
 	}
 
+	wall, mono := frame.RecvWall, frame.RecvMonoNs
 	src := schema.BmFrameDataSourceWs
 	if frame.Kind == "poll" {
 		src = schema.BmFrameDataSourcePoll
 	}
-	evs := []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}}}
+	evs := []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}, RecvWall: wall, RecvMonoNs: mono}}
 
 	// 1. Resync
 	if s.ExpectResync {
@@ -106,7 +111,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 		for i, t := range cur.Throws {
 			throws[i] = toDart(t)
 		}
-		evs = append(evs, Event{Kind: "board.resync", Data: &schema.BoardResyncData{Throws: throws}})
+		evs = append(evs, Event{Kind: "board.resync", Data: &schema.BoardResyncData{Throws: throws}, RecvWall: wall, RecvMonoNs: mono})
 		s.ExpectResync = false
 		s.PrevThrows = cur.Throws
 		s.PrevStatus = cur.Status
@@ -117,7 +122,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 
 	// 2. Spurious frame guard: skip if both empty
 	if len(cur.Throws) == 0 && len(s.PrevThrows) == 0 {
-		evs = append(evs, boardStatusEvents(s, cur)...)
+		evs = append(evs, boardStatusEvents(s, cur, wall, mono)...)
 		s.PrevStatus = cur.Status
 		s.PrevEvent = cur.Event
 		s.PrevRunning = cur.Running
@@ -125,7 +130,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 	}
 
 	// 3. board.status (before dart events)
-	evs = append(evs, boardStatusEvents(s, cur)...)
+	evs = append(evs, boardStatusEvents(s, cur, wall, mono)...)
 
 	// 4. Takeout signals from state — only if visit open, not already in takeout, numThrows > 0
 	// NOTE: status="Takeout" on 3rd dart is board.status ONLY (diff-rules §8); NOT a takeout signal.
@@ -136,14 +141,14 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 			evs = append(evs, Event{Kind: "takeout.started", Data: &schema.TakeoutStartedData{
 				VisitId: schema.VisitId(s.VisitID.String()),
 				Trigger: schema.TakeoutStartedDataTriggerStatusTakeoutInProgress,
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		} else if cur.Event == "Takeout started" {
 			s.InTakeout = true
 			s.TakeoutStartedAt = frame.RecvWall
 			evs = append(evs, Event{Kind: "takeout.started", Data: &schema.TakeoutStartedData{
 				VisitId: schema.VisitId(s.VisitID.String()),
 				Trigger: schema.TakeoutStartedDataTriggerEventTakeoutStarted,
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		}
 	}
 
@@ -153,7 +158,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 			s.VisitID = ulid.Make()
 			evs = append(evs, Event{Kind: "visit.opened", Data: &schema.VisitOpenedData{
 				VisitId: schema.VisitId(s.VisitID.String()),
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		}
 		for i := len(s.PrevThrows); i < len(cur.Throws); i++ {
 			evs = append(evs, Event{Kind: "dart.detected", Data: &schema.DartDetectedData{
@@ -161,7 +166,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 				Index:     i,
 				Dart:      toDart(cur.Throws[i]),
 				SourceSeq: 0, // transport backfills
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		}
 	}
 
@@ -179,7 +184,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 				Dart:      toDart(c),
 				Previous:  toDart(p),
 				SourceSeq: 0,
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		} else if c.Coords != nil && p.Coords != nil {
 			dx := c.Coords.X - p.Coords.X
 			dy := c.Coords.Y - p.Coords.Y
@@ -190,7 +195,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 					Coords:         schema.Coords{X: c.Coords.X, Y: c.Coords.Y},
 					PreviousCoords: schema.Coords{X: p.Coords.X, Y: p.Coords.Y},
 					SourceSeq:      0,
-				}})
+				}, RecvWall: wall, RecvMonoNs: mono})
 			}
 		}
 	}
@@ -206,7 +211,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 				VisitId:    schema.VisitId(s.VisitID.String()),
 				Trigger:    schema.TakeoutFinishedDataTriggerNumThrowsZero,
 				DurationMs: int(dur),
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		} else {
 			reason := schema.VisitClearedDataReasonUnknown
 			if cur.Event == "Manual reset" {
@@ -215,7 +220,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 			evs = append(evs, Event{Kind: "visit.cleared", Data: &schema.VisitClearedData{
 				VisitId: schema.VisitId(s.VisitID.String()),
 				Reason:  reason,
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		}
 		s.VisitID = ulid.ULID{}
 		s.InTakeout = false
@@ -234,7 +239,12 @@ func processMotion(s State, frame bm.BMFrame) (State, []Event) {
 	if err := json.Unmarshal(frame.Data, &cur); err != nil {
 		return s, nil
 	}
-	evs := []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: schema.BmFrameDataSourceWs}}}
+	wall, mono := frame.RecvWall, frame.RecvMonoNs
+	src := schema.BmFrameDataSourceWs
+	if frame.Kind == "poll" {
+		src = schema.BmFrameDataSourcePoll
+	}
+	evs := []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}, RecvWall: wall, RecvMonoNs: mono}}
 
 	if !s.InTakeout && !s.VisitID.IsZero() && len(s.PrevThrows) > 0 {
 		if cur.IsHand || cur.IsTakeoutPartial {
@@ -243,7 +253,7 @@ func processMotion(s State, frame bm.BMFrame) (State, []Event) {
 			evs = append(evs, Event{Kind: "takeout.started", Data: &schema.TakeoutStartedData{
 				VisitId: schema.VisitId(s.VisitID.String()),
 				Trigger: schema.TakeoutStartedDataTriggerMotionIsHand,
-			}})
+			}, RecvWall: wall, RecvMonoNs: mono})
 		}
 	}
 	evs = append(evs, Event{Kind: "motion", Data: &schema.MotionData{
@@ -253,11 +263,11 @@ func processMotion(s State, frame bm.BMFrame) (State, []Event) {
 		IsTakeoutPartial: cur.IsTakeoutPartial,
 		IsTakeoutFull:    cur.IsTakeoutFull,
 		IsWaiting:        cur.IsWaiting,
-	}})
+	}, RecvWall: wall, RecvMonoNs: mono})
 	return s, evs
 }
 
-func boardStatusEvents(s State, cur bm.BMStateData) []Event {
+func boardStatusEvents(s State, cur bm.BMStateData, wall time.Time, mono int64) []Event {
 	if cur.Status == s.PrevStatus && cur.Event == s.PrevEvent && cur.Running == s.PrevRunning {
 		return nil
 	}
@@ -266,5 +276,5 @@ func boardStatusEvents(s State, cur bm.BMStateData) []Event {
 		Event:     cur.Event,
 		Running:   cur.Running,
 		Connected: cur.Connected,
-	}}}
+	}, RecvWall: wall, RecvMonoNs: mono}}
 }

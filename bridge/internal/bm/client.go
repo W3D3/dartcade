@@ -42,14 +42,27 @@ func (c *Client) BoardID() string { v, _ := c.boardID.Load().(string); return v 
 // BMVersion returns the Board Manager version string.
 func (c *Client) BMVersion() string { return c.bmVersion }
 
-// Start fetches /api/version and /api/config, then runs WS and poll loops.
-// Blocks until ctx is cancelled.
-func (c *Client) Start(ctx context.Context) error {
+// Init fetches /api/version and /api/config synchronously so that BoardID
+// and BMVersion are available before the transport is constructed.
+// It is idempotent: a second call returns immediately if already initialised.
+// Start calls Init internally, so callers that call Init first don't double-fetch.
+func (c *Client) Init(ctx context.Context) error {
+	if c.bmVersion != "" {
+		return nil
+	}
 	if err := c.fetchVersion(ctx); err != nil {
 		return fmt.Errorf("bm version: %w", err)
 	}
 	if err := c.fetchConfig(ctx); err != nil {
 		return fmt.Errorf("bm config: %w", err)
+	}
+	return nil
+}
+
+// Start calls Init then runs the WS and poll loops. Blocks until ctx is cancelled.
+func (c *Client) Start(ctx context.Context) error {
+	if err := c.Init(ctx); err != nil {
+		return err
 	}
 	go c.pollLoop(ctx)
 	c.wsLoop(ctx)

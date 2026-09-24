@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"math/rand"
+	"runtime"
 	"sync"
 	"time"
 
@@ -14,7 +15,11 @@ import (
 	"github.com/coder/websocket/wsjson"
 )
 
-const outboxMax = 1000
+const (
+	outboxMax      = 1000
+	bridgeVersion  = "0.1.0"
+	schemaVersion  = "adbridge/1.0"
+)
 
 // Envelope wraps every outbound adbridge/v1 message.
 type Envelope struct {
@@ -25,8 +30,8 @@ type Envelope struct {
 	Seq        uint64          `json:"seq"`
 	BoardID    string          `json:"board_id"`
 	BMVersion  string          `json:"bm_version"`
-	RecvWall   string          `json:"recv_wall,omitempty"`
-	RecvMonoNs int64           `json:"recv_mono_ns,omitempty"`
+	RecvWall   string          `json:"recv_wall"`
+	RecvMonoNs int64           `json:"recv_mono_ns"`
 	Kind       string          `json:"kind"`
 	Data       json.RawMessage `json:"data"`
 }
@@ -38,6 +43,7 @@ type Config struct {
 	BootID     string
 	BoardID    string
 	BMVersion  string
+	BMUrl      string // Board Manager base URL, reported in bridge.hello
 }
 
 // ExecuteFunc is called when the backend sends a valid command.
@@ -102,7 +108,7 @@ func (t *Transport) Start(ctx context.Context) error {
 }
 
 func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
-	// Start ingesting events into outbox
+	// Start ingesting events into outbox concurrently with the send loop.
 	ingest := make(chan struct{}, 1)
 	ingestCtx, ingestCancel := context.WithCancel(ctx)
 	defer ingestCancel()
@@ -121,17 +127,37 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		}
 	}()
 
-	// Replay outbox
+	// Send bridge.hello on every connect (not seq-numbered, not in outbox).
+	hello := map[string]any{
+		"kind": "bridge.hello",
+		"data": schema.BridgeHelloData{
+			BridgeVersion: bridgeVersion,
+			Schema:        schemaVersion,
+			Os:            runtime.GOOS,
+			Arch:          runtime.GOARCH,
+			BmVersion:     t.cfg.BMVersion,
+			BmUrl:         t.cfg.BMUrl,
+		},
+	}
+	if err := wsjson.Write(ctx, conn, hello); err != nil {
+		return
+	}
+
+	// Replay unacknowledged outbox entries. Advance sentUpTo so the first ingest
+	// signal after replay doesn't re-deliver the whole outbox.
 	t.mu.Lock()
 	snapshot := make([]Envelope, len(t.outbox))
 	for i, e := range t.outbox {
 		snapshot[i] = e.env
 	}
 	t.mu.Unlock()
+
+	var sentUpTo uint64
 	for _, e := range snapshot {
 		if err := wsjson.Write(ctx, conn, e); err != nil {
 			return
 		}
+		sentUpTo = e.Seq
 	}
 
 	heartbeat := time.NewTicker(20 * time.Second)
@@ -156,9 +182,6 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		}
 	}()
 
-	// Track highest seq sent to avoid duplicate sends on ingest signal
-	var sentUpTo uint64
-
 	for {
 		select {
 		case <-ctx.Done():
@@ -176,7 +199,6 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		case msg := <-readMsg:
 			t.handleMessage(ctx, msg)
 		case <-ingest:
-			// Send newly enqueued entries
 			t.mu.Lock()
 			var toSend []Envelope
 			for _, e := range t.outbox {
@@ -220,34 +242,45 @@ func (t *Transport) enqueue(evs []differ.Event) {
 			continue
 		}
 
+		recvWall := ""
+		if !ev.RecvWall.IsZero() {
+			recvWall = ev.RecvWall.UTC().Format(time.RFC3339Nano)
+		}
+
 		env := Envelope{
-			V:        1,
-			Schema:   "adbridge/1.0",
-			BridgeID: t.cfg.BridgeID,
-			BootID:   t.cfg.BootID,
-			Seq:      seq,
-			BoardID:  t.cfg.BoardID,
-			Kind:     ev.Kind,
-			Data:     data,
+			V:          1,
+			Schema:     schemaVersion,
+			BridgeID:   t.cfg.BridgeID,
+			BootID:     t.cfg.BootID,
+			Seq:        seq,
+			BoardID:    t.cfg.BoardID,
+			BMVersion:  t.cfg.BMVersion,
+			RecvWall:   recvWall,
+			RecvMonoNs: ev.RecvMonoNs,
+			Kind:       ev.Kind,
+			Data:       data,
 		}
 
 		isTelemetry := ev.Kind == "motion" || ev.Kind == "bm.frame"
 
 		if len(t.outbox) >= outboxMax && isTelemetry {
-			// Collapse: replace last entry of same kind
+			// Collapse: replace last entry of same kind to bound telemetry.
 			for i := len(t.outbox) - 1; i >= 0; i-- {
 				if t.outbox[i].telemetry && t.outbox[i].env.Kind == ev.Kind {
 					t.outbox[i].env = env
 					goto next
 				}
 			}
-			// No collapsible entry found, drop
+			// No collapsible entry found; drop to stay within bound.
 			t.seq--
 			goto next
 		}
 
+		// Game-data events are never dropped (spec §8.2). The outbox grows
+		// unboundedly during extended backend outages; this is intentional.
+		// Log once per event to aid diagnosis; don't spam per-second.
 		if len(t.outbox) >= outboxMax && !isTelemetry {
-			log.Error("outbox full for game-data event", "kind", ev.Kind)
+			log.Warn("outbox over capacity — game-data retained", "kind", ev.Kind, "size", len(t.outbox))
 		}
 
 		t.outbox = append(t.outbox, outboxEntry{env: env, telemetry: isTelemetry})
@@ -270,7 +303,6 @@ func marshalData(ev differ.Event, bmFrameSeq uint64) (json.RawMessage, error) {
 }
 
 func (t *Transport) handleMessage(ctx context.Context, msg json.RawMessage) {
-	// Check for ack
 	var ack struct {
 		Ack *uint64 `json:"ack"`
 	}
@@ -288,7 +320,6 @@ func (t *Transport) handleMessage(ctx context.Context, msg json.RawMessage) {
 		return
 	}
 
-	// Check for command
 	var cmd struct {
 		CommandID string `json:"command_id"`
 		Name      string `json:"name"`

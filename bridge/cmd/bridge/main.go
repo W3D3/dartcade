@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"dartcade/bridge/internal/bm"
 	"dartcade/bridge/internal/differ"
@@ -40,18 +41,30 @@ func main() {
 	setLogLevel(cfg.LogLevel)
 	log.Info("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
 
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
 	bootID := ulid.Make().String()
 	client := bm.NewClient(cfg.BoardURL)
 
+	// Fetch BM version and board_id before creating the transport so those
+	// values are available in every envelope from the first connection.
+	initCtx, initCancel := context.WithTimeout(ctx, 30*time.Second)
+	if err := client.Init(initCtx); err != nil {
+		initCancel()
+		log.Fatal("BM init failed", "err", err)
+	}
+	initCancel()
+
 	exec := func(name string) (int, error) {
-		ctx := context.Background()
+		execCtx := context.Background()
 		switch name {
 		case "reset":
-			return client.Reset(ctx)
+			return client.Reset(execCtx)
 		case "start":
-			return client.StartDetection(ctx)
+			return client.StartDetection(execCtx)
 		case "stop":
-			return client.StopDetection(ctx)
+			return client.StopDetection(execCtx)
 		}
 		return 0, nil
 	}
@@ -62,10 +75,8 @@ func main() {
 		BootID:     bootID,
 		BoardID:    client.BoardID(),
 		BMVersion:  client.BMVersion(),
+		BMUrl:      cfg.BoardURL,
 	}, exec)
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
 
 	go func() {
 		if err := tr.Start(ctx); err != nil && ctx.Err() == nil {
