@@ -15,17 +15,25 @@
     align-items: center;
     min-height: 100vh;
     padding: 16px;
-    gap: 16px;
+    gap: 12px;
   }
   h1 { font-size: 1.1rem; letter-spacing: 0.15em; color: #aaa; text-transform: uppercase; }
-  #board-wrap { width: min(90vw, 90vh, 600px); aspect-ratio: 1; }
+
+  #main {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 960px;
+  }
+  #left { display: flex; flex-direction: column; gap: 12px; flex: 0 0 auto; }
+  #board-wrap { width: min(70vw, 70vh, 560px); aspect-ratio: 1; }
   svg { width: 100%; height: 100%; }
 
   #panel {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    width: min(90vw, 600px);
     font-size: 0.85rem;
   }
   .card {
@@ -38,23 +46,94 @@
   #status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #666; margin-right: 6px; vertical-align: middle; }
   #status-dot.ok { background: #4caf50; }
   #status-dot.err { background: #f44336; }
+
+  #log-wrap {
+    flex: 1 1 200px;
+    min-width: 180px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    align-self: stretch;
+  }
+  #log-header {
+    padding: 8px 14px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #log-clear {
+    background: none; border: none; color: #555; cursor: pointer;
+    font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;
+  }
+  #log-clear:hover { color: #aaa; background: #333; }
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .log-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 14px;
+    border-bottom: 1px solid #1e1e1e;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .time { color: #555; font-size: 0.7rem; flex-shrink: 0; }
+  .log-entry .seg  { font-weight: 600; min-width: 3.5em; }
+  .log-entry .pts  { color: #ffe066; flex-shrink: 0; }
+  .log-entry.miss  .seg { color: #f39c12; }
+  .log-entry.corrected .seg { color: #a78bfa; }
+  .log-divider {
+    padding: 4px 14px;
+    color: #444;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .log-divider::before, .log-divider::after {
+    content: ''; flex: 1; height: 1px; background: #333;
+  }
 </style>
 </head>
 <body>
 <h1>dartcade · live board</h1>
-<div id="board-wrap"><svg id="svg" viewBox="-1.15 -1.15 2.3 2.3" xmlns="http://www.w3.org/2000/svg"></svg></div>
-<div id="panel">
-  <div class="card">
-    <label>Connection</label>
-    <div class="val"><span id="status-dot"></span><span id="conn-text">–</span></div>
+<div id="main">
+  <div id="left">
+    <div id="board-wrap"><svg id="svg" viewBox="-1.15 -1.15 2.3 2.3" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="panel">
+      <div class="card">
+        <label>Connection</label>
+        <div class="val"><span id="status-dot"></span><span id="conn-text">–</span></div>
+      </div>
+      <div class="card">
+        <label>Last dart</label>
+        <div class="val" id="last-dart">–</div>
+      </div>
+      <div class="card">
+        <label>Visit score</label>
+        <div class="val" id="visit-score">0</div>
+      </div>
+    </div>
   </div>
-  <div class="card">
-    <label>Last dart</label>
-    <div class="val" id="last-dart">–</div>
-  </div>
-  <div class="card">
-    <label>Visit score</label>
-    <div class="val" id="visit-score">0</div>
+  <div id="log-wrap">
+    <div id="log-header">
+      <span>Throw log</span>
+      <button id="log-clear" onclick="clearLog()">clear</button>
+    </div>
+    <div id="log"></div>
   </div>
 </div>
 
@@ -247,6 +326,37 @@ function clearDarts() {
   document.getElementById('visit-score').textContent = '0';
 }
 
+// ── Throw log ─────────────────────────────────────────────────────────────────
+const logEl = document.getElementById('log');
+
+function nowStr() {
+  const d = new Date();
+  return d.toTimeString().slice(0, 8);
+}
+
+function logDart(seg, score, isMiss, isCorrected) {
+  const e = document.createElement('div');
+  e.className = 'log-entry' + (isMiss ? ' miss' : '') + (isCorrected ? ' corrected' : '');
+  e.innerHTML =
+    `<span class="time">${nowStr()}</span>` +
+    `<span class="seg">${isCorrected ? '✱ ' : ''}${seg}</span>` +
+    `<span class="pts">${score > 0 ? '+' + score : 'miss'}</span>`;
+  logEl.appendChild(e);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function logDivider(text) {
+  const e = document.createElement('div');
+  e.className = 'log-divider';
+  e.textContent = text;
+  logEl.appendChild(e);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function clearLog() {
+  logEl.innerHTML = '';
+}
+
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 const dot = document.getElementById('status-dot');
 const connText = document.getElementById('conn-text');
@@ -289,16 +399,20 @@ function connect() {
       case 'takeout':
         clearDarts();
         lastDart.textContent = 'takeout';
+        logDivider('takeout');
         break;
 
       case 'dart':
       case 'dart_corrected': {
-        const g = addDartDot(ev, false);
-        darts.push({ g, score: ev.score });
+        const isCorrected = ev.type === 'dart_corrected';
+        const isMiss = !ev.hasCoords || ev.score === 0;
+        addDartDot(ev, false);
+        darts.push({ score: ev.score });
         visitScore += ev.score;
         visitScoreEl.textContent = visitScore;
-        const label = ev.type === 'dart_corrected' ? `✱ ${ev.segment}` : ev.segment;
+        const label = isCorrected ? `✱ ${ev.segment}` : ev.segment;
         lastDart.textContent = label + (ev.score > 0 ? ` · ${ev.score}` : ' · miss');
+        logDart(ev.segment, ev.score, isMiss, isCorrected);
         break;
       }
 
@@ -308,6 +422,10 @@ function connect() {
           addDartDot(t, true);
         }
         connText.textContent = 'resynced';
+        logDivider('reconnect — existing darts shown grey');
+        for (const t of (ev.throws || [])) {
+          logDart(t.segment, t.score, !t.hasCoords || t.score === 0, false);
+        }
         break;
     }
   };
