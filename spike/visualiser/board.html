@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dartcade — live board</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: #1a1a1a;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+    padding: 16px;
+    gap: 12px;
+  }
+  h1 { font-size: 1.1rem; letter-spacing: 0.15em; color: #aaa; text-transform: uppercase; }
+
+  #main {
+    display: flex;
+    gap: 16px;
+    align-items: stretch;
+    width: 100%;
+    max-width: 960px;
+    flex: 1;
+    min-height: 0;
+  }
+  #left { display: flex; flex-direction: column; gap: 12px; flex: 0 0 auto; align-self: flex-start; }
+  #board-wrap { width: min(70vw, 70vh, 560px); aspect-ratio: 1; }
+  svg { width: 100%; height: 100%; }
+
+  #panel {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    font-size: 0.85rem;
+  }
+  .card {
+    background: #2a2a2a;
+    border-radius: 8px;
+    padding: 10px 14px;
+  }
+  .card label { display: block; color: #888; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
+  .card .val { font-size: 1.3rem; font-weight: 600; }
+  #status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #666; margin-right: 6px; vertical-align: middle; }
+  #status-dot.ok { background: #4caf50; }
+  #status-dot.err { background: #f44336; }
+
+  #log-wrap {
+    flex: 1 1 200px;
+    min-width: 180px;
+    background: #2a2a2a;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    align-self: stretch;
+  }
+  #log-header {
+    padding: 8px 14px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: #888;
+    border-bottom: 1px solid #333;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  #log-clear {
+    background: none; border: none; color: #555; cursor: pointer;
+    font-size: 0.75rem; padding: 2px 6px; border-radius: 4px;
+  }
+  #log-clear:hover { color: #aaa; background: #333; }
+  #log {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .log-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 14px;
+    border-bottom: 1px solid #1e1e1e;
+  }
+  .log-entry:last-child { border-bottom: none; }
+  .log-entry .time { color: #555; font-size: 0.7rem; flex-shrink: 0; }
+  .log-entry .seg  { font-weight: 600; min-width: 3.5em; }
+  .log-entry .pts  { color: #ffe066; flex-shrink: 0; }
+  .log-entry.miss  .seg { color: #f39c12; }
+  .log-entry.corrected .seg { color: #a78bfa; }
+  .log-divider {
+    padding: 4px 14px;
+    color: #444;
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .log-divider::before, .log-divider::after {
+    content: ''; flex: 1; height: 1px; background: #333;
+  }
+</style>
+</head>
+<body>
+<h1>dartcade · live board</h1>
+<div id="main">
+  <div id="left">
+    <div id="board-wrap"><svg id="svg" viewBox="-1.15 -1.15 2.3 2.3" xmlns="http://www.w3.org/2000/svg"></svg></div>
+    <div id="panel">
+      <div class="card">
+        <label>Connection</label>
+        <div class="val"><span id="status-dot"></span><span id="conn-text">–</span></div>
+      </div>
+      <div class="card">
+        <label>Last dart</label>
+        <div class="val" id="last-dart">–</div>
+      </div>
+      <div class="card">
+        <label>Visit score</label>
+        <div class="val" id="visit-score">0</div>
+      </div>
+    </div>
+  </div>
+  <div id="log-wrap">
+    <div id="log-header">
+      <span>Throw log</span>
+      <button id="log-clear" onclick="clearLog()">clear</button>
+    </div>
+    <div id="log"></div>
+  </div>
+</div>
+
+<script>
+// ── Dartboard geometry ────────────────────────────────────────────────────────
+// All radii in the normalised frame (r=1 = outer double wire, y up).
+const R = {
+  bull50Inner: 0,
+  bull50Outer: 0.037,
+  bull25Outer: 0.094,
+  singleInnerOuter: 0.582,
+  tripleOuter: 0.629,
+  singleOuterOuter: 0.953,
+  doubleOuter: 1.000,
+};
+
+// Standard clockwise order from top (segment 20 centred at 90°).
+const SEGS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5];
+const N = SEGS.length; // 20
+const DEG = 2 * Math.PI / N; // 18° in radians
+
+// Segment i is centred at angle: 90° - i*18° (clockwise from top, y-up → SVG).
+// In SVG y is DOWN, so we negate y when converting from board to SVG coords.
+// Board (x, y) → SVG (x, -y).
+
+function segAngle(i) {
+  // Centre angle of segment i, measured CCW from positive x in board coords.
+  return Math.PI / 2 - i * DEG;
+}
+
+// Arc path from r1 to r2, spanning from angle a1 to a2 (board coords, CCW from +x).
+// Board (x,y) → SVG (x,-y), so we negate y.
+function sectorPath(r1, r2, a1, a2) {
+  const cos1 = Math.cos(a1), sin1 = Math.sin(a1);
+  const cos2 = Math.cos(a2), sin2 = Math.sin(a2);
+  // Outer arc goes a1→a2 CCW in board coords → CW in SVG (y flipped).
+  // SVG arc: large-arc=0, sweep=0 means CW in SVG (which is CCW in math).
+  const sweep = 1; // clockwise in SVG = counterclockwise in math
+  return [
+    `M ${r1*cos1} ${-r1*sin1}`,
+    `L ${r2*cos1} ${-r2*sin1}`,
+    `A ${r2} ${r2} 0 0 ${sweep} ${r2*cos2} ${-r2*sin2}`,
+    `L ${r1*cos2} ${-r1*sin2}`,
+    `A ${r1} ${r1} 0 0 ${1-sweep} ${r1*cos1} ${-r1*sin1}`,
+    'Z',
+  ].join(' ');
+}
+
+// Colour logic
+function segColour(segIndex, ring) {
+  // ring: 'single_inner' | 'triple' | 'single_outer' | 'double'
+  const even = segIndex % 2 === 0;
+  if (ring === 'triple' || ring === 'double') {
+    return even ? '#e74c3c' : '#2ecc40'; // red / green
+  }
+  // singles: same segment = same colour in both rings; adjacent segments alternate
+  return even ? '#111' : '#f5f0dc';
+}
+
+// ── Draw board ────────────────────────────────────────────────────────────────
+const svg = document.getElementById('svg');
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  for (const [k,v] of Object.entries(attrs)) e.setAttribute(k, v);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+
+// Wire-coloured surround
+el('circle', {cx:0, cy:0, r:1.12, fill:'#222', stroke:'none'}, svg);
+
+// Segment rings
+const rings = [
+  { r1: R.bull25Outer,       r2: R.singleInnerOuter, ring: 'single_inner' },
+  { r1: R.singleInnerOuter,  r2: R.tripleOuter,      ring: 'triple'       },
+  { r1: R.tripleOuter,       r2: R.singleOuterOuter, ring: 'single_outer' },
+  { r1: R.singleOuterOuter,  r2: R.doubleOuter,      ring: 'double'       },
+];
+
+for (let i = 0; i < N; i++) {
+  const centre = segAngle(i);
+  const a1 = centre + DEG / 2;  // left edge
+  const a2 = centre - DEG / 2;  // right edge (going CW)
+  for (const { r1, r2, ring } of rings) {
+    el('path', {
+      d: sectorPath(r1, r2, a1, a2),
+      fill: segColour(i, ring),
+      stroke: '#555',
+      'stroke-width': '0.005',
+    }, svg);
+  }
+}
+
+// Outer bull (25) — green
+el('circle', { cx:0, cy:0, r: R.bull25Outer, fill:'#2ecc40', stroke:'#555', 'stroke-width':'0.005' }, svg);
+// Inner bull (50) — red
+el('circle', { cx:0, cy:0, r: R.bull50Outer, fill:'#e74c3c', stroke:'#555', 'stroke-width':'0.005' }, svg);
+
+// Segment numbers
+for (let i = 0; i < N; i++) {
+  const a = segAngle(i);
+  const r = 1.06;
+  const x = r * Math.cos(a);
+  const y = -r * Math.sin(a);
+  el('text', {
+    x, y,
+    'text-anchor': 'middle',
+    'dominant-baseline': 'central',
+    fill: '#ccc',
+    'font-size': '0.09',
+    'font-family': 'system-ui, sans-serif',
+    'font-weight': 'bold',
+  }, svg).textContent = SEGS[i];
+}
+
+// Thin wire lines between segments
+for (let i = 0; i < N; i++) {
+  const a = segAngle(i) + DEG / 2;
+  el('line', {
+    x1: R.bull25Outer * Math.cos(a), y1: -R.bull25Outer * Math.sin(a),
+    x2: R.doubleOuter * Math.cos(a), y2: -R.doubleOuter * Math.sin(a),
+    stroke: '#666', 'stroke-width': '0.006',
+  }, svg);
+}
+// Ring wire circles
+for (const r of [R.bull25Outer, R.singleInnerOuter, R.tripleOuter, R.singleOuterOuter, R.doubleOuter]) {
+  el('circle', { cx:0, cy:0, r, fill:'none', stroke:'#666', 'stroke-width':'0.006' }, svg);
+}
+
+// Dart dot layer
+const dartLayer = el('g', {id:'darts'}, svg);
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let visitScore = 0;
+const darts = []; // {el, score}
+
+function addDartDot(ev, grey) {
+  const g = el('g', {}, dartLayer);
+  if (ev.hasCoords) {
+    // Normal dot
+    el('circle', {
+      cx: ev.x, cy: -ev.y,
+      r: 0.035,
+      fill: grey ? '#666' : '#fff',
+      stroke: '#000', 'stroke-width': '0.008',
+      opacity: grey ? '0.6' : '1',
+    }, g);
+  } else {
+    // Miss/bouncer — draw ✕
+    const s = 0.04;
+    const cx = 0, cy = 0; // no coords — draw at centre with offset by index
+    const off = ev.index * 0.08 - 0.1;
+    for (const [x1,y1,x2,y2] of [
+      [off-s, -s, off+s, s],
+      [off-s,  s, off+s,-s],
+    ]) {
+      el('line', {
+        x1,y1,x2,y2,
+        stroke: grey ? '#666' : '#f39c12',
+        'stroke-width': '0.018',
+        'stroke-linecap': 'round',
+      }, g);
+    }
+  }
+
+  // Score label
+  if (!grey && ev.segment) {
+    const lx = ev.hasCoords ? ev.x : (ev.index * 0.08 - 0.1);
+    const ly = ev.hasCoords ? -(ev.y + 0.07) : -0.12;
+    const t = el('text', {
+      x: lx, y: ly,
+      'text-anchor': 'middle',
+      'dominant-baseline': 'central',
+      fill: '#ffe066',
+      'font-size': '0.07',
+      'font-family': 'system-ui, sans-serif',
+      'font-weight': 'bold',
+    }, g);
+    t.textContent = ev.segment + (ev.score > 0 ? ` (${ev.score})` : '');
+  }
+  return g;
+}
+
+function clearDarts() {
+  while (dartLayer.firstChild) dartLayer.removeChild(dartLayer.firstChild);
+  darts.length = 0;
+  visitScore = 0;
+  document.getElementById('visit-score').textContent = '0';
+}
+
+// ── Throw log ─────────────────────────────────────────────────────────────────
+const logEl = document.getElementById('log');
+
+function nowStr() {
+  const d = new Date();
+  return d.toTimeString().slice(0, 8);
+}
+
+function logDart(seg, score, isMiss, isCorrected) {
+  const e = document.createElement('div');
+  e.className = 'log-entry' + (isMiss ? ' miss' : '') + (isCorrected ? ' corrected' : '');
+  e.innerHTML =
+    `<span class="time">${nowStr()}</span>` +
+    `<span class="seg">${isCorrected ? '✱ ' : ''}${seg}</span>` +
+    `<span class="pts">${score > 0 ? '+' + score : 'miss'}</span>`;
+  logEl.appendChild(e);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function logDivider(text) {
+  const e = document.createElement('div');
+  e.className = 'log-divider';
+  e.textContent = text;
+  logEl.appendChild(e);
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+function clearLog() {
+  logEl.innerHTML = '';
+}
+
+// ── WebSocket ─────────────────────────────────────────────────────────────────
+const dot = document.getElementById('status-dot');
+const connText = document.getElementById('conn-text');
+const lastDart = document.getElementById('last-dart');
+const visitScoreEl = document.getElementById('visit-score');
+
+function connect() {
+  const ws = new WebSocket(`ws://${location.host}/ws`);
+
+  ws.onopen = () => {
+    dot.className = 'ok';
+    connText.textContent = 'connected';
+  };
+
+  ws.onclose = () => {
+    dot.className = 'err';
+    connText.textContent = 'reconnecting…';
+    setTimeout(connect, 2000);
+  };
+
+  ws.onmessage = (e) => {
+    const ev = JSON.parse(e.data);
+    switch (ev.type) {
+      case 'status':
+        if (ev.status === 'disconnected') {
+          dot.className = 'err';
+          connText.textContent = 'board disconnected';
+        } else if (ev.status === 'connected') {
+          dot.className = 'ok';
+          connText.textContent = 'connected';
+        } else {
+          connText.textContent = ev.status + (ev.numThrows > 0 ? ` (${ev.numThrows})` : '');
+        }
+        break;
+
+      case 'visit_opened':
+        clearDarts();
+        break;
+
+      case 'takeout':
+        clearDarts();
+        lastDart.textContent = 'takeout';
+        logDivider('takeout');
+        break;
+
+      case 'dart':
+      case 'dart_corrected': {
+        const isCorrected = ev.type === 'dart_corrected';
+        const isMiss = !ev.hasCoords || ev.score === 0;
+        addDartDot(ev, false);
+        darts.push({ score: ev.score });
+        visitScore += ev.score;
+        visitScoreEl.textContent = visitScore;
+        const label = isCorrected ? `✱ ${ev.segment}` : ev.segment;
+        lastDart.textContent = label + (ev.score > 0 ? ` · ${ev.score}` : ' · miss');
+        logDart(ev.segment, ev.score, isMiss, isCorrected);
+        break;
+      }
+
+      case 'resync':
+        clearDarts();
+        for (const t of (ev.throws || [])) {
+          addDartDot(t, true);
+        }
+        connText.textContent = 'resynced';
+        logDivider('reconnect — existing darts shown grey');
+        for (const t of (ev.throws || [])) {
+          logDart(t.segment, t.score, !t.hasCoords || t.score === 0, false);
+        }
+        break;
+    }
+  };
+}
+
+connect();
+</script>
+</body>
+</html>
