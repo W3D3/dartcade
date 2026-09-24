@@ -1,0 +1,4 @@
+{"kind":"connect","recv_wall":"2026-01-01T10:00:00Z","recv_mono_ns":0}
+{"kind":"ws_frame","bm_type":"state","data":{"connected":true,"event":"Throw detected","numThrows":1,"running":true,"status":"Throw","throws":[{"coords":{"x":0.0,"y":0.5},"segment":{"bed":"SingleInner","multiplier":1,"name":"S20","number":20}}]},"recv_wall":"2026-01-01T10:00:01.000Z","recv_mono_ns":1000000000}
+{"kind":"reconnect","recv_wall":"2026-01-01T10:00:05.000Z","recv_mono_ns":5000000000,"gap_ms":3000}
+{"kind":"ws_frame","bm_type":"state","data":{"connected":true,"event":"Throw detected","numThrows":2,"running":true,"status":"Throw","throws":[{"coords":{"x":0.0,"y":0.5},"segment":{"bed":"SingleInner","multiplier":1,"name":"S20","number":20}},{"coords":{"x":0.1,"y":0.4},"segment":{"bed":"SingleInner","multiplier":1,"name":"S5","number":5}}]},"recv_wall":"2026-01-01T10:00:05.100Z","recv_mono_ns":5100000000}

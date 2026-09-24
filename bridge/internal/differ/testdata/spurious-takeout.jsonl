@@ -1,0 +1,4 @@
+{"kind":"connect","recv_wall":"2026-01-01T10:00:00Z","recv_mono_ns":0}
+{"kind":"ws_frame","bm_type":"state","data":{"connected":true,"event":"Idle","numThrows":0,"running":true,"status":"Idle","throws":[]},"recv_wall":"2026-01-01T10:00:00.100Z","recv_mono_ns":100000000}
+{"kind":"ws_frame","bm_type":"state","data":{"connected":true,"event":"Takeout started","numThrows":0,"running":true,"status":"Takeout in progress","throws":[]},"recv_wall":"2026-01-01T10:00:01.000Z","recv_mono_ns":1000000000}
+{"kind":"ws_frame","bm_type":"state","data":{"connected":true,"event":"Idle","numThrows":0,"running":true,"status":"Idle","throws":[]},"recv_wall":"2026-01-01T10:00:02.000Z","recv_mono_ns":2000000000}
