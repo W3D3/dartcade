@@ -189,9 +189,8 @@ function segColour(segIndex, ring) {
   if (ring === 'triple' || ring === 'double') {
     return even ? '#e74c3c' : '#2ecc40'; // red / green
   }
-  // singles: alternate black/cream; outer is opposite of inner for same segment
-  const base = ring === 'single_outer' ? !even : even;
-  return base ? '#111' : '#f5f0dc';
+  // singles: same segment = same colour in both rings; adjacent segments alternate
+  return even ? '#111' : '#f5f0dc';
 }
 
 // ── Draw board ────────────────────────────────────────────────────────────────
