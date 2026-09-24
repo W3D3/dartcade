@@ -20,3 +20,4 @@ dist/
 .vscode/
 *.swp
 spike/recorder/recorder
+spike/visualiser/visualiser
