@@ -1,0 +1,21 @@
+# Secrets / env
+.env
+.env.*
+*.secret
+
+# Fixture recordings with sensitive data
+fixtures/raw/
+
+# Go
+bin/
+*.exe
+
+# Node / JS
+node_modules/
+dist/
+.svelte-kit/
+
+# Editor
+.idea/
+.vscode/
+*.swp
