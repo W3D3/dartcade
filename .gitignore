@@ -19,3 +19,4 @@ dist/
 .idea/
 .vscode/
 *.swp
+spike/recorder/recorder
