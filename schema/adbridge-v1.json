@@ -1,0 +1,370 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "adbridge/v1",
+  "title": "adbridge/v1 — bridge → backend envelope",
+  "description": "Every message the autodarts-bridge sends to the backend over WSS. The `kind` field is the discriminator; `data` shape depends on it. Raw BM frames are forwarded separately as bm.frame. See diff-rules.md for how the bridge derives dart/takeout/visit events from consecutive BM state snapshots.",
+
+  "$defs": {
+
+    "Segment": {
+      "title": "Board Manager segment",
+      "description": "Exactly as Board Manager sends it. For Outside throws, multiplier=0 and score will be 0. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50 (unverified on hardware). Near-miss: name=M<n>, number=n, bed=Outside. Bounce-out: name=Miss, number=0, bed=Outside.",
+      "type": "object",
+      "required": ["name", "number", "bed", "multiplier"],
+      "additionalProperties": false,
+      "properties": {
+        "name":       { "type": "string",  "examples": ["T20", "D5", "S1", "25", "50", "Miss", "M17"] },
+        "number":     { "type": "integer", "minimum": 0, "maximum": 25 },
+        "bed":        { "type": "string",  "enum": ["SingleInner", "SingleOuter", "Single", "Double", "Triple", "Outside"] },
+        "multiplier": { "type": "integer", "enum": [0, 1, 2, 3] }
+      }
+    },
+
+    "Coords": {
+      "title": "Normalised board coordinates",
+      "description": "Bull-centred, r=1.0 at the outer double wire, x pointing right, y pointing up. Values beyond r=1 are valid for near-misses. Absent on bounce-outs (bed=Outside, name=Miss).",
+      "type": "object",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+
+    "Polar": {
+      "title": "Polar coordinates (bridge-computed)",
+      "description": "Derived from coords. r=1 at the outer double wire. theta_deg measured counterclockwise from the positive x-axis (right). Only present when coords is present.",
+      "type": "object",
+      "required": ["r", "theta_deg"],
+      "additionalProperties": false,
+      "properties": {
+        "r":         { "type": "number", "minimum": 0 },
+        "theta_deg": { "type": "number", "minimum": -180, "exclusiveMaximum": 180 }
+      }
+    },
+
+    "Dart": {
+      "title": "A detected dart",
+      "description": "coords and polar are absent for bounce-outs (bed=Outside, name=Miss). bouncer is true only for bounce-outs. score = segment.number × segment.multiplier; always 0 for Outside throws.",
+      "type": "object",
+      "required": ["segment", "score"],
+      "additionalProperties": false,
+      "properties": {
+        "segment": { "$ref": "#/$defs/Segment" },
+        "score":   { "type": "integer", "minimum": 0, "maximum": 180,
+                     "description": "Bridge-computed: segment.number × segment.multiplier." },
+        "coords":  { "$ref": "#/$defs/Coords" },
+        "polar":   { "$ref": "#/$defs/Polar" },
+        "bouncer": { "type": "boolean",
+                     "description": "True when the dart hit a wire or the board and bounced off. Only present (and true) on bounce-outs." }
+      }
+    },
+
+    "VisitId": {
+      "description": "ULID, unique per visit (the physical set of darts in the board between two takeouts).",
+      "type": "string"
+    },
+
+    "BaseEnvelope": {
+      "description": "Fields present on every adbridge/v1 message.",
+      "type": "object",
+      "required": ["v", "schema", "bridge_id", "boot_id", "seq", "board_id", "bm_version", "recv_wall", "recv_mono_ns", "kind", "data"],
+      "properties": {
+        "v":            { "type": "integer", "const": 1,
+                          "description": "Schema major version. Backend refuses an unknown major and tells the bridge to update." },
+        "schema":       { "type": "string",  "const": "adbridge/1.0" },
+        "bridge_id":    { "type": "string",  "description": "Stable per install (ULID)." },
+        "boot_id":      { "type": "string",  "description": "New UUID every time the bridge process starts." },
+        "seq":          { "type": "integer", "minimum": 1,
+                          "description": "Increases monotonically per boot_id. Backend dedupes on (bridge_id, boot_id, seq)." },
+        "board_id":     { "type": "string",  "description": "auth.board_id from /api/config. Bridge refuses to send if this changes." },
+        "bm_version":   { "type": "string",  "description": "Board Manager version string, e.g. '1.0.7'." },
+        "recv_wall":    { "type": "string",  "format": "date-time",
+                          "description": "UTC wall-clock timestamp when the BM frame arrived at the bridge." },
+        "recv_mono_ns": { "type": "integer",
+                          "description": "Nanoseconds since the bridge process started (monotonic). Use only for durations within one boot_id." },
+        "kind":         { "type": "string",  "description": "Event discriminator. See oneOf variants below." },
+        "data":         { "type": "object",  "description": "Kind-specific payload." }
+      }
+    },
+
+    "BridgeHelloData": {
+      "description": "Sent once on connect, before any seq-numbered events.",
+      "type": "object",
+      "required": ["bridge_version", "schema", "os", "arch", "bm_version", "bm_url"],
+      "additionalProperties": false,
+      "properties": {
+        "bridge_version": { "type": "string" },
+        "schema":         { "type": "string", "const": "adbridge/1.0" },
+        "os":             { "type": "string" },
+        "arch":           { "type": "string" },
+        "bm_version":     { "type": "string" },
+        "bm_url":         { "type": "string", "format": "uri" }
+      }
+    },
+
+    "BmLinkData": {
+      "description": "Board Manager WebSocket connection went up or down.",
+      "type": "object",
+      "required": ["up"],
+      "additionalProperties": false,
+      "properties": {
+        "up":     { "type": "boolean" },
+        "reason": { "type": "string", "description": "Error message if up=false." }
+      }
+    },
+
+    "BmFrameData": {
+      "description": "Every raw Board Manager frame, forwarded verbatim (except auth frames, which are dropped). Secrets (api_key, token) are never forwarded. The raw BM payload is in the top-level `raw` field.",
+      "type": "object",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "type": "string", "enum": ["ws", "poll"],
+                    "description": "ws = arrived via WebSocket push; poll = arrived via GET /api/state." }
+      }
+    },
+
+    "BoardStatusData": {
+      "description": "Fired when status, event, or running changes. connected is forwarded as-is but documented as unreliable (can be false while detection is live).",
+      "type": "object",
+      "required": ["status", "event", "running", "connected"],
+      "additionalProperties": false,
+      "properties": {
+        "status":    { "type": "string",
+                       "description": "BM status string. Known values: Offline, Starting, Running, Stopping, Stopped, Throw, Takeout, Takeout in progress, Calibrating, Setup, Error. Treat as open enum." },
+        "event":     { "type": "string",
+                       "description": "BM event string, free text. Known values: Throw detected, Takeout started, Takeout finished, Manual reset, Started, Stopped, etc." },
+        "running":   { "type": "boolean" },
+        "connected": { "type": "boolean",
+                       "description": "Unreliable. Has been seen as false while detection is active. Ignore for liveness; use running and status instead." }
+      }
+    },
+
+    "BoardResyncData": {
+      "description": "Emitted after any reconnect to Board Manager or to the backend. throws is the current board state — a baseline, NOT new darts. Consumers must not score these. The backend uses this to detect darts that landed during a gap (R5) and asks the user.",
+      "type": "object",
+      "required": ["throws"],
+      "additionalProperties": false,
+      "properties": {
+        "throws": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Dart" },
+          "maxItems": 3
+        }
+      }
+    },
+
+    "VisitOpenedData": {
+      "description": "Emitted with the first dart.detected of a new visit (when throws goes from 0 to 1).",
+      "type": "object",
+      "required": ["visit_id"],
+      "additionalProperties": false,
+      "properties": {
+        "visit_id": { "$ref": "#/$defs/VisitId" }
+      }
+    },
+
+    "DartDetectedData": {
+      "description": "A new dart appeared at throws[index]. Emitted after visit.opened if this is the first dart of a visit.",
+      "type": "object",
+      "required": ["visit_id", "index", "dart", "source_seq"],
+      "additionalProperties": false,
+      "properties": {
+        "visit_id":   { "$ref": "#/$defs/VisitId" },
+        "index":      { "type": "integer", "minimum": 0, "maximum": 2 },
+        "dart":       { "$ref": "#/$defs/Dart" },
+        "source_seq": { "type": "integer",
+                        "description": "seq of the bm.frame that triggered this event." }
+      }
+    },
+
+    "DartCorrectedData": {
+      "description": "throws[index] changed segment between two consecutive state frames. The bridge refolds the open visit from committedState; game authors write only forward-only reducers.",
+      "type": "object",
+      "required": ["visit_id", "index", "dart", "previous", "source_seq"],
+      "additionalProperties": false,
+      "properties": {
+        "visit_id":   { "$ref": "#/$defs/VisitId" },
+        "index":      { "type": "integer", "minimum": 0, "maximum": 2 },
+        "dart":       { "$ref": "#/$defs/Dart" },
+        "previous":   { "$ref": "#/$defs/Dart" },
+        "source_seq": { "type": "integer" }
+      }
+    },
+
+    "DartMovedData": {
+      "description": "throws[index] kept the same segment but coords changed by more than ε=0.02. Only games that use coordinates care about this event.",
+      "type": "object",
+      "required": ["visit_id", "index", "coords", "previous_coords", "source_seq"],
+      "additionalProperties": false,
+      "properties": {
+        "visit_id":       { "$ref": "#/$defs/VisitId" },
+        "index":          { "type": "integer", "minimum": 0, "maximum": 2 },
+        "coords":         { "$ref": "#/$defs/Coords" },
+        "previous_coords":{ "$ref": "#/$defs/Coords" },
+        "source_seq":     { "type": "integer" }
+      }
+    },
+
+    "TakeoutStartedData": {
+      "description": "Takeout motion has begun. trigger identifies what caused the bridge to emit this.",
+      "type": "object",
+      "required": ["visit_id", "trigger"],
+      "additionalProperties": false,
+      "properties": {
+        "visit_id": { "$ref": "#/$defs/VisitId" },
+        "trigger":  { "type": "string",
+                      "enum": ["motion.isHand", "status.Takeout in progress", "event.Takeout started"],
+                      "description": "Whichever signal arrived first." }
+      }
+    },
+
+    "TakeoutFinishedData": {
+      "description": "All darts have been removed (numThrows=0). duration_ms is measured from takeout.started.",
+      "type": "object",
+      "required": ["visit_id", "trigger", "duration_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "visit_id":    { "$ref": "#/$defs/VisitId" },
+        "trigger":     { "type": "string",
+                         "enum": ["numThrows.zero", "motion.isTakeoutFull", "event.Takeout finished"] },
+        "duration_ms": { "type": "integer", "minimum": 0 }
+      }
+    },
+
+    "VisitClearedData": {
+      "description": "numThrows dropped to 0 without a detected takeout — typically a POST /api/reset or a Manual reset event from the BM.",
+      "type": "object",
+      "required": ["visit_id", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "visit_id": { "$ref": "#/$defs/VisitId" },
+        "reason":   { "type": "string",
+                      "enum": ["manual_reset", "bridge_reset_command", "unknown"] }
+      }
+    },
+
+    "MotionData": {
+      "description": "motion_state frame forwarded from Board Manager. High-rate; consumers may throttle.",
+      "type": "object",
+      "required": ["isDart", "isHand", "isStable", "isTakeoutPartial", "isTakeoutFull", "isWaiting"],
+      "additionalProperties": true,
+      "properties": {
+        "isDart":          { "type": "boolean" },
+        "isHand":          { "type": "boolean" },
+        "isStable":        { "type": "boolean" },
+        "isTakeoutPartial":{ "type": "boolean" },
+        "isTakeoutFull":   { "type": "boolean" },
+        "isWaiting":       { "type": "boolean" }
+      }
+    },
+
+    "CommandResultData": {
+      "description": "Result of a downstream command (reset, start, stop) sent by the backend.",
+      "type": "object",
+      "required": ["command_id", "ok"],
+      "additionalProperties": false,
+      "properties": {
+        "command_id":  { "type": "string" },
+        "ok":          { "type": "boolean" },
+        "http_status": { "type": "integer", "description": "HTTP status from the BM endpoint, if applicable." }
+      }
+    }
+  },
+
+  "oneOf": [
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "bridge.hello"  }, "data": { "$ref": "#/$defs/BridgeHelloData"  } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "bm.link"       }, "data": { "$ref": "#/$defs/BmLinkData"       } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        {
+          "properties": {
+            "kind": { "const": "bm.frame" },
+            "data": { "$ref": "#/$defs/BmFrameData" },
+            "raw":  { "type": "object", "description": "Exact BM JSON frame, verbatim. Secrets are redacted." }
+          },
+          "required": ["raw"]
+        }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "board.status"  }, "data": { "$ref": "#/$defs/BoardStatusData"  } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "board.resync"  }, "data": { "$ref": "#/$defs/BoardResyncData"  } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "visit.opened"  }, "data": { "$ref": "#/$defs/VisitOpenedData"  } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "dart.detected" }, "data": { "$ref": "#/$defs/DartDetectedData" } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "dart.corrected"}, "data": { "$ref": "#/$defs/DartCorrectedData"} } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "dart.moved"    }, "data": { "$ref": "#/$defs/DartMovedData"    } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "takeout.started"  }, "data": { "$ref": "#/$defs/TakeoutStartedData"  } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "takeout.finished" }, "data": { "$ref": "#/$defs/TakeoutFinishedData" } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "visit.cleared" }, "data": { "$ref": "#/$defs/VisitClearedData" } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "motion"        }, "data": { "$ref": "#/$defs/MotionData"        } } }
+      ]
+    },
+    {
+      "allOf": [
+        { "$ref": "#/$defs/BaseEnvelope" },
+        { "properties": { "kind": { "const": "command.result"}, "data": { "$ref": "#/$defs/CommandResultData" } } }
+      ]
+    }
+  ]
+}
