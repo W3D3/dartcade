@@ -10,21 +10,21 @@
     "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties"
   },
   "dependencies": {
-    "@fastify/static": "^7.0.4",
-    "@fastify/websocket": "^8.3.1",
-    "better-auth": "^1.7.6",
-    "fastify": "^4.28.1",
-    "kysely": "^0.28.17",
-    "pg": "^8.12.0",
-    "ulid": "^2.3.0"
+    "@fastify/static": "7.0.4",
+    "@fastify/websocket": "8.3.1",
+    "better-auth": "1.7.6",
+    "fastify": "4.29.1",
+    "kysely": "0.28.17",
+    "pg": "8.23.0",
+    "ulid": "2.4.0"
   },
   "devDependencies": {
-    "@types/node": "^22.0.0",
-    "@types/pg": "^8.11.6",
-    "@types/ws": "^8.5.12",
-    "json-schema-to-typescript": "^14.1.0",
-    "tsx": "^4.16.2",
-    "typescript": "^5.5.3",
-    "vitest": "^2.0.5"
+    "@types/node": "22.20.4",
+    "@types/pg": "8.23.1",
+    "@types/ws": "8.18.1",
+    "json-schema-to-typescript": "14.1.0",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "2.1.9"
   }
 }
