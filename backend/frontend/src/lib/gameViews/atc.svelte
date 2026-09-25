@@ -24,19 +24,13 @@
       {targetLabel(target)}
     </span>
     <span
-      class="text-sm rounded px-2 py-0.5 font-semibold"
-      class:bg-black/30={isActive}
-      class:text-white/70={isActive}
-      class:bg-white/10={!isActive}
-      class:text-gray-500={!isActive}
+      class="text-sm rounded px-2 py-0.5 font-semibold {isActive ? 'bg-black/30 text-white/70' : 'bg-white/10 text-gray-500'}"
     >
       0
     </span>
   </div>
   <span
-    class="text-sm italic"
-    class:text-white/50={isActive}
-    class:text-gray-600={!isActive}
+    class="text-sm italic {isActive ? 'text-white/50' : 'text-gray-600'}"
     title="Stat tracking coming soon"
   >
     Hit% —

@@ -66,9 +66,7 @@
           style="border-color: rgba(255,255,255,0.08)"
         >
           <span
-            class="text-sm font-mono tabular-nums"
-            class:text-white/70={isActive}
-            class:text-gray-600={!isActive}
+            class="text-sm font-mono tabular-nums {isActive ? 'text-white/70' : 'text-gray-600'}"
           >
             {visitTotal}
           </span>
