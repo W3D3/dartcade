@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { SocketStream } from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
 import type { SessionEngine } from '../session/engine.js'
+import { getAuthUser } from '../auth/session.js'
 
 export const browserConnections = new BrowserConnections()
 
@@ -12,31 +13,33 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
 
   app.get('/ws', { websocket: true }, (connection: SocketStream, req) => {
     const socket = connection.socket
-    const sessionId = (req.query as any).sessionId as string | undefined
-    if (!sessionId) {
-      socket.close(4400, 'missing sessionId')
-      return
-    }
 
-    const snap = engine.getSnapshot(sessionId)
-    if (!snap) {
-      socket.close(4404, 'session not found')
-      return
-    }
-
-    browserConnections.add(sessionId, socket)
-    socket.send(JSON.stringify(snap))
-
-    socket.on('message', async (raw) => {
-      let msg: any
-      try { msg = JSON.parse(raw.toString()) } catch { return }
-      if (msg.type === 'user_action' && msg.action) {
-        await engine.onUserAction(sessionId, msg.action)
+    getAuthUser(req).then(user => {
+      if (!user) {
+        socket.close(4401, 'unauthorized')
+        return
       }
-    })
 
-    socket.on('close', () => browserConnections.remove(sessionId, socket))
-    socket.on('error', () => browserConnections.remove(sessionId, socket))
+      const sessionId = (req.query as any).sessionId as string | undefined
+      if (!sessionId) { socket.close(4400, 'missing sessionId'); return }
+
+      const snap = engine.getSnapshot(sessionId)
+      if (!snap) { socket.close(4404, 'session not found'); return }
+
+      browserConnections.add(sessionId, socket)
+      socket.send(JSON.stringify(snap))
+
+      socket.on('message', async (raw) => {
+        let msg: any
+        try { msg = JSON.parse(raw.toString()) } catch { return }
+        if (msg.type === 'user_action' && msg.action) {
+          await engine.onUserAction(sessionId, msg.action)
+        }
+      })
+
+      socket.on('close', () => browserConnections.remove(sessionId, socket))
+      socket.on('error', () => browserConnections.remove(sessionId, socket))
+    }).catch(() => socket.close(4500, 'internal error'))
   })
 }
 

@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
 import { BrowserConnections } from './connections.js'
 
+vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
+
 describe('BrowserConnections', () => {
   it('push sends snapshot JSON to all sockets for a sessionId', () => {
     const bc = new BrowserConnections()
@@ -40,5 +42,12 @@ describe('BrowserConnections', () => {
     const snap = { type: 'snapshot' as const, sessionId: 'session-1', players: [], game: {} }
     bc.push('session-1', snap)
     expect(ws.send).not.toHaveBeenCalled()
+  })
+})
+
+describe('WS auth', () => {
+  it('exports browserGwPlugin function', async () => {
+    const { browserGwPlugin } = await import('./handler.js')
+    expect(typeof browserGwPlugin).toBe('function')
   })
 })

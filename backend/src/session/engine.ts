@@ -9,18 +9,18 @@ import * as queries from '../db/queries.js'
 type PushFn = (sessionId: string) => void
 
 export interface EngineStore {
-  insertSession(data: { id: string; board_id: string; game_id: string; config: unknown; players: unknown }): Promise<void>
-  getActiveSessions(): Promise<Array<{ id: string; board_id: string; game_id: string; config: unknown; players: unknown; created_at: unknown }>>
-  getBridgeEventsForBoard(boardId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: unknown }>>
+  insertSession(data: { id: string; board_db_id: string; game_id: string; config: unknown; players: unknown }): Promise<void>
+  getActiveSessions(): Promise<Array<{ id: string; board_db_id: string; game_id: string; config: unknown; players: unknown; created_at: unknown }>>
+  getBridgeEventsForBoard(boardDbId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: unknown }>>
   setSessionFinished(id: string): Promise<void>
 }
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
   return {
-    insertSession: (d) => queries.insertSession(db, d),
-    getActiveSessions: () => queries.getActiveSessions(db) as any,
-    getBridgeEventsForBoard: (boardId, since) => queries.getBridgeEventsForBoard(db, boardId, since) as any,
-    setSessionFinished: (id) => queries.setSessionFinished(db, id),
+    insertSession: (d) => queries.insertGameSession(db, d),
+    getActiveSessions: () => queries.getActiveGameSessions(db) as any,
+    getBridgeEventsForBoard: (boardDbId, since) => queries.getBridgeEventsForBoardDbId(db, boardDbId, since) as any,
+    setSessionFinished: (id) => queries.setGameSessionFinished(db, id),
   }
 }
 
@@ -54,7 +54,7 @@ export class SessionEngine {
       status: 'active',
       createdAt: new Date(),
     }
-    await this.store.insertSession({ id: sessionId, board_id: boardId, game_id: gameId, config, players })
+    await this.store.insertSession({ id: sessionId, board_db_id: boardId, game_id: gameId, config, players })
     this.byBoard.set(boardId, session)
     this.byId.set(sessionId, session)
     return { sessionId }
@@ -160,7 +160,7 @@ export class SessionEngine {
       const config = row.config
       const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
       const session: Session = {
-        id: row.id, boardId: row.board_id, players,
+        id: row.id, boardId: row.board_db_id, players,
         module: mod as GameModule<unknown, unknown>,
         committedState: initialState,
         openVisitEvents: [],
@@ -168,12 +168,12 @@ export class SessionEngine {
         status: 'active',
         createdAt: (row.created_at as unknown as Date) ?? new Date(),
       }
-      this.byBoard.set(row.board_id, session)
+      this.byBoard.set(row.board_db_id, session)
       this.byId.set(row.id, session)
 
-      const events = await this.store.getBridgeEventsForBoard(row.board_id, session.createdAt)
+      const events = await this.store.getBridgeEventsForBoard(row.board_db_id, session.createdAt)
       for (const ev of events) {
-        await this.onBridgeEvent(row.board_id, ev.kind, ev.data, ev.recv_wall as unknown as Date)
+        await this.onBridgeEvent(row.board_db_id, ev.kind, ev.data, ev.recv_wall as unknown as Date)
       }
     }
   }

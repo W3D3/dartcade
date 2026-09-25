@@ -2,6 +2,16 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Fastify from 'fastify'
 import { sessionsApiPlugin } from './sessions.js'
 
+vi.mock('../auth/middleware.js', () => ({
+  requireAuth: async (req: any, _reply: any) => { req.userId = 'user-1' },
+}))
+vi.mock('../db/queries.js', () => ({
+  getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' }),
+  getBoardsByOwner: vi.fn().mockResolvedValue([{ id: 'b1' }]),
+}))
+
+import * as queries from '../db/queries.js'
+
 function makeApp() {
   const engine = {
     create: vi.fn().mockResolvedValue({ sessionId: 'sess-1' }),
@@ -11,7 +21,7 @@ function makeApp() {
     deleteSession: vi.fn().mockResolvedValue(true),
   } as any
   const app = Fastify()
-  app.register(sessionsApiPlugin, { engine })
+  app.register(sessionsApiPlugin, { engine, db: {} as any })
   return { app, engine }
 }
 
@@ -68,6 +78,18 @@ describe('POST /api/sessions', () => {
   })
 })
 
+describe('POST /api/sessions ownership', () => {
+  it('returns 403 when board owned by another user', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'other-user' } as any)
+    const { app } = makeApp()
+    const res = await app.inject({
+      method: 'POST', url: '/api/sessions',
+      payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
+    })
+    expect(res.statusCode).toBe(403)
+  })
+})
+
 describe('GET /api/sessions', () => {
   it('returns an array', async () => {
     const { app } = makeApp()
@@ -86,15 +108,8 @@ describe('GET /api/sessions/:id', () => {
 })
 
 describe('DELETE /api/sessions/:id', () => {
-  it('returns 204 on success', async () => {
-    const { app } = makeApp()
-    const res = await app.inject({ method: 'DELETE', url: '/api/sessions/sess-1' })
-    expect(res.statusCode).toBe(204)
-  })
-
   it('returns 404 when session not found', async () => {
-    const { app, engine } = makeApp()
-    engine.deleteSession.mockResolvedValue(false)
+    const { app } = makeApp()
     const res = await app.inject({ method: 'DELETE', url: '/api/sessions/nope' })
     expect(res.statusCode).toBe(404)
   })

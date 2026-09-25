@@ -137,7 +137,7 @@ describe('rebuild', () => {
     const store = makeStore()
     vi.mocked(store.getActiveSessions).mockResolvedValue([{
       id: 'sess-rebuild',
-      board_id: 'board-r',
+      board_db_id: 'board-r',
       game_id: 'atc',
       config: {},
       players: [{ name: 'Alice' }],
