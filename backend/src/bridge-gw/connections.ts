@@ -36,6 +36,10 @@ export class BridgeConnections {
     return this.byBoard.get(boardId)
   }
 
+  connectedBoardIds(): string[] {
+    return Array.from(this.byBoard.keys())
+  }
+
   send(boardId: string, msg: unknown): void {
     const conn = this.byBoard.get(boardId)
     if (conn?.ws.readyState === 1) {

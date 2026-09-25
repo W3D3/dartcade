@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import { games } from '../games/index.js'
 import type { SessionEngine } from '../session/engine.js'
+import { bridgeConnections } from '../bridge-gw/handler.js'
 
 type Opts = FastifyPluginOptions & { engine: SessionEngine }
 
@@ -8,6 +9,10 @@ export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promi
   const { engine } = opts
 
   app.get('/health', async () => ({ ok: true }))
+
+  app.get('/api/boards', async () => ({
+    boards: bridgeConnections.connectedBoardIds(),
+  }))
 
   app.get('/api/games', async () => ({
     games: Object.values(games).map(m => ({ id: m.id, defaultConfig: m.defaultConfig })),

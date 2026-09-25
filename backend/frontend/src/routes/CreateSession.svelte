@@ -4,20 +4,28 @@
   import GameConfigForm from '../lib/components/GameConfigForm.svelte'
 
   let games: { id: string; defaultConfig: Record<string, unknown> }[] = []
+  let boards: string[] = []
   let selectedGame = 'atc'
+  let selectedBoard = ''
   let config: Record<string, unknown> = {}
   let players: { name: string }[] = [{ name: '' }, { name: '' }]
   let error = ''
   let loading = false
 
   onMount(async () => {
-    const res = await fetch('/api/games')
-    const data = await res.json()
-    games = data.games
+    const [gamesRes, boardsRes] = await Promise.all([
+      fetch('/api/games'),
+      fetch('/api/boards'),
+    ])
+    const gamesData = await gamesRes.json()
+    const boardsData = await boardsRes.json()
+    games = gamesData.games
+    boards = boardsData.boards
     if (games.length > 0) {
       selectedGame = games[0].id
       config = { ...games[0].defaultConfig }
     }
+    if (boards.length > 0) selectedBoard = boards[0]
   })
 
   function addPlayer() { players = [...players, { name: '' }] }
@@ -25,6 +33,7 @@
 
   async function submit() {
     error = ''
+    if (!selectedBoard) { error = 'No board connected — is the bridge running?'; return }
     const validPlayers = players.filter(p => p.name.trim())
     if (validPlayers.length < 1) { error = 'At least one player is required'; return }
     loading = true
@@ -32,7 +41,7 @@
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ boardId: 'default', gameId: selectedGame, config, players: validPlayers }),
+        body: JSON.stringify({ boardId: selectedBoard, gameId: selectedGame, config, players: validPlayers }),
       })
       if (!res.ok) {
         const d = await res.json()
@@ -49,6 +58,19 @@
 
 <div class="max-w-lg mx-auto p-6">
   <h1 class="text-2xl font-bold mb-4">New Game</h1>
+
+  <label class="block mb-4">
+    Board
+    {#if boards.length === 0}
+      <p class="text-amber-600 text-sm mt-1">No bridge connected — start the bridge first.</p>
+    {:else}
+      <select bind:value={selectedBoard} class="block w-full border rounded p-2 mt-1">
+        {#each boards as b}
+          <option value={b}>{b}</option>
+        {/each}
+      </select>
+    {/if}
+  </label>
 
   <label class="block mb-4">
     Game
