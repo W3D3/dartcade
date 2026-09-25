@@ -1,6 +1,6 @@
 import { createHash, timingSafeEqual } from 'crypto'
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
-import type { WebSocket } from 'ws'
+import type { SocketStream } from '@fastify/websocket'
 import { BridgeConnections } from './connections.js'
 import type { SessionEngine } from '../session/engine.js'
 import { insertBridgeEvent } from '../db/queries.js'
@@ -25,7 +25,8 @@ type Opts = FastifyPluginOptions & {
 export async function bridgeGwPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
   const { secret, engine, db } = opts
 
-  app.get('/bridge', { websocket: true }, (socket: WebSocket, req) => {
+  app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
+    const socket = connection.socket
     const provided = (req.query as any).secret ?? ''
     if (!checkSecret(provided, secret)) {
       socket.close(4401, 'unauthorized')

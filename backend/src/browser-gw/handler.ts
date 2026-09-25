@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
-import type { WebSocket } from 'ws'
+import type { SocketStream } from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
 import type { SessionEngine } from '../session/engine.js'
 
@@ -10,7 +10,8 @@ type Opts = FastifyPluginOptions & { engine: SessionEngine }
 export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
   const { engine } = opts
 
-  app.get('/ws', { websocket: true }, (socket: WebSocket, req) => {
+  app.get('/ws', { websocket: true }, (connection: SocketStream, req) => {
+    const socket = connection.socket
     const sessionId = (req.query as any).sessionId as string | undefined
     if (!sessionId) {
       socket.close(4400, 'missing sessionId')
