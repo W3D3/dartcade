@@ -1,4 +1,6 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import Fastify from 'fastify'
+import fastifyWebsocket from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
 
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
@@ -46,8 +48,25 @@ describe('BrowserConnections', () => {
 })
 
 describe('WS auth', () => {
-  it('exports browserGwPlugin function', async () => {
+  let testApp: ReturnType<typeof Fastify> | null = null
+  afterEach(async () => { await testApp?.close(); testApp = null })
+
+  it('closes with 4401 when not authenticated', async () => {
+    const engine = { getSnapshot: vi.fn().mockReturnValue(undefined), onUserAction: vi.fn() } as any
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
     const { browserGwPlugin } = await import('./handler.js')
-    expect(typeof browserGwPlugin).toBe('function')
+    await testApp.register(browserGwPlugin, { engine })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as any).port
+
+    const code = await new Promise<number>((resolve, reject) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
+      ws.addEventListener('close', (e) => resolve((e as any).code))
+      ws.addEventListener('error', () => reject(new Error('ws error')))
+      setTimeout(() => reject(new Error('timeout')), 2000)
+    })
+
+    expect(code).toBe(4401)
   })
 })

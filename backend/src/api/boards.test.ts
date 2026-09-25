@@ -95,4 +95,15 @@ describe('DELETE /api/boards/:id', () => {
     expect(res.statusCode).toBe(204)
     expect(queries.deleteBoard).toHaveBeenCalledWith(expect.anything(), 'board-1')
   })
+
+  it('returns 409 when board has active sessions (FK violation)', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({
+      id: 'board-1', owner_user_id: 'user-1',
+    } as any)
+    const fkError = Object.assign(new Error('FK violation'), { code: '23503' })
+    vi.mocked(queries.deleteBoard).mockRejectedValue(fkError)
+    const app = makeApp()
+    const res = await app.inject({ method: 'DELETE', url: '/api/boards/board-1' })
+    expect(res.statusCode).toBe(409)
+  })
 })

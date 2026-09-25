@@ -40,7 +40,12 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     const board = await getBoardById(db, id)
     if (!board) return reply.code(404).send({ error: 'not found' })
     if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
-    await deleteBoard(db, id)
+    try {
+      await deleteBoard(db, id)
+    } catch (err: any) {
+      if (err.code === '23503') return reply.code(409).send({ error: 'board has active sessions' })
+      throw err
+    }
     return reply.code(204).send()
   })
 }

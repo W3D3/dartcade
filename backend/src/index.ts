@@ -4,7 +4,7 @@ import fastifyStatic from '@fastify/static'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { toNodeHandler } from 'better-auth/node'
-import { createDb } from './db/index.js'
+import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
 import { bridgeGwPlugin } from './bridge-gw/handler.js'
@@ -22,7 +22,6 @@ const PORT = parseInt(process.env.PORT ?? '3000', 10)
 
 if (!DATABASE_URL) throw new Error('DATABASE_URL is required')
 
-const db = createDb(DATABASE_URL)
 await runMigrations(db)
 await seedDev()
 
