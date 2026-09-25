@@ -2,6 +2,7 @@
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import GameConfigForm from '../lib/components/GameConfigForm.svelte'
+  import { Button } from '$lib/components/ui/button/index.js'
 
   type Board = { id: string; name: string; online: boolean }
 
@@ -57,59 +58,73 @@
       loading = false
     }
   }
+
+  const inputClass = 'w-full rounded-lg px-4 py-2 text-white border focus:outline-none focus:border-blue-500 transition-colors'
+  const inputStyle = 'background: #0b1628; border-color: rgba(255,255,255,0.1);'
 </script>
 
-<div class="max-w-lg mx-auto p-6">
-  <div class="flex items-center justify-between mb-4">
-    <h1 class="text-2xl font-bold">New Game</h1>
-    <a href="#/boards" class="text-gray-400 hover:text-white text-sm">Boards</a>
-  </div>
+<div class="min-h-screen text-white p-6" style="background: #0b1628;">
+  <div class="max-w-lg mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-2xl font-bold tracking-tight">New Game</h1>
+      <a href="#/boards" class="text-blue-400 hover:text-blue-300 text-sm transition-colors">Boards</a>
+    </div>
 
-  <label class="block mb-4">
-    <span class="text-sm text-gray-400">Board</span>
-    <select bind:value={boardId}
-      class="w-full mt-1 bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:outline-none focus:border-orange-500">
-      {#each boards as b (b.id)}
-        <option value={b.id}>{b.name} {b.online ? '🟢' : '⚫'}</option>
-      {:else}
-        <option disabled value="">No boards registered — add one in Boards</option>
-      {/each}
-    </select>
-    {#if boards.length === 0}
-      <a href="#/boards" class="text-orange-400 text-sm mt-1 inline-block hover:underline">→ Register a board</a>
-    {/if}
-  </label>
+    <div class="rounded-2xl p-6 space-y-5"
+      style="background: #111d2e; border: 1px solid rgba(255,255,255,0.07)">
 
-  <label class="block mb-4">
-    Game
-    <select bind:value={selectedGame} class="block w-full border rounded p-2 mt-1">
-      {#each games as g}
-        <option value={g.id}>{g.id.toUpperCase()}</option>
-      {/each}
-    </select>
-  </label>
-
-  <div class="mb-4">
-    <GameConfigForm gameId={selectedGame} bind:config />
-  </div>
-
-  <div class="mb-4">
-    <p class="font-semibold mb-2">Players</p>
-    {#each players as player, i}
-      <div class="flex gap-2 mb-2">
-        <input bind:value={player.name} placeholder="Player {i + 1}" class="border rounded p-2 flex-1" />
-        {#if players.length > 1}
-          <button on:click={() => removePlayer(i)} class="text-red-500 px-2">✕</button>
+      <!-- Board selector -->
+      <label class="block">
+        <span class="text-sm text-gray-400 mb-1 block">Board</span>
+        <select bind:value={boardId} class={inputClass} style={inputStyle}>
+          {#each boards as b (b.id)}
+            <option value={b.id}>{b.name} {b.online ? '🟢' : '⚫'}</option>
+          {:else}
+            <option disabled value="">No boards registered — add one in Boards</option>
+          {/each}
+        </select>
+        {#if boards.length === 0}
+          <a href="#/boards" class="text-blue-400 text-sm mt-1 inline-block hover:underline">→ Register a board</a>
         {/if}
+      </label>
+
+      <!-- Game selector -->
+      <label class="block">
+        <span class="text-sm text-gray-400 mb-1 block">Game</span>
+        <select bind:value={selectedGame} class={inputClass} style={inputStyle}>
+          {#each games as g}
+            <option value={g.id}>{g.id.toUpperCase()}</option>
+          {/each}
+        </select>
+      </label>
+
+      <!-- Game config -->
+      <div>
+        <GameConfigForm gameId={selectedGame} bind:config />
       </div>
-    {/each}
-    <button on:click={addPlayer} class="text-blue-600 text-sm">+ Add player</button>
+
+      <!-- Players -->
+      <div>
+        <p class="text-sm text-gray-400 mb-2">Players</p>
+        {#each players as player, i}
+          <div class="flex gap-2 mb-2">
+            <input bind:value={player.name} placeholder="Player {i + 1}"
+              class={inputClass} style={inputStyle} />
+            {#if players.length > 1}
+              <button on:click={() => removePlayer(i)}
+                class="text-gray-600 hover:text-red-400 px-3 transition-colors">✕</button>
+            {/if}
+          </div>
+        {/each}
+        <button on:click={addPlayer} class="text-blue-400 hover:text-blue-300 text-sm transition-colors">+ Add player</button>
+      </div>
+
+      {#if error}<p class="text-red-400 text-sm">{error}</p>{/if}
+
+      <Button on:click={submit} disabled={loading}
+        class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold">
+        {loading ? 'Starting…' : 'Start Game'}
+      </Button>
+    </div>
   </div>
-
-  {#if error}<p class="text-red-600 mb-2">{error}</p>{/if}
-
-  <button on:click={submit} disabled={loading}
-    class="bg-blue-600 text-white rounded px-4 py-2 disabled:opacity-50">
-    {loading ? 'Starting…' : 'Start Game'}
-  </button>
 </div>
