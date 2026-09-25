@@ -1,23 +1,38 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
+  import { writable } from 'svelte/store'
   import { params } from 'svelte-spa-router'
   import { createSessionStore } from '../lib/ws.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
   import PlayerList from '../lib/components/PlayerList.svelte'
   import CorrectionPanel from '../lib/components/CorrectionPanel.svelte'
 
-  const sessionId = $params?.id ?? ''
-  const { snapshot, send, destroy } = createSessionStore(sessionId)
-  onDestroy(destroy)
+  // Stable store — always safe to subscribe to in the template.
+  // Populated once onMount so params is guaranteed to be set.
+  const snapshot = writable<any>(null)
+  let sessionStore: ReturnType<typeof createSessionStore> | null = null
+  let unsubSnap: (() => void) | null = null
+
+  onMount(() => {
+    const id = $params?.id ?? ''
+    if (!id) return
+    sessionStore = createSessionStore(id)
+    unsubSnap = sessionStore.snapshot.subscribe(v => snapshot.set(v))
+  })
+
+  onDestroy(() => {
+    unsubSnap?.()
+    sessionStore?.destroy()
+  })
 
   $: game = $snapshot?.game as any
   $: players = $snapshot?.players ?? []
   $: darts = game?.currentVisitDarts ?? []
   $: visitInProgress = darts.length > 0
 
-  function undo() { send({ type: 'undo_dart' }) }
+  function undo() { sessionStore?.send({ type: 'undo_dart' }) }
   function correct(visitIndex: number, number: number, bed: string, multiplier: number) {
-    send({ type: 'correct_dart', visitIndex, segment: { name: `${bed[0]}${number}`, number, bed, multiplier } })
+    sessionStore?.send({ type: 'correct_dart', visitIndex, segment: { name: `${bed[0]}${number}`, number, bed, multiplier } })
   }
 </script>
 
