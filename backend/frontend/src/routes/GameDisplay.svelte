@@ -1,7 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import { writable } from 'svelte/store'
-  import { params } from 'svelte-spa-router'
   import { createSessionStore } from '../lib/ws.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
   import PlayerList from '../lib/components/PlayerList.svelte'
@@ -14,7 +13,10 @@
   let unsubSnap: (() => void) | null = null
 
   onMount(() => {
-    const id = $params?.id ?? ''
+    // svelte-spa-router's params store is not yet set in Svelte 5 at onMount time.
+    // Read the session ID from the hash directly instead.
+    const match = window.location.hash.match(/\/session\/([^/]+)/)
+    const id = match?.[1] ?? ''
     if (!id) return
     sessionStore = createSessionStore(id)
     unsubSnap = sessionStore.snapshot.subscribe(v => snapshot.set(v))
