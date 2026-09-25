@@ -141,17 +141,15 @@ ALTER TABLE game_sessions
 ```ts
 import { betterAuth } from 'better-auth'
 import { kyselyAdapter } from 'better-auth/adapters/kysely'
-import { username } from 'better-auth/plugins'
 import { db } from '../db/index.js'
 
 export const auth = betterAuth({
   database: kyselyAdapter(db, { provider: 'pg' }),
   emailAndPassword: { enabled: true },
-  plugins: [username()],
 })
 ```
 
-> **Username plugin:** better-auth's `username` plugin adds a `username` field to the `user` table and allows sign-in by username instead of email. Login form sends `{ username, password }` to `POST /api/auth/sign-in/username`. Email field is not used or shown in the UI. The `user` table migration must include a `username TEXT UNIQUE` column (better-auth adds it automatically when the plugin is active).
+> **Email as identifier:** Users register and log in with email + password. The `name` field is a display name (e.g. "Alice"). Login form sends `{ email, password }` to `POST /api/auth/sign-in/email`. Dev seed uses `admin@dartcade.local` / `admin`.
 
 ### `src/auth/session.ts` — the swappable boundary
 
@@ -200,13 +198,13 @@ export async function seedDev(): Promise<void> {
   if (process.env.NODE_ENV !== 'development') return
 
   // Ensure admin user exists
-  const existing = await db.selectFrom('user').where('email', '=', 'admin@local').executeTakeFirst()
+  const existing = await db.selectFrom('user').where('email', '=', 'admin@dartcade.local').executeTakeFirst()
   if (!existing) {
-    await auth.api.signUpEmail({ body: { email: 'admin@local', password: 'admin', name: 'Admin' } })
+    await auth.api.signUpEmail({ body: { email: 'admin@dartcade.local', password: 'admin', name: 'Admin' } })
   }
 
   // Ensure Dev Board exists with known token (owned by admin)
-  const admin = await db.selectFrom('user').select('id').where('email', '=', 'admin@local').executeTakeFirstOrThrow()
+  const admin = await db.selectFrom('user').select('id').where('email', '=', 'admin@dartcade.local').executeTakeFirstOrThrow()
   const DEV_TOKEN = 'dev-bridge-token'
   const tokenHash = createHash('sha256').update(DEV_TOKEN).digest('hex')
   await db.insertInto('boards')
@@ -288,8 +286,9 @@ Two new routes + minor changes to existing:
 
 **`/login` — `Login.svelte`**
 - Email + password form → `POST /api/auth/sign-in/email`
+- Register form → `POST /api/auth/sign-up/email` (requires email, password, name)
 - Redirects to `/` on success
-- App root redirects to `/login` if no session
+- App root redirects to `/login` if no active session
 
 **`/boards` — `Boards.svelte`** (accessible from nav)
 - Lists user's boards (`GET /api/boards`)
