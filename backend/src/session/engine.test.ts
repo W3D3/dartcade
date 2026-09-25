@@ -132,6 +132,39 @@ describe('onUserAction', () => {
   })
 })
 
+describe('rebuild', () => {
+  it('restores session from store and replays bridge events to rebuild state', async () => {
+    const store = makeStore()
+    vi.mocked(store.getActiveSessions).mockResolvedValue([{
+      id: 'sess-rebuild',
+      board_id: 'board-r',
+      game_id: 'atc',
+      config: {},
+      players: [{ name: 'Alice' }],
+      created_at: new Date(),
+    }] as any)
+    vi.mocked(store.getBridgeEventsForBoard).mockResolvedValue([
+      { kind: 'visit.opened', data: { visit_id: 'v1' }, recv_wall: new Date() },
+      {
+        kind: 'dart.detected',
+        data: { visit_id: 'v1', index: 0, dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 }, source_seq: 1 },
+        recv_wall: new Date(),
+      },
+    ] as any)
+
+    const engine = new SessionEngine(store, push)
+    await engine.rebuild()
+
+    const session = engine.getSessionByBoard('board-r')
+    expect(session).toBeDefined()
+    expect(session!.id).toBe('sess-rebuild')
+    // visit.opened + dart.detected → target advances from 1 to 2, one dart in currentVisitDarts
+    const snap = engine.getSnapshot('sess-rebuild')!
+    expect((snap.game as any).currentVisitDarts).toHaveLength(1)
+    expect((snap.game as any).targets[0]).toBe(2)
+  })
+})
+
 describe('getSnapshot', () => {
   it('returns snapshot with currentVisitDarts from openVisitEvents', async () => {
     const engine = makeEngine()
