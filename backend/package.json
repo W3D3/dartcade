@@ -1,0 +1,29 @@
+{
+  "name": "dartcade-backend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "test": "vitest run",
+    "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o ../schema/types.ts --no-additionalProperties"
+  },
+  "dependencies": {
+    "@fastify/static": "^7.0.4",
+    "@fastify/websocket": "^8.3.1",
+    "fastify": "^4.28.1",
+    "kysely": "^0.27.4",
+    "pg": "^8.12.0",
+    "ulid": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/pg": "^8.11.6",
+    "@types/ws": "^8.5.12",
+    "json-schema-to-typescript": "^14.1.0",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.5"
+  }
+}
