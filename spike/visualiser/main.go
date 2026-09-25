@@ -24,6 +24,7 @@ var boardHTML []byte
 
 var boardBase = flag.String("board", "http://192.168.0.109:3180", "Board Manager base URL")
 var listenAddr = flag.String("listen", "localhost:7180", "Address to serve on")
+var bridgeMode = flag.Bool("bridge", false, "Accept bridge connections at /bridge instead of connecting to Board Manager")
 
 // --- Board Manager types ---
 
@@ -309,6 +310,118 @@ func openBrowser(url string) {
 	exec.Command(cmd, url).Start()
 }
 
+// --- Bridge backend mode ---
+
+// bridgeDart mirrors the adbridge/v1 Dart payload shape we need to read.
+type bridgeDart struct {
+	Segment struct {
+		Name string `json:"name"`
+	} `json:"segment"`
+	Score  int     `json:"score"`
+	Coords *Coords `json:"coords"`
+}
+
+func toDartShapeFromBridge(i int, t bridgeDart) DartShape {
+	ds := DartShape{Index: i, Segment: t.Segment.Name, Score: t.Score}
+	if t.Coords != nil {
+		ds.X, ds.Y, ds.HasCoords = t.Coords.X, t.Coords.Y, true
+	}
+	return ds
+}
+
+func translateBridgeEvent(kind string, data json.RawMessage) {
+	switch kind {
+	case "bridge.hello":
+		hub.broadcast(DartEvent{Type: "status", Status: "bridge connected"})
+	case "bm.link":
+		var d struct {
+			Up bool `json:"up"`
+		}
+		json.Unmarshal(data, &d)
+		if d.Up {
+			hub.broadcast(DartEvent{Type: "status", Status: "connected"})
+		} else {
+			hub.broadcast(DartEvent{Type: "status", Status: "disconnected"})
+		}
+	case "board.status":
+		var d struct {
+			Status string `json:"status"`
+		}
+		json.Unmarshal(data, &d)
+		hub.broadcast(DartEvent{Type: "status", Status: d.Status})
+	case "board.resync":
+		var d struct {
+			Throws []bridgeDart `json:"throws"`
+		}
+		json.Unmarshal(data, &d)
+		shapes := make([]DartShape, len(d.Throws))
+		for i, t := range d.Throws {
+			shapes[i] = toDartShapeFromBridge(i, t)
+		}
+		hub.broadcast(DartEvent{Type: "resync", Throws: shapes})
+	case "visit.opened":
+		hub.broadcast(DartEvent{Type: "visit_opened"})
+	case "dart.detected":
+		var d struct {
+			Index int        `json:"index"`
+			Dart  bridgeDart `json:"dart"`
+		}
+		json.Unmarshal(data, &d)
+		ev := DartEvent{Type: "dart", Index: d.Index, Segment: d.Dart.Segment.Name, Score: d.Dart.Score}
+		if d.Dart.Coords != nil {
+			ev.X, ev.Y, ev.HasCoords = d.Dart.Coords.X, d.Dart.Coords.Y, true
+		}
+		hub.broadcast(ev)
+	case "dart.corrected":
+		var d struct {
+			Index int        `json:"index"`
+			Dart  bridgeDart `json:"dart"`
+		}
+		json.Unmarshal(data, &d)
+		ev := DartEvent{Type: "dart_corrected", Index: d.Index, Segment: d.Dart.Segment.Name, Score: d.Dart.Score}
+		if d.Dart.Coords != nil {
+			ev.X, ev.Y, ev.HasCoords = d.Dart.Coords.X, d.Dart.Coords.Y, true
+		}
+		hub.broadcast(ev)
+	case "takeout.finished", "visit.cleared":
+		hub.broadcast(DartEvent{Type: "takeout"})
+	}
+}
+
+// bridgeConnHandler accepts WS connections from the bridge binary, translates
+// adbridge/v1 envelopes to DartEvents, and ACKs each seq so the bridge clears
+// its outbox.
+func bridgeConnHandler(w http.ResponseWriter, r *http.Request) {
+	conn, err := upgrader.Upgrade(w, r, nil)
+	if err != nil {
+		return
+	}
+	defer conn.Close()
+	log.Println("bridge connected")
+
+	for {
+		_, msg, err := conn.ReadMessage()
+		if err != nil {
+			log.Printf("bridge disconnected: %v", err)
+			hub.broadcast(DartEvent{Type: "status", Status: "disconnected"})
+			return
+		}
+		var env struct {
+			Seq  uint64          `json:"seq"`
+			Kind string          `json:"kind"`
+			Data json.RawMessage `json:"data"`
+		}
+		if err := json.Unmarshal(msg, &env); err != nil {
+			continue
+		}
+		if env.Seq > 0 {
+			ack, _ := json.Marshal(map[string]uint64{"ack": env.Seq})
+			conn.WriteMessage(websocket.TextMessage, ack)
+		}
+		translateBridgeEvent(env.Kind, env.Data)
+	}
+}
+
 func main() {
 	flag.Parse()
 
@@ -318,8 +431,13 @@ func main() {
 	})
 	http.HandleFunc("/ws", wsHandler)
 
-	go boardLoop()
-	go pollLoop()
+	if *bridgeMode {
+		http.HandleFunc("/bridge", bridgeConnHandler)
+		log.Printf("bridge mode — run: bridge --backend-url ws://%s/bridge", *listenAddr)
+	} else {
+		go boardLoop()
+		go pollLoop()
+	}
 
 	url := "http://" + *listenAddr
 	log.Printf("dartcade visualiser — %s", url)
