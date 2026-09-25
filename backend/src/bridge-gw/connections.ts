@@ -40,6 +40,10 @@ export class BridgeConnections {
     return Array.from(this.byBoard.keys())
   }
 
+  isOnline(boardDbId: string): boolean {
+    return this.byBoard.has(boardDbId)
+  }
+
   send(boardId: string, msg: unknown): void {
     const conn = this.byBoard.get(boardId)
     if (conn?.ws.readyState === 1) {
