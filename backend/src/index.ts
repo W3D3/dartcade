@@ -9,6 +9,7 @@ import { SessionEngine, createEngineStore } from './session/engine.js'
 import { bridgeGwPlugin } from './bridge-gw/handler.js'
 import { browserGwPlugin, pushSnapshot } from './browser-gw/handler.js'
 import { sessionsApiPlugin } from './api/sessions.js'
+import { boardApiPlugin } from './api/board.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -42,6 +43,7 @@ try {
 await app.register(bridgeGwPlugin, { secret: BRIDGE_SECRET, engine, db })
 await app.register(browserGwPlugin, { engine })
 await app.register(sessionsApiPlugin, { engine })
+await app.register(boardApiPlugin)
 
 // SPA fallback: all non-API/WS routes serve index.html
 app.get('*', async (req, reply) => {
