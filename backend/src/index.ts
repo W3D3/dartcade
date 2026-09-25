@@ -34,6 +34,8 @@ const app = Fastify({ logger: true })
 await app.register(fastifyWebsocket)
 
 app.all('/api/auth/*', async (req, reply) => {
+  // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
+  if (req.body !== undefined) (req.raw as any).body = req.body
   toNodeHandler(auth)(req.raw, reply.raw)
   return reply.hijack()
 })
