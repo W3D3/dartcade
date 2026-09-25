@@ -3,10 +3,12 @@
   import { push } from 'svelte-spa-router'
   import GameConfigForm from '../lib/components/GameConfigForm.svelte'
 
+  type Board = { id: string; name: string; online: boolean }
+
   let games: { id: string; defaultConfig: Record<string, unknown> }[] = []
-  let boards: string[] = []
+  let boards: Board[] = []
   let selectedGame = 'atc'
-  let selectedBoard = ''
+  let boardId = ''
   let config: Record<string, unknown> = {}
   let players: { name: string }[] = [{ name: '' }, { name: '' }]
   let error = ''
@@ -17,6 +19,7 @@
       fetch('/api/games'),
       fetch('/api/boards'),
     ])
+    if (boardsRes.status === 401) { push('/login'); return }
     const gamesData = await gamesRes.json()
     const boardsData = await boardsRes.json()
     games = gamesData.games
@@ -25,7 +28,7 @@
       selectedGame = games[0].id
       config = { ...games[0].defaultConfig }
     }
-    if (boards.length > 0) selectedBoard = boards[0]
+    if (boards.length > 0) boardId = boards[0].id
   })
 
   function addPlayer() { players = [...players, { name: '' }] }
@@ -33,7 +36,7 @@
 
   async function submit() {
     error = ''
-    if (!selectedBoard) { error = 'No board connected — is the bridge running?'; return }
+    if (!boardId) { error = 'Select a board — or register one in Boards.'; return }
     const validPlayers = players.filter(p => p.name.trim())
     if (validPlayers.length < 1) { error = 'At least one player is required'; return }
     loading = true
@@ -41,7 +44,7 @@
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ boardId: selectedBoard, gameId: selectedGame, config, players: validPlayers }),
+        body: JSON.stringify({ boardId, gameId: selectedGame, config, players: validPlayers }),
       })
       if (!res.ok) {
         const d = await res.json()
@@ -57,18 +60,23 @@
 </script>
 
 <div class="max-w-lg mx-auto p-6">
-  <h1 class="text-2xl font-bold mb-4">New Game</h1>
+  <div class="flex items-center justify-between mb-4">
+    <h1 class="text-2xl font-bold">New Game</h1>
+    <a href="#/boards" class="text-gray-400 hover:text-white text-sm">Boards</a>
+  </div>
 
   <label class="block mb-4">
-    Board
+    <span class="text-sm text-gray-400">Board</span>
+    <select bind:value={boardId}
+      class="w-full mt-1 bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:outline-none focus:border-orange-500">
+      {#each boards as b (b.id)}
+        <option value={b.id}>{b.name} {b.online ? '🟢' : '⚫'}</option>
+      {:else}
+        <option disabled value="">No boards registered — add one in Boards</option>
+      {/each}
+    </select>
     {#if boards.length === 0}
-      <p class="text-amber-600 text-sm mt-1">No bridge connected — start the bridge first.</p>
-    {:else}
-      <select bind:value={selectedBoard} class="block w-full border rounded p-2 mt-1">
-        {#each boards as b}
-          <option value={b}>{b}</option>
-        {/each}
-      </select>
+      <a href="#/boards" class="text-orange-400 text-sm mt-1 inline-block hover:underline">→ Register a board</a>
     {/if}
   </label>
 
