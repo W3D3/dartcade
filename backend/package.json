@@ -7,7 +7,7 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
-    "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o ../schema/types.ts --no-additionalProperties"
+    "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties"
   },
   "dependencies": {
     "@fastify/static": "^7.0.4",

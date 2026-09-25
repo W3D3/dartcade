@@ -24,8 +24,10 @@ export async function insertSession(
       id: s.id,
       board_id: s.board_id,
       game_id: s.game_id,
-      config: JSON.stringify(s.config) as unknown,
-      players: JSON.stringify(s.players) as unknown,
+      // Cast to any: Kysely expects typed JSONB but we pass a JSON string (pg driver accepts it)
+      config: JSON.stringify(s.config) as any,
+      players: JSON.stringify(s.players) as any,
+      status: 'active',
     })
     .execute()
 }

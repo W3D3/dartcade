@@ -8,7 +8,7 @@ import type {
   VisitClearedData,
   BoardResyncData,
   BoardStatusData,
-} from '../../schema/types.js'
+} from '../schema/types.js'
 
 // Aliases for shorter names throughout the backend
 export type Dart = ADetectedDart
