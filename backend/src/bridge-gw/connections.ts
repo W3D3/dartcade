@@ -1,4 +1,4 @@
-import type { WebSocket } from '@fastify/websocket'
+import type { WebSocket } from 'ws'
 
 export type BridgeConn = {
   ws: WebSocket

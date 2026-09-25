@@ -20,7 +20,7 @@ services:
     command: sh -c "npm install --prefer-offline && npm run dev"
     environment:
       DATABASE_URL: postgres://dartgames:dev@postgres:5432/dartgames
-      BRIDGE_SECRET: ${BRIDGE_SECRET:-devsecret}
+      NODE_ENV: development
       PORT: "3000"
       DARTCADE_BOARD_URL: ${DARTCADE_BOARD_URL:-}
     ports:
@@ -57,7 +57,7 @@ services:
     network_mode: host
     environment:
       DARTCADE_BOARD_URL: ${DARTCADE_BOARD_URL:?Set DARTCADE_BOARD_URL to your board's URL, e.g. http://192.168.1.x:3180}
-      DARTCADE_BACKEND_URL: ws://localhost:3000/bridge?secret=${BRIDGE_SECRET:-devsecret}
+      DARTCADE_BACKEND_URL: ws://localhost:3000/bridge?token=dev-bridge-token
     depends_on:
       backend:
         condition: service_healthy
