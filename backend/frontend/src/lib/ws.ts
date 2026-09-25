@@ -22,7 +22,11 @@ export function createSessionStore(sessionId: string) {
         if (msg.type === 'snapshot') { snapshot.set(msg); backoff = 500 }
       } catch {}
     }
-    ws.onclose = () => {
+    ws.onclose = (e) => {
+      if (e.code === 4401) {
+        window.location.hash = '#/login'
+        return
+      }
       if (!closed) setTimeout(connect, backoff)
       backoff = Math.min(backoff * 2, 30_000)
     }
