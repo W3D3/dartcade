@@ -3,6 +3,7 @@ import { writable } from 'svelte/store'
 export type Snapshot = {
   type: 'snapshot'
   sessionId: string
+  gameId: string
   players: { name: string }[]
   game: Record<string, unknown>
 }
