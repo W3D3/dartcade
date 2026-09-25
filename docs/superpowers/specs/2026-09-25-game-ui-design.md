@@ -287,6 +287,36 @@ shadcn-svelte components added under `frontend/src/lib/components/ui/` (managed 
 
 ---
 
+## Auth Pages Retheme
+
+`Login.svelte` and `Boards.svelte` are restyled to match the new design language. No logic changes.
+
+### Login.svelte
+
+- Background: `#0b1628`
+- Centred card: `#111d2e`, subtle `border border-white/10`, `rounded-2xl`
+- Header: "Dartcade" wordmark + small inline dart SVG icon
+- Tab toggle (Sign in / Register): styled with blue active state instead of orange
+- Inputs: shadcn-svelte `Input` component, matching dark fill
+- Submit button: shadcn-svelte `Button` (blue `#3b82f6`), not orange
+- Error text: red-400, unchanged
+
+### Boards.svelte
+
+- Background and text: match `#0b1628` / `#111d2e` card style
+- "Add" button: blue, not orange
+- Online badge: green, unchanged
+- Board token reveal box: keep yellow warning style (it's a one-time secret, should stand out)
+
+### File manifest additions
+
+| Path | Action |
+|---|---|
+| `frontend/src/routes/Login.svelte` | Retheme (no logic change) |
+| `frontend/src/routes/Boards.svelte` | Retheme (no logic change) |
+
+---
+
 ## Out of Scope
 
 - 501 game module (future — slots into `gameViews/x01.svelte` when ready)
