@@ -121,7 +121,7 @@
 
       {#if error}<p class="text-red-400 text-sm">{error}</p>{/if}
 
-      <Button on:click={submit} disabled={loading}
+      <Button onclick={submit} disabled={loading}
         class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold">
         {loading ? 'Starting…' : 'Start Game'}
       </Button>

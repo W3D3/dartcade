@@ -44,7 +44,7 @@
 
   <!-- Right: Undo + Next -->
   <div class="flex items-center gap-3">
-    <Button variant="ghost" size="sm" on:click={onUndo}
+    <Button variant="ghost" size="sm" onclick={onUndo}
       class="text-gray-400 hover:text-white hover:bg-white/10">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" class="mr-1.5">
         <path d="M2 8a6 6 0 1 1 1.5 4M2 4v4h4"/>
