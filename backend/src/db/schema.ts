@@ -1,13 +1,14 @@
 import type { ColumnType, Generated } from 'kysely'
 
+// Column names match better-auth's camelCase schema
 export interface UserTable {
   id: string
   name: string
   email: string
-  email_verified: boolean
+  emailVerified: boolean
   image: string | null
-  created_at: ColumnType<Date, never, never>
-  updated_at: ColumnType<Date, never, never>
+  createdAt: ColumnType<Date, never, never>
+  updatedAt: ColumnType<Date, never, never>
 }
 
 export interface BoardsTable {

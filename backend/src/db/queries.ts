@@ -25,7 +25,12 @@ export async function runMigrations(db: Kysely<Database>): Promise<void> {
     if (already.rows.length > 0) continue
 
     const migrationSql = readFileSync(join(migrationsDir, file), 'utf8')
-    await sql.raw(migrationSql).execute(db)
+    const statements = migrationSql
+      .split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
+      .split(';').map(s => s.trim()).filter(s => s.length > 0)
+    for (const stmt of statements) {
+      await sql.raw(stmt).execute(db)
+    }
     await sql`INSERT INTO schema_migrations (name) VALUES (${file})`.execute(db)
   }
 }

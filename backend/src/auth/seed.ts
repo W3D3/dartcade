@@ -14,7 +14,7 @@ export async function seedDev(): Promise<void> {
 
   if (!existing) {
     await auth.api.signUpEmail({
-      body: { email: 'admin@dartcade.local', password: 'admin', name: 'Admin' },
+      body: { email: 'admin@dartcade.local', password: 'admin1234', name: 'Admin' },
     })
   }
 

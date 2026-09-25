@@ -7,4 +7,6 @@ export const auth = betterAuth({
     type: 'pg' as const,
   },
   emailAndPassword: { enabled: true },
+  // We manage schema via runMigrations; suppress better-auth's startup check
+  advanced: { database: { validateSchema: false } },
 })

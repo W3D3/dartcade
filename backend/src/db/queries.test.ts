@@ -30,7 +30,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       id: 'u-test-1',
       name: 'Test',
       email: 'test@example.com',
-      email_verified: false,
+      emailVerified: false,
       image: null,
     } as any).execute()
   })
