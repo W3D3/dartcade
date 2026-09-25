@@ -1,6 +1,7 @@
 # Secrets / env
 .env
-.env.*
+.env.local
+.env.*.local
 *.secret
 
 # Fixture recordings with sensitive data

@@ -2,87 +2,78 @@
 
 ## Prerequisites
 
-- **Node 22 LTS** (`nvm install 22`)
-- **Go 1.23+** (for the bridge)
-- **Docker** (for Postgres in tests and the full stack)
+- **Docker** — runs the full dev stack
+- **Node 22 LTS** (`nvm install 22`) — for running backend tests locally
+- **Go 1.23+** — for working on the bridge outside Docker
 
 ## Repository layout
 
 ```
-backend/          Node/TS Fastify server + Svelte SPA
-  src/            server source
-  frontend/       Svelte 5 frontend (built into backend/frontend/dist/)
-  Dockerfile      multi-stage image (backend + frontend)
-  docker-compose.yaml
-bridge/           Go binary that talks to Board Manager
-schema/           adbridge/v1 JSON Schema + generated TS types
-docs/             architecture and design notes
-fixtures/         recorded Board Manager frames (used in bridge tests)
+backend/              Node/TS Fastify server + Svelte SPA
+  src/                server source
+  frontend/           Svelte 5 frontend (Vite dev server or built dist/)
+  Dockerfile          multi-stage production image
+  docker-compose.yaml production compose (backend + postgres)
+bridge/               Go binary that talks to Board Manager
+  Dockerfile          bridge image (used by dev compose)
+schema/               adbridge/v1 JSON Schema + generated TS types
+docker-compose.dev.yaml  dev compose (postgres + backend + frontend + bridge)
+.env.example          env var template
 ```
 
-## Backend
+## Running the full dev stack
 
 ```bash
-cd backend
-npm install
+cp .env.example .env
+# Edit .env — set DARTCADE_BOARD_URL to your board's local IP
+docker compose -f docker-compose.dev.yaml up --build
 ```
 
-### Run tests
+| Service  | URL                        | Notes                          |
+|----------|----------------------------|--------------------------------|
+| frontend | http://localhost:5173      | Vite hot-reload                |
+| backend  | http://localhost:3000      | tsx watch hot-reload           |
+| postgres | localhost:5432             | user/pass: dartgames/dev       |
+| bridge   | —                          | connects to your board on LAN  |
 
-The DB tests (`src/db/queries.test.ts`) require a live Postgres. Start one with Docker:
+Once the bridge connects, open http://localhost:5173, pick your board in the dropdown, add players, and start a game.
+
+## Environment variables
+
+`.env` (copied from `.env.example`):
+
+| Variable             | Required | Description                                           |
+|----------------------|----------|-------------------------------------------------------|
+| `DARTCADE_BOARD_URL` | Yes      | Board Manager URL, e.g. `http://192.168.1.x:3180`    |
+| `BRIDGE_SECRET`      | No       | Shared secret for bridge auth (default: `devsecret`) |
+
+Backend-only (set automatically by the dev compose, documented here for manual runs):
+
+| Variable           | Description                              |
+|--------------------|------------------------------------------|
+| `DATABASE_URL`     | Postgres connection string               |
+| `PORT`             | HTTP/WS listen port (default `3000`)     |
+| `TEST_DATABASE_URL`| Override DB URL for `npm test`           |
+
+## Running backend tests
+
+The DB tests require a live Postgres:
 
 ```bash
 docker run -d --name dartcade-test-pg \
-  -e POSTGRES_USER=postgres \
-  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_USER=postgres -e POSTGRES_PASSWORD=postgres \
   -e POSTGRES_DB=dartcade_test \
-  -p 5432:5432 \
-  postgres:16-alpine
+  -p 5432:5432 postgres:16-alpine
+
+cd backend && npm install && npm test
 ```
 
-Then run all tests:
-
-```bash
-npm test
-```
-
-The default connection string is `postgres://postgres:postgres@localhost:5432/dartcade_test`.
-Override it with `TEST_DATABASE_URL`:
-
+Override the connection string if needed:
 ```bash
 TEST_DATABASE_URL=postgres://... npm test
 ```
 
-### Dev server
-
-Requires a running Postgres and the two env vars:
-
-```bash
-DATABASE_URL=postgres://postgres:postgres@localhost:5432/dartcade \
-BRIDGE_SECRET=devsecret \
-npm run dev
-```
-
-The backend serves at `http://localhost:3000`. Migrations run automatically on startup.
-
-### Frontend dev (with hot reload)
-
-In a second terminal:
-
-```bash
-cd backend/frontend
-npm install
-npm run dev   # Vite at http://localhost:5173, proxies /api and /ws to :3000
-```
-
-### Regenerate TS types from the schema
-
-```bash
-cd backend
-npm run gen:types   # writes backend/src/schema/types.ts
-```
-
-## Bridge
+## Bridge (Go)
 
 ```bash
 cd bridge
@@ -90,21 +81,16 @@ go test ./...
 go run ./cmd/bridge --help
 ```
 
-## Full stack (Docker)
+## Regenerate TS types from the schema
 
 ```bash
 cd backend
-cp .env.example .env   # or set POSTGRES_PASSWORD and BRIDGE_SECRET manually
-POSTGRES_PASSWORD=secret BRIDGE_SECRET=secret docker compose up --build
+npm run gen:types   # writes backend/src/schema/types.ts
 ```
 
-Backend at `http://localhost:3000`.
+## Production build
 
-## Environment variables
-
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes (runtime) | Postgres connection string |
-| `BRIDGE_SECRET` | Yes (runtime) | Shared secret for bridge WebSocket auth |
-| `PORT` | No (default `3000`) | HTTP/WS listen port |
-| `TEST_DATABASE_URL` | No | Override DB URL for `npm test` |
+```bash
+cd backend
+POSTGRES_PASSWORD=secret BRIDGE_SECRET=secret docker compose up --build
+```
