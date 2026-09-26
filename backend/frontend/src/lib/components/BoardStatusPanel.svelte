@@ -181,18 +181,27 @@
           Reset
         </button>
 
-        <!-- Calibrate (coming soon) -->
-        <div class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px]
-                    border border-line-2 text-text-dim opacity-35 cursor-not-allowed select-none">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-          </svg>
+        <!-- Calibrate -->
+        <button type="button"
+          onclick={() => runAction('calibrate', 'calibrate')}
+          disabled={busy !== null || !board?.online}
+          class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-medium
+                 border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
+                 text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
+          {#if busy === 'calibrate'}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" aria-hidden="true" class="animate-spin">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          {:else}
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          {/if}
           Calibrate
-          <span class="text-[10px] border border-current rounded-[3px] px-[5px] py-[2px]
-                       tracking-[0.06em] uppercase ml-1">Soon</span>
-        </div>
+        </button>
       </div>
     </div>
   {/if}

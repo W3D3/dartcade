@@ -26,9 +26,10 @@ export async function boardApiPlugin(app: FastifyInstance) {
       }
     }
 
-  app.post('/api/board/start', handle('/api/start', '/api/detection/start'))
-  app.post('/api/board/stop',  handle('/api/stop',  '/api/detection/stop'))
-  app.post('/api/board/reset', handle('/api/reset', undefined, 'POST'))
+  app.post('/api/board/start',     handle('/api/start', '/api/detection/start'))
+  app.post('/api/board/stop',      handle('/api/stop',  '/api/detection/stop'))
+  app.post('/api/board/reset',     handle('/api/reset', undefined, 'POST'))
+  app.post('/api/board/calibrate', handle('/api/config/calibration/auto?distortion=true', undefined, 'POST'))
 
   app.get('/api/board/status', async (_req, reply) => {
     try {
