@@ -23,6 +23,7 @@ export type UserAction =
   | { type: 'correct_dart'; visitIndex: number; segment: Segment }
   | { type: 'undo_dart' }
   | { type: 'takeout' }
+  | { type: 'add_dart'; segment: Segment }
 
 export type BoardEvent =
   | { kind: 'visit.opened';     data: VisitOpenedData }
@@ -53,7 +54,7 @@ export interface GameModule<S, Cfg = Record<string, never>> {
 
 export interface Session<S = unknown> {
   id: string
-  boardId: string
+  boardId: string | null
   players: Player[]
   module: GameModule<S, unknown>
   committedState: S
@@ -70,6 +71,7 @@ export type Snapshot = {
   type: 'snapshot'
   sessionId: string
   gameId: string
+  boardId: string | null
   players: Player[]
   game: Record<string, unknown>
   bmStatus: { status: string; running: boolean; event: string } | null
