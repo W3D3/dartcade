@@ -8,6 +8,7 @@ export interface PlayerStatsProps {
   playerIndex: number
   isActive: boolean
   compact?: boolean
+  previousVisits?: number[]
 }
 
 export interface GameView {

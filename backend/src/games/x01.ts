@@ -242,7 +242,7 @@ export const x01Module: GameModule<X01State, X01Config> = {
     return {
       scores: s.scores, legs: s.legs, firstTo: s.cfg.firstTo,
       currentPlayer: s.currentPlayer, round: s.round, phase: s.phase,
-      winner: s.winner, opened: s.opened,
+      winner: s.winner, opened: s.opened, bustThisVisit: s.bustThisVisit,
       config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode },
     }
   },
