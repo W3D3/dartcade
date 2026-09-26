@@ -177,6 +177,7 @@ describe('getSnapshot', () => {
     }, new Date())
     const snap = engine.getSnapshot(sessionId)!
     expect(snap.type).toBe('snapshot')
+    expect(snap.gameId).toBe('atc')
     expect((snap.game as any).currentVisitDarts).toHaveLength(1)
   })
 })
