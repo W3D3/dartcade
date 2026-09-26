@@ -150,7 +150,8 @@ export const x01Module: GameModule<X01State, X01Config> = {
         const totalDarts = s.totalDarts.map((n, i) => i === cp ? n + 1 : n)
 
         if (s.phase === 'bulloff') {
-          const bullOff = onBullOffDart(s.bullOff, dart.score)
+          // Use segment number (25=outer bull, 50=inner bull) not score — inner bull scores 50 not 100
+          const bullOff = onBullOffDart(s.bullOff, dart.segment.number)
           return { state: { ...s, bullOff, totalDarts } }
         }
 
