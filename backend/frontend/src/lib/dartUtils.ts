@@ -69,9 +69,10 @@ export function checkoutHint(remaining: number, outMode: OutMode = 'double', dar
   // 1-dart finish
   if (n >= 1 && finishMap.has(remaining)) return [finishMap.get(remaining)!]
 
-  // Scoring darts (preferred order: triples high→low, then singles, then bull)
+  // Scoring darts (preferred order: triples high→low skipping T1, then singles, then bull)
+  // T1 omitted: S3 scores the same and is always the saner suggestion
   const scoring: { l: string; v: number }[] = []
-  for (let k = 20; k >= 1; k--) scoring.push({ l: `T${k}`, v: 3*k })
+  for (let k = 20; k >= 2; k--) scoring.push({ l: `T${k}`, v: 3*k })
   for (let k = 20; k >= 1; k--) scoring.push({ l: `S${k}`, v: k })
   scoring.push({ l: '25', v: 25 }, { l: 'Bull', v: 50 })
 
