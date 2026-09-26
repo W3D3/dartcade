@@ -85,6 +85,24 @@ describe('init', () => {
   })
 })
 
+// ─── getCurrentPlayer ─────────────────────────────────────────────────────────
+
+describe('getCurrentPlayer', () => {
+  it('returns currentPlayer during game phase', () => {
+    const s = makeState({ currentPlayer: 1, phase: 'game' })
+    expect(x01Module.getCurrentPlayer(s)).toBe(1)
+  })
+
+  it('returns bullOff.currentPlayer during bulloff phase', () => {
+    const s = makeState({
+      phase: 'bulloff',
+      currentPlayer: 0,
+      bullOff: { active: true, darts: [null, null], currentPlayer: 1, playerCount: 2 },
+    })
+    expect(x01Module.getCurrentPlayer(s)).toBe(1)
+  })
+})
+
 // ─── visit.opened ────────────────────────────────────────────────────────────
 
 describe('visit.opened', () => {
@@ -308,6 +326,14 @@ describe('visit.cleared', () => {
     const { state } = x01Module.onBoardEvent(s, { kind: 'visit.cleared', data: {} as any })
     expect(state.currentPlayer).toBe(1)
     expect(state.scores[0]).toBe(200)
+  })
+
+  it('enforces maxRounds: lowest score wins when round limit exceeded on cleared visit', () => {
+    const cfg = { ...defaultCfg, maxRounds: 2 }
+    const s = makeState({ cfg, currentPlayer: 1, round: 2, scores: [100, 150] })
+    const { state } = x01Module.onBoardEvent(s, { kind: 'visit.cleared', data: {} as any })
+    expect(state.phase).toBe('finished')
+    expect(state.winner).toBe(0)
   })
 })
 

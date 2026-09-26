@@ -7,6 +7,7 @@ const pdcCfg: BullOffConfig = { mode: 'pdc', playerCount: 2 }
 
 function state(overrides: Partial<BullOffState> = {}): BullOffState {
   return {
+    active: true,
     darts: [null, null],
     currentPlayer: 0,
     playerCount: 2,

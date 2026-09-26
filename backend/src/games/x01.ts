@@ -137,6 +137,10 @@ export const x01Module: GameModule<X01State, X01Config> = {
     }
   },
 
+  getCurrentPlayer(s: X01State): number {
+    return s.phase === 'bulloff' ? s.bullOff.currentPlayer : s.currentPlayer
+  },
+
   onBoardEvent(s: X01State, e: BoardEvent): { state: X01State } {
     switch (e.kind) {
       case 'visit.opened': {
@@ -218,6 +222,13 @@ export const x01Module: GameModule<X01State, X01Config> = {
       case 'visit.cleared': {
         const nextPlayer = (s.currentPlayer + 1) % s.playerCount
         const round = nextPlayer === 0 ? s.round + 1 : s.round
+
+        if (nextPlayer === 0 && round > s.cfg.maxRounds) {
+          const minScore = Math.min(...s.scores)
+          const winner = s.scores.indexOf(minScore)
+          return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished' } }
+        }
+
         return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false } }
       }
 
