@@ -1,5 +1,6 @@
 import type { Component } from 'svelte'
 import ATCPlayerStats from './atc.svelte'
+import X01PlayerStats from './x01.svelte'
 import type { ATCConfig } from '../../../../src/games/atc.js'
 
 export interface PlayerStatsProps {
@@ -60,8 +61,40 @@ const atcView: GameView = {
   PlayerStats: ATCPlayerStats as unknown as Component<PlayerStatsProps>,
 }
 
+const x01View: GameView = {
+  title: 'X01',
+
+  getBoardHighlights: () => [],
+
+  getPrimaryDisplay: (game, i) => {
+    const scores = (game.scores as number[] | undefined) ?? []
+    return { label: 'REMAINING', value: scores[i] ?? 0 }
+  },
+
+  getPlayerDisplay: (game, i) => {
+    const scores = (game.scores as number[] | undefined) ?? []
+    const currentPlayer = (game.currentPlayer as number) ?? 0
+    const visitDarts = (game.currentVisitDarts as unknown[]) ?? []
+    return {
+      remaining: scores[i] ?? 0,
+      dartsLeft: i === currentPlayer ? 3 - visitDarts.length : 3,
+    }
+  },
+
+  getSubtitle: (game) => {
+    const config = (game.config as any) ?? {}
+    const startScore = config.startScore ?? 501
+    const outMode = (config.outMode as string | undefined) ?? 'double'
+    return `${startScore} · ${outMode} out`
+  },
+
+  showVisitScore: true,
+  PlayerStats: X01PlayerStats as unknown as Component<PlayerStatsProps>,
+}
+
 export const gameViews: Record<string, GameView> = {
   atc: atcView,
+  x01: x01View,
 }
 
 const fallbackView: GameView = {
