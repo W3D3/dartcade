@@ -1,0 +1,35 @@
+[tools]
+node = "22"
+go = "1.23"
+
+[tasks.dev]
+description = "Start the full dev stack"
+run = "docker compose -f docker-compose.dev.yaml up --build"
+
+[tasks."test:backend"]
+description = "Run backend tests (requires postgres)"
+run = "cd backend && npm test"
+
+[tasks."test:frontend"]
+description = "Run frontend tests"
+run = "cd backend/frontend && npm test"
+
+[tasks."test:bridge"]
+description = "Run bridge tests"
+run = "cd bridge && go test ./..."
+
+[tasks.test]
+description = "Run all tests"
+depends = ["test:backend", "test:frontend", "test:bridge"]
+
+[tasks."build:backend"]
+description = "Build backend"
+run = "cd backend && npm run build"
+
+[tasks."build:bridge"]
+description = "Build bridge binary"
+run = "cd bridge && go build -o dist/dartcade-bridge ./cmd/bridge"
+
+[tasks."gen:types"]
+description = "Regenerate TS types from schema"
+run = "cd backend && npm run gen:types"
