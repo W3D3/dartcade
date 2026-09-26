@@ -1,10 +1,13 @@
 <script lang="ts">
+  import { labelPos } from '$lib/dartUtils.js'
+
   export let darts: Array<{
     segment: { number: number; bed: string; multiplier: number; name: string }
     score: number
     coords?: { x: number; y: number }
   }> = []
   export let highlightedSegments: number[] = []
+  export let checkoutTargets: string[] = []
 
   function sectorOpacity(num: number): number {
     if (highlightedSegments.length === 0) return 1
@@ -25,8 +28,8 @@
 
   function ringColor(i: number, ring: string) {
     const ev = i % 2 === 0
-    if (ring === 'tr' || ring === 'db') return ev ? '#e74c3c' : '#2ecc40'
-    return ev ? '#111' : '#f5f0dc'
+    if (ring === 'tr' || ring === 'db') return ev ? '#d23b36' : '#1e7a4f'
+    return ev ? '#1a1a17' : '#e9dfc4'
   }
 
   // Pre-compute all sector paths and text positions once
@@ -63,46 +66,55 @@
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
 
-  const DOT_COLORS = ['#fff', '#f39c12', '#a78bfa']
+  const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
+  const DOT_STROKE = '#0f100e'
 </script>
 
 <svg viewBox="-1.15 -1.15 2.3 2.3" class="w-full" xmlns="http://www.w3.org/2000/svg">
-  <circle cx="0" cy="0" r="1.12" fill="#222" />
+  <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
 
   {#each sectors as { num, i, paths, tx, ty, wa }}
     {#each paths as { ring, d }}
-      <path {d} fill={ringColor(i, ring)} stroke="#555" stroke-width="0.005" opacity={sectorOpacity(num)} />
+      <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="0.005" opacity={sectorOpacity(num)} />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
       x2={R.db * Math.cos(wa)} y2={-R.db * Math.sin(wa)}
-      stroke="#666" stroke-width="0.006" opacity={sectorOpacity(num)}
+      stroke="#8d8e84" stroke-width="0.006" opacity={sectorOpacity(num)}
     />
     <text x={tx} y={ty} text-anchor="middle" dominant-baseline="central"
-      fill="#ccc" font-size="0.09" font-family="system-ui,sans-serif" font-weight="bold"
+      fill="#efeee6" font-size="0.09" font-family="Barlow Condensed, sans-serif" font-weight="bold"
       opacity={sectorOpacity(num)}>
       {num}
     </text>
   {/each}
 
   {#each [R.bull25, R.si, R.tr, R.so, R.db] as r}
-    <circle cx="0" cy="0" {r} fill="none" stroke="#666" stroke-width="0.006" />
+    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="0.006" />
   {/each}
-  <circle cx="0" cy="0" r={R.bull25} fill="#2ecc40" stroke="#666" stroke-width="0.006" />
-  <circle cx="0" cy="0" r={R.bull50} fill="#e74c3c" stroke="#666" stroke-width="0.006" />
+  <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="0.006" />
+  <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="0.006" />
 
   {#each darts as dart, i}
     {@const pos = dartPos(dart)}
     {#if pos}
       <circle cx={pos.x} cy={-pos.y} r="0.04"
-        fill={DOT_COLORS[i % DOT_COLORS.length]} stroke="#000" stroke-width="0.008" />
+        fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008" />
       <text x={pos.x + 0.05} y={-pos.y} dominant-baseline="central"
         fill="#ffe066" font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold">
         {dart.segment.name}
       </text>
     {:else}
       <text x={-0.15 + i * 0.14} y="1.05" text-anchor="middle" dominant-baseline="central"
-        fill="#f39c12" font-size="0.1" font-family="system-ui,sans-serif">✕</text>
+        fill="#c6f24e" font-size="0.1" font-family="Barlow Condensed, sans-serif">✕</text>
+    {/if}
+  {/each}
+
+  {#each checkoutTargets as label}
+    {@const pos = labelPos(label)}
+    {#if pos}
+      <circle cx={pos.x} cy={pos.y} r="0.055"
+        fill="none" stroke="#c6f24e" stroke-width="0.018" stroke-dasharray="0.025 0.02" />
     {/if}
   {/each}
 </svg>
