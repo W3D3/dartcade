@@ -41,7 +41,7 @@ export async function runMigrations(db: Kysely<Database>): Promise<void> {
 
 export async function insertGameSession(
   db: Kysely<Database>,
-  s: { id: string; board_db_id: string; game_id: string; config: unknown; players: unknown },
+  s: { id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown },
 ): Promise<void> {
   await db.insertInto('game_sessions')
     .values({
