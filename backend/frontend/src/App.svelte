@@ -1,6 +1,7 @@
 <script lang="ts">
   import Router, { push } from 'svelte-spa-router'
   import { onMount } from 'svelte'
+  import { Tooltip } from 'bits-ui'
   import CreateSession from './routes/CreateSession.svelte'
   import GameDisplay from './routes/GameDisplay.svelte'
   import Login from './routes/Login.svelte'
@@ -30,6 +31,8 @@
   })
 </script>
 
-{#if checked}
-  <Router {routes} />
-{/if}
+<Tooltip.Provider>
+  {#if checked}
+    <Router {routes} />
+  {/if}
+</Tooltip.Provider>

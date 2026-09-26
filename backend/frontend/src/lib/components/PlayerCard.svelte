@@ -76,7 +76,7 @@
   <!-- Game-specific body -->
   {#if PlayerStats}
     {@const Stats = PlayerStats}
-    <Stats {game} {playerIndex} {isActive} />
+    <Stats {game} {playerIndex} {isActive} {previousVisits} />
   {:else}
     <!-- x01 body -->
     <span class="font-display font-bold text-[clamp(80px,15vw,220px)] leading-[0.8] tracking-[-0.02em] mt-4

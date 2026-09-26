@@ -1,18 +1,21 @@
 <script lang="ts">
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
 
-  let { darts = [], hits, onCorrect, onUndo, ontakeout, showVisitScore = true }: {
+  let { darts = [], hits, onCorrect, onUndo, ontakeout, showVisitScore = true, bust = false }: {
     darts: Array<{ label: string; score: number }>
     hits?: boolean[]
     onCorrect: (dartIndex: number, label: string) => void
     onUndo: () => void
     ontakeout?: () => void
     showVisitScore?: boolean
+    bust?: boolean
   } = $props()
 
   let openDart = $state<number | null>(null)
   let mode = $state<'quick' | 'full'>('quick')
   let mult = $state<'S' | 'D' | 'T'>('S')
+
+  const visitTotal = $derived(darts.reduce((s, d) => s + d.score, 0))
 
   const quickPicks = $derived(openDart !== null && darts[openDart]
     ? nearbyPicks(darts[openDart].label)
@@ -33,45 +36,72 @@
   const multNames: Record<string, string> = { S: 'Single', D: 'Double', T: 'Treble' }
 </script>
 
-<!-- Dart tiles -->
-<div class="w-full grid gap-2" style:grid-template-columns={`repeat(3, minmax(0, 1fr))`}>
-  {#each [0, 1, 2] as i}
-    {#if i < darts.length}
-      {@const dart = darts[i]}
-      {@const isOpen = openDart === i}
-      {@const hitFlag = hits?.[i]}
-      {@const isHit = hitFlag === true}
-      {@const isMiss = hitFlag === false}
-      <button type="button" onclick={() => toggle(i)}
-        aria-expanded={isOpen}
-        aria-label="Dart {i+1}: {dart.label}, {dart.score} points. Correct this dart"
-        class="h-[72px] rounded-[12px] flex items-center justify-between px-4 border-0 cursor-pointer
-               {isMiss ? 'bg-[#252820] text-text' : 'bg-accent text-accent-fg'}
-               {isOpen ? '[box-shadow:0_0_0_3px_#0f100e,0_0_0_5px_#c6f24e]' : ''}">
-        <span class="font-display font-bold text-[30px]">{dart.label}</span>
-        <div class="flex flex-col items-end gap-[2px]">
-          {#if isHit}
-            <span class="text-[10px] font-bold tracking-[0.1em] uppercase opacity-70">HIT</span>
-            <span class="text-[14px] font-bold">{dart.score} ✓</span>
-          {:else if isMiss}
-            <span class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#6a6e63]">NO HIT</span>
+<!-- Dart tiles + visit total -->
+<div class="w-full flex gap-2 items-stretch">
+  <!-- 3 dart tiles -->
+  <div class="flex-1 grid gap-2" style:grid-template-columns="repeat(3, minmax(0, 1fr))">
+    {#each [0, 1, 2] as i}
+      {#if i < darts.length}
+        {@const dart = darts[i]}
+        {@const isOpen = openDart === i}
+        {@const hitFlag = hits?.[i]}
+        {@const isHit = hitFlag === true}
+        {@const isMiss = hitFlag === false}
+        <button type="button" onclick={() => toggle(i)}
+          aria-expanded={isOpen}
+          aria-label="Dart {i+1}: {dart.label}, {dart.score} points. Correct this dart"
+          class="h-[80px] rounded-[12px] flex flex-col justify-between px-3 py-2 border-0 cursor-pointer
+                 {isMiss ? 'bg-[#252820] text-text' : 'bg-accent text-accent-fg'}
+                 {isOpen ? '[box-shadow:0_0_0_3px_#0f100e,0_0_0_5px_#c6f24e]' : ''}">
+          <div class="flex items-center justify-between w-full">
+            <span class="text-[11px] font-semibold tracking-[0.08em] uppercase opacity-60">
+              {dart.label}
+            </span>
+            {#if isHit}
+              <span class="text-[10px] font-bold tracking-[0.1em] uppercase opacity-70">HIT</span>
+            {:else if isMiss}
+              <span class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#6a6e63]">NO HIT</span>
+            {/if}
+          </div>
+          <span class="font-display font-bold text-[40px] leading-none self-end tabular-nums">
+            {dart.score}
+          </span>
+        </button>
+      {:else}
+        {@const isBustSlot = bust && i >= darts.length}
+        <div class="h-[80px] rounded-[12px] border border-dashed flex flex-col items-center justify-center gap-1
+                    {isBustSlot
+                      ? 'border-[#5a2a24] bg-[#1a0e0c] text-[#7a3a32]'
+                      : i === darts.length
+                        ? 'border-[#6a6f62] text-[#c9c9bf]'
+                        : 'border-[#3e4239] text-[#7d7f74]'}">
+          {#if isBustSlot}
+            <span class="text-[11px] font-bold uppercase tracking-[0.12em]">Bust</span>
           {:else}
-            <span class="text-[16px] font-bold">{dart.score}</span>
+            {#if i === darts.length}
+              <span class="w-2 h-2 rounded-full bg-accent"></span>
+            {/if}
+            <span class="text-[14px]">Dart {i + 1}</span>
           {/if}
         </div>
-      </button>
-    {:else}
-      <div class="h-[72px] rounded-[12px] border border-dashed
-                  {i === darts.length ? 'border-[#6a6f62]' : 'border-[#3e4239]'}
-                  flex items-center justify-center gap-2 text-[15px]
-                  {i === darts.length ? 'text-[#c9c9bf]' : 'text-[#7d7f74]'}">
-        {#if i === darts.length}
-          <span class="w-2 h-2 rounded-full bg-accent"></span>
-        {/if}
-        Dart {i + 1}
-      </div>
-    {/if}
-  {/each}
+      {/if}
+    {/each}
+  </div>
+
+  <!-- Visit total -->
+  {#if showVisitScore}
+    <div class="w-[72px] h-[80px] flex-shrink-0 rounded-[12px] flex flex-col items-center justify-center gap-1
+                {bust ? 'bg-[#1a0e0c] border border-[#5a2a24]' : 'bg-[#1e2119] border border-[#2e3229]'}">
+      <span class="text-[9px] uppercase tracking-[0.12em] font-semibold
+                   {bust ? 'text-[#6a3a32]' : 'text-text-dim'}">
+        {bust ? 'Bust' : 'Total'}
+      </span>
+      <span class="font-display font-bold text-[32px] leading-none tabular-nums
+                   {bust ? 'text-[#7a3a32]' : 'text-text'}">
+        {bust ? 0 : visitTotal}
+      </span>
+    </div>
+  {/if}
 </div>
 
 <!-- Popover -->
@@ -171,7 +201,7 @@
 
 <!-- Hint + actions -->
 <span class="text-[13px] text-text-dim">
-  Tap a dart to correct it{#if showVisitScore} · Visit so far <strong class="text-text">{darts.reduce((s, d) => s + d.score, 0)}</strong>{/if}
+  Tap a dart to correct it
 </span>
 
 <div class="w-full flex gap-2">

@@ -41,20 +41,60 @@ export function nearbyPicks(label: string): string[] {
   return [...out.slice(0, 6), 'Miss']
 }
 
-export function checkoutHint(remaining: number): string[] | null {
-  if (remaining < 2) return null
-  const dblOrder = [20,16,18,12,10,8,14,6,4,2,19,17,15,13,11,9,7,5,3,1]
-  const dbl: Record<number, string> = {}
-  dblOrder.forEach(d => { dbl[2 * d] = dbl[2 * d] ?? `D${d}` })
-  dbl[50] = 'Bull'
-  if (dbl[remaining]) return [dbl[remaining]]
-  const shots: { l: string; v: number }[] = []
-  for (let n = 20; n >= 1; n--) shots.push({ l: `T${n}`, v: 3*n })
-  for (let n = 20; n >= 1; n--) shots.push({ l: `S${n}`, v: n })
-  shots.push({ l: '25', v: 25 }, { l: 'Bull', v: 50 })
-  for (const { l, v } of shots) {
-    const rest = remaining - v
-    if (rest >= 2 && dbl[rest]) return [l, dbl[rest]]
+type OutMode = 'straight' | 'double' | 'master'
+
+export function checkoutHint(remaining: number, outMode: OutMode = 'double', dartsLeft = 3): string[] | null {
+  if (remaining < 1 || remaining > 170) return null
+  const n = Math.min(dartsLeft, 3)
+
+  // Valid finishing darts
+  const finishMap = new Map<number, string>()
+  if (outMode === 'straight') {
+    for (let k = 20; k >= 1; k--) {
+      finishMap.set(3*k, `T${k}`)
+      finishMap.set(2*k, `D${k}`)
+      finishMap.set(k,   `S${k}`)
+    }
+    finishMap.set(50, 'Bull')
+    finishMap.set(25, '25')
+  } else if (outMode === 'master') {
+    for (let k = 20; k >= 1; k--) { finishMap.set(3*k, `T${k}`); finishMap.set(2*k, `D${k}`) }
+    finishMap.set(50, 'Bull')
+  } else {
+    // double out
+    for (let k = 20; k >= 1; k--) finishMap.set(2*k, `D${k}`)
+    finishMap.set(50, 'Bull')
   }
+
+  // 1-dart finish
+  if (n >= 1 && finishMap.has(remaining)) return [finishMap.get(remaining)!]
+
+  // Scoring darts (preferred order: triples high→low skipping T1, then singles, then bull)
+  // T1 omitted: S3 scores the same and is always the saner suggestion
+  const scoring: { l: string; v: number }[] = []
+  for (let k = 20; k >= 2; k--) scoring.push({ l: `T${k}`, v: 3*k })
+  for (let k = 20; k >= 1; k--) scoring.push({ l: `S${k}`, v: k })
+  scoring.push({ l: '25', v: 25 }, { l: 'Bull', v: 50 })
+
+  // 2-dart finish
+  if (n >= 2) {
+    for (const d of scoring) {
+      const rest = remaining - d.v
+      if (rest >= 1 && finishMap.has(rest)) return [d.l, finishMap.get(rest)!]
+    }
+  }
+
+  // 3-dart finish
+  if (n >= 3) {
+    for (const d1 of scoring) {
+      const r1 = remaining - d1.v
+      if (r1 < 2) continue
+      for (const d2 of scoring) {
+        const r2 = r1 - d2.v
+        if (r2 >= 1 && finishMap.has(r2)) return [d1.l, d2.l, finishMap.get(r2)!]
+      }
+    }
+  }
+
   return null
 }

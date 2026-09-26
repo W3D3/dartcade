@@ -34,3 +34,23 @@
   input::placeholder { color: #7d7f74; }
   :focus-visible { outline: 2px solid #c6f24e; outline-offset: 2px; }
 }
+
+@layer utilities {
+  .scrollbar-themed {
+    scrollbar-width: thin;
+    scrollbar-color: #353930 transparent;
+  }
+  .scrollbar-themed::-webkit-scrollbar {
+    width: 6px;
+  }
+  .scrollbar-themed::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-themed::-webkit-scrollbar-thumb {
+    background: #353930;
+    border-radius: 3px;
+  }
+  .scrollbar-themed::-webkit-scrollbar-thumb:hover {
+    background: #a3a498;
+  }
+}
