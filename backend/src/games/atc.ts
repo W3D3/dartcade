@@ -9,13 +9,14 @@ export type ATCConfig = {
 }
 
 export type ATCState = {
-  sequence: number[]   // ordered list of actual dart targets (1–20, 21=25, 22=bull)
-  targets: number[]    // current target per player (actual number from sequence)
+  sequence: number[]        // ordered list of actual dart targets (1–20, 21=25, 22=bull)
+  targets: number[]         // current target per player (actual number from sequence)
   currentPlayer: number
   allHitThisVisit: boolean
   winner: number | null
   cfg: ATCConfig
   playerCount: number
+  currentVisitHits: boolean[]  // per-dart hit flags for the open visit
 }
 
 function shuffle(arr: number[]): number[] {
@@ -140,25 +141,31 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
       winner: null,
       cfg,
       playerCount: players.length,
+      currentVisitHits: [],
     }
+  },
+
+  getCurrentPlayer(s: ATCState): number {
+    return s.currentPlayer
   },
 
   onBoardEvent(s: ATCState, e: BoardEvent) {
     switch (e.kind) {
       case 'visit.opened':
-        return { state: { ...s, allHitThisVisit: true } }
+        return { state: { ...s, allHitThisVisit: true, currentVisitHits: [] } }
 
       case 'dart.detected': {
         const data = e.data as DartDetectedData
         const prev = s.targets[s.currentPlayer]
         const steps = s.cfg.multiplierAdvances ? (data.dart as Dart).segment.multiplier : 1
         const hit = hitsTarget(prev, data.dart as Dart)
-        if (!hit) return { state: { ...s, allHitThisVisit: false } }
+        const currentVisitHits = [...s.currentVisitHits, hit]
+        if (!hit) return { state: { ...s, allHitThisVisit: false, currentVisitHits } }
         const next = advanceInSequence(prev, steps, s.sequence)
         const targets = s.targets.map((t, i) => i === s.currentPlayer ? next : t)
         const winner = !s.sequence.includes(next) ? s.currentPlayer : s.winner
         return {
-          state: { ...s, targets, allHitThisVisit: s.allHitThisVisit && true, winner },
+          state: { ...s, targets, allHitThisVisit: s.allHitThisVisit && true, winner, currentVisitHits },
         }
       }
 
@@ -166,12 +173,12 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
         if (s.winner !== null) return { state: s }
         const stay = s.cfg.throwAgainOnAllHit && s.allHitThisVisit
         const nextPlayer = stay ? s.currentPlayer : (s.currentPlayer + 1) % s.playerCount
-        return { state: { ...s, currentPlayer: nextPlayer, allHitThisVisit: false } }
+        return { state: { ...s, currentPlayer: nextPlayer, allHitThisVisit: false, currentVisitHits: [] } }
       }
 
       case 'visit.cleared':
         return {
-          state: { ...s, currentPlayer: (s.currentPlayer + 1) % s.playerCount, allHitThisVisit: false },
+          state: { ...s, currentPlayer: (s.currentPlayer + 1) % s.playerCount, allHitThisVisit: false, currentVisitHits: [] },
         }
 
       default:
@@ -184,6 +191,18 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
   },
 
   view(s: ATCState, _players: Player[]) {
-    return { targets: s.targets, sequence: s.sequence, currentPlayer: s.currentPlayer, winner: s.winner }
+    const hitCounts = s.targets.map(t => {
+      const idx = s.sequence.indexOf(t)
+      return idx === -1 ? s.sequence.length : idx
+    })
+    return {
+      targets: s.targets,
+      sequence: s.sequence,
+      currentPlayer: s.currentPlayer,
+      winner: s.winner,
+      cfg: s.cfg,
+      currentVisitHits: s.currentVisitHits,
+      hitCounts,
+    }
   },
 }

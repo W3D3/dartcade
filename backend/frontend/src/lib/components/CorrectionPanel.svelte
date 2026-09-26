@@ -1,11 +1,13 @@
 <script lang="ts">
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
 
-  let { darts = [], onCorrect, onUndo, ontakeout }: {
+  let { darts = [], hits, onCorrect, onUndo, ontakeout, showVisitScore = true }: {
     darts: Array<{ label: string; score: number }>
+    hits?: boolean[]
     onCorrect: (dartIndex: number, label: string) => void
     onUndo: () => void
     ontakeout?: () => void
+    showVisitScore?: boolean
   } = $props()
 
   let openDart = $state<number | null>(null)
@@ -37,15 +39,25 @@
     {#if i < darts.length}
       {@const dart = darts[i]}
       {@const isOpen = openDart === i}
+      {@const hitFlag = hits?.[i]}
+      {@const isHit = hitFlag === true}
+      {@const isMiss = hitFlag === false}
       <button type="button" onclick={() => toggle(i)}
         aria-expanded={isOpen}
         aria-label="Dart {i+1}: {dart.label}, {dart.score} points. Correct this dart"
         class="h-[72px] rounded-[12px] flex items-center justify-between px-4 border-0 cursor-pointer
-               bg-accent text-accent-fg
+               {isMiss ? 'bg-[#252820] text-text' : 'bg-accent text-accent-fg'}
                {isOpen ? '[box-shadow:0_0_0_3px_#0f100e,0_0_0_5px_#c6f24e]' : ''}">
-        <span class="font-display font-bold text-[32px]">{dart.label}</span>
+        <span class="font-display font-bold text-[30px]">{dart.label}</span>
         <div class="flex flex-col items-end gap-[2px]">
-          <span class="text-[16px] font-bold">{dart.score}</span>
+          {#if isHit}
+            <span class="text-[10px] font-bold tracking-[0.1em] uppercase opacity-70">HIT</span>
+            <span class="text-[14px] font-bold">{dart.score} ✓</span>
+          {:else if isMiss}
+            <span class="text-[10px] font-bold tracking-[0.1em] uppercase text-[#6a6e63]">NO HIT</span>
+          {:else}
+            <span class="text-[16px] font-bold">{dart.score}</span>
+          {/if}
         </div>
       </button>
     {:else}
@@ -159,8 +171,7 @@
 
 <!-- Hint + actions -->
 <span class="text-[13px] text-text-dim">
-  Tap a dart to correct it ·
-  Visit so far <strong class="text-text">{darts.reduce((s, d) => s + d.score, 0)}</strong>
+  Tap a dart to correct it{#if showVisitScore} · Visit so far <strong class="text-text">{darts.reduce((s, d) => s + d.score, 0)}</strong>{/if}
 </span>
 
 <div class="w-full flex gap-2">

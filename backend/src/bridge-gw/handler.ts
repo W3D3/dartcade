@@ -39,44 +39,50 @@ export async function bridgeGwPlugin(app: FastifyInstance, opts: Opts): Promise<
       bridgeConnections.add(conn)
       bridgeConnections.register(conn, board.id)
 
-      socket.on('message', async (raw) => {
-        let msg: any
-        try { msg = JSON.parse(raw.toString()) } catch { return }
+      // Serialize all event processing for this connection to prevent race conditions
+      // between rapidly-arriving events (e.g. dart.detected followed by takeout.finished).
+      let eventQueue: Promise<void> = Promise.resolve()
 
-        if (!conn.helloReceived) {
-          if (msg.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
-          conn.helloReceived = true
-          conn.bmVersion = msg.data?.bm_version ?? null
-          conn.bmUrl = msg.data?.bm_url ?? null
-          return
-        }
+      socket.on('message', (raw) => {
+        eventQueue = eventQueue.then(async () => {
+          let msg: any
+          try { msg = JSON.parse(raw.toString()) } catch { return }
 
-        if (msg.v !== 1 || typeof msg.seq !== 'number' || typeof msg.kind !== 'string') return
+          if (!conn.helloReceived) {
+            if (msg.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
+            conn.helloReceived = true
+            conn.bmVersion = msg.data?.bm_version ?? null
+            conn.bmUrl = msg.data?.bm_url ?? null
+            return
+          }
 
-        if (!conn.hardwareBoardId && msg.board_id) {
-          conn.hardwareBoardId = msg.board_id
-          await updateBoardHardwareId(db, conn.boardDbId!, msg.board_id)
-        }
+          if (msg.v !== 1 || typeof msg.seq !== 'number' || typeof msg.kind !== 'string') return
 
-        if (conn.bridgeId === null) {
-          conn.bridgeId = msg.bridge_id
-          conn.bootId = msg.boot_id
-        }
+          if (!conn.hardwareBoardId && msg.board_id) {
+            conn.hardwareBoardId = msg.board_id
+            await updateBoardHardwareId(db, conn.boardDbId!, msg.board_id)
+          }
 
-        const { inserted } = await insertBridgeEvent(db, {
-          bridge_id: msg.bridge_id,
-          boot_id: msg.boot_id,
-          seq: BigInt(msg.seq),
-          board_id: msg.board_id ?? conn.hardwareBoardId ?? conn.boardDbId!,
-          recv_wall: new Date(msg.recv_wall),
-          kind: msg.kind,
-          data: msg.data ?? {},
-        })
+          if (conn.bridgeId === null) {
+            conn.bridgeId = msg.bridge_id
+            conn.bootId = msg.boot_id
+          }
 
-        socket.send(JSON.stringify({ ack: msg.seq }))
-        if (!inserted) return
+          const { inserted } = await insertBridgeEvent(db, {
+            bridge_id: msg.bridge_id,
+            boot_id: msg.boot_id,
+            seq: BigInt(msg.seq),
+            board_id: msg.board_id ?? conn.hardwareBoardId ?? conn.boardDbId!,
+            recv_wall: new Date(msg.recv_wall),
+            kind: msg.kind,
+            data: msg.data ?? {},
+          })
 
-        await engine.onBridgeEvent(conn.boardDbId!, msg.kind, msg.data ?? {}, new Date(msg.recv_wall))
+          socket.send(JSON.stringify({ ack: msg.seq }))
+          if (!inserted) return
+
+          await engine.onBridgeEvent(conn.boardDbId!, msg.kind, msg.data ?? {}, new Date(msg.recv_wall))
+        }).catch(err => { console.error('Bridge event processing error:', err) })
       })
 
       socket.on('close', () => bridgeConnections.remove(conn))

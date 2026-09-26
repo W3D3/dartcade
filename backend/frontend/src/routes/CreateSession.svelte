@@ -32,16 +32,52 @@
   // ATC config fields in display order — populated from backend configMeta
   const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
 
+  // ── Preference persistence ──────────────────────────────────────────────────
+  const PREFS_KEY = 'dartcade_game_prefs'
+  const X01_DEFAULTS: Record<string, unknown> = { startScore: 501, checkout: 'double', firstTo: 3 }
+
+  type SavedPrefs = { mode: string; configs: Record<string, Record<string, unknown>> }
+  function loadPrefs(): SavedPrefs | null {
+    try { const s = localStorage.getItem(PREFS_KEY); if (s) return JSON.parse(s) } catch {}
+    return null
+  }
+  const initPrefs = loadPrefs()
+
   let games = $state<GameDef[]>([])
   let boards = $state<Board[]>([])
-  let selectedMode = $state('atc')
+  let selectedMode = $state(initPrefs?.mode ?? 'atc')
   let boardId = $state('')
-  let config = $state<Record<string, unknown>>({ startScore: 501, checkout: 'double', firstTo: 3 })
   let atcMeta = $state<Record<string, FieldMeta>>({})
   let youName = $state('')
-  let guests = $state<{ name: string }[]>([{ name: '' }])
+  let guests = $state<{ name: string }[]>([])
   let error = $state('')
   let loading = $state(false)
+
+  let gameDefaults = $state<Record<string, Record<string, unknown>>>({ x01: X01_DEFAULTS })
+  let savedConfigs = $state<Record<string, Record<string, unknown>>>(initPrefs?.configs ?? {})
+  let config = $state<Record<string, unknown>>({
+    ...X01_DEFAULTS,
+    ...(initPrefs?.configs?.[initPrefs?.mode ?? 'atc'] ?? {}),
+  })
+
+  // Persist whenever mode or config changes
+  $effect(() => {
+    localStorage.setItem(PREFS_KEY, JSON.stringify({
+      mode: selectedMode,
+      configs: { ...savedConfigs, [selectedMode]: config },
+    }))
+  })
+
+  function selectMode(id: string) {
+    savedConfigs = { ...savedConfigs, [selectedMode]: { ...config } }
+    selectedMode = id
+    config = { ...(gameDefaults[id] ?? {}), ...(savedConfigs[id] ?? {}) }
+  }
+
+  function isNonDefault(key: string): boolean {
+    const def = gameDefaults[selectedMode]
+    return !!def && key in def && config[key] !== def[key]
+  }
 
   onMount(async () => {
     const [gr, br, sr] = await Promise.all([
@@ -59,8 +95,11 @@
     const atcGame = games.find(g => g.id === 'atc')
     if (atcGame) {
       atcMeta = atcGame.configMeta
-      config = { ...config, ...atcGame.defaultConfig }
+      gameDefaults = { ...gameDefaults, atc: atcGame.defaultConfig }
     }
+
+    // Re-apply with real defaults now that we have them
+    config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) }
   })
 
   async function start() {
@@ -111,7 +150,7 @@
           {@const active = mode.id === selectedMode}
           {@const unavailable = !mode.available}
           <button type="button"
-            onclick={() => { if (mode.available) selectedMode = mode.id }}
+            onclick={() => { if (mode.available) selectMode(mode.id) }}
             disabled={unavailable}
             class="relative text-left box-border p-6 rounded-[14px] flex flex-col gap-[10px]
                    overflow-hidden transition-colors font-[inherit]
@@ -163,12 +202,14 @@
           <div class="flex flex-col gap-[18px]">
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
               <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Start score</legend>
-              <SegmentedControl options={startScoreOptions} bind:value={config.startScore} />
+              <SegmentedControl options={startScoreOptions} bind:value={config.startScore}
+                defaultValue={X01_DEFAULTS.startScore} />
             </fieldset>
 
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
               <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-out</legend>
-              <SegmentedControl options={checkoutOptions} bind:value={config.checkout} />
+              <SegmentedControl options={checkoutOptions} bind:value={config.checkout}
+                defaultValue={X01_DEFAULTS.checkout} />
             </fieldset>
 
             <div class="flex justify-between items-center">
@@ -179,7 +220,8 @@
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">−</button>
                 <span class="w-[72px] text-center text-[15px]">
-                  <strong class="font-display text-[24px]">{config.firstTo}</strong> legs
+                  <strong class="font-display text-[24px]
+                                 {isNonDefault('firstTo') ? 'text-accent' : ''}">{config.firstTo}</strong> legs
                 </span>
                 <button type="button" aria-label="More legs"
                   onclick={() => config = {...config, firstTo: (config.firstTo as number) + 1}}
@@ -204,6 +246,7 @@
                   <SegmentedControl
                     options={meta.options}
                     value={config[fieldKey]}
+                    defaultValue={gameDefaults['atc']?.[fieldKey]}
                     onchange={(v) => config = { ...config, [fieldKey]: v }} />
                 </fieldset>
               {/if}

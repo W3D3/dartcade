@@ -53,6 +53,8 @@ export class SessionEngine {
       currentState: initialState,
       status: 'active',
       createdAt: new Date(),
+      totalDarts: new Array(players.length).fill(0),
+      totalVisits: new Array(players.length).fill(0),
     }
     await this.store.insertSession({ id: sessionId, board_db_id: boardId, game_id: gameId, config, players })
     this.byBoard.set(boardId, session)
@@ -68,10 +70,17 @@ export class SessionEngine {
 
     switch (kind) {
       case 'visit.opened':
-      case 'dart.detected':
         session.openVisitEvents.push(event)
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         break
+
+      case 'dart.detected': {
+        const thrower = session.module.getCurrentPlayer(session.committedState)
+        session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
+        session.openVisitEvents.push(event)
+        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
+        break
+      }
 
       case 'dart.corrected': {
         const d = data as any
@@ -91,6 +100,8 @@ export class SessionEngine {
 
       case 'takeout.finished':
       case 'visit.cleared': {
+        const visitOwner = session.module.getCurrentPlayer(session.committedState)
+        session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
         session.openVisitEvents.push(event)
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         session.committedState = session.currentState
@@ -105,6 +116,11 @@ export class SessionEngine {
       }
 
       case 'board.resync': {
+        const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
+        if (dartCount > 0) {
+          const thrower = session.module.getCurrentPlayer(session.committedState)
+          session.totalDarts[thrower] = Math.max(0, (session.totalDarts[thrower] ?? 0) - dartCount)
+        }
         session.openVisitEvents = []
         session.currentState = session.committedState
         break
@@ -119,9 +135,11 @@ export class SessionEngine {
     if (!session) return
 
     if (action.type === 'undo_dart') {
+      let dartRemoved = false
       for (let i = session.openVisitEvents.length - 1; i >= 0; i--) {
         if (session.openVisitEvents[i].kind === 'dart.detected') {
           session.openVisitEvents.splice(i, 1)
+          dartRemoved = true
           if (
             i > 0 &&
             session.openVisitEvents[i - 1]?.kind === 'visit.opened' &&
@@ -131,6 +149,10 @@ export class SessionEngine {
           }
           break
         }
+      }
+      if (dartRemoved) {
+        const thrower = session.module.getCurrentPlayer(session.committedState)
+        session.totalDarts[thrower] = Math.max(0, (session.totalDarts[thrower] ?? 0) - 1)
       }
     } else if (action.type === 'correct_dart') {
       const dartEvents = session.openVisitEvents.filter(e => e.kind === 'dart.detected')
@@ -144,6 +166,24 @@ export class SessionEngine {
           kind: 'dart.detected',
           data: { ...orig, dart: newDart },
         } as BoardEvent
+      }
+    } else if (action.type === 'takeout') {
+      if (session.openVisitEvents.length > 0) {
+        const visitOwner = session.module.getCurrentPlayer(session.committedState)
+        session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
+        const finalState = session.module.onBoardEvent(
+          session.currentState,
+          { kind: 'takeout.finished', data: {} as any },
+        ).state
+        session.committedState = finalState
+        session.currentState = finalState
+        session.openVisitEvents = []
+        const view = session.module.view(finalState, session.players) as any
+        if (view.winner !== null && view.winner !== undefined) {
+          session.status = 'finished'
+          await this.store.setSessionFinished(session.id)
+          this.byBoard.delete(session.boardId)
+        }
       }
     }
 
@@ -167,6 +207,8 @@ export class SessionEngine {
         currentState: initialState,
         status: 'active',
         createdAt: (row.created_at as unknown as Date) ?? new Date(),
+        totalDarts: new Array(players.length).fill(0),
+        totalVisits: new Array(players.length).fill(0),
       }
       this.byBoard.set(row.board_db_id, session)
       this.byId.set(row.id, session)
@@ -189,7 +231,12 @@ export class SessionEngine {
       sessionId: session.id,
       gameId: session.module.id,
       players: session.players,
-      game: { ...session.module.view(session.currentState, session.players), currentVisitDarts },
+      game: {
+        ...session.module.view(session.currentState, session.players),
+        currentVisitDarts,
+        totalDarts: session.totalDarts,
+        totalVisits: session.totalVisits,
+      },
     }
   }
 

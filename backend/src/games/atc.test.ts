@@ -14,7 +14,7 @@ function makeState(overrides: Partial<ATCState> = {}): ATCState {
   const sequence = overrides.sequence ?? buildSequence(cfg)
   return {
     sequence, targets: [1, 1], currentPlayer: 0, allHitThisVisit: true, winner: null,
-    cfg, playerCount: 2, ...overrides,
+    cfg, playerCount: 2, currentVisitHits: [], ...overrides,
   }
 }
 

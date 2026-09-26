@@ -1,23 +1,20 @@
 <script lang="ts">
   import { labelPos } from '$lib/dartUtils.js'
 
-  export let darts: Array<{
-    segment: { number: number; bed: string; multiplier: number; name: string }
-    score: number
-    coords?: { x: number; y: number }
-  }> = []
-  export let highlightedSegments: number[] = []
-  export let checkoutTargets: string[] = []
+  let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [] }: {
+    darts?: Array<{
+      segment: { number: number; bed: string; multiplier: number; name: string }
+      score: number
+      coords?: { x: number; y: number }
+    }>
+    selectedSegments?: number[]
+    playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
+    checkoutTargets?: string[]
+  } = $props()
 
-  function sectorOpacity(num: number): number {
-    if (highlightedSegments.length === 0) return 1
-    return highlightedSegments.includes(num) ? 1 : 0.18
-  }
-
-  // ── Geometry (normalised: r=1 at outer double wire) ─────────────────────────
   const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.000 }
   const SEGS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5]
-  const HALF = Math.PI / 20   // half of 18°
+  const HALF = Math.PI / 20
 
   function segAngle(i: number) { return Math.PI / 2 - i * 2 * HALF }
 
@@ -32,11 +29,10 @@
     return ev ? '#1a1a17' : '#e9dfc4'
   }
 
-  // Pre-compute all sector paths and text positions once
   const sectors = SEGS.map((num, i) => {
     const c = segAngle(i), a1 = c + HALF, a2 = c - HALF
     return {
-      num, i,
+      num, i, a1, a2,
       paths: [
         { ring: 'si', d: sectorPath(R.bull25, R.si, a1, a2) },
         { ring: 'tr', d: sectorPath(R.si, R.tr, a1, a2) },
@@ -49,7 +45,6 @@
     }
   })
 
-  // ── Dart position from segment info ─────────────────────────────────────────
   function dartPos(dart: typeof darts[0]): { x: number; y: number } | null {
     if (dart.coords) return dart.coords
     const { bed, number } = dart.segment
@@ -66,6 +61,15 @@
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
 
+  function markerPos(segNum: number): { x: number; y: number } | null {
+    if (segNum === 25 || segNum === 50) return { x: 0, y: 0 }
+    const si = SEGS.indexOf(segNum)
+    if (si < 0) return null
+    const a = segAngle(si)
+    const r = (R.tr + R.so) / 2
+    return { x: r * Math.cos(a), y: -r * Math.sin(a) }
+  }
+
   const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
   const DOT_STROKE = '#0f100e'
 </script>
@@ -73,28 +77,70 @@
 <svg viewBox="-1.15 -1.15 2.3 2.3" class="w-full" xmlns="http://www.w3.org/2000/svg">
   <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
 
-  {#each sectors as { num, i, paths, tx, ty, wa }}
+  <!-- Sector fills and wire dividers — all at full opacity -->
+  {#each sectors as { num, i, paths, wa }}
     {#each paths as { ring, d }}
-      <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="0.005" opacity={sectorOpacity(num)} />
+      <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="0.005" />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
       x2={R.db * Math.cos(wa)} y2={-R.db * Math.sin(wa)}
-      stroke="#8d8e84" stroke-width="0.006" opacity={sectorOpacity(num)}
+      stroke="#8d8e84" stroke-width="0.006"
     />
+  {/each}
+
+  <!-- Ring wire circles -->
+  {#each [R.bull25, R.si, R.tr, R.so, R.db] as r}
+    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="0.006" />
+  {/each}
+
+  <!-- Bull fills -->
+  <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="0.006" />
+  <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="0.006" />
+
+  <!-- Selected segment: lime wedge overlay -->
+  {#each sectors as { num, a1, a2 }}
+    {#if selectedSegments.includes(num)}
+      <path d={sectorPath(R.bull25, R.db, a1, a2)}
+        fill="#c6f24e" fill-opacity="0.22"
+        stroke="#c6f24e" stroke-width="0.016" stroke-linejoin="round" />
+    {/if}
+  {/each}
+
+  <!-- Selected bull overlays -->
+  {#if selectedSegments.includes(25)}
+    <circle cx="0" cy="0" r={R.bull25}
+      fill="#c6f24e" fill-opacity="0.28" stroke="#c6f24e" stroke-width="0.016" />
+  {/if}
+  {#if selectedSegments.includes(50)}
+    <circle cx="0" cy="0" r={R.bull50}
+      fill="#c6f24e" fill-opacity="0.45" stroke="#c6f24e" stroke-width="0.016" />
+  {/if}
+
+  <!-- Number labels on top of overlay — lime for selected segment -->
+  {#each sectors as { num, tx, ty }}
     <text x={tx} y={ty} text-anchor="middle" dominant-baseline="central"
-      fill="#efeee6" font-size="0.09" font-family="Barlow Condensed, sans-serif" font-weight="bold"
-      opacity={sectorOpacity(num)}>
+      fill={selectedSegments.includes(num) ? '#c6f24e' : '#efeee6'}
+      font-size={selectedSegments.includes(num) ? '0.105' : '0.09'}
+      font-family="Barlow Condensed, sans-serif" font-weight="bold">
       {num}
     </text>
   {/each}
 
-  {#each [R.bull25, R.si, R.tr, R.so, R.db] as r}
-    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="0.006" />
+  <!-- Other-player markers: white circle with initial -->
+  {#each playerMarkers.filter(m => !m.isActive) as marker}
+    {@const pos = markerPos(marker.segment)}
+    {#if pos}
+      <circle cx={pos.x} cy={pos.y} r="0.085"
+        fill="white" stroke="#0a0b09" stroke-width="0.01" />
+      <text x={pos.x} y={pos.y} text-anchor="middle" dominant-baseline="central"
+        fill="#0a0b09" font-size="0.072" font-family="Barlow Condensed, sans-serif" font-weight="bold">
+        {marker.initial}
+      </text>
+    {/if}
   {/each}
-  <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="0.006" />
-  <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="0.006" />
 
+  <!-- Darts -->
   {#each darts as dart, i}
     {@const pos = dartPos(dart)}
     {#if pos}
@@ -110,6 +156,7 @@
     {/if}
   {/each}
 
+  <!-- Checkout target dashed circles (x01) -->
   {#each checkoutTargets as label}
     {@const pos = labelPos(label)}
     {#if pos}

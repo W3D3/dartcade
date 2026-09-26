@@ -22,6 +22,7 @@ export type Effect = { type: 'board.reset' }
 export type UserAction =
   | { type: 'correct_dart'; visitIndex: number; segment: Segment }
   | { type: 'undo_dart' }
+  | { type: 'takeout' }
 
 export type BoardEvent =
   | { kind: 'visit.opened';     data: VisitOpenedData }
@@ -44,6 +45,7 @@ export interface GameModule<S, Cfg = Record<string, never>> {
   defaultConfig: Cfg
   configMeta?: Record<string, ConfigFieldMeta>
   init(cfg: Cfg, players: Player[]): S
+  getCurrentPlayer(s: S): number
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }
   onUserAction(s: S, a: UserAction): { state: S; effects?: Effect[] }
   view(s: S, players: Player[]): Record<string, unknown>
@@ -59,6 +61,8 @@ export interface Session<S = unknown> {
   currentState: S
   status: 'active' | 'finished'
   createdAt: Date
+  totalDarts: number[]
+  totalVisits: number[]
 }
 
 export type Snapshot = {
