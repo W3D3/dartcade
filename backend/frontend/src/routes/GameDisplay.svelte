@@ -118,6 +118,7 @@
   const isMultiPlayer  = $derived(players.length > 2)
   const showVisitScore = $derived(view.showVisitScore ?? true)
   const bmStatus       = $derived(snapshot?.bmStatus ?? null)
+  const bust           = $derived(!!(game.bustThisVisit))
 
   const dartItems = $derived(currentDarts.map((d: any) => ({
     label: d.segment?.name ?? 'Miss',
@@ -300,7 +301,7 @@
           </div>
 
           <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo}
-            ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} />
+            ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
       </div>
 
@@ -349,7 +350,7 @@
           {/if}
 
           <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo}
-            ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} />
+            ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
 
         <!-- Player 1 -->
