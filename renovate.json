@@ -3,7 +3,16 @@
   "extends": ["config:recommended"],
   "schedule": ["before 6am on Monday"],
   "timezone": "Europe/Vienna",
+  "docker-compose": {
+    "enabled": true
+  },
   "packageRules": [
+    {
+      "description": "Group Docker base image patch/minor updates",
+      "matchManagers": ["dockerfile", "docker-compose"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Docker base images (non-major)"
+    },
     {
       "description": "Group all non-major npm updates into one PR",
       "matchManagers": ["npm"],
