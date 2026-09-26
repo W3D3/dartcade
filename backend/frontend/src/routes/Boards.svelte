@@ -1,17 +1,19 @@
 <script lang="ts">
-  import { onMount } from 'svelte'
+  import { onMount, onDestroy } from 'svelte'
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
 
   type Board = {
     id: string; name: string; online: boolean; ip?: string
-    cameras?: number; bridgeVersion?: string; totalGames?: number; latencyMs?: number
+    bridgeVersion?: string | null; totalGames?: number; latencyMs?: number
   }
 
   let boards = $state<Board[]>([])
   let selectedId = $state<string | null>(null)
   let selected = $derived(boards.find(b => b.id === selectedId) ?? null)
+  let cameraTs = $state(Date.now())
+  let cameraInterval: ReturnType<typeof setInterval> | null = null
 
   onMount(async () => {
     const res = await fetch('/api/boards')
@@ -19,7 +21,9 @@
     const d = await res.json()
     boards = d.boards ?? []
     if (boards.length) selectedId = boards[0].id
+    cameraInterval = setInterval(() => { cameraTs = Date.now() }, 1000)
   })
+  onDestroy(() => { if (cameraInterval) clearInterval(cameraInterval) })
 
   const onlineCount = $derived(boards.filter(b => b.online).length)
 </script>
@@ -78,12 +82,7 @@
               {/if}
             </div>
 
-            <dl class="m-0 mt-auto grid grid-cols-3 gap-3 pt-4 border-t border-line-2">
-              <!-- [PLACEHOLDER] cameras/bridgeVersion/totalGames from API -->
-              <div>
-                <dt class="text-[12px] text-text-dim">Cameras</dt>
-                <dd class="mt-1 m-0 text-[15px] font-semibold">{board.cameras != null ? `${board.cameras} / 3` : '—'}</dd>
-              </div>
+            <dl class="m-0 mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-line-2">
               <div>
                 <dt class="text-[12px] text-text-dim">Bridge</dt>
                 <dd class="mt-1 m-0 text-[15px] font-semibold">{board.bridgeVersion ?? '—'}</dd>
@@ -107,10 +106,22 @@
         <aside class="w-[360px] flex-shrink-0 box-border p-6 border border-line-2 rounded-[14px]
                        bg-surface-2 flex flex-col gap-5">
           <h3 class="m-0 font-display font-bold text-[24px] uppercase">{selected.name}</h3>
-          <!-- [PLACEHOLDER] camera tiles, event feed — needs board detail API -->
-          <div class="flex flex-col gap-3">
-            <div class="rounded-[10px] bg-[#0a0b09] h-24 flex items-center justify-center
-                         text-text-dim text-[13px]">Camera feed — coming soon</div>
+          <div class="flex flex-col gap-2">
+            {#if selected.online}
+              {#each [0, 1, 2] as camIndex (camIndex)}
+                <div class="rounded-[10px] overflow-hidden bg-[#0a0b09] aspect-video">
+                  <img
+                    src="/api/boards/{selected.id}/camera/{camIndex}?t={cameraTs}"
+                    alt="Camera {camIndex}"
+                    class="w-full h-full object-cover"
+                    onerror={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                  />
+                </div>
+              {/each}
+            {:else}
+              <div class="rounded-[10px] bg-[#0a0b09] h-24 flex items-center justify-center
+                           text-text-dim text-[13px]">Board offline</div>
+            {/if}
           </div>
           <div class="flex flex-col gap-1">
             {#if selected.ip}

@@ -23,8 +23,8 @@ describe('BridgeConnections', () => {
     const bc = new BridgeConnections()
     const ws1 = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
     const ws2 = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn1 = { ws: ws1, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, helloReceived: false }
-    const conn2 = { ws: ws2, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, helloReceived: false }
+    const conn1 = { ws: ws1, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: false }
+    const conn2 = { ws: ws2, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: false }
     bc.add(conn1)
     bc.register(conn1, 'board-ulid-1')
     bc.add(conn2)
@@ -36,7 +36,7 @@ describe('BridgeConnections', () => {
   it('remove cleans up the connection', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = { ws, boardDbId: 'board-ulid-1', hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, helloReceived: true }
+    const conn = { ws, boardDbId: 'board-ulid-1', hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: true }
     bc.add(conn)
     bc.register(conn, 'board-ulid-1')
     bc.remove(conn)
@@ -46,7 +46,7 @@ describe('BridgeConnections', () => {
   it('send transmits JSON to the socket', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = { ws, boardDbId: 'board-ulid-1', hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, helloReceived: true }
+    const conn = { ws, boardDbId: 'board-ulid-1', hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: true }
     bc.add(conn)
     bc.register(conn, 'board-ulid-1')
     bc.send('board-ulid-1', { command_id: 'c1', name: 'reset' })
@@ -56,11 +56,20 @@ describe('BridgeConnections', () => {
   it('isOnline returns true for a registered board', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = { ws, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, helloReceived: false }
+    const conn = { ws, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: false }
     bc.add(conn)
     bc.register(conn, 'board-ulid-1')
     expect(bc.isOnline('board-ulid-1')).toBe(true)
     expect(bc.isOnline('other')).toBe(false)
+  })
+
+  it('bmUrl is accessible after registering a connection', () => {
+    const bc = new BridgeConnections()
+    const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
+    const conn = { ws, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180', helloReceived: true }
+    bc.add(conn)
+    bc.register(conn, 'board-ulid-1')
+    expect(bc.get('board-ulid-1')?.bmUrl).toBe('http://192.168.0.109:3180')
   })
 })
 
