@@ -1,0 +1,25 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["before 6am on Monday"],
+  "timezone": "Europe/Vienna",
+  "packageRules": [
+    {
+      "description": "Group all non-major npm updates into one PR",
+      "matchManagers": ["npm"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "npm dependencies (non-major)"
+    },
+    {
+      "description": "Group all non-major Go updates into one PR",
+      "matchManagers": ["gomod"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "Go dependencies (non-major)"
+    },
+    {
+      "description": "Separate major bumps — one PR each",
+      "matchUpdateTypes": ["major"],
+      "groupName": null
+    }
+  ]
+}
