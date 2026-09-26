@@ -89,7 +89,6 @@
     const [gd, bd, sd] = await Promise.all([gr.json(), br.json(), sr.json()])
     games = gd.games ?? []
     boards = bd.boards ?? []
-    if (boards.length) boardId = boards[0].id
     youName = sd.user?.name ?? sd.user?.email ?? 'You'
 
     const atcGame = games.find(g => g.id === 'atc')
@@ -108,7 +107,6 @@
       { name: youName.trim() || 'Player 1' },
       ...guests.filter(g => g.name.trim()).map(g => ({ name: g.name.trim() })),
     ]
-    if (!boardId) { error = 'Select a board first.'; return }
     const gameId = games.find(g => g.id === selectedMode)?.id
       ?? games.find(g => g.id.includes('501'))?.id
       ?? games[0]?.id
@@ -121,7 +119,7 @@
       const res = await fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ boardId, gameId, config: resolvedConfig, players: allPlayers }),
+        body: JSON.stringify({ boardId: boardId || null, gameId, config: resolvedConfig, players: allPlayers }),
       })
       if (!res.ok) { error = (await res.json()).error ?? 'Failed to start'; return }
       push(`/session/${(await res.json()).sessionId}`)
