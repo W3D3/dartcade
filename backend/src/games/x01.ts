@@ -23,7 +23,6 @@ export type X01State = {
   round: number
   bustThisVisit: boolean
   visitOpenedScores: number[]
-  totalDarts: number[]
   winner: number | null
   playerCount: number
 }
@@ -132,7 +131,6 @@ export const x01Module: GameModule<X01State, X01Config> = {
       currentPlayer: 0, round: 1,
       bustThisVisit: false,
       visitOpenedScores: Array(n).fill(cfg.startScore),
-      totalDarts: Array(n).fill(0),
       winner: null, playerCount: n,
     }
   },
@@ -151,36 +149,35 @@ export const x01Module: GameModule<X01State, X01Config> = {
         const data = e.data as DartDetectedData
         const dart = data.dart as Dart
         const cp = s.currentPlayer
-        const totalDarts = s.totalDarts.map((n, i) => i === cp ? n + 1 : n)
 
         if (s.phase === 'bulloff') {
           // Use segment number (25=outer bull, 50=inner bull) not score — inner bull scores 50 not 100
           const bullOff = onBullOffDart(s.bullOff, dart.segment.number)
-          return { state: { ...s, bullOff, totalDarts } }
+          return { state: { ...s, bullOff } }
         }
 
-        if (s.bustThisVisit) return { state: { ...s, totalDarts } }
+        if (s.bustThisVisit) return { state: s }
 
         if (!s.opened[cp]) {
           const opens = opensPlayer(dart, s.cfg.inMode)
-          if (!opens) return { state: { ...s, totalDarts } }
+          if (!opens) return { state: s }
           const opened = s.opened.map((o, i) => i === cp ? true : o)
           const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
           const newScore = s.scores[cp] - dartScore
           if (newScore < 0 || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
-            return { state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc), totalDarts } }
+            return { state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc) } }
           }
-          return { state: { ...s, opened, scores: s.scores.map((sc, i) => i === cp ? newScore : sc), totalDarts } }
+          return { state: { ...s, opened, scores: s.scores.map((sc, i) => i === cp ? newScore : sc) } }
         }
 
         const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
         const newScore = s.scores[cp] - dartScore
 
         if (newScore < 0 || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
-          return { state: { ...s, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc), bustThisVisit: true, totalDarts } }
+          return { state: { ...s, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc), bustThisVisit: true } }
         }
 
-        return { state: { ...s, scores: s.scores.map((sc, i) => i === cp ? newScore : sc), totalDarts } }
+        return { state: { ...s, scores: s.scores.map((sc, i) => i === cp ? newScore : sc) } }
       }
 
       case 'takeout.finished': {
@@ -195,7 +192,7 @@ export const x01Module: GameModule<X01State, X01Config> = {
             // rethrow
             return { state: { ...s, bullOff: result.state } }
           }
-          return { state: { ...s, bullOff: result.state, phase: 'game', ...freshLeg(s.cfg, s.playerCount, result.winner), totalDarts: s.totalDarts } }
+          return { state: { ...s, bullOff: result.state, phase: 'game', ...freshLeg(s.cfg, s.playerCount, result.winner) } }
         }
 
         // Leg win
@@ -204,7 +201,7 @@ export const x01Module: GameModule<X01State, X01Config> = {
           if (legs[cp] >= s.cfg.firstTo) {
             return { state: { ...s, legs, winner: cp, phase: 'finished' } }
           }
-          return { state: { ...s, legs, ...freshLeg(s.cfg, s.playerCount, cp), totalDarts: s.totalDarts } }
+          return { state: { ...s, legs, ...freshLeg(s.cfg, s.playerCount, cp) } }
         }
 
         const nextPlayer = (cp + 1) % s.playerCount
@@ -245,7 +242,7 @@ export const x01Module: GameModule<X01State, X01Config> = {
     return {
       scores: s.scores, legs: s.legs, firstTo: s.cfg.firstTo,
       currentPlayer: s.currentPlayer, round: s.round, phase: s.phase,
-      winner: s.winner, opened: s.opened, totalDarts: s.totalDarts,
+      winner: s.winner, opened: s.opened,
       config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode },
     }
   },

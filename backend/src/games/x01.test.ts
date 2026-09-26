@@ -17,7 +17,7 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
     bullOff: { active: false, darts: [null, null], currentPlayer: 0, playerCount: 2 },
     currentPlayer: 0, round: 1,
     bustThisVisit: false, visitOpenedScores: [501, 501],
-    totalDarts: [0, 0], winner: null, playerCount: 2, ...overrides,
+    winner: null, playerCount: 2, ...overrides,
   }
 }
 
@@ -124,18 +124,10 @@ describe('dart.detected — straight in, double out', () => {
     expect(state.bustThisVisit).toBe(false)
   })
 
-  it('increments totalDarts for current player only', () => {
-    const s = openedVisit(makeState({ totalDarts: [2, 0] }))
-    const { state } = x01Module.onBoardEvent(s, dartEvent(20, 'SingleOuter', 1))
-    expect(state.totalDarts[0]).toBe(3)
-    expect(state.totalDarts[1]).toBe(0)
-  })
-
-  it('bounce-out (multiplier=0) leaves score unchanged but increments totalDarts', () => {
+  it('bounce-out (multiplier=0) leaves score unchanged', () => {
     const s = openedVisit(makeState({ scores: [180, 501] }))
     const { state } = x01Module.onBoardEvent(s, dartEvent(20, 'Outside', 0))
     expect(state.scores[0]).toBe(180)
-    expect(state.totalDarts[0]).toBe(1)
   })
 
   it('bust: overshoot reverts score', () => {
@@ -159,12 +151,11 @@ describe('dart.detected — straight in, double out', () => {
     expect(state.bustThisVisit).toBe(false)
   })
 
-  it('dart after bust: score stays reverted, totalDarts still increments', () => {
+  it('dart after bust: score stays reverted', () => {
     // Do NOT use openedVisit here — that would reset bustThisVisit
     const s = makeState({ scores: [10, 501], visitOpenedScores: [10, 501], bustThisVisit: true })
     const { state } = x01Module.onBoardEvent(s, dartEvent(5, 'SingleOuter', 1))
     expect(state.scores[0]).toBe(10)
-    expect(state.totalDarts[0]).toBe(1)
   })
 
   it('50_50 bull value: outer bull (25) scores 50', () => {
@@ -400,5 +391,10 @@ describe('view', () => {
     expect(v.currentPlayer).toBe(1)
     expect(v.winner).toBeNull()
     expect((v.config as any).outMode).toBe('double')
+  })
+
+  it('does not include totalDarts (tracked by engine, not module)', () => {
+    const v = x01Module.view(makeState(), players)
+    expect(v).not.toHaveProperty('totalDarts')
   })
 })
