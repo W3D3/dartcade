@@ -11,7 +11,7 @@
   let loading = $state(false)
 
   const devEmail = import.meta.env.VITE_DEV_EMAIL ?? 'admin@dartcade.local'
-  const devPassword = import.meta.env.VITE_DEV_PASSWORD ?? 'password'
+  const devPassword = import.meta.env.VITE_DEV_PASSWORD ?? 'admin1234'
 
   async function submit() {
     loading = true
