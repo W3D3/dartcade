@@ -42,50 +42,79 @@
     finally { busy = null }
   }
 
-  function startPoll() {
-    if (pollTimer) return
-    loadBmStatus()
-    pollTimer = setInterval(loadBmStatus, 2000)
+  function resetPoll() {
+    if (pollTimer) clearInterval(pollTimer)
+    const interval = open ? 2000 : 5000
+    pollTimer = setInterval(loadBmStatus, interval)
   }
 
-  function stopPoll() {
-    if (pollTimer) { clearInterval(pollTimer); pollTimer = null }
-  }
+  $effect(() => { void open; resetPoll() })
 
-  $effect(() => {
-    if (open) startPoll()
-    else stopPoll()
-  })
-
-  onMount(loadBoard)
-  onDestroy(stopPoll)
+  onMount(async () => { await loadBoard(); await loadBmStatus(); resetPoll() })
+  onDestroy(() => { if (pollTimer) clearInterval(pollTimer) })
 
   function onkeydown(e: KeyboardEvent) { if (e.key === 'Escape') open = false }
 
+  // ── BM state colour classification ─────────────────────────────────────────
+  type DotColor = 'green' | 'yellow' | 'purple' | 'red' | 'gray'
+
+  function bmDotColor(status: string | null, online: boolean): DotColor {
+    if (!online) return 'gray'
+    switch (status) {
+      case 'Running':
+      case 'Throw':
+      case 'Starting':
+        return 'green'
+      case 'Takeout':
+      case 'Takeout in progress':
+      case 'Stopping':
+        return 'yellow'
+      case 'Calibrating':
+      case 'Setup':
+        return 'purple'
+      case 'Stopped':
+      case 'Error':
+      case 'Offline':
+        return 'red'
+      default:
+        return 'gray'
+    }
+  }
+
+  const DOT_BG: Record<DotColor, string> = {
+    green:  'bg-[#84cc16]',
+    yellow: 'bg-[#facc15]',
+    purple: 'bg-[#a78bfa]',
+    red:    'bg-[#f87171]',
+    gray:   'bg-[#4a4e45]',
+  }
+  const DOT_TEXT: Record<DotColor, string> = {
+    green:  'text-[#84cc16]',
+    yellow: 'text-[#facc15]',
+    purple: 'text-[#a78bfa]',
+    red:    'text-[#f87171]',
+    gray:   'text-[#4a4e45]',
+  }
+
+  const dotColor  = $derived(bmDotColor(bmStatus?.status ?? null, board?.online ?? false))
+  const dotBg     = $derived(DOT_BG[dotColor])
+  const dotText   = $derived(DOT_TEXT[dotColor])
   const isRunning = $derived(bmStatus?.running === true)
-  const bmLabel  = $derived(bmStatus?.status ?? (board?.online ? 'Unknown' : 'Offline'))
-  const labelColor = $derived(
-    !board?.online             ? 'text-text-dim' :
-    bmStatus?.status === 'Running' || bmStatus?.status === 'Throw' || bmStatus?.status === 'Takeout' || bmStatus?.status === 'Takeout in progress' ? 'text-accent' :
-    bmStatus?.status === 'Error'   ? 'text-live-text' :
-    'text-text-muted'
-  )
+  const bmLabel   = $derived(bmStatus?.status ?? (board?.online ? '—' : 'Offline'))
 </script>
 
 <svelte:window {onkeydown} />
 
 <div class="relative">
-  <!-- Trigger: status dot + board name, no dropdown chrome -->
+  <!-- Trigger -->
   <button type="button" onclick={() => open = !open}
     class="flex items-center gap-[8px] h-9 px-3 rounded-[8px] text-[13px] font-[inherit] cursor-pointer
            transition-colors border
            {open
              ? 'bg-surface-active border-accent/50 text-text'
              : 'bg-transparent border-line-2 text-text-muted hover:border-line-3 hover:text-text'}">
-    <span class="w-[7px] h-[7px] rounded-full shrink-0
-                 {board?.online ? 'bg-accent' : 'bg-text-dim'}"></span>
+    <span class="w-[7px] h-[7px] rounded-full shrink-0 {dotBg}"></span>
     <span class="font-medium">{board?.name ?? 'Board'}</span>
-    <!-- small sliders icon to hint at controls, not a switcher -->
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" aria-hidden="true" class="opacity-50">
       <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/>
@@ -105,20 +134,17 @@
       <!-- Header -->
       <div class="px-4 py-3 border-b border-line-2 flex items-center justify-between gap-3">
         <div class="flex items-center gap-[10px] min-w-0">
-          <span class="w-[8px] h-[8px] rounded-full shrink-0
-                       {board?.online ? 'bg-accent' : 'bg-text-dim'}"></span>
+          <span class="w-[8px] h-[8px] rounded-full shrink-0 {dotBg}"></span>
           <span class="font-semibold text-[14px] text-text truncate">{board?.name ?? 'Unknown board'}</span>
         </div>
-        {#if bmStatus || board?.online}
-          <span class="text-[11px] font-medium tracking-[0.05em] uppercase shrink-0 {labelColor}">
-            {bmLabel}
-          </span>
-        {/if}
+        <span class="text-[11px] font-medium tracking-[0.05em] uppercase shrink-0 {dotText}">
+          {bmLabel}
+        </span>
       </div>
 
-      <!-- Detection controls -->
+      <!-- Controls -->
       <div class="p-3 flex flex-col gap-2">
-        <!-- Start + Stop on one row -->
+        <!-- Start + Stop -->
         <div class="grid grid-cols-2 gap-2">
           <button type="button"
             onclick={() => runAction('start', 'start')}
