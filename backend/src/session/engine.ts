@@ -55,6 +55,7 @@ export class SessionEngine {
       createdAt: new Date(),
       totalDarts: new Array(players.length).fill(0),
       totalVisits: new Array(players.length).fill(0),
+      bmStatus: null,
     }
     await this.store.insertSession({ id: sessionId, board_db_id: boardId, game_id: gameId, config, players })
     this.byBoard.set(boardId, session)
@@ -111,6 +112,16 @@ export class SessionEngine {
           session.status = 'finished'
           await this.store.setSessionFinished(session.id)
           this.byBoard.delete(boardId)
+        }
+        break
+      }
+
+      case 'board.status': {
+        const d = data as { status?: string; running?: boolean; event?: string }
+        session.bmStatus = {
+          status:  d.status  ?? '',
+          running: d.running ?? false,
+          event:   d.event   ?? '',
         }
         break
       }
@@ -237,6 +248,7 @@ export class SessionEngine {
         totalDarts: session.totalDarts,
         totalVisits: session.totalVisits,
       },
+      bmStatus: session.bmStatus,
     }
   }
 

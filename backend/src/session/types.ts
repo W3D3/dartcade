@@ -63,6 +63,7 @@ export interface Session<S = unknown> {
   createdAt: Date
   totalDarts: number[]
   totalVisits: number[]
+  bmStatus: { status: string; running: boolean; event: string } | null
 }
 
 export type Snapshot = {
@@ -71,4 +72,5 @@ export type Snapshot = {
   gameId: string
   players: Player[]
   game: Record<string, unknown>
+  bmStatus: { status: string; running: boolean; event: string } | null
 }

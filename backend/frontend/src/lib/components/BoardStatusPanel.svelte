@@ -1,16 +1,14 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte'
-
-  let { sessionId }: { sessionId: string } = $props()
+  import { onMount } from 'svelte'
 
   type Board = { id: string; name: string; online: boolean }
-  type BmStatus = { status: string | null; running: boolean; event: string | null }
+  type BmStatus = { status: string; running: boolean; event: string } | null
+
+  let { sessionId, bmStatus }: { sessionId: string; bmStatus: BmStatus } = $props()
 
   let open = $state(false)
   let board = $state<Board | null>(null)
-  let bmStatus = $state<BmStatus | null>(null)
   let busy = $state<string | null>(null)
-  let pollTimer: ReturnType<typeof setInterval> | null = null
 
   async function loadBoard() {
     if (!sessionId) return
@@ -26,32 +24,14 @@
     } catch { /* ignore */ }
   }
 
-  async function loadBmStatus() {
-    try {
-      const res = await fetch('/api/board/status')
-      if (res.ok) bmStatus = await res.json()
-    } catch { /* ignore */ }
-  }
-
   async function runAction(name: string, endpoint: string) {
     busy = name
-    try {
-      await fetch(`/api/board/${endpoint}`, { method: 'POST' })
-      await loadBmStatus()
-    } catch { /* ignore */ }
+    try { await fetch(`/api/board/${endpoint}`, { method: 'POST' }) }
+    catch { /* ignore */ }
     finally { busy = null }
   }
 
-  function resetPoll() {
-    if (pollTimer) clearInterval(pollTimer)
-    const interval = open ? 2000 : 5000
-    pollTimer = setInterval(loadBmStatus, interval)
-  }
-
-  $effect(() => { void open; resetPoll() })
-
-  onMount(async () => { await loadBoard(); await loadBmStatus(); resetPoll() })
-  onDestroy(() => { if (pollTimer) clearInterval(pollTimer) })
+  onMount(loadBoard)
 
   function onkeydown(e: KeyboardEvent) { if (e.key === 'Escape') open = false }
 

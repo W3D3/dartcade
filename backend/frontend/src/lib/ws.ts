@@ -6,6 +6,7 @@ export type Snapshot = {
   gameId: string
   players: { name: string }[]
   game: Record<string, unknown>
+  bmStatus: { status: string; running: boolean; event: string } | null
 }
 
 export function createSessionStore(sessionId: string) {

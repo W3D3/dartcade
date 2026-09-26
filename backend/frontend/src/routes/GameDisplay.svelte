@@ -117,6 +117,7 @@
   const subtitle      = $derived(view.getSubtitle?.(game, players.length) ?? '')
   const isMultiPlayer  = $derived(players.length > 2)
   const showVisitScore = $derived(view.showVisitScore ?? true)
+  const bmStatus       = $derived(snapshot?.bmStatus ?? null)
 
   const dartItems = $derived(currentDarts.map((d: any) => ({
     label: d.segment?.name ?? 'Miss',
@@ -231,7 +232,7 @@
           </button>
         {/if}
         <Badge variant="live">LIVE</Badge>
-        <BoardStatusPanel {sessionId} />
+        <BoardStatusPanel {sessionId} {bmStatus} />
 
         <!-- Settings cog -->
         <div class="relative">
