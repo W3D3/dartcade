@@ -58,6 +58,7 @@
   let prevCurrentPlayer = 0
   let prevDarts: any[] = []
   let visitOwner = 0
+  let prevTotalVisits: number[] = []
 
   onMount(() => {
     const match = window.location.hash.match(/\/session\/([^/]+)/)
@@ -95,13 +96,21 @@
     const newDarts = (snap.game.currentVisitDarts ?? []) as any[]
     const newCount = newDarts.length
     const newPlayer = snap.game.currentPlayer as number
+    const snapTotalVisits = (snap.game.totalVisits as number[] | undefined) ?? []
+
     if (prevDartCount === 0 && newCount > 0) visitOwner = newPlayer
-    if (prevDartCount > 0 && newCount === 0 && newPlayer !== prevCurrentPlayer) {
+
+    // Detect completed visit by totalVisits counter incrementing for visitOwner
+    const prevOwnerVisits = prevTotalVisits[visitOwner] ?? 0
+    const newOwnerVisits = snapTotalVisits[visitOwner] ?? 0
+    if (newOwnerVisits > prevOwnerVisits) {
       const total = prevDarts.reduce((s: number, d: any) => s + (d.score ?? 0), 0)
       if (!perPlayerVisits[visitOwner]) perPlayerVisits[visitOwner] = []
       perPlayerVisits[visitOwner] = [...perPlayerVisits[visitOwner], total]
       perPlayerVisits = [...perPlayerVisits]
     }
+
+    prevTotalVisits = [...snapTotalVisits]
     prevDartCount = newCount; prevCurrentPlayer = newPlayer; prevDarts = newDarts
   }
 

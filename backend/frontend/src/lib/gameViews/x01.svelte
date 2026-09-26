@@ -9,11 +9,12 @@
   const opened    = $derived((game.opened as boolean[] | undefined)?.[playerIndex] ?? true)
   const bust      = $derived(isActive && !!(game.bustThisVisit))
 
+  const outMode      = $derived(((game.config as any)?.outMode ?? 'double') as 'straight' | 'double' | 'master')
   const dartsLeft    = $derived(isActive ? 3 - ((game.currentVisitDarts as unknown[]) ?? []).length : 3)
-  const checkout     = $derived(checkoutHint(remaining))
+  const checkout     = $derived(checkoutHint(remaining, outMode, dartsLeft))
   const checkoutText = $derived(checkout ? checkout.join(' · ') : null)
 
-  const totalDarts   = $derived(previousVisits.length * 3)
+  const totalDarts   = $derived((game.totalDarts as number[] | undefined)?.[playerIndex] ?? previousVisits.length * 3)
   const avg          = $derived(
     previousVisits.length
       ? (previousVisits.reduce((a, b) => a + b, 0) / previousVisits.length).toFixed(1)

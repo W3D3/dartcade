@@ -157,6 +157,7 @@ export const x01Module: GameModule<X01State, X01Config> = {
         }
 
         if (s.bustThisVisit) return { state: s }
+        if (s.scores[cp] === 0) return { state: s }
 
         if (!s.opened[cp]) {
           const opens = opensPlayer(dart, s.cfg.inMode)
@@ -244,6 +245,7 @@ export const x01Module: GameModule<X01State, X01Config> = {
       currentPlayer: s.currentPlayer, round: s.round, phase: s.phase,
       winner: s.winner, opened: s.opened, bustThisVisit: s.bustThisVisit,
       config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode },
+      visitLocked: s.bustThisVisit || s.scores[s.currentPlayer] === 0,
     }
   },
 }

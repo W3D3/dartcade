@@ -76,6 +76,8 @@ export class SessionEngine {
         break
 
       case 'dart.detected': {
+        const view = session.module.view(session.currentState, session.players) as any
+        if (view.visitLocked) break
         const thrower = session.module.getCurrentPlayer(session.committedState)
         session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
         session.openVisitEvents.push(event)
