@@ -29,4 +29,20 @@ export async function boardApiPlugin(app: FastifyInstance) {
   app.post('/api/board/start', handle('/api/start', '/api/detection/start'))
   app.post('/api/board/stop',  handle('/api/stop',  '/api/detection/stop'))
   app.post('/api/board/reset', handle('/api/reset', undefined, 'POST'))
+
+  app.get('/api/board/status', async (_req, reply) => {
+    try {
+      if (!BOARD_URL) return reply.code(503).send({ error: 'no DARTCADE_BOARD_URL' })
+      const res = await fetch(BOARD_URL + '/api/state')
+      if (!res.ok) return reply.code(res.status).send({ error: 'board error' })
+      const data = await res.json() as any
+      return reply.send({
+        status: data.status ?? null,
+        running: data.running ?? false,
+        event: data.event ?? null,
+      })
+    } catch {
+      return reply.code(503).send({ error: 'board unreachable' })
+    }
+  })
 }
