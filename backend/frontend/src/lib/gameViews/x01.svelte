@@ -1,30 +1,34 @@
 <script lang="ts">
   import type { PlayerStatsProps } from './index.js'
+  import { checkoutHint } from '$lib/dartUtils.js'
 
   let { game, playerIndex, isActive, previousVisits = [] }: PlayerStatsProps = $props()
 
   const scores    = $derived(game.scores as number[] | undefined)
   const remaining = $derived(scores?.[playerIndex] ?? 0)
   const opened    = $derived((game.opened as boolean[] | undefined)?.[playerIndex] ?? true)
-  const outMode   = $derived((game.config as any)?.outMode ?? 'double')
-  const legsWon   = $derived((game.legs as number[])?.[playerIndex] ?? 0)
-  const firstTo   = $derived((game.firstTo as number) ?? 3)
   const bust      = $derived(isActive && !!(game.bustThisVisit))
 
-  // Show last 7 visits, newest first
-  const recentVisits = $derived([...previousVisits].reverse().slice(0, 7))
-  const avg = $derived(
+  const dartsLeft    = $derived(isActive ? 3 - ((game.currentVisitDarts as unknown[]) ?? []).length : 3)
+  const checkout     = $derived(checkoutHint(remaining))
+  const checkoutText = $derived(checkout ? checkout.join(' · ') : null)
+
+  const totalDarts   = $derived(previousVisits.length * 3)
+  const avg          = $derived(
     previousVisits.length
-      ? Math.round(previousVisits.reduce((a, b) => a + b, 0) / previousVisits.length)
+      ? (previousVisits.reduce((a, b) => a + b, 0) / previousVisits.length).toFixed(1)
       : null
   )
+
+  const lastVisits   = $derived(previousVisits.slice(-3).reverse())
+  const recentVisits = $derived([...previousVisits].reverse().slice(0, 7))
 </script>
 
-<div class="flex flex-col py-4 gap-3 flex-1 min-h-0">
+<div class="flex flex-col py-3 gap-3 flex-1 min-h-0">
 
-  <!-- Remaining score + BUST badge -->
+  <!-- Score + bust -->
   <div class="flex items-baseline gap-3">
-    <span class="font-black tabular-nums leading-none text-[clamp(64px,10vw,160px)]
+    <span class="font-display font-black tabular-nums leading-none text-[clamp(64px,10vw,160px)]
                  {bust ? 'text-[#c94a3a]' : isActive ? 'text-text' : 'text-[#b4b5aa]'}">
       {remaining}
     </span>
@@ -36,39 +40,43 @@
     {/if}
   </div>
 
-  <!-- Out mode + open status -->
-  <span class="text-[13px] uppercase tracking-[0.08em]
-               {isActive ? 'text-text-muted' : 'text-text-dim'}">
-    {outMode} out
-    {#if !opened}
-      · <span class="text-accent">needs open</span>
-    {/if}
-  </span>
-
-  <!-- Leg dots -->
-  <div class="flex items-center gap-[6px]">
-    {#each Array.from({ length: firstTo }, (_, i) => i) as i}
-      <span class="w-3 h-3 rounded-full {i < legsWon
-        ? (isActive ? 'bg-accent' : 'bg-text-muted')
-        : 'border border-[#5a5e53] box-border'}">
+  <!-- Checkout box -->
+  {#if !opened}
+    <div class="flex flex-col gap-1 p-[14px_16px] rounded-[10px]
+                {isActive ? 'bg-[#1e2119]' : 'bg-[#1a1c18]'}">
+      <span class="text-[11px] tracking-[0.1em] uppercase {isActive ? 'text-text-muted' : 'text-text-dim'}">
+        Needs to open
       </span>
-    {/each}
-  </div>
+    </div>
+  {:else if checkoutText}
+    <div class="flex flex-col gap-1 p-[14px_16px] rounded-[10px]
+                {isActive ? 'bg-[#1e2119]' : 'bg-[#1a1c18]'}">
+      <span class="text-[11px] tracking-[0.1em] uppercase {isActive ? 'text-text-muted' : 'text-text-dim'}">
+        {#if isActive}Checkout · {dartsLeft} dart{dartsLeft === 1 ? '' : 's'} left{:else}Checkout{/if}
+      </span>
+      <span class="font-display font-bold text-[32px] leading-none
+                   {isActive ? 'text-accent' : 'text-[#b4b5aa]'}">
+        {checkoutText}
+      </span>
+    </div>
+  {/if}
+
+  <!-- Avg + Darts -->
+  {#if avg !== null}
+    <div class="flex gap-6 text-[14px] {isActive ? 'text-text-muted' : 'text-text-dim'}">
+      <span>Avg <strong class="font-semibold {isActive ? 'text-text' : 'text-[#c9c9bf]'}">{avg}</strong></span>
+      <span>Darts <strong class="font-semibold {isActive ? 'text-text' : 'text-[#c9c9bf]'}">{totalDarts}</strong></span>
+    </div>
+  {/if}
 
   <!-- Chalkboard visit history -->
   {#if recentVisits.length > 0}
     <div class="mt-auto flex flex-col gap-0 min-h-0">
-      <div class="flex items-center justify-between mb-1">
+      <div class="mb-1">
         <span class="text-[10px] uppercase tracking-[0.12em] font-semibold
                      {isActive ? 'text-text-dim' : 'text-[#4a4e45]'}">
           Visits
         </span>
-        {#if avg !== null}
-          <span class="text-[10px] uppercase tracking-[0.1em]
-                       {isActive ? 'text-text-dim' : 'text-[#4a4e45]'}">
-            avg <strong class="{isActive ? 'text-text-muted' : 'text-[#6a6e63]'}">{avg}</strong>
-          </span>
-        {/if}
       </div>
       <div class="flex flex-col gap-0 border-t {isActive ? 'border-[#2e3229]' : 'border-[#252820]'}">
         {#each recentVisits as v, i}
@@ -83,6 +91,16 @@
           </div>
         {/each}
       </div>
+    </div>
+  {/if}
+
+  <!-- Last visits row -->
+  {#if lastVisits.length > 0}
+    <div class="flex items-center gap-3 text-[13px] {isActive ? 'text-text-dim' : 'text-[#4a4e45]'}">
+      <span>Last visits</span>
+      {#each lastVisits as v}
+        <span class="tabular-nums {isActive ? 'text-text-muted' : 'text-[#6a6e63]'}">{v}</span>
+      {/each}
     </div>
   {/if}
 
