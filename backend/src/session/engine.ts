@@ -9,7 +9,7 @@ import * as queries from '../db/queries.js'
 type PushFn = (sessionId: string) => void
 
 export interface EngineStore {
-  insertSession(data: { id: string; board_db_id: string; game_id: string; config: unknown; players: unknown }): Promise<void>
+  insertSession(data: { id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown }): Promise<void>
   getActiveSessions(): Promise<Array<{ id: string; board_db_id: string; game_id: string; config: unknown; players: unknown; created_at: unknown }>>
   getBridgeEventsForBoard(boardDbId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: unknown }>>
   setSessionFinished(id: string): Promise<void>
@@ -34,14 +34,14 @@ export class SessionEngine {
   ) {}
 
   async create(
-    boardId: string,
+    boardId: string | null,
     gameId: string,
     config: unknown,
     players: Player[],
   ): Promise<{ sessionId: string }> {
     const mod = games[gameId]
     if (!mod) throw new Error(`unknown game: ${gameId}`)
-    if (this.byBoard.has(boardId)) throw new Error(`active session already exists for board ${boardId}`)
+    if (boardId && this.byBoard.has(boardId)) throw new Error(`active session already exists for board ${boardId}`)
 
     const sessionId = ulid()
     const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
@@ -58,7 +58,7 @@ export class SessionEngine {
       bmStatus: null,
     }
     await this.store.insertSession({ id: sessionId, board_db_id: boardId, game_id: gameId, config, players })
-    this.byBoard.set(boardId, session)
+    if (boardId) this.byBoard.set(boardId, session)
     this.byId.set(sessionId, session)
     return { sessionId }
   }
@@ -193,9 +193,22 @@ export class SessionEngine {
         if (view.winner !== null && view.winner !== undefined) {
           session.status = 'finished'
           await this.store.setSessionFinished(session.id)
-          this.byBoard.delete(session.boardId)
+          if (session.boardId) this.byBoard.delete(session.boardId)
         }
       }
+    } else if (action.type === 'add_dart') {
+      const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
+      if (dartCount >= 3) return
+      if (session.openVisitEvents.length === 0) {
+        session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } as any })
+      }
+      const thrower = session.module.getCurrentPlayer(session.committedState)
+      session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
+      const score = action.segment.number * action.segment.multiplier
+      session.openVisitEvents.push({
+        kind: 'dart.detected',
+        data: { visit_id: 'manual', index: dartCount, dart: { segment: action.segment, score }, source_seq: 0 } as any,
+      })
     }
 
     session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
@@ -220,6 +233,7 @@ export class SessionEngine {
         createdAt: (row.created_at as unknown as Date) ?? new Date(),
         totalDarts: new Array(players.length).fill(0),
         totalVisits: new Array(players.length).fill(0),
+        bmStatus: null,
       }
       this.byBoard.set(row.board_db_id, session)
       this.byId.set(row.id, session)
@@ -241,6 +255,7 @@ export class SessionEngine {
       type: 'snapshot',
       sessionId: session.id,
       gameId: session.module.id,
+      boardId: session.boardId,
       players: session.players,
       game: {
         ...session.module.view(session.currentState, session.players),
@@ -269,7 +284,7 @@ export class SessionEngine {
     if (!session) return false
     session.status = 'finished'
     await this.store.setSessionFinished(sessionId)
-    this.byBoard.delete(session.boardId)
+    if (session.boardId) this.byBoard.delete(session.boardId)
     this.byId.delete(sessionId)
     return true
   }

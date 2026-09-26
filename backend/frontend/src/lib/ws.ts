@@ -4,6 +4,7 @@ export type Snapshot = {
   type: 'snapshot'
   sessionId: string
   gameId: string
+  boardId: string | null
   players: { name: string }[]
   game: Record<string, unknown>
   bmStatus: { status: string; running: boolean; event: string } | null

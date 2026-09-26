@@ -5,6 +5,7 @@
   import { createSessionStore } from '../lib/ws.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
+  import DartEntryPanel from '../lib/components/DartEntryPanel.svelte'
   import PlayerCard from '../lib/components/PlayerCard.svelte'
   import PlayerListRow from '../lib/components/PlayerListRow.svelte'
   import CorrectionPanel from '../lib/components/CorrectionPanel.svelte'
@@ -52,6 +53,10 @@
   let snapshot = $state<import('../lib/ws.js').Snapshot | null>(null)
   let unsubSnap: (() => void) | null = null
 
+  // ── View mode: 'board' shows the SVG, 'entry' shows DartEntryPanel ─────────
+  let viewMode = $state<'board' | 'entry'>('board')
+  let viewModeSetByUser = $state(false)
+
   let perPlayerVisits = $state<number[][]>([])
   let showEndConfirm = $state(false)
   let prevDartCount = 0
@@ -66,6 +71,11 @@
     sessionStore = createSessionStore(sessionId)
     unsubSnap = sessionStore.snapshot.subscribe(snap => {
       if (!snap) { snapshot = null; return }
+      // Default to entry mode for boardless sessions (once, on first snapshot)
+      if (!viewModeSetByUser && snap.boardId === null) {
+        viewMode = 'entry'
+        viewModeSetByUser = true
+      }
       const oldCount = prevDartCount
       const oldPlayer = prevCurrentPlayer
       updateVisitHistory(snap)
@@ -81,8 +91,6 @@
     if (newDarts.length > oldCount) {
       const idx = newDarts.length - 1
       const hits = snap.game.currentVisitHits as boolean[] | undefined
-      // Use per-dart hit tracking when available (ATC: true only if dart hit the target).
-      // Fall back to score > 0 for games that don't populate currentVisitHits.
       const isHit = hits !== undefined ? hits[idx] === true : (newDarts[idx]?.score ?? 0) > 0
       if (isHit) { if (settings.soundHit) soundHit() }
       else { if (settings.soundMiss) soundMiss() }
@@ -106,6 +114,7 @@
   }
 
   const gameId        = $derived(snapshot?.gameId ?? '')
+  const boardId       = $derived(snapshot?.boardId ?? null)
   const players       = $derived(snapshot?.players ?? [])
   const game          = $derived(snapshot?.game ?? {})
   const currentPlayer = $derived((game.currentPlayer as number) ?? 0)
@@ -118,13 +127,13 @@
   const isMultiPlayer  = $derived(players.length > 2)
   const showVisitScore = $derived(view.showVisitScore ?? true)
   const bmStatus       = $derived(snapshot?.bmStatus ?? null)
+  const isActive       = $derived(winner === null)
 
   const dartItems = $derived(currentDarts.map((d: any) => ({
     label: d.segment?.name ?? 'Miss',
     score: d.score ?? 0,
   })))
 
-  // Board markers: each player's target position (active player's shown as overlay, others as dots)
   const boardMarkers = $derived(
     isMultiPlayer && settings.showMarkers
       ? players.map((p, i) => ({
@@ -135,10 +144,8 @@
       : []
   )
 
-  // Next player in rotation
   const nextPlayer = $derived((currentPlayer + 1) % Math.max(players.length, 1))
 
-  // Player furthest ahead (highest hitCount) — ATC-specific, -1 if unavailable
   const leadingPlayerIndex = $derived((() => {
     const hitCounts = game.hitCounts as number[] | undefined
     if (!hitCounts || hitCounts.length === 0) return -1
@@ -147,7 +154,6 @@
     return leadIdx
   })())
 
-  // 2-player: ATC center legend
   const atcTargets = $derived(
     !isMultiPlayer && (game.targets as number[] | undefined) && players.length > 0
       ? (game.targets as number[]).map((t, i) => ({
@@ -159,6 +165,10 @@
   )
 
   function undo() { sessionStore?.send({ type: 'undo_dart' }) }
+
+  function addManualDart(seg: { name: string; number: number; bed: string; multiplier: number }) {
+    sessionStore?.send({ type: 'add_dart', segment: seg })
+  }
 
   function handleCorrect(dartIndex: number, label: string) {
     let segment: { name: string; number: number; bed: string; multiplier: number }
@@ -186,6 +196,11 @@
     if (!sessionId) return
     await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' })
     push('/')
+  }
+
+  function setViewMode(m: 'board' | 'entry') {
+    viewMode = m
+    viewModeSetByUser = true
   }
 </script>
 
@@ -220,6 +235,22 @@
       </div>
 
       <div class="ml-auto flex items-center gap-3 shrink-0">
+        <!-- Board / Enter toggle -->
+        <div class="flex items-center gap-0 p-[3px] bg-[#0f100e] rounded-[8px] border border-line-2">
+          <button type="button" onclick={() => setViewMode('board')}
+            aria-pressed={viewMode === 'board'}
+            class="h-8 px-3 rounded-[5px] text-[13px] font-medium border-0 cursor-pointer transition-colors
+                   {viewMode === 'board' ? 'bg-surface-2 text-text' : 'bg-transparent text-[#6a6e63] hover:text-[#c9c9bf]'}">
+            Board
+          </button>
+          <button type="button" onclick={() => setViewMode('entry')}
+            aria-pressed={viewMode === 'entry'}
+            class="h-8 px-3 rounded-[5px] text-[13px] font-medium border-0 cursor-pointer transition-colors
+                   {viewMode === 'entry' ? 'bg-surface-2 text-text' : 'bg-transparent text-[#6a6e63] hover:text-[#c9c9bf]'}">
+            Enter
+          </button>
+        </div>
+
         {#if winner === null}
           <button type="button" onclick={() => showEndConfirm = true}
             class="flex items-center gap-2 h-9 px-3 border border-line-3 rounded-[8px]
@@ -232,7 +263,9 @@
           </button>
         {/if}
         <Badge variant="live">LIVE</Badge>
-        <BoardStatusPanel {sessionId} {bmStatus} />
+        {#if boardId !== null}
+          <BoardStatusPanel {sessionId} {bmStatus} />
+        {/if}
 
         <!-- Settings cog -->
         <div class="relative">
@@ -263,7 +296,7 @@
       <!-- ── Multi-player layout (>2 players) ── -->
       <div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-5">
 
-        <!-- Player list: rows stretch to fill full height -->
+        <!-- Player list -->
         <div class="flex-[13] min-w-0 flex flex-col gap-3">
           {#each players as player, i}
             <div class="flex-1 min-h-0">
@@ -281,23 +314,26 @@
           {/each}
         </div>
 
-        <!-- Board + controls column -->
+        <!-- Board/Entry + controls column -->
         <div class="flex-[10] min-w-[380px] flex-shrink-0 flex flex-col gap-3">
-          <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers} />
-
-          <!-- Legend -->
-          <div class="flex gap-5 text-[12px] text-text-dim justify-center">
-            <span class="flex items-center gap-[6px]">
-              <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
-              Current target
-            </span>
-            {#if settings.showMarkers}
+          {#if viewMode === 'entry'}
+            <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
+          {:else}
+            <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
+              onSegmentClick={isActive ? addManualDart : undefined} />
+            <div class="flex gap-5 text-[12px] text-text-dim justify-center">
               <span class="flex items-center gap-[6px]">
-                <span class="w-[9px] h-[9px] rounded-full bg-white shrink-0"></span>
-                Others' targets
+                <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
+                Current target
               </span>
-            {/if}
-          </div>
+              {#if settings.showMarkers}
+                <span class="flex items-center gap-[6px]">
+                  <span class="w-[9px] h-[9px] rounded-full bg-white shrink-0"></span>
+                  Others' targets
+                </span>
+              {/if}
+            </div>
+          {/if}
 
           <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo}
             ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} />
@@ -323,15 +359,21 @@
           {/if}
         </div>
 
-        <!-- Board + correction panel column: flex-1 so it scales with available space.
-             Board SVG is capped by viewport height so it never overflows vertically. -->
+        <!-- Board/Entry + correction panel column -->
         <div class="flex-1 min-w-[380px] flex flex-col items-center gap-3">
-          <div class="w-full" style="max-width: min(100%, calc(100vh - 340px))">
-            <DartBoard darts={currentDarts} selectedSegments={highlights} />
-          </div>
+          {#if viewMode === 'entry'}
+            <div class="w-full">
+              <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
+            </div>
+          {:else}
+            <div class="w-full" style="max-width: min(100%, calc(100vh - 340px))">
+              <DartBoard darts={currentDarts} selectedSegments={highlights}
+                onSegmentClick={isActive ? addManualDart : undefined} />
+            </div>
+          {/if}
 
-          <!-- ATC target legend (2-player) -->
-          {#if atcTargets}
+          <!-- ATC target legend (2-player, board view only) -->
+          {#if atcTargets && viewMode === 'board'}
             <div class="flex items-center justify-center gap-5 text-[12px]">
               {#each atcTargets as p}
                 <span class="flex items-center gap-[6px]">
