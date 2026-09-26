@@ -4,6 +4,12 @@
     score: number
     coords?: { x: number; y: number }
   }> = []
+  export let highlightedSegments: number[] = []
+
+  function sectorOpacity(num: number): number {
+    if (highlightedSegments.length === 0) return 1
+    return highlightedSegments.includes(num) ? 1 : 0.18
+  }
 
   // ── Geometry (normalised: r=1 at outer double wire) ─────────────────────────
   const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.000 }
@@ -65,15 +71,16 @@
 
   {#each sectors as { num, i, paths, tx, ty, wa }}
     {#each paths as { ring, d }}
-      <path {d} fill={ringColor(i, ring)} stroke="#555" stroke-width="0.005" />
+      <path {d} fill={ringColor(i, ring)} stroke="#555" stroke-width="0.005" opacity={sectorOpacity(num)} />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
       x2={R.db * Math.cos(wa)} y2={-R.db * Math.sin(wa)}
-      stroke="#666" stroke-width="0.006"
+      stroke="#666" stroke-width="0.006" opacity={sectorOpacity(num)}
     />
     <text x={tx} y={ty} text-anchor="middle" dominant-baseline="central"
-      fill="#ccc" font-size="0.09" font-family="system-ui,sans-serif" font-weight="bold">
+      fill="#ccc" font-size="0.09" font-family="system-ui,sans-serif" font-weight="bold"
+      opacity={sectorOpacity(num)}>
       {num}
     </text>
   {/each}

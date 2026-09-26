@@ -187,6 +187,7 @@ export class SessionEngine {
     return {
       type: 'snapshot',
       sessionId: session.id,
+      gameId: session.module.id,
       players: session.players,
       game: { ...session.module.view(session.currentState, session.players), currentVisitDarts },
     }

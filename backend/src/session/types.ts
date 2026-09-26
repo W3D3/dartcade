@@ -57,6 +57,7 @@ export interface Session<S = unknown> {
 export type Snapshot = {
   type: 'snapshot'
   sessionId: string
+  gameId: string
   players: Player[]
   game: Record<string, unknown>
 }

@@ -1,5 +1,7 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router'
+  import { Button } from '$lib/components/ui/button/index.js'
+  import { Input } from '$lib/components/ui/input/index.js'
 
   let mode: 'login' | 'register' = 'login'
   let email = ''
@@ -35,42 +37,75 @@
   }
 </script>
 
-<div class="min-h-screen flex items-center justify-center bg-gray-950">
-  <div class="bg-gray-900 rounded-xl p-8 w-full max-w-sm space-y-6">
-    <h1 class="text-2xl font-bold text-white text-center">Dartcade</h1>
+<div class="min-h-screen flex items-center justify-center" style="background: #0b1628;">
+  <div class="w-full max-w-sm px-6">
 
-    <div class="flex rounded-lg overflow-hidden border border-gray-700">
-      <button
-        class="flex-1 py-2 text-sm font-medium transition-colors
-               {mode === 'login' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}"
-        on:click={() => { mode = 'login'; error = '' }}
-      >Sign in</button>
-      <button
-        class="flex-1 py-2 text-sm font-medium transition-colors
-               {mode === 'register' ? 'bg-orange-600 text-white' : 'text-gray-400 hover:text-white'}"
-        on:click={() => { mode = 'register'; error = '' }}
-      >Register</button>
+    <!-- Logo -->
+    <div class="flex flex-col items-center mb-8 gap-3">
+      <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
+        style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3)">
+        🎯
+      </div>
+      <h1 class="text-2xl font-bold tracking-tight" style="color: #f1f5f9;">Dartcade</h1>
     </div>
 
-    <form on:submit|preventDefault={submit} class="space-y-4">
-      {#if mode === 'register'}
-        <input bind:value={name} placeholder="Display name"
-          class="w-full bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:outline-none focus:border-orange-500"
-          required />
-      {/if}
-      <input bind:value={email} type="email" placeholder="Email"
-        class="w-full bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:outline-none focus:border-orange-500"
-        required />
-      <input bind:value={password} type="password" placeholder="Password"
-        class="w-full bg-gray-800 text-white rounded-lg px-4 py-2 border border-gray-700 focus:outline-none focus:border-orange-500"
-        required />
-      {#if error}
-        <p class="text-red-400 text-sm">{error}</p>
-      {/if}
-      <button type="submit" disabled={loading}
-        class="w-full bg-orange-600 hover:bg-orange-500 disabled:opacity-50 text-white font-semibold py-2 rounded-lg transition-colors">
-        {loading ? '...' : mode === 'login' ? 'Sign in' : 'Create account'}
-      </button>
-    </form>
+    <!-- Card -->
+    <div class="rounded-2xl p-6 space-y-5"
+      style="background: #111d2e; border: 1px solid rgba(255,255,255,0.07);">
+
+      <!-- Tab toggle -->
+      <div class="flex rounded-xl overflow-hidden" style="background: rgba(255,255,255,0.04);">
+        <button
+          class="flex-1 py-2 text-sm font-medium transition-colors rounded-lg"
+          style={mode === 'login'
+            ? 'background: #3b82f6; color: white;'
+            : 'color: #64748b;'}
+          on:click={() => { mode = 'login'; error = '' }}
+        >Sign in</button>
+        <button
+          class="flex-1 py-2 text-sm font-medium transition-colors rounded-lg"
+          style={mode === 'register'
+            ? 'background: #3b82f6; color: white;'
+            : 'color: #64748b;'}
+          on:click={() => { mode = 'register'; error = '' }}
+        >Register</button>
+      </div>
+
+      <!-- Form -->
+      <form on:submit|preventDefault={submit} class="space-y-3">
+        {#if mode === 'register'}
+          <Input
+            bind:value={name}
+            placeholder="Display name"
+            required
+            class="bg-[#0b1628] border-white/10 text-white placeholder:text-gray-600 focus:border-blue-500"
+          />
+        {/if}
+        <Input
+          bind:value={email}
+          type="email"
+          placeholder="Email"
+          required
+          class="bg-[#0b1628] border-white/10 text-white placeholder:text-gray-600 focus:border-blue-500"
+        />
+        <Input
+          bind:value={password}
+          type="password"
+          placeholder="Password"
+          required
+          class="bg-[#0b1628] border-white/10 text-white placeholder:text-gray-600 focus:border-blue-500"
+        />
+        {#if error}
+          <p class="text-red-400 text-sm">{error}</p>
+        {/if}
+        <Button
+          type="submit"
+          disabled={loading}
+          class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+        >
+          {loading ? '…' : mode === 'login' ? 'Sign in' : 'Create account'}
+        </Button>
+      </form>
+    </div>
   </div>
 </div>
