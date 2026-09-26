@@ -30,8 +30,8 @@
   ]
   const bullOffOptions = [
     { value: 'off', label: 'Off' },
-    { value: 'wdc', label: 'WDC' },
-    { value: 'pdc', label: 'PDC' },
+    { value: 'wdc', label: 'WDC', tooltip: 'Re-throw if both darts land in the same scoring area (both outer bull or both inner bull).' },
+    { value: 'pdc', label: 'PDC', tooltip: 'Inner bull always beats outer bull. Re-throw only if both hit the inner bull.' },
   ]
   const bullValueOptions = [
     { value: '25_50', label: '25 / 50' },
@@ -204,7 +204,7 @@
       <aside class="w-[400px] flex-shrink-0 box-border border border-line-2 rounded-[14px]
                     bg-[#151713] flex flex-col overflow-hidden">
         <!-- Scrollable body: title + config + players -->
-        <div class="flex-1 min-h-0 overflow-y-auto p-6 pb-4 flex flex-col gap-[22px]">
+        <div class="flex-1 min-h-0 overflow-y-auto scrollbar-themed p-6 pb-4 flex flex-col gap-[22px]">
         <div class="flex flex-col gap-1">
           <span class="text-[12px] tracking-[0.1em] uppercase text-text-dim">Setup</span>
           <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
@@ -233,7 +233,10 @@
             </fieldset>
 
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Bull off</legend>
+              <legend class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce] mb-2">
+                Bull off
+                <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
+              </legend>
               <SegmentedControl options={bullOffOptions} bind:value={config.bullOff}
                 defaultValue={X01_DEFAULTS.bullOff} />
             </fieldset>
@@ -245,7 +248,7 @@
             </fieldset>
 
             <div class="flex justify-between items-center">
-              <span class="text-[14px] font-medium text-[#d8d8ce]">Max rounds</span>
+              <span class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce]">Max rounds <Tooltip text="Maximum number of rounds before the game ends. The player with the lowest score wins if nobody checks out. Set higher for longer games." /></span>
               <div class="flex items-center gap-1">
                 <button type="button" aria-label="Fewer rounds"
                   onclick={() => config = { ...config, maxRounds: Math.max(1, (config.maxRounds as number) - 1) }}
