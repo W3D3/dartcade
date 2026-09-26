@@ -13,7 +13,7 @@
 
   const MODES = [
     { id: 'atc',        glyph: 'ATC',    name: 'Around the Clock', desc: 'Hit 1 through 20 in order, then finish on your chosen target.', available: true  },
-    { id: 'x01',        glyph: 'X01',    name: '501',               desc: 'Count down from 501 and finish on a double.',                  available: true  },
+    { id: 'x01',        glyph: 'X01',    name: 'X01',               desc: 'Count down from your chosen score. Configure check-in, check-out, and bull off.', available: true  },
     { id: 'soccer',     glyph: 'Soccer', name: 'Dart Soccer',       desc: 'Coming soon.',                                                 available: false },
     { id: 'tournament', glyph: 'R16',    name: 'Tournament',        desc: 'Coming soon.',                                                 available: false },
   ]
@@ -23,10 +23,19 @@
     { value: 501, label: '501' },
     { value: 701, label: '701' },
   ]
-  const checkoutOptions = [
+  const inOutOptions = [
     { value: 'straight', label: 'Straight' },
-    { value: 'double',   label: 'Double' },
-    { value: 'master',   label: 'Master' },
+    { value: 'double',   label: 'Double'   },
+    { value: 'master',   label: 'Master'   },
+  ]
+  const bullOffOptions = [
+    { value: 'off', label: 'Off' },
+    { value: 'wdc', label: 'WDC' },
+    { value: 'pdc', label: 'PDC' },
+  ]
+  const bullValueOptions = [
+    { value: '25_50', label: '25 / 50' },
+    { value: '50_50', label: '50 / 50' },
   ]
 
   // ATC config fields in display order — populated from backend configMeta
@@ -34,7 +43,10 @@
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const PREFS_KEY = 'dartcade_game_prefs'
-  const X01_DEFAULTS: Record<string, unknown> = { startScore: 501, checkout: 'double', firstTo: 3 }
+  const X01_DEFAULTS: Record<string, unknown> = {
+    startScore: 501, inMode: 'straight', outMode: 'double',
+    bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3,
+  }
 
   type SavedPrefs = { mode: string; configs: Record<string, Record<string, unknown>> }
   function loadPrefs(): SavedPrefs | null {
@@ -115,7 +127,7 @@
     if (!gameId) { error = 'No game found. Is the backend running?'; return }
     const resolvedConfig = selectedMode === 'atc'
       ? { finishOn: config.finishOn, order: config.order, multiplierAdvances: config.multiplierAdvances, throwAgainOnAllHit: config.throwAgainOnAllHit }
-      : { startScore: config.startScore, checkout: config.checkout, firstTo: config.firstTo }
+      : { startScore: config.startScore, inMode: config.inMode, outMode: config.outMode, bullOff: config.bullOff, bullValue: config.bullValue, maxRounds: config.maxRounds, firstTo: config.firstTo }
     loading = true
     try {
       const res = await fetch('/api/sessions', {
@@ -207,16 +219,52 @@
             </fieldset>
 
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-out</legend>
-              <SegmentedControl options={checkoutOptions} bind:value={config.checkout}
-                defaultValue={X01_DEFAULTS.checkout} />
+              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-in</legend>
+              <SegmentedControl options={inOutOptions} bind:value={config.inMode}
+                defaultValue={X01_DEFAULTS.inMode} />
             </fieldset>
+
+            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-out</legend>
+              <SegmentedControl options={inOutOptions} bind:value={config.outMode}
+                defaultValue={X01_DEFAULTS.outMode} />
+            </fieldset>
+
+            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Bull off</legend>
+              <SegmentedControl options={bullOffOptions} bind:value={config.bullOff}
+                defaultValue={X01_DEFAULTS.bullOff} />
+            </fieldset>
+
+            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Bull value</legend>
+              <SegmentedControl options={bullValueOptions} bind:value={config.bullValue}
+                defaultValue={X01_DEFAULTS.bullValue} />
+            </fieldset>
+
+            <div class="flex justify-between items-center">
+              <span class="text-[14px] font-medium text-[#d8d8ce]">Max rounds</span>
+              <div class="flex items-center gap-1">
+                <button type="button" aria-label="Fewer rounds"
+                  onclick={() => config = { ...config, maxRounds: Math.max(1, (config.maxRounds as number) - 1) }}
+                  class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
+                         cursor-pointer">−</button>
+                <span class="w-[72px] text-center text-[15px]">
+                  <strong class="font-display text-[24px]
+                                 {isNonDefault('maxRounds') ? 'text-accent' : ''}">{config.maxRounds}</strong>
+                </span>
+                <button type="button" aria-label="More rounds"
+                  onclick={() => config = { ...config, maxRounds: (config.maxRounds as number) + 1 }}
+                  class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
+                         cursor-pointer">+</button>
+              </div>
+            </div>
 
             <div class="flex justify-between items-center">
               <span class="text-[14px] font-medium text-[#d8d8ce]">First to</span>
               <div class="flex items-center gap-1">
                 <button type="button" aria-label="Fewer legs"
-                  onclick={() => config = {...config, firstTo: Math.max(1, (config.firstTo as number) - 1)}}
+                  onclick={() => config = { ...config, firstTo: Math.max(1, (config.firstTo as number) - 1) }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">−</button>
                 <span class="w-[72px] text-center text-[15px]">
@@ -224,7 +272,7 @@
                                  {isNonDefault('firstTo') ? 'text-accent' : ''}">{config.firstTo}</strong> legs
                 </span>
                 <button type="button" aria-label="More legs"
-                  onclick={() => config = {...config, firstTo: (config.firstTo as number) + 1}}
+                  onclick={() => config = { ...config, firstTo: (config.firstTo as number) + 1 }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">+</button>
               </div>
