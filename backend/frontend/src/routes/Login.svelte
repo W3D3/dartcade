@@ -2,32 +2,29 @@
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
+  import AuthPanel from '$lib/components/AuthPanel.svelte'
 
-  let mode: 'login' | 'register' = 'login'
-  let email = ''
-  let password = ''
-  let name = ''
-  let error = ''
-  let loading = false
+  let email = $state('')
+  let password = $state('')
+  let keepSignedIn = $state(true)
+  let error = $state('')
+  let loading = $state(false)
+
+  const devEmail = import.meta.env.VITE_DEV_EMAIL ?? 'admin@dartcade.local'
+  const devPassword = import.meta.env.VITE_DEV_PASSWORD ?? 'password'
 
   async function submit() {
     loading = true
     error = ''
     try {
-      const url = mode === 'login'
-        ? '/api/auth/sign-in/email'
-        : '/api/auth/sign-up/email'
-      const body = mode === 'login'
-        ? { email, password }
-        : { email, password, name }
-      const res = await fetch(url, {
+      const res = await fetch('/api/auth/sign-in/email', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
+        body: JSON.stringify({ email, password }),
       })
       if (!res.ok) {
-        const data = await res.json().catch(() => ({}))
-        error = data.message ?? 'Invalid credentials'
+        const d = await res.json().catch(() => ({}))
+        error = d.message ?? 'Invalid credentials'
         return
       }
       push('/')
@@ -35,77 +32,70 @@
       loading = false
     }
   }
+
+  async function devLogin() {
+    email = devEmail
+    password = devPassword
+    await submit()
+  }
 </script>
 
-<div class="min-h-screen flex items-center justify-center" style="background: #0b1628;">
-  <div class="w-full max-w-sm px-6">
+<div class="flex min-h-screen bg-bg">
+  <AuthPanel />
 
-    <!-- Logo -->
-    <div class="flex flex-col items-center mb-8 gap-3">
-      <div class="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
-        style="background: rgba(59,130,246,0.15); border: 1px solid rgba(59,130,246,0.3)">
-        🎯
-      </div>
-      <h1 class="text-2xl font-bold tracking-tight" style="color: #f1f5f9;">Dartcade</h1>
-    </div>
+  <main class="flex flex-grow items-center justify-center">
+    <form onsubmit={(e) => { e.preventDefault(); submit() }} class="flex w-[400px] flex-col gap-7">
 
-    <!-- Card -->
-    <div class="rounded-2xl p-6 space-y-5"
-      style="background: #111d2e; border: 1px solid rgba(255,255,255,0.07);">
-
-      <!-- Tab toggle -->
-      <div class="flex rounded-xl overflow-hidden" style="background: rgba(255,255,255,0.04);">
-        <button
-          class="flex-1 py-2 text-sm font-medium transition-colors rounded-lg"
-          style={mode === 'login'
-            ? 'background: #3b82f6; color: white;'
-            : 'color: #64748b;'}
-          on:click={() => { mode = 'login'; error = '' }}
-        >Sign in</button>
-        <button
-          class="flex-1 py-2 text-sm font-medium transition-colors rounded-lg"
-          style={mode === 'register'
-            ? 'background: #3b82f6; color: white;'
-            : 'color: #64748b;'}
-          on:click={() => { mode = 'register'; error = '' }}
-        >Register</button>
+      <div class="flex flex-col gap-2">
+        <h1 class="m-0 font-display font-bold text-[48px] uppercase tracking-[0.02em] leading-none">
+          Sign in
+        </h1>
+        <p class="m-0 text-[16px] text-text-muted">Welcome back. Your boards are waiting.</p>
       </div>
 
-      <!-- Form -->
-      <form on:submit|preventDefault={submit} class="space-y-3">
-        {#if mode === 'register'}
-          <Input
-            bind:value={name}
-            placeholder="Display name"
-            required
-            class="bg-[#0b1628] border-white/10 text-white placeholder:text-gray-600 focus:border-blue-500"
-          />
-        {/if}
-        <Input
-          bind:value={email}
-          type="email"
-          placeholder="Email"
-          required
-          class="bg-[#0b1628] border-white/10 text-white placeholder:text-gray-600 focus:border-blue-500"
-        />
-        <Input
-          bind:value={password}
-          type="password"
-          placeholder="Password"
-          required
-          class="bg-[#0b1628] border-white/10 text-white placeholder:text-gray-600 focus:border-blue-500"
-        />
-        {#if error}
-          <p class="text-red-400 text-sm">{error}</p>
-        {/if}
-        <Button
-          type="submit"
-          disabled={loading}
-          class="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold"
-        >
-          {loading ? '…' : mode === 'login' ? 'Sign in' : 'Create account'}
+      <div class="flex flex-col gap-[18px]">
+        <div class="flex flex-col gap-2">
+          <label for="login-email" class="text-[14px] font-medium text-[#d8d8ce]">Email</label>
+          <Input id="login-email" type="email" bind:value={email} autocomplete="email"
+            placeholder="you@example.com" required />
+        </div>
+
+        <div class="flex flex-col gap-2">
+          <div class="flex justify-between items-baseline">
+            <label for="login-password" class="text-[14px] font-medium text-[#d8d8ce]">Password</label>
+            <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
+          </div>
+          <Input id="login-password" type="password" bind:value={password}
+            autocomplete="current-password" placeholder="••••••••" required />
+        </div>
+
+        <label class="flex items-center gap-[10px] text-[15px] text-[#c9c9bf] min-h-[44px] cursor-pointer">
+          <input type="checkbox" bind:checked={keepSignedIn}
+            class="w-[18px] h-[18px] m-0 accent-accent" />
+          Keep me signed in on this device
+        </label>
+      </div>
+
+      {#if error}
+        <p class="m-0 text-[14px] text-live-text">{error}</p>
+      {/if}
+
+      <div class="flex flex-col gap-3">
+        <Button type="submit" variant="primary" disabled={loading} class="w-full">
+          {loading ? '…' : 'Sign in'}
         </Button>
-      </form>
-    </div>
-  </div>
+
+        {#if import.meta.env.DEV}
+          <Button type="button" variant="ghost" onclick={devLogin} class="w-full text-text-dim">
+            Dev: sign in as admin
+          </Button>
+        {/if}
+      </div>
+
+      <p class="m-0 text-[15px] text-text-muted text-center">
+        New to Dartcade?
+        <a href="#/register" class="font-semibold no-underline">Create an account</a>
+      </p>
+    </form>
+  </main>
 </div>
