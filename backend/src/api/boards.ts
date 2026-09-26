@@ -15,14 +15,36 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
   app.get('/api/boards', { preHandler: requireAuth }, async (req) => {
     const rows = await getBoardsByOwner(db, req.userId)
     return {
-      boards: rows.map(b => ({
-        id: b.id,
-        name: b.name,
-        hardwareId: b.hardware_id,
-        online: bridgeConnections.isOnline(b.id),
-        createdAt: b.created_at,
-      })),
+      boards: rows.map(b => {
+        const conn = bridgeConnections.get(b.id)
+        return {
+          id: b.id,
+          name: b.name,
+          hardwareId: b.hardware_id,
+          online: bridgeConnections.isOnline(b.id),
+          bridgeVersion: conn?.bmVersion ?? null,
+          createdAt: b.created_at,
+        }
+      }),
     }
+  })
+
+  app.get('/api/boards/:id/camera/:index', { preHandler: requireAuth }, async (req, reply) => {
+    const { id, index } = req.params as { id: string; index: string }
+    const board = await getBoardById(db, id)
+    if (!board) return reply.code(404).send({ error: 'not found' })
+    if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
+
+    const conn = bridgeConnections.get(id)
+    if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
+
+    const upstream = await fetch(`${conn.bmUrl}/api/img/cams/${index}`)
+    if (!upstream.ok) return reply.code(502).send({ error: 'camera unavailable' })
+
+    const buf = await upstream.arrayBuffer()
+    reply.header('content-type', upstream.headers.get('content-type') ?? 'image/jpeg')
+    reply.header('cache-control', 'no-store')
+    return reply.send(Buffer.from(buf))
   })
 
   app.post('/api/boards', { preHandler: requireAuth }, async (req, reply) => {
