@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import SideNav from '$lib/components/SideNav.svelte'
+  import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
 
   type Board = {
@@ -24,8 +24,7 @@
   const onlineCount = $derived(boards.filter(b => b.online).length)
 </script>
 
-<div class="flex h-screen bg-bg text-text overflow-hidden">
-  <SideNav />
+<Layout>
 
   <main class="flex flex-grow flex-col gap-7 box-border min-w-0 overflow-y-auto p-[40px_44px]">
 
@@ -134,4 +133,4 @@
       {/if}
     </div>
   </main>
-</div>
+</Layout>

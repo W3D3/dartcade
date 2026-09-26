@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @theme {
   --color-bg:             #0f100e;
@@ -22,14 +21,16 @@
   --font-mono:    'JetBrains Mono', monospace;
 }
 
-body {
-  margin: 0;
-  background: #0f100e;
-  color: #efeee6;
-  font-family: 'Instrument Sans', system-ui, sans-serif;
-}
+@layer base {
+  body {
+    margin: 0;
+    background: #0f100e;
+    color: #efeee6;
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+  }
 
-a { color: #c6f24e; }
-a:hover { color: #dcff7a; }
-input::placeholder { color: #7d7f74; }
-:focus-visible { outline: 2px solid #c6f24e; outline-offset: 2px; }
+  a { color: #c6f24e; }
+  a:hover { color: #dcff7a; }
+  input::placeholder { color: #7d7f74; }
+  :focus-visible { outline: 2px solid #c6f24e; outline-offset: 2px; }
+}

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte'
   import { push } from 'svelte-spa-router'
+  import ConfirmModal from '../lib/components/ConfirmModal.svelte'
   import { createSessionStore } from '../lib/ws.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
@@ -8,6 +9,7 @@
   import CorrectionPanel from '../lib/components/CorrectionPanel.svelte'
   import { Badge } from '../lib/components/ui/badge/index.js'
   import { parseLabel } from '../lib/dartUtils.js'
+  import BoardStatusPanel from '../lib/components/BoardStatusPanel.svelte'
 
   let sessionId = $state('')
   let sessionStore: ReturnType<typeof createSessionStore> | null = null
@@ -15,6 +17,7 @@
   let unsubSnap: (() => void) | null = null
 
   let perPlayerVisits = $state<number[][]>([])
+  let showEndConfirm = $state(false)
   let prevDartCount = 0
   let prevCurrentPlayer = 0
   let prevDarts: any[] = []
@@ -74,7 +77,9 @@
     })
   }
 
-  async function closeSession() {
+  function leaveSession() { push('/') }
+
+  async function endSession() {
     if (!sessionId) return
     await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' })
     push('/')
@@ -92,7 +97,7 @@
     <!-- Header -->
     <header class="h-16 flex-shrink-0 box-border px-7 flex items-center gap-6
                    border-b border-line bg-surface-1">
-      <button type="button" onclick={closeSession}
+      <button type="button" onclick={leaveSession}
         class="flex items-center gap-2 h-11 px-[14px] border border-line-3 rounded-[10px]
                text-[#c9c9bf] text-[14px] font-medium bg-transparent cursor-pointer">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -101,6 +106,18 @@
         </svg>
         Leave
       </button>
+
+      {#if winner === null}
+        <button type="button" onclick={() => showEndConfirm = true}
+          class="flex items-center gap-2 h-11 px-[14px] border border-line-3 rounded-[10px]
+                 text-live-text text-[14px] font-medium bg-transparent cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+          End game
+        </button>
+      {/if}
 
       <div class="flex items-center gap-3">
         <h1 class="m-0 font-display font-bold text-[26px] uppercase tracking-[0.04em]">
@@ -113,8 +130,7 @@
 
       <div class="ml-auto flex items-center gap-4">
         <Badge variant="live">LIVE</Badge>
-        <!-- [PLACEHOLDER] board name from session snapshot -->
-        <span class="text-[14px] text-[#c9c9bf]">Board</span>
+        <BoardStatusPanel {sessionId} />
       </div>
     </header>
 
@@ -168,7 +184,7 @@
           <p class="m-0 font-display font-bold text-[48px] text-accent uppercase mb-1">
             {players[winner]?.name} wins!
           </p>
-          <button onclick={closeSession}
+          <button onclick={endSession}
             class="mt-6 h-[54px] px-8 rounded-[10px] bg-accent text-accent-fg font-display
                    font-bold text-xl uppercase tracking-widest border-0 cursor-pointer">
             Back to lobby
@@ -178,3 +194,13 @@
     {/if}
   {/if}
 </div>
+
+{#if showEndConfirm}
+  <ConfirmModal
+    title="End this game?"
+    body="The current game will be cancelled and all progress will be lost."
+    confirmLabel="End game"
+    danger
+    onconfirm={endSession}
+    oncancel={() => showEndConfirm = false} />
+{/if}
