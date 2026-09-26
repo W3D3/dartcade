@@ -17,6 +17,7 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     return {
       boards: rows.map(b => {
         const conn = bridgeConnections.get(b.id)
+        const ip = conn?.bmUrl ? (() => { try { return new URL(conn.bmUrl!).hostname } catch { return null } })() : null
         return {
           id: b.id,
           name: b.name,
@@ -24,6 +25,7 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
           online: bridgeConnections.isOnline(b.id),
           bridgeVersion: conn?.bmVersion ?? null,
           createdAt: b.created_at,
+          ip: ip ?? null,
         }
       }),
     }
@@ -56,6 +58,49 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     await insertBoard(db, { id, owner_user_id: req.userId, name: name.trim(), token_hash: tokenHash })
     return reply.code(201).send({ id, name: name.trim(), token: rawToken })
   })
+
+  // Per-board BM status
+  app.get('/api/boards/:id/status', { preHandler: requireAuth }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const board = await getBoardById(db, id)
+    if (!board) return reply.code(404).send({ error: 'not found' })
+    if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
+    const conn = bridgeConnections.get(id)
+    if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
+    try {
+      const res = await fetch(`${conn.bmUrl}/api/state`)
+      if (!res.ok) return reply.code(res.status).send({ error: 'board error' })
+      const data = await res.json() as any
+      return reply.send({ status: data.status ?? null, running: data.running ?? false, event: data.event ?? null })
+    } catch {
+      return reply.code(503).send({ error: 'board unreachable' })
+    }
+  })
+
+  // Per-board BM actions
+  for (const [action, path, fallback, method] of [
+    ['start',     '/api/start',                             '/api/detection/start',  'PUT' ],
+    ['stop',      '/api/stop',                              '/api/detection/stop',   'PUT' ],
+    ['reset',     '/api/reset',                             undefined,               'POST'],
+    ['calibrate', '/api/config/calibration/auto?distortion=true', undefined,         'POST'],
+  ] as const) {
+    app.post(`/api/boards/:id/${action}`, { preHandler: requireAuth }, async (req, reply) => {
+      const { id } = req.params as { id: string }
+      const board = await getBoardById(db, id)
+      if (!board) return reply.code(404).send({ error: 'not found' })
+      if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
+      const conn = bridgeConnections.get(id)
+      if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
+      try {
+        const tryFetch = (url: string) => fetch(url, { method, headers: { 'Content-Length': '0' } })
+        let res = await tryFetch(conn.bmUrl + path)
+        if ((res.status === 404 || res.status === 405) && fallback) res = await tryFetch(conn.bmUrl + fallback)
+        return reply.code(res.ok ? 200 : res.status).send({ status: res.status })
+      } catch (err: any) {
+        return reply.code(502).send({ error: err.message })
+      }
+    })
+  }
 
   app.delete('/api/boards/:id', { preHandler: requireAuth }, async (req, reply) => {
     const { id } = req.params as { id: string }
