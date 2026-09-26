@@ -38,6 +38,9 @@
   // ── BM state colour classification ─────────────────────────────────────────
   type DotColor = 'green' | 'yellow' | 'purple' | 'red' | 'gray'
 
+  const SPINNING = new Set(['Starting', 'Stopping', 'Calibrating'])
+  const isSpinning = $derived(board?.online && SPINNING.has(bmStatus?.status ?? ''))
+
   function bmDotColor(status: string | null, online: boolean): DotColor {
     if (!online) return 'gray'
     switch (status) {
@@ -93,7 +96,15 @@
            {open
              ? 'bg-surface-active border-accent/50 text-text'
              : 'bg-transparent border-line-2 text-text-muted hover:border-line-3 hover:text-text'}">
-    <span class="w-[7px] h-[7px] rounded-full shrink-0 {dotBg}"></span>
+    {#if isSpinning}
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        stroke-width="3" stroke-linecap="round" aria-hidden="true"
+        class="shrink-0 animate-spin {dotText}">
+        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+      </svg>
+    {:else}
+      <span class="w-[7px] h-[7px] rounded-full shrink-0 {dotBg}"></span>
+    {/if}
     <span class="font-medium">{board?.name ?? 'Board'}</span>
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" aria-hidden="true" class="opacity-50">
@@ -114,7 +125,15 @@
       <!-- Header -->
       <div class="px-4 py-3 border-b border-line-2 flex items-center justify-between gap-3">
         <div class="flex items-center gap-[10px] min-w-0">
-          <span class="w-[8px] h-[8px] rounded-full shrink-0 {dotBg}"></span>
+          {#if isSpinning}
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="3" stroke-linecap="round" aria-hidden="true"
+              class="shrink-0 animate-spin {dotText}">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+          {:else}
+            <span class="w-[8px] h-[8px] rounded-full shrink-0 {dotBg}"></span>
+          {/if}
           <span class="font-semibold text-[14px] text-text truncate">{board?.name ?? 'Unknown board'}</span>
         </div>
         <span class="text-[11px] font-medium tracking-[0.05em] uppercase shrink-0 {dotText}">
