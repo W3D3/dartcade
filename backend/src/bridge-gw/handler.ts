@@ -34,7 +34,7 @@ export async function bridgeGwPlugin(app: FastifyInstance, opts: Opts): Promise<
         boardDbId: board.id,
         hardwareBoardId: board.hardware_id ?? null,
         bridgeId: null, bootId: null,
-        bmVersion: null, helloReceived: false,
+        bmVersion: null, bmUrl: null, helloReceived: false,
       }
       bridgeConnections.add(conn)
       bridgeConnections.register(conn, board.id)
@@ -47,6 +47,7 @@ export async function bridgeGwPlugin(app: FastifyInstance, opts: Opts): Promise<
           if (msg.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
           conn.helloReceived = true
           conn.bmVersion = msg.data?.bm_version ?? null
+          conn.bmUrl = msg.data?.bm_url ?? null
           return
         }
 

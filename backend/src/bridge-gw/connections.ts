@@ -7,6 +7,7 @@ export type BridgeConn = {
   bridgeId: string | null
   bootId: string | null
   bmVersion: string | null
+  bmUrl: string | null
   helloReceived: boolean
 }
 
