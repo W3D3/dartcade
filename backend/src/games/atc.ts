@@ -1,14 +1,16 @@
 import type { GameModule, BoardEvent, Player, Dart } from '../session/types.js'
-import type { DartDetectedData } from '../session/types.js'
+import type { DartDetectedData, ConfigFieldMeta } from '../session/types.js'
 
 export type ATCConfig = {
   throwAgainOnAllHit: boolean
   finishOn: 'twenty' | 'single_bull' | 'bull'
   multiplierAdvances: boolean
+  order: 'asc' | 'desc' | 'random'
 }
 
 export type ATCState = {
-  targets: number[]
+  sequence: number[]   // ordered list of actual dart targets (1–20, 21=25, 22=bull)
+  targets: number[]    // current target per player (actual number from sequence)
   currentPlayer: number
   allHitThisVisit: boolean
   winner: number | null
@@ -16,51 +18,123 @@ export type ATCState = {
   playerCount: number
 }
 
-function finishTarget(cfg: ATCConfig): number {
-  return cfg.finishOn === 'twenty' ? 20
-    : cfg.finishOn === 'single_bull' ? 21
-    : 22
+function shuffle(arr: number[]): number[] {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+export function buildSequence(cfg: ATCConfig): number[] {
+  const nums = Array.from({ length: 20 }, (_, i) => i + 1)
+  let ordered: number[]
+  if (cfg.order === 'desc') {
+    ordered = [...nums].reverse()
+  } else if (cfg.order === 'random') {
+    ordered = shuffle(nums)
+  } else {
+    ordered = nums
+  }
+  if (cfg.finishOn === 'single_bull') return [...ordered, 21]
+  if (cfg.finishOn === 'bull') return [...ordered, 22]
+  return ordered
 }
 
 function hitsTarget(target: number, dart: Dart): boolean {
   const { number, bed, multiplier } = dart.segment
-  if (multiplier === 0) return false // outside/bounce-out/near-miss
+  if (multiplier === 0) return false
   if (target >= 1 && target <= 20) return number === target
-  if (target === 21) return number === 25 || number === 50   // single_bull: any bull
-  if (target === 22) return number === 50 && bed === 'Double' // bull: D50 only
+  if (target === 21) return number === 25 || number === 50
+  if (target === 22) return number === 50 && bed === 'Double'
   return false
 }
 
-function advance(target: number, dart: Dart, cfg: ATCConfig): number {
-  if (!hitsTarget(target, dart)) return target
+// Returns the new target value after advancing `steps` positions through the sequence.
+// Bull checkpoints (21, 22) advance exactly 1 step; multiplier cannot skip them.
+// A win is signalled by returning a value not in the sequence (> last element).
+function advanceInSequence(current: number, steps: number, sequence: number[]): number {
+  const idx = sequence.indexOf(current)
+  if (idx === -1) return current
 
-  // Bull checkpoints: one hit wins regardless of multiplier
-  if (target === 21 || target === 22) return target + 1
+  const seqTarget = sequence[idx]
 
-  const adv = cfg.multiplierAdvances ? dart.segment.multiplier : 1
-
-  if (target < 20 && cfg.finishOn !== 'twenty') {
-    // Bull is required — cap advance at 20
-    return Math.min(target + adv, 20)
+  // Bull checkpoints: exactly 1 step, no skipping
+  if (seqTarget === 21 || seqTarget === 22) {
+    return sequence[idx + 1] ?? seqTarget + 1
   }
 
-  if (target === 20) {
-    if (cfg.finishOn === 'twenty') return 21           // win state
-    if (cfg.finishOn === 'single_bull') return 21      // bull checkpoint
-    return 22                                          // double-bull checkpoint
+  // Find first bull checkpoint after current position
+  let bullIdx = -1
+  for (let i = idx + 1; i < sequence.length; i++) {
+    if (sequence[i] === 21 || sequence[i] === 22) { bullIdx = i; break }
   }
 
-  // finishOn === 'twenty', target < 20
-  return Math.min(target + adv, 21) // cap at win state
+  if (bullIdx === -1) {
+    // No bull ahead — can advance off the end to win
+    const nextIdx = idx + steps
+    if (nextIdx >= sequence.length) return sequence[sequence.length - 1] + 1
+    return sequence[nextIdx]
+  }
+
+  // Bull ahead: can't skip INTO bull via multiplier.
+  // If already at the last regular number (idx === bullIdx-1), hit advances to bull.
+  const lastRegularIdx = bullIdx - 1
+  if (idx === lastRegularIdx) return sequence[bullIdx]
+
+  // Otherwise cap at the last regular number
+  const targetIdx = Math.min(idx + steps, lastRegularIdx)
+  return sequence[targetIdx]
+}
+
+export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
+  finishOn: {
+    label: 'Finish on',
+    tooltip: 'Which target ends the game after hitting all numbers.',
+    options: [
+      { value: 'twenty',      label: '20' },
+      { value: 'single_bull', label: '25' },
+      { value: 'bull',        label: 'Bull' },
+    ],
+  },
+  order: {
+    label: 'Order',
+    tooltip: 'The sequence in which numbers must be hit.',
+    options: [
+      { value: 'asc',    label: '1→20' },
+      { value: 'desc',   label: '20→1' },
+      { value: 'random', label: 'Random' },
+    ],
+  },
+  multiplierAdvances: {
+    label: 'Multiplier advances',
+    tooltip: 'A double or triple on the current target skips 2 or 3 numbers ahead.',
+    options: [
+      { value: false, label: 'Off' },
+      { value: true,  label: 'On'  },
+    ],
+  },
+  throwAgainOnAllHit: {
+    label: 'Throw again on all hit',
+    tooltip: 'If all 3 darts hit their target in a visit, the same player throws again.',
+    options: [
+      { value: false, label: 'Off' },
+      { value: true,  label: 'On'  },
+    ],
+  },
 }
 
 export const atcModule: GameModule<ATCState, ATCConfig> = {
   id: 'atc',
-  defaultConfig: { throwAgainOnAllHit: false, finishOn: 'twenty', multiplierAdvances: false },
+  defaultConfig: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
+  configMeta,
 
   init(cfg: ATCConfig, players: Player[]): ATCState {
+    const sequence = buildSequence(cfg)
     return {
-      targets: players.map(() => 1),
+      sequence,
+      targets: players.map(() => sequence[0]),
       currentPlayer: 0,
       allHitThisVisit: false,
       winner: null,
@@ -77,12 +151,14 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
       case 'dart.detected': {
         const data = e.data as DartDetectedData
         const prev = s.targets[s.currentPlayer]
-        const next = advance(prev, data.dart as Dart, s.cfg)
-        const hit = next > prev
+        const steps = s.cfg.multiplierAdvances ? (data.dart as Dart).segment.multiplier : 1
+        const hit = hitsTarget(prev, data.dart as Dart)
+        if (!hit) return { state: { ...s, allHitThisVisit: false } }
+        const next = advanceInSequence(prev, steps, s.sequence)
         const targets = s.targets.map((t, i) => i === s.currentPlayer ? next : t)
-        const winner = next > finishTarget(s.cfg) ? s.currentPlayer : s.winner
+        const winner = !s.sequence.includes(next) ? s.currentPlayer : s.winner
         return {
-          state: { ...s, targets, allHitThisVisit: s.allHitThisVisit && hit, winner },
+          state: { ...s, targets, allHitThisVisit: s.allHitThisVisit && true, winner },
         }
       }
 
@@ -104,10 +180,10 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
   },
 
   onUserAction(s: ATCState) {
-    return { state: s } // structural actions handled by engine
+    return { state: s }
   },
 
   view(s: ATCState, _players: Player[]) {
-    return { targets: s.targets, currentPlayer: s.currentPlayer, winner: s.winner }
+    return { targets: s.targets, sequence: s.sequence, currentPlayer: s.currentPlayer, winner: s.winner }
   },
 }

@@ -33,9 +33,16 @@ export type BoardEvent =
   | { kind: 'board.status';     data: BoardStatusData }
   | { kind: string;             data: unknown }
 
+export type ConfigFieldMeta = {
+  label: string
+  tooltip?: string
+  options?: { value: string | number | boolean; label: string }[]
+}
+
 export interface GameModule<S, Cfg = Record<string, never>> {
   id: string
   defaultConfig: Cfg
+  configMeta?: Record<string, ConfigFieldMeta>
   init(cfg: Cfg, players: Player[]): S
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }
   onUserAction(s: S, a: UserAction): { state: S; effects?: Effect[] }
