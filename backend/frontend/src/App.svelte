@@ -4,12 +4,14 @@
   import CreateSession from './routes/CreateSession.svelte'
   import GameDisplay from './routes/GameDisplay.svelte'
   import Login from './routes/Login.svelte'
+  import Register from './routes/Register.svelte'
   import Boards from './routes/Boards.svelte'
 
   const routes = {
     '/': CreateSession,
     '/session/:id': GameDisplay,
     '/login': Login,
+    '/register': Register,
     '/boards': Boards,
   }
 
