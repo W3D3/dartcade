@@ -1,0 +1,8 @@
+slug: dartcade
+preview:
+  hostname: "dartcade-{pr_id}.wedenig.dev"
+health:
+  path: /health
+  interval: 2s
+  timeout: 120s
+  expect: 200
