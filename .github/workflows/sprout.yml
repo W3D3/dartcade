@@ -1,0 +1,20 @@
+name: sprout
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited, closed]
+
+permissions:
+  contents: read
+  pull-requests: write
+  packages: write
+
+jobs:
+  preview:
+    uses: simpros/sprout/.github/workflows/preview.yml@v0.8.1
+    with:
+      sprout_version: v0.8.1
+    secrets:
+      SPROUT_URL: ${{ secrets.SPROUT_URL }}
+      SPROUT_TOKEN: ${{ secrets.SPROUT_TOKEN }}
+      SPROUT_APP_ENV: ${{ secrets.SPROUT_APP_ENV }}
