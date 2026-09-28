@@ -1,8 +1,16 @@
 slug: dartcade
 preview:
   hostname: "dartcade-{pr_id}.wedenig.dev"
+  app_env:
+    BETTER_AUTH_URL: "https://{hostname}"
+    BETTER_AUTH_TRUSTED_ORIGINS: "https://{hostname}"
+    BETTER_AUTH_SECRET:
+      generate: stable_per_pr
+    BRIDGE_SECRET: preview-only
 health:
   path: /health
   interval: 2s
   timeout: 120s
   expect: 200
+build:
+  dockerfile: backend/Dockerfile
