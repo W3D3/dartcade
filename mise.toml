@@ -49,3 +49,7 @@ run = "cd backend && npm run lint"
 [tasks.lint]
 description = "Lint everything"
 depends = ["lint:frontend", "lint:backend"]
+
+[tasks."test:e2e"]
+description = "Run e2e smoke tests"
+run = "cd e2e && npm test"

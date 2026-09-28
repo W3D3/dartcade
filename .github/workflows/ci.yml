@@ -124,3 +124,24 @@ jobs:
           elif ! grep -q 'no changes in this PR' "$FILE"; then
             gh pr comment "$PR" --body-file "$FILE"
           fi
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - name: Install e2e dependencies
+        run: npm ci
+        working-directory: e2e
+      - name: Run e2e smoke tests
+        # Uses channel: 'chrome' — ubuntu-latest has Google Chrome pre-installed
+        run: npm test
+        working-directory: e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: e2e/playwright-report/
+          retention-days: 7
