@@ -15,6 +15,9 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// version is stamped at build time via -ldflags "-X main.version=vX.Y.Z".
+var version = "dev"
+
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "replay" {
 		runReplay(os.Args[2:])
@@ -26,6 +29,7 @@ func main() {
 	backendURL := fs.String("backend-url", "", "Backend WSS URL")
 	bridgeID := fs.String("bridge-id", "", "Stable bridge identifier (auto-generated if empty)")
 	logLevel := fs.String("log-level", "", "Log level: debug, info, warn, error")
+	verbose := fs.Bool("verbose", false, "Verbose (debug-level) logging")
 	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
 	fs.Parse(os.Args[1:])
 
@@ -40,15 +44,36 @@ func main() {
 		log.Fatal("config error", "err", err)
 	}
 
-	setLogLevel(cfg.LogLevel)
-	log.Info("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
+	level := cfg.LogLevel
+	if *verbose {
+		level = "debug"
+	}
+	setLogLevel(level)
+
+	con := newConsole(os.Stdout)
+	con.banner(version)
+	log.Debug("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
+	bootID := ulid.Make().String()
+	client := bm.NewClient(cfg.BoardURL)
+
+	// Reach the board first: fetch BM version, board_id, and camera count so we
+	// can confirm the board is present before asking the user to pair, and so
+	// those values are available in every envelope from the first connection.
+	initCtx, initCancel := context.WithTimeout(ctx, 30*time.Second)
+	if err := client.Init(initCtx); err != nil {
+		initCancel()
+		con.boardUnreachable(cfg.BoardURL)
+		log.Fatal("BM init failed", "err", err)
+	}
+	initCancel()
+	con.boardFound(hostOf(cfg.BoardURL), client.CameraCount())
+
 	if cfg.Token == "" {
-		log.Info("no token configured — starting pairing flow")
-		pairedToken, err := runPairing(ctx, cfg)
+		pairedToken, err := runPairing(ctx, cfg, con)
 		if err != nil {
 			log.Fatal("pairing failed", "err", err)
 		}
@@ -56,19 +81,8 @@ func main() {
 		if cfgPath, _ := configFilePath(); cfgPath != "" {
 			persistToken(cfgPath, cfg.Token)
 		}
+		con.pairedOK()
 	}
-
-	bootID := ulid.Make().String()
-	client := bm.NewClient(cfg.BoardURL)
-
-	// Fetch BM version and board_id before creating the transport so those
-	// values are available in every envelope from the first connection.
-	initCtx, initCancel := context.WithTimeout(ctx, 30*time.Second)
-	if err := client.Init(initCtx); err != nil {
-		initCancel()
-		log.Fatal("BM init failed", "err", err)
-	}
-	initCancel()
 
 	exec := func(name string) (int, error) {
 		execCtx := context.Background()

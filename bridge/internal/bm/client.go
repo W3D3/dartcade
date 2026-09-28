@@ -20,6 +20,7 @@ type Client struct {
 	boardURL  string
 	boardID   atomic.Value // string
 	bmVersion string
+	cameras   atomic.Int32
 	frames    chan BMFrame
 	startTime time.Time
 }
@@ -41,6 +42,9 @@ func (c *Client) BoardID() string { v, _ := c.boardID.Load().(string); return v 
 
 // BMVersion returns the Board Manager version string.
 func (c *Client) BMVersion() string { return c.bmVersion }
+
+// CameraCount returns the number of cameras reported by /api/config.
+func (c *Client) CameraCount() int { return int(c.cameras.Load()) }
 
 // Init fetches /api/version and /api/config synchronously so that BoardID
 // and BMVersion are available before the transport is constructed.
@@ -80,7 +84,7 @@ func (c *Client) fetchVersion(ctx context.Context) error {
 	}
 	json.NewDecoder(resp.Body).Decode(&v)
 	c.bmVersion = v.Version
-	log.Info("BM version", "version", c.bmVersion)
+	log.Debug("BM version", "version", c.bmVersion)
 	return nil
 }
 
@@ -97,6 +101,9 @@ func (c *Client) fetchConfig(ctx context.Context) error {
 		Auth struct {
 			BoardID string `json:"board_id"`
 		} `json:"auth"`
+		Cam struct {
+			Cams []string `json:"cams"`
+		} `json:"cam"`
 	}
 	json.Unmarshal(raw, &cfg)
 
@@ -105,6 +112,7 @@ func (c *Client) fetchConfig(ctx context.Context) error {
 		return fmt.Errorf("board_id changed from %s to %s — restart required", prev, cfg.Auth.BoardID)
 	}
 	c.boardID.Store(cfg.Auth.BoardID)
+	c.cameras.Store(int32(len(cfg.Cam.Cams)))
 
 	c.emit(BMFrame{Kind: "startup_config", Data: redacted, RecvWall: time.Now(), RecvMonoNs: c.mono()})
 	return nil

@@ -131,29 +131,43 @@ func toHTTPBase(backendURL string) string {
 	return u.Scheme + "://" + u.Host
 }
 
-func runPairing(ctx context.Context, cfg Config) (string, error) {
+// hostOf returns the host:port of a URL for display, falling back to the raw
+// string if it cannot be parsed.
+func hostOf(rawURL string) string {
+	if u, err := url.Parse(rawURL); err == nil && u.Host != "" {
+		return u.Host
+	}
+	return rawURL
+}
+
+func runPairing(ctx context.Context, cfg Config, con *console) (string, error) {
 	httpBase := toHTTPBase(cfg.BackendURL)
 	for {
-		token, err := runPairingOnce(ctx, httpBase)
+		token, code, err := runPairingOnce(ctx, httpBase, con)
 		if err == nil {
 			return token, nil
 		}
 		if ctx.Err() != nil {
 			return "", ctx.Err()
 		}
-		log.Info("pairing code expired — requesting a new one")
+		// The code lapsed before anyone claimed it — note it and loop for a
+		// fresh one.
+		con.codeExpired(code)
 	}
 }
 
-func runPairingOnce(ctx context.Context, httpBase string) (string, error) {
+// runPairingOnce requests one code, shows it, and polls until the code is
+// claimed, the code expires, or the context is cancelled. It returns the code
+// it displayed so the caller can report an expiry.
+func runPairingOnce(ctx context.Context, httpBase string, con *console) (token string, code string, err error) {
 	pairReq, err := http.NewRequestWithContext(ctx, "POST", httpBase+"/api/pairing/request", strings.NewReader("{}"))
 	if err != nil {
-		return "", fmt.Errorf("pairing request: %w", err)
+		return "", "", fmt.Errorf("pairing request: %w", err)
 	}
 	pairReq.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(pairReq)
 	if err != nil {
-		return "", fmt.Errorf("pairing request: %w", err)
+		return "", "", fmt.Errorf("pairing request: %w", err)
 	}
 	defer resp.Body.Close()
 
@@ -162,38 +176,43 @@ func runPairingOnce(ctx context.Context, httpBase string) (string, error) {
 		ExpiresAt string `json:"expiresAt"`
 	}
 	if err := json.NewDecoder(resp.Body).Decode(&pairResp); err != nil {
-		return "", fmt.Errorf("pairing request decode: %w", err)
+		return "", "", fmt.Errorf("pairing request decode: %w", err)
 	}
 
 	expiresAt, err := time.Parse(time.RFC3339, pairResp.ExpiresAt)
 	if err != nil {
-		return "", fmt.Errorf("pairing expiry parse: %w", err)
+		return "", "", fmt.Errorf("pairing expiry parse: %w", err)
 	}
 
-	log.Info("bridge not paired — visit the web UI to complete setup",
-		"code", pairResp.Code,
-		"url", httpBase,
-		"expires_in", time.Until(expiresAt).Round(time.Second),
-	)
+	con.pairPrompt(pairResp.Code)
+	con.waiting(time.Until(expiresAt))
 
-	ticker := time.NewTicker(2 * time.Second)
-	defer ticker.Stop()
+	display := time.NewTicker(1 * time.Second)
+	defer display.Stop()
+	poll := time.NewTicker(2 * time.Second)
+	defer poll.Stop()
 	deadline := time.NewTimer(time.Until(expiresAt))
 	defer deadline.Stop()
 
 	for {
 		select {
 		case <-ctx.Done():
-			return "", ctx.Err()
+			con.clearWaiting()
+			return "", pairResp.Code, ctx.Err()
 		case <-deadline.C:
-			return "", fmt.Errorf("pairing code %s expired", pairResp.Code)
-		case <-ticker.C:
-			token, done, err := pollPairingToken(ctx, httpBase, pairResp.Code)
+			con.clearWaiting()
+			return "", pairResp.Code, fmt.Errorf("pairing code %s expired", pairResp.Code)
+		case <-display.C:
+			con.waiting(time.Until(expiresAt))
+		case <-poll.C:
+			tok, done, err := pollPairingToken(ctx, httpBase, pairResp.Code)
 			if err != nil {
-				return "", err
+				con.clearWaiting()
+				return "", pairResp.Code, err
 			}
 			if done {
-				return token, nil
+				con.clearWaiting()
+				return tok, pairResp.Code, nil
 			}
 		}
 	}

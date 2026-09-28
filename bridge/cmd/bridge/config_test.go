@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -12,6 +13,10 @@ import (
 	"testing"
 	"time"
 )
+
+// discardConsole is a console that swallows output, for tests that exercise
+// the pairing flow without asserting on the printed lines.
+func discardConsole() *console { return &console{w: io.Discard} }
 
 func TestToHTTPBase(t *testing.T) {
 	cases := []struct {
@@ -79,7 +84,7 @@ func TestRunPairing_Success(t *testing.T) {
 	defer srv.Close()
 
 	cfg := Config{BackendURL: srv.URL, BridgeID: "br_test"}
-	token, err := runPairing(context.Background(), cfg)
+	token, err := runPairing(context.Background(), cfg, discardConsole())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -107,7 +112,7 @@ func TestRunPairing_BackendURLWithPath(t *testing.T) {
 	defer srv.Close()
 
 	cfg := Config{BackendURL: srv.URL + "/bridge", BridgeID: "br_test"}
-	token, err := runPairing(context.Background(), cfg)
+	token, err := runPairing(context.Background(), cfg, discardConsole())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -125,7 +130,7 @@ func TestRunPairing_CtxCancelledDuringRequest(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
 
-	_, err := runPairing(ctx, Config{BackendURL: srv.URL, BridgeID: "br_test"})
+	_, err := runPairing(ctx, Config{BackendURL: srv.URL, BridgeID: "br_test"}, discardConsole())
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("expected DeadlineExceeded, got: %v", err)
 	}
@@ -158,7 +163,7 @@ func TestRunPairing_RetryAfterExpiry(t *testing.T) {
 	defer srv.Close()
 
 	cfg := Config{BackendURL: srv.URL, BridgeID: "br_test"}
-	token, err := runPairing(context.Background(), cfg)
+	token, err := runPairing(context.Background(), cfg, discardConsole())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -186,7 +191,7 @@ func TestRunPairing_StopsOnCtxCancelDuringRetry(t *testing.T) {
 	defer cancel()
 
 	cfg := Config{BackendURL: srv.URL, BridgeID: "br_test"}
-	_, err := runPairing(ctx, cfg)
+	_, err := runPairing(ctx, cfg, discardConsole())
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("expected DeadlineExceeded, got: %v", err)
 	}
