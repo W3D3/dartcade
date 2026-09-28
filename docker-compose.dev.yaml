@@ -59,7 +59,8 @@ services:
     network_mode: host
     environment:
       DARTCADE_BOARD_URL: ${DARTCADE_BOARD_URL:?Set DARTCADE_BOARD_URL to your board's URL, e.g. http://192.168.1.x:3180}
-      DARTCADE_BACKEND_URL: ws://localhost:3000/bridge?token=dev-bridge-token
+      DARTCADE_BACKEND_URL: ws://localhost:3000/bridge
+      DARTCADE_TOKEN: dev-bridge-token
     depends_on:
       backend:
         condition: service_healthy
