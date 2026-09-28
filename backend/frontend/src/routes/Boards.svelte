@@ -3,6 +3,8 @@
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { Badge } from '$lib/components/ui/badge/index.js'
+  import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
 
   type Board = {
@@ -96,9 +98,7 @@
                   <span class="w-2 h-2 rounded-full border border-accent border-t-transparent animate-spin"></span>
                   Connecting cameras…
                 </span>
-                <span class="px-2 py-0.5 rounded-full bg-accent text-accent-fg text-[11px] font-bold uppercase tracking-wide">
-                  Just paired
-                </span>
+                <Badge variant="paired">Just paired</Badge>
               {:else}
                 <span class="flex items-center gap-2 text-[13px] font-semibold
                              {board.online ? 'text-accent' : 'text-text-dim'}">
@@ -106,9 +106,7 @@
                   {board.online ? 'Online' : 'Offline'}
                 </span>
                 {#if justPaired}
-                  <span class="px-2 py-0.5 rounded-full bg-accent text-accent-fg text-[11px] font-bold uppercase tracking-wide">
-                    Just paired
-                  </span>
+                  <Badge variant="paired">Just paired</Badge>
                 {/if}
               {/if}
               {#if !justPaired}
@@ -194,26 +192,14 @@
 
   <!-- Success toast -->
   {#if toast}
-    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3
-                px-4 py-3 rounded-[12px] bg-surface-1 border border-line-2 shadow-xl max-w-[92vw]">
-      <span class="flex-shrink-0 w-6 h-6 rounded-full bg-accent text-accent-fg flex items-center justify-center">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M20 6L9 17l-5-5" />
-        </svg>
-      </span>
-      <span class="text-[14px] text-text-muted">
-        <span class="text-text font-semibold">{toast.name}</span> is paired.
-        It shows as online once all cameras report in.
-      </span>
-      <button
-        type="button"
-        onclick={() => { selectedId = toast!.boardId; toast = null }}
-        class="flex-shrink-0 text-[14px] text-accent font-semibold hover:underline"
-      >
-        Play on it
-      </button>
-    </div>
+    <Toast
+      actionLabel="Play on it"
+      onaction={() => { selectedId = toast!.boardId; toast = null }}
+      onclose={() => { toast = null }}
+    >
+      <span class="text-text font-semibold">{toast.name}</span> is paired.
+      It shows as online once all cameras report in.
+    </Toast>
   {/if}
   </main>
 </Layout>

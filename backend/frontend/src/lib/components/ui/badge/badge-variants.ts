@@ -7,6 +7,7 @@ export const badgeVariants = tv({
 			live:      "h-[30px] px-3 rounded-full bg-[#3a1a17] text-live-text text-[13px] font-bold tracking-widest",
 			throwing:  "h-7 px-3 rounded-full bg-accent text-accent-fg text-[13px] tracking-[0.08em] uppercase",
 			"up-next": "h-7 px-3 rounded-full border border-line text-text-dim text-[13px] tracking-[0.08em] uppercase",
+			paired:    "h-6 px-2 rounded-full bg-accent text-accent-fg text-[11px] font-bold tracking-wide uppercase",
 		},
 	},
 	defaultVariants: { variant: "throwing" },
