@@ -137,6 +137,39 @@ func TestRunPairing_BackendURLWithPath(t *testing.T) {
 	}
 }
 
+// A code claimed in its final moments must still be delivered: when the local
+// deadline fires, runPairingOnce does one last poll before giving up.
+func TestRunPairing_ClaimedAtDeadline(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == "POST" && r.URL.Path == "/api/pairing/request":
+			// Short TTL so the deadline fires before the 2s poll ticker — the
+			// only poll that can happen is the deadline's final one.
+			json.NewEncoder(w).Encode(map[string]string{
+				"code":      "ABCD1234",
+				"expiresAt": time.Now().Add(250 * time.Millisecond).Format(time.RFC3339Nano),
+			})
+		case r.Method == "GET" && r.URL.Path == "/api/pairing/ABCD1234/token":
+			json.NewEncoder(w).Encode(map[string]string{"status": "claimed", "token": "tok-deadline"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+
+	cfg := Config{BackendURL: srv.URL, BridgeID: "br_test"}
+	token, err := runPairing(ctx, cfg, discardConsole())
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token != "tok-deadline" {
+		t.Errorf("got token %q, want %q", token, "tok-deadline")
+	}
+}
+
 func TestRunPairing_CtxCancelledDuringRequest(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		time.Sleep(500 * time.Millisecond)

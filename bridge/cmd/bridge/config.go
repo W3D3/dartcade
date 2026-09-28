@@ -214,6 +214,13 @@ func runPairingOnce(ctx context.Context, httpBase string, con *console) (token s
 			con.clearWaiting()
 			return "", pairResp.Code, ctx.Err()
 		case <-deadline.C:
+			// The code may have been claimed in its final moments; check once
+			// more before giving up (a claimed code delivers its token even
+			// after it expires).
+			if tok, done, err := pollPairingToken(ctx, httpBase, pairResp.Code); err == nil && done {
+				con.clearWaiting()
+				return tok, pairResp.Code, nil
+			}
 			con.clearWaiting()
 			return "", pairResp.Code, fmt.Errorf("pairing code %s expired", pairResp.Code)
 		case <-display.C:
