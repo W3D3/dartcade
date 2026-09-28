@@ -1,6 +1,7 @@
 import Fastify from 'fastify'
 import fastifyWebsocket from '@fastify/websocket'
 import fastifyStatic from '@fastify/static'
+import rateLimit from '@fastify/rate-limit'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { toNodeHandler } from 'better-auth/node'
@@ -12,6 +13,7 @@ import { browserGwPlugin, pushSnapshot } from './browser-gw/handler.js'
 import { sessionsApiPlugin } from './api/sessions.js'
 import { boardsApiPlugin } from './api/boards.js'
 import { boardApiPlugin } from './api/board.js'
+import { pairingApiPlugin } from './api/pairing.js'
 import { auth } from './auth/index.js'
 import { seedDev } from './auth/seed.js'
 
@@ -32,6 +34,7 @@ await engine.rebuild()
 
 const app = Fastify({ logger: true })
 await app.register(fastifyWebsocket)
+await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
 
 app.all('/api/auth/*', async (req, reply) => {
   // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
@@ -50,6 +53,7 @@ await app.register(browserGwPlugin, { engine })
 await app.register(sessionsApiPlugin, { engine, db })
 await app.register(boardsApiPlugin, { db })
 await app.register(boardApiPlugin)
+await app.register(pairingApiPlugin, { db })
 
 app.get('*', async (req, reply) => {
   if (

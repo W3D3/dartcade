@@ -10,6 +10,7 @@
     "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties"
   },
   "dependencies": {
+    "@fastify/rate-limit": "^9.1.0",
     "@fastify/static": "7.0.4",
     "@fastify/websocket": "8.3.1",
     "better-auth": "1.7.6",
