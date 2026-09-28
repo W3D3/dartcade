@@ -20,6 +20,12 @@ function generateCode(): string {
   return Array.from(bytes, b => CODE_CHARSET[b % CODE_CHARSET.length]).join('')
 }
 
+// Uppercase and strip separators (dashes, spaces) so a code entered as
+// "7kq4-m2xd" or pasted with surrounding whitespace resolves to "7KQ4M2XD".
+function normalizeCode(raw: string): string {
+  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '')
+}
+
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
 export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
@@ -38,7 +44,7 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
     config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
   }, async (req, reply) => {
     const { code } = req.params as { code: string }
-    const row = await getPairingCode(db, code.toUpperCase())
+    const row = await getPairingCode(db, normalizeCode(code))
 
     if (!row || row.expires_at < new Date()) {
       return reply.code(404).send({ error: 'not found' })
@@ -58,7 +64,7 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
     if (!code?.trim() || !name?.trim()) {
       return reply.code(400).send({ error: 'code and name required' })
     }
-    const row = await getPairingCode(db, code.trim().toUpperCase())
+    const row = await getPairingCode(db, normalizeCode(code))
     if (!row) return reply.code(404).send({ error: 'not found' })
     if (row.expires_at < new Date()) return reply.code(410).send({ error: 'expired' })
     if (row.claimed_at) return reply.code(409).send({ error: 'already claimed' })

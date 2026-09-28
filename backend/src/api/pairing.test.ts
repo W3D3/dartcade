@@ -231,4 +231,22 @@ describe('POST /api/pairing/claim', () => {
     expect(res.statusCode).toBe(201)
     expect(queries.getPairingCode).toHaveBeenCalledWith(expect.anything(), 'ABCD1234')
   })
+
+  it('normalizes a dashed/spaced code by stripping separators', async () => {
+    vi.mocked(queries.getPairingCode).mockResolvedValue({
+      code: '7KQ4M2XD',
+      expires_at: new Date(Date.now() + 60_000),
+      claimed_at: null,
+      raw_token: null,
+      board_id: null,
+      created_at: new Date() as any,
+    })
+    const app = makeApp()
+    const res = await app.inject({
+      method: 'POST', url: '/api/pairing/claim',
+      payload: { code: ' 7kq4-m2xd ', name: 'Board' },
+    })
+    expect(res.statusCode).toBe(201)
+    expect(queries.getPairingCode).toHaveBeenCalledWith(expect.anything(), '7KQ4M2XD')
+  })
 })
