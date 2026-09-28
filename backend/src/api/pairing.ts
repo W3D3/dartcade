@@ -41,7 +41,10 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
   })
 
   app.get('/api/pairing/:code/token', {
-    config: { rateLimit: { max: 5, timeWindow: '1 minute' } },
+    // A paired bridge polls this every 2s (~30/min), so the cap has to sit
+    // above that. Brute-forcing is still futile: the code space is 32^8 and
+    // the token is consumed on first delivery.
+    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
   }, async (req, reply) => {
     const { code } = req.params as { code: string }
     const row = await getPairingCode(db, normalizeCode(code))
