@@ -26,9 +26,13 @@
 
   async function onPaired(info: { boardId: string; name: string }) {
     pairOpen = false
-    const d = await fetch('/api/boards').then(r => r.json())
-    boards = d.boards ?? []
-    selectedId = info.boardId
+    // The board is already paired server-side; refresh the list, but still
+    // surface success even if the refetch fails (e.g. session expired).
+    try {
+      const d = await fetch('/api/boards').then(r => r.json())
+      boards = d.boards ?? []
+      selectedId = info.boardId
+    } catch { /* keep the current list; the toast still confirms the pair */ }
     justPairedId = info.boardId
     toast = info
     if (toastTimer) clearTimeout(toastTimer)

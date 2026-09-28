@@ -75,6 +75,20 @@ func TestPersistToken(t *testing.T) {
 	}
 }
 
+func TestPersistToken_ReturnsErrorWhenDirUnwritable(t *testing.T) {
+	dir := t.TempDir()
+	// A regular file where a parent directory is expected makes MkdirAll fail,
+	// so callers can surface "couldn't persist token" instead of silently
+	// re-pairing on the next start.
+	blocker := filepath.Join(dir, "blocker")
+	if err := os.WriteFile(blocker, []byte("x"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := persistToken(filepath.Join(blocker, "sub", "bridge.toml"), "tok"); err == nil {
+		t.Fatal("expected an error persisting under a file, got nil")
+	}
+}
+
 func TestRunPairing_Success(t *testing.T) {
 	expiry := time.Now().Add(10 * time.Minute)
 

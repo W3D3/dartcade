@@ -85,7 +85,10 @@ func main() {
 		}
 		cfg.Token = pairedToken
 		if cfgPath != "" {
-			persistToken(cfgPath, cfg.Token)
+			if err := persistToken(cfgPath, cfg.Token); err != nil {
+				log.Warn("could not persist token — the bridge will re-pair on restart",
+					"path", cfgPath, "err", err)
+			}
 		}
 		con.pairedOK()
 	}

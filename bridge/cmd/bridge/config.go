@@ -74,7 +74,9 @@ func loadConfig(overrides map[string]string, cfgPath string) (Config, error) {
 		cfg.BridgeID = "br_" + ulid.Make().String()
 		log.Info("generated new bridge_id", "bridge_id", cfg.BridgeID)
 		if cfgPath != "" {
-			persistBridgeID(cfgPath, cfg.BridgeID)
+			if err := persistBridgeID(cfgPath, cfg.BridgeID); err != nil {
+				log.Warn("could not persist bridge_id", "path", cfgPath, "err", err)
+			}
 		}
 	}
 
@@ -102,28 +104,25 @@ func configFilePath(dirOverride string) (string, error) {
 	return filepath.Join(dir, "dartcade", "bridge.toml"), nil
 }
 
-func persistBridgeID(path, id string) {
-	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return
-	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
-	if err != nil {
-		return
-	}
-	defer f.Close()
-	fmt.Fprintf(f, "\nbridge_id = %q\n", id)
+func persistBridgeID(path, id string) error {
+	return appendConfigLine(path, fmt.Sprintf("\nbridge_id = %q\n", id))
 }
 
-func persistToken(path, token string) {
+func persistToken(path, token string) error {
+	return appendConfigLine(path, fmt.Sprintf("\ntoken = %q\n", token))
+}
+
+func appendConfigLine(path, line string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
-		return
+		return err
 	}
 	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
 	if err != nil {
-		return
+		return err
 	}
 	defer f.Close()
-	fmt.Fprintf(f, "\ntoken = %q\n", token)
+	_, err = f.WriteString(line)
+	return err
 }
 
 // toHTTPBase derives the HTTP origin (scheme://host) for the REST API from
