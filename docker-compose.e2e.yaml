@@ -23,9 +23,9 @@ services:
       NODE_ENV: test
       PORT: "3000"
       BETTER_AUTH_URL: http://localhost:3000
-      BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5173
+      BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5174
     ports:
-      - "3000:3000"
+      - "3001:3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -46,7 +46,7 @@ services:
     environment:
       BACKEND_HOST: backend
     ports:
-      - "5173:5173"
+      - "5174:5173"
     depends_on:
       backend:
         condition: service_healthy

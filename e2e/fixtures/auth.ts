@@ -11,16 +11,16 @@ export const test = base.extend<{ authedPage: Page }>({
     const name = `E2E-${testInfo.workerIndex}`
 
     // Register via API (Origin header satisfies better-auth CSRF check)
-    const signUp = await page.request.post('http://localhost:5173/api/auth/sign-up/email', {
+    const signUp = await page.request.post('http://localhost:5174/api/auth/sign-up/email', {
       data: { name, email, password },
-      headers: { Origin: 'http://localhost:5173' },
+      headers: { Origin: 'http://localhost:5174' },
     })
     expect(signUp.ok(), `sign-up failed: ${signUp.status()} ${await signUp.text()}`).toBeTruthy()
 
     // Sign in — session cookie is set for localhost:5173 via Vite proxy
-    const signIn = await page.request.post('http://localhost:5173/api/auth/sign-in/email', {
+    const signIn = await page.request.post('http://localhost:5174/api/auth/sign-in/email', {
       data: { email, password },
-      headers: { Origin: 'http://localhost:5173' },
+      headers: { Origin: 'http://localhost:5174' },
     })
     expect(signIn.ok(), `sign-in failed: ${signIn.status()} ${await signIn.text()}`).toBeTruthy()
 
