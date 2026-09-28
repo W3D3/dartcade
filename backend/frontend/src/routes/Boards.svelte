@@ -3,6 +3,7 @@
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import PairBoardModal from '$lib/components/PairBoardModal.svelte'
 
   type Board = {
     id: string; name: string; online: boolean; ip?: string
@@ -16,38 +17,22 @@
   let cameraInterval: ReturnType<typeof setInterval> | null = null
 
   let pairOpen = $state(false)
-  let pairCode = $state('')
-  let pairName = $state('')
-  let pairError = $state<string | null>(null)
-  let pairLoading = $state(false)
+  let justPairedId = $state<string | null>(null)
+  let toast = $state<{ name: string; boardId: string } | null>(null)
+  let toastTimer: ReturnType<typeof setTimeout> | null = null
+  let pairedTimer: ReturnType<typeof setTimeout> | null = null
 
-  async function submitPair() {
-    pairError = null
-    pairLoading = true
-    try {
-      const res = await fetch('/api/pairing/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code: pairCode.toUpperCase().trim(), name: pairName.trim() }),
-      })
-      if (res.ok) {
-        pairOpen = false
-        pairCode = ''
-        pairName = ''
-        const d = await fetch('/api/boards').then(r => r.json())
-        boards = d.boards ?? []
-      } else {
-        const body = await res.json().catch(() => ({}))
-        if (res.status === 404) pairError = 'Code not found — check it and try again'
-        else if (res.status === 410) pairError = 'Code has expired — restart the bridge to get a new one'
-        else if (res.status === 409) pairError = 'Code already used'
-        else pairError = body.error ?? 'Something went wrong'
-      }
-    } catch {
-      pairError = 'Network error — check your connection'
-    } finally {
-      pairLoading = false
-    }
+  async function onPaired(info: { boardId: string; name: string }) {
+    pairOpen = false
+    const d = await fetch('/api/boards').then(r => r.json())
+    boards = d.boards ?? []
+    selectedId = info.boardId
+    justPairedId = info.boardId
+    toast = info
+    if (toastTimer) clearTimeout(toastTimer)
+    if (pairedTimer) clearTimeout(pairedTimer)
+    toastTimer = setTimeout(() => { toast = null }, 8000)
+    pairedTimer = setTimeout(() => { justPairedId = null }, 12000)
   }
 
   onMount(async () => {
@@ -58,7 +43,11 @@
     if (boards.length) selectedId = boards[0].id
     cameraInterval = setInterval(() => { cameraTs = Date.now() }, 1000)
   })
-  onDestroy(() => { if (cameraInterval) clearInterval(cameraInterval) })
+  onDestroy(() => {
+    if (cameraInterval) clearInterval(cameraInterval)
+    if (toastTimer) clearTimeout(toastTimer)
+    if (pairedTimer) clearTimeout(pairedTimer)
+  })
 
   const onlineCount = $derived(boards.filter(b => b.online).length)
 </script>
@@ -92,22 +81,42 @@
       <div class="flex-grow grid grid-cols-2 grid-rows-2 gap-4 content-start">
         {#each boards as board (board.id)}
           {@const active = board.id === selectedId}
+          {@const justPaired = board.id === justPairedId}
           <button type="button" onclick={() => selectedId = board.id}
             class="text-left box-border p-[22px] rounded-[14px] flex flex-col gap-[18px] transition-colors
-                   {active
+                   {justPaired
                      ? 'bg-surface-2 border-2 border-accent'
-                     : 'bg-surface-2 border border-line-2 hover:border-line'}">
+                     : active
+                       ? 'bg-surface-2 border-2 border-accent'
+                       : 'bg-surface-2 border border-line-2 hover:border-line'}">
 
             <div class="flex justify-between items-center">
-              <span class="flex items-center gap-2 text-[13px] font-semibold
-                           {board.online ? 'text-accent' : 'text-text-dim'}">
-                <span class="w-2 h-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>
-                {board.online ? 'Online' : 'Offline'}
-              </span>
-              <!-- [PLACEHOLDER] latency from API -->
-              <span class="font-mono text-[12px] text-text-dim">
-                {board.latencyMs != null ? `${board.latencyMs} ms` : '— ms'}
-              </span>
+              {#if justPaired && !board.online}
+                <span class="flex items-center gap-2 text-[13px] font-semibold text-text-muted">
+                  <span class="w-2 h-2 rounded-full border border-accent border-t-transparent animate-spin"></span>
+                  Connecting cameras…
+                </span>
+                <span class="px-2 py-0.5 rounded-full bg-accent text-accent-fg text-[11px] font-bold uppercase tracking-wide">
+                  Just paired
+                </span>
+              {:else}
+                <span class="flex items-center gap-2 text-[13px] font-semibold
+                             {board.online ? 'text-accent' : 'text-text-dim'}">
+                  <span class="w-2 h-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>
+                  {board.online ? 'Online' : 'Offline'}
+                </span>
+                {#if justPaired}
+                  <span class="px-2 py-0.5 rounded-full bg-accent text-accent-fg text-[11px] font-bold uppercase tracking-wide">
+                    Just paired
+                  </span>
+                {/if}
+              {/if}
+              {#if !justPaired}
+                <!-- [PLACEHOLDER] latency from API -->
+                <span class="font-mono text-[12px] text-text-dim">
+                  {board.latencyMs != null ? `${board.latencyMs} ms` : '— ms'}
+                </span>
+              {/if}
             </div>
 
             <div class="flex flex-col gap-1">
@@ -180,56 +189,30 @@
     </div>
 
   {#if pairOpen}
-    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
-         role="dialog" aria-modal="true">
-      <div class="w-full max-w-md box-border p-8 rounded-[18px] bg-surface-1 border border-line-2
-                  flex flex-col gap-6">
-        <h2 class="m-0 font-display font-bold text-[28px] uppercase">Pair new board</h2>
-        <p class="m-0 text-[14px] text-text-muted">
-          Run <code class="font-mono bg-surface-2 px-1 rounded">dartcade-bridge</code> on your
-          board's machine, then enter the code it displays.
-        </p>
-        <div class="flex flex-col gap-4">
-          <div class="flex flex-col gap-1">
-            <label class="text-[13px] text-text-dim" for="pair-code">Pairing code</label>
-            <input
-              id="pair-code"
-              type="text"
-              maxlength="8"
-              placeholder="ABCD1234"
-              class="h-11 px-3 rounded-[10px] bg-surface-2 border border-line-2 font-mono text-[18px]
-                     uppercase tracking-widest text-center focus:outline-none focus:border-accent"
-              bind:value={pairCode}
-              oninput={() => { pairCode = pairCode.toUpperCase() }}
-            />
-          </div>
-          <div class="flex flex-col gap-1">
-            <label class="text-[13px] text-text-dim" for="pair-name">Board name</label>
-            <input
-              id="pair-name"
-              type="text"
-              placeholder="Living Room"
-              class="h-11 px-3 rounded-[10px] bg-surface-2 border border-line-2 text-[15px]
-                     focus:outline-none focus:border-accent"
-              bind:value={pairName}
-            />
-          </div>
-          {#if pairError}
-            <p class="m-0 text-[13px] text-red-400">{pairError}</p>
-          {/if}
-        </div>
-        <div class="flex gap-3 justify-end">
-          <Button variant="ghost" onclick={() => { pairOpen = false; pairError = null }}
-                  disabled={pairLoading}>
-            Cancel
-          </Button>
-          <Button variant="primary"
-                  onclick={submitPair}
-                  disabled={pairLoading || pairCode.length !== 8 || !pairName.trim()}>
-            {pairLoading ? 'Pairing…' : 'Pair board'}
-          </Button>
-        </div>
-      </div>
+    <PairBoardModal onclose={() => { pairOpen = false }} onpaired={onPaired} />
+  {/if}
+
+  <!-- Success toast -->
+  {#if toast}
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3
+                px-4 py-3 rounded-[12px] bg-surface-1 border border-line-2 shadow-xl max-w-[92vw]">
+      <span class="flex-shrink-0 w-6 h-6 rounded-full bg-accent text-accent-fg flex items-center justify-center">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20 6L9 17l-5-5" />
+        </svg>
+      </span>
+      <span class="text-[14px] text-text-muted">
+        <span class="text-text font-semibold">{toast.name}</span> is paired.
+        It shows as online once all cameras report in.
+      </span>
+      <button
+        type="button"
+        onclick={() => { selectedId = toast!.boardId; toast = null }}
+        class="flex-shrink-0 text-[14px] text-accent font-semibold hover:underline"
+      >
+        Play on it
+      </button>
     </div>
   {/if}
   </main>
