@@ -185,10 +185,14 @@ export async function claimPairingCode(
   db: Kysely<Database>,
   p: { code: string; rawToken: string; boardId: string },
 ): Promise<void> {
-  await db.updateTable('pairing_codes')
+  const result = await db.updateTable('pairing_codes')
     .set({ claimed_at: new Date(), raw_token: p.rawToken, board_id: p.boardId })
     .where('code', '=', p.code)
-    .execute()
+    .where('claimed_at', 'is', null)
+    .executeTakeFirst()
+  if (result.numUpdatedRows === 0n) {
+    throw new Error('pairing code already claimed')
+  }
 }
 
 export async function consumePairingToken(db: Kysely<Database>, code: string): Promise<void> {

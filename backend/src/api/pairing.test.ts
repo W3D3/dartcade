@@ -196,6 +196,24 @@ describe('POST /api/pairing/claim', () => {
     expect(queries.claimPairingCode).toHaveBeenCalledOnce()
   })
 
+  it('returns 409 when concurrent claim beats this request', async () => {
+    vi.mocked(queries.getPairingCode).mockResolvedValue({
+      code: 'ABCD1234',
+      expires_at: new Date(Date.now() + 60_000),
+      claimed_at: null,
+      raw_token: null,
+      board_id: null,
+      created_at: new Date() as any,
+    })
+    vi.mocked(queries.claimPairingCode).mockRejectedValueOnce(new Error('pairing code already claimed'))
+    const app = makeApp()
+    const res = await app.inject({
+      method: 'POST', url: '/api/pairing/claim',
+      payload: { code: 'ABCD1234', name: 'Board' },
+    })
+    expect(res.statusCode).toBe(409)
+  })
+
   it('accepts lowercase code by uppercasing it', async () => {
     vi.mocked(queries.getPairingCode).mockResolvedValue({
       code: 'ABCD1234',

@@ -67,10 +67,17 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
     const tokenHash = createHash('sha256').update(rawToken).digest('hex')
     const boardId = ulid()
 
-    await db.transaction().execute(async (trx) => {
-      await insertBoard(trx, { id: boardId, owner_user_id: req.userId, name: name.trim(), token_hash: tokenHash })
-      await claimPairingCode(trx, { code: row.code, rawToken, boardId })
-    })
+    try {
+      await db.transaction().execute(async (trx) => {
+        await insertBoard(trx, { id: boardId, owner_user_id: req.userId, name: name.trim(), token_hash: tokenHash })
+        await claimPairingCode(trx, { code: row.code, rawToken, boardId })
+      })
+    } catch (err) {
+      if (err instanceof Error && err.message === 'pairing code already claimed') {
+        return reply.code(409).send({ error: 'already claimed' })
+      }
+      throw err
+    }
 
     return reply.code(201).send({ boardId, name: name.trim() })
   })
