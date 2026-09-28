@@ -30,12 +30,13 @@ type Config struct {
 
 // loadConfig builds Config from: defaults → TOML file → env vars → overrides.
 // overrides is a map of koanf key → value for CLI flag values; nil is fine.
-func loadConfig(overrides map[string]string) (Config, error) {
+// cfgPath is where bridge.toml is read from and where a generated bridge_id is
+// written back; "" disables both.
+func loadConfig(overrides map[string]string, cfgPath string) (Config, error) {
 	k := koanf.New(".")
 
 	k.Set("log_level", "info")
 
-	cfgPath, _ := configFilePath()
 	if cfgPath != "" {
 		if _, err := os.Stat(cfgPath); err == nil {
 			if err := k.Load(file.Provider(cfgPath), toml.Parser()); err != nil {
@@ -80,7 +81,20 @@ func loadConfig(overrides map[string]string) (Config, error) {
 	return cfg, nil
 }
 
-func configFilePath() (string, error) {
+// configFilePath resolves where bridge.toml lives. Precedence:
+//  1. dirOverride (the --config-dir flag) — bridge.toml sits directly in it
+//  2. DARTCADE_CONFIG_DIR env var — same
+//  3. the OS user-config dir, under dartcade/ (the default)
+//
+// The override forms make container persistence a single explicit setting:
+// point it at a mounted volume and the token + bridge_id survive restarts.
+func configFilePath(dirOverride string) (string, error) {
+	if dirOverride == "" {
+		dirOverride = os.Getenv("DARTCADE_CONFIG_DIR")
+	}
+	if dirOverride != "" {
+		return filepath.Join(dirOverride, "bridge.toml"), nil
+	}
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		return "", err

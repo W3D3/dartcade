@@ -28,7 +28,7 @@ run = "cd backend && npm run build"
 
 [tasks."build:bridge"]
 description = "Build bridge binary"
-run = "cd bridge && go build -o dist/dartcade-bridge ./cmd/bridge"
+run = "cd bridge && go build -ldflags \"-X main.version=$(git describe --tags --always --dirty 2>/dev/null || echo dev)\" -o dist/dartcade-bridge ./cmd/bridge"
 
 [tasks."gen:types"]
 description = "Regenerate TS types from schema"

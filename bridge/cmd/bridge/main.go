@@ -31,7 +31,13 @@ func main() {
 	logLevel := fs.String("log-level", "", "Log level: debug, info, warn, error")
 	verbose := fs.Bool("verbose", false, "Verbose (debug-level) logging")
 	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
+	configDir := fs.String("config-dir", "", "Directory holding bridge.toml (also DARTCADE_CONFIG_DIR; default: OS user config dir)")
 	fs.Parse(os.Args[1:])
+
+	// Resolve the config path once; it's where bridge.toml is read and where
+	// the token + bridge_id are persisted. Mount this dir as a volume to keep a
+	// paired bridge paired across container restarts.
+	cfgPath, _ := configFilePath(*configDir)
 
 	cfg, err := loadConfig(map[string]string{
 		"board_url":   *boardURL,
@@ -39,7 +45,7 @@ func main() {
 		"bridge_id":   *bridgeID,
 		"log_level":   *logLevel,
 		"token":       *token,
-	})
+	}, cfgPath)
 	if err != nil {
 		log.Fatal("config error", "err", err)
 	}
@@ -78,7 +84,7 @@ func main() {
 			log.Fatal("pairing failed", "err", err)
 		}
 		cfg.Token = pairedToken
-		if cfgPath, _ := configFilePath(); cfgPath != "" {
+		if cfgPath != "" {
 			persistToken(cfgPath, cfg.Token)
 		}
 		con.pairedOK()

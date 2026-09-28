@@ -41,6 +41,22 @@ func TestToHTTPBase(t *testing.T) {
 	}
 }
 
+func TestConfigFilePath(t *testing.T) {
+	// An explicit directory override wins and puts bridge.toml directly in it.
+	if got, _ := configFilePath("/data"); got != filepath.Join("/data", "bridge.toml") {
+		t.Errorf("override: got %q", got)
+	}
+	// DARTCADE_CONFIG_DIR is used when no override is given.
+	t.Setenv("DARTCADE_CONFIG_DIR", "/envdir")
+	if got, _ := configFilePath(""); got != filepath.Join("/envdir", "bridge.toml") {
+		t.Errorf("env: got %q", got)
+	}
+	// The explicit override beats the env var.
+	if got, _ := configFilePath("/flagdir"); got != filepath.Join("/flagdir", "bridge.toml") {
+		t.Errorf("precedence: got %q", got)
+	}
+}
+
 func TestPersistToken(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "bridge.toml")
