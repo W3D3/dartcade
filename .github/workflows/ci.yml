@@ -134,8 +134,10 @@ jobs:
       - name: Install e2e dependencies
         run: npm ci
         working-directory: e2e
+      - name: Install Playwright browsers
+        run: npx playwright install chromium --with-deps
+        working-directory: e2e
       - name: Run e2e smoke tests
-        # Uses channel: 'chrome' — ubuntu-latest has Google Chrome pre-installed
         run: npm test
         working-directory: e2e
       - name: Upload Playwright report on failure
