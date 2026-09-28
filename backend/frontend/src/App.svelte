@@ -33,7 +33,7 @@
 
   onMount(async () => {
     const currentHash = window.location.hash
-    if (currentHash.startsWith('#/login')) { checked = true; return }
+    if (currentHash.startsWith('#/login') || currentHash.startsWith('#/register')) { checked = true; return }
     await currentUser.refresh()
     if (!get(currentUser)) {
       // A join link or QR code opened while signed out comes back here after signing in
