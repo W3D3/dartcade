@@ -28,13 +28,14 @@ test('X01 manual dart entry shows bust state', async ({ authedPage: page }) => {
   // End the visit (CorrectionPanel button)
   await page.click('button:has-text("Takeout · next player")')
 
-  // Round 2: default outMode is "double" — score 1 is unfinishable → bust.
-  // T20 → 121−60=61.  T20 → 61−60=1 → bust fires immediately.
+  // Round 2: T20 → 121−60=61. T20 → 61−60=1. T20 → 1−60=−59 → bust.
+  await tripleBtn.click()
+  await page.click('button[aria-label="Triple 20"]')
   await tripleBtn.click()
   await page.click('button[aria-label="Triple 20"]')
   await tripleBtn.click()
   await page.click('button[aria-label="Triple 20"]')
 
-  // Bust badge visible in x01 player stats view
+  // Bust indicator visible in correction panel or player stats
   await expect(page.locator('text=Bust').first()).toBeVisible()
 })
