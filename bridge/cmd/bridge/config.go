@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -111,15 +112,23 @@ func persistToken(path, token string) {
 	fmt.Fprintf(f, "\ntoken = %q\n", token)
 }
 
-func toHTTPBase(wsURL string) string {
-	switch {
-	case strings.HasPrefix(wsURL, "wss://"):
-		return "https://" + strings.TrimPrefix(wsURL, "wss://")
-	case strings.HasPrefix(wsURL, "ws://"):
-		return "http://" + strings.TrimPrefix(wsURL, "ws://")
-	default:
-		return wsURL
+// toHTTPBase derives the HTTP origin (scheme://host) for the REST API from
+// the backend URL. The backend URL carries the WebSocket path (e.g.
+// ws://host:3000/bridge) and may carry a token query; the pairing endpoints
+// live at the origin, so the path and query are dropped and ws(s) is mapped
+// to http(s).
+func toHTTPBase(backendURL string) string {
+	u, err := url.Parse(backendURL)
+	if err != nil || u.Host == "" {
+		return backendURL
 	}
+	switch u.Scheme {
+	case "wss":
+		u.Scheme = "https"
+	case "ws":
+		u.Scheme = "http"
+	}
+	return u.Scheme + "://" + u.Host
 }
 
 func runPairing(ctx context.Context, cfg Config) (string, error) {

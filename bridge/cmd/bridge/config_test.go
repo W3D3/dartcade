@@ -22,6 +22,11 @@ func TestToHTTPBase(t *testing.T) {
 		{"ws://localhost:3000", "http://localhost:3000"},
 		{"https://already.example.com", "https://already.example.com"},
 		{"http://localhost:3000", "http://localhost:3000"},
+		// The backend URL carries the WS path (/bridge) and may carry a
+		// query — pairing endpoints live at the origin, so both are dropped.
+		{"ws://localhost:3000/bridge", "http://localhost:3000"},
+		{"wss://dartcade.example.com/bridge", "https://dartcade.example.com"},
+		{"ws://localhost:3000/bridge?token=abc", "http://localhost:3000"},
 	}
 	for _, tc := range cases {
 		got := toHTTPBase(tc.in)
@@ -80,6 +85,34 @@ func TestRunPairing_Success(t *testing.T) {
 	}
 	if token != "tok-secret" {
 		t.Errorf("got token %q, want %q", token, "tok-secret")
+	}
+}
+
+// The dev backend URL carries the WS path (ws://host/bridge). Pairing must
+// still reach /api/pairing/* at the origin, not /bridge/api/pairing/*.
+func TestRunPairing_BackendURLWithPath(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch {
+		case r.Method == "POST" && r.URL.Path == "/api/pairing/request":
+			json.NewEncoder(w).Encode(map[string]string{
+				"code":      "ABCD1234",
+				"expiresAt": time.Now().Add(10 * time.Minute).Format(time.RFC3339),
+			})
+		case r.Method == "GET" && r.URL.Path == "/api/pairing/ABCD1234/token":
+			json.NewEncoder(w).Encode(map[string]string{"status": "claimed", "token": "tok-path"})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+
+	cfg := Config{BackendURL: srv.URL + "/bridge", BridgeID: "br_test"}
+	token, err := runPairing(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token != "tok-path" {
+		t.Errorf("got token %q, want %q", token, "tok-path")
 	}
 }
 
