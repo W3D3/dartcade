@@ -20,6 +20,15 @@ export interface BoardsTable {
   created_at: ColumnType<Date, never, never>
 }
 
+export interface PairingCodesTable {
+  code: string
+  created_at: ColumnType<Date, never, never>
+  expires_at: Date
+  claimed_at: Date | null
+  raw_token: string | null
+  board_id: string | null
+}
+
 export interface GameSessionsTable {
   id: string
   board_db_id: string | null
@@ -45,6 +54,7 @@ export interface BridgeEventsTable {
 export interface Database {
   user: UserTable
   boards: BoardsTable
+  pairing_codes: PairingCodesTable
   game_sessions: GameSessionsTable
   bridge_events: BridgeEventsTable
 }

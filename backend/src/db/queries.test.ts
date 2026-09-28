@@ -8,6 +8,10 @@ import {
   setGameSessionFinished,
   insertBridgeEvent,
   getBridgeEventsForBoardDbId,
+  insertPairingCode,
+  getPairingCode,
+  claimPairingCode,
+  consumePairingToken,
   insertBoard,
 } from './queries.js'
 import type { Kysely } from 'kysely'
@@ -23,6 +27,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
     await runMigrations(db)
     await db.deleteFrom('game_sessions').execute()
     await db.deleteFrom('bridge_events').execute()
+    await db.deleteFrom('pairing_codes').execute()
     await db.deleteFrom('boards').execute()
     // seed a minimal user row for FK
     await db.deleteFrom('user').execute()
@@ -99,6 +104,47 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       const rows = await getBridgeEventsForBoardDbId(db, 'board-db-1', since)
       // board-db-1 has no hardware_id yet, so no events
       expect(rows).toHaveLength(0)
+    })
+  })
+
+  describe('pairing_codes queries', () => {
+    const code = 'TESTCODE'
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000)
+
+    it('insertPairingCode creates a pending row', async () => {
+      await insertPairingCode(db, { code, expiresAt })
+      const row = await getPairingCode(db, code)
+      expect(row).toBeDefined()
+      expect(row!.code).toBe(code)
+      expect(row!.claimed_at).toBeNull()
+      expect(row!.raw_token).toBeNull()
+      expect(row!.board_id).toBeNull()
+    })
+
+    it('getPairingCode returns undefined for unknown code', async () => {
+      const row = await getPairingCode(db, 'NOTEXIST')
+      expect(row).toBeUndefined()
+    })
+
+    it('claimPairingCode sets claimed_at, raw_token, and board_id', async () => {
+      await insertBoard(db, {
+        id: 'board-pair-1',
+        owner_user_id: 'u-test-1',
+        name: 'Paired Board',
+        token_hash: 'hash-pair-1',
+      })
+      await claimPairingCode(db, { code, rawToken: 'secret-token', boardId: 'board-pair-1' })
+      const row = await getPairingCode(db, code)
+      expect(row!.claimed_at).not.toBeNull()
+      expect(row!.raw_token).toBe('secret-token')
+      expect(row!.board_id).toBe('board-pair-1')
+    })
+
+    it('consumePairingToken nulls out raw_token', async () => {
+      await consumePairingToken(db, code)
+      const row = await getPairingCode(db, code)
+      expect(row!.raw_token).toBeNull()
+      expect(row!.claimed_at).not.toBeNull()
     })
   })
 })
