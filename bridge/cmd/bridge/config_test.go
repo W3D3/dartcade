@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -79,6 +80,21 @@ func TestRunPairing_Success(t *testing.T) {
 	}
 	if token != "tok-secret" {
 		t.Errorf("got token %q, want %q", token, "tok-secret")
+	}
+}
+
+func TestRunPairing_CtxCancelledDuringRequest(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(500 * time.Millisecond)
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+
+	_, err := runPairing(ctx, Config{BackendURL: srv.URL, BridgeID: "br_test"})
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("expected DeadlineExceeded, got: %v", err)
 	}
 }
 

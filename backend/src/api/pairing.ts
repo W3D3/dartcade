@@ -67,8 +67,10 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
     const tokenHash = createHash('sha256').update(rawToken).digest('hex')
     const boardId = ulid()
 
-    await insertBoard(db, { id: boardId, owner_user_id: req.userId, name: name.trim(), token_hash: tokenHash })
-    await claimPairingCode(db, { code: row.code, rawToken, boardId })
+    await db.transaction().execute(async (trx) => {
+      await insertBoard(trx, { id: boardId, owner_user_id: req.userId, name: name.trim(), token_hash: tokenHash })
+      await claimPairingCode(trx, { code: row.code, rawToken, boardId })
+    })
 
     return reply.code(201).send({ boardId, name: name.trim() })
   })

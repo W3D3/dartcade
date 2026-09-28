@@ -22,7 +22,10 @@ beforeEach(() => vi.clearAllMocks())
 function makeApp() {
   const app = Fastify()
   app.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
-  app.register(pairingApiPlugin, { db: {} as any })
+  const mockDb: any = {
+    transaction: () => ({ execute: (fn: (trx: any) => Promise<any>) => fn(mockDb) }),
+  }
+  app.register(pairingApiPlugin, { db: mockDb })
   return app
 }
 

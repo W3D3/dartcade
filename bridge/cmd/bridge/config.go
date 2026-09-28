@@ -125,7 +125,12 @@ func toHTTPBase(wsURL string) string {
 func runPairing(ctx context.Context, cfg Config) (string, error) {
 	httpBase := toHTTPBase(cfg.BackendURL)
 
-	resp, err := http.Post(httpBase+"/api/pairing/request", "application/json", strings.NewReader("{}"))
+	pairReq, err := http.NewRequestWithContext(ctx, "POST", httpBase+"/api/pairing/request", strings.NewReader("{}"))
+	if err != nil {
+		return "", fmt.Errorf("pairing request: %w", err)
+	}
+	pairReq.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(pairReq)
 	if err != nil {
 		return "", fmt.Errorf("pairing request: %w", err)
 	}
