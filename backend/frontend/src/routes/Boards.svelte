@@ -15,6 +15,41 @@
   let cameraTs = $state(Date.now())
   let cameraInterval: ReturnType<typeof setInterval> | null = null
 
+  let pairOpen = $state(false)
+  let pairCode = $state('')
+  let pairName = $state('')
+  let pairError = $state<string | null>(null)
+  let pairLoading = $state(false)
+
+  async function submitPair() {
+    pairError = null
+    pairLoading = true
+    try {
+      const res = await fetch('/api/pairing/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: pairCode.toUpperCase().trim(), name: pairName.trim() }),
+      })
+      if (res.ok) {
+        pairOpen = false
+        pairCode = ''
+        pairName = ''
+        const d = await fetch('/api/boards').then(r => r.json())
+        boards = d.boards ?? []
+      } else {
+        const body = await res.json().catch(() => ({}))
+        if (res.status === 404) pairError = 'Code not found — check it and try again'
+        else if (res.status === 410) pairError = 'Code has expired — restart the bridge to get a new one'
+        else if (res.status === 409) pairError = 'Code already used'
+        else pairError = body.error ?? 'Something went wrong'
+      }
+    } catch {
+      pairError = 'Network error — check your connection'
+    } finally {
+      pairLoading = false
+    }
+  }
+
   onMount(async () => {
     const res = await fetch('/api/boards')
     if (res.status === 401) { push('/login'); return }
@@ -43,7 +78,7 @@
           <span class="text-text">{onlineCount} online</span> · {boards.length - onlineCount} offline
         </p>
       </div>
-      <Button variant="primary" class="h-12 text-[18px]">
+      <Button variant="primary" class="h-12 text-[18px]" onclick={() => { pairOpen = true }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
           <path d="M12 5v14M5 12h14"/>
@@ -143,5 +178,59 @@
         </aside>
       {/if}
     </div>
+
+  {#if pairOpen}
+    <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60"
+         role="dialog" aria-modal="true">
+      <div class="w-full max-w-md box-border p-8 rounded-[18px] bg-surface-1 border border-line-2
+                  flex flex-col gap-6">
+        <h2 class="m-0 font-display font-bold text-[28px] uppercase">Pair new board</h2>
+        <p class="m-0 text-[14px] text-text-muted">
+          Run <code class="font-mono bg-surface-2 px-1 rounded">dartcade-bridge</code> on your
+          board's machine, then enter the code it displays.
+        </p>
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-col gap-1">
+            <label class="text-[13px] text-text-dim" for="pair-code">Pairing code</label>
+            <input
+              id="pair-code"
+              type="text"
+              maxlength="8"
+              placeholder="ABCD1234"
+              class="h-11 px-3 rounded-[10px] bg-surface-2 border border-line-2 font-mono text-[18px]
+                     uppercase tracking-widest text-center focus:outline-none focus:border-accent"
+              bind:value={pairCode}
+              oninput={() => { pairCode = pairCode.toUpperCase() }}
+            />
+          </div>
+          <div class="flex flex-col gap-1">
+            <label class="text-[13px] text-text-dim" for="pair-name">Board name</label>
+            <input
+              id="pair-name"
+              type="text"
+              placeholder="Living Room"
+              class="h-11 px-3 rounded-[10px] bg-surface-2 border border-line-2 text-[15px]
+                     focus:outline-none focus:border-accent"
+              bind:value={pairName}
+            />
+          </div>
+          {#if pairError}
+            <p class="m-0 text-[13px] text-red-400">{pairError}</p>
+          {/if}
+        </div>
+        <div class="flex gap-3 justify-end">
+          <Button variant="ghost" onclick={() => { pairOpen = false; pairError = null }}
+                  disabled={pairLoading}>
+            Cancel
+          </Button>
+          <Button variant="primary"
+                  onclick={submitPair}
+                  disabled={pairLoading || pairCode.length !== 8 || !pairName.trim()}>
+            {pairLoading ? 'Pairing…' : 'Pair board'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  {/if}
   </main>
 </Layout>
