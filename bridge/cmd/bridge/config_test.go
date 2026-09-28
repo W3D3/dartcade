@@ -98,25 +98,63 @@ func TestRunPairing_CtxCancelledDuringRequest(t *testing.T) {
 	}
 }
 
-func TestRunPairing_Expired(t *testing.T) {
+func TestRunPairing_RetryAfterExpiry(t *testing.T) {
+	requestCount := 0
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == "POST" && r.URL.Path == "/api/pairing/request":
-			expiry := time.Now().Add(100 * time.Millisecond)
+			requestCount++
+			expiry := time.Now().Add(10 * time.Minute)
+			if requestCount == 1 {
+				expiry = time.Now().Add(100 * time.Millisecond) // first code expires fast
+			}
 			json.NewEncoder(w).Encode(map[string]string{
 				"code":      "ABCD1234",
 				"expiresAt": expiry.Format(time.RFC3339),
 			})
+		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/api/pairing/"):
+			if requestCount >= 2 {
+				json.NewEncoder(w).Encode(map[string]string{"status": "claimed", "token": "tok-retry"})
+			} else {
+				json.NewEncoder(w).Encode(map[string]string{"status": "pending"})
+			}
 		default:
-			w.WriteHeader(http.StatusNotFound)
-			json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+			http.NotFound(w, r)
 		}
 	}))
 	defer srv.Close()
 
 	cfg := Config{BackendURL: srv.URL, BridgeID: "br_test"}
-	_, err := runPairing(context.Background(), cfg)
-	if err == nil {
-		t.Fatal("expected an error for expired code, got nil")
+	token, err := runPairing(context.Background(), cfg)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if token != "tok-retry" {
+		t.Errorf("got token %q, want %q", token, "tok-retry")
+	}
+	if requestCount < 2 {
+		t.Errorf("expected at least 2 pairing requests (retry), got %d", requestCount)
+	}
+}
+
+func TestRunPairing_StopsOnCtxCancelDuringRetry(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" && r.URL.Path == "/api/pairing/request" {
+			expiry := time.Now().Add(100 * time.Millisecond)
+			json.NewEncoder(w).Encode(map[string]string{
+				"code":      "ABCD1234",
+				"expiresAt": expiry.Format(time.RFC3339),
+			})
+		}
+	}))
+	defer srv.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 350*time.Millisecond)
+	defer cancel()
+
+	cfg := Config{BackendURL: srv.URL, BridgeID: "br_test"}
+	_, err := runPairing(ctx, cfg)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("expected DeadlineExceeded, got: %v", err)
 	}
 }

@@ -124,7 +124,19 @@ func toHTTPBase(wsURL string) string {
 
 func runPairing(ctx context.Context, cfg Config) (string, error) {
 	httpBase := toHTTPBase(cfg.BackendURL)
+	for {
+		token, err := runPairingOnce(ctx, httpBase)
+		if err == nil {
+			return token, nil
+		}
+		if ctx.Err() != nil {
+			return "", ctx.Err()
+		}
+		log.Info("pairing code expired — requesting a new one")
+	}
+}
 
+func runPairingOnce(ctx context.Context, httpBase string) (string, error) {
 	pairReq, err := http.NewRequestWithContext(ctx, "POST", httpBase+"/api/pairing/request", strings.NewReader("{}"))
 	if err != nil {
 		return "", fmt.Errorf("pairing request: %w", err)
@@ -165,7 +177,7 @@ func runPairing(ctx context.Context, cfg Config) (string, error) {
 		case <-ctx.Done():
 			return "", ctx.Err()
 		case <-deadline.C:
-			return "", fmt.Errorf("pairing code %s expired before it was claimed", pairResp.Code)
+			return "", fmt.Errorf("pairing code %s expired", pairResp.Code)
 		case <-ticker.C:
 			token, done, err := pollPairingToken(ctx, httpBase, pairResp.Code)
 			if err != nil {
@@ -207,7 +219,7 @@ func pollPairingToken(ctx context.Context, httpBase, code string) (token string,
 	case "claimed":
 		return body.Token, true, nil
 	case "consumed":
-		return "", false, fmt.Errorf("pairing token already consumed — restart bridge to generate a new code")
+		return "", false, fmt.Errorf("pairing token already consumed — a new code will be requested")
 	default:
 		return "", false, nil
 	}
