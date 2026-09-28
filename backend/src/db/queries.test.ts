@@ -140,8 +140,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       expect(row!.board_id).toBe('board-pair-1')
     })
 
-    it('consumePairingToken nulls out raw_token', async () => {
-      await consumePairingToken(db, code)
+    it('consumePairingToken returns the token once, then null, and nulls raw_token', async () => {
+      const first = await consumePairingToken(db, code)
+      expect(first).toBe('secret-token')
+      const second = await consumePairingToken(db, code)
+      expect(second).toBeNull()
       const row = await getPairingCode(db, code)
       expect(row!.raw_token).toBeNull()
       expect(row!.claimed_at).not.toBeNull()

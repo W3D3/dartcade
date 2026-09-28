@@ -195,9 +195,22 @@ export async function claimPairingCode(
   }
 }
 
-export async function consumePairingToken(db: Kysely<Database>, code: string): Promise<void> {
-  await db.updateTable('pairing_codes')
-    .set({ raw_token: null })
-    .where('code', '=', code)
-    .execute()
+// consumePairingToken atomically reads and clears the one-time token: it locks
+// the row, returns the token if still present (nulling it), or null if it was
+// already delivered. The row lock serializes concurrent polls so the token is
+// handed out at most once.
+export async function consumePairingToken(db: Kysely<Database>, code: string): Promise<string | null> {
+  return db.transaction().execute(async (trx) => {
+    const row = await trx.selectFrom('pairing_codes')
+      .select('raw_token')
+      .where('code', '=', code)
+      .forUpdate()
+      .executeTakeFirst()
+    if (!row?.raw_token) return null
+    await trx.updateTable('pairing_codes')
+      .set({ raw_token: null })
+      .where('code', '=', code)
+      .execute()
+    return row.raw_token
+  })
 }

@@ -83,15 +83,17 @@ describe('GET /api/pairing/:code/token', () => {
     expect(queries.consumePairingToken).not.toHaveBeenCalled()
   })
 
-  it('returns claimed+token and consumes on first delivery', async () => {
+  it('returns claimed+token from the atomic consume on first delivery', async () => {
     vi.mocked(queries.getPairingCode).mockResolvedValue({
       code: 'ABCD1234',
       expires_at: new Date(Date.now() + 60_000),
       claimed_at: new Date(),
-      raw_token: 'secret-abc',
+      raw_token: 'stale-read', // GET must NOT trust this; it uses the consume result
       board_id: 'board-1',
       created_at: new Date() as any,
     })
+    // The token comes from the atomic consume, not the earlier read.
+    vi.mocked(queries.consumePairingToken).mockResolvedValueOnce('secret-abc')
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/pairing/ABCD1234/token' })
     expect(res.statusCode).toBe(200)
@@ -101,7 +103,7 @@ describe('GET /api/pairing/:code/token', () => {
     expect(queries.consumePairingToken).toHaveBeenCalledWith(expect.anything(), 'ABCD1234')
   })
 
-  it('returns consumed when raw_token already nulled', async () => {
+  it('returns consumed when the atomic consume finds no token (already delivered)', async () => {
     vi.mocked(queries.getPairingCode).mockResolvedValue({
       code: 'ABCD1234',
       expires_at: new Date(Date.now() + 60_000),
@@ -110,11 +112,31 @@ describe('GET /api/pairing/:code/token', () => {
       board_id: 'board-1',
       created_at: new Date() as any,
     })
+    vi.mocked(queries.consumePairingToken).mockResolvedValueOnce(null)
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/pairing/ABCD1234/token' })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body).status).toBe('consumed')
-    expect(queries.consumePairingToken).not.toHaveBeenCalled()
+  })
+
+  it('delivers the token for a claimed code even after it expired', async () => {
+    // Claimed just before the TTL, polled just after — the token must still
+    // be delivered, not 404'd, or the bridge loops forever.
+    vi.mocked(queries.getPairingCode).mockResolvedValue({
+      code: 'ABCD1234',
+      expires_at: new Date(Date.now() - 1000),
+      claimed_at: new Date(Date.now() - 500),
+      raw_token: 'tok-late',
+      board_id: 'board-1',
+      created_at: new Date() as any,
+    })
+    vi.mocked(queries.consumePairingToken).mockResolvedValueOnce('tok-late')
+    const app = makeApp()
+    const res = await app.inject({ method: 'GET', url: '/api/pairing/ABCD1234/token' })
+    expect(res.statusCode).toBe(200)
+    const body = JSON.parse(res.body)
+    expect(body.status).toBe('claimed')
+    expect(body.token).toBe('tok-late')
   })
 })
 

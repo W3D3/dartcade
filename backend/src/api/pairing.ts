@@ -49,17 +49,20 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
     const { code } = req.params as { code: string }
     const row = await getPairingCode(db, normalizeCode(code))
 
-    if (!row || row.expires_at < new Date()) {
-      return reply.code(404).send({ error: 'not found' })
-    }
+    if (!row) return reply.code(404).send({ error: 'not found' })
+
     if (!row.claimed_at) {
+      // Expiry only bounds unclaimed codes (the brute-force window). A claimed
+      // code must still deliver its one token even if it expired between the
+      // claim and this poll.
+      if (row.expires_at < new Date()) return reply.code(404).send({ error: 'not found' })
       return reply.send({ status: 'pending' })
     }
-    if (!row.raw_token) {
-      return reply.send({ status: 'consumed' })
-    }
-    await consumePairingToken(db, row.code)
-    return reply.send({ status: 'claimed', token: row.raw_token })
+
+    // Atomically grab the one-time token; null means it was already delivered.
+    const token = await consumePairingToken(db, row.code)
+    if (token) return reply.send({ status: 'claimed', token })
+    return reply.send({ status: 'consumed' })
   })
 
   app.post('/api/pairing/claim', { preHandler: requireAuth }, async (req, reply) => {
