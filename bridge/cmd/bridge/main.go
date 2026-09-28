@@ -15,6 +15,9 @@ import (
 	"github.com/oklog/ulid/v2"
 )
 
+// version is stamped at build time via -ldflags "-X main.version=vX.Y.Z".
+var version = "dev"
+
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "replay" {
 		runReplay(os.Args[2:])
@@ -26,20 +29,36 @@ func main() {
 	backendURL := fs.String("backend-url", "", "Backend WSS URL")
 	bridgeID := fs.String("bridge-id", "", "Stable bridge identifier (auto-generated if empty)")
 	logLevel := fs.String("log-level", "", "Log level: debug, info, warn, error")
+	verbose := fs.Bool("verbose", false, "Verbose (debug-level) logging")
+	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
+	configDir := fs.String("config-dir", "", "Directory holding bridge.toml (also DARTCADE_CONFIG_DIR; default: OS user config dir)")
 	fs.Parse(os.Args[1:])
+
+	// Resolve the config path once; it's where bridge.toml is read and where
+	// the token + bridge_id are persisted. Mount this dir as a volume to keep a
+	// paired bridge paired across container restarts.
+	cfgPath, _ := configFilePath(*configDir)
 
 	cfg, err := loadConfig(map[string]string{
 		"board_url":   *boardURL,
 		"backend_url": *backendURL,
 		"bridge_id":   *bridgeID,
 		"log_level":   *logLevel,
-	})
+		"token":       *token,
+	}, cfgPath)
 	if err != nil {
 		log.Fatal("config error", "err", err)
 	}
 
-	setLogLevel(cfg.LogLevel)
-	log.Info("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
+	level := cfg.LogLevel
+	if *verbose {
+		level = "debug"
+	}
+	setLogLevel(level)
+
+	con := newConsole(os.Stdout)
+	con.banner(version)
+	log.Debug("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -47,14 +66,32 @@ func main() {
 	bootID := ulid.Make().String()
 	client := bm.NewClient(cfg.BoardURL)
 
-	// Fetch BM version and board_id before creating the transport so those
-	// values are available in every envelope from the first connection.
+	// Reach the board first: fetch BM version, board_id, and camera count so we
+	// can confirm the board is present before asking the user to pair, and so
+	// those values are available in every envelope from the first connection.
 	initCtx, initCancel := context.WithTimeout(ctx, 30*time.Second)
 	if err := client.Init(initCtx); err != nil {
 		initCancel()
+		con.boardUnreachable(cfg.BoardURL)
 		log.Fatal("BM init failed", "err", err)
 	}
 	initCancel()
+	con.boardFound(hostOf(cfg.BoardURL), client.CameraCount())
+
+	if cfg.Token == "" {
+		pairedToken, err := runPairing(ctx, cfg, con)
+		if err != nil {
+			log.Fatal("pairing failed", "err", err)
+		}
+		cfg.Token = pairedToken
+		if cfgPath != "" {
+			if err := persistToken(cfgPath, cfg.Token); err != nil {
+				log.Warn("could not persist token — the bridge will re-pair on restart",
+					"path", cfgPath, "err", err)
+			}
+		}
+		con.pairedOK()
+	}
 
 	exec := func(name string) (int, error) {
 		execCtx := context.Background()
@@ -70,7 +107,7 @@ func main() {
 	}
 
 	tr := transport.New(transport.Config{
-		BackendURL: cfg.BackendURL,
+		BackendURL: cfg.BackendURL + "?token=" + cfg.Token,
 		BridgeID:   cfg.BridgeID,
 		BootID:     bootID,
 		BoardID:    client.BoardID(),

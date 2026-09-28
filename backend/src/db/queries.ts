@@ -160,3 +160,57 @@ export async function updateBoardHardwareId(
     .where('hardware_id', 'is', null)
     .execute()
 }
+
+// ---------------------------------------------------------------------------
+// Pairing codes
+// ---------------------------------------------------------------------------
+
+export async function insertPairingCode(
+  db: Kysely<Database>,
+  p: { code: string; expiresAt: Date },
+): Promise<void> {
+  await db.insertInto('pairing_codes')
+    .values({ code: p.code, expires_at: p.expiresAt })
+    .execute()
+}
+
+export async function getPairingCode(db: Kysely<Database>, code: string) {
+  return db.selectFrom('pairing_codes')
+    .selectAll()
+    .where('code', '=', code)
+    .executeTakeFirst()
+}
+
+export async function claimPairingCode(
+  db: Kysely<Database>,
+  p: { code: string; rawToken: string; boardId: string },
+): Promise<void> {
+  const result = await db.updateTable('pairing_codes')
+    .set({ claimed_at: new Date(), raw_token: p.rawToken, board_id: p.boardId })
+    .where('code', '=', p.code)
+    .where('claimed_at', 'is', null)
+    .executeTakeFirst()
+  if (result.numUpdatedRows === 0n) {
+    throw new Error('pairing code already claimed')
+  }
+}
+
+// consumePairingToken atomically reads and clears the one-time token: it locks
+// the row, returns the token if still present (nulling it), or null if it was
+// already delivered. The row lock serializes concurrent polls so the token is
+// handed out at most once.
+export async function consumePairingToken(db: Kysely<Database>, code: string): Promise<string | null> {
+  return db.transaction().execute(async (trx) => {
+    const row = await trx.selectFrom('pairing_codes')
+      .select('raw_token')
+      .where('code', '=', code)
+      .forUpdate()
+      .executeTakeFirst()
+    if (!row?.raw_token) return null
+    await trx.updateTable('pairing_codes')
+      .set({ raw_token: null })
+      .where('code', '=', code)
+      .execute()
+    return row.raw_token
+  })
+}

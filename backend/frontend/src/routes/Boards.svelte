@@ -3,6 +3,9 @@
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { Badge } from '$lib/components/ui/badge/index.js'
+  import { Toast } from '$lib/components/ui/toast/index.js'
+  import PairBoardModal from '$lib/components/PairBoardModal.svelte'
 
   type Board = {
     id: string; name: string; online: boolean; ip?: string
@@ -15,6 +18,29 @@
   let cameraTs = $state(Date.now())
   let cameraInterval: ReturnType<typeof setInterval> | null = null
 
+  let pairOpen = $state(false)
+  let justPairedId = $state<string | null>(null)
+  let toast = $state<{ name: string; boardId: string } | null>(null)
+  let toastTimer: ReturnType<typeof setTimeout> | null = null
+  let pairedTimer: ReturnType<typeof setTimeout> | null = null
+
+  async function onPaired(info: { boardId: string; name: string }) {
+    pairOpen = false
+    // The board is already paired server-side; refresh the list, but still
+    // surface success even if the refetch fails (e.g. session expired).
+    try {
+      const d = await fetch('/api/boards').then(r => r.json())
+      boards = d.boards ?? []
+      selectedId = info.boardId
+    } catch { /* keep the current list; the toast still confirms the pair */ }
+    justPairedId = info.boardId
+    toast = info
+    if (toastTimer) clearTimeout(toastTimer)
+    if (pairedTimer) clearTimeout(pairedTimer)
+    toastTimer = setTimeout(() => { toast = null }, 8000)
+    pairedTimer = setTimeout(() => { justPairedId = null }, 12000)
+  }
+
   onMount(async () => {
     const res = await fetch('/api/boards')
     if (res.status === 401) { push('/login'); return }
@@ -23,7 +49,11 @@
     if (boards.length) selectedId = boards[0].id
     cameraInterval = setInterval(() => { cameraTs = Date.now() }, 1000)
   })
-  onDestroy(() => { if (cameraInterval) clearInterval(cameraInterval) })
+  onDestroy(() => {
+    if (cameraInterval) clearInterval(cameraInterval)
+    if (toastTimer) clearTimeout(toastTimer)
+    if (pairedTimer) clearTimeout(pairedTimer)
+  })
 
   const onlineCount = $derived(boards.filter(b => b.online).length)
 </script>
@@ -43,7 +73,7 @@
           <span class="text-text">{onlineCount} online</span> · {boards.length - onlineCount} offline
         </p>
       </div>
-      <Button variant="primary" class="h-12 text-[18px]">
+      <Button variant="primary" class="h-12 text-[18px]" onclick={() => { pairOpen = true }}>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
           stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
           <path d="M12 5v14M5 12h14"/>
@@ -57,22 +87,38 @@
       <div class="flex-grow grid grid-cols-2 grid-rows-2 gap-4 content-start">
         {#each boards as board (board.id)}
           {@const active = board.id === selectedId}
+          {@const justPaired = board.id === justPairedId}
           <button type="button" onclick={() => selectedId = board.id}
             class="text-left box-border p-[22px] rounded-[14px] flex flex-col gap-[18px] transition-colors
-                   {active
+                   {justPaired
                      ? 'bg-surface-2 border-2 border-accent'
-                     : 'bg-surface-2 border border-line-2 hover:border-line'}">
+                     : active
+                       ? 'bg-surface-2 border-2 border-accent'
+                       : 'bg-surface-2 border border-line-2 hover:border-line'}">
 
             <div class="flex justify-between items-center">
-              <span class="flex items-center gap-2 text-[13px] font-semibold
-                           {board.online ? 'text-accent' : 'text-text-dim'}">
-                <span class="w-2 h-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>
-                {board.online ? 'Online' : 'Offline'}
-              </span>
-              <!-- [PLACEHOLDER] latency from API -->
-              <span class="font-mono text-[12px] text-text-dim">
-                {board.latencyMs != null ? `${board.latencyMs} ms` : '— ms'}
-              </span>
+              {#if justPaired && !board.online}
+                <span class="flex items-center gap-2 text-[13px] font-semibold text-text-muted">
+                  <span class="w-2 h-2 rounded-full border border-accent border-t-transparent animate-spin"></span>
+                  Connecting cameras…
+                </span>
+                <Badge variant="paired">Just paired</Badge>
+              {:else}
+                <span class="flex items-center gap-2 text-[13px] font-semibold
+                             {board.online ? 'text-accent' : 'text-text-dim'}">
+                  <span class="w-2 h-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>
+                  {board.online ? 'Online' : 'Offline'}
+                </span>
+                {#if justPaired}
+                  <Badge variant="paired">Just paired</Badge>
+                {/if}
+              {/if}
+              {#if !justPaired}
+                <!-- [PLACEHOLDER] latency from API -->
+                <span class="font-mono text-[12px] text-text-dim">
+                  {board.latencyMs != null ? `${board.latencyMs} ms` : '— ms'}
+                </span>
+              {/if}
             </div>
 
             <div class="flex flex-col gap-1">
@@ -143,5 +189,21 @@
         </aside>
       {/if}
     </div>
+
+  {#if pairOpen}
+    <PairBoardModal onclose={() => { pairOpen = false }} onpaired={onPaired} />
+  {/if}
+
+  <!-- Success toast -->
+  {#if toast}
+    <Toast
+      actionLabel="Play on it"
+      onaction={() => { selectedId = toast!.boardId; toast = null }}
+      onclose={() => { toast = null }}
+    >
+      <span class="text-text font-semibold">{toast.name}</span> is paired.
+      It shows as online once all cameras report in.
+    </Toast>
+  {/if}
   </main>
 </Layout>
