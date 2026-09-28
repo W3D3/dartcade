@@ -1,6 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createHash } from 'crypto'
+import { EventEmitter } from 'events'
 import { BridgeConnections } from './connections.js'
+
+vi.mock('../db/queries.js', () => ({
+  getBoardByTokenHash: vi.fn(),
+  insertBridgeEvent: vi.fn().mockResolvedValue({ inserted: true }),
+  updateBoardHardwareId: vi.fn().mockResolvedValue(undefined),
+}))
+import * as queries from '../db/queries.js'
+import { handleBridgeConnection } from './handler.js'
 
 describe('bridge-gw token auth', () => {
   it('SHA-256 of token produces consistent hash', () => {
@@ -82,5 +91,48 @@ describe('bridgeGwPlugin export', () => {
   it('exports bridgeConnections instance', async () => {
     const { bridgeConnections } = await import('./handler.js')
     expect(bridgeConnections).toBeDefined()
+  })
+})
+
+class FakeSocket extends EventEmitter {
+  readyState = 1
+  close = vi.fn()
+  send = vi.fn()
+}
+
+const flush = () => new Promise(r => setImmediate(r))
+
+describe('handleBridgeConnection', () => {
+  it('does not drop bridge.hello that arrives before the token lookup resolves', async () => {
+    // getBoardByTokenHash stays pending so hello arrives during the auth window.
+    let resolveBoard!: (b: any) => void
+    vi.mocked(queries.getBoardByTokenHash).mockReturnValue(
+      new Promise(r => { resolveBoard = r }) as any,
+    )
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined) } as any
+    const socket = new FakeSocket()
+
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
+
+    // hello sent immediately on connect — before auth resolves
+    socket.emit('message', Buffer.from(JSON.stringify({
+      kind: 'bridge.hello', data: { bm_version: '1.0', bm_url: 'http://board' },
+    })))
+    await flush()
+
+    // auth resolves after hello already arrived
+    resolveBoard({ id: 'board-1', hardware_id: null })
+    await flush(); await flush()
+
+    // a real board event follows
+    socket.emit('message', Buffer.from(JSON.stringify({
+      v: 1, seq: 1, kind: 'bm.frame', bridge_id: 'br', boot_id: 'boot',
+      recv_wall: new Date().toISOString(), data: {},
+    })))
+    await flush(); await flush()
+
+    // hello was processed (not dropped) → no 4400, and the event was acked
+    expect(socket.close).not.toHaveBeenCalledWith(4400, 'expected bridge.hello')
+    expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ ack: 1 }))
   })
 })
