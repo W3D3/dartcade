@@ -26,6 +26,7 @@ func main() {
 	backendURL := fs.String("backend-url", "", "Backend WSS URL")
 	bridgeID := fs.String("bridge-id", "", "Stable bridge identifier (auto-generated if empty)")
 	logLevel := fs.String("log-level", "", "Log level: debug, info, warn, error")
+	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
 	fs.Parse(os.Args[1:])
 
 	cfg, err := loadConfig(map[string]string{
@@ -33,6 +34,7 @@ func main() {
 		"backend_url": *backendURL,
 		"bridge_id":   *bridgeID,
 		"log_level":   *logLevel,
+		"token":       *token,
 	})
 	if err != nil {
 		log.Fatal("config error", "err", err)
@@ -43,6 +45,18 @@ func main() {
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+
+	if cfg.Token == "" {
+		log.Info("no token configured — starting pairing flow")
+		pairedToken, err := runPairing(ctx, cfg)
+		if err != nil {
+			log.Fatal("pairing failed", "err", err)
+		}
+		cfg.Token = pairedToken
+		if cfgPath, _ := configFilePath(); cfgPath != "" {
+			persistToken(cfgPath, cfg.Token)
+		}
+	}
 
 	bootID := ulid.Make().String()
 	client := bm.NewClient(cfg.BoardURL)
@@ -70,7 +84,7 @@ func main() {
 	}
 
 	tr := transport.New(transport.Config{
-		BackendURL: cfg.BackendURL,
+		BackendURL: cfg.BackendURL + "?token=" + cfg.Token,
 		BridgeID:   cfg.BridgeID,
 		BootID:     bootID,
 		BoardID:    client.BoardID(),
