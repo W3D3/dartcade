@@ -286,7 +286,7 @@
 
     <!-- Footer -->
     <div class="flex gap-3 justify-end pt-1">
-      <Button variant="ghost" onclick={onclose} disabled={loading}>Cancel</Button>
+      <Button variant="ghost" class="h-[54px]" onclick={onclose} disabled={loading}>Cancel</Button>
       <Button variant="primary" class="flex-1 max-w-[220px]" onclick={submit} disabled={!canSubmit}>
         {#if loading}
           <svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none"
