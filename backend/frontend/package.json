@@ -7,7 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -23,6 +23,7 @@
     "@types/node": "^22.0.0",
     "@vitest/browser": "^2.0.5",
     "bits-ui": "^2.18.0",
+    "svelte-check": "^4.7.6",
     "tailwind-variants": "^3.3.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.5.3",

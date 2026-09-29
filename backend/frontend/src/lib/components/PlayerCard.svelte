@@ -2,7 +2,7 @@
   import type { GameView } from '../gameViews/index.js'
   import { checkoutHint } from '$lib/dartUtils.js'
 
-  let { player, playerIndex, game, view, isActive, isWinner, previousVisits } = $props<{
+  let { player, playerIndex, game, view, isActive, isWinner, previousVisits }: {
     player: { id?: string; name: string }
     playerIndex: number
     game: Record<string, unknown>
@@ -10,7 +10,7 @@
     isActive: boolean
     isWinner: boolean
     previousVisits: number[]
-  }>()
+  } = $props()
 
   const display      = $derived(view.getPlayerDisplay(game, playerIndex))
   const remaining    = $derived(display?.remaining ?? 0)

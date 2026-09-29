@@ -6,10 +6,10 @@
   import CodeInput from '$lib/components/CodeInput.svelte'
   import { CODE_LENGTH } from '$lib/pairing'
 
-  let { onclose, onpaired } = $props<{
+  let { onclose, onpaired }: {
     onclose: () => void
     onpaired: (info: { boardId: string; name: string }) => void
-  }>()
+  } = $props()
 
   const CHIPS = ['Living room', 'Garage', 'Basement', 'Club']
 

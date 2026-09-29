@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { GameView } from '../gameViews/index.js'
 
-  let { player, playerIndex, game, view, isActive, isWinner, isNext, isLeading } = $props<{
+  let { player, playerIndex, game, view, isActive, isWinner, isNext, isLeading }: {
     player: { id?: string; name: string }
     playerIndex: number
     game: Record<string, unknown>
@@ -10,7 +10,7 @@
     isWinner: boolean
     isNext: boolean
     isLeading: boolean
-  }>()
+  } = $props()
 
   const primary     = $derived(view.getPrimaryDisplay(game, playerIndex))
   const initial     = $derived(player.name?.[0]?.toUpperCase() ?? '?')
