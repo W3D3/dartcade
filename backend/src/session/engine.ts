@@ -24,6 +24,11 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
   }
 }
 
+// Darts and visits of a bull off (see withBullOff) don't count towards game stats
+function inBullOff(session: Session, state: unknown): boolean {
+  return (session.module.view(state, session.players) as { phase?: unknown }).phase === 'bulloff'
+}
+
 export class SessionEngine {
   private byBoard: Map<string, Session> = new Map()
   private byId: Map<string, Session> = new Map()
@@ -80,8 +85,8 @@ export class SessionEngine {
       case 'dart.detected': {
         const view = session.module.view(session.currentState, session.players) as any
         if (view.visitLocked) break
-        const thrower = session.module.getCurrentPlayer(session.committedState)
-        session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
+        const thrower = session.module.getCurrentPlayer(session.currentState)
+        if (!inBullOff(session, session.currentState)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
         session.openVisitEvents.push(event)
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         break
@@ -105,8 +110,8 @@ export class SessionEngine {
 
       case 'takeout.finished':
       case 'visit.cleared': {
-        const visitOwner = session.module.getCurrentPlayer(session.committedState)
-        session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
+        const visitOwner = session.module.getCurrentPlayer(session.currentState)
+        if (!inBullOff(session, session.currentState)) session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
         session.openVisitEvents.push(event)
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         session.committedState = session.currentState
@@ -132,8 +137,8 @@ export class SessionEngine {
 
       case 'board.resync': {
         const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
-        if (dartCount > 0) {
-          const thrower = session.module.getCurrentPlayer(session.committedState)
+        if (dartCount > 0 && !inBullOff(session, session.currentState)) {
+          const thrower = session.module.getCurrentPlayer(session.currentState)
           session.totalDarts[thrower] = Math.max(0, (session.totalDarts[thrower] ?? 0) - dartCount)
         }
         session.openVisitEvents = []
@@ -165,8 +170,8 @@ export class SessionEngine {
           break
         }
       }
-      if (dartRemoved) {
-        const thrower = session.module.getCurrentPlayer(session.committedState)
+      if (dartRemoved && !inBullOff(session, session.currentState)) {
+        const thrower = session.module.getCurrentPlayer(session.currentState)
         session.totalDarts[thrower] = Math.max(0, (session.totalDarts[thrower] ?? 0) - 1)
       }
     } else if (action.type === 'correct_dart') {
@@ -186,8 +191,8 @@ export class SessionEngine {
       }
     } else if (action.type === 'takeout') {
       if (session.openVisitEvents.length > 0) {
-        const visitOwner = session.module.getCurrentPlayer(session.committedState)
-        session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
+        const visitOwner = session.module.getCurrentPlayer(session.currentState)
+        if (!inBullOff(session, session.currentState)) session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
         const finalState = session.module.onBoardEvent(
           session.currentState,
           { kind: 'takeout.finished', data: {} as any },
@@ -208,8 +213,10 @@ export class SessionEngine {
       if (session.openVisitEvents.length === 0) {
         session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } as any })
       }
-      const thrower = session.module.getCurrentPlayer(session.committedState)
-      session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
+      // visit.opened may have just ended the bull off, so use the state it leads to
+      const opened = refoldVisit(session.module, session.committedState, session.openVisitEvents)
+      const thrower = session.module.getCurrentPlayer(opened)
+      if (!inBullOff(session, opened)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
       const score = action.segment.number * action.segment.multiplier
       session.openVisitEvents.push({
         kind: 'dart.detected',

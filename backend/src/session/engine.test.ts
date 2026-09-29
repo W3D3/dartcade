@@ -158,6 +158,30 @@ describe('onUserAction', () => {
     expect(d.data.dart).not.toHaveProperty('polar')
   })
 
+  it('does not count bull off darts; the first game dart counts for the bull off winner', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('board-1', 'x01',
+      { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }, { name: 'Bob' }])
+    const dart = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
+      dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } } })
+    for (const r of [0.2, 0.05]) {
+      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' }, new Date())
+      await engine.onBridgeEvent('board-1', 'dart.detected', dart(r), new Date())
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {}, new Date())
+    }
+    let session = engine.getSession(sessionId)!
+    expect(session.totalDarts).toEqual([0, 0])
+    expect(session.totalVisits).toEqual([0, 0])
+
+    // Bob won the bull off; the next visit is the game's first
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'g1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart(0.5), new Date())
+    await engine.onBridgeEvent('board-1', 'takeout.finished', {}, new Date())
+    session = engine.getSession(sessionId)!
+    expect(session.totalDarts).toEqual([0, 1])
+    expect(session.totalVisits).toEqual([0, 1])
+  })
+
   it('passes other actions to the game module (bull off start)', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('board-1', 'x01',

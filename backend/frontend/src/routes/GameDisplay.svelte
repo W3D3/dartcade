@@ -11,6 +11,7 @@
   import CorrectionPanel from '../lib/components/CorrectionPanel.svelte'
   import { parseLabel } from '../lib/dartUtils.js'
   import GameHeader from '../lib/components/GameHeader.svelte'
+  import BullOffPanel, { type BullOffView } from '../lib/components/BullOffPanel.svelte'
   import { defaultSettings, type GameSettings } from '../lib/gameSettings.js'
 
   // ── Settings (persisted to localStorage) ──────────────────────────────────
@@ -135,6 +136,8 @@
   const bmStatus       = $derived(snapshot?.bmStatus ?? null)
   const bust           = $derived(!!(game.bustThisVisit))
   const isActive       = $derived(winner === null)
+  // Set while a bull off decides the throwing order (any game using withBullOff)
+  const bullOff        = $derived(game.phase === 'bulloff' ? (game.bullOff as BullOffView | undefined) ?? null : null)
 
   const dartItems = $derived(currentDarts.map((d: any) => ({
     label: d.segment?.name ?? 'Miss',
@@ -220,8 +223,9 @@
 
   {:else}
     <GameHeader
-      title={view.title}
-      {subtitle}
+      title={bullOff ? 'Bull-off' : view.title}
+      subtitle={bullOff ? `Who throws first in ${view.title}` : subtitle}
+      showViewToggle={!bullOff}
       {sessionId}
       {boardId}
       {bmStatus}
@@ -233,7 +237,11 @@
       onviewmode={setViewMode}
     />
 
-    {#if isMultiPlayer}
+    {#if bullOff}
+      <BullOffPanel {players} {bullOff} manual={boardId === null}
+        send={a => sessionStore?.send(a)} />
+
+    {:else if isMultiPlayer}
       <!-- ── Multi-player layout (>2 players) ── -->
       <div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-5">
 

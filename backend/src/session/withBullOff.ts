@@ -129,7 +129,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig>(
         currentPlayer: b.currentPlayer,
         // Only a player's first dart counts; lock the visit once it's in.
         visitLocked: b.result !== null || b.throws[b.currentPlayer] !== null,
-        bullOff: { throws: b.throws, currentPlayer: b.currentPlayer, result: b.result },
+        bullOff: { throws: b.throws, sequence: b.sequence, currentPlayer: b.currentPlayer, result: b.result },
       }
     },
   }
