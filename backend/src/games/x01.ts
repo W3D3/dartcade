@@ -1,6 +1,5 @@
 import type { GameModule, BoardEvent, Player, Dart, DartDetectedData, ConfigFieldMeta } from '../session/types.js'
-import { initBullOff, onBullOffDart, onBullOffTakeout } from '../session/bullOff.js'
-import type { BullOffState } from '../session/bullOff.js'
+import { withBullOff } from '../session/withBullOff.js'
 
 export type X01Config = {
   startScore: 301 | 501 | 701
@@ -17,8 +16,9 @@ export type X01State = {
   scores: number[]
   legs: number[]
   opened: boolean[]
-  phase: 'bulloff' | 'game' | 'finished'
-  bullOff: BullOffState
+  phase: 'game' | 'finished'
+  /** Throwing order (player indices); a bull off sets it, else index order. */
+  order: number[]
   currentPlayer: number
   round: number
   bustThisVisit: boolean
@@ -44,6 +44,13 @@ function validFinish(dart: Dart, outMode: 'straight' | 'double' | 'master'): boo
   if (outMode === 'straight') return true
   if (outMode === 'double') return dart.segment.multiplier === 2
   return dart.segment.multiplier === 2 || dart.segment.multiplier === 3
+}
+
+// Next thrower in `order`; a new round starts when it wraps to the first thrower.
+function nextTurn(s: X01State): { nextPlayer: number; round: number } {
+  const pos = s.order.indexOf(s.currentPlayer)
+  const nextPlayer = s.order[(pos + 1) % s.order.length]
+  return { nextPlayer, round: nextPlayer === s.order[0] ? s.round + 1 : s.round }
 }
 
 function freshLeg(cfg: X01Config, playerCount: number, firstPlayer: number): Partial<X01State> {
@@ -111,12 +118,8 @@ export const configMeta: Record<keyof X01Config, ConfigFieldMeta> = {
   },
 }
 
-// A missing bullOff means the default ('off')
-function bullOffEnabled(cfg: X01Config): boolean {
-  return (cfg.bullOff ?? 'off') !== 'off'
-}
-
-export const x01Module: GameModule<X01State, X01Config> = {
+/** X01 without a bull off; `x01Module` below adds it. */
+export const x01Game: GameModule<X01State, X01Config> = {
   id: 'x01',
   defaultConfig: {
     startScore: 501, inMode: 'straight', outMode: 'double',
@@ -124,25 +127,14 @@ export const x01Module: GameModule<X01State, X01Config> = {
   },
   configMeta,
 
-  validate(cfg: X01Config, players: Player[]): string | null {
-    if (bullOffEnabled(cfg) && players.length < 2) return 'bull off needs at least two players'
-    return null
-  },
-
   init(cfg: X01Config, players: Player[]): X01State {
     const n = players.length
-    // A bull off decides throw order between players — with fewer than two it is
-    // meaningless and would otherwise freeze the game in the bulloff phase (score
-    // never counts down). validate() rejects such new games; this also covers
-    // sessions created before that check existed when they are rebuilt.
-    const doBullOff = bullOffEnabled(cfg) && n >= 2
-    const phase: X01State['phase'] = doBullOff ? 'bulloff' : 'game'
     return {
-      cfg, phase,
+      cfg, phase: 'game',
       scores: Array(n).fill(cfg.startScore),
       legs: Array(n).fill(0),
       opened: Array(n).fill(cfg.inMode === 'straight'),
-      bullOff: initBullOff({ mode: doBullOff ? cfg.bullOff : 'off', playerCount: n }),
+      order: players.map((_, i) => i),
       currentPlayer: 0, round: 1,
       bustThisVisit: false,
       visitOpenedScores: Array(n).fill(cfg.startScore),
@@ -151,7 +143,7 @@ export const x01Module: GameModule<X01State, X01Config> = {
   },
 
   getCurrentPlayer(s: X01State): number {
-    return s.phase === 'bulloff' ? s.bullOff.currentPlayer : s.currentPlayer
+    return s.currentPlayer
   },
 
   onBoardEvent(s: X01State, e: BoardEvent): { state: X01State } {
@@ -164,12 +156,6 @@ export const x01Module: GameModule<X01State, X01Config> = {
         const data = e.data as DartDetectedData
         const dart = data.dart as Dart
         const cp = s.currentPlayer
-
-        if (s.phase === 'bulloff') {
-          // Use segment number (25=outer bull, 50=inner bull) not score — inner bull scores 50 not 100
-          const bullOff = onBullOffDart(s.bullOff, dart.segment.number)
-          return { state: { ...s, bullOff } }
-        }
 
         if (s.bustThisVisit) return { state: s }
         if (s.scores[cp] === 0) return { state: s }
@@ -199,18 +185,6 @@ export const x01Module: GameModule<X01State, X01Config> = {
       case 'takeout.finished': {
         const cp = s.currentPlayer
 
-        if (s.phase === 'bulloff') {
-          const result = onBullOffTakeout(s.bullOff)
-          if (!result.done) {
-            return { state: { ...s, bullOff: result.state, currentPlayer: result.state.currentPlayer } }
-          }
-          if (result.winner === null) {
-            // rethrow — restarts with the bull off's first thrower
-            return { state: { ...s, bullOff: result.state, currentPlayer: result.state.currentPlayer } }
-          }
-          return { state: { ...s, bullOff: result.state, phase: 'game', ...freshLeg(s.cfg, s.playerCount, result.winner) } }
-        }
-
         // Leg win
         if (s.scores[cp] === 0) {
           const legs = s.legs.map((l, i) => i === cp ? l + 1 : l)
@@ -220,10 +194,9 @@ export const x01Module: GameModule<X01State, X01Config> = {
           return { state: { ...s, legs, ...freshLeg(s.cfg, s.playerCount, cp) } }
         }
 
-        const nextPlayer = (cp + 1) % s.playerCount
-        const round = nextPlayer === 0 ? s.round + 1 : s.round
+        const { nextPlayer, round } = nextTurn(s)
 
-        if (nextPlayer === 0 && round > s.cfg.maxRounds) {
+        if (round > s.cfg.maxRounds) {
           const minScore = Math.min(...s.scores)
           const winner = s.scores.indexOf(minScore)
           return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished' } }
@@ -233,10 +206,9 @@ export const x01Module: GameModule<X01State, X01Config> = {
       }
 
       case 'visit.cleared': {
-        const nextPlayer = (s.currentPlayer + 1) % s.playerCount
-        const round = nextPlayer === 0 ? s.round + 1 : s.round
+        const { nextPlayer, round } = nextTurn(s)
 
-        if (nextPlayer === 0 && round > s.cfg.maxRounds) {
+        if (round > s.cfg.maxRounds) {
           const minScore = Math.min(...s.scores)
           const winner = s.scores.indexOf(minScore)
           return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished' } }
@@ -264,3 +236,8 @@ export const x01Module: GameModule<X01State, X01Config> = {
     }
   },
 }
+
+/** X01 with an optional bull off deciding the throwing order. */
+export const x01Module = withBullOff(x01Game, {
+  applyStartOrder: (s, order) => ({ ...s, order, currentPlayer: order[0] }),
+})

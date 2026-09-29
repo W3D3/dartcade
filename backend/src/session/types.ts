@@ -24,6 +24,10 @@ export type UserAction =
   | { type: 'undo_dart' }
   | { type: 'takeout' }
   | { type: 'add_dart'; segment: Segment }
+  // Bull off (see withBullOff)
+  | { type: 'bulloff_skip' }
+  | { type: 'bulloff_rethrow' }
+  | { type: 'bulloff_start' }
 
 export type BoardEvent =
   | { kind: 'visit.opened';     data: VisitOpenedData }

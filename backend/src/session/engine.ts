@@ -175,7 +175,9 @@ export class SessionEngine {
       if (target) {
         const orig = target.data as DartDetectedData
         const score = action.segment.number * action.segment.multiplier
-        const newDart = { ...orig.dart, segment: action.segment, score }
+        // The camera position no longer matches the corrected segment, so drop it
+        const { coords: _c, polar: _p, ...rest } = orig.dart
+        const newDart = { ...rest, segment: action.segment, score }
         const idx = session.openVisitEvents.indexOf(target)
         session.openVisitEvents[idx] = {
           kind: 'dart.detected',
@@ -213,6 +215,14 @@ export class SessionEngine {
         kind: 'dart.detected',
         data: { visit_id: 'manual', index: dartCount, dart: { segment: action.segment, score }, source_seq: 0 } as any,
       })
+    } else {
+      // Anything else is the game module's own action (e.g. the bull off's
+      // skip/rethrow/start). It ends the open visit and becomes committed state.
+      const next = session.module.onUserAction(session.currentState, action).state
+      if (next !== session.currentState) {
+        session.committedState = next
+        session.openVisitEvents = []
+      }
     }
 
     session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
