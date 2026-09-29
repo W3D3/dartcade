@@ -31,6 +31,7 @@ export interface PairingCodesTable {
 
 export interface GameSessionsTable {
   id: string
+  owner_user_id: string | null
   board_db_id: string | null
   game_id: string
   config: unknown

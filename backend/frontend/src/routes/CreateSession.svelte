@@ -63,6 +63,8 @@
   let youName = $state('')
   let guests = $state<{ name: string }[]>([])
   let error = $state('')
+  // Set when the server refuses because this user already has a game running
+  let runningSessionId = $state<string | null>(null)
   let loading = $state(false)
 
   let gameDefaults = $state<Record<string, Record<string, unknown>>>({ x01: X01_DEFAULTS })
@@ -129,6 +131,7 @@
   async function start() {
     if (bullOffBlocked) return
     error = ''
+    runningSessionId = null
     const allPlayers = [
       { name: youName.trim() || 'Player 1' },
       ...guests.filter(g => g.name.trim()).map(g => ({ name: g.name.trim() })),
@@ -147,7 +150,12 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ boardId: boardId || null, gameId, config: resolvedConfig, players: allPlayers }),
       })
-      if (!res.ok) { error = (await res.json()).error ?? 'Failed to start'; return }
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        error = body.error ?? 'Failed to start'
+        runningSessionId = res.status === 409 ? body.sessionId ?? null : null
+        return
+      }
       push(`/session/${(await res.json()).sessionId}`)
     } finally { loading = false }
   }
@@ -353,7 +361,18 @@
 
         <!-- Sticky bottom: error + start button -->
         <div class="px-6 pb-6 pt-3 flex flex-col gap-3 border-t border-line">
-          {#if error}<p class="m-0 text-[14px] text-live-text">{error}</p>{/if}
+          {#if error}
+            <p class="m-0 flex items-center justify-between gap-3 text-[14px] text-live-text">
+              {error}
+              {#if runningSessionId}
+                <button type="button" onclick={() => push(`/session/${runningSessionId}`)}
+                  class="h-9 px-3 rounded-[8px] border border-line-3 bg-transparent text-text text-[13px]
+                         font-medium cursor-pointer font-[inherit] hover:bg-surface-active">
+                  Return to game
+                </button>
+              {/if}
+            </p>
+          {/if}
           <button type="button" onclick={start} disabled={loading || bullOffBlocked}
             title={bullOffBlocked ? 'Bull off needs at least two players' : undefined}
             class="h-14 flex items-center justify-center gap-[10px] bg-accent text-accent-fg

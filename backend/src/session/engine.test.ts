@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { SessionEngine } from './engine.js'
+import { ActiveSessionError, SessionEngine } from './engine.js'
 import type { EngineStore } from './engine.js'
 import type { BoardEvent } from './types.js'
 import { x01Module } from '../games/x01.js'
@@ -24,28 +24,47 @@ beforeEach(() => { vi.clearAllMocks() })
 describe('create', () => {
   it('rejects unknown game', async () => {
     const engine = makeEngine()
-    await expect(engine.create('board-1', 'unknown', {}, [{ name: 'Alice' }]))
+    await expect(engine.create('user-1', 'board-1', 'unknown', {}, [{ name: 'Alice' }]))
       .rejects.toThrow(/unknown game/)
   })
 
   it('rejects duplicate active session for same board', async () => {
     const engine = makeEngine()
-    await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
-    await expect(engine.create('board-1', 'atc', {}, [{ name: 'Bob' }]))
-      .rejects.toThrow(/active session/)
+    await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
+    await expect(engine.create('user-2', 'board-1', 'atc', {}, [{ name: 'Bob' }]))
+      .rejects.toThrow(/active session already exists for board/)
+  })
+
+  it('allows one active session per user, with or without a board', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'atc', {}, [{ name: 'Alice' }])
+    const err = await engine.create('user-1', 'board-2', 'atc', {}, [{ name: 'Alice' }]).catch(e => e)
+    expect(err).toBeInstanceOf(ActiveSessionError)
+    expect(err.sessionId).toBe(sessionId)
+    // other users are unaffected
+    await expect(engine.create('user-2', null, 'atc', {}, [{ name: 'Bob' }])).resolves.toBeDefined()
+    expect(engine.getSessionByOwner('user-1')?.id).toBe(sessionId)
+  })
+
+  it('frees the slot once the session ends', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
+    await engine.deleteSession(sessionId)
+    expect(engine.getSessionByOwner('user-1')).toBeUndefined()
+    await expect(engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])).resolves.toBeDefined()
   })
 
   it('rejects a config the game module deems invalid, without persisting', async () => {
     const store = makeStore()
     const engine = new SessionEngine(store, push)
-    await expect(engine.create('board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }]))
+    await expect(engine.create('user-1', 'board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }]))
       .rejects.toThrow(/invalid config: bull off needs at least two players/)
     expect(store.insertSession).not.toHaveBeenCalled()
   })
 
   it('returns a sessionId', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     expect(typeof sessionId).toBe('string')
     expect(sessionId.length).toBeGreaterThan(0)
   })
@@ -60,14 +79,14 @@ describe('onBridgeEvent', () => {
 
   it('pushes snapshot after visit.opened', async () => {
     const engine = makeEngine()
-    await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
     expect(push).toHaveBeenCalledWith(expect.any(String))
   })
 
   it('flushes openVisitEvents on takeout.finished', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
     await engine.onBridgeEvent('board-1', 'takeout.finished', { visit_id: 'v1', trigger: 'numThrows.zero', duration_ms: 1000 }, new Date())
     const session = engine.getSession(sessionId)
@@ -76,7 +95,7 @@ describe('onBridgeEvent', () => {
 
   it('dart.corrected replaces dart at index in openVisitEvents', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     const visitId = 'v1'
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: visitId }, new Date())
     await engine.onBridgeEvent('board-1', 'dart.detected', {
@@ -97,7 +116,7 @@ describe('onBridgeEvent', () => {
 
   it('board.resync clears openVisitEvents, preserves committedState', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
     await engine.onBridgeEvent('board-1', 'board.resync', { throws: [] }, new Date())
     const session = engine.getSession(sessionId)!
@@ -109,7 +128,7 @@ describe('onBridgeEvent', () => {
 describe('onUserAction', () => {
   it('undo_dart removes last dart.detected from openVisitEvents', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0,
@@ -124,7 +143,7 @@ describe('onUserAction', () => {
 
   it('correct_dart replaces segment at visitIndex', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0,
@@ -142,7 +161,7 @@ describe('onUserAction', () => {
 
   it('correct_dart drops the camera position, which no longer matches the segment', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0, source_seq: 1,
@@ -160,7 +179,7 @@ describe('onUserAction', () => {
 
   it('does not count bull off darts; the first game dart counts for the bull off winner', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'x01',
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01',
       { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }, { name: 'Bob' }])
     const dart = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
       dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } } })
@@ -184,7 +203,7 @@ describe('onUserAction', () => {
 
   it('passes other actions to the game module (bull off start)', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'x01',
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01',
       { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }, { name: 'Bob' }])
     const dart = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
       dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } } })
@@ -205,6 +224,7 @@ describe('rebuild', () => {
     const store = makeStore()
     vi.mocked(store.getActiveSessions).mockResolvedValue([{
       id: 'sess-rebuild',
+      owner_user_id: 'user-1',
       board_db_id: 'board-r',
       game_id: 'atc',
       config: {},
@@ -230,13 +250,29 @@ describe('rebuild', () => {
     const snap = engine.getSnapshot('sess-rebuild')!
     expect((snap.game as any).currentVisitDarts).toHaveLength(1)
     expect((snap.game as any).targets[0]).toBe(2)
+    expect(engine.getSessionByOwner('user-1')?.id).toBe('sess-rebuild')
+  })
+
+  it('closes active sessions it cannot restore (boardless or without owner)', async () => {
+    const store = makeStore()
+    vi.mocked(store.getActiveSessions).mockResolvedValue([
+      { id: 'no-board', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc', config: {}, players: [{ name: 'A' }], created_at: new Date() },
+      { id: 'no-owner', owner_user_id: null, board_db_id: 'board-x', game_id: 'atc', config: {}, players: [{ name: 'A' }], created_at: new Date() },
+    ])
+    const engine = new SessionEngine(store, push)
+    await engine.rebuild()
+    expect(store.setSessionFinished).toHaveBeenCalledWith('no-board')
+    expect(store.setSessionFinished).toHaveBeenCalledWith('no-owner')
+    expect(engine.getAllSessions()).toEqual([])
+    // the owner isn't blocked by the closed session
+    await expect(engine.create('user-1', null, 'atc', {}, [{ name: 'A' }])).resolves.toBeDefined()
   })
 })
 
 describe('getSnapshot', () => {
   it('returns snapshot with currentVisitDarts from openVisitEvents', async () => {
     const engine = makeEngine()
-    const { sessionId } = await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0,

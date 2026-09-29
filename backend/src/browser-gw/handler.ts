@@ -3,6 +3,7 @@ import type { SocketStream } from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
 import type { SessionEngine } from '../session/engine.js'
 import { getAuthUser } from '../auth/session.js'
+import { canAccessSession } from '../api/sessions.js'
 
 export const browserConnections = new BrowserConnections()
 
@@ -23,8 +24,10 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
       const sessionId = (req.query as any).sessionId as string | undefined
       if (!sessionId) { socket.close(4400, 'missing sessionId'); return }
 
+      const session = engine.getSession(sessionId)
       const snap = engine.getSnapshot(sessionId)
-      if (!snap) { socket.close(4404, 'session not found'); return }
+      if (!session || !snap) { socket.close(4404, 'session not found'); return }
+      if (!canAccessSession(user.userId, session)) { socket.close(4403, 'forbidden'); return }
 
       browserConnections.add(sessionId, socket)
       socket.send(JSON.stringify(snap))

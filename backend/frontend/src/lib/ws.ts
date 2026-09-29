@@ -30,6 +30,12 @@ export function createSessionStore(sessionId: string) {
         window.location.hash = '#/login'
         return
       }
+      // Not this user's session, or it no longer exists: retrying won't help
+      if (e.code === 4403 || e.code === 4404) {
+        closed = true
+        window.location.hash = '#/'
+        return
+      }
       if (!closed) setTimeout(connect, backoff)
       backoff = Math.min(backoff * 2, 30_000)
     }
