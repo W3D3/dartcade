@@ -59,6 +59,17 @@ describe('init', () => {
     expect(s.phase).toBe('game')
   })
 
+  it('single player: bull off is skipped (phase is game), so darts score', () => {
+    const solo: Player[] = [{ name: 'Solo' }]
+    const s = x01Module.init({ ...defaultCfg, bullOff: 'wdc' }, solo)
+    expect(s.phase).toBe('game')
+    expect(s.bullOff.active).toBe(false)
+    // A dart must count down rather than be swallowed by the bull off phase
+    const opened = x01Module.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } as any }).state
+    const { state } = x01Module.onBoardEvent(opened, dartEvent(20, 'SingleOuter', 1))
+    expect(state.scores[0]).toBe(481)
+  })
+
   it('straight in: opened = true for all players', () => {
     const s = x01Module.init(defaultCfg, players)
     expect(s.opened).toEqual([true, true])

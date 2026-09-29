@@ -121,13 +121,17 @@ export const x01Module: GameModule<X01State, X01Config> = {
 
   init(cfg: X01Config, players: Player[]): X01State {
     const n = players.length
-    const phase: X01State['phase'] = cfg.bullOff === 'off' ? 'game' : 'bulloff'
+    // A bull off decides throw order between players — with fewer than two it is
+    // meaningless and would otherwise freeze the game in the bulloff phase (score
+    // never counts down). Skip straight to the game phase.
+    const doBullOff = cfg.bullOff !== 'off' && n >= 2
+    const phase: X01State['phase'] = doBullOff ? 'bulloff' : 'game'
     return {
       cfg, phase,
       scores: Array(n).fill(cfg.startScore),
       legs: Array(n).fill(0),
       opened: Array(n).fill(cfg.inMode === 'straight'),
-      bullOff: initBullOff({ mode: cfg.bullOff, playerCount: n }),
+      bullOff: initBullOff({ mode: doBullOff ? cfg.bullOff : 'off', playerCount: n }),
       currentPlayer: 0, round: 1,
       bustThisVisit: false,
       visitOpenedScores: Array(n).fill(cfg.startScore),
