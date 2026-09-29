@@ -60,7 +60,8 @@ export function handleBridgeConnection(
       if (!conn.helloReceived) {
         if (msg.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
         conn.helloReceived = true
-        conn.bmVersion = msg.data?.bm_version ?? null
+        conn.bmVersion = msg.data?.bm_version || null
+        conn.bridgeVersion = msg.data?.bridge_version || null
         conn.bmUrl = msg.data?.bm_url ?? null
         return
       }
@@ -89,6 +90,8 @@ export function handleBridgeConnection(
 
       socket.send(JSON.stringify({ ack: msg.seq }))
       if (!inserted) return
+
+      bridgeConnections.recordEvent(conn.boardDbId!, { at: msg.recv_wall, kind: msg.kind, data: msg.data ?? {} })
 
       await engine.onBridgeEvent(conn.boardDbId!, msg.kind, msg.data ?? {}, new Date(msg.recv_wall))
     }).catch(err => { console.error('Bridge event processing error:', err) })

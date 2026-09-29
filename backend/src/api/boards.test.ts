@@ -9,6 +9,7 @@ vi.mock('../bridge-gw/connections.js', () => ({
   bridgeConnections: {
     isOnline: vi.fn().mockReturnValue(false),
     get: vi.fn().mockReturnValue(undefined),
+    recentEvents: vi.fn().mockReturnValue([]),
   },
 }))
 vi.mock('../db/queries.js', () => ({
@@ -16,6 +17,7 @@ vi.mock('../db/queries.js', () => ({
   insertBoard: vi.fn().mockResolvedValue(undefined),
   getBoardById: vi.fn().mockResolvedValue(undefined),
   deleteBoard: vi.fn().mockResolvedValue(undefined),
+  renameBoard: vi.fn().mockResolvedValue(undefined),
 }))
 
 import * as queries from '../db/queries.js'
@@ -114,16 +116,30 @@ describe('DELETE /api/boards/:id', () => {
 })
 
 describe('GET /api/boards - bridgeVersion', () => {
-  it('includes bridgeVersion from live connection', async () => {
+  it('reports bridge and Board Manager versions separately', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
       { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
     ])
     vi.mocked(connections.bridgeConnections.isOnline).mockReturnValue(true)
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
+    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bridgeVersion: 'v0.4.2', bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
     expect(res.statusCode).toBe(200)
-    expect(JSON.parse(res.body).boards[0].bridgeVersion).toBe('1.0.7')
+    const board = JSON.parse(res.body).boards[0]
+    expect(board.bridgeVersion).toBe('v0.4.2')
+    expect(board.bmVersion).toBe('1.0.7')
+  })
+
+  it('keeps the Board Manager port in bmUrl', async () => {
+    vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
+      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+    ])
+    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
+    const app = makeApp()
+    const res = await app.inject({ method: 'GET', url: '/api/boards' })
+    const board = JSON.parse(res.body).boards[0]
+    expect(board.ip).toBe('192.168.0.109')
+    expect(board.bmUrl).toBe('http://192.168.0.109:3180')
   })
 
   it('bridgeVersion is null when board is offline', async () => {
@@ -182,5 +198,52 @@ describe('GET /api/boards/:id/camera/:index', () => {
     expect(res.statusCode).toBe(200)
     expect(res.headers['content-type']).toContain('image/jpeg')
     expect(vi.mocked(global.fetch as any)).toHaveBeenCalledWith('http://192.168.0.109:3180/api/img/cams/1')
+  })
+})
+
+describe('PATCH /api/boards/:id', () => {
+  const row = { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' }
+
+  it('renames an owned board', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(row)
+    const app = makeApp()
+    const res = await app.inject({ method: 'PATCH', url: '/api/boards/board-1', payload: { name: '  Garage ' } })
+    expect(res.statusCode).toBe(200)
+    expect(queries.renameBoard).toHaveBeenCalledWith(expect.anything(), 'board-1', 'Garage')
+  })
+
+  it('rejects an empty name', async () => {
+    const app = makeApp()
+    const res = await app.inject({ method: 'PATCH', url: '/api/boards/board-1', payload: { name: ' ' } })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('returns 403 for another user\'s board', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ ...row, owner_user_id: 'user-2' })
+    const app = makeApp()
+    const res = await app.inject({ method: 'PATCH', url: '/api/boards/board-1', payload: { name: 'X' } })
+    expect(res.statusCode).toBe(403)
+    expect(queries.renameBoard).not.toHaveBeenCalled()
+  })
+})
+
+describe('GET /api/boards/:id/events', () => {
+  const row = { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' }
+
+  it('returns the recent event feed', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(row)
+    const ev = { at: '2026-09-29T19:14:08Z', kind: 'takeout.started', data: {} }
+    vi.mocked(connections.bridgeConnections.recentEvents).mockReturnValue([ev])
+    const app = makeApp()
+    const res = await app.inject({ method: 'GET', url: '/api/boards/board-1/events' })
+    expect(res.statusCode).toBe(200)
+    expect(JSON.parse(res.body).events).toEqual([ev])
+  })
+
+  it('returns 403 for another user\'s board', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ ...row, owner_user_id: 'user-2' })
+    const app = makeApp()
+    const res = await app.inject({ method: 'GET', url: '/api/boards/board-1/events' })
+    expect(res.statusCode).toBe(403)
   })
 })

@@ -5,7 +5,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
-import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard } from '../db/queries.js'
+import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard } from '../db/queries.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
@@ -17,15 +17,18 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     return {
       boards: rows.map(b => {
         const conn = bridgeConnections.get(b.id)
-        const ip = conn?.bmUrl ? (() => { try { return new URL(conn.bmUrl!).hostname } catch { return null } })() : null
+        const bm = conn?.bmUrl ? (() => { try { return new URL(conn.bmUrl!) } catch { return null } })() : null
         return {
           id: b.id,
           name: b.name,
           hardwareId: b.hardware_id,
           online: bridgeConnections.isOnline(b.id),
-          bridgeVersion: conn?.bmVersion ?? null,
+          bridgeVersion: conn?.bridgeVersion ?? null,
+          bmVersion: conn?.bmVersion ?? null,
           createdAt: b.created_at,
-          ip: ip ?? null,
+          ip: bm?.hostname ?? null,
+          // Full Board Manager origin (incl. port) for linking
+          bmUrl: bm?.origin ?? null,
         }
       }),
     }
@@ -57,6 +60,26 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     const id = ulid()
     await insertBoard(db, { id, owner_user_id: req.userId, name: name.trim(), token_hash: tokenHash })
     return reply.code(201).send({ id, name: name.trim(), token: rawToken })
+  })
+
+  app.patch('/api/boards/:id', { preHandler: requireAuth }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const { name } = (req.body ?? {}) as { name?: string }
+    if (!name?.trim()) return reply.code(400).send({ error: 'name required' })
+    const board = await getBoardById(db, id)
+    if (!board) return reply.code(404).send({ error: 'not found' })
+    if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
+    await renameBoard(db, id, name.trim())
+    return reply.send({ id, name: name.trim() })
+  })
+
+  // Recent bridge events for the live feed (in-memory, newest last)
+  app.get('/api/boards/:id/events', { preHandler: requireAuth }, async (req, reply) => {
+    const { id } = req.params as { id: string }
+    const board = await getBoardById(db, id)
+    if (!board) return reply.code(404).send({ error: 'not found' })
+    if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
+    return reply.send({ events: bridgeConnections.recentEvents(id) })
   })
 
   // Per-board BM status

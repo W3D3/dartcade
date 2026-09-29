@@ -1,10 +1,11 @@
 <script lang="ts">
   import { Modal } from '$lib/components/ui/modal/index.js'
 
-  let { title, body, confirmLabel = 'Confirm', danger = false, onconfirm, oncancel }: {
+  let { title, body, confirmLabel = 'Confirm', cancelLabel = 'Keep playing', danger = false, onconfirm, oncancel }: {
     title: string
     body?: string
     confirmLabel?: string
+    cancelLabel?: string
     danger?: boolean
     onconfirm: () => void
     oncancel: () => void
@@ -24,7 +25,7 @@
     <button type="button" onclick={oncancel}
       class="flex-1 h-12 rounded-[10px] border border-line-3 bg-transparent text-text
              text-[15px] font-medium cursor-pointer">
-      Keep playing
+      {cancelLabel}
     </button>
     <button type="button" onclick={onconfirm}
       class="flex-1 h-12 rounded-[10px] border-0 text-[15px] font-bold cursor-pointer

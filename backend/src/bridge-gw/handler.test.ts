@@ -9,7 +9,7 @@ vi.mock('../db/queries.js', () => ({
   updateBoardHardwareId: vi.fn().mockResolvedValue(undefined),
 }))
 import * as queries from '../db/queries.js'
-import { handleBridgeConnection } from './handler.js'
+import { handleBridgeConnection, bridgeConnections } from './handler.js'
 
 describe('bridge-gw token auth', () => {
   it('SHA-256 of token produces consistent hash', () => {
@@ -116,7 +116,7 @@ describe('handleBridgeConnection', () => {
 
     // hello sent immediately on connect — before auth resolves
     socket.emit('message', Buffer.from(JSON.stringify({
-      kind: 'bridge.hello', data: { bm_version: '1.0', bm_url: 'http://board' },
+      kind: 'bridge.hello', data: { bridge_version: 'v0.4.2', bm_version: '1.0', bm_url: 'http://board' },
     })))
     await flush()
 
@@ -134,5 +134,23 @@ describe('handleBridgeConnection', () => {
     // hello was processed (not dropped) → no 4400, and the event was acked
     expect(socket.close).not.toHaveBeenCalledWith(4400, 'expected bridge.hello')
     expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ ack: 1 }))
+
+    // both versions from the hello are kept on the connection
+    const conn = bridgeConnections.get('board-1')
+    expect(conn?.bridgeVersion).toBe('v0.4.2')
+    expect(conn?.bmVersion).toBe('1.0')
+  })
+})
+
+describe('BridgeConnections event feed', () => {
+  it('keeps only feed kinds and caps the buffer', () => {
+    const bc = new BridgeConnections()
+    bc.recordEvent('b1', { at: 't', kind: 'motion', data: {} })
+    for (let i = 0; i < 60; i++) bc.recordEvent('b1', { at: String(i), kind: 'dart.detected', data: {} })
+    const feed = bc.recentEvents('b1')
+    expect(feed).toHaveLength(50)
+    expect(feed[0].at).toBe('10')
+    expect(feed.every(e => e.kind === 'dart.detected')).toBe(true)
+    expect(bc.recentEvents('other')).toEqual([])
   })
 })
