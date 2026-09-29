@@ -111,6 +111,11 @@ export const configMeta: Record<keyof X01Config, ConfigFieldMeta> = {
   },
 }
 
+// A missing bullOff means the default ('off')
+function bullOffEnabled(cfg: X01Config): boolean {
+  return (cfg.bullOff ?? 'off') !== 'off'
+}
+
 export const x01Module: GameModule<X01State, X01Config> = {
   id: 'x01',
   defaultConfig: {
@@ -119,12 +124,18 @@ export const x01Module: GameModule<X01State, X01Config> = {
   },
   configMeta,
 
+  validate(cfg: X01Config, players: Player[]): string | null {
+    if (bullOffEnabled(cfg) && players.length < 2) return 'bull off needs at least two players'
+    return null
+  },
+
   init(cfg: X01Config, players: Player[]): X01State {
     const n = players.length
     // A bull off decides throw order between players — with fewer than two it is
     // meaningless and would otherwise freeze the game in the bulloff phase (score
-    // never counts down). Skip straight to the game phase.
-    const doBullOff = cfg.bullOff !== 'off' && n >= 2
+    // never counts down). validate() rejects such new games; this also covers
+    // sessions created before that check existed when they are rebuilt.
+    const doBullOff = bullOffEnabled(cfg) && n >= 2
     const phase: X01State['phase'] = doBullOff ? 'bulloff' : 'game'
     return {
       cfg, phase,
@@ -194,8 +205,8 @@ export const x01Module: GameModule<X01State, X01Config> = {
             return { state: { ...s, bullOff: result.state, currentPlayer: result.state.currentPlayer } }
           }
           if (result.winner === null) {
-            // rethrow
-            return { state: { ...s, bullOff: result.state } }
+            // rethrow — restarts with the bull off's first thrower
+            return { state: { ...s, bullOff: result.state, currentPlayer: result.state.currentPlayer } }
           }
           return { state: { ...s, bullOff: result.state, phase: 'game', ...freshLeg(s.cfg, s.playerCount, result.winner) } }
         }

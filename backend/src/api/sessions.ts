@@ -44,6 +44,7 @@ export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promi
       return reply.code(201).send({ sessionId })
     } catch (err: any) {
       if (err.message?.includes('unknown game')) return reply.code(400).send({ error: err.message })
+      if (err.message?.startsWith('invalid config')) return reply.code(400).send({ error: err.message })
       if (err.message?.includes('active session')) return reply.code(409).send({ error: err.message })
       return reply.code(500).send({ error: 'internal error' })
     }

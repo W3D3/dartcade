@@ -59,6 +59,14 @@ describe('init', () => {
     expect(s.phase).toBe('game')
   })
 
+  it('validate: rejects bull off with fewer than two players', () => {
+    const solo: Player[] = [{ name: 'Solo' }]
+    expect(x01Module.validate!({ ...defaultCfg, bullOff: 'wdc' }, solo)).toMatch(/at least two players/)
+    expect(x01Module.validate!({ ...defaultCfg, bullOff: 'pdc' }, solo)).toMatch(/at least two players/)
+    expect(x01Module.validate!({ ...defaultCfg, bullOff: 'off' }, solo)).toBeNull()
+    expect(x01Module.validate!({ ...defaultCfg, bullOff: 'wdc' }, players)).toBeNull()
+  })
+
   it('single player: bull off is skipped (phase is game), so darts score', () => {
     const solo: Player[] = [{ name: 'Solo' }]
     const s = x01Module.init({ ...defaultCfg, bullOff: 'wdc' }, solo)
@@ -387,6 +395,9 @@ describe('bull off integration', () => {
     expect(s4.phase).toBe('bulloff')
     expect(s4.bullOff.darts).toEqual([null, null])
     expect(s4.bullOff.currentPlayer).toBe(0)
+    // the rethrow starts with player 0, and the view must highlight them too
+    expect(s4.currentPlayer).toBe(0)
+    expect(x01Module.view(s4, players).currentPlayer).toBe(0)
   })
 })
 

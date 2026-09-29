@@ -45,6 +45,8 @@ export interface GameModule<S, Cfg = Record<string, never>> {
   id: string
   defaultConfig: Cfg
   configMeta?: Record<string, ConfigFieldMeta>
+  /** Reject a config that can't be played with these players; returns the reason. */
+  validate?(cfg: Cfg, players: Player[]): string | null
   init(cfg: Cfg, players: Player[]): S
   getCurrentPlayer(s: S): number
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }

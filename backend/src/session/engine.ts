@@ -42,6 +42,8 @@ export class SessionEngine {
     const mod = games[gameId]
     if (!mod) throw new Error(`unknown game: ${gameId}`)
     if (boardId && this.byBoard.has(boardId)) throw new Error(`active session already exists for board ${boardId}`)
+    const invalid = (mod as GameModule<unknown, unknown>).validate?.(config, players)
+    if (invalid) throw new Error(`invalid config: ${invalid}`)
 
     const sessionId = ulid()
     const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)

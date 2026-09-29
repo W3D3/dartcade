@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { SessionEngine } from './engine.js'
 import type { EngineStore } from './engine.js'
 import type { BoardEvent } from './types.js'
+import { x01Module } from '../games/x01.js'
 
 function makeStore(): EngineStore {
   return {
@@ -32,6 +33,14 @@ describe('create', () => {
     await engine.create('board-1', 'atc', {}, [{ name: 'Alice' }])
     await expect(engine.create('board-1', 'atc', {}, [{ name: 'Bob' }]))
       .rejects.toThrow(/active session/)
+  })
+
+  it('rejects a config the game module deems invalid, without persisting', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    await expect(engine.create('board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }]))
+      .rejects.toThrow(/invalid config: bull off needs at least two players/)
+    expect(store.insertSession).not.toHaveBeenCalled()
   })
 
   it('returns a sessionId', async () => {
