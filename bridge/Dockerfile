@@ -4,8 +4,10 @@ COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
 # Stamp the version: docker build --build-arg VERSION=v0.4.2 (defaults to "dev").
+# .git isn't in this context, so dev builds pass COMMIT to get "dev+<sha>".
 ARG VERSION=dev
-RUN CGO_ENABLED=0 go build -ldflags "-X main.version=${VERSION}" -o bridge ./cmd/bridge
+ARG COMMIT=
+RUN CGO_ENABLED=0 go build -ldflags "-X main.version=${VERSION} -X main.commit=${COMMIT}" -o bridge ./cmd/bridge
 
 FROM alpine:3.20
 RUN apk add --no-cache ca-certificates

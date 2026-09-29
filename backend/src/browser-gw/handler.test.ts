@@ -12,7 +12,7 @@ describe('BrowserConnections', () => {
     const ws2 = { readyState: 1, send: vi.fn() } as any
     bc.add('session-1', ws1)
     bc.add('session-1', ws2)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', players: [], game: {} }
+    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null }
     bc.push('session-1', snap)
     expect(ws1.send).toHaveBeenCalledWith(JSON.stringify(snap))
     expect(ws2.send).toHaveBeenCalledWith(JSON.stringify(snap))
@@ -22,7 +22,7 @@ describe('BrowserConnections', () => {
     const bc = new BrowserConnections()
     const sender = { readyState: 1, send: vi.fn() } as any
     bc.add('session-1', sender)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', players: [], game: {} }
+    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null }
     bc.push('session-1', snap)
     expect(sender.send).toHaveBeenCalledOnce()
   })
@@ -32,7 +32,7 @@ describe('BrowserConnections', () => {
     const ws = { readyState: 1, send: vi.fn() } as any
     bc.add('session-1', ws)
     bc.remove('session-1', ws)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', players: [], game: {} }
+    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null }
     bc.push('session-1', snap)
     expect(ws.send).not.toHaveBeenCalled()
   })
@@ -41,7 +41,7 @@ describe('BrowserConnections', () => {
     const bc = new BrowserConnections()
     const ws = { readyState: 3, send: vi.fn() } as any
     bc.add('session-1', ws)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', players: [], game: {} }
+    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null }
     bc.push('session-1', snap)
     expect(ws.send).not.toHaveBeenCalled()
   })

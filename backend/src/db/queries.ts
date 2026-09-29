@@ -145,6 +145,10 @@ export async function deleteBoard(db: Kysely<Database>, id: string): Promise<voi
   await db.deleteFrom('boards').where('id', '=', id).execute()
 }
 
+export async function renameBoard(db: Kysely<Database>, id: string, name: string): Promise<void> {
+  await db.updateTable('boards').set({ name }).where('id', '=', id).execute()
+}
+
 export async function getBoardByTokenHash(db: Kysely<Database>, tokenHash: string) {
   return db.selectFrom('boards').selectAll().where('token_hash', '=', tokenHash).executeTakeFirst()
 }

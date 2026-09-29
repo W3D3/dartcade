@@ -11,6 +11,7 @@ const countModule: GameModule<CountState, Record<string, never>> = {
     e.kind === 'dart.detected' ? { state: { count: s.count + 1 } } : { state: s },
   onUserAction: (s) => ({ state: s }),
   view: (s) => s as unknown as Record<string, unknown>,
+  getCurrentPlayer: () => 0,
 }
 
 describe('refoldVisit', () => {

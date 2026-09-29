@@ -37,7 +37,7 @@ jobs:
           GOOS: ${{ matrix.goos }}
           GOARCH: ${{ matrix.goarch }}
           CGO_ENABLED: '0'
-        run: go build -o ${{ matrix.name }} ./cmd/bridge
+        run: go build -ldflags "-X main.version=${{ github.ref_name }}" -o ${{ matrix.name }} ./cmd/bridge
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
@@ -71,6 +71,8 @@ jobs:
           context: bridge
           push: true
           platforms: linux/amd64,linux/arm64
+          build-args: |
+            VERSION=${{ github.ref_name }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 

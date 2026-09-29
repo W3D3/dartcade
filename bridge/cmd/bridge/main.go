@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"runtime/debug"
 	"syscall"
 	"time"
 
@@ -17,6 +18,51 @@ import (
 
 // version is stamped at build time via -ldflags "-X main.version=vX.Y.Z".
 var version = "dev"
+
+// commit is optionally stamped via -ldflags "-X main.commit=<sha>[-dirty]" for
+// builds that can't see .git (e.g. Docker). Otherwise Go's embedded VCS info is used.
+var commit = ""
+
+// buildVersion is the version the bridge reports: the stamped tag for releases,
+// or "dev+<sha>[-dirty]" for untagged builds so they can be told apart.
+func buildVersion() string {
+	if version != "dev" {
+		return version
+	}
+	rev := commit
+	if rev == "" {
+		rev = vcsRevision()
+	}
+	if rev == "" {
+		return version
+	}
+	return version + "+" + rev
+}
+
+// vcsRevision returns the short commit (plus "-dirty") embedded by go build.
+func vcsRevision() string {
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return ""
+	}
+	var rev string
+	var dirty bool
+	for _, s := range info.Settings {
+		switch s.Key {
+		case "vcs.revision":
+			rev = s.Value
+		case "vcs.modified":
+			dirty = s.Value == "true"
+		}
+	}
+	if len(rev) > 7 {
+		rev = rev[:7]
+	}
+	if rev != "" && dirty {
+		rev += "-dirty"
+	}
+	return rev
+}
 
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "replay" {
@@ -57,7 +103,7 @@ func main() {
 	setLogLevel(level)
 
 	con := newConsole(os.Stdout)
-	con.banner(version)
+	con.banner(buildVersion())
 	log.Debug("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
@@ -107,12 +153,13 @@ func main() {
 	}
 
 	tr := transport.New(transport.Config{
-		BackendURL: cfg.BackendURL + "?token=" + cfg.Token,
-		BridgeID:   cfg.BridgeID,
-		BootID:     bootID,
-		BoardID:    client.BoardID(),
-		BMVersion:  client.BMVersion(),
-		BMUrl:      cfg.BoardURL,
+		BackendURL:    cfg.BackendURL + "?token=" + cfg.Token,
+		BridgeID:      cfg.BridgeID,
+		BootID:        bootID,
+		BoardID:       client.BoardID(),
+		BMVersion:     client.BMVersion(),
+		BMUrl:         cfg.BoardURL,
+		BridgeVersion: buildVersion(),
 	}, exec)
 
 	go func() {

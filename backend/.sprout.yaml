@@ -13,4 +13,4 @@ health:
   timeout: 120s
   expect: 200
 build:
-  dockerfile: backend/Dockerfile
+  dockerfile: Dockerfile

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { push } from 'svelte-spa-router'
+  import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import BoardSelector from '$lib/components/BoardSelector.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
@@ -48,7 +48,7 @@
     bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3,
   }
 
-  type SavedPrefs = { mode: string; configs: Record<string, Record<string, unknown>> }
+  type SavedPrefs = { mode: string; configs: Record<string, Record<string, unknown>>; boardId?: string }
   function loadPrefs(): SavedPrefs | null {
     try { const s = localStorage.getItem(PREFS_KEY); if (s) return JSON.parse(s) } catch {}
     return null
@@ -58,7 +58,7 @@
   let games = $state<GameDef[]>([])
   let boards = $state<Board[]>([])
   let selectedMode = $state(initPrefs?.mode ?? 'atc')
-  let boardId = $state('')
+  let boardId = $state(initPrefs?.boardId ?? '')
   let atcMeta = $state<Record<string, FieldMeta>>({})
   let youName = $state('')
   let guests = $state<{ name: string }[]>([])
@@ -72,11 +72,12 @@
     ...(initPrefs?.configs?.[initPrefs?.mode ?? 'atc'] ?? {}),
   })
 
-  // Persist whenever mode or config changes
+  // Persist whenever mode, config or board changes
   $effect(() => {
     localStorage.setItem(PREFS_KEY, JSON.stringify({
       mode: selectedMode,
       configs: { ...savedConfigs, [selectedMode]: config },
+      boardId,
     }))
   })
 
@@ -101,6 +102,11 @@
     const [gd, bd, sd] = await Promise.all([gr.json(), br.json(), sr.json()])
     games = gd.games ?? []
     boards = bd.boards ?? []
+    // A board handed over from the Boards page ("Play on this board") wins over
+    // the remembered one; a remembered board that was since unpaired is dropped.
+    const preselect = new URLSearchParams($querystring ?? '').get('board')
+    if (preselect && boards.some(b => b.id === preselect)) boardId = preselect
+    else if (boardId && !boards.some(b => b.id === boardId)) boardId = ''
     youName = sd.user?.name ?? sd.user?.email ?? 'You'
 
     const atcGame = games.find(g => g.id === 'atc')
