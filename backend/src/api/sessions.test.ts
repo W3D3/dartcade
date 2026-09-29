@@ -76,6 +76,17 @@ describe('POST /api/sessions', () => {
     })
     expect(res.statusCode).toBe(409)
   })
+
+  it('returns 400 with the reason for an invalid config', async () => {
+    const { app, engine } = makeApp()
+    engine.create.mockRejectedValue(new Error('invalid config: bull off needs at least two players'))
+    const res = await app.inject({
+      method: 'POST', url: '/api/sessions',
+      payload: { boardId: 'b1', gameId: 'x01', config: { bullOff: 'wdc' }, players: [{ name: 'Alice' }] },
+    })
+    expect(res.statusCode).toBe(400)
+    expect(JSON.parse(res.body).error).toMatch(/bull off needs at least two players/)
+  })
 })
 
 describe('POST /api/sessions ownership', () => {

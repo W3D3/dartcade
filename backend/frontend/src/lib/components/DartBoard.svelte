@@ -1,9 +1,11 @@
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import { labelPos } from '$lib/dartUtils.js'
 
   type Segment = { name: string; number: number; bed: string; multiplier: number }
 
-  let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [], onSegmentClick }: {
+  let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [], onSegmentClick,
+        zoom = 1, overlay }: {
     darts?: Array<{
       segment: { number: number; bed: string; multiplier: number; name: string }
       score: number
@@ -13,6 +15,11 @@
     playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
     checkoutTargets?: string[]
     onSegmentClick?: (seg: Segment) => void
+    /** Magnification around the bull (1 = whole board); changes animate. */
+    zoom?: number
+    /** Extra marks drawn in board units (r = 1 at the outer double wire), zoomed with the board.
+     *  Receives the zoom factor so marks can keep a constant on-screen size. */
+    overlay?: Snippet<[number]>
   } = $props()
 
   const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.000 }
@@ -97,33 +104,34 @@
   xmlns="http://www.w3.org/2000/svg">
   <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
 
+  <g style="transform: scale({zoom}); transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
   <!-- Sector fills and wire dividers -->
   {#each sectors as { num, i, paths, wa }}
     {#each paths as { ring, d }}
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-      <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="0.005"
+      <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" vector-effect="non-scaling-stroke"
         onclick={interactive ? () => clickSegment(num, ring) : undefined}
         class={interactive ? 'hover:brightness-125' : ''} />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
       x2={R.db * Math.cos(wa)} y2={-R.db * Math.sin(wa)}
-      stroke="#8d8e84" stroke-width="0.006"
+      stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     />
   {/each}
 
   <!-- Ring wire circles -->
   {#each [R.bull25, R.si, R.tr, R.so, R.db] as r}
-    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="0.006" />
+    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke" />
   {/each}
 
   <!-- Bull fills -->
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="0.006"
+  <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: '25', number: 25, bed: 'Single', multiplier: 1 }) : undefined}
     class={interactive ? 'hover:brightness-125' : ''} />
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-  <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="0.006"
+  <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }) : undefined}
     class={interactive ? 'hover:brightness-125' : ''} />
 
@@ -203,4 +211,8 @@
         style="pointer-events:none" />
     {/if}
   {/each}
+
+  <!-- Overlay marks are informational: clicks go through to the segments -->
+  <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
+  </g>
 </svg>

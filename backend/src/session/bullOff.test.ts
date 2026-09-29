@@ -1,123 +1,115 @@
 import { describe, it, expect } from 'vitest'
-import { initBullOff, onBullOffDart, onBullOffTakeout } from './bullOff.js'
-import type { BullOffConfig, BullOffState } from './bullOff.js'
+import {
+  clearCurrentBullOffThrow, initBullOff, onBullOffDart, onBullOffTakeout, rank, rethrowBullOff,
+  skipBullOffThrow, throwFromDart,
+} from './bullOff.js'
+import type { BullOffThrow } from './bullOff.js'
+import type { Dart } from './types.js'
 
-const wdcCfg: BullOffConfig = { mode: 'wdc', playerCount: 2 }
-const pdcCfg: BullOffConfig = { mode: 'pdc', playerCount: 2 }
+const at = (mm: number | null): BullOffThrow => ({ mm, segment: '', thetaDeg: null, estimated: false })
 
-function state(overrides: Partial<BullOffState> = {}): BullOffState {
-  return {
-    active: true,
-    darts: [null, null],
-    currentPlayer: 0,
-    playerCount: 2,
-    ...overrides,
-  }
+function dart(overrides: Partial<Dart> = {}): Dart {
+  return { segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 }, score: 25, ...overrides } as Dart
 }
 
 describe('initBullOff', () => {
-  it('returns inactive state for mode=off', () => {
-    const s = initBullOff({ mode: 'off', playerCount: 2 })
-    expect(s.active).toBe(false)
+  it('is inactive for mode=off', () => {
+    expect(initBullOff({ mode: 'off', playerCount: 2 }).active).toBe(false)
   })
 
-  it('returns active state for mode=wdc', () => {
-    const s = initBullOff(wdcCfg)
-    expect(s.active).toBe(true)
-    expect(s.currentPlayer).toBe(0)
-    expect(s.darts).toEqual([null, null])
-  })
-
-  it('returns active state for mode=pdc', () => {
-    const s = initBullOff(pdcCfg)
-    expect(s.active).toBe(true)
-  })
-
-  it('initialises darts array to playerCount nulls', () => {
+  it('starts with player 0, no throws and the index order', () => {
     const s = initBullOff({ mode: 'wdc', playerCount: 3 })
-    expect(s.darts).toEqual([null, null, null])
-    expect(s.playerCount).toBe(3)
+    expect(s.active).toBe(true)
+    expect(s.throws).toEqual([null, null, null])
+    expect(s.sequence).toEqual([0, 1, 2])
+    expect(s.currentPlayer).toBe(0)
+    expect(s.result).toBeNull()
   })
 })
 
-describe('onBullOffDart', () => {
-  it('records first dart for current player', () => {
-    const s = state()
-    const next = onBullOffDart(s, 50)
-    expect(next.darts[0]).toBe(50)
+describe('throwFromDart', () => {
+  it('measures from the cameras: r = 1 is the outer double wire (170 mm)', () => {
+    const t = throwFromDart(dart({ polar: { r: 0.0753, theta_deg: 135 } }))
+    expect(t).toEqual({ mm: 12.8, segment: '25', thetaDeg: 135, estimated: false })
   })
 
-  it('ignores subsequent darts in same visit (first dart already recorded)', () => {
-    const s = state({ darts: [50, null] })
-    const next = onBullOffDart(s, 25)
-    expect(next.darts[0]).toBe(50)
+  it('falls back to coords when polar is missing', () => {
+    const t = throwFromDart(dart({ coords: { x: 0, y: 0.1 } }))
+    expect(t.mm).toBe(17)
+    expect(t.thetaDeg).toBe(90)
   })
 
-  it('records dart for player 1', () => {
-    const s = state({ currentPlayer: 1, darts: [50, null] })
-    const next = onBullOffDart(s, 25)
-    expect(next.darts[1]).toBe(25)
+  it('treats a dart off the board as a miss', () => {
+    const t = throwFromDart(dart({ segment: { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 }, score: 0 }))
+    expect(t.mm).toBeNull()
+  })
+
+  it('estimates the distance from the segment without coordinates', () => {
+    expect(throwFromDart(dart()).estimated).toBe(true)
+    expect(throwFromDart(dart({ segment: { name: 'Bull', number: 50, bed: 'Double', multiplier: 2 } })).mm).toBeLessThan(6.35)
+    expect(throwFromDart(dart({ segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 } })).mm).toBe(103)
   })
 })
 
-describe('onBullOffTakeout', () => {
-  it('advances to next player if not all have thrown', () => {
-    const s = state({ darts: [50, null], currentPlayer: 0 })
-    const result = onBullOffTakeout(s)
-    expect(result.state.currentPlayer).toBe(1)
-    expect(result.done).toBe(false)
+describe('turns', () => {
+  it('records only the first dart per player', () => {
+    let s = initBullOff({ mode: 'wdc', playerCount: 2 })
+    s = onBullOffDart(s, dart({ polar: { r: 0.1, theta_deg: 0 } }))
+    s = onBullOffDart(s, dart({ polar: { r: 0.01, theta_deg: 0 } }))
+    expect(s.throws[0]?.mm).toBe(17)
   })
 
-  it('clear winner: done=true, winner=index of highest dart', () => {
-    const s = state({ darts: [50, 25], currentPlayer: 1 })
-    const result = onBullOffTakeout(s)
-    expect(result.done).toBe(true)
-    expect(result.winner).toBe(0)
+  it('moves to the next player on takeout, then ranks everyone', () => {
+    let s = initBullOff({ mode: 'wdc', playerCount: 2 })
+    s = onBullOffTakeout(onBullOffDart(s, dart({ polar: { r: 0.2, theta_deg: 0 } })))
+    expect(s.currentPlayer).toBe(1)
+    expect(s.result).toBeNull()
+    s = onBullOffTakeout(onBullOffDart(s, dart({ polar: { r: 0.05, theta_deg: 0 } })))
+    expect(s.result).toEqual({ order: [1, 0], rethrow: false })
   })
 
-  it('tie: done=true, winner=null (rethrow)', () => {
-    const s = state({ darts: [50, 50], currentPlayer: 1 })
-    const result = onBullOffTakeout(s)
-    expect(result.done).toBe(true)
-    expect(result.winner).toBeNull()
+  it('skip counts the current player as off the board and moves on', () => {
+    let s = skipBullOffThrow(initBullOff({ mode: 'wdc', playerCount: 2 }))
+    expect(s.throws[0]?.mm).toBeNull()
+    expect(s.currentPlayer).toBe(1)
   })
 
-  it('all outside: done=true, winner=null (rethrow)', () => {
-    const s = state({ darts: [17, 18], currentPlayer: 1 })
-    const result = onBullOffTakeout(s)
-    expect(result.done).toBe(true)
-    expect(result.winner).toBeNull()
+  it('clearing a throw lets the current player throw again', () => {
+    let s = onBullOffDart(initBullOff({ mode: 'wdc', playerCount: 2 }), dart())
+    s = clearCurrentBullOffThrow(s)
+    expect(s.throws[0]).toBeNull()
+    expect(s.currentPlayer).toBe(0)
   })
 
-  it('25 beats outside', () => {
-    const s = state({ darts: [17, 25], currentPlayer: 1 })
-    const result = onBullOffTakeout(s)
-    expect(result.done).toBe(true)
-    expect(result.winner).toBe(1)
+  it('rethrows in reverse order, reversing again each time', () => {
+    let s = rethrowBullOff(initBullOff({ mode: 'wdc', playerCount: 3 }))
+    expect(s.sequence).toEqual([2, 1, 0])
+    expect(s.currentPlayer).toBe(2)
+    s = onBullOffTakeout(s)
+    expect(s.currentPlayer).toBe(1)
+    expect(rethrowBullOff(s).sequence).toEqual([0, 1, 2])
+  })
+})
+
+describe('rank', () => {
+  it('orders closest first, misses last', () => {
+    expect(rank([at(null), at(30), at(8)])).toEqual({ order: [2, 1, 0], rethrow: false })
   })
 
-  it('on rethrow, resets darts and currentPlayer to 0', () => {
-    const s = state({ darts: [50, 50], currentPlayer: 1 })
-    const result = onBullOffTakeout(s)
-    expect(result.state.darts).toEqual([null, null])
-    expect(result.state.currentPlayer).toBe(0)
+  it('rethrows when the top two are within 0.5 mm', () => {
+    expect(rank([at(10), at(10.4)])).toMatchObject({ rethrow: true, reason: 'tie' })
+    expect(rank([at(10), at(10.5)]).rethrow).toBe(false)
   })
 
-  it('3 players: only advances until all have thrown', () => {
-    const s: BullOffState = { darts: [50, null, null], currentPlayer: 1, playerCount: 3, active: true }
-    const r1 = onBullOffTakeout(s)
-    expect(r1.done).toBe(false)
-    expect(r1.state.currentPlayer).toBe(2)
-    const s2 = { ...r1.state, darts: [50, 25, null] as (number | null)[] }
-    const r2 = onBullOffTakeout({ ...s2, darts: [50, 25, 30] })
-    expect(r2.done).toBe(true)
-    expect(r2.winner).toBe(0)
+  it('rethrows when more than one dart is in the bullseye', () => {
+    expect(rank([at(2), at(6)])).toMatchObject({ rethrow: true, reason: 'bullseye' })
   })
 
-  it('3 players tie on 50: rethrow', () => {
-    const s: BullOffState = { darts: [50, 50, 25], currentPlayer: 2, playerCount: 3, active: true }
-    const result = onBullOffTakeout(s)
-    expect(result.done).toBe(true)
-    expect(result.winner).toBeNull()
+  it('rethrows when nobody hit the board', () => {
+    expect(rank([at(null), at(null)])).toMatchObject({ rethrow: true, reason: 'all_missed' })
+  })
+
+  it('ties further down the order do not force a rethrow', () => {
+    expect(rank([at(40), at(3), at(40.2)])).toEqual({ order: [1, 0, 2], rethrow: false })
   })
 })

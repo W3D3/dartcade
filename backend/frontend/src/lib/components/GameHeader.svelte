@@ -8,7 +8,7 @@
   import type { Snapshot } from '$lib/ws.js'
 
   let {
-    title, subtitle = '', sessionId, boardId, bmStatus, viewMode, canEnd,
+    title, subtitle = '', sessionId, boardId, bmStatus, viewMode, canEnd, showViewToggle = true,
     settings = $bindable(), onleave, onend, onviewmode,
   }: {
     title: string
@@ -18,6 +18,7 @@
     bmStatus: Snapshot['bmStatus']
     viewMode: 'board' | 'entry'
     canEnd: boolean
+    showViewToggle?: boolean
     settings: GameSettings
     onleave: () => void
     onend: () => void
@@ -49,6 +50,7 @@
   </div>
 
   <div class="ml-auto flex items-center gap-3 shrink-0">
+    {#if showViewToggle}
     <!-- Board / Enter toggle -->
     <div class="flex items-center gap-0 p-[3px] bg-[#0f100e] rounded-[8px] border border-line-2">
       <button type="button" onclick={() => onviewmode('board')}
@@ -64,6 +66,7 @@
         Enter
       </button>
     </div>
+    {/if}
 
     {#if canEnd}
       <button type="button" onclick={onend}

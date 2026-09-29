@@ -119,7 +119,15 @@
     config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) }
   })
 
+  // Bull off decides who throws first, so it needs an opponent (the backend
+  // rejects it too). Named guests count as players, same as in start().
+  const playerCount = $derived(1 + guests.filter(g => g.name.trim()).length)
+  const bullOffBlocked = $derived(
+    selectedMode === 'x01' && (config.bullOff ?? 'off') !== 'off' && playerCount < 2
+  )
+
   async function start() {
+    if (bullOffBlocked) return
     error = ''
     const allPlayers = [
       { name: youName.trim() || 'Player 1' },
@@ -243,6 +251,11 @@
               </legend>
               <SegmentedControl options={bullOffOptions} bind:value={config.bullOff}
                 defaultValue={X01_DEFAULTS.bullOff} />
+              {#if bullOffBlocked}
+                <p class="m-0 text-[13px] text-live-text">
+                  Bull off needs at least two players. Add a player or turn it off.
+                </p>
+              {/if}
             </fieldset>
 
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
@@ -341,7 +354,8 @@
         <!-- Sticky bottom: error + start button -->
         <div class="px-6 pb-6 pt-3 flex flex-col gap-3 border-t border-line">
           {#if error}<p class="m-0 text-[14px] text-live-text">{error}</p>{/if}
-          <button type="button" onclick={start} disabled={loading}
+          <button type="button" onclick={start} disabled={loading || bullOffBlocked}
+            title={bullOffBlocked ? 'Bull off needs at least two players' : undefined}
             class="h-14 flex items-center justify-center gap-[10px] bg-accent text-accent-fg
                    rounded-[10px] font-display font-bold text-[22px] tracking-[0.08em] uppercase
                    border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
