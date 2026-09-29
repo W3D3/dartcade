@@ -26,8 +26,15 @@ docker-compose.dev.yaml  dev compose (postgres + backend + frontend + bridge)
 ```bash
 cp .env.example .env
 # Edit .env — set DARTCADE_BOARD_URL to your board's local IP
-docker compose -f docker-compose.dev.yaml up --build
+scripts/dev.sh
 ```
+
+`scripts/dev.sh` wraps `docker compose -f docker-compose.dev.yaml up --build` (extra args are passed through). It also:
+
+- creates `backend/node_modules` and `backend/frontend/node_modules` up front — otherwise Docker creates these volume mount points as root and host-side `npm install` fails with `EACCES`
+- stamps the bridge with the current commit, so the Boards page shows e.g. `dev+b503493-dirty` instead of a bare `dev`
+
+Tagged releases report the tag (e.g. `v0.4.2`) instead.
 
 | Service  | URL                        | Notes                          |
 |----------|----------------------------|--------------------------------|

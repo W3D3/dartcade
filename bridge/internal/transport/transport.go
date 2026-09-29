@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	outboxMax      = 1000
-	bridgeVersion  = "0.1.0"
-	schemaVersion  = "adbridge/1.0"
+	outboxMax     = 1000
+	schemaVersion = "adbridge/1.0"
 )
 
 // Envelope wraps every outbound adbridge/v1 message.
@@ -44,6 +43,8 @@ type Config struct {
 	BoardID    string
 	BMVersion  string
 	BMUrl      string // Board Manager base URL, reported in bridge.hello
+	// Bridge build version (main.version), reported in bridge.hello
+	BridgeVersion string
 }
 
 // ExecuteFunc is called when the backend sends a valid command.
@@ -131,7 +132,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 	hello := map[string]any{
 		"kind": "bridge.hello",
 		"data": schema.BridgeHelloData{
-			BridgeVersion: bridgeVersion,
+			BridgeVersion: t.cfg.BridgeVersion,
 			Schema:        schemaVersion,
 			Os:            runtime.GOOS,
 			Arch:          runtime.GOARCH,
