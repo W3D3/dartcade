@@ -6,6 +6,8 @@
 - **Node 22 LTS** (`nvm install 22`) — for running backend tests locally
 - **Go 1.23+** — for working on the bridge outside Docker
 
+Run npm through mise's pinned Node 22 (`mise exec -- npm …`), not a newer system Node — npm 11 rewrites `package-lock.json` in a way `npm ci` on npm 10/Node 22 (and CI) rejects.
+
 ## Repository layout
 
 ```
