@@ -1,3 +1,5 @@
+import type { AtcGame, X01Game } from './api/game-ws'
+
 // Finished visits per player, rebuilt in the browser from game snapshots.
 // It only knows what happened since the page loaded.
 
@@ -16,18 +18,15 @@ export type VisitHistory = {
 
 export const emptyHistory = (): VisitHistory => ({ leg: [], all: [], start: [], prev: null })
 
-const nums = (game: Record<string, unknown>, key: string): number[] =>
-  Array.isArray(game[key]) ? (game[key] as number[]) : []
-
 /** Fold one snapshot's game state into the history. A visit is finished when totalVisits goes up. */
-export function trackVisits(h: VisitHistory, game: Record<string, unknown>): VisitHistory {
-  const isX01 = Array.isArray(game.scores)
-  const progress = isX01 ? nums(game, 'scores') : nums(game, 'hitCounts')
-  const totalVisits = nums(game, 'totalVisits')
-  const legs = nums(game, 'legs')
-  const totalDarts = nums(game, 'totalDarts')
-  const darts = Array.isArray(game.currentVisitDarts) ? game.currentVisitDarts.length : 0
-  const cp = typeof game.currentPlayer === 'number' ? game.currentPlayer : 0
+export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHistory {
+  const isX01 = 'scores' in game
+  const progress = isX01 ? game.scores : game.hitCounts
+  const { totalVisits, totalDarts } = game
+  const legs = isX01 ? game.legs : []
+  const bust = isX01 && game.bustThisVisit
+  const darts = game.currentVisitDarts.length
+  const cp = game.currentPlayer
   const n = Math.max(totalVisits.length, progress.length)
 
   let leg = Array.from({ length: n }, (_, i) => h.leg[i] ?? [])
@@ -38,15 +37,15 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
   if (p) {
     const finished = totalVisits.flatMap((t, i) => (t > (p.totalVisits[i] ?? 0) ? [i] : []))
     const added = finished.reduce((a, i) => a + totalVisits[i] - (p.totalVisits[i] ?? 0), 0)
-    const legOver = legs.some((l, i) => l > (p.legs[i] ?? 0))
+    const legOver = legs.some((l, i) => l > (p.legs.at(i) ?? 0))
     if (added === 1 && finished[0] === p.cp) {
       const i = p.cp
-      const wonLeg = (legs[i] ?? 0) > (p.legs[i] ?? 0)
+      const wonLeg = (legs.at(i) ?? 0) > (p.legs.at(i) ?? 0)
       const s = start[i]
-      const now = progress[i] ?? s
+      const now = progress.at(i) ?? s
       if (s !== null && now !== null) { // null: began before the page loaded
         // Darts seen so far plus any the server counted since (missed snapshots, an empty turn's misses)
-        const darts = Math.max(0, p.darts + (totalDarts[i] ?? 0) - (p.totalDarts[i] ?? 0))
+        const darts = Math.max(0, p.darts + (totalDarts.at(i) ?? 0) - (p.totalDarts.at(i) ?? 0))
         const visit: Visit = isX01
           ? { scored: wonLeg ? s : s - now, left: wonLeg ? 0 : now, darts, bust: p.bust }
           : { scored: now - s, left: 0, darts, bust: false }
@@ -64,11 +63,11 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
   }
 
   // A visit (re)starts whenever the thrower has no darts on the board
-  if (darts === 0 && cp < n) start[cp] = progress[cp] ?? null
+  if (darts === 0 && cp < n) start[cp] = progress.at(cp) ?? null
 
   return {
     leg, all, start,
-    prev: { totalVisits: [...totalVisits], totalDarts: [...totalDarts], legs: [...legs], darts, bust: game.bustThisVisit === true, cp },
+    prev: { totalVisits: [...totalVisits], totalDarts: [...totalDarts], legs: [...legs], darts, bust, cp },
   }
 }
 

@@ -1,13 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import { x01Player, atcPlayer } from '../playerStats.js'
 import { emptyHistory, type VisitHistory } from '../visitHistory.js'
+import type { AtcGame, X01Game } from '../api/game-ws'
 
 const visit = (scored: number, left: number, darts = 3) => ({ scored, left, darts, bust: false })
 const history = (leg: VisitHistory['leg'], all = leg): VisitHistory => ({ ...emptyHistory(), leg, all })
-const game = (o: Record<string, unknown> = {}) => ({
+const game = (o: Record<string, unknown> = {}): X01Game => ({
   scores: [81, 87], opened: [true, true], legs: [1, 0], firstTo: 3, totalDarts: [16, 18],
   config: { outMode: 'double' }, currentVisitDarts: [{ segment: { name: 'T20' }, score: 60 }], ...o,
-})
+}) as unknown as X01Game
 
 describe('x01Player', () => {
   it('the thrower: running visit on the chalkboard, finish with the darts left', () => {
@@ -56,12 +57,12 @@ describe('x01Player', () => {
 describe('atcPlayer', () => {
   it('shows target, progress and hit rate', () => {
     const seq = [...Array.from({ length: 20 }, (_, i) => i + 1), 22]
-    const p = atcPlayer({ sequence: seq, targets: [14], hitCounts: [13], totalDarts: [35] }, 0)
+    const p = atcPlayer({ sequence: seq, targets: [14], hitCounts: [13], totalDarts: [35] } as unknown as AtcGame, 0)
     expect(p).toMatchObject({ target: '14', done: 13, total: 21, darts: 35, hitRate: '37%' })
     expect(p.cells).toHaveLength(21)
   })
 
   it('hit rate is 0% before the first dart', () => {
-    expect(atcPlayer({ sequence: [1, 2], targets: [1], hitCounts: [0], totalDarts: [0] }, 0).hitRate).toBe('0%')
+    expect(atcPlayer({ sequence: [1, 2], targets: [1], hitCounts: [0], totalDarts: [0] } as unknown as AtcGame, 0).hitRate).toBe('0%')
   })
 })

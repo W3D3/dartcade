@@ -20,13 +20,15 @@
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { createSounds } from '../lib/sounds.js'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
-  import { x01Slots, atcSlots, type ThrownDart } from '../lib/dartSlots.js'
+  import { x01Slots, atcSlots } from '../lib/dartSlots.js'
+  import { gameState } from '../lib/gameState.js'
   import { x01Band, atcBand, atcAdvanced, bigDartIndex } from '../lib/visitBand.js'
   import { nextButton } from '../lib/controls.js'
   import { x01Player, atcPlayer } from '../lib/playerStats.js'
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
-  import { api, type Segment, type BullOffView, type UserAction } from '$lib/api'
+  import { api, type Segment, type UserAction } from '$lib/api'
+  import type { AtcGame, X01Game } from '$lib/api/game-ws'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -54,25 +56,29 @@
       if (!snap) { snapshot = null; return }
       // Boardless sessions start on the keypad (once)
       if (!viewModeSetByUser && snap.boardId === null) { viewMode = 'entry'; viewModeSetByUser = true }
-      if (snapshot) playSounds(asRecord(snapshot.game), asRecord(snap.game))
-      history = trackVisits(history, asRecord(snap.game))
+      const next = gameState(snap)
+      const g = next.x01 ?? next.atc
+      if (g) {
+        const prev = gameState(snapshot)
+        const pg = prev.x01 ?? prev.atc
+        if (pg) playSounds(pg, g)
+        history = trackVisits(history, g)
+      }
       snapshot = snap
     })
   })
   onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
 
-  // The game logic modules read the snapshot's game generically, per game id
-  const asRecord = (g: unknown) => (g ?? {}) as Record<string, unknown>
-
-  function playSounds(before: Record<string, unknown>, after: Record<string, unknown>) {
-    const oldCount = (before.currentVisitDarts as unknown[] | undefined)?.length ?? 0
-    const now = (after.currentVisitDarts as ThrownDart[] | undefined) ?? []
-    if (after.bustThisVisit === true && before.bustThisVisit !== true) {
+  function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
+    const oldCount = before.currentVisitDarts.length
+    const now = after.currentVisitDarts
+    const bustNow = 'bustThisVisit' in after && after.bustThisVisit
+    const bustBefore = 'bustThisVisit' in before && before.bustThisVisit
+    if (bustNow && !bustBefore) {
       if (settings.soundBust) sounds.bust()
     } else if (now.length > oldCount) {
       const i = now.length - 1
-      const hits = after.currentVisitHits as boolean[] | undefined
-      const hit = hits ? hits[i] : (now[i]?.score ?? 0) > 0
+      const hit = 'currentVisitHits' in after ? after.currentVisitHits.at(i) === true : (now.at(i)?.score ?? 0) > 0
       if (hit && settings.soundHit) sounds.hit()
       if (!hit && settings.soundMiss) sounds.miss()
     } else if (after.currentPlayer !== before.currentPlayer && settings.soundSwitch) {
@@ -82,33 +88,35 @@
 
   // ── Game state ────────────────────────────────────────────────────────────
   const gameId = $derived(snapshot?.gameId ?? '')
-  const isX01 = $derived(gameId === 'x01')
   const boardId = $derived(snapshot?.boardId ?? null)
   const players = $derived(snapshot?.players ?? [])
-  const game = $derived(asRecord(snapshot?.game))
+  // The snapshot's game narrowed by game id; both null for a game this page doesn't know
+  const current = $derived(gameState(snapshot))
+  const x01 = $derived(current.x01)
+  const atc = $derived(current.atc)
+  const game = $derived(x01 ?? atc)
+  const isX01 = $derived(x01 !== null)
   const view = $derived(getGameView(gameId))
-  const currentPlayer = $derived((game.currentPlayer as number | undefined) ?? 0)
-  const winner = $derived((game.winner as number | null | undefined) ?? null)
+  const currentPlayer = $derived(game?.currentPlayer ?? 0)
+  const winner = $derived(game?.winner ?? null)
   const isActive = $derived(winner === null)
-  // Darts of the open visit as the engine sends them (segment, score, and coords when placed)
-  type VisitDart = { segment: Segment; score: number; coords?: { x: number; y: number } }
-  const darts = $derived((game.currentVisitDarts as VisitDart[] | undefined) ?? [])
-  const hits = $derived((game.currentVisitHits as boolean[] | undefined) ?? [])
-  const bust = $derived(game.bustThisVisit === true)
+  const darts = $derived(game?.currentVisitDarts ?? [])
+  const hits = $derived(atc?.currentVisitHits ?? [])
+  const bust = $derived(x01?.bustThisVisit === true)
   // The visit is over (bust, checkout, win): no more darts until the next player
-  const locked = $derived(game.visitLocked === true || winner !== null)
-  const bullOff = $derived(game.phase === 'bulloff' ? (game.bullOff as BullOffView | undefined) ?? null : null)
+  const locked = $derived(x01?.visitLocked === true || winner !== null)
+  const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
   const layout = $derived(players.length === 1 ? 'solo' : players.length === 2 ? 'duel' : 'party')
   const nextPlayer = $derived((currentPlayer + 1) % Math.max(players.length, 1))
 
-  const x01Players = $derived(isX01
-    ? players.map((_, i) => x01Player(game, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions, bust: i === currentPlayer && bust }))
+  const x01Players = $derived(x01
+    ? players.map((_, i) => x01Player(x01, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions, bust: i === currentPlayer && bust }))
     : [])
-  const atcPlayers = $derived(isX01 ? [] : players.map((_, i) => atcPlayer(game, i)))
-  const leaders = $derived(isX01 ? [] : atcLeaders((game.hitCounts as number[] | undefined) ?? []))
+  const atcPlayers = $derived(atc ? players.map((_, i) => atcPlayer(atc, i)) : [])
+  const leaders = $derived(atcLeaders(atc?.hitCounts ?? []))
 
   // ── Center column ─────────────────────────────────────────────────────────
-  const outMode = $derived(((game.config as { outMode?: string } | undefined)?.outMode ?? 'double') as 'straight' | 'double' | 'master')
+  const outMode = $derived(x01?.config.outMode ?? 'double')
   const slots = $derived(isX01
     ? x01Slots({
         darts, outMode, bust,
@@ -118,35 +126,34 @@
       })
     : atcSlots({
         darts, hits, target: isActive ? atcPlayers[currentPlayer]?.target ?? null : null,
-        multiplierAdvances: (game.cfg as { multiplierAdvances?: boolean } | undefined)?.multiplierAdvances === true,
+        multiplierAdvances: atc?.cfg.multiplierAdvances === true,
       }))
 
-  const hitCount = $derived((game.hitCounts as number[] | undefined)?.[currentPlayer] ?? 0)
+  const hitCount = $derived(atc?.hitCounts.at(currentPlayer) ?? 0)
+  const visitStart = $derived(history.start.at(currentPlayer) ?? null)
   const band = $derived(isX01
     ? x01Band({
         darts, bust,
         left: x01Players[currentPlayer]?.remaining ?? 0,
         // What the engine actually took off, when the visit's start is known
-        scored: !bust && history.start[currentPlayer] != null
-          ? (history.start[currentPlayer]) - (x01Players[currentPlayer]?.remaining ?? 0)
-          : undefined,
+        scored: !bust && visitStart !== null ? visitStart - (x01Players[currentPlayer]?.remaining ?? 0) : undefined,
       })
     : atcBand({
         dartCount: darts.length,
-        advanced: atcAdvanced(hitCount, history.start[currentPlayer] ?? null, hits),
+        advanced: atcAdvanced(hitCount, visitStart, hits),
         target: atcPlayers[currentPlayer]?.target ?? '',
       }))
   const popIndex = $derived(isX01 ? bigDartIndex(darts, { opened: x01Players[currentPlayer]?.opened ?? true, bust }) : null)
 
-  const sequence = $derived((game.sequence as number[] | undefined) ?? [])
-  const targets = $derived((game.targets as number[] | undefined) ?? [])
+  const sequence = $derived(atc?.sequence ?? [])
+  const targets = $derived(atc?.targets ?? [])
   const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next' || s.kind === 'suggested-later').map(s => s.label))
-  const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets[currentPlayer]) : null)
-  const boardNext = $derived(!isX01 && isActive && layout === 'duel' ? atcTargetSegment(sequence, targets[nextPlayer]) : null)
+  const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets.at(currentPlayer)) : null)
+  const boardNext = $derived(!isX01 && isActive && layout === 'duel' ? atcTargetSegment(sequence, targets.at(nextPlayer)) : null)
   const markers = $derived(!isX01 && isActive && layout === 'party' && settings.showMarkers
     ? players.map((p, i) => ({
         initial: p.name.trim()[0]?.toUpperCase() ?? '?',
-        segment: atcTargetSegment(sequence, targets[i]) ?? 0,
+        segment: atcTargetSegment(sequence, targets.at(i)) ?? 0,
         isActive: i === currentPlayer,
       })).filter(m => m.segment > 0)
     : [])
@@ -252,7 +259,7 @@
   {:else}
     <GameHeader
       title={bullOff ? 'Bull-off' : view.title}
-      meta={bullOff ? `Who throws first in ${view.title}` : view.meta(game, players.length)}
+      meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
       showViewToggle={!bullOff}
       {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode}
       canEnd={winner === null}
@@ -264,6 +271,11 @@
 
     {#if bullOff}
       <BullOffPanel {players} {bullOff} manual={boardId === null} {send} />
+
+    {:else if !game}
+      <main class="flex-grow flex items-center justify-center">
+        <p class="text-text-muted">Unsupported game</p>
+      </main>
 
     {:else if layout === 'solo'}
       <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">

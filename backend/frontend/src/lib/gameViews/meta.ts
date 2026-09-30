@@ -1,29 +1,27 @@
 // The meta line next to the game title in the header.
+import type { AtcGame, X01Game } from '../api/game-ws'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
-export function x01Meta(game: Record<string, unknown>, playerCount: number): string {
-  const cfg = (game.config ?? {}) as { startScore?: number; outMode?: string; inMode?: string }
-  const legs = (game.legs as number[] | undefined) ?? []
-  const firstTo = (game.firstTo as number | undefined) ?? 1
+export function x01Meta(game: X01Game, playerCount: number): string {
+  const cfg = game.config
+  const { legs, firstTo } = game
   const played = legs.reduce((a, b) => a + b, 0)
   const parts: string[] = []
   if (playerCount > 2) parts.push(`${playerCount} players`)
-  parts.push(String(cfg.startScore ?? 501))
-  if (cfg.inMode && cfg.inMode !== 'straight') parts.push(`${cap(cfg.inMode)} in`)
-  parts.push(`${cap(cfg.outMode ?? 'double')} out`)
+  parts.push(String(cfg.startScore))
+  if (cfg.inMode !== 'straight') parts.push(`${cap(cfg.inMode)} in`)
+  parts.push(`${cap(cfg.outMode)} out`)
   parts.push(playerCount === 1 ? 'Practice' : `First to ${firstTo} ${firstTo === 1 ? 'leg' : 'legs'}`)
   // After the match: the leg in play when it ended (a won final leg, or one cut short by the round limit)
-  const winner = game.winner as number | null | undefined
-  const finalLegWon = winner !== null && winner !== undefined && (legs[winner] ?? 0) >= firstTo
+  const winner = game.winner
+  const finalLegWon = winner !== null && (legs.at(winner) ?? 0) >= firstTo
   parts.push(`Leg ${finalLegWon ? played : played + 1}`)
   return parts.join(' · ')
 }
 
-export function atcMeta(game: Record<string, unknown>, playerCount: number): string {
-  const cfg = (game.cfg ?? {}) as { order?: string; multiplierAdvances?: boolean }
-  const seq = (game.sequence as number[] | undefined) ?? []
-  const totalVisits = (game.totalVisits as number[] | undefined) ?? []
+export function atcMeta(game: AtcGame, playerCount: number): string {
+  const { cfg, sequence: seq, totalVisits } = game
   const round = totalVisits.length ? Math.min(...totalVisits) + 1 : 1
   const order = cfg.order === 'desc' ? '20–1' : cfg.order === 'random' ? 'Random order' : '1–20'
   const bull = seq.includes(22) ? ', then Bull' : seq.includes(21) ? ', then 25' : ''

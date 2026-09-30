@@ -3,10 +3,8 @@ import { checkoutHint } from './dartUtils.js'
 import { atcCells, atcDone, atcTargetLabel, type AtcCell } from './atc.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
 
-type OutMode = 'straight' | 'double' | 'master'
+import type { AtcGame, X01Game } from './api/game-ws'
 
-const nums = (game: Record<string, unknown>, key: string): number[] =>
-  Array.isArray(game[key]) ? (game[key] as number[]) : []
 const fmtAvg = (v: number | null) => (v === null ? '—' : v.toFixed(1))
 
 export type X01PlayerView = {
@@ -29,38 +27,38 @@ export type X01PlayerView = {
 }
 
 export function x01Player(
-  game: Record<string, unknown>, i: number, history: VisitHistory, o: { active: boolean; suggest: boolean; bust?: boolean },
+  game: X01Game, i: number, history: VisitHistory, o: { active: boolean; suggest: boolean; bust?: boolean },
 ): X01PlayerView {
-  const remaining = nums(game, 'scores')[i] ?? 0
-  const opened = (game.opened as boolean[] | undefined)?.[i] ?? true
-  const outMode = ((game.config as { outMode?: OutMode } | undefined)?.outMode ?? 'double')
-  const running = o.active ? ((game.currentVisitDarts as { score?: number }[] | undefined) ?? []) : []
+  const remaining = game.scores.at(i) ?? 0
+  const opened = game.opened.at(i) ?? true
+  const running = o.active ? game.currentVisitDarts : []
   const dartsLeft = 3 - running.length
-  const hint = o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, outMode, dartsLeft) : null
-  const all = history.all[i] ?? []
-  const leg = history.leg[i] ?? []
+  const hint = o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, game.config.outMode, dartsLeft) : null
+  const all = history.all.at(i) ?? []
+  const leg = history.leg.at(i) ?? []
+  const last = all.at(-1)
   return {
     remaining, opened,
     canFinish: hint ? hint.join(' · ') : null,
     avg: fmtAvg(threeDartAvg(all)),
     legAvg: fmtAvg(threeDartAvg(leg)),
-    last: all.length ? String(all[all.length - 1].scored) : '—',
-    darts: nums(game, 'totalDarts')[i] ?? 0,
-    legsWon: nums(game, 'legs')[i] ?? 0,
-    firstTo: (game.firstTo as number | undefined) ?? 1,
+    last: last ? String(last.scored) : '—',
+    darts: game.totalDarts.at(i) ?? 0,
+    legsWon: game.legs.at(i) ?? 0,
+    firstTo: game.firstTo,
     visits: leg,
     showFinish: o.suggest,
-    current: running.length ? { scored: running.reduce((a, d) => a + (d.score ?? 0), 0), left: remaining, bust: o.bust === true } : null,
+    current: running.length ? { scored: running.reduce((a, d) => a + d.score, 0), left: remaining, bust: o.bust === true } : null,
   }
 }
 
 export type AtcPlayerView = { target: string; done: number; total: number; cells: AtcCell[]; darts: number; hitRate: string }
 
-export function atcPlayer(game: Record<string, unknown>, i: number): AtcPlayerView {
-  const seq = nums(game, 'sequence')
-  const target = nums(game, 'targets')[i] ?? seq[0] ?? 1
-  const darts = nums(game, 'totalDarts')[i] ?? 0
-  const hits = nums(game, 'hitCounts')[i] ?? 0
+export function atcPlayer(game: AtcGame, i: number): AtcPlayerView {
+  const seq = game.sequence
+  const target = game.targets.at(i) ?? seq.at(0) ?? 1
+  const darts = game.totalDarts.at(i) ?? 0
+  const hits = game.hitCounts.at(i) ?? 0
   return {
     target: atcTargetLabel(seq, target), done: atcDone(seq, target), total: seq.length,
     cells: atcCells(seq, target), darts, hitRate: darts ? `${Math.round((hits / darts) * 100)}%` : '0%',
