@@ -177,6 +177,24 @@ describe('onUserAction', () => {
     expect(d.data.dart).not.toHaveProperty('polar')
   })
 
+  it('correct_dart with coords moves the dart to that spot', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'dart.detected', {
+      visit_id: 'v1', index: 0, source_seq: 1,
+      dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3,
+        coords: { x: 0.1, y: -0.3 }, polar: { r: 0.32, theta_deg: -72 } },
+    }, new Date())
+    await engine.onUserAction(sessionId, {
+      type: 'correct_dart', visitIndex: 0,
+      segment: { number: 20, bed: 'Triple', multiplier: 3, name: 'T20' },
+      coords: { x: 0, y: 0.6 },
+    })
+    const d = engine.getSession(sessionId)!.openVisitEvents.find(e => e.kind === 'dart.detected') as any
+    expect(d.data.dart).toMatchObject({ score: 60, coords: { x: 0, y: 0.6 }, polar: { r: 0.6, theta_deg: 90 } })
+  })
+
   it('does not count bull off darts; the first game dart counts for the bull off winner', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'x01',
@@ -216,6 +234,19 @@ describe('onUserAction', () => {
     const snap = engine.getSnapshot(sessionId)!
     expect((snap.game as any).phase).toBe('game')
     expect((snap.game as any).currentPlayer).toBe(1)
+  })
+
+  it('measures a manually entered bull off dart from its coordinates', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01',
+      { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }, { name: 'Bob' }])
+    await engine.onUserAction(sessionId, {
+      type: 'add_dart',
+      segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 },
+      coords: { x: 0.03, y: 0.04 },
+    })
+    const bullOff = engine.getSnapshot(sessionId)!.game.bullOff as any
+    expect(bullOff.throws[0]).toEqual({ mm: 8.5, segment: '25', thetaDeg: expect.closeTo(53.13, 2), estimated: false })
   })
 })
 

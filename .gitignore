@@ -22,3 +22,7 @@ dist/
 *.swp
 spike/recorder/recorder
 spike/visualiser/visualiser
+
+# Build outputs and caches
+.vite/
+bridge/bridge

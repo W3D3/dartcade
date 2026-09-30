@@ -1,6 +1,7 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
 import { refoldVisit } from './refold.js'
+import { manualDart } from './manualDart.js'
 import type { GameModule, Session, Player, BoardEvent, UserAction, Snapshot, DartDetectedData } from './types.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -189,10 +190,10 @@ export class SessionEngine {
       const target = dartEvents[action.visitIndex]
       if (target) {
         const orig = target.data as DartDetectedData
-        const score = action.segment.number * action.segment.multiplier
-        // The camera position no longer matches the corrected segment, so drop it
+        // The camera position no longer matches the corrected segment, so drop it,
+        // unless the dart was moved to a new spot on the board
         const { coords: _c, polar: _p, ...rest } = orig.dart
-        const newDart = { ...rest, segment: action.segment, score }
+        const newDart = { ...rest, ...manualDart(action.segment, action.coords) }
         const idx = session.openVisitEvents.indexOf(target)
         session.openVisitEvents[idx] = {
           kind: 'dart.detected',
@@ -227,10 +228,9 @@ export class SessionEngine {
       const opened = refoldVisit(session.module, session.committedState, session.openVisitEvents)
       const thrower = session.module.getCurrentPlayer(opened)
       if (!inBullOff(session, opened)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
-      const score = action.segment.number * action.segment.multiplier
       session.openVisitEvents.push({
         kind: 'dart.detected',
-        data: { visit_id: 'manual', index: dartCount, dart: { segment: action.segment, score }, source_seq: 0 } as any,
+        data: { visit_id: 'manual', index: dartCount, dart: manualDart(action.segment, action.coords), source_seq: 0 } as any,
       })
     } else {
       // Anything else is the game module's own action (e.g. the bull off's
