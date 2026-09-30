@@ -2,368 +2,279 @@
   import { onMount, onDestroy } from 'svelte'
   import { push } from 'svelte-spa-router'
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
-  import { createSessionStore } from '../lib/ws.js'
+  import { createSessionStore, type Snapshot } from '../lib/ws.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
   import DartEntryPanel from '../lib/components/DartEntryPanel.svelte'
-  import PlayerCard from '../lib/components/PlayerCard.svelte'
-  import PlayerListRow from '../lib/components/PlayerListRow.svelte'
-  import CorrectionPanel from '../lib/components/CorrectionPanel.svelte'
-  import { parseLabel } from '../lib/dartUtils.js'
   import GameHeader from '../lib/components/GameHeader.svelte'
-  import BullOffPanel from '../lib/components/BullOffPanel.svelte'
+  import BullOffPanel, { type BullOffView } from '../lib/components/BullOffPanel.svelte'
+  import BoardLegend from '../lib/components/BoardLegend.svelte'
+  import VisitBand from '../lib/components/VisitBand.svelte'
+  import DartSlots from '../lib/components/DartSlots.svelte'
+  import ControlBar from '../lib/components/ControlBar.svelte'
+  import X01Panel from '../lib/components/X01Panel.svelte'
+  import AtcPanel from '../lib/components/AtcPanel.svelte'
+  import X01Row from '../lib/components/X01Row.svelte'
+  import AtcRow from '../lib/components/AtcRow.svelte'
+  import type { PillKind } from '../lib/components/PlayerPill.svelte'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
-  import { api, type Segment, type BullOffView } from '$lib/api'
   import { createSounds } from '../lib/sounds.js'
+  import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
+  import { x01Slots, atcSlots, type ThrownDart } from '../lib/dartSlots.js'
+  import { x01Band, atcBand, isBigDart } from '../lib/visitBand.js'
+  import { x01Player, atcPlayer } from '../lib/playerStats.js'
+  import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
+  import { labelToSegment, type Segment } from '../lib/dartUtils.js'
 
-  // ── Settings (persisted to localStorage) ──────────────────────────────────
+  // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
   $effect(() => { saveSettings(localStorage, settings) })
-
   const sounds = createSounds(() => settings.volume)
 
+  // ── Session ───────────────────────────────────────────────────────────────
   let sessionId = $state('')
   let sessionStore: ReturnType<typeof createSessionStore> | null = null
-  let snapshot = $state<import('../lib/ws.js').Snapshot | null>(null)
+  let snapshot = $state<Snapshot | null>(null)
+  let history = $state<VisitHistory>(emptyHistory())
   let unsubSnap: (() => void) | null = null
 
-  // ── View mode: 'board' shows the SVG, 'entry' shows DartEntryPanel ─────────
   let viewMode = $state<'board' | 'entry'>('board')
-  let viewModeSetByUser = $state(false)
-
-  let perPlayerVisits = $state<number[][]>([])
+  let viewModeSetByUser = false
   let showEndConfirm = $state(false)
-  let prevDartCount = 0
-  let prevCurrentPlayer = 0
-  let prevDarts: any[] = []
-  let visitOwner = 0
-  let prevTotalVisits: number[] = []
+  /** Dart open in the correction popover; also highlighted on the board. */
+  let correcting = $state<number | null>(null)
 
   onMount(() => {
-    const match = window.location.hash.match(/\/session\/([^/]+)/)
-    sessionId = match?.[1] ?? ''
+    sessionId = window.location.hash.match(/\/session\/([^/]+)/)?.[1] ?? ''
     if (!sessionId) return
     sessionStore = createSessionStore(sessionId)
     unsubSnap = sessionStore.snapshot.subscribe(snap => {
       if (!snap) { snapshot = null; return }
-      // Default to entry mode for boardless sessions (once, on first snapshot)
-      if (!viewModeSetByUser && snap.boardId === null) {
-        viewMode = 'entry'
-        viewModeSetByUser = true
-      }
-      const oldCount = prevDartCount
-      const oldPlayer = prevCurrentPlayer
-      updateVisitHistory(snap)
-      if (settings.soundHit || settings.soundMiss || settings.soundSwitch) playSoundEvents(snap, oldCount, oldPlayer)
+      // Boardless sessions start on the keypad (once)
+      if (!viewModeSetByUser && snap.boardId === null) { viewMode = 'entry'; viewModeSetByUser = true }
+      if (snapshot) playSounds(snapshot.game, snap.game)
+      history = trackVisits(history, snap.game)
       snapshot = snap
     })
   })
   onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
 
-  function playSoundEvents(snap: import('../lib/ws.js').Snapshot, oldCount: number, oldPlayer: number) {
-    const g = snap.game
-    const newDarts = g.currentVisitDarts
-    const newPlayer = g.currentPlayer
-    if (newDarts.length > oldCount) {
-      const idx = newDarts.length - 1
-      const hits = 'currentVisitHits' in g ? g.currentVisitHits : undefined
-      const isHit = hits !== undefined ? hits[idx] === true : (newDarts[idx]?.score ?? 0) > 0
-      if (isHit) { if (settings.soundHit) sounds.hit() }
-      else { if (settings.soundMiss) sounds.miss() }
-    } else if (newPlayer !== oldPlayer) {
-      if (settings.soundSwitch) sounds.switchPlayer()
+  function playSounds(before: Record<string, unknown>, after: Record<string, unknown>) {
+    const oldCount = (before.currentVisitDarts as unknown[] | undefined)?.length ?? 0
+    const now = (after.currentVisitDarts as ThrownDart[] | undefined) ?? []
+    if (after.bustThisVisit === true && before.bustThisVisit !== true) {
+      if (settings.soundBust) sounds.bust()
+    } else if (now.length > oldCount) {
+      const i = now.length - 1
+      const hits = after.currentVisitHits as boolean[] | undefined
+      const hit = hits ? hits[i] === true : (now[i]?.score ?? 0) > 0
+      if (hit && settings.soundHit) sounds.hit()
+      if (!hit && settings.soundMiss) sounds.miss()
+    } else if (after.currentPlayer !== before.currentPlayer && settings.soundSwitch) {
+      sounds.switchPlayer()
     }
   }
 
-  function updateVisitHistory(snap: import('../lib/ws.js').Snapshot) {
-    const g = snap.game
-    const newDarts = g.currentVisitDarts
-    const newCount = newDarts.length
-    const newPlayer = g.currentPlayer
-    const snapTotalVisits = g.totalVisits ?? []
-
-    if (prevDartCount === 0 && newCount > 0) visitOwner = newPlayer
-
-    // Detect completed visit by totalVisits counter incrementing for visitOwner
-    const prevOwnerVisits = prevTotalVisits[visitOwner] ?? 0
-    const newOwnerVisits = snapTotalVisits[visitOwner] ?? 0
-    if (newOwnerVisits > prevOwnerVisits) {
-      const total = prevDarts.reduce((s: number, d: any) => s + (d.score ?? 0), 0)
-      if (!perPlayerVisits[visitOwner]) perPlayerVisits[visitOwner] = []
-      perPlayerVisits[visitOwner] = [...perPlayerVisits[visitOwner], total]
-      perPlayerVisits = [...perPlayerVisits]
-    }
-
-    prevTotalVisits = [...snapTotalVisits]
-    prevDartCount = newCount; prevCurrentPlayer = newPlayer; prevDarts = newDarts
-  }
-
-  const gameId        = $derived(snapshot?.gameId ?? '')
-  const boardId       = $derived(snapshot?.boardId ?? null)
-  const players       = $derived(snapshot?.players ?? [])
-  const game          = $derived(snapshot?.game)
-  const currentPlayer = $derived(game?.currentPlayer ?? 0)
-  const winner        = $derived(game?.winner ?? null)
-  const currentDarts  = $derived(game?.currentVisitDarts ?? [])
-  const visitHits     = $derived(game && 'currentVisitHits' in game ? game.currentVisitHits : undefined)
-  const bust          = $derived(!!game && 'bustThisVisit' in game && game.bustThisVisit)
-  // Set while a bull off decides the throwing order (games wrapped with withBullOff)
-  const bullOff       = $derived(game && 'bullOff' in game && game.phase === 'bulloff' ? game.bullOff : null)
-  // The per-game view helpers (lib/gameViews) and player cards still take an untyped game
-  const gameRecord    = $derived((game ?? {}) as Record<string, unknown>)
-  const view          = $derived(getGameView(gameId))
-  const highlights    = $derived(view.getBoardHighlights(gameRecord, currentPlayer))
-  const subtitle      = $derived(view.getSubtitle?.(gameRecord, players.length) ?? '')
-  const isMultiPlayer  = $derived(players.length > 2)
-  const showVisitScore = $derived(view.showVisitScore ?? true)
-  const bmStatus       = $derived(snapshot?.bmStatus ?? null)
-  const isActive       = $derived(winner === null)
-
-  const dartItems = $derived(currentDarts.map((d: any) => ({
-    label: d.segment?.name ?? 'Miss',
-    score: d.score ?? 0,
-  })))
-
-  const boardMarkers = $derived(
-    isMultiPlayer && settings.showMarkers
-      ? players.map((p, i) => ({
-          initial: p.name?.[0]?.toUpperCase() ?? '?',
-          segment: view.getBoardHighlights(gameRecord, i)[0] ?? 0,
-          isActive: i === currentPlayer && winner === null,
-        })).filter(m => m.segment > 0)
-      : []
-  )
-
+  // ── Game state ────────────────────────────────────────────────────────────
+  const gameId = $derived(snapshot?.gameId ?? '')
+  const isX01 = $derived(gameId === 'x01')
+  const boardId = $derived(snapshot?.boardId ?? null)
+  const players = $derived(snapshot?.players ?? [])
+  const game = $derived(snapshot?.game ?? {})
+  const view = $derived(getGameView(gameId))
+  const currentPlayer = $derived((game.currentPlayer as number | undefined) ?? 0)
+  const winner = $derived((game.winner as number | null | undefined) ?? null)
+  const isActive = $derived(winner === null)
+  // Darts of the open visit as the engine sends them (segment, score, and coords when placed)
+  type VisitDart = { segment: Segment; score: number; coords?: { x: number; y: number } }
+  const darts = $derived((game.currentVisitDarts as VisitDart[] | undefined) ?? [])
+  const hits = $derived((game.currentVisitHits as boolean[] | undefined) ?? [])
+  const bust = $derived(game.bustThisVisit === true)
+  const bullOff = $derived(game.phase === 'bulloff' ? (game.bullOff as BullOffView | undefined) ?? null : null)
+  const layout = $derived(players.length === 1 ? 'solo' : players.length === 2 ? 'duel' : 'party')
   const nextPlayer = $derived((currentPlayer + 1) % Math.max(players.length, 1))
 
-  const leadingPlayerIndex = $derived((() => {
-    const hitCounts = gameRecord.hitCounts as number[] | undefined
-    if (!hitCounts || hitCounts.length === 0) return -1
-    let maxHits = -1, leadIdx = -1
-    hitCounts.forEach((h, i) => { if (h > maxHits) { maxHits = h; leadIdx = i } })
-    return leadIdx
-  })())
+  const x01Players = $derived(isX01
+    ? players.map((_, i) => x01Player(game, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions }))
+    : [])
+  const atcPlayers = $derived(isX01 ? [] : players.map((_, i) => atcPlayer(game, i)))
+  const leaders = $derived(isX01 ? [] : atcLeaders((game.hitCounts as number[] | undefined) ?? []))
 
-  const atcTargets = $derived(
-    !isMultiPlayer && (gameRecord.targets as number[] | undefined) && players.length > 0
-      ? (gameRecord.targets as number[]).map((t, i) => ({
-          name: players[i]?.name ?? `Player ${i + 1}`,
-          label: t === 22 ? 'Bull' : t === 21 ? '25' : t > 22 ? '✓' : String(t),
-          isActive: i === currentPlayer,
-        }))
-      : null
-  )
+  // ── Center column ─────────────────────────────────────────────────────────
+  const outMode = $derived(((game.config as { outMode?: string } | undefined)?.outMode ?? 'double') as 'straight' | 'double' | 'master')
+  const slots = $derived(isX01
+    ? x01Slots({
+        darts, outMode, bust,
+        remaining: x01Players[currentPlayer]?.remaining ?? 0,
+        opened: x01Players[currentPlayer]?.opened ?? true,
+        suggest: settings.checkoutSuggestions && isActive,
+      })
+    : atcSlots({ darts, hits, target: isActive ? atcPlayers[currentPlayer]?.target ?? null : null }))
 
-  function undo() { sessionStore?.send({ type: 'undo_dart' }) }
+  const hitCount = $derived((game.hitCounts as number[] | undefined)?.[currentPlayer] ?? 0)
+  const band = $derived(isX01
+    ? x01Band({ darts, left: x01Players[currentPlayer]?.remaining ?? 0, bust })
+    : atcBand({
+        dartCount: darts.length,
+        advanced: Math.max(0, hitCount - (history.start[currentPlayer] ?? hitCount)),
+        target: atcPlayers[currentPlayer]?.target ?? '',
+      }))
+  const popIndex = $derived(isX01 && darts.length && isBigDart(darts[darts.length - 1]?.score ?? 0) ? darts.length - 1 : null)
 
-  function addManualDart(seg: Segment) {
-    sessionStore?.send({ type: 'add_dart', segment: seg })
+  const sequence = $derived((game.sequence as number[] | undefined) ?? [])
+  const targets = $derived((game.targets as number[] | undefined) ?? [])
+  const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next' || s.kind === 'suggested-later').map(s => s.label))
+  const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets[currentPlayer]) : null)
+  const boardNext = $derived(!isX01 && isActive && layout === 'duel' ? atcTargetSegment(sequence, targets[nextPlayer]) : null)
+  const markers = $derived(!isX01 && isActive && layout === 'party' && settings.showMarkers
+    ? players.map((p, i) => ({
+        initial: p.name.trim()[0]?.toUpperCase() ?? '?',
+        segment: atcTargetSegment(sequence, targets[i]) ?? 0,
+        isActive: i === currentPlayer,
+      })).filter(m => m.segment > 0)
+    : [])
+  const legend = $derived.by((): { label: string; kind: 'current' | 'next' | 'others' }[] => {
+    if (isX01 || !isActive || layout === 'solo') return []
+    if (layout === 'party') return settings.showMarkers
+      ? [{ label: 'Current target', kind: 'current' }, { label: "Others' targets", kind: 'others' }]
+      : [{ label: 'Current target', kind: 'current' }]
+    return [
+      { label: `${players[currentPlayer]?.name} · ${atcPlayers[currentPlayer]?.target}`, kind: 'current' },
+      { label: `${players[nextPlayer]?.name} · ${atcPlayers[nextPlayer]?.target}`, kind: 'next' },
+    ]
+  })
+
+  function pillFor(i: number, rows: boolean): PillKind | null {
+    if (winner === i) return 'winner'
+    if (!isActive) return null
+    if (layout === 'solo') return 'practice'
+    if (i === currentPlayer) return 'throwing'
+    if (rows && leaders.includes(i)) return 'leading'
+    return i === nextPlayer ? 'up-next' : null
   }
 
+  // Party rows: the X01 thrower's row is taller; rows keep a minimum height and scroll
+  const rowTemplate = $derived(players
+    .map((_, i) => (isX01 && isActive && i === currentPlayer ? 'minmax(150px, 1.55fr)' : 'minmax(96px, 1fr)'))
+    .join(' '))
+
+  // ── Actions ───────────────────────────────────────────────────────────────
+  const send = (action: Record<string, unknown>) => sessionStore?.send(action)
+  const undo = () => send({ type: 'undo_dart' })
+  const next = () => send({ type: 'takeout' })
+  const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
-  function addBoardDart(hit: { segment: Segment; coords: { x: number; y: number } }) {
-    sessionStore?.send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
-  }
-
-  function handleCorrect(dartIndex: number, label: string) {
-    let segment: Segment
-    if (label === 'Bull') {
-      segment = { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }
-    } else if (label === '25') {
-      segment = { name: '25', number: 25, bed: 'Single', multiplier: 1 }
-    } else if (label === 'Miss') {
-      segment = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 }
-    } else {
-      const parsed = parseLabel(label)
-      segment = {
-        name: label,
-        number: parsed.num,
-        bed: parsed.mult === 3 ? 'Triple' : parsed.mult === 2 ? 'Double' : 'SingleOuter',
-        multiplier: parsed.mult,
-      }
-    }
-    sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment })
-  }
-
+  const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
+    send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
+  const correct = (dartIndex: number, label: string) =>
+    send({ type: 'correct_dart', visitIndex: dartIndex, segment: labelToSegment(label) })
   // Any dart of the open visit can be dragged on the board to correct it
-  let correcting = $state<number | null>(null)
-  function moveDart(dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) {
-    sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment: hit.segment, coords: hit.coords })
-  }
-
-  function leaveSession() { push('/') }
-
-  async function endSession() {
-    if (!sessionId) return
-    await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
-    push('/')
-  }
+  const moveDart = (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) =>
+    send({ type: 'correct_dart', visitIndex: dartIndex, segment: hit.segment, coords: hit.coords })
 
   function setViewMode(m: 'board' | 'entry') {
     viewMode = m
     viewModeSetByUser = true
   }
+
+  async function endSession() {
+    if (!sessionId) return
+    await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' })
+    push('/')
+  }
 </script>
 
-<div class="flex flex-col h-screen bg-bg text-text overflow-hidden">
+{#snippet center(variant: 'solo' | 'duel' | 'party')}
+  {#if viewMode === 'entry'}
+    <div class="flex-1 min-h-0 overflow-y-auto">
+      <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={darts.length} />
+    </div>
+  {:else}
+    <!-- The board takes the height the column has left (capped by its width) -->
+    <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
+      <div class="aspect-square" style="width: min(100cqw, 100cqh)">
+        <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
+          checkoutTargets={isActive ? checkoutTargets : []}
+          onBoardClick={isActive ? addBoardDart : undefined}
+          selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
+      </div>
+    </div>
+    {#if legend.length}<BoardLegend items={legend} />{/if}
+  {/if}
 
+  {#if variant === 'solo'}
+    <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)] gap-[10px] items-start">
+      <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
+      {#if settings.visitSum}<VisitBand {band} compact />{/if}
+    </div>
+  {:else}
+    {#if settings.visitSum}<VisitBand {band} />{/if}
+    <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
+  {/if}
+
+  <ControlBar canUndo={isActive && darts.length > 0} manual={boardId === null} onUndo={undo} onNext={next} />
+{/snippet}
+
+{#snippet panel(i: number)}
+  {#if isX01}
+    <X01Panel name={players[i]?.name ?? ''} p={x01Players[i]} active={i === currentPlayer && isActive}
+      solo={layout === 'solo'} pill={pillFor(i, false)} chalkboard={settings.chalkboard} />
+  {:else}
+    <AtcPanel name={players[i]?.name ?? ''} p={atcPlayers[i]} active={i === currentPlayer && isActive}
+      solo={layout === 'solo'} pill={pillFor(i, false)} />
+  {/if}
+{/snippet}
+
+<div class="flex flex-col h-screen bg-bg text-text overflow-hidden">
   {#if !snapshot}
     <div class="flex-1 flex items-center justify-center">
       <span class="text-text-muted text-lg">Connecting…</span>
     </div>
-
   {:else}
     <GameHeader
       title={bullOff ? 'Bull-off' : view.title}
-      meta={bullOff ? `Who throws first in ${view.title}` : subtitle}
+      meta={bullOff ? `Who throws first in ${view.title}` : view.meta(game, players.length)}
       showViewToggle={!bullOff}
-      {sessionId}
-      {boardId}
-      {bmStatus}
-      {viewMode}
+      {sessionId} {boardId} bmStatus={snapshot.bmStatus} {viewMode}
       canEnd={winner === null}
       bind:settings
-      onleave={leaveSession}
+      onleave={() => push('/')}
       onend={() => showEndConfirm = true}
       onviewmode={setViewMode}
     />
 
     {#if bullOff}
-      <BullOffPanel {players} {bullOff} manual={boardId === null}
-        send={a => sessionStore?.send(a)} />
+      <BullOffPanel {players} {bullOff} manual={boardId === null} {send} />
 
-    {:else if isMultiPlayer}
-      <!-- ── Multi-player layout (>2 players) ── -->
-      <div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-5">
+    {:else if layout === 'solo'}
+      <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
+        {@render panel(0)}
+        <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
+      </main>
 
-        <!-- Player list -->
-        <div class="flex-[13] min-w-0 flex flex-col gap-3">
-          {#each players as player, i}
-            <div class="flex-1 min-h-0">
-              <PlayerListRow
-                {player}
-                playerIndex={i}
-                game={gameRecord}
-                {view}
-                isActive={currentPlayer === i && winner === null}
-                isWinner={winner === i}
-                isNext={i === nextPlayer && i !== currentPlayer}
-                isLeading={i === leadingPlayerIndex && i !== currentPlayer && i !== nextPlayer}
-              />
-            </div>
-          {/each}
-        </div>
-
-        <!-- Board/Entry + controls column -->
-        <div class="flex-[10] min-w-[380px] flex-shrink-0 flex flex-col gap-3">
-          {#if viewMode === 'entry'}
-            <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
-          {:else}
-            <!-- The board takes the height the column has left (capped by its width),
-                 so the tiles, popover and buttons below always fit without a gap -->
-            <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
-              <div class="aspect-square" style="width: min(100cqw, 100cqh)">
-                <DartBoard darts={currentDarts} target={highlights[0] ?? null} dim={gameId === 'atc'} playerMarkers={boardMarkers}
-                  onBoardClick={isActive ? addBoardDart : undefined}
-                  selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
-              </div>
-            </div>
-            <div class="flex gap-5 text-[12px] text-text-dim justify-center">
-              <span class="flex items-center gap-[6px]">
-                <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
-                Current target
-              </span>
-              {#if settings.showMarkers}
-                <span class="flex items-center gap-[6px]">
-                  <span class="w-[9px] h-[9px] rounded-full bg-white shrink-0"></span>
-                  Others' targets
-                </span>
-              {/if}
-            </div>
-          {/if}
-
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
-            ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
-        </div>
-      </div>
+    {:else if layout === 'duel'}
+      <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
+        {@render panel(0)}
+        <div class="w-[560px] shrink-0 min-h-0 flex flex-col gap-3">{@render center('duel')}</div>
+        {@render panel(1)}
+      </main>
 
     {:else}
-      <!-- ── 1-2 player layout ── -->
-      <div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-5">
-
-        <!-- Player 0 -->
-        <div class="flex-1 min-w-0">
-          {#if players[0]}
-            <PlayerCard
-              player={players[0]}
-              playerIndex={0}
-              game={gameRecord}
-              {view}
-              isActive={currentPlayer === 0 && winner === null}
-              isWinner={winner === 0}
-              previousVisits={perPlayerVisits[0] ?? []}
-            />
-          {/if}
+      <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
+        <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
+          {#each players as player, i (i)}
+            {#if isX01}
+              <X01Row name={player.name} p={x01Players[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} />
+            {:else}
+              <AtcRow name={player.name} p={atcPlayers[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} />
+            {/if}
+          {/each}
         </div>
-
-        <!-- Board/Entry + correction panel column -->
-        <div class="flex-1 min-w-[380px] flex flex-col items-center gap-3">
-          {#if viewMode === 'entry'}
-            <div class="w-full">
-              <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
-            </div>
-          {:else}
-            <!-- The board takes the height the column has left (capped by its width),
-                 so the tiles, popover and buttons below always fit without a gap -->
-            <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
-              <div class="aspect-square" style="width: min(100cqw, 100cqh)">
-                <DartBoard darts={currentDarts} target={highlights[0] ?? null} dim={gameId === 'atc'}
-                  onBoardClick={isActive ? addBoardDart : undefined}
-                  selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
-              </div>
-            </div>
-          {/if}
-
-          <!-- ATC target legend (2-player, board view only) -->
-          {#if atcTargets && viewMode === 'board'}
-            <div class="flex items-center justify-center gap-5 text-[12px]">
-              {#each atcTargets as p}
-                <span class="flex items-center gap-[6px]">
-                  {#if p.isActive}
-                    <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
-                  {:else}
-                    <span class="w-[9px] h-[9px] rounded-full border border-line-3 shrink-0"></span>
-                  {/if}
-                  <span class="text-text-muted">{p.name}</span>
-                  <span class="text-text-dim">·</span>
-                  <span class="font-semibold text-text">{p.label}</span>
-                </span>
-              {/each}
-            </div>
-          {/if}
-
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
-            ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
-        </div>
-
-        <!-- Player 1 -->
-        <div class="flex-1 min-w-0">
-          {#if players[1]}
-            <PlayerCard
-              player={players[1]}
-              playerIndex={1}
-              game={gameRecord}
-              {view}
-              isActive={currentPlayer === 1 && winner === null}
-              isWinner={winner === 1}
-              previousVisits={perPlayerVisits[1] ?? []}
-            />
-          {/if}
-        </div>
-      </div>
+        <aside class="w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
+      </main>
     {/if}
 
-    <!-- Winner overlay -->
+    <!-- Winner overlay (unchanged; a designed win state is out of scope) -->
     {#if winner !== null}
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div class="rounded-[18px] px-10 py-8 text-center pointer-events-auto
