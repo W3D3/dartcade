@@ -2,6 +2,8 @@ import type { FastifyInstance, RouteOptions } from 'fastify'
 import fastifyWebsocket from '@fastify/websocket'
 import fastifyStatic from '@fastify/static'
 import rateLimit from '@fastify/rate-limit'
+import fastifySwagger from '@fastify/swagger'
+import fastifySwaggerUi from '@fastify/swagger-ui'
 import type { Kysely } from 'kysely'
 import { toNodeHandler } from 'better-auth/node'
 import type { Database } from './db/schema.js'
@@ -13,6 +15,7 @@ import { boardsApiPlugin } from './api/boards.js'
 import { pairingApiPlugin } from './api/pairing.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
+import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 
 export type AppDeps = {
   engine: SessionEngine
@@ -30,6 +33,19 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
 
   await app.register(fastifyWebsocket)
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
+
+  // API docs: our spec plus better-auth's generated one, in one Swagger UI
+  await app.register(fastifySwagger, { mode: 'static', specification: { document: bundledSpec as any } })
+  await app.register(fastifySwaggerUi, {
+    routePrefix: '/api/docs',
+    uiConfig: {
+      urls: [
+        { url: '/api/docs/json', name: 'Dartcade API' },
+        { url: '/api/auth/open-api/generate-schema', name: 'Auth (better-auth)' },
+      ],
+      'urls.primaryName': 'Dartcade API',
+    } as any,
+  })
 
   app.all('/api/auth/*', async (req, reply) => {
     // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
