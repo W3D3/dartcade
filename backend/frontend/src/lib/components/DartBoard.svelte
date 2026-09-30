@@ -129,10 +129,12 @@
   const DOT_STROKE = '#0f100e'
   const precise = $derived(!!onBoardClick)
   const interactive = $derived(!precise && !!onSegmentClick)
+  // Either way, light up the segment under the cursor
+  const hoverable = $derived(interactive || precise)
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<svg bind:this={svgEl} viewBox="-1.15 -1.15 2.3 2.3" class="w-full {interactive || precise ? 'cursor-crosshair' : ''}"
+<svg bind:this={svgEl} viewBox="-1.15 -1.15 2.3 2.3" class="w-full {hoverable ? 'cursor-crosshair' : ''}"
   xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}>
   <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
 
@@ -143,7 +145,7 @@
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" vector-effect="non-scaling-stroke"
         onclick={interactive ? () => clickSegment(num, ring) : undefined}
-        class={interactive ? 'hover:brightness-125' : ''} />
+        class={hoverable ? 'hover:brightness-125' : ''} />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
@@ -161,11 +163,11 @@
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: '25', number: 25, bed: 'Single', multiplier: 1 }) : undefined}
-    class={interactive ? 'hover:brightness-125' : ''} />
+    class={hoverable ? 'hover:brightness-125' : ''} />
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }) : undefined}
-    class={interactive ? 'hover:brightness-125' : ''} />
+    class={hoverable ? 'hover:brightness-125' : ''} />
 
   <!-- Selected segment: lime wedge overlay -->
   {#each sectors as { num, a1, a2 }}
