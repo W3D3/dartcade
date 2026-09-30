@@ -20,14 +20,27 @@
   ] as const
 
   let panel: HTMLDivElement | undefined = $state()
-  $effect(() => { panel?.focus() })
+  // Focus the drawer while open, and give focus back to the cog when it closes
+  $effect(() => {
+    const opener = document.activeElement as HTMLElement | null
+    panel?.focus()
+    return () => opener?.focus()
+  })
+  // Keep Tab inside the drawer
+  function trap(e: KeyboardEvent) {
+    if (e.key !== 'Tab' || !panel) return
+    const items = [...panel.querySelectorAll<HTMLElement>('button, input')]
+    const first = items[0], last = items[items.length - 1]
+    if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
+    else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
+  }
 </script>
 
 <svelte:window onkeydown={e => { if (e.key === 'Escape') onclose() }} />
 
 <div role="presentation" class="fixed inset-x-0 top-16 bottom-0 z-40 bg-[rgba(8,9,7,0.62)]" onclick={onclose}></div>
 
-<div bind:this={panel} tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="game-settings-title"
+<div bind:this={panel} tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="game-settings-title" onkeydown={trap}
   class="fixed top-16 right-0 bottom-0 z-50 w-[460px] max-w-full box-border px-7 pt-5 pb-6 flex flex-col overflow-y-auto
          bg-surface-active border-l border-line-2 [box-shadow:-24px_0_48px_rgba(0,0,0,.45)] outline-none">
   <div class="h-12 shrink-0 flex items-center justify-between">

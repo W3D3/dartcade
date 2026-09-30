@@ -20,6 +20,10 @@
   // Close the popover when its dart goes away (undo, takeout)
   $effect(() => { if (openDart !== null && !isThrown(slots[openDart])) openDart = null })
 
+  // Move focus into the popover when it opens
+  let popover: HTMLDivElement | undefined = $state()
+  $effect(() => { if (openDart !== null) popover?.querySelector<HTMLElement>('button')?.focus() })
+
   const quickPicks = $derived(openDart !== null ? nearbyPicks(slots[openDart]?.label ?? 'Miss') : [])
 
   function toggle(i: number) {
@@ -38,6 +42,8 @@
   const slotBox = 'h-[min(124px,14vh)] box-border rounded-[14px] px-[14px] pt-[10px] pb-3 flex flex-col items-center justify-center gap-2'
   const slotLabel = 'font-display font-bold text-[min(66px,7.5vh)] leading-[0.9]'
 </script>
+
+<svelte:window onkeydown={e => { if (e.key === 'Escape' && openDart !== null) { openDart = null; mode = 'quick' } }} />
 
 <div class="flex flex-col gap-2 min-w-0">
   <div class="grid grid-cols-3 gap-[10px]">
@@ -72,7 +78,7 @@
   </div>
 
   {#if openDart !== null}
-    <div role="dialog" aria-label="Correct dart {openDart + 1}"
+    <div bind:this={popover} role="dialog" aria-label="Correct dart {openDart + 1}"
       class="w-full box-border px-3 pt-2 pb-3 rounded-[14px] bg-surface-inset border border-line-popover
              flex flex-col gap-2 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)]">
       <div class="flex items-center gap-2 min-w-0">
