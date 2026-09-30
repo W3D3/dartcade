@@ -41,11 +41,12 @@ export async function runMigrations(db: Kysely<Database>): Promise<void> {
 
 export async function insertGameSession(
   db: Kysely<Database>,
-  s: { id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown },
+  s: { id: string; owner_user_id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown },
 ): Promise<void> {
   await db.insertInto('game_sessions')
     .values({
       id: s.id,
+      owner_user_id: s.owner_user_id,
       board_db_id: s.board_db_id,
       game_id: s.game_id,
       config: JSON.stringify(s.config) as any,
@@ -59,7 +60,6 @@ export async function getActiveGameSessions(db: Kysely<Database>) {
   return db.selectFrom('game_sessions')
     .selectAll()
     .where('status', '=', 'active')
-    .where('board_db_id', 'is not', null)
     .execute()
 }
 

@@ -60,6 +60,8 @@ export interface GameModule<S, Cfg = Record<string, never>> {
 
 export interface Session<S = unknown> {
   id: string
+  /** The user who started it; each user has at most one active session. */
+  ownerUserId: string
   boardId: string | null
   players: Player[]
   module: GameModule<S, unknown>

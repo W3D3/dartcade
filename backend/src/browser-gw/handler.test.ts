@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import Fastify from 'fastify'
 import fastifyWebsocket from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
+import { WS_CLOSE } from '../shared/wsClose.js'
 
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
 
@@ -67,6 +68,31 @@ describe('WS auth', () => {
       setTimeout(() => reject(new Error('timeout')), 2000)
     })
 
-    expect(code).toBe(4401)
+    expect(code).toBe(WS_CLOSE.unauthorized)
+  })
+
+  it('closes with 4403 when the session belongs to another user', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'user-1' })
+    const engine = {
+      getSession: vi.fn().mockReturnValue({ id: 's1', ownerUserId: 'user-2' }),
+      getSnapshot: vi.fn().mockReturnValue({ type: 'snapshot' }),
+      onUserAction: vi.fn(),
+    } as any
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as any).port
+
+    const code = await new Promise<number>((resolve, reject) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
+      ws.addEventListener('close', (e) => resolve((e as any).code))
+      ws.addEventListener('error', () => reject(new Error('ws error')))
+      setTimeout(() => reject(new Error('timeout')), 2000)
+    })
+
+    expect(code).toBe(WS_CLOSE.forbidden)
   })
 })

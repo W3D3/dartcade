@@ -4,6 +4,8 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ .
+# Code shared with the backend, imported as $shared (resolves to ../src/shared)
+COPY src/shared/ /app/src/shared/
 RUN npm run build
 
 # Stage 2: Build backend

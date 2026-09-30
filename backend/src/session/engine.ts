@@ -9,8 +9,8 @@ import * as queries from '../db/queries.js'
 type PushFn = (sessionId: string) => void
 
 export interface EngineStore {
-  insertSession(data: { id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown }): Promise<void>
-  getActiveSessions(): Promise<Array<{ id: string; board_db_id: string; game_id: string; config: unknown; players: unknown; created_at: unknown }>>
+  insertSession(data: { id: string; owner_user_id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown }): Promise<void>
+  getActiveSessions(): Promise<Array<{ id: string; owner_user_id: string | null; board_db_id: string | null; game_id: string; config: unknown; players: unknown; created_at: unknown }>>
   getBridgeEventsForBoard(boardDbId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: unknown }>>
   setSessionFinished(id: string): Promise<void>
 }
@@ -24,6 +24,11 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
   }
 }
 
+/** Thrown when the user already has a session running; carries that session's id. */
+export class ActiveSessionError extends Error {
+  constructor(message: string, readonly sessionId: string) { super(message) }
+}
+
 // Darts and visits of a bull off (see withBullOff) don't count towards game stats
 function inBullOff(session: Session, state: unknown): boolean {
   return (session.module.view(state, session.players) as { phase?: unknown }).phase === 'bulloff'
@@ -32,6 +37,7 @@ function inBullOff(session: Session, state: unknown): boolean {
 export class SessionEngine {
   private byBoard: Map<string, Session> = new Map()
   private byId: Map<string, Session> = new Map()
+  private byOwner: Map<string, Session> = new Map()
 
   constructor(
     private readonly store: EngineStore,
@@ -39,6 +45,7 @@ export class SessionEngine {
   ) {}
 
   async create(
+    ownerUserId: string,
     boardId: string | null,
     gameId: string,
     config: unknown,
@@ -46,6 +53,8 @@ export class SessionEngine {
   ): Promise<{ sessionId: string }> {
     const mod = games[gameId]
     if (!mod) throw new Error(`unknown game: ${gameId}`)
+    const running = this.byOwner.get(ownerUserId)
+    if (running) throw new ActiveSessionError('active session already exists for user', running.id)
     if (boardId && this.byBoard.has(boardId)) throw new Error(`active session already exists for board ${boardId}`)
     const invalid = (mod as GameModule<unknown, unknown>).validate?.(config, players)
     if (invalid) throw new Error(`invalid config: ${invalid}`)
@@ -53,7 +62,7 @@ export class SessionEngine {
     const sessionId = ulid()
     const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
     const session: Session = {
-      id: sessionId, boardId, players,
+      id: sessionId, ownerUserId, boardId, players,
       module: mod as GameModule<unknown, unknown>,
       committedState: initialState,
       openVisitEvents: [],
@@ -64,8 +73,9 @@ export class SessionEngine {
       totalVisits: new Array(players.length).fill(0),
       bmStatus: null,
     }
-    await this.store.insertSession({ id: sessionId, board_db_id: boardId, game_id: gameId, config, players })
+    await this.store.insertSession({ id: sessionId, owner_user_id: ownerUserId, board_db_id: boardId, game_id: gameId, config, players })
     if (boardId) this.byBoard.set(boardId, session)
+    this.byOwner.set(ownerUserId, session)
     this.byId.set(sessionId, session)
     return { sessionId }
   }
@@ -120,7 +130,7 @@ export class SessionEngine {
         if (view.winner !== null && view.winner !== undefined) {
           session.status = 'finished'
           await this.store.setSessionFinished(session.id)
-          this.byBoard.delete(boardId)
+          this.release(session)
         }
         break
       }
@@ -204,7 +214,7 @@ export class SessionEngine {
         if (view.winner !== null && view.winner !== undefined) {
           session.status = 'finished'
           await this.store.setSessionFinished(session.id)
-          if (session.boardId) this.byBoard.delete(session.boardId)
+          this.release(session)
         }
       }
     } else if (action.type === 'add_dart') {
@@ -240,12 +250,18 @@ export class SessionEngine {
     const rows = await this.store.getActiveSessions()
     for (const row of rows) {
       const mod = games[row.game_id]
-      if (!mod) continue
+      // Only board sessions can be restored (their darts are stored as bridge
+      // events); close the rest so they don't block their owner forever.
+      if (!mod || !row.board_db_id || !row.owner_user_id) {
+        await this.store.setSessionFinished(row.id)
+        continue
+      }
+      const boardId = row.board_db_id
       const players = row.players as Player[]
       const config = row.config
       const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
       const session: Session = {
-        id: row.id, boardId: row.board_db_id, players,
+        id: row.id, ownerUserId: row.owner_user_id, boardId, players,
         module: mod as GameModule<unknown, unknown>,
         committedState: initialState,
         openVisitEvents: [],
@@ -256,12 +272,13 @@ export class SessionEngine {
         totalVisits: new Array(players.length).fill(0),
         bmStatus: null,
       }
-      this.byBoard.set(row.board_db_id, session)
+      this.byBoard.set(boardId, session)
+      this.byOwner.set(row.owner_user_id, session)
       this.byId.set(row.id, session)
 
-      const events = await this.store.getBridgeEventsForBoard(row.board_db_id, session.createdAt)
+      const events = await this.store.getBridgeEventsForBoard(boardId, session.createdAt)
       for (const ev of events) {
-        await this.onBridgeEvent(row.board_db_id, ev.kind, ev.data, ev.recv_wall as unknown as Date)
+        await this.onBridgeEvent(boardId, ev.kind, ev.data, ev.recv_wall as unknown as Date)
       }
     }
   }
@@ -296,6 +313,11 @@ export class SessionEngine {
     return this.byBoard.get(boardId)
   }
 
+  /** The user's running session, if any. */
+  getSessionByOwner(userId: string): Session | undefined {
+    return this.byOwner.get(userId)
+  }
+
   getAllSessions(): Session[] {
     return Array.from(this.byId.values())
   }
@@ -305,8 +327,15 @@ export class SessionEngine {
     if (!session) return false
     session.status = 'finished'
     await this.store.setSessionFinished(sessionId)
-    if (session.boardId) this.byBoard.delete(session.boardId)
+    this.release(session)
     this.byId.delete(sessionId)
     return true
+  }
+
+  // A finished session no longer holds its board or its owner's one active slot.
+  // It stays in byId so its final snapshot can still be shown.
+  private release(session: Session): void {
+    if (session.boardId && this.byBoard.get(session.boardId) === session) this.byBoard.delete(session.boardId)
+    if (this.byOwner.get(session.ownerUserId) === session) this.byOwner.delete(session.ownerUserId)
   }
 }

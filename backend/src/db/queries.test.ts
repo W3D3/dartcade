@@ -54,6 +54,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       })
       await insertGameSession(db, {
         id: '01JTEST00000000000000000AA',
+        owner_user_id: 'u-test-1',
         board_db_id: 'board-db-1',
         game_id: 'atc',
         config: { throwAgainOnAllHit: false },

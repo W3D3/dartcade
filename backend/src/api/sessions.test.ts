@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import Fastify from 'fastify'
 import { sessionsApiPlugin } from './sessions.js'
+import { ActiveSessionError } from '../session/engine.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: async (req: any, _reply: any) => { req.userId = 'user-1' },
@@ -123,5 +124,41 @@ describe('DELETE /api/sessions/:id', () => {
     const { app } = makeApp()
     const res = await app.inject({ method: 'DELETE', url: '/api/sessions/nope' })
     expect(res.statusCode).toBe(404)
+  })
+})
+
+describe('session ownership', () => {
+  const session = (id: string, ownerUserId: string, boardId: string | null = null) =>
+    ({ id, ownerUserId, boardId, module: { id: 'atc' }, status: 'active', players: [], createdAt: new Date() })
+
+  it('creates the session for the signed-in user', async () => {
+    const { app, engine } = makeApp()
+    await app.inject({ method: 'POST', url: '/api/sessions',
+      payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
+    expect(engine.create).toHaveBeenCalledWith('user-1', null, 'atc', {}, [{ name: 'Alice' }])
+  })
+
+  it('returns 409 with the running session when the user already has one', async () => {
+    const { app, engine } = makeApp()
+    engine.create.mockRejectedValue(new ActiveSessionError('active session already exists for user', 'sess-running'))
+    const res = await app.inject({ method: 'POST', url: '/api/sessions',
+      payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
+    expect(res.statusCode).toBe(409)
+    expect(JSON.parse(res.body)).toEqual({ error: 'You already have a game running', sessionId: 'sess-running' })
+  })
+
+  it('lists only the user\'s own sessions', async () => {
+    const { app, engine } = makeApp()
+    engine.getAllSessions.mockReturnValue([session('mine', 'user-1'), session('theirs', 'user-2')])
+    const res = await app.inject({ method: 'GET', url: '/api/sessions' })
+    expect(JSON.parse(res.body).sessions.map((s: any) => s.id)).toEqual(['mine'])
+  })
+
+  it('forbids reading or ending another user\'s boardless session', async () => {
+    const { app, engine } = makeApp()
+    engine.getSession.mockReturnValue(session('theirs', 'user-2'))
+    expect((await app.inject({ method: 'GET', url: '/api/sessions/theirs' })).statusCode).toBe(403)
+    expect((await app.inject({ method: 'DELETE', url: '/api/sessions/theirs' })).statusCode).toBe(403)
+    expect(engine.deleteSession).not.toHaveBeenCalled()
   })
 })
