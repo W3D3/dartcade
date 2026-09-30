@@ -2,7 +2,8 @@ import type { FastifySchema } from 'fastify'
 import spec from '../schema/api-v1.deref.json' with { type: 'json' }
 
 type JsonSchema = Record<string, unknown>
-type Parameter = { name: string; in: 'path' | 'query' | 'header' | 'cookie'; required?: boolean; schema: JsonSchema }
+// `in` is 'path' | 'query' | 'header' | 'cookie'; typed string as the JSON import types it
+type Parameter = { name: string; in: string; required?: boolean; schema: JsonSchema }
 type MediaTypes = Record<string, { schema: JsonSchema }>
 export type Operation = {
   operationId: string
@@ -17,7 +18,8 @@ type PathItem = Partial<Record<(typeof METHODS)[number], Operation>> & { paramet
 const METHODS = ['get', 'post', 'put', 'patch', 'delete'] as const
 
 /** Every operation in schema/api-v1.yaml, with Fastify-style paths ({id} → :id). */
-export const specRoutes = Object.entries(spec.paths as unknown as Record<string, PathItem>).flatMap(([path, item]) =>
+const paths: Record<string, PathItem> = spec.paths
+export const specRoutes = Object.entries(paths).flatMap(([path, item]) =>
   METHODS.flatMap(method => {
     const op = item[method]
     if (!op) return []

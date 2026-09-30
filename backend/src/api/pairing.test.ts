@@ -4,7 +4,7 @@ import { createFastify } from './fastify.js'
 import { pairingApiPlugin } from './pairing.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: async (req: any, _reply: any) => { req.userId = 'user-1' },
+  requireAuth: (req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() },
 }))
 
 vi.mock('../db/queries.js', () => ({

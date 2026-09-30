@@ -8,8 +8,12 @@ import { bridgeConnections } from '../bridge-gw/connections.js'
 import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
+import { isBoolean, isRecord, isString } from '../guards.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
+
+// The camera route answers with a JPEG, which the spec'd (JSON) Reply type leaves out
+type CameraRoute = Omit<Route<'getBoardCamera'>, 'Reply'> & { Reply: Route<'getBoardCamera'>['Reply'] | Buffer }
 
 // Board Manager commands: [operationId, route suffix, BM path, fallback path for older BMs, method]
 const ACTIONS = [
@@ -19,7 +23,7 @@ const ACTIONS = [
   ['calibrateBoard', 'calibrate', '/api/config/calibration/auto?distortion=true', undefined,              'POST'],
 ] as const
 
-export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
+export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
@@ -52,7 +56,7 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     }
   })
 
-  app.get<Route<'getBoardCamera'>>('/api/boards/:id/camera/:index', { preValidation: requireAuth, schema: fromSpec('getBoardCamera') }, async (req, reply) => {
+  app.get<CameraRoute>('/api/boards/:id/camera/:index', { preValidation: requireAuth, schema: fromSpec('getBoardCamera') }, async (req, reply) => {
     const { id, index } = req.params
     if (!await ownBoard(id, req.userId, reply)) return reply
     const conn = bridgeConnections.get(id)
@@ -64,7 +68,7 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     const buf = await upstream.arrayBuffer()
     reply.header('content-type', upstream.headers.get('content-type') ?? 'image/jpeg')
     reply.header('cache-control', 'no-store')
-    return reply.send(Buffer.from(buf) as never)   // binary body; not part of the JSON Reply type
+    return reply.send(Buffer.from(buf))
   })
 
   app.post<Route<'createBoard'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('createBoard') }, async (req, reply) => {
@@ -88,7 +92,7 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
   app.get<Route<'getBoardEvents'>>('/api/boards/:id/events', { preValidation: requireAuth, schema: fromSpec('getBoardEvents') }, async (req, reply) => {
     const { id } = req.params
     if (!await ownBoard(id, req.userId, reply)) return reply
-    return reply.send({ events: bridgeConnections.recentEvents(id) as never })
+    return reply.send({ events: bridgeConnections.recentEvents(id) })
   })
 
   // Per-board BM status
@@ -97,14 +101,21 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     if (!await ownBoard(id, req.userId, reply)) return reply
     const conn = bridgeConnections.get(id)
     if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
+    let res: Response
+    let body: unknown
     try {
-      const res = await fetch(`${conn.bmUrl}/api/state`)
-      if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
-      const data = await res.json() as { status?: string; running?: boolean; event?: string }
-      return reply.send({ status: data.status ?? null, running: data.running ?? false, event: data.event ?? null })
+      res = await fetch(`${conn.bmUrl}/api/state`)
+      if (res.ok) body = await res.json()
     } catch {
       return reply.code(503).send({ error: 'board unreachable' })
     }
+    if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
+    const state: Record<string, unknown> = isRecord(body) ? body : {}
+    return reply.send({
+      status: isString(state.status) ? state.status : null,
+      running: isBoolean(state.running) ? state.running : false,
+      event: isString(state.event) ? state.event : null,
+    })
   })
 
   // Per-board BM actions
@@ -114,15 +125,17 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
       if (!await ownBoard(id, req.userId, reply)) return reply
       const conn = bridgeConnections.get(id)
       if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
+      const bmUrl = conn.bmUrl
+      const tryFetch = (url: string) => fetch(url, { method, headers: { 'Content-Length': '0' } })
+      let res: Response
       try {
-        const tryFetch = (url: string) => fetch(url, { method, headers: { 'Content-Length': '0' } })
-        let res = await tryFetch(conn.bmUrl + path)
-        if ((res.status === 404 || res.status === 405) && fallback) res = await tryFetch(conn.bmUrl + fallback)
-        if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
-        return reply.send({ status: res.status })
+        res = await tryFetch(bmUrl + path)
+        if ((res.status === 404 || res.status === 405) && fallback) res = await tryFetch(bmUrl + fallback)
       } catch (err) {
         return reply.code(502).send({ error: err instanceof Error ? err.message : 'Board Manager request failed' })
       }
+      if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
+      return reply.send({ status: res.status })
     })
   }
 
@@ -131,10 +144,12 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     if (!await ownBoard(id, req.userId, reply)) return reply
     try {
       await deleteBoard(db, id)
-    } catch (err: any) {
-      if (err.code === '23503') return reply.code(409).send({ error: 'board has active sessions' })
+    } catch (err) {
+      if (isRecord(err) && err.code === '23503') return reply.code(409).send({ error: 'board has active sessions' })
       throw err
     }
     return reply.code(204).send()
   })
+
+  done()
 }

@@ -30,7 +30,7 @@ function normalizeCode(raw: string): string {
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
-export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
+export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
   app.post<Route<'requestPairing'>>('/api/pairing/request', {
@@ -95,4 +95,6 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
 
     return reply.code(201).send({ boardId, name })
   })
+
+  done()
 }

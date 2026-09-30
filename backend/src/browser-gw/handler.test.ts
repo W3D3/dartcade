@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest'
-import Fastify from 'fastify'
+import Fastify, { type FastifyInstance } from 'fastify'
+import type { AddressInfo } from 'net'
 import fastifyWebsocket from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
 import { WsCloseCode } from '../schema/game-ws.js'
@@ -50,7 +51,7 @@ describe('BrowserConnections', () => {
 })
 
 describe('WS auth', () => {
-  let testApp: ReturnType<typeof Fastify> | null = null
+  let testApp: FastifyInstance | null = null
   afterEach(async () => { await testApp?.close(); testApp = null })
 
   it('closes with 4401 when not authenticated', async () => {
@@ -60,7 +61,7 @@ describe('WS auth', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address()).port
+    const port = (testApp.server.address() as AddressInfo).port
 
     const code = await new Promise<number>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
@@ -85,7 +86,7 @@ describe('WS auth', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address()).port
+    const port = (testApp.server.address() as AddressInfo).port
 
     const code = await new Promise<number>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
@@ -99,7 +100,7 @@ describe('WS auth', () => {
 })
 
 describe('WS client messages', () => {
-  let testApp: ReturnType<typeof Fastify> | null = null
+  let testApp: FastifyInstance | null = null
   afterEach(async () => { await testApp?.close(); testApp = null })
 
   it('ignores malformed messages without closing, then applies a valid action', async () => {
@@ -122,7 +123,7 @@ describe('WS client messages', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address()).port
+    const port = (testApp.server.address() as AddressInfo).port
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     let closed = false
@@ -166,7 +167,7 @@ describe('WS client messages', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address()).port
+    const port = (testApp.server.address() as AddressInfo).port
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     await new Promise<void>((resolve, reject) => {
@@ -215,7 +216,7 @@ describe('WS client messages', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address()).port
+    const port = (testApp.server.address() as AddressInfo).port
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     await new Promise<void>((resolve, reject) => {

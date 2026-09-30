@@ -5,8 +5,9 @@ export class BrowserConnections {
   private sessions: Map<string, Set<WebSocket>> = new Map()
 
   add(sessionId: string, ws: WebSocket): void {
-    if (!this.sessions.has(sessionId)) this.sessions.set(sessionId, new Set())
-    this.sessions.get(sessionId)!.add(ws)
+    let set = this.sessions.get(sessionId)
+    if (!set) { set = new Set(); this.sessions.set(sessionId, set) }
+    set.add(ws)
   }
 
   remove(sessionId: string, ws: WebSocket): void {

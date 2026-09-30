@@ -2,7 +2,7 @@ import type { FastifyInstance, RouteOptions } from 'fastify'
 import fastifyWebsocket from '@fastify/websocket'
 import fastifyStatic from '@fastify/static'
 import rateLimit from '@fastify/rate-limit'
-import fastifySwagger from '@fastify/swagger'
+import fastifySwagger, { type StaticDocumentSpec } from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
 import type { Kysely } from 'kysely'
 import { toNodeHandler } from 'better-auth/node'
@@ -16,6 +16,7 @@ import { pairingApiPlugin } from './api/pairing.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
+import { isRecord, isString } from './guards.js'
 
 export type AppDeps = {
   engine: SessionEngine
@@ -24,6 +25,21 @@ export type AppDeps = {
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
   onRoute?: (route: RouteOptions) => void
+}
+
+// The JSON import types its enums as plain strings, which the OpenAPI types don't accept;
+// the document itself is our generated spec, checked here for its top-level shape
+function isOpenApiDocument(v: unknown): v is StaticDocumentSpec['document'] {
+  return isRecord(v) && isString(v.openapi) && isRecord(v.info) && isRecord(v.paths)
+}
+
+// 'urls.primaryName' is a Swagger UI option that @fastify/swagger-ui's types leave out
+const swaggerUiConfig = {
+  urls: [
+    { url: '/api/docs/json', name: 'Dartcade API' },
+    { url: '/api/auth/open-api/generate-schema', name: 'Auth (better-auth)' },
+  ],
+  'urls.primaryName': 'Dartcade API',
 }
 
 /** All HTTP/WebSocket routes of the backend, without listening or touching the database. */
@@ -35,7 +51,8 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
 
   // API docs: our spec plus better-auth's generated one, in one Swagger UI
-  await app.register(fastifySwagger, { mode: 'static', specification: { document: bundledSpec as any } })
+  if (!isOpenApiDocument(bundledSpec)) throw new Error('schema/api-v1.bundled.json is not an OpenAPI document')
+  await app.register(fastifySwagger, { mode: 'static', specification: { document: bundledSpec } })
   // @fastify/swagger-ui@4.2.0 builds asset links as `.${routePrefix}/static/...`, assuming a
   // single-segment routePrefix; with routePrefix: '/api/docs' that resolves (relative to the
   // no-trailing-slash document URL /api/docs) to /api/api/docs/static/... → 404s, leaving the
@@ -45,20 +62,14 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
   await app.register(async (api) => {
     await api.register(fastifySwaggerUi, {
       routePrefix: '/docs',
-      uiConfig: {
-        urls: [
-          { url: '/api/docs/json', name: 'Dartcade API' },
-          { url: '/api/auth/open-api/generate-schema', name: 'Auth (better-auth)' },
-        ],
-        'urls.primaryName': 'Dartcade API',
-      } as any,
+      uiConfig: swaggerUiConfig,
     })
   }, { prefix: '/api' })
 
   app.all('/api/auth/*', async (req, reply) => {
     // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
-    if (req.body !== undefined) (req.raw as any).body = req.body
-    toNodeHandler(auth)(req.raw, reply.raw)
+    if (req.body !== undefined) Object.assign(req.raw, { body: req.body })
+    void toNodeHandler(auth)(req.raw, reply.raw)
     return reply.hijack()
   })
 

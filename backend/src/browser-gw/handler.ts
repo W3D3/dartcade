@@ -1,5 +1,6 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { SocketStream } from '@fastify/websocket'
+import type { RawData } from 'ws'
 import { Ajv } from 'ajv'
 import { BrowserConnections } from './connections.js'
 import type { SessionEngine } from '../session/engine.js'
@@ -8,6 +9,7 @@ import { canAccessSession } from '../api/sessions.js'
 import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
 import { WsCloseCode, type ClientMessage, type Segment, type UserAction } from '../schema/game-ws.js'
 import { checkSnapshot } from '../session/snapshotValidation.js'
+import { isRecord, isString } from '../guards.js'
 
 export const browserConnections = new BrowserConnections()
 
@@ -24,8 +26,15 @@ function allowExtraFields(schema: unknown): unknown {
   }
   return schema
 }
-const isClientMessage = new Ajv({ strict: false })
-  .compile<ClientMessage>(allowExtraFields(wsSchema.$defs.ClientMessage) as object)
+const clientMessageSchema = allowExtraFields(wsSchema.$defs.ClientMessage)
+if (!isRecord(clientMessageSchema)) throw new Error('ClientMessage schema is not an object')
+const isClientMessage = new Ajv({ strict: false }).compile<ClientMessage>(clientMessageSchema)
+
+// ws hands over a Buffer (its default binaryType); the other forms are handled for completeness
+function rawText(raw: RawData): string {
+  if (Array.isArray(raw)) return Buffer.concat(raw).toString()
+  return Buffer.isBuffer(raw) ? raw.toString() : Buffer.from(raw).toString()
+}
 
 // Rebuilds the action from only its spec'd fields, dropping anything a newer/buggy
 // client added (including inside `segment`, whose own `additionalProperties: false`
@@ -62,7 +71,7 @@ function sanitizeAction(action: UserAction): UserAction {
 
 type Opts = FastifyPluginOptions & { engine: SessionEngine }
 
-export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
+export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { engine } = opts
 
   app.get('/ws', { websocket: true }, (connection: SocketStream, req) => {
@@ -74,7 +83,7 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
         return
       }
 
-      const sessionId = (req.query as any).sessionId as string | undefined
+      const sessionId = isRecord(req.query) && isString(req.query.sessionId) ? req.query.sessionId : undefined
       if (!sessionId) { socket.close(WsCloseCode.MissingSession, 'missing sessionId'); return }
 
       const session = engine.getSession(sessionId)
@@ -86,9 +95,9 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
       checkSnapshot(snap, msg => app.log.error(msg))
       socket.send(JSON.stringify(snap))
 
-      socket.on('message', async (raw) => {
+      const onMessage = async (raw: RawData) => {
         let msg: unknown
-        try { msg = JSON.parse(raw.toString()) } catch {
+        try { msg = JSON.parse(rawText(raw)) } catch {
           app.log.warn({ sessionId }, 'ignoring non-JSON client message')
           return
         }
@@ -98,12 +107,14 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
           return
         }
         await engine.onUserAction(sessionId, sanitizeAction(msg.action))
-      })
+      }
+      socket.on('message', (raw: RawData) => { void onMessage(raw) })
 
       socket.on('close', () => browserConnections.remove(sessionId, socket))
       socket.on('error', () => browserConnections.remove(sessionId, socket))
-    }).catch(() => socket.close(WsCloseCode.InternalError, 'internal error'))
+    }).catch(() => { socket.close(WsCloseCode.InternalError, 'internal error') })
   })
+  done()
 }
 
 export function pushSnapshot(sessionId: string, engine: SessionEngine): void {

@@ -34,8 +34,8 @@ describe('request validation and error format', () => {
 
   it('maps thrown errors to { error } with their status, and hides 500 messages', async () => {
     const a = createFastify()
-    a.get('/boom', async () => { throw Object.assign(new Error('secret db detail'), { statusCode: 500 }) })
-    a.get('/teapot', async () => { throw Object.assign(new Error('short and stout'), { statusCode: 418 }) })
+    a.get('/boom', () => { throw Object.assign(new Error('secret db detail'), { statusCode: 500 }) })
+    a.get('/teapot', () => { throw Object.assign(new Error('short and stout'), { statusCode: 418 }) })
     expect(JSON.parse((await a.inject('/boom')).body)).toEqual({ error: 'internal error' })
     const tea = await a.inject('/teapot')
     expect(tea.statusCode).toBe(418)

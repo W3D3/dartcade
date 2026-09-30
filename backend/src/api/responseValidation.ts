@@ -1,13 +1,12 @@
 import { Ajv, type ValidateFunction } from 'ajv'
-import addFormatsDefault from 'ajv-formats'
-import type { FormatsPlugin } from 'ajv-formats'
+import addFormatsModule from 'ajv-formats'
 import type { FastifyInstance } from 'fastify'
-import { getOperation } from './spec.js'
+import { getOperation, type Operation } from './spec.js'
 
-// ajv-formats has only a default export; under this project's NodeNext module resolution,
-// TypeScript resolves `import addFormats from 'ajv-formats'` to the module namespace (not
-// callable) rather than its default export, so we re-type it explicitly from the import type.
-const addFormats = addFormatsDefault as unknown as FormatsPlugin
+// ajv-formats is CommonJS: under NodeNext, TypeScript types its default import as the
+// module object, whose `default` is the plugin (at runtime module.exports.default is the
+// plugin itself too).
+const addFormats = addFormatsModule.default
 
 /**
  * Dev/test safety net: checks each response of a spec'd route against schema/api-v1.yaml
@@ -30,7 +29,8 @@ export function registerResponseValidation(app: FastifyInstance): void {
     }
 
     const status = String(reply.statusCode)
-    const response = getOperation(operationId).responses[status]
+    const responses: Partial<Operation['responses']> = getOperation(operationId).responses
+    const response = responses[status]
     if (!response) return fail(`undocumented status ${status}`)
     const schema = response.content?.['application/json']?.schema
     if (!schema || typeof payload !== 'string') return payload
