@@ -66,14 +66,16 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
   await app.register(boardsApiPlugin, { db })
   await app.register(pairingApiPlugin, { db })
 
-  app.get('*', async (req, reply) => {
-    if (
-      req.url.startsWith('/api') ||
-      req.url.startsWith('/ws') ||
-      req.url.startsWith('/bridge')
-    ) return reply.code(404).send({ error: 'not found' })
-    try { return reply.sendFile('index.html') }
-    catch { return reply.code(404).send({ error: 'not found' }) }
+  // Any unmatched method+path under our reserved prefixes gets our ErrorResponse 404
+  // (not Fastify's default `{ message, error: 'Not Found', statusCode }`); an unmatched
+  // GET elsewhere falls through to the SPA's index.html for client-side routing.
+  app.setNotFoundHandler((req, reply) => {
+    const reserved = req.url.startsWith('/api') || req.url.startsWith('/ws') || req.url.startsWith('/bridge')
+    if (!reserved && req.method === 'GET') {
+      try { return reply.sendFile('index.html') }
+      catch { /* not built yet */ }
+    }
+    return reply.code(404).send({ error: 'not found' })
   })
 
   return app
