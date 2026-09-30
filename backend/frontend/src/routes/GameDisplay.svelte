@@ -13,6 +13,7 @@
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel, { type BullOffView } from '../lib/components/BullOffPanel.svelte'
   import { defaultSettings, type GameSettings } from '../lib/gameSettings.js'
+  import type { Segment } from '$lib/api/game-ws'
 
   // ── Settings (persisted to localStorage) ──────────────────────────────────
   const SETTINGS_KEY = 'dartcade_game_settings'
@@ -85,11 +86,12 @@
   onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
 
   function playSoundEvents(snap: import('../lib/ws.js').Snapshot, oldCount: number, oldPlayer: number) {
-    const newDarts = (snap.game.currentVisitDarts ?? []) as any[]
-    const newPlayer = snap.game.currentPlayer as number
+    const game = snap.game as unknown as Record<string, unknown>
+    const newDarts = (game.currentVisitDarts ?? []) as any[]
+    const newPlayer = game.currentPlayer as number
     if (newDarts.length > oldCount) {
       const idx = newDarts.length - 1
-      const hits = snap.game.currentVisitHits as boolean[] | undefined
+      const hits = game.currentVisitHits as boolean[] | undefined
       const isHit = hits !== undefined ? hits[idx] === true : (newDarts[idx]?.score ?? 0) > 0
       if (isHit) { if (settings.soundHit) soundHit() }
       else { if (settings.soundMiss) soundMiss() }
@@ -99,10 +101,11 @@
   }
 
   function updateVisitHistory(snap: import('../lib/ws.js').Snapshot) {
-    const newDarts = (snap.game.currentVisitDarts ?? []) as any[]
+    const game = snap.game as unknown as Record<string, unknown>
+    const newDarts = (game.currentVisitDarts ?? []) as any[]
     const newCount = newDarts.length
-    const newPlayer = snap.game.currentPlayer as number
-    const snapTotalVisits = (snap.game.totalVisits as number[] | undefined) ?? []
+    const newPlayer = game.currentPlayer as number
+    const snapTotalVisits = (game.totalVisits as number[] | undefined) ?? []
 
     if (prevDartCount === 0 && newCount > 0) visitOwner = newPlayer
 
@@ -123,7 +126,9 @@
   const gameId        = $derived(snapshot?.gameId ?? '')
   const boardId       = $derived(snapshot?.boardId ?? null)
   const players       = $derived(snapshot?.players ?? [])
-  const game          = $derived(snapshot?.game ?? {})
+  // The per-game view (X01Game | AtcGame) is read field-by-field below via `as`
+  // casts, same as the rest of this file: there is no single shape to narrow to.
+  const game          = $derived((snapshot?.game ?? {}) as Record<string, unknown>)
   const currentPlayer = $derived((game.currentPlayer as number) ?? 0)
   const winner        = $derived((game.winner as number | null) ?? null)
   const currentDarts  = $derived((game.currentVisitDarts as any[]) ?? [])
@@ -176,12 +181,12 @@
 
   function undo() { sessionStore?.send({ type: 'undo_dart' }) }
 
-  function addManualDart(seg: { name: string; number: number; bed: string; multiplier: number }) {
+  function addManualDart(seg: Segment) {
     sessionStore?.send({ type: 'add_dart', segment: seg })
   }
 
   function handleCorrect(dartIndex: number, label: string) {
-    let segment: { name: string; number: number; bed: string; multiplier: number }
+    let segment: Segment
     if (label === 'Bull') {
       segment = { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }
     } else if (label === '25') {

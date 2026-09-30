@@ -214,8 +214,8 @@ describe('onUserAction', () => {
     }
     await engine.onUserAction(sessionId, { type: 'bulloff_start' })
     const snap = engine.getSnapshot(sessionId)!
-    expect(snap.game.phase).toBe('game')
-    expect(snap.game.currentPlayer).toBe(1)
+    expect((snap.game as any).phase).toBe('game')
+    expect((snap.game as any).currentPlayer).toBe(1)
   })
 })
 

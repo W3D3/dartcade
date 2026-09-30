@@ -1,5 +1,5 @@
 <script lang="ts">
-  type Segment = { name: string; number: number; bed: string; multiplier: number }
+  import type { Segment } from '$lib/api/game-ws'
 
   let { onDart, dartCount = 0 }: {
     onDart: (seg: Segment) => void
@@ -17,7 +17,7 @@
   function pick(number: number) {
     if (full) return
     const m = mult
-    const bed = m === 3 ? 'Triple' : m === 2 ? 'Double' : 'SingleOuter'
+    const bed: Segment['bed'] = m === 3 ? 'Triple' : m === 2 ? 'Double' : 'SingleOuter'
     const name = `${multShort[m]}${number}`
     onDart({ name, number, bed, multiplier: m })
   }

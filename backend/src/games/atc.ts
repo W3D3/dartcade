@@ -1,5 +1,6 @@
 import type { GameModule, BoardEvent, Player, Dart } from '../session/types.js'
 import type { DartDetectedData, ConfigFieldMeta } from '../session/types.js'
+import type { AtcView } from '../session/views.js'
 
 export type ATCConfig = {
   throwAgainOnAllHit: boolean
@@ -190,7 +191,7 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
     return { state: s }
   },
 
-  view(s: ATCState, _players: Player[]) {
+  view(s: ATCState, _players: Player[]): AtcView {
     const hitCounts = s.targets.map(t => {
       const idx = s.sequence.indexOf(t)
       return idx === -1 ? s.sequence.length : idx

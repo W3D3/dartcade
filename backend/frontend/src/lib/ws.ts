@@ -1,15 +1,7 @@
 import { writable } from 'svelte/store'
-import { WS_CLOSE } from '$shared/wsClose'
+import { WsCloseCode, type ClientMessage, type Snapshot, type UserAction } from './api/game-ws'
 
-export type Snapshot = {
-  type: 'snapshot'
-  sessionId: string
-  gameId: string
-  boardId: string | null
-  players: { name: string }[]
-  game: Record<string, unknown>
-  bmStatus: { status: string; running: boolean; event: string } | null
-}
+export type { Snapshot }
 
 export function createSessionStore(sessionId: string) {
   const snapshot = writable<Snapshot | null>(null)
@@ -27,12 +19,12 @@ export function createSessionStore(sessionId: string) {
       } catch {}
     }
     ws.onclose = (e) => {
-      if (e.code === WS_CLOSE.unauthorized) {
+      if (e.code === WsCloseCode.Unauthorized) {
         window.location.hash = '#/login'
         return
       }
       // Not this user's session, or it no longer exists: retrying won't help
-      if (e.code === WS_CLOSE.forbidden || e.code === WS_CLOSE.notFound) {
+      if (e.code === WsCloseCode.Forbidden || e.code === WsCloseCode.NotFound) {
         closed = true
         window.location.hash = '#/'
         return
@@ -45,8 +37,9 @@ export function createSessionStore(sessionId: string) {
 
   connect()
 
-  function send(action: unknown) {
-    ws?.send(JSON.stringify({ type: 'user_action', action }))
+  function send(action: UserAction) {
+    const msg: ClientMessage = { type: 'user_action', action }
+    ws?.send(JSON.stringify(msg))
   }
 
   function destroy() {

@@ -302,7 +302,7 @@ export class SessionEngine {
         totalVisits: session.totalVisits,
       },
       bmStatus: session.bmStatus,
-    }
+    } as Snapshot   // shape per game is enforced by snapshot.contract.test.ts and checkSnapshot()
   }
 
   getSession(sessionId: string): Session | undefined {

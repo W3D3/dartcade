@@ -1,13 +1,12 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import { labelPos } from '$lib/dartUtils.js'
-
-  type Segment = { name: string; number: number; bed: string; multiplier: number }
+  import type { Segment } from '$lib/api/game-ws'
 
   let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [], onSegmentClick,
         zoom = 1, overlay }: {
     darts?: Array<{
-      segment: { number: number; bed: string; multiplier: number; name: string }
+      segment: Segment
       score: number
       coords?: { x: number; y: number }
     }>
@@ -26,7 +25,7 @@
   const SEGS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5]
   const HALF = Math.PI / 20
 
-  const RING_BED: Record<string, { bed: string; multiplier: number }> = {
+  const RING_BED: Record<string, { bed: Segment['bed']; multiplier: Segment['multiplier'] }> = {
     si: { bed: 'SingleOuter', multiplier: 1 },
     tr: { bed: 'Triple',      multiplier: 3 },
     so: { bed: 'SingleOuter', multiplier: 1 },
@@ -65,9 +64,8 @@
   function clickSegment(num: number, ring: string) {
     if (!onSegmentClick) return
     const { bed, multiplier } = RING_BED[ring]
-    const mult = multiplier as 1 | 2 | 3
-    const name = mult === 3 ? `T${num}` : mult === 2 ? `D${num}` : `S${num}`
-    onSegmentClick({ name, number: num, bed, multiplier: mult })
+    const name = multiplier === 3 ? `T${num}` : multiplier === 2 ? `D${num}` : `S${num}`
+    onSegmentClick({ name, number: num, bed, multiplier })
   }
 
   function dartPos(dart: typeof darts[0]): { x: number; y: number } | null {

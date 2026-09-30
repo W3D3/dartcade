@@ -3,6 +3,7 @@
   // the centre throws first. Driven entirely by the snapshot's `bullOff` view.
   import DartBoard from './DartBoard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import type { Segment, UserAction } from '$lib/api/game-ws'
 
   type Throw = { mm: number | null; segment: string; thetaDeg: number | null; estimated: boolean }
   type Result = { order: number[]; rethrow: boolean; reason?: 'tie' | 'bullseye' | 'all_missed' }
@@ -12,14 +13,13 @@
     currentPlayer: number
     result: Result | null
   }
-  type Segment = { name: string; number: number; bed: string; multiplier: number }
 
   let { players, bullOff, manual, send }: {
     players: { name: string }[]
     bullOff: BullOffView
     /** No board attached: darts are entered by clicking the board. */
     manual: boolean
-    send: (action: Record<string, unknown>) => void
+    send: (action: UserAction) => void
   } = $props()
 
   const BOARD_MM = 170            // r = 1 in board units

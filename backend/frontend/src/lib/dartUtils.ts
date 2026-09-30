@@ -1,11 +1,13 @@
 const SEGS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5]
 const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.000 }
 
-export function parseLabel(label: string): { mult: number; num: number; score: number } {
+const MULT: Record<string, 1 | 2 | 3> = { S: 1, D: 2, T: 3 }
+
+export function parseLabel(label: string): { mult: 0 | 1 | 2 | 3; num: number; score: number } {
   if (label === 'Miss') return { mult: 0, num: 0, score: 0 }
   if (label === 'Bull') return { mult: 2, num: 25, score: 50 }
   if (label === '25')   return { mult: 1, num: 25, score: 25 }
-  const mult = ({ S: 1, D: 2, T: 3 } as Record<string, number>)[label[0]] ?? 1
+  const mult = MULT[label[0]] ?? 1
   const num  = parseInt(label.slice(1), 10)
   return { mult, num, score: mult * num }
 }
