@@ -280,7 +280,7 @@
                  so the tiles, popover and buttons below always fit without a gap -->
             <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
               <div class="aspect-square" style="width: min(100cqw, 100cqh)">
-                <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
+                <DartBoard darts={currentDarts} target={highlights[0] ?? null} dim={gameId === 'atc'} playerMarkers={boardMarkers}
                   onBoardClick={isActive ? addBoardDart : undefined}
                   selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
               </div>
@@ -334,7 +334,7 @@
                  so the tiles, popover and buttons below always fit without a gap -->
             <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
               <div class="aspect-square" style="width: min(100cqw, 100cqh)">
-                <DartBoard darts={currentDarts} selectedSegments={highlights}
+                <DartBoard darts={currentDarts} target={highlights[0] ?? null} dim={gameId === 'atc'}
                   onBoardClick={isActive ? addBoardDart : undefined}
                   selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
               </div>
