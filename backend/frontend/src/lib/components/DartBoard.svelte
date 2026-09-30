@@ -18,9 +18,9 @@
     /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
      *  and the segment under it. Takes precedence over onSegmentClick. */
     onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    /** Index into `darts` of the dart picked for correction; it is highlighted and can be dragged. */
+    /** Index into `darts` of the dart picked for correction; it is highlighted. */
     selectedDart?: number | null
-    /** The selected dart was dropped at a new spot. */
+    /** A dart was dragged to a new spot (any dart can be dragged while this is set). */
     onDartMove?: (index: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** Magnification around the bull (1 = whole board); changes animate. */
     zoom?: number
@@ -138,7 +138,7 @@
   // Dragging the selected dart: preview where it goes, report the drop
   let drag = $state<{ index: number; from: { x: number; y: number }; at: { x: number; y: number } } | null>(null)
   let justDragged = false
-  const canDrag = (i: number) => !!onDartMove && selectedDart === i
+  const canDrag = (_i: number) => !!onDartMove
 
   function dragStart(e: PointerEvent, i: number) {
     if (!canDrag(i)) return
@@ -158,10 +158,10 @@
     const { index, from } = drag
     const c = toBoard(e) ?? drag.at
     drag = null
+    // A tap without moving is an ordinary click (it may place a new dart)
+    if (Math.hypot(c.x - from.x, c.y - from.y) < 0.01) return
     justDragged = true
     setTimeout(() => { justDragged = false })
-    // A tap on the dart without moving it leaves it where it is
-    if (Math.hypot(c.x - from.x, c.y - from.y) < 0.01) return
     onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
   }
 

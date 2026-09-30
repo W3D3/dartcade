@@ -205,8 +205,13 @@
     sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment })
   }
 
-  // The dart open in the correction panel can also be dragged on the board
+  // Any dart of the open visit can be dragged on the board to correct it
   let correcting = $state<number | null>(null)
+  // The correction popover opens below the tiles; shrink the board by its
+  // height so the whole column still fits on screen
+  let correctionHeight = $state(0)
+  const boardMaxWidth = $derived(
+    `min(100%, calc(100vh - 340px - ${correcting !== null ? correctionHeight + 12 : 0}px))`)
   function moveDart(dartIndex: number, hit: { segment: { name: string; number: number; bed: string; multiplier: number }; coords: { x: number; y: number } }) {
     sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment: hit.segment, coords: hit.coords })
   }
@@ -279,9 +284,11 @@
           {#if viewMode === 'entry'}
             <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
           {:else}
-            <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
-              onBoardClick={isActive ? addBoardDart : undefined}
-              selectedDart={correcting} onDartMove={moveDart} />
+            <div class="w-full mx-auto transition-[max-width] duration-200" style:max-width={boardMaxWidth}>
+              <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
+                onBoardClick={isActive ? addBoardDart : undefined}
+                selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
+            </div>
             <div class="flex gap-5 text-[12px] text-text-dim justify-center">
               <span class="flex items-center gap-[6px]">
                 <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
@@ -296,7 +303,7 @@
             </div>
           {/if}
 
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
+          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting} bind:popoverHeight={correctionHeight}
             ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
       </div>
@@ -327,10 +334,10 @@
               <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
             </div>
           {:else}
-            <div class="w-full" style="max-width: min(100%, calc(100vh - 340px))">
+            <div class="w-full mx-auto transition-[max-width] duration-200" style:max-width={boardMaxWidth}>
               <DartBoard darts={currentDarts} selectedSegments={highlights}
                 onBoardClick={isActive ? addBoardDart : undefined}
-                selectedDart={correcting} onDartMove={moveDart} />
+                selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
             </div>
           {/if}
 
@@ -352,7 +359,7 @@
             </div>
           {/if}
 
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
+          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting} bind:popoverHeight={correctionHeight}
             ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
 

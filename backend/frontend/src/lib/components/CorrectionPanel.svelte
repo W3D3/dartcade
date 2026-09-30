@@ -2,7 +2,7 @@
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
 
   let { darts = [], hits, onCorrect, onUndo, ontakeout, showVisitScore = true, bust = false,
-        openDart = $bindable(null) }: {
+        openDart = $bindable(null), popoverHeight = $bindable(0) }: {
     darts: Array<{ label: string; score: number }>
     hits?: boolean[]
     onCorrect: (dartIndex: number, label: string) => void
@@ -12,6 +12,8 @@
     bust?: boolean
     /** The dart being corrected (bindable, so the board can let it be dragged). */
     openDart?: number | null
+    /** Height of the open popover in px, so the page can make room for it. */
+    popoverHeight?: number
   } = $props()
 
   // Close the popover when its dart goes away (undo, takeout)
@@ -41,7 +43,7 @@
 </script>
 
 <!-- Dart tiles + visit total -->
-<div class="relative w-full flex gap-2 items-stretch">
+<div class="w-full flex gap-2 items-stretch">
   <!-- 3 dart tiles -->
   <div class="flex-1 grid gap-2" style:grid-template-columns="repeat(3, minmax(0, 1fr))">
     {#each [0, 1, 2] as i}
@@ -106,114 +108,104 @@
       </span>
     </div>
   {/if}
-
-  <!-- Popover -->
-  {#if openDart !== null}
-    <!-- Opens above the tiles so it never runs off the bottom of the screen -->
-    <div role="dialog" aria-label="Correct dart {openDart + 1}"
-      class="absolute bottom-full left-0 right-0 mb-3 z-30 box-border p-[18px] rounded-[16px] bg-[#1f221c] border border-[#454a3f]
-             flex flex-col gap-[14px] [box-shadow:0_24px_60px_rgba(0,0,0,0.55)]">
-      <!-- Pointer down to the dart being corrected -->
-      <span aria-hidden="true"
-        class="absolute -bottom-[7px] w-3 h-3 rotate-45 bg-[#1f221c] border-r border-b border-[#454a3f]"
-        style:left="calc((100% - {showVisitScore ? 80 : 0}px + 8px) / 3 * {openDart + 0.5} - 11px)"></span>
-
-      <div class="flex justify-between items-start">
-        <div class="flex flex-col gap-[2px]">
-          <span class="text-[16px] font-semibold">Correct dart {openDart + 1}</span>
-          <span class="text-[13px] text-text-muted">
-            Detected <strong class="text-text">{darts[openDart]?.label}</strong> ·
-            {mode === 'quick' ? 'nearby segments' : 'pick any target'} · or drag it on the board
-          </span>
-        </div>
-        <button type="button" onclick={() => { openDart = null; mode = 'quick' }}
-          aria-label="Close" class="w-11 h-11 -mr-2 -mt-2 flex items-center justify-center bg-transparent
-                 border-0 text-[#c9c9bf] cursor-pointer">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" aria-hidden="true">
-            <path d="M6 6l12 12M18 6L6 18"/>
-          </svg>
-        </button>
-      </div>
-
-      {#if mode === 'quick'}
-        <div class="grid gap-2" style:grid-template-columns="repeat(4, minmax(0, 1fr))">
-          {#each quickPicks as label}
-            <button type="button" onclick={() => pick(openDart!, label)}
-              class="h-[56px] flex flex-col items-center justify-center gap-0 bg-[#2a2e26]
-                     border border-[#3a3f35] rounded-[10px] text-text cursor-pointer">
-              <span class="font-display font-bold text-[24px] leading-none">{label}</span>
-              <span class="text-[12px] text-text-muted">{parseLabel(label).score}</span>
-            </button>
-          {/each}
-          <button type="button" onclick={() => mode = 'full'}
-            class="h-[56px] flex flex-col items-center justify-center bg-transparent
-                   border border-dashed border-[#5a5e53] rounded-[10px] text-accent text-[14px]
-                   font-semibold cursor-pointer">Other…</button>
-        </div>
-
-      {:else}
-        <!-- Full picker -->
-        <div class="flex items-center">
-          <button type="button" onclick={() => mode = 'quick'}
-            class="h-10 flex items-center gap-[6px] px-1 bg-transparent border-0
-                   text-[#c9c9bf] text-[14px] cursor-pointer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M15 6l-6 6 6 6"/>
-            </svg>
-            Nearby
-          </button>
-        </div>
-
-        <!-- S/D/T toggle -->
-        <div class="grid gap-1 p-1 bg-bg rounded-[10px]" style:grid-template-columns="repeat(3, minmax(0, 1fr))">
-          {#each (['S', 'D', 'T'] as const) as m}
-            <button type="button" onclick={() => mult = m} aria-pressed={mult === m}
-              class="h-11 border-0 rounded-[7px] text-[15px] cursor-pointer
-                     {mult === m
-                       ? 'bg-accent text-accent-fg font-bold'
-                       : 'bg-transparent text-[#c9c9bf]'}">
-              {multNames[m]}
-            </button>
-          {/each}
-        </div>
-
-        <!-- 1–20 grid -->
-        <div class="grid grid-cols-5 gap-[6px]">
-          {#each nums as n}
-            <button type="button" onclick={() => pick(openDart!, `${mult}${n}`)}
-              aria-label="{multNames[mult]} {n}"
-              class="h-12 bg-[#2a2e26] border border-[#3a3f35] rounded-[9px] text-text
-                     font-display font-bold text-[22px] cursor-pointer">
-              {n}
-            </button>
-          {/each}
-        </div>
-
-        <!-- Special targets -->
-        <div class="grid grid-cols-3 gap-[6px]">
-          <button type="button" onclick={() => pick(openDart!, '25')}
-            class="h-12 bg-[#1e3a2b] border border-[#2f5a42] rounded-[9px] text-text
-                   text-[15px] font-semibold cursor-pointer">25 · Outer bull</button>
-          <button type="button" onclick={() => pick(openDart!, 'Bull')}
-            class="h-12 bg-[#4a1f1c] border border-[#6e2e2a] rounded-[9px] text-text
-                   text-[15px] font-semibold cursor-pointer">50 · Bull</button>
-          <button type="button" onclick={() => pick(openDart!, 'Miss')}
-            class="h-12 bg-transparent border border-[#3a3f35] rounded-[9px] text-[#c9c9bf]
-                   text-[15px] font-semibold cursor-pointer">Miss · 0</button>
-        </div>
-      {/if}
-    </div>
-  {/if}
 </div>
 
-<!-- Hint + actions -->
-<span class="text-[13px] text-text-dim">
-  Tap a dart to correct it
-</span>
+<!-- Popover: compact, below the tiles, so the board above stays free for dragging -->
+{#if openDart !== null}
+  <div role="dialog" aria-label="Correct dart {openDart + 1}" bind:offsetHeight={popoverHeight}
+    class="w-full box-border px-3 pt-2 pb-3 rounded-[14px] bg-[#1f221c] border border-[#454a3f]
+           flex flex-col gap-2 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)]">
 
-<div class="w-full flex gap-2">
+    <div class="flex items-center gap-2 min-w-0">
+      {#if mode === 'full'}
+        <button type="button" onclick={() => mode = 'quick'} aria-label="Back to nearby segments"
+          class="w-9 h-9 -ml-2 flex-shrink-0 flex items-center justify-center bg-transparent border-0 text-[#c9c9bf] cursor-pointer">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6"/>
+          </svg>
+        </button>
+      {/if}
+      <span class="text-[14px] font-semibold whitespace-nowrap">Correct dart {openDart + 1}</span>
+      <span class="text-[13px] text-text-muted truncate">
+        Detected <strong class="text-text">{darts[openDart]?.label}</strong> · or drag it on the board
+      </span>
+      <button type="button" onclick={() => { openDart = null; mode = 'quick' }}
+        aria-label="Close" class="w-9 h-9 -mr-2 ml-auto flex-shrink-0 flex items-center justify-center bg-transparent
+               border-0 text-[#c9c9bf] cursor-pointer">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+          stroke-width="2" stroke-linecap="round" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18"/>
+        </svg>
+      </button>
+    </div>
+
+    {#if mode === 'quick'}
+      <!-- Nearby picks and "Other…" in one row -->
+      <div class="grid gap-[6px]" style:grid-template-columns="repeat({quickPicks.length + 1}, minmax(0, 1fr))">
+        {#each quickPicks as label}
+          <button type="button" onclick={() => pick(openDart!, label)}
+            class="h-11 flex flex-col items-center justify-center bg-[#2a2e26]
+                   border border-[#3a3f35] rounded-[9px] text-text cursor-pointer">
+            <span class="font-display font-bold text-[18px] leading-none">{label}</span>
+            <span class="text-[10px] text-text-muted leading-tight">{parseLabel(label).score}</span>
+          </button>
+        {/each}
+        <button type="button" onclick={() => mode = 'full'}
+          class="h-11 flex items-center justify-center bg-transparent
+                 border border-dashed border-[#5a5e53] rounded-[9px] text-accent text-[13px]
+                 font-semibold cursor-pointer">Other…</button>
+      </div>
+
+    {:else}
+      <!-- Full picker: S/D/T, 1–20 in two rows, then 25 / Bull / Miss -->
+      <div class="grid gap-1 p-1 bg-bg rounded-[9px]" style:grid-template-columns="repeat(3, minmax(0, 1fr))">
+        {#each (['S', 'D', 'T'] as const) as m}
+          <button type="button" onclick={() => mult = m} aria-pressed={mult === m}
+            class="h-9 border-0 rounded-[6px] text-[14px] cursor-pointer
+                   {mult === m
+                     ? 'bg-accent text-accent-fg font-bold'
+                     : 'bg-transparent text-[#c9c9bf]'}">
+            {multNames[m]}
+          </button>
+        {/each}
+      </div>
+
+      <div class="grid grid-cols-10 gap-1">
+        {#each nums as n}
+          <button type="button" onclick={() => pick(openDart!, `${mult}${n}`)}
+            aria-label="{multNames[mult]} {n}"
+            class="h-10 bg-[#2a2e26] border border-[#3a3f35] rounded-[8px] text-text
+                   font-display font-bold text-[18px] cursor-pointer">
+            {n}
+          </button>
+        {/each}
+      </div>
+
+      <div class="grid grid-cols-3 gap-1">
+        <button type="button" onclick={() => pick(openDart!, '25')}
+          class="h-10 bg-[#1e3a2b] border border-[#2f5a42] rounded-[8px] text-text
+                 text-[14px] font-semibold cursor-pointer">25 · Outer bull</button>
+        <button type="button" onclick={() => pick(openDart!, 'Bull')}
+          class="h-10 bg-[#4a1f1c] border border-[#6e2e2a] rounded-[8px] text-text
+                 text-[14px] font-semibold cursor-pointer">50 · Bull</button>
+        <button type="button" onclick={() => pick(openDart!, 'Miss')}
+          class="h-10 bg-transparent border border-[#3a3f35] rounded-[8px] text-[#c9c9bf]
+                 text-[14px] font-semibold cursor-pointer">Miss · 0</button>
+      </div>
+    {/if}
+  </div>
+{/if}
+
+<!-- Hint + actions -->
+{#if openDart === null}
+  <span class="text-[13px] text-text-dim">
+    Tap a dart to correct it, or drag it on the board
+  </span>
+{/if}
+
+<!-- Pinned to the bottom of the column -->
+<div class="w-full flex gap-2 mt-auto">
   <button type="button" onclick={onUndo}
     class="w-[160px] h-[56px] flex items-center justify-center gap-2 border border-line-3
            rounded-[12px] bg-transparent text-text text-[15px] font-medium cursor-pointer">
