@@ -158,8 +158,8 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
       case 'dart.detected': {
         const data = e.data as DartDetectedData
         const prev = s.targets[s.currentPlayer]
-        const steps = s.cfg.multiplierAdvances ? (data.dart as Dart).segment.multiplier : 1
-        const hit = hitsTarget(prev, data.dart as Dart)
+        const steps = s.cfg.multiplierAdvances ? (data.dart).segment.multiplier : 1
+        const hit = hitsTarget(prev, data.dart)
         const currentVisitHits = [...s.currentVisitHits, hit]
         if (!hit) return { state: { ...s, allHitThisVisit: false, currentVisitHits } }
         const next = advanceInSequence(prev, steps, s.sequence)

@@ -69,7 +69,7 @@ describe('GET /api/pairing/:code/token', () => {
       claimed_at: null,
       raw_token: null,
       board_id: null,
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/pairing/ABCD1234/token' })
@@ -83,7 +83,7 @@ describe('GET /api/pairing/:code/token', () => {
       claimed_at: null,
       raw_token: null,
       board_id: null,
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/pairing/ABCD1234/token' })
@@ -99,7 +99,7 @@ describe('GET /api/pairing/:code/token', () => {
       claimed_at: new Date(),
       raw_token: 'stale-read', // GET must NOT trust this; it uses the consume result
       board_id: 'board-1',
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     // The token comes from the atomic consume, not the earlier read.
     vi.mocked(queries.consumePairingToken).mockResolvedValueOnce('secret-abc')
@@ -119,7 +119,7 @@ describe('GET /api/pairing/:code/token', () => {
       claimed_at: new Date(),
       raw_token: null,
       board_id: 'board-1',
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     vi.mocked(queries.consumePairingToken).mockResolvedValueOnce(null)
     const app = makeApp()
@@ -137,7 +137,7 @@ describe('GET /api/pairing/:code/token', () => {
       claimed_at: new Date(Date.now() - 500),
       raw_token: 'tok-late',
       board_id: 'board-1',
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     vi.mocked(queries.consumePairingToken).mockResolvedValueOnce('tok-late')
     const app = makeApp()
@@ -178,7 +178,7 @@ describe('POST /api/pairing/claim', () => {
       claimed_at: null,
       raw_token: null,
       board_id: null,
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     const app = makeApp()
     const res = await app.inject({
@@ -195,7 +195,7 @@ describe('POST /api/pairing/claim', () => {
       claimed_at: new Date(),
       raw_token: 'tok',
       board_id: 'b1',
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     const app = makeApp()
     const res = await app.inject({
@@ -212,7 +212,7 @@ describe('POST /api/pairing/claim', () => {
       claimed_at: null,
       raw_token: null,
       board_id: null,
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     const app = makeApp()
     const res = await app.inject({
@@ -234,7 +234,7 @@ describe('POST /api/pairing/claim', () => {
       claimed_at: null,
       raw_token: null,
       board_id: null,
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     vi.mocked(queries.claimPairingCode).mockRejectedValueOnce(new Error('pairing code already claimed'))
     const app = makeApp()
@@ -252,7 +252,7 @@ describe('POST /api/pairing/claim', () => {
       claimed_at: null,
       raw_token: null,
       board_id: null,
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     const app = makeApp()
     const res = await app.inject({
@@ -270,7 +270,7 @@ describe('POST /api/pairing/claim', () => {
       claimed_at: null,
       raw_token: null,
       board_id: null,
-      created_at: new Date() as any,
+      created_at: new Date(),
     })
     const app = makeApp()
     const res = await app.inject({

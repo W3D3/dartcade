@@ -35,7 +35,7 @@ export async function boardsApiPlugin(app: FastifyInstance, opts: Opts): Promise
     return {
       boards: rows.map(b => {
         const conn = bridgeConnections.get(b.id)
-        const bm = conn?.bmUrl ? (() => { try { return new URL(conn.bmUrl!) } catch { return null } })() : null
+        const bm = conn?.bmUrl ? (() => { try { return new URL(conn.bmUrl) } catch { return null } })() : null
         return {
           id: b.id,
           name: b.name,

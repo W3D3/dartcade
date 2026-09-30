@@ -70,7 +70,7 @@ export function handleBridgeConnection(
 
       if (!conn.hardwareBoardId && msg.board_id) {
         conn.hardwareBoardId = msg.board_id
-        await updateBoardHardwareId(db, conn.boardDbId!, msg.board_id)
+        await updateBoardHardwareId(db, conn.boardDbId, msg.board_id)
       }
 
       if (conn.bridgeId === null) {
@@ -82,7 +82,7 @@ export function handleBridgeConnection(
         bridge_id: msg.bridge_id,
         boot_id: msg.boot_id,
         seq: BigInt(msg.seq),
-        board_id: msg.board_id ?? conn.hardwareBoardId ?? conn.boardDbId!,
+        board_id: msg.board_id ?? conn.hardwareBoardId ?? conn.boardDbId,
         recv_wall: new Date(msg.recv_wall),
         kind: msg.kind,
         data: msg.data ?? {},
@@ -91,9 +91,9 @@ export function handleBridgeConnection(
       socket.send(JSON.stringify({ ack: msg.seq }))
       if (!inserted) return
 
-      bridgeConnections.recordEvent(conn.boardDbId!, { at: msg.recv_wall, kind: msg.kind, data: msg.data ?? {} })
+      bridgeConnections.recordEvent(conn.boardDbId, { at: msg.recv_wall, kind: msg.kind, data: msg.data ?? {} })
 
-      await engine.onBridgeEvent(conn.boardDbId!, msg.kind, msg.data ?? {}, new Date(msg.recv_wall))
+      await engine.onBridgeEvent(conn.boardDbId, msg.kind, msg.data ?? {}, new Date(msg.recv_wall))
     }).catch(err => { console.error('Bridge event processing error:', err) })
   })
 

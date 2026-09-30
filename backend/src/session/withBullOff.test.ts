@@ -21,8 +21,8 @@ const game = withBullOff(countGame, {
 })
 
 const players: Player[] = [{ name: 'A' }, { name: 'B' }]
-const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } as any }
-const takeout: BoardEvent = { kind: 'takeout.finished', data: {} as any }
+const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } }
+const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
 const dartAt = (mm: number): BoardEvent => ({
   kind: 'dart.detected',
   data: { visit_id: 'v', index: 0, source_seq: 1, dart: {

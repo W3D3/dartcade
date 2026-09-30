@@ -322,7 +322,7 @@ describe('rebuild', () => {
       config: {},
       players: [{ name: 'Alice' }],
       created_at: new Date(),
-    }] as any)
+    }])
     vi.mocked(store.getBridgeEventsForBoard).mockResolvedValue([
       { kind: 'visit.opened', data: { visit_id: 'v1' }, recv_wall: new Date() },
       {
@@ -330,7 +330,7 @@ describe('rebuild', () => {
         data: { visit_id: 'v1', index: 0, dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 }, source_seq: 1 },
         recv_wall: new Date(),
       },
-    ] as any)
+    ])
 
     const engine = new SessionEngine(store, push)
     await engine.rebuild()

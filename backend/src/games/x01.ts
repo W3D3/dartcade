@@ -162,7 +162,7 @@ export const x01Game: GameModule<X01State, X01Config> = {
 
       case 'dart.detected': {
         const data = e.data as DartDetectedData
-        const dart = data.dart as Dart
+        const dart = data.dart
         const cp = s.currentPlayer
 
         if (s.bustThisVisit) return { state: s }

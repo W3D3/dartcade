@@ -32,10 +32,10 @@
   // Closest dart so far — the one to beat
   const best = $derived.by(() => {
     let b: { mm: number; player: number } | null = null
-    bullOff.throws.forEach((t, i) => {
+    for (const [i, t] of bullOff.throws.entries()) {
       if (t?.mm != null && (!b || t.mm < b.mm)) b = { mm: t.mm, player: i }
-    })
-    return b as { mm: number; player: number } | null
+    }
+    return b
   })
 
   // Zoomed in: fit every dart so far

@@ -60,7 +60,7 @@ describe('WS auth', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address() as any).port
+    const port = (testApp.server.address()).port
 
     const code = await new Promise<number>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
@@ -85,7 +85,7 @@ describe('WS auth', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address() as any).port
+    const port = (testApp.server.address()).port
 
     const code = await new Promise<number>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
@@ -122,7 +122,7 @@ describe('WS client messages', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address() as any).port
+    const port = (testApp.server.address()).port
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     let closed = false
@@ -166,7 +166,7 @@ describe('WS client messages', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address() as any).port
+    const port = (testApp.server.address()).port
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     await new Promise<void>((resolve, reject) => {
@@ -215,7 +215,7 @@ describe('WS client messages', () => {
     const { browserGwPlugin } = await import('./handler.js')
     await testApp.register(browserGwPlugin, { engine })
     await testApp.listen({ port: 0, host: '127.0.0.1' })
-    const port = (testApp.server.address() as any).port
+    const port = (testApp.server.address()).port
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     await new Promise<void>((resolve, reject) => {

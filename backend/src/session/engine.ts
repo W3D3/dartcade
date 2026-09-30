@@ -19,8 +19,8 @@ export interface EngineStore {
 export function createEngineStore(db: Kysely<Database>): EngineStore {
   return {
     insertSession: (d) => queries.insertGameSession(db, d),
-    getActiveSessions: () => queries.getActiveGameSessions(db) as any,
-    getBridgeEventsForBoard: (boardDbId, since) => queries.getBridgeEventsForBoardDbId(db, boardDbId, since) as any,
+    getActiveSessions: () => queries.getActiveGameSessions(db),
+    getBridgeEventsForBoard: (boardDbId, since) => queries.getBridgeEventsForBoardDbId(db, boardDbId, since),
     setSessionFinished: (id) => queries.setGameSessionFinished(db, id),
   }
 }
@@ -57,14 +57,14 @@ export class SessionEngine {
     const running = this.byOwner.get(ownerUserId)
     if (running) throw new ActiveSessionError('active session already exists for user', running.id)
     if (boardId && this.byBoard.has(boardId)) throw new Error(`active session already exists for board ${boardId}`)
-    const invalid = (mod as GameModule<unknown, unknown>).validate?.(config, players)
+    const invalid = (mod).validate?.(config, players)
     if (invalid) throw new Error(`invalid config: ${invalid}`)
 
     const sessionId = ulid()
-    const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
+    const initialState = (mod).init(config, players)
     const session: Session = {
       id: sessionId, ownerUserId, boardId, players,
-      module: mod as GameModule<unknown, unknown>,
+      module: mod,
       committedState: initialState,
       openVisitEvents: [],
       currentState: initialState,
@@ -85,7 +85,7 @@ export class SessionEngine {
     const session = this.byBoard.get(boardId)
     if (!session) return
 
-    const event: BoardEvent = { kind, data } as BoardEvent
+    const event: BoardEvent = { kind, data }
 
     switch (kind) {
       case 'visit.opened':
@@ -113,7 +113,7 @@ export class SessionEngine {
           session.openVisitEvents[idx] = {
             kind: 'dart.detected',
             data: { ...orig, dart: d.dart },
-          } as BoardEvent
+          }
         }
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         break
@@ -198,7 +198,7 @@ export class SessionEngine {
         session.openVisitEvents[idx] = {
           kind: 'dart.detected',
           data: { ...orig, dart: newDart },
-        } as BoardEvent
+        }
       }
     } else if (action.type === 'takeout') {
       // An empty turn (nothing thrown or nothing detected) counts as three misses
@@ -208,11 +208,11 @@ export class SessionEngine {
         const thrower = session.module.getCurrentPlayer(session.currentState)
         const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
         session.openVisitEvents = [
-          { kind: 'visit.opened', data: { visit_id: 'manual' } as any },
+          { kind: 'visit.opened', data: { visit_id: 'manual' } },
           ...[0, 1, 2].map(index => ({
             kind: 'dart.detected',
             data: { visit_id: 'manual', index, dart: manualDart({ ...miss }), source_seq: 0 } as any,
-          } as BoardEvent)),
+          })),
         ]
         session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 3
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
@@ -222,7 +222,7 @@ export class SessionEngine {
         if (!inBullOff(session, session.currentState)) session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
         const finalState = session.module.onBoardEvent(
           session.currentState,
-          { kind: 'takeout.finished', data: {} as any },
+          { kind: 'takeout.finished', data: {} },
         ).state
         session.committedState = finalState
         session.currentState = finalState
@@ -241,7 +241,7 @@ export class SessionEngine {
       const now = session.module.view(session.currentState, session.players) as { visitLocked?: boolean; winner?: number | null }
       if (now.visitLocked === true || (now.winner !== null && now.winner !== undefined)) return
       if (session.openVisitEvents.length === 0) {
-        session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } as any })
+        session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } })
       }
       // Use the state after the (possibly new) visit.opened to find the thrower
       const opened = refoldVisit(session.module, session.committedState, session.openVisitEvents)
@@ -249,7 +249,7 @@ export class SessionEngine {
       if (!inBullOff(session, opened)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
       session.openVisitEvents.push({
         kind: 'dart.detected',
-        data: { visit_id: 'manual', index: dartCount, dart: manualDart(action.segment, action.coords), source_seq: 0 } as any,
+        data: { visit_id: 'manual', index: dartCount, dart: manualDart(action.segment, action.coords), source_seq: 0 },
       })
     } else {
       // Anything else is the game module's own action (e.g. the bull off's
@@ -278,15 +278,15 @@ export class SessionEngine {
       const boardId = row.board_db_id
       const players = row.players as Player[]
       const config = row.config
-      const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
+      const initialState = (mod).init(config, players)
       const session: Session = {
         id: row.id, ownerUserId: row.owner_user_id, boardId, players,
-        module: mod as GameModule<unknown, unknown>,
+        module: mod,
         committedState: initialState,
         openVisitEvents: [],
         currentState: initialState,
         status: 'active',
-        createdAt: (row.created_at as unknown as Date) ?? new Date(),
+        createdAt: (row.created_at as Date) ?? new Date(),
         totalDarts: new Array(players.length).fill(0),
         totalVisits: new Array(players.length).fill(0),
         bmStatus: null,
@@ -297,7 +297,7 @@ export class SessionEngine {
 
       const events = await this.store.getBridgeEventsForBoard(boardId, session.createdAt)
       for (const ev of events) {
-        await this.onBridgeEvent(boardId, ev.kind, ev.data, ev.recv_wall as unknown as Date)
+        await this.onBridgeEvent(boardId, ev.kind, ev.data, ev.recv_wall as Date)
       }
     }
   }

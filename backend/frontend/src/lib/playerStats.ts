@@ -33,7 +33,7 @@ export function x01Player(
 ): X01PlayerView {
   const remaining = nums(game, 'scores')[i] ?? 0
   const opened = (game.opened as boolean[] | undefined)?.[i] ?? true
-  const outMode = ((game.config as { outMode?: OutMode } | undefined)?.outMode ?? 'double') as OutMode
+  const outMode = ((game.config as { outMode?: OutMode } | undefined)?.outMode ?? 'double')
   const running = o.active ? ((game.currentVisitDarts as { score?: number }[] | undefined) ?? []) : []
   const dartsLeft = 3 - running.length
   const hint = o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, outMode, dartsLeft) : null

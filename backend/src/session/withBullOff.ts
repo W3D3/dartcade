@@ -45,7 +45,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig>(
 
   return {
     id: game.id,
-    defaultConfig: { bullOff: 'off', ...game.defaultConfig } as Cfg,
+    defaultConfig: { bullOff: 'off', ...game.defaultConfig },
     configMeta: {
       ...game.configMeta,
       bullOff: game.configMeta?.bullOff ?? {

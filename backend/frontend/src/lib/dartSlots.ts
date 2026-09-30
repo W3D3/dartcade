@@ -56,6 +56,6 @@ export function atcSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: stri
     const n = d.segment?.number ?? 0
     return o.multiplierAdvances && n <= 20 ? Math.max(1, d.segment?.multiplier ?? 1) : 1
   }
-  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i] === true, o.hits[i] === true ? `+${steps(d)}` : '0'))
+  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i], o.hits[i] ? `+${steps(d)}` : '0'))
   return [...done, ...openSlots(done.length, o.target ? [{ label: o.target, foot: 'your target' }] : [])]
 }

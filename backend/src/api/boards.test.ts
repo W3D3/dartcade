@@ -43,7 +43,7 @@ describe('GET /api/boards', () => {
 
   it('returns boards owned by user', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Living Room', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Living Room', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
@@ -119,7 +119,7 @@ describe('DELETE /api/boards/:id', () => {
 describe('GET /api/boards - bridgeVersion', () => {
   it('reports bridge and Board Manager versions separately', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
     vi.mocked(connections.bridgeConnections.isOnline).mockReturnValue(true)
     vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bridgeVersion: 'v0.4.2', bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
@@ -133,7 +133,7 @@ describe('GET /api/boards - bridgeVersion', () => {
 
   it('keeps the Board Manager port in bmUrl', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
     vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
     const app = makeApp()
@@ -145,7 +145,7 @@ describe('GET /api/boards - bridgeVersion', () => {
 
   it('bridgeVersion is null when board is offline', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
     vi.mocked(connections.bridgeConnections.get).mockReturnValue(undefined)
     const app = makeApp()

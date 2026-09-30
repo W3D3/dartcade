@@ -20,7 +20,7 @@ export function registerResponseValidation(app: FastifyInstance): void {
   const validators = new Map<string, ValidateFunction>()
 
   app.addHook('onSend', async (req, reply, payload) => {
-    const operationId = (req.routeOptions.schema as { operationId?: string } | undefined)?.operationId
+    const operationId = (req.routeOptions.schema)?.operationId
     if (!operationId || reply.statusCode >= 500) return payload
 
     const fail = (message: string) => {

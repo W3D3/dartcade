@@ -14,7 +14,7 @@ async function registeredRoutes() {
     onRoute: (r: RouteOptions) => {
       for (const method of ([] as string[]).concat(r.method)) {
         if (method === 'HEAD') continue   // auto-added for every GET
-        routes.push({ method, path: r.url, operationId: (r.schema as { operationId?: string } | undefined)?.operationId })
+        routes.push({ method, path: r.url, operationId: (r.schema)?.operationId })
       }
     },
   })

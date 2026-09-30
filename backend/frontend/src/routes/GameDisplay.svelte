@@ -72,7 +72,7 @@
     } else if (now.length > oldCount) {
       const i = now.length - 1
       const hits = after.currentVisitHits as boolean[] | undefined
-      const hit = hits ? hits[i] === true : (now[i]?.score ?? 0) > 0
+      const hit = hits ? hits[i] : (now[i]?.score ?? 0) > 0
       if (hit && settings.soundHit) sounds.hit()
       if (!hit && settings.soundMiss) sounds.miss()
     } else if (after.currentPlayer !== before.currentPlayer && settings.soundSwitch) {
@@ -128,7 +128,7 @@
         left: x01Players[currentPlayer]?.remaining ?? 0,
         // What the engine actually took off, when the visit's start is known
         scored: !bust && history.start[currentPlayer] != null
-          ? (history.start[currentPlayer] as number) - (x01Players[currentPlayer]?.remaining ?? 0)
+          ? (history.start[currentPlayer]) - (x01Players[currentPlayer]?.remaining ?? 0)
           : undefined,
       })
     : atcBand({
