@@ -64,7 +64,7 @@ flowchart LR
 | **Bridge** | [`bridge/`](bridge) | Single Go binary that runs next to the board. Connects to Board Manager, diffs state snapshots into typed `adbridge/v1` events and streams them to the backend over WSS with seq/ack delivery. |
 | **Backend** | [`backend/`](backend) | Fastify server with an event-sourced session engine, game modules, a bridge gateway, a browser WebSocket gateway and a REST API. Serves the SPA from the same process. |
 | **Frontend** | [`backend/frontend/`](backend/frontend) | Svelte 5 SPA for creating sessions, running matches and managing boards. |
-| **Schema** | [`schema/`](schema) | The `adbridge/v1` JSON Schema shared by bridge and backend, plus generated TypeScript types. |
+| **Schema** | [`schema/`](schema) | Hand-written contracts, generated into TypeScript and Go: the `adbridge/v1` JSON Schema shared by bridge and backend, an OpenAPI 3.0.3 spec (`api-v1.yaml`) for the HTTP API used by the frontend and bridge, and a JSON Schema (`game-ws-v1.json`) for the game WebSocket, plus shared defs in `common-v1.json`. |
 
 Every game is a pure reducer over the event log, so sessions survive restarts and dart corrections replay cleanly.
 
@@ -103,8 +103,11 @@ The project uses [mise](https://mise.jdx.dev) for tool versions (Node 22, Go 1.2
 ```bash
 mise run dev          # full dev stack with hot reload
 mise run test         # backend, frontend and bridge tests
-mise run gen:types    # regenerate TS types from the schema
+mise run gen:types    # regenerate adbridge/v1 TS types from the schema
+mise run gen:api      # regenerate HTTP/WS types and clients from schema/ (or: npm run gen:api)
 ```
+
+`npm ci` at the repo root installs the tools `gen:api` needs (`@redocly/cli`, `openapi-typescript`, …); `npm run lint:api` validates `schema/api-v1.yaml`. Once the backend is running, `/api/docs` serves a Swagger UI for both our API and better-auth's.
 
 The backend tests need a running Postgres. See [`DEVELOPMENT.md`](DEVELOPMENT.md) for setup, environment variables, the repository layout and production builds.
 
