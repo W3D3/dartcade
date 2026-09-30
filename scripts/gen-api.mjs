@@ -54,5 +54,10 @@ async function genWs() {
   writeFileSync(join(BACKEND_SCHEMA, 'game-ws-v1.deref.json'), JSON.stringify(deref, null, 2) + '\n')
 }
 
+function genGo() {
+  run('go', ['generate', './internal/api'], r('bridge'))
+}
+
 await genHttp()
 await genWs()
+genGo()

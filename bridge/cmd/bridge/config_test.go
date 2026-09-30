@@ -18,6 +18,15 @@ import (
 // the pairing flow without asserting on the printed lines.
 func discardConsole() *console { return &console{w: io.Discard} }
 
+// writeJSON writes a JSON fixture response with the status and content type
+// the generated api client requires to populate its JSONxxx fields (it
+// switches on both, not just the body shape).
+func writeJSON(w http.ResponseWriter, status int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(v)
+}
+
 func TestToHTTPBase(t *testing.T) {
 	cases := []struct {
 		in   string
@@ -96,16 +105,16 @@ func TestRunPairing_Success(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == "POST" && r.URL.Path == "/api/pairing/request":
-			json.NewEncoder(w).Encode(map[string]string{
+			writeJSON(w, http.StatusCreated, map[string]string{
 				"code":      "ABCD1234",
 				"expiresAt": expiry.Format(time.RFC3339),
 			})
 		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/api/pairing/"):
 			callCount++
 			if callCount < 2 {
-				json.NewEncoder(w).Encode(map[string]string{"status": "pending"})
+				writeJSON(w, http.StatusOK, map[string]string{"status": "pending"})
 			} else {
-				json.NewEncoder(w).Encode(map[string]string{"status": "claimed", "token": "tok-secret"})
+				writeJSON(w, http.StatusOK, map[string]string{"status": "claimed", "token": "tok-secret"})
 			}
 		default:
 			http.NotFound(w, r)
@@ -129,12 +138,12 @@ func TestRunPairing_BackendURLWithPath(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.Method == "POST" && r.URL.Path == "/api/pairing/request":
-			json.NewEncoder(w).Encode(map[string]string{
+			writeJSON(w, http.StatusCreated, map[string]string{
 				"code":      "ABCD1234",
 				"expiresAt": time.Now().Add(10 * time.Minute).Format(time.RFC3339),
 			})
 		case r.Method == "GET" && r.URL.Path == "/api/pairing/ABCD1234/token":
-			json.NewEncoder(w).Encode(map[string]string{"status": "claimed", "token": "tok-path"})
+			writeJSON(w, http.StatusOK, map[string]string{"status": "claimed", "token": "tok-path"})
 		default:
 			http.NotFound(w, r)
 		}
@@ -159,12 +168,12 @@ func TestRunPairing_ClaimedAtDeadline(t *testing.T) {
 		case r.Method == "POST" && r.URL.Path == "/api/pairing/request":
 			// Short TTL so the deadline fires before the 2s poll ticker — the
 			// only poll that can happen is the deadline's final one.
-			json.NewEncoder(w).Encode(map[string]string{
+			writeJSON(w, http.StatusCreated, map[string]string{
 				"code":      "ABCD1234",
 				"expiresAt": time.Now().Add(250 * time.Millisecond).Format(time.RFC3339Nano),
 			})
 		case r.Method == "GET" && r.URL.Path == "/api/pairing/ABCD1234/token":
-			json.NewEncoder(w).Encode(map[string]string{"status": "claimed", "token": "tok-deadline"})
+			writeJSON(w, http.StatusOK, map[string]string{"status": "claimed", "token": "tok-deadline"})
 		default:
 			http.NotFound(w, r)
 		}
@@ -209,15 +218,15 @@ func TestRunPairing_RetryAfterExpiry(t *testing.T) {
 			if requestCount == 1 {
 				expiry = time.Now().Add(100 * time.Millisecond) // first code expires fast
 			}
-			json.NewEncoder(w).Encode(map[string]string{
+			writeJSON(w, http.StatusCreated, map[string]string{
 				"code":      "ABCD1234",
 				"expiresAt": expiry.Format(time.RFC3339),
 			})
 		case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/api/pairing/"):
 			if requestCount >= 2 {
-				json.NewEncoder(w).Encode(map[string]string{"status": "claimed", "token": "tok-retry"})
+				writeJSON(w, http.StatusOK, map[string]string{"status": "claimed", "token": "tok-retry"})
 			} else {
-				json.NewEncoder(w).Encode(map[string]string{"status": "pending"})
+				writeJSON(w, http.StatusOK, map[string]string{"status": "pending"})
 			}
 		default:
 			http.NotFound(w, r)
@@ -242,7 +251,7 @@ func TestRunPairing_StopsOnCtxCancelDuringRetry(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "POST" && r.URL.Path == "/api/pairing/request" {
 			expiry := time.Now().Add(100 * time.Millisecond)
-			json.NewEncoder(w).Encode(map[string]string{
+			writeJSON(w, http.StatusCreated, map[string]string{
 				"code":      "ABCD1234",
 				"expiresAt": expiry.Format(time.RFC3339),
 			})
