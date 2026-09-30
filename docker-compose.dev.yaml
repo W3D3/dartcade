@@ -43,6 +43,8 @@ services:
     volumes:
       - ./backend/frontend:/app
       - /app/node_modules
+      # Code shared with the backend, imported as $shared (/app/../src/shared)
+      - ./backend/src/shared:/src/shared:ro
     command: sh -c "npm install --prefer-offline && npm run dev -- --host 0.0.0.0"
     environment:
       BACKEND_HOST: backend

@@ -4,6 +4,7 @@ import { BrowserConnections } from './connections.js'
 import type { SessionEngine } from '../session/engine.js'
 import { getAuthUser } from '../auth/session.js'
 import { canAccessSession } from '../api/sessions.js'
+import { WS_CLOSE } from '../shared/wsClose.js'
 
 export const browserConnections = new BrowserConnections()
 
@@ -17,17 +18,17 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
 
     getAuthUser(req).then(user => {
       if (!user) {
-        socket.close(4401, 'unauthorized')
+        socket.close(WS_CLOSE.unauthorized, 'unauthorized')
         return
       }
 
       const sessionId = (req.query as any).sessionId as string | undefined
-      if (!sessionId) { socket.close(4400, 'missing sessionId'); return }
+      if (!sessionId) { socket.close(WS_CLOSE.missingSession, 'missing sessionId'); return }
 
       const session = engine.getSession(sessionId)
       const snap = engine.getSnapshot(sessionId)
-      if (!session || !snap) { socket.close(4404, 'session not found'); return }
-      if (!canAccessSession(user.userId, session)) { socket.close(4403, 'forbidden'); return }
+      if (!session || !snap) { socket.close(WS_CLOSE.notFound, 'session not found'); return }
+      if (!canAccessSession(user.userId, session)) { socket.close(WS_CLOSE.forbidden, 'forbidden'); return }
 
       browserConnections.add(sessionId, socket)
       socket.send(JSON.stringify(snap))
@@ -42,7 +43,7 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
 
       socket.on('close', () => browserConnections.remove(sessionId, socket))
       socket.on('error', () => browserConnections.remove(sessionId, socket))
-    }).catch(() => socket.close(4500, 'internal error'))
+    }).catch(() => socket.close(WS_CLOSE.internalError, 'internal error'))
   })
 }
 

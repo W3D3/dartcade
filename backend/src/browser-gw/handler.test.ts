@@ -2,6 +2,7 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import Fastify from 'fastify'
 import fastifyWebsocket from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
+import { WS_CLOSE } from '../shared/wsClose.js'
 
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
 
@@ -67,7 +68,7 @@ describe('WS auth', () => {
       setTimeout(() => reject(new Error('timeout')), 2000)
     })
 
-    expect(code).toBe(4401)
+    expect(code).toBe(WS_CLOSE.unauthorized)
   })
 
   it('closes with 4403 when the session belongs to another user', async () => {
@@ -92,6 +93,6 @@ describe('WS auth', () => {
       setTimeout(() => reject(new Error('timeout')), 2000)
     })
 
-    expect(code).toBe(4403)
+    expect(code).toBe(WS_CLOSE.forbidden)
   })
 })

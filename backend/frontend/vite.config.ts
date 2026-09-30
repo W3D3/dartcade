@@ -10,9 +10,12 @@ export default defineConfig({
   resolve: {
     alias: {
       $lib: path.resolve('./src/lib'),
+      // Code shared with the backend (backend/src/shared)
+      $shared: path.resolve('../src/shared'),
     },
   },
   server: {
+    fs: { allow: ['.', '../src/shared'] },
     proxy: {
       '/api': { target: `http://${backendHost}:3000`, changeOrigin: true },
       '/ws': { target: `ws://${backendHost}:3000`, ws: true },

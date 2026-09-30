@@ -1,4 +1,5 @@
 import { writable } from 'svelte/store'
+import { WS_CLOSE } from '$shared/wsClose'
 
 export type Snapshot = {
   type: 'snapshot'
@@ -26,12 +27,12 @@ export function createSessionStore(sessionId: string) {
       } catch {}
     }
     ws.onclose = (e) => {
-      if (e.code === 4401) {
+      if (e.code === WS_CLOSE.unauthorized) {
         window.location.hash = '#/login'
         return
       }
       // Not this user's session, or it no longer exists: retrying won't help
-      if (e.code === 4403 || e.code === 4404) {
+      if (e.code === WS_CLOSE.forbidden || e.code === WS_CLOSE.notFound) {
         closed = true
         window.location.hash = '#/'
         return
