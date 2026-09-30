@@ -1,9 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import Fastify from 'fastify'
+import { createFastify } from './fastify.js'
 import { boardsApiPlugin } from './boards.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: async (req: any, _reply: any) => { req.userId = 'user-1' },
+  requireAuth: vi.fn(async (req: any, _reply: any) => { req.userId = 'user-1' }),
 }))
 vi.mock('../bridge-gw/connections.js', () => ({
   bridgeConnections: {
@@ -22,12 +22,13 @@ vi.mock('../db/queries.js', () => ({
 
 import * as queries from '../db/queries.js'
 import * as connections from '../bridge-gw/connections.js'
+import * as middleware from '../auth/middleware.js'
 
 beforeEach(() => vi.clearAllMocks())
 afterEach(() => vi.unstubAllGlobals())
 
 function makeApp() {
-  const app = Fastify()
+  const app = createFastify()
   app.register(boardsApiPlugin, { db: {} as any })
   return app
 }
@@ -245,5 +246,53 @@ describe('GET /api/boards/:id/events', () => {
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards/board-1/events' })
     expect(res.statusCode).toBe(403)
+  })
+})
+
+describe('boards: spec enforcement', () => {
+  const board = { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date('2026-08-12T10:00:00Z') as any, owner_user_id: 'user-1', token_hash: 'hash' }
+
+  it('checks auth before the body: signed-out + invalid body is 401, not 400', async () => {
+    vi.mocked(middleware.requireAuth).mockImplementationOnce(async (_req: any, reply: any) => {
+      reply.code(401).send({ error: 'unauthorized' })
+    })
+    const res = await makeApp().inject({ method: 'POST', url: '/api/boards', payload: { bogus: true } })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('rejects a whitespace-only name on rename with 400', async () => {
+    const res = await makeApp().inject({ method: 'PATCH', url: '/api/boards/board-1', payload: { name: '  ' } })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('serves camera frames with a cache-busting query', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board)
+    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(new Uint8Array([0xff, 0xd8]), { status: 200, headers: { 'content-type': 'image/jpeg' } })))
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/board-1/camera/0?t=1790700000000' })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['content-type']).toBe('image/jpeg')
+  })
+
+  it('rejects a non-numeric camera index with 400', async () => {
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/board-1/camera/abc' })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('reports a Board Manager rejection as 502', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(board)
+    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })))
+    const res = await makeApp().inject({ method: 'POST', url: '/api/boards/board-1/reset' })
+    expect(res.statusCode).toBe(502)
+    expect(JSON.parse(res.body).error).toMatch(/Board Manager/)
+  })
+
+  it('lists boards with createdAt as an ISO timestamp', async () => {
+    vi.mocked(queries.getBoardsByOwner).mockResolvedValue([board])
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards' })
+    expect(res.statusCode).toBe(200)
+    expect(JSON.parse(res.body).boards[0].createdAt).toBe('2026-08-12T10:00:00.000Z')
   })
 })
