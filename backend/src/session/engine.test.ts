@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ActiveSessionError, SessionEngine } from './engine.js'
 import type { EngineStore } from './engine.js'
 import type { BoardEvent } from './types.js'
+import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
 
 function makeStore(): EngineStore {
@@ -288,7 +289,7 @@ describe('onUserAction', () => {
     await engine.onUserAction(sessionId, { type: 'undo_dart' })
     await engine.onUserAction(sessionId, { type: 'add_dart', segment: S20 })
     expect((engine.getSnapshot(sessionId)!.game.currentVisitDarts as unknown[]).length).toBe(1)
-    expect(engine.getSnapshot(sessionId)!.game.scores).toEqual([21, 41])
+    expect((engine.getSnapshot(sessionId)!.game as X01Game).scores).toEqual([21, 41])
   })
 
   it('empty takeout is ignored during the bull off', async () => {
@@ -297,7 +298,7 @@ describe('onUserAction', () => {
     await engine.onUserAction(sessionId, { type: 'takeout' })
     const s = engine.getSession(sessionId)!
     expect(s.totalVisits).toEqual([0, 0])
-    expect(engine.getSnapshot(sessionId)!.game.phase).toBe('bulloff')
+    expect((engine.getSnapshot(sessionId)!.game as X01Game).phase).toBe('bulloff')
   })
 
   it('empty takeout is ignored after a win', async () => {
