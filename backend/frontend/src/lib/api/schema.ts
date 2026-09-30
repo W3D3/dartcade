@@ -929,6 +929,7 @@ export interface operations {
                     "application/json": components["schemas"]["PairingCode"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -953,6 +954,7 @@ export interface operations {
                     "application/json": components["schemas"]["PairingTokenStatus"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };

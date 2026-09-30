@@ -55,6 +55,9 @@ type BoardId = string
 // SessionId defines model for SessionId.
 type SessionId = string
 
+// BadRequest defines model for BadRequest.
+type BadRequest = ErrorResponse
+
 // NotFound defines model for NotFound.
 type NotFound = ErrorResponse
 
@@ -280,6 +283,7 @@ type RequestPairingResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON201      *PairingCode
+	JSON400      *BadRequest
 	JSON429      *TooManyRequests
 }
 
@@ -303,6 +307,7 @@ type GetPairingTokenResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *PairingTokenStatus
+	JSON400      *BadRequest
 	JSON404      *NotFound
 	JSON429      *TooManyRequests
 }
@@ -362,6 +367,13 @@ func ParseRequestPairingResponse(rsp *http.Response) (*RequestPairingResponse, e
 		}
 		response.JSON201 = &dest
 
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
 		var dest TooManyRequests
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -394,6 +406,13 @@ func ParseGetPairingTokenResponse(rsp *http.Response) (*GetPairingTokenResponse,
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest BadRequest
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
 		var dest NotFound

@@ -265,6 +265,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PairingCode' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/pairing/{code}/token:
@@ -285,6 +286,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/PairingTokenStatus' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 

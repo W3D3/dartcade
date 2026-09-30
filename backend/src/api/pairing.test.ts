@@ -31,6 +31,15 @@ function makeApp() {
 
 // ---- POST /api/pairing/request ----
 
+describe('M4: undocumented 400s', () => {
+  it('GET /api/pairing/:code/token returns 400 with an ErrorResponse for a too-long code', async () => {
+    const app = makeApp()
+    const res = await app.inject({ method: 'GET', url: `/api/pairing/${'A'.repeat(33)}/token` })
+    expect(res.statusCode).toBe(400)
+    expect(JSON.parse(res.body)).toMatchObject({ error: expect.any(String) })
+  })
+})
+
 describe('POST /api/pairing/request', () => {
   it('returns 201 with an 8-char uppercase code and expiresAt', async () => {
     const app = makeApp()
