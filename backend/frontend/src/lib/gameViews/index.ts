@@ -1,7 +1,7 @@
 import type { Component } from 'svelte'
 import ATCPlayerStats from './atc.svelte'
 import X01PlayerStats from './x01.svelte'
-import type { ATCConfig } from '../../../../src/games/atc.js'
+import { x01Meta, atcMeta } from './meta.js'
 
 export interface PlayerStatsProps {
   game: Record<string, unknown>
@@ -42,21 +42,7 @@ const atcView: GameView = {
 
   getPlayerDisplay: (_game, _playerIndex) => ({ remaining: 0, dartsLeft: 3 }),
 
-  getSubtitle: (game, playerCount) => {
-    const cfg = game.cfg as ATCConfig | undefined
-    const totalVisits = game.totalVisits as number[] | undefined
-    const round = totalVisits?.length ? Math.min(...totalVisits) + 1 : 1
-
-    const seqPart = cfg?.order === 'desc' ? '20→1' : cfg?.order === 'random' ? 'Random' : '1–20'
-    const seq = game.sequence as number[] | undefined
-    const hasBull22 = seq?.includes(22)
-    const hasBull21 = seq?.includes(21)
-    const bullPart = hasBull22 ? ', then Bull' : hasBull21 ? ', then 25' : ''
-    const multPart = cfg?.multiplierAdvances ? 'multiplier advances' : 'any segment counts'
-    const playerPart = playerCount && playerCount > 1 ? `${playerCount} players · ` : ''
-
-    return `${playerPart}${seqPart}${bullPart} · ${multPart} · Round ${round}`
-  },
+  getSubtitle: (game, playerCount) => atcMeta(game, playerCount ?? 1),
 
   showVisitScore: false,
   PlayerStats: ATCPlayerStats as unknown as Component<PlayerStatsProps>,
@@ -82,12 +68,7 @@ const x01View: GameView = {
     }
   },
 
-  getSubtitle: (game) => {
-    const config = (game.config as any) ?? {}
-    const startScore = config.startScore ?? 501
-    const outMode = (config.outMode as string | undefined) ?? 'double'
-    return `${startScore} · ${outMode} out`
-  },
+  getSubtitle: (game, playerCount) => x01Meta(game, playerCount ?? 1),
 
   showVisitScore: true,
   PlayerStats: X01PlayerStats as unknown as Component<PlayerStatsProps>,
