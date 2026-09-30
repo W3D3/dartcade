@@ -30,4 +30,12 @@ describe('schema/api-v1.yaml', () => {
     const registered = (await registeredRoutes()).map(key).sort()
     expect(registered).toEqual(specRoutes.map(key).sort())
   })
+
+  it('attaches each operation\'s schema to its route', async () => {
+    const byKey = new Map(specRoutes.map(r => [key(r), r.operation.operationId]))
+    const missing = (await registeredRoutes())
+      .filter(r => r.operationId !== byKey.get(key(r)))
+      .map(r => `${key(r)} has ${r.operationId ?? 'no schema'}, expected ${byKey.get(key(r))}`)
+    expect(missing).toEqual([])
+  })
 })

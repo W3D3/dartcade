@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import Fastify from 'fastify'
 import rateLimit from '@fastify/rate-limit'
+import { createFastify } from './fastify.js'
 import { pairingApiPlugin } from './pairing.js'
 
 vi.mock('../auth/middleware.js', () => ({
@@ -20,7 +20,7 @@ import * as queries from '../db/queries.js'
 beforeEach(() => vi.clearAllMocks())
 
 function makeApp() {
-  const app = Fastify()
+  const app = createFastify()
   app.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
   const mockDb: any = {
     transaction: () => ({ execute: (fn: (trx: any) => Promise<any>) => fn(mockDb) }),
@@ -270,5 +270,18 @@ describe('POST /api/pairing/claim', () => {
     })
     expect(res.statusCode).toBe(201)
     expect(queries.getPairingCode).toHaveBeenCalledWith(expect.anything(), '7KQ4M2XD')
+  })
+})
+
+describe('pairing: bridge compatibility', () => {
+  it('accepts the {} body older bridges send', async () => {
+    const res = await makeApp().inject({ method: 'POST', url: '/api/pairing/request', payload: {} })
+    expect(res.statusCode).toBe(201)
+    expect(JSON.parse(res.body)).toEqual({ code: expect.any(String), expiresAt: expect.any(String) })
+  })
+
+  it('accepts no body (the generated Go client)', async () => {
+    const res = await makeApp().inject({ method: 'POST', url: '/api/pairing/request' })
+    expect(res.statusCode).toBe(201)
   })
 })
