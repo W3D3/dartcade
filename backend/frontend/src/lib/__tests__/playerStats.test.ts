@@ -1,0 +1,56 @@
+import { describe, it, expect } from 'vitest'
+import { x01Player, atcPlayer } from '../playerStats.js'
+import { emptyHistory, type VisitHistory } from '../visitHistory.js'
+
+const visit = (scored: number, left: number, darts = 3) => ({ scored, left, darts, bust: false })
+const history = (leg: VisitHistory['leg'], all = leg): VisitHistory => ({ ...emptyHistory(), leg, all })
+const game = (o: Record<string, unknown> = {}) => ({
+  scores: [81, 87], opened: [true, true], legs: [1, 0], firstTo: 3, totalDarts: [16, 18],
+  config: { outMode: 'double' }, currentVisitDarts: [{ segment: { name: 'T20' }, score: 60 }], ...o,
+})
+
+describe('x01Player', () => {
+  it('the thrower: running visit on the chalkboard, finish with the darts left', () => {
+    const p = x01Player(game(), 0, history([[visit(100, 401), visit(60, 341)]]), { active: true, suggest: true })
+    expect(p).toMatchObject({
+      remaining: 81, canFinish: 'T19 · D12', avg: '80.0', legAvg: '80.0', last: '60', darts: 16, legsWon: 1, firstTo: 3,
+      current: { scored: 60, left: 81 },
+    })
+  })
+
+  it('a waiting player has no running visit and three darts to finish', () => {
+    const p = x01Player(game(), 1, history([[], [visit(45, 87)]]), { active: false, suggest: true })
+    expect(p.current).toBeNull()
+    // First two-dart finish the finder meets (it prefers trebles high to low), not the design's sample T17 · D18
+    expect(p.canFinish).toBe('T19 · D15')
+  })
+
+  it('averages show a dash without visits', () => {
+    const p = x01Player(game(), 1, emptyHistory(), { active: false, suggest: true })
+    expect([p.avg, p.legAvg, p.last]).toEqual(['—', '—', '—'])
+  })
+
+  it('no finish is null (too high, not opened, or suggestions off)', () => {
+    expect(x01Player(game({ scores: [301, 87] }), 0, emptyHistory(), { active: true, suggest: true }).canFinish).toBeNull()
+    expect(x01Player(game({ opened: [false, true] }), 0, emptyHistory(), { active: true, suggest: true }).canFinish).toBeNull()
+    expect(x01Player(game(), 1, emptyHistory(), { active: false, suggest: false }).canFinish).toBeNull()
+  })
+
+  it('leg average uses this leg only', () => {
+    const p = x01Player(game(), 0, history([[visit(30, 471)]], [[visit(100, 401), visit(30, 471)]]), { active: false, suggest: true })
+    expect([p.avg, p.legAvg]).toEqual(['65.0', '30.0'])
+  })
+})
+
+describe('atcPlayer', () => {
+  it('shows target, progress and hit rate', () => {
+    const seq = [...Array.from({ length: 20 }, (_, i) => i + 1), 22]
+    const p = atcPlayer({ sequence: seq, targets: [14], hitCounts: [13], totalDarts: [35] }, 0)
+    expect(p).toMatchObject({ target: '14', done: 13, total: 21, darts: 35, hitRate: '37%' })
+    expect(p.cells).toHaveLength(21)
+  })
+
+  it('hit rate is 0% before the first dart', () => {
+    expect(atcPlayer({ sequence: [1, 2], targets: [1], hitCounts: [0], totalDarts: [0] }, 0).hitRate).toBe('0%')
+  })
+})
