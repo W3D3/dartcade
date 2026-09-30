@@ -11,7 +11,7 @@ export type VisitHistory = {
   all: Visit[][]
   /** Per player: score (X01) or progress (ATC) when their current visit began; null when unknown. */
   start: (number | null)[]
-  prev: { totalVisits: number[]; legs: number[]; darts: number; bust: boolean } | null
+  prev: { totalVisits: number[]; legs: number[]; darts: number; bust: boolean; cp: number } | null
 }
 
 export const emptyHistory = (): VisitHistory => ({ leg: [], all: [], start: [], prev: null })
@@ -35,20 +35,27 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
 
   const p = h.prev
   if (p) {
-    let legOver = false
-    for (let i = 0; i < n; i++) {
-      if ((totalVisits[i] ?? 0) <= (p.totalVisits[i] ?? 0)) continue
+    const finished = totalVisits.flatMap((t, i) => (t > (p.totalVisits[i] ?? 0) ? [i] : []))
+    const added = finished.reduce((a, i) => a + totalVisits[i] - (p.totalVisits[i] ?? 0), 0)
+    const legOver = legs.some((l, i) => l > (p.legs[i] ?? 0))
+    if (added === 1 && finished[0] === p.cp) {
+      const i = p.cp
       const wonLeg = (legs[i] ?? 0) > (p.legs[i] ?? 0)
-      legOver ||= wonLeg
       const s = start[i]
-      start[i] = null
-      if (s === null) continue // began before the page loaded
       const now = progress[i] ?? s
-      const visit: Visit = isX01
-        ? { scored: wonLeg ? s : s - now, left: wonLeg ? 0 : now, darts: p.darts, bust: p.bust }
-        : { scored: now - s, left: 0, darts: p.darts, bust: false }
-      leg[i] = [...leg[i], visit]
-      all[i] = [...all[i], visit]
+      if (s !== null && now !== null) { // null: began before the page loaded
+        const visit: Visit = isX01
+          ? { scored: wonLeg ? s : s - now, left: wonLeg ? 0 : now, darts: p.darts, bust: p.bust }
+          : { scored: now - s, left: 0, darts: p.darts, bust: false }
+        if (visit.scored >= 0) {
+          leg[i] = [...leg[i], visit]
+          all[i] = [...all[i], visit]
+        }
+      }
+      start[i] = null
+    } else if (added > 0) {
+      // Snapshots were missed (reconnect, restart): what happened in between is unknown
+      start.fill(null)
     }
     if (legOver) leg = leg.map(() => [])
   }
@@ -58,7 +65,7 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
 
   return {
     leg, all, start,
-    prev: { totalVisits: [...totalVisits], legs: [...legs], darts, bust: game.bustThisVisit === true },
+    prev: { totalVisits: [...totalVisits], legs: [...legs], darts, bust: game.bustThisVisit === true, cp },
   }
 }
 

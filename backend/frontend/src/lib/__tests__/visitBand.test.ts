@@ -28,6 +28,11 @@ describe('x01Band', () => {
     expect(x01Band({ darts: [d(60), d(60), d(60)], left: 321, bust: false })).toMatchObject({ eyebrow: 'Maximum', fx: 'max', sum: '180' })
   })
 
+  it('uses the points actually scored when known (darts before opening do not count)', () => {
+    expect(x01Band({ darts: [d(60), d(60), d(60)], left: 501, bust: false, scored: 0 }))
+      .toMatchObject({ sum: '0', eyebrow: 'This visit', fx: 'none', bigDart: false })
+  })
+
   it('a bust never celebrates', () => {
     expect(x01Band({ darts: [d(60), d(60)], left: 101, bust: true })).toMatchObject({ eyebrow: 'Bust', fx: 'none', bigDart: false, bust: true })
   })

@@ -113,7 +113,14 @@
 
   const hitCount = $derived((game.hitCounts as number[] | undefined)?.[currentPlayer] ?? 0)
   const band = $derived(isX01
-    ? x01Band({ darts, left: x01Players[currentPlayer]?.remaining ?? 0, bust })
+    ? x01Band({
+        darts, bust,
+        left: x01Players[currentPlayer]?.remaining ?? 0,
+        // What the engine actually took off, when the visit's start is known
+        scored: !bust && history.start[currentPlayer] != null
+          ? (history.start[currentPlayer] as number) - (x01Players[currentPlayer]?.remaining ?? 0)
+          : undefined,
+      })
     : atcBand({
         dartCount: darts.length,
         advanced: Math.max(0, hitCount - (history.start[currentPlayer] ?? hitCount)),

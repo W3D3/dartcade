@@ -65,6 +65,27 @@ describe('trackVisits (X01)', () => {
   })
 })
 
+describe('trackVisits after a gap (reconnect)', () => {
+  it('records nothing when another player checked out while disconnected', () => {
+    const h = run([
+      x01({ scores: [301, 40], totalVisits: [5, 5], cp: 0 }),
+      x01({ scores: [301, 301], totalVisits: [6, 6], legs: [0, 1], cp: 0 }),
+    ])
+    expect(h.all).toEqual([[], []])
+    expect(h.leg).toEqual([[], []])
+    expect(h.start[0]).toBe(301)
+  })
+
+  it('does not merge visits missed while disconnected', () => {
+    const h = run([
+      x01({ scores: [301], totalVisits: [0], cp: 0 }),
+      x01({ scores: [200], totalVisits: [2], cp: 0 }),
+    ])
+    expect(h.all[0]).toEqual([])
+    expect(h.start[0]).toBe(200)
+  })
+})
+
 describe('trackVisits (ATC)', () => {
   it('records targets advanced per visit', () => {
     const atc = (hitCounts: number[], totalVisits: number[], cp: number, darts: number[] = []): G =>
