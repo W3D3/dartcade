@@ -5,7 +5,7 @@
   type Segment = { name: string; number: number; bed: string; multiplier: number }
 
   let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [], onSegmentClick,
-        zoom = 1, overlay }: {
+        onBoardClick, zoom = 1, overlay }: {
     darts?: Array<{
       segment: { number: number; bed: string; multiplier: number; name: string }
       score: number
@@ -15,6 +15,9 @@
     playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
     checkoutTargets?: string[]
     onSegmentClick?: (seg: Segment) => void
+    /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
+     *  and the segment under it. Takes precedence over onSegmentClick. */
+    onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** Magnification around the bull (1 = whole board); changes animate. */
     zoom?: number
     /** Extra marks drawn in board units (r = 1 at the outer double wire), zoomed with the board.
@@ -95,13 +98,42 @@
     return { x: r * Math.cos(a), y: -r * Math.sin(a) }
   }
 
+  /** The segment at a point in board units (y up), as Board Manager would name it. */
+  function segmentAt(x: number, y: number): Segment {
+    const r = Math.hypot(x, y)
+    if (r <= R.bull50) return { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }
+    if (r <= R.bull25) return { name: '25', number: 25, bed: 'Single', multiplier: 1 }
+    // Sector 0 (20) is centred on +y; sectors run clockwise
+    const cw = (Math.PI / 2 - Math.atan2(y, x) + 2 * Math.PI) % (2 * Math.PI)
+    const num = SEGS[Math.round(cw / (2 * HALF)) % 20]
+    // Just off the board: a near miss next to that number
+    if (r > R.db) return { name: `M${num}`, number: num, bed: 'Outside', multiplier: 0 }
+    const ring = r <= R.si ? 'si' : r <= R.tr ? 'tr' : r <= R.so ? 'so' : 'db'
+    const { bed, multiplier } = RING_BED[ring]
+    const name = multiplier === 3 ? `T${num}` : multiplier === 2 ? `D${num}` : `S${num}`
+    return { name, number: num, bed, multiplier }
+  }
+
+  let svgEl: SVGSVGElement
+  function boardClick(e: MouseEvent) {
+    if (!onBoardClick) return
+    const ctm = svgEl.getScreenCTM()
+    if (!ctm) return
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
+    // Undo the zoom around the centre; flip y so it points up like camera coords
+    const x = p.x / zoom, y = -p.y / zoom
+    onBoardClick({ segment: segmentAt(x, y), coords: { x, y } })
+  }
+
   const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
   const DOT_STROKE = '#0f100e'
-  const interactive = $derived(!!onSegmentClick)
+  const precise = $derived(!!onBoardClick)
+  const interactive = $derived(!precise && !!onSegmentClick)
 </script>
 
-<svg viewBox="-1.15 -1.15 2.3 2.3" class="w-full {interactive ? 'cursor-crosshair' : ''}"
-  xmlns="http://www.w3.org/2000/svg">
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<svg bind:this={svgEl} viewBox="-1.15 -1.15 2.3 2.3" class="w-full {interactive || precise ? 'cursor-crosshair' : ''}"
+  xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}>
   <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
 
   <g style="transform: scale({zoom}); transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">

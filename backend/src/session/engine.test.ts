@@ -217,6 +217,19 @@ describe('onUserAction', () => {
     expect(snap.game.phase).toBe('game')
     expect(snap.game.currentPlayer).toBe(1)
   })
+
+  it('measures a manually entered bull off dart from its coordinates', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01',
+      { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }, { name: 'Bob' }])
+    await engine.onUserAction(sessionId, {
+      type: 'add_dart',
+      segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 },
+      coords: { x: 0.03, y: 0.04 },
+    })
+    const bullOff = engine.getSnapshot(sessionId)!.game.bullOff as any
+    expect(bullOff.throws[0]).toEqual({ mm: 8.5, segment: '25', thetaDeg: expect.closeTo(53.13, 2), estimated: false })
+  })
 })
 
 describe('rebuild', () => {

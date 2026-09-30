@@ -180,6 +180,11 @@
     sessionStore?.send({ type: 'add_dart', segment: seg })
   }
 
+  // Clicking the board keeps the exact spot, so the dart shows where it landed
+  function addBoardDart(hit: { segment: { name: string; number: number; bed: string; multiplier: number }; coords: { x: number; y: number } }) {
+    sessionStore?.send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
+  }
+
   function handleCorrect(dartIndex: number, label: string) {
     let segment: { name: string; number: number; bed: string; multiplier: number }
     if (label === 'Bull') {
@@ -269,7 +274,7 @@
             <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
           {:else}
             <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
-              onSegmentClick={isActive ? addManualDart : undefined} />
+              onBoardClick={isActive ? addBoardDart : undefined} />
             <div class="flex gap-5 text-[12px] text-text-dim justify-center">
               <span class="flex items-center gap-[6px]">
                 <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
@@ -317,7 +322,7 @@
           {:else}
             <div class="w-full" style="max-width: min(100%, calc(100vh - 340px))">
               <DartBoard darts={currentDarts} selectedSegments={highlights}
-                onSegmentClick={isActive ? addManualDart : undefined} />
+                onBoardClick={isActive ? addBoardDart : undefined} />
             </div>
           {/if}
 
