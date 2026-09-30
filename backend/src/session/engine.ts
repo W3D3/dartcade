@@ -201,6 +201,22 @@ export class SessionEngine {
         } as BoardEvent
       }
     } else if (action.type === 'takeout') {
+      // An empty turn (nothing thrown or nothing detected) counts as three misses
+      const current = session.module.view(session.currentState, session.players) as { winner?: number | null }
+      if (session.openVisitEvents.length === 0 && !inBullOff(session, session.currentState)
+          && (current.winner === null || current.winner === undefined)) {
+        const thrower = session.module.getCurrentPlayer(session.currentState)
+        const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
+        session.openVisitEvents = [
+          { kind: 'visit.opened', data: { visit_id: 'manual' } as any },
+          ...[0, 1, 2].map(index => ({
+            kind: 'dart.detected',
+            data: { visit_id: 'manual', index, dart: manualDart({ ...miss }), source_seq: 0 } as any,
+          } as BoardEvent)),
+        ]
+        session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 3
+        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
+      }
       if (session.openVisitEvents.length > 0) {
         const visitOwner = session.module.getCurrentPlayer(session.currentState)
         if (!inBullOff(session, session.currentState)) session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
@@ -221,6 +237,9 @@ export class SessionEngine {
     } else if (action.type === 'add_dart') {
       const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
       if (dartCount >= 3) return
+      // A finished visit (bust, checkout, win) takes no more darts
+      const now = session.module.view(session.currentState, session.players) as { visitLocked?: boolean; winner?: number | null }
+      if (now.visitLocked === true || (now.winner !== null && now.winner !== undefined)) return
       if (session.openVisitEvents.length === 0) {
         session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } as any })
       }

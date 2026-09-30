@@ -248,6 +248,66 @@ describe('onUserAction', () => {
     const bullOff = (engine.getSnapshot(sessionId)!.game as any).bullOff
     expect(bullOff.throws[0]).toEqual({ mm: 8.5, segment: '25', thetaDeg: expect.closeTo(53.13, 2), estimated: false })
   })
+  const T20 = { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 } as const
+  const S20 = { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 } as const
+  const x01Cfg = { ...x01Module.defaultConfig, startScore: 101 }
+
+  it('empty takeout records three misses and moves on', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01', x01Cfg, [{ name: 'A' }, { name: 'B' }])
+    await engine.onUserAction(sessionId, { type: 'takeout' })
+    const s = engine.getSession(sessionId)!
+    expect(s.totalVisits).toEqual([1, 0])
+    expect(s.totalDarts).toEqual([3, 0])
+    expect(engine.getSnapshot(sessionId)!.game.currentPlayer).toBe(1)
+  })
+
+  it('takeout after a bust records that visit, not misses', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 41 }, [{ name: 'A' }, { name: 'B' }])
+    await engine.onUserAction(sessionId, { type: 'add_dart', segment: T20 })
+    await engine.onUserAction(sessionId, { type: 'takeout' })
+    const s = engine.getSession(sessionId)!
+    expect(s.totalVisits).toEqual([1, 0])
+    expect(s.totalDarts).toEqual([1, 0])
+  })
+
+  it('a busted visit takes no more darts', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 41 }, [{ name: 'A' }, { name: 'B' }])
+    await engine.onUserAction(sessionId, { type: 'add_dart', segment: T20 })
+    await engine.onUserAction(sessionId, { type: 'add_dart', segment: S20 })
+    expect((engine.getSnapshot(sessionId)!.game.currentVisitDarts as unknown[]).length).toBe(1)
+    expect(engine.getSession(sessionId)!.totalDarts).toEqual([1, 0])
+  })
+
+  it('undo after a bust accepts darts again', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 41 }, [{ name: 'A' }, { name: 'B' }])
+    await engine.onUserAction(sessionId, { type: 'add_dart', segment: T20 })
+    await engine.onUserAction(sessionId, { type: 'undo_dart' })
+    await engine.onUserAction(sessionId, { type: 'add_dart', segment: S20 })
+    expect((engine.getSnapshot(sessionId)!.game.currentVisitDarts as unknown[]).length).toBe(1)
+    expect(engine.getSnapshot(sessionId)!.game.scores).toEqual([21, 41])
+  })
+
+  it('empty takeout is ignored during the bull off', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
+    await engine.onUserAction(sessionId, { type: 'takeout' })
+    const s = engine.getSession(sessionId)!
+    expect(s.totalVisits).toEqual([0, 0])
+    expect(engine.getSnapshot(sessionId)!.game.phase).toBe('bulloff')
+  })
+
+  it('empty takeout is ignored after a win', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 40, firstTo: 1 }, [{ name: 'A' }])
+    await engine.onUserAction(sessionId, { type: 'add_dart', segment: { name: 'D20', number: 20, bed: 'Double', multiplier: 2 } })
+    await engine.onUserAction(sessionId, { type: 'takeout' })
+    await engine.onUserAction(sessionId, { type: 'takeout' })
+    expect(engine.getSession(sessionId)!.totalVisits).toEqual([1])
+  })
 })
 
 describe('rebuild', () => {
