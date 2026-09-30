@@ -180,6 +180,11 @@
     sessionStore?.send({ type: 'add_dart', segment: seg })
   }
 
+  // Clicking the board keeps the exact spot, so the dart shows where it landed
+  function addBoardDart(hit: { segment: { name: string; number: number; bed: string; multiplier: number }; coords: { x: number; y: number } }) {
+    sessionStore?.send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
+  }
+
   function handleCorrect(dartIndex: number, label: string) {
     let segment: { name: string; number: number; bed: string; multiplier: number }
     if (label === 'Bull') {
@@ -198,6 +203,12 @@
       }
     }
     sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment })
+  }
+
+  // Any dart of the open visit can be dragged on the board to correct it
+  let correcting = $state<number | null>(null)
+  function moveDart(dartIndex: number, hit: { segment: { name: string; number: number; bed: string; multiplier: number }; coords: { x: number; y: number } }) {
+    sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment: hit.segment, coords: hit.coords })
   }
 
   function leaveSession() { push('/') }
@@ -268,8 +279,15 @@
           {#if viewMode === 'entry'}
             <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
           {:else}
-            <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
-              onSegmentClick={isActive ? addManualDart : undefined} />
+            <!-- The board takes the height the column has left (capped by its width),
+                 so the tiles, popover and buttons below always fit without a gap -->
+            <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
+              <div class="aspect-square" style="width: min(100cqw, 100cqh)">
+                <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
+                  onBoardClick={isActive ? addBoardDart : undefined}
+                  selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
+              </div>
+            </div>
             <div class="flex gap-5 text-[12px] text-text-dim justify-center">
               <span class="flex items-center gap-[6px]">
                 <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
@@ -284,7 +302,7 @@
             </div>
           {/if}
 
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo}
+          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
             ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
       </div>
@@ -315,9 +333,14 @@
               <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
             </div>
           {:else}
-            <div class="w-full" style="max-width: min(100%, calc(100vh - 340px))">
-              <DartBoard darts={currentDarts} selectedSegments={highlights}
-                onSegmentClick={isActive ? addManualDart : undefined} />
+            <!-- The board takes the height the column has left (capped by its width),
+                 so the tiles, popover and buttons below always fit without a gap -->
+            <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
+              <div class="aspect-square" style="width: min(100cqw, 100cqh)">
+                <DartBoard darts={currentDarts} selectedSegments={highlights}
+                  onBoardClick={isActive ? addBoardDart : undefined}
+                  selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
+              </div>
             </div>
           {/if}
 
@@ -339,7 +362,7 @@
             </div>
           {/if}
 
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo}
+          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
             ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
 

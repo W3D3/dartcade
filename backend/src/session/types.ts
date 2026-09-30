@@ -20,10 +20,12 @@ export type Player = { name: string }
 export type Effect = { type: 'board.reset' }
 
 export type UserAction =
-  | { type: 'correct_dart'; visitIndex: number; segment: Segment }
+  /** coords: the dart's new spot when it was dragged on the board. */
+  | { type: 'correct_dart'; visitIndex: number; segment: Segment; coords?: { x: number; y: number } }
   | { type: 'undo_dart' }
   | { type: 'takeout' }
-  | { type: 'add_dart'; segment: Segment }
+  /** coords: where the dart landed (r = 1 at the outer double wire), when entered on the board. */
+  | { type: 'add_dart'; segment: Segment; coords?: { x: number; y: number } }
   // Bull off (see withBullOff)
   | { type: 'bulloff_skip' }
   | { type: 'bulloff_rethrow' }

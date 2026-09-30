@@ -5,7 +5,7 @@
   type Segment = { name: string; number: number; bed: string; multiplier: number }
 
   let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [], onSegmentClick,
-        zoom = 1, overlay }: {
+        onBoardClick, selectedDart = null, onDartMove, zoom = 1, overlay }: {
     darts?: Array<{
       segment: { number: number; bed: string; multiplier: number; name: string }
       score: number
@@ -15,6 +15,13 @@
     playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
     checkoutTargets?: string[]
     onSegmentClick?: (seg: Segment) => void
+    /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
+     *  and the segment under it. Takes precedence over onSegmentClick. */
+    onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
+    /** Index into `darts` of the dart picked for correction; it is highlighted. */
+    selectedDart?: number | null
+    /** A dart was dragged to a new spot (any dart can be dragged while this is set). */
+    onDartMove?: (index: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** Magnification around the bull (1 = whole board); changes animate. */
     zoom?: number
     /** Extra marks drawn in board units (r = 1 at the outer double wire), zoomed with the board.
@@ -95,15 +102,88 @@
     return { x: r * Math.cos(a), y: -r * Math.sin(a) }
   }
 
+  /** The segment at a point in board units (y up), as Board Manager would name it. */
+  function segmentAt(x: number, y: number): Segment {
+    const r = Math.hypot(x, y)
+    if (r <= R.bull50) return { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }
+    if (r <= R.bull25) return { name: '25', number: 25, bed: 'Single', multiplier: 1 }
+    // Sector 0 (20) is centred on +y; sectors run clockwise
+    const cw = (Math.PI / 2 - Math.atan2(y, x) + 2 * Math.PI) % (2 * Math.PI)
+    const num = SEGS[Math.round(cw / (2 * HALF)) % 20]
+    // Just off the board: a near miss next to that number
+    if (r > R.db) return { name: `M${num}`, number: num, bed: 'Outside', multiplier: 0 }
+    const ring = r <= R.si ? 'si' : r <= R.tr ? 'tr' : r <= R.so ? 'so' : 'db'
+    const { bed, multiplier } = RING_BED[ring]
+    const name = multiplier === 3 ? `T${num}` : multiplier === 2 ? `D${num}` : `S${num}`
+    return { name, number: num, bed, multiplier }
+  }
+
+  let svgEl: SVGSVGElement
+
+  /** Pointer position in board units: zoom undone, y up like camera coords. */
+  function toBoard(e: MouseEvent): { x: number; y: number } | null {
+    const ctm = svgEl.getScreenCTM()
+    if (!ctm) return null
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
+    return { x: p.x / zoom, y: -p.y / zoom }
+  }
+
+  function boardClick(e: MouseEvent) {
+    // The click that ends a drag is not a new dart
+    if (!onBoardClick || justDragged) { justDragged = false; return }
+    const c = toBoard(e)
+    if (c) onBoardClick({ segment: segmentAt(c.x, c.y), coords: c })
+  }
+
+  // Dragging the selected dart: preview where it goes, report the drop
+  let drag = $state<{ index: number; from: { x: number; y: number }; at: { x: number; y: number } } | null>(null)
+  let justDragged = false
+  const canDrag = (_i: number) => !!onDartMove
+
+  function dragStart(e: PointerEvent, i: number) {
+    if (!canDrag(i)) return
+    const c = toBoard(e)
+    if (!c) return
+    e.preventDefault()
+    ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    drag = { index: i, from: c, at: c }
+  }
+  function dragMove(e: PointerEvent) {
+    if (!drag) return
+    const c = toBoard(e)
+    if (c) drag = { ...drag, at: c }
+  }
+  function dragEnd(e: PointerEvent) {
+    if (!drag) return
+    const { index, from } = drag
+    const c = toBoard(e) ?? drag.at
+    drag = null
+    // A tap without moving is an ordinary click (it may place a new dart)
+    if (Math.hypot(c.x - from.x, c.y - from.y) < 0.01) return
+    justDragged = true
+    setTimeout(() => { justDragged = false })
+    onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
+  }
+
   const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
   const DOT_STROKE = '#0f100e'
-  const interactive = $derived(!!onSegmentClick)
+  // Zoomed content is clipped to the board's round background
+  const uid = $props.id()
+  const clipId = `board-clip-${uid}`
+
+  const precise = $derived(!!onBoardClick)
+  const interactive = $derived(!precise && !!onSegmentClick)
+  // Either way, light up the segment under the cursor
+  const hoverable = $derived(interactive || precise)
 </script>
 
-<svg viewBox="-1.15 -1.15 2.3 2.3" class="w-full {interactive ? 'cursor-crosshair' : ''}"
-  xmlns="http://www.w3.org/2000/svg">
+<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+<svg bind:this={svgEl} viewBox="-1.15 -1.15 2.3 2.3" class="w-full {hoverable ? 'cursor-crosshair' : ''}"
+  xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}>
+  <defs><clipPath id={clipId}><circle cx="0" cy="0" r="1.12" /></clipPath></defs>
   <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
 
+  <g clip-path="url(#{clipId})">
   <g style="transform: scale({zoom}); transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
   <!-- Sector fills and wire dividers -->
   {#each sectors as { num, i, paths, wa }}
@@ -111,7 +191,7 @@
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" vector-effect="non-scaling-stroke"
         onclick={interactive ? () => clickSegment(num, ring) : undefined}
-        class={interactive ? 'hover:brightness-125' : ''} />
+        class={hoverable ? 'hover:brightness-125' : ''} />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
@@ -129,11 +209,11 @@
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: '25', number: 25, bed: 'Single', multiplier: 1 }) : undefined}
-    class={interactive ? 'hover:brightness-125' : ''} />
+    class={hoverable ? 'hover:brightness-125' : ''} />
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }) : undefined}
-    class={interactive ? 'hover:brightness-125' : ''} />
+    class={hoverable ? 'hover:brightness-125' : ''} />
 
   <!-- Selected segment: lime wedge overlay -->
   {#each sectors as { num, a1, a2 }}
@@ -185,16 +265,28 @@
 
   <!-- Darts -->
   {#each darts as dart, i}
-    {@const pos = dartPos(dart)}
+    {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
+    {@const selected = selectedDart === i}
     {#if pos}
-      <circle cx={pos.x} cy={-pos.y} r="0.04"
-        fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008"
-        style="pointer-events:none" />
-      <text x={pos.x + 0.05} y={-pos.y} dominant-baseline="central"
-        fill="#ffe066" font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold"
-        style="pointer-events:none">
-        {dart.segment.name}
-      </text>
+      <!-- The segment label only shows while the dart is hovered, selected or dragged -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <g class="group {canDrag(i) ? (drag ? 'cursor-grabbing' : 'cursor-grab') : ''}"
+        style="touch-action:none"
+        onpointerdown={e => dragStart(e, i)} onpointermove={dragMove}
+        onpointerup={dragEnd} onpointercancel={() => drag = null}>
+        {#if selected}
+          <circle cx={pos.x} cy={-pos.y} r="0.075" fill="#c6f24e" fill-opacity="0.18"
+            stroke="#c6f24e" stroke-width="0.012" stroke-dasharray="0.02 0.015" />
+        {/if}
+        <circle cx={pos.x} cy={-pos.y} r={selected ? 0.05 : 0.04}
+          fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008" />
+        <text x={pos.x + 0.06} y={-pos.y} dominant-baseline="central"
+          fill="#ffffff" stroke="#000000" stroke-width="0.016" stroke-linejoin="round" paint-order="stroke"
+          font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold"
+          class="{selected ? '' : 'opacity-0'} group-hover:opacity-100 transition-opacity" style="pointer-events:none">
+          {drag?.index === i ? segmentAt(drag.at.x, drag.at.y).name : dart.segment.name}
+        </text>
+      </g>
     {:else}
       <text x={-0.15 + i * 0.14} y="1.05" text-anchor="middle" dominant-baseline="central"
         fill="#c6f24e" font-size="0.1" font-family="Barlow Condensed, sans-serif"
@@ -214,5 +306,6 @@
 
   <!-- Overlay marks are informational: clicks go through to the segments -->
   <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
+  </g>
   </g>
 </svg>
