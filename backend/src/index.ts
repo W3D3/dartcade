@@ -1,20 +1,11 @@
-import Fastify from 'fastify'
-import fastifyWebsocket from '@fastify/websocket'
-import fastifyStatic from '@fastify/static'
-import rateLimit from '@fastify/rate-limit'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
-import { toNodeHandler } from 'better-auth/node'
 import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
-import { bridgeGwPlugin } from './bridge-gw/handler.js'
-import { browserGwPlugin, pushSnapshot } from './browser-gw/handler.js'
-import { sessionsApiPlugin } from './api/sessions.js'
-import { boardsApiPlugin } from './api/boards.js'
-import { pairingApiPlugin } from './api/pairing.js'
-import { auth } from './auth/index.js'
+import { pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
+import { buildApp } from './app.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -35,36 +26,5 @@ const push = (sessionId: string) => pushSnapshot(sessionId, engine)
 engine = new SessionEngine(createEngineStore(db), push)
 await engine.rebuild()
 
-const app = Fastify({ logger: true })
-await app.register(fastifyWebsocket)
-await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
-
-app.all('/api/auth/*', async (req, reply) => {
-  // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
-  if (req.body !== undefined) (req.raw as any).body = req.body
-  toNodeHandler(auth)(req.raw, reply.raw)
-  return reply.hijack()
-})
-
-const frontendDist = join(__dirname, '../../frontend/dist')
-try {
-  await app.register(fastifyStatic, { root: frontendDist, wildcard: false })
-} catch { /* not built yet */ }
-
-await app.register(bridgeGwPlugin, { engine, db })
-await app.register(browserGwPlugin, { engine })
-await app.register(sessionsApiPlugin, { engine, db })
-await app.register(boardsApiPlugin, { db })
-await app.register(pairingApiPlugin, { db })
-
-app.get('*', async (req, reply) => {
-  if (
-    req.url.startsWith('/api') ||
-    req.url.startsWith('/ws') ||
-    req.url.startsWith('/bridge')
-  ) return reply.code(404).send({ error: 'not found' })
-  try { return reply.sendFile('index.html') }
-  catch { return reply.code(404).send({ error: 'not found' }) }
-})
-
+const app = await buildApp({ engine, db, frontendDist: join(__dirname, '../../frontend/dist') })
 await app.listen({ port: PORT, host: '0.0.0.0' })
