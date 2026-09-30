@@ -1,5 +1,6 @@
 import type { GameModule, BoardEvent, Player, Dart, DartDetectedData, ConfigFieldMeta } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
+import type { X01View } from '../session/views.js'
 
 export type X01Config = {
   startScore: 301 | 501 | 701
@@ -226,7 +227,7 @@ export const x01Game: GameModule<X01State, X01Config> = {
     return { state: s }
   },
 
-  view(s: X01State, _players: Player[]) {
+  view(s: X01State, _players: Player[]): X01View {
     return {
       scores: s.scores, legs: s.legs, firstTo: s.cfg.firstTo,
       currentPlayer: s.currentPlayer, round: s.round, phase: s.phase,

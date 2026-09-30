@@ -7,28 +7,21 @@
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
-
-  type Board = {
-    id: string; name: string; online: boolean; ip?: string | null
-    bridgeVersion?: string | null; totalGames?: number; latencyMs?: number
-    createdAt?: string | null; bmUrl?: string | null
-  }
-  type BmStatus = { status: string; running: boolean } | null
+  import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
 
   let boards = $state<Board[]>([])
   let selectedId = $state<string | null>(null)
   let selected = $derived(boards.find(b => b.id === selectedId) ?? null)
   let cameraTs = $state(Date.now())
   let cameraInterval: ReturnType<typeof setInterval> | null = null
-  let bmStatus = $state<BmStatus>(null)
+  let bmStatus = $state<BoardStatus | null>(null)
   let bmStatusInterval: ReturnType<typeof setInterval> | null = null
   let busy = $state<string | null>(null)
 
   async function loadBmStatus(boardId: string) {
     try {
-      const res = await fetch(`/api/boards/${boardId}/status`)
-      if (!res.ok) { bmStatus = null; return }
-      bmStatus = await res.json()
+      const { data } = await api.GET('/api/boards/{id}/status', { params: { path: { id: boardId } } })
+      bmStatus = data ?? null
     } catch { bmStatus = null }
   }
 
@@ -48,10 +41,10 @@
     else stopStatusPoll()
   })
 
-  async function runAction(action: string) {
+  async function runAction(action: BoardAction) {
     if (!selected) return
     busy = action
-    try { await fetch(`/api/boards/${selected.id}/${action}`, { method: 'POST' }) }
+    try { await runBoardAction(selected.id, action) }
     catch { /* ignore */ }
     finally {
       busy = null
@@ -60,18 +53,14 @@
   }
 
   // Live event feed (recent bridge events, polled)
-  type Segment = { name: string; multiplier: number }
-  type BoardEvent = { at: string; kind: string; data: { dart?: { segment?: Segment; score?: number } } }
   let events = $state<BoardEvent[]>([])
   let eventsInterval: ReturnType<typeof setInterval> | null = null
   let eventsEl = $state<HTMLDivElement | null>(null)
 
   async function loadEvents(boardId: string) {
     try {
-      const res = await fetch(`/api/boards/${boardId}/events`)
-      if (!res.ok) return
-      const d = await res.json()
-      if (boardId === selectedId) events = d.events ?? []
+      const { data } = await api.GET('/api/boards/{id}/events', { params: { path: { id: boardId } } })
+      if (data && boardId === selectedId) events = data.events
     } catch { /* keep last known feed */ }
   }
 
@@ -128,10 +117,8 @@
     const name = draftName.trim()
     if (!name || name === selected.name) return
     const id = selected.id
-    const res = await fetch(`/api/boards/${id}`, {
-      method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name }),
-    }).catch(() => null)
-    if (res?.ok) boards = boards.map(b => b.id === id ? { ...b, name } : b)
+    const { error } = await api.PATCH('/api/boards/{id}', { params: { path: { id } }, body: { name } }).catch(() => ({ error: true }))
+    if (!error) boards = boards.map(b => b.id === id ? { ...b, name } : b)
   }
   $effect(() => { selectedId; editing = false })
 
@@ -143,9 +130,9 @@
     confirmUnpair = false
     if (!selected) return
     const id = selected.id
-    const res = await fetch(`/api/boards/${id}`, { method: 'DELETE' }).catch(() => null)
-    if (!res?.ok) {
-      unpairError = res?.status === 409 ? 'Board has an active session' : 'Could not unpair board'
+    const res = await api.DELETE('/api/boards/{id}', { params: { path: { id } } }).catch(() => null)
+    if (!res || res.error) {
+      unpairError = res?.response.status === 409 ? 'Board has an active session' : 'Could not unpair board'
       return
     }
     boards = boards.filter(b => b.id !== id)
@@ -163,8 +150,8 @@
     // The board is already paired server-side; refresh the list, but still
     // surface success even if the refetch fails (e.g. session expired).
     try {
-      const d = await fetch('/api/boards').then(r => r.json())
-      boards = d.boards ?? []
+      const { data } = await api.GET('/api/boards')
+      boards = data?.boards ?? []
       selectedId = info.boardId
     } catch { /* keep the current list; the toast still confirms the pair */ }
     justPairedId = info.boardId
@@ -176,10 +163,9 @@
   }
 
   onMount(async () => {
-    const res = await fetch('/api/boards')
-    if (res.status === 401) { push('/login'); return }
-    const d = await res.json()
-    boards = d.boards ?? []
+    const { data } = await api.GET('/api/boards')
+    if (!data) return   // 401 is redirected to login by the client
+    boards = data.boards
     if (boards.length) selectedId = boards[0].id
     cameraInterval = setInterval(() => { cameraTs = Date.now() }, 1000)
   })
@@ -222,7 +208,7 @@
   const listening = $derived(selected?.online && isRunning)
 </script>
 
-{#snippet control(action: string, label: string, blocked: boolean, icon: import('svelte').Snippet)}
+{#snippet control(action: BoardAction, label: string, blocked: boolean, icon: import('svelte').Snippet)}
   <button type="button"
     onclick={() => runAction(action)}
     disabled={busy !== null || blocked}
@@ -322,12 +308,7 @@
                 {/if}
               {/if}
               {#if !justPaired}
-                <!-- [PLACEHOLDER] latency from API -->
-                {#if board.latencyMs != null}
-                  <span class="font-mono text-[12px] text-text-dim">{board.latencyMs} ms</span>
-                {:else}
-                  <Badge variant="soon">Latency · soon</Badge>
-                {/if}
+                <Badge variant="soon">Latency · soon</Badge>
               {/if}
             </div>
 
@@ -345,7 +326,7 @@
               </div>
               <div>
                 <dt class="text-[12px] text-text-dim">Games</dt>
-                <dd class="mt-1 m-0 text-[15px] font-semibold">{board.totalGames ?? '—'}</dd>
+                <dd class="mt-1 m-0 text-[15px] font-semibold">—</dd>
               </div>
             </dl>
           </button>
@@ -456,11 +437,7 @@
             <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
               <dt class="text-text-muted">Latency</dt>
               <dd class="m-0">
-                {#if selected.latencyMs != null}
-                  {selected.latencyMs} ms
-                {:else}
-                  <Badge variant="soon">Soon</Badge>
-                {/if}
+                <Badge variant="soon">Soon</Badge>
               </dd>
             </div>
             <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">

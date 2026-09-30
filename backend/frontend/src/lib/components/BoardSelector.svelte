@@ -1,5 +1,5 @@
 <script lang="ts">
-  type Board = { id: string; name: string; online: boolean }
+  import type { Board } from '$lib/api'
 
   let { boards, value = $bindable('') }: { boards: Board[]; value: string } = $props()
 

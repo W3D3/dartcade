@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import Fastify from 'fastify'
+import rateLimit from '@fastify/rate-limit'
+import { createFastify } from './fastify.js'
 import { sessionsApiPlugin } from './sessions.js'
 import { ActiveSessionError } from '../session/engine.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: async (req: any, _reply: any) => { req.userId = 'user-1' },
+  requireAuth: vi.fn(async (req: any, _reply: any) => { req.userId = 'user-1' }),
 }))
 vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' }),
@@ -12,6 +13,7 @@ vi.mock('../db/queries.js', () => ({
 }))
 
 import * as queries from '../db/queries.js'
+import * as middleware from '../auth/middleware.js'
 
 function makeApp() {
   const engine = {
@@ -21,7 +23,7 @@ function makeApp() {
     getSnapshot: vi.fn().mockReturnValue(undefined),
     deleteSession: vi.fn().mockResolvedValue(true),
   } as any
-  const app = Fastify()
+  const app = createFastify()
   app.register(sessionsApiPlugin, { engine, db: {} as any })
   return { app, engine }
 }
@@ -34,6 +36,26 @@ describe('GET /health', () => {
     const res = await app.inject({ method: 'GET', url: '/health' })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body).ok).toBe(true)
+  })
+
+  it('answers a 429 over the rate limit with an ErrorResponse body', async () => {
+    const engine = {
+      create: vi.fn().mockResolvedValue({ sessionId: 'sess-1' }),
+      getSession: vi.fn().mockReturnValue(undefined),
+      getAllSessions: vi.fn().mockReturnValue([]),
+      getSnapshot: vi.fn().mockReturnValue(undefined),
+      deleteSession: vi.fn().mockResolvedValue(true),
+    } as any
+    const app = createFastify()
+    await app.register(rateLimit, { max: 1, timeWindow: '1 minute' })
+    app.register(sessionsApiPlugin, { engine, db: {} as any })
+
+    const first = await app.inject({ method: 'GET', url: '/health' })
+    expect(first.statusCode).toBe(200)
+
+    const second = await app.inject({ method: 'GET', url: '/health' })
+    expect(second.statusCode).toBe(429)
+    expect(JSON.parse(second.body)).toEqual({ error: expect.any(String) })
   })
 })
 
@@ -160,5 +182,23 @@ describe('session ownership', () => {
     expect((await app.inject({ method: 'GET', url: '/api/sessions/theirs' })).statusCode).toBe(403)
     expect((await app.inject({ method: 'DELETE', url: '/api/sessions/theirs' })).statusCode).toBe(403)
     expect(engine.deleteSession).not.toHaveBeenCalled()
+  })
+})
+
+describe('sessions: spec enforcement', () => {
+  it('checks auth before the body: signed-out + invalid body is 401, not 400', async () => {
+    vi.mocked(middleware.requireAuth).mockImplementationOnce(async (_req: any, reply: any) => {
+      reply.code(401).send({ error: 'unauthorized' })
+    })
+    const { app } = makeApp()
+    const res = await app.inject({ method: 'POST', url: '/api/sessions', payload: { nope: 1 } })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('rejects a session without players with 400', async () => {
+    const { app } = makeApp()
+    const res = await app.inject({ method: 'POST', url: '/api/sessions',
+      payload: { boardId: null, gameId: 'atc', config: {}, players: [] } })
+    expect(res.statusCode).toBe(400)
   })
 })

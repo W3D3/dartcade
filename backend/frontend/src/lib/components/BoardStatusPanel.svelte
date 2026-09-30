@@ -1,10 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { api, runBoardAction, type Board, type BoardAction } from '$lib/api'
+  import type { Snapshot } from '$lib/api'
 
-  type Board = { id: string; name: string; online: boolean }
-  type BmStatus = { status: string; running: boolean; event: string } | null
-
-  let { sessionId, bmStatus }: { sessionId: string; bmStatus: BmStatus } = $props()
+  let { sessionId, bmStatus }: { sessionId: string; bmStatus: Snapshot['bmStatus'] } = $props()
 
   let open = $state(false)
   let board = $state<Board | null>(null)
@@ -14,19 +13,18 @@
     if (!sessionId) return
     try {
       const [sr, br] = await Promise.all([
-        fetch(`/api/sessions/${sessionId}`),
-        fetch('/api/boards'),
+        api.GET('/api/sessions/{id}', { params: { path: { id: sessionId } } }),
+        api.GET('/api/boards'),
       ])
-      if (!sr.ok || !br.ok) return
-      const [sd, bd] = await Promise.all([sr.json(), br.json()])
-      const boardId = sd.boardId
-      board = (bd.boards ?? []).find((b: Board) => b.id === boardId) ?? null
+      board = br.data?.boards.find(b => b.id === sr.data?.boardId) ?? null
     } catch { /* ignore */ }
   }
 
-  async function runAction(name: string, endpoint: string) {
+  // Board Manager commands for this session's board
+  async function runAction(name: string, action: BoardAction) {
+    if (!board) return
     busy = name
-    try { await fetch(`/api/board/${endpoint}`, { method: 'POST' }) }
+    try { await runBoardAction(board.id, action) }
     catch { /* ignore */ }
     finally { busy = null }
   }

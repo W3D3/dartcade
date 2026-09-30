@@ -8,8 +8,7 @@
     "skipLibCheck": true,
     "paths": {
       "$lib": ["./src/lib"],
-      "$lib/*": ["./src/lib/*"],
-      "$shared/*": ["../src/shared/*"]
+      "$lib/*": ["./src/lib/*"]
     }
   },
   "include": ["src/**/*", "*.ts"]

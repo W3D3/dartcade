@@ -1,0 +1,8 @@
+# Generates the client for the backend operations the bridge uses (tag: bridge in schema/api-v1.yaml).
+package: api
+output: api.gen.go
+generate:
+  models: true
+  client: true
+output-options:
+  include-tags: [bridge]

@@ -1,0 +1,12 @@
+# Lint rules for schema/api-v1.yaml (npm run lint:api)
+extends:
+  - recommended
+rules:
+  operation-operationId: error
+  operation-summary: error
+  operation-tag-defined: error
+  operation-4xx-response: error
+  security-defined: error
+  # The API is served from the same origin as the frontend, so the server URL is "/"
+  no-server-trailing-slash: off
+  info-license-url: off

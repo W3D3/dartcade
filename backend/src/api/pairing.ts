@@ -11,6 +11,8 @@ import {
   consumePairingToken,
   insertBoard,
 } from '../db/queries.js'
+import { fromSpec } from './spec.js'
+import type { Route } from './route.js'
 
 const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_TTL_MS = 10 * 60 * 1000
@@ -31,8 +33,9 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
   const { db } = opts
 
-  app.post('/api/pairing/request', {
+  app.post<Route<'requestPairing'>>('/api/pairing/request', {
     config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    schema: fromSpec('requestPairing'),
   }, async (_req, reply) => {
     const code = generateCode()
     const expiresAt = new Date(Date.now() + CODE_TTL_MS)
@@ -40,13 +43,14 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
     return reply.code(201).send({ code, expiresAt: expiresAt.toISOString() })
   })
 
-  app.get('/api/pairing/:code/token', {
+  app.get<Route<'getPairingToken'>>('/api/pairing/:code/token', {
     // A paired bridge polls this every 2s (~30/min), so the cap has to sit
     // above that. Brute-forcing is still futile: the code space is 32^8 and
     // the token is consumed on first delivery.
     config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+    schema: fromSpec('getPairingToken'),
   }, async (req, reply) => {
-    const { code } = req.params as { code: string }
+    const { code } = req.params
     const row = await getPairingCode(db, normalizeCode(code))
 
     if (!row) return reply.code(404).send({ error: 'not found' })
@@ -65,11 +69,9 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
     return reply.send({ status: 'consumed' })
   })
 
-  app.post('/api/pairing/claim', { preHandler: requireAuth }, async (req, reply) => {
-    const { code, name } = req.body as { code?: string; name?: string }
-    if (!code?.trim() || !name?.trim()) {
-      return reply.code(400).send({ error: 'code and name required' })
-    }
+  app.post<Route<'claimPairing'>>('/api/pairing/claim', { preValidation: requireAuth, schema: fromSpec('claimPairing') }, async (req, reply) => {
+    const code = req.body.code
+    const name = req.body.name.trim()
     const row = await getPairingCode(db, normalizeCode(code))
     if (!row) return reply.code(404).send({ error: 'not found' })
     if (row.expires_at < new Date()) return reply.code(410).send({ error: 'expired' })
@@ -81,7 +83,7 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
 
     try {
       await db.transaction().execute(async (trx) => {
-        await insertBoard(trx, { id: boardId, owner_user_id: req.userId, name: name.trim(), token_hash: tokenHash })
+        await insertBoard(trx, { id: boardId, owner_user_id: req.userId, name, token_hash: tokenHash })
         await claimPairingCode(trx, { code: row.code, rawToken, boardId })
       })
     } catch (err) {
@@ -91,6 +93,6 @@ export async function pairingApiPlugin(app: FastifyInstance, opts: Opts): Promis
       throw err
     }
 
-    return reply.code(201).send({ boardId, name: name.trim() })
+    return reply.code(201).send({ boardId, name })
   })
 }

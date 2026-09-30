@@ -9,6 +9,7 @@ import type {
   BoardResyncData,
   BoardStatusData,
 } from '../schema/types.js'
+import type { UserAction } from '../schema/game-ws.js'
 
 // Aliases for shorter names throughout the backend
 export type Dart = ADetectedDart
@@ -19,17 +20,8 @@ export type Player = { name: string }
 
 export type Effect = { type: 'board.reset' }
 
-export type UserAction =
-  /** coords: the dart's new spot when it was dragged on the board. */
-  | { type: 'correct_dart'; visitIndex: number; segment: Segment; coords?: { x: number; y: number } }
-  | { type: 'undo_dart' }
-  | { type: 'takeout' }
-  /** coords: where the dart landed (r = 1 at the outer double wire), when entered on the board. */
-  | { type: 'add_dart'; segment: Segment; coords?: { x: number; y: number } }
-  // Bull off (see withBullOff)
-  | { type: 'bulloff_skip' }
-  | { type: 'bulloff_rethrow' }
-  | { type: 'bulloff_start' }
+export type { Snapshot } from '../schema/game-ws.js'
+export type { UserAction }
 
 export type BoardEvent =
   | { kind: 'visit.opened';     data: VisitOpenedData }
@@ -74,15 +66,5 @@ export interface Session<S = unknown> {
   createdAt: Date
   totalDarts: number[]
   totalVisits: number[]
-  bmStatus: { status: string; running: boolean; event: string } | null
-}
-
-export type Snapshot = {
-  type: 'snapshot'
-  sessionId: string
-  gameId: string
-  boardId: string | null
-  players: Player[]
-  game: Record<string, unknown>
   bmStatus: { status: string; running: boolean; event: string } | null
 }

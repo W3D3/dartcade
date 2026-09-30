@@ -10,8 +10,10 @@
     "typecheck": "tsc --noEmit && svelte-check --tsconfig ./tsconfig.json"
   },
   "dependencies": {
+    "better-auth": "1.7.6",
     "clsx": "^2.1.1",
     "flowbite-svelte": "^0.46.0",
+    "openapi-fetch": "0.17.0",
     "svelte": "^5.0.0",
     "svelte-spa-router": "^4.0.1",
     "tailwind-merge": "^3.7.0"

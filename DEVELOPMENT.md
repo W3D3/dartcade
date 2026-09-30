@@ -6,6 +6,8 @@
 - **Node 22 LTS** (`nvm install 22`) — for running backend tests locally
 - **Go 1.23+** — for working on the bridge outside Docker
 
+Run npm through mise's pinned Node 22 (`mise exec -- npm …`), not a newer system Node — npm 11 rewrites `package-lock.json` in a way `npm ci` on npm 10/Node 22 (and CI) rejects.
+
 ## Repository layout
 
 ```
@@ -16,7 +18,8 @@ backend/              Node/TS Fastify server + Svelte SPA
   docker-compose.yaml production compose (backend + postgres)
 bridge/               Go binary that talks to Board Manager
   Dockerfile          bridge image (used by dev compose)
-schema/               adbridge/v1 JSON Schema + generated TS types
+schema/               HTTP (api-v1.yaml) and game WebSocket (game-ws-v1.json) contracts,
+                      adbridge/v1 JSON Schema, shared defs + generated TS/Go types
 docker-compose.dev.yaml  dev compose (postgres + backend + frontend + bridge)
 .env.example          env var template
 ```
@@ -88,12 +91,21 @@ go test ./...
 go run ./cmd/bridge --help
 ```
 
-## Regenerate TS types from the schema
+## Regenerate types and clients from the schema
+
+`schema/` holds the hand-written contracts: the adbridge/v1 JSON Schema (bridge↔Board Manager),
+the HTTP API (`api-v1.yaml`, OpenAPI 3.0.3) and the game WebSocket (`game-ws-v1.json`), plus
+shared defs in `common-v1.json`. Generated files are committed and never hand-edited.
 
 ```bash
-cd backend
-npm run gen:types   # writes backend/src/schema/types.ts
+npm ci             # repo root — installs the codegen tools
+npm run gen:api     # regenerates HTTP/WS types (backend + frontend) and the bridge's Go client
+npm run lint:api    # validates schema/api-v1.yaml
+cd backend && npm run gen:types   # regenerates adbridge/v1 TS types (backend/src/schema/types.ts)
 ```
+
+`mise run gen:api` / `mise run gen:types` run the same from either directory. Once the backend is
+running, `/api/docs` serves a Swagger UI for both our API and better-auth's.
 
 ## Production build
 

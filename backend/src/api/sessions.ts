@@ -6,6 +6,8 @@ import { ActiveSessionError, type SessionEngine } from '../session/engine.js'
 import type { Session } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
 import { getBoardById } from '../db/queries.js'
+import { fromSpec } from './spec.js'
+import type { Route } from './route.js'
 
 type Opts = FastifyPluginOptions & { engine: SessionEngine; db: Kysely<Database> }
 
@@ -14,22 +16,27 @@ export function canAccessSession(userId: string, session: Session): boolean {
   return session.ownerUserId === userId
 }
 
+const summary = (s: Session) => ({
+  id: s.id, boardId: s.boardId, gameId: s.module.id,
+  status: s.status, players: s.players, createdAt: s.createdAt.toISOString(),
+})
+
 export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
   const { engine, db } = opts
 
-  app.get('/health', async () => ({ ok: true }))
+  app.get<Route<'health'>>('/health', { schema: fromSpec('health') }, async () => ({ ok: true }))
 
-  app.get('/api/games', async () => ({
+  app.get<Route<'listGames'>>('/api/games', { schema: fromSpec('listGames') }, async () => ({
     games: Object.values(games).map(m => ({
       id: m.id,
-      defaultConfig: m.defaultConfig,
+      defaultConfig: m.defaultConfig as Record<string, unknown>,
       configMeta: m.configMeta ?? {},
     })),
   }))
 
-  app.post('/api/sessions', { preHandler: requireAuth }, async (req, reply) => {
-    const { boardId, gameId, config, players } = req.body as any
-    const resolvedBoardId: string | null = boardId || null
+  app.post<Route<'createSession'>>('/api/sessions', { preValidation: requireAuth, schema: fromSpec('createSession') }, async (req, reply) => {
+    const { boardId, gameId, config, players } = req.body
+    const resolvedBoardId = boardId || null
     if (resolvedBoardId) {
       const board = await getBoardById(db, resolvedBoardId)
       if (!board) return reply.code(400).send({ error: 'board not found' })
@@ -48,40 +55,27 @@ export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promi
       if (err.message?.includes('unknown game')) return reply.code(400).send({ error: err.message })
       if (err.message?.startsWith('invalid config')) return reply.code(400).send({ error: err.message })
       if (err.message?.includes('active session')) return reply.code(409).send({ error: err.message })
-      return reply.code(500).send({ error: 'internal error' })
+      throw err
     }
   })
 
-  app.get('/api/sessions', { preHandler: requireAuth }, async (req) => {
-    return {
-      sessions: engine.getAllSessions()
-        .filter(s => canAccessSession(req.userId, s))
-        .map(s => ({
-          id: s.id, boardId: s.boardId, gameId: s.module.id,
-          status: s.status, players: s.players, createdAt: s.createdAt,
-        })),
-    }
-  })
+  app.get<Route<'listSessions'>>('/api/sessions', { preValidation: requireAuth, schema: fromSpec('listSessions') }, async (req) => ({
+    sessions: engine.getAllSessions().filter(s => canAccessSession(req.userId, s)).map(summary),
+  }))
 
-  app.get('/api/sessions/:id', { preHandler: requireAuth }, async (req, reply) => {
-    const { id } = req.params as any
-    const session = engine.getSession(id)
+  app.get<Route<'getSession'>>('/api/sessions/:id', { preValidation: requireAuth, schema: fromSpec('getSession') }, async (req, reply) => {
+    const session = engine.getSession(req.params.id)
     if (!session) return reply.code(404).send({ error: 'not found' })
     if (!canAccessSession(req.userId, session)) return reply.code(403).send({ error: 'forbidden' })
-    const snap = engine.getSnapshot(id)
-    return {
-      id: session.id, boardId: session.boardId, gameId: session.module.id,
-      status: session.status, players: session.players, createdAt: session.createdAt,
-      game: snap?.game ?? null,
-    }
+    const snap = engine.getSnapshot(session.id)
+    return reply.send({ ...summary(session), game: (snap?.game ?? null) as Record<string, unknown> | null })
   })
 
-  app.delete('/api/sessions/:id', { preHandler: requireAuth }, async (req, reply) => {
-    const { id } = req.params as any
-    const session = engine.getSession(id)
+  app.delete<Route<'deleteSession'>>('/api/sessions/:id', { preValidation: requireAuth, schema: fromSpec('deleteSession') }, async (req, reply) => {
+    const session = engine.getSession(req.params.id)
     if (!session) return reply.code(404).send({ error: 'not found' })
     if (!canAccessSession(req.userId, session)) return reply.code(403).send({ error: 'forbidden' })
-    await engine.deleteSession(id)
+    await engine.deleteSession(session.id)
     return reply.code(204).send()
   })
 }

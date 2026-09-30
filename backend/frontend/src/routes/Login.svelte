@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
+  import { authClient } from '$lib/auth'
 
   let email = $state('')
   let password = $state('')
@@ -17,14 +18,9 @@
     loading = true
     error = ''
     try {
-      const res = await fetch('/api/auth/sign-in/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}))
-        error = d.message ?? 'Invalid credentials'
+      const { error: err } = await authClient.signIn.email({ email, password })
+      if (err) {
+        error = err.message ?? 'Invalid credentials'
         return
       }
       push('/')

@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
+  import { authClient } from '$lib/auth'
 
   let name = $state('')
   let email = $state('')
@@ -28,14 +29,9 @@
     if (!acceptTerms) { error = 'Please accept the terms'; return }
     loading = true; error = ''
     try {
-      const res = await fetch('/api/auth/sign-up/email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email, password }),
-      })
-      if (!res.ok) {
-        const d = await res.json().catch(() => ({}))
-        error = d.message ?? 'Registration failed'
+      const { error: err } = await authClient.signUp.email({ name, email, password })
+      if (err) {
+        error = err.message ?? 'Registration failed'
         return
       }
       push('/')

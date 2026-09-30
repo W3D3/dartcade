@@ -1,22 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
+  import { api, type SessionSummary } from '$lib/api'
 
-  type ActiveSession = {
-    id: string
-    gameId: string
-    players: { name: string }[]
-  }
-
-  let session = $state<ActiveSession | null>(null)
+  let session = $state<SessionSummary | null>(null)
 
   onMount(async () => {
     try {
-      const res = await fetch('/api/sessions')
-      if (!res.ok) return
-      const d = await res.json()
-      const active = (d.sessions ?? []).find((s: any) => s.status === 'active')
-      session = active ?? null
+      const { data } = await api.GET('/api/sessions')
+      session = data?.sessions.find(s => s.status === 'active') ?? null
     } catch { /* ignore */ }
   })
 

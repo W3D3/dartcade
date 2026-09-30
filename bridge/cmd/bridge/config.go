@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -17,6 +16,8 @@ import (
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
 	"github.com/oklog/ulid/v2"
+
+	"dartcade/bridge/internal/api"
 )
 
 // Config holds the bridge runtime configuration.
@@ -173,31 +174,21 @@ func runPairing(ctx context.Context, cfg Config, con *console) (string, error) {
 // claimed, the code expires, or the context is cancelled. It returns the code
 // it displayed so the caller can report an expiry.
 func runPairingOnce(ctx context.Context, httpBase string, con *console) (token string, code string, err error) {
-	pairReq, err := http.NewRequestWithContext(ctx, "POST", httpBase+"/api/pairing/request", strings.NewReader("{}"))
+	client, err := api.NewClientWithResponses(httpBase)
+	if err != nil {
+		return "", "", fmt.Errorf("pairing client: %w", err)
+	}
+	pairResp, err := client.RequestPairingWithResponse(ctx)
 	if err != nil {
 		return "", "", fmt.Errorf("pairing request: %w", err)
 	}
-	pairReq.Header.Set("Content-Type", "application/json")
-	resp, err := http.DefaultClient.Do(pairReq)
-	if err != nil {
-		return "", "", fmt.Errorf("pairing request: %w", err)
+	if pairResp.JSON201 == nil {
+		return "", "", fmt.Errorf("pairing request: unexpected status %d", pairResp.StatusCode())
 	}
-	defer resp.Body.Close()
+	code = pairResp.JSON201.Code
+	expiresAt := pairResp.JSON201.ExpiresAt
 
-	var pairResp struct {
-		Code      string `json:"code"`
-		ExpiresAt string `json:"expiresAt"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&pairResp); err != nil {
-		return "", "", fmt.Errorf("pairing request decode: %w", err)
-	}
-
-	expiresAt, err := time.Parse(time.RFC3339, pairResp.ExpiresAt)
-	if err != nil {
-		return "", "", fmt.Errorf("pairing expiry parse: %w", err)
-	}
-
-	con.pairPrompt(pairResp.Code)
+	con.pairPrompt(code)
 	con.waiting(time.Until(expiresAt))
 
 	display := time.NewTicker(1 * time.Second)
@@ -211,61 +202,53 @@ func runPairingOnce(ctx context.Context, httpBase string, con *console) (token s
 		select {
 		case <-ctx.Done():
 			con.clearWaiting()
-			return "", pairResp.Code, ctx.Err()
+			return "", code, ctx.Err()
 		case <-deadline.C:
 			// The code may have been claimed in its final moments; check once
 			// more before giving up (a claimed code delivers its token even
 			// after it expires).
-			if tok, done, err := pollPairingToken(ctx, httpBase, pairResp.Code); err == nil && done {
+			if tok, done, err := pollPairingToken(ctx, client, code); err == nil && done {
 				con.clearWaiting()
-				return tok, pairResp.Code, nil
+				return tok, code, nil
 			}
 			con.clearWaiting()
-			return "", pairResp.Code, fmt.Errorf("pairing code %s expired", pairResp.Code)
+			return "", code, fmt.Errorf("pairing code %s expired", code)
 		case <-display.C:
 			con.waiting(time.Until(expiresAt))
 		case <-poll.C:
-			tok, done, err := pollPairingToken(ctx, httpBase, pairResp.Code)
+			tok, done, err := pollPairingToken(ctx, client, code)
 			if err != nil {
 				con.clearWaiting()
-				return "", pairResp.Code, err
+				return "", code, err
 			}
 			if done {
 				con.clearWaiting()
-				return tok, pairResp.Code, nil
+				return tok, code, nil
 			}
 		}
 	}
 }
 
-func pollPairingToken(ctx context.Context, httpBase, code string) (token string, done bool, err error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", httpBase+"/api/pairing/"+code+"/token", nil)
-	if err != nil {
-		return "", false, err
-	}
-	resp, err := http.DefaultClient.Do(req)
+func pollPairingToken(ctx context.Context, client *api.ClientWithResponses, code string) (token string, done bool, err error) {
+	resp, err := client.GetPairingTokenWithResponse(ctx, code)
 	if err != nil {
 		log.Warn("polling pairing token failed, will retry", "err", err)
 		return "", false, nil
 	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
+	if resp.StatusCode() == http.StatusNotFound {
 		return "", false, fmt.Errorf("pairing code %s not found or expired", code)
 	}
-
-	var body struct {
-		Status string `json:"status"`
-		Token  string `json:"token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&body); err != nil {
-		log.Warn("polling response decode error, will retry", "err", err)
+	if resp.JSON200 == nil {
+		log.Warn("unexpected pairing poll response, will retry", "status", resp.StatusCode())
 		return "", false, nil
 	}
 
-	switch body.Status {
+	switch string(resp.JSON200.Status) {
 	case "claimed":
-		return body.Token, true, nil
+		if resp.JSON200.Token == nil {
+			return "", false, fmt.Errorf("pairing claimed without a token")
+		}
+		return *resp.JSON200.Token, true, nil
 	case "consumed":
 		return "", false, fmt.Errorf("pairing token already consumed — a new code will be requested")
 	default:

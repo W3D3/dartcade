@@ -6,10 +6,8 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import PlayerRow from '$lib/components/PlayerRow.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
-
-  type Board = { id: string; name: string; online: boolean }
-  type FieldMeta = { label: string; tooltip?: string; options?: { value: unknown; label: string }[] }
-  type GameDef = { id: string; defaultConfig: Record<string, unknown>; configMeta: Record<string, FieldMeta> }
+  import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'
+  import { authClient } from '$lib/auth'
 
   const MODES = [
     { id: 'atc',        glyph: 'ATC',    name: 'Around the Clock', desc: 'Hit 1 through 20 in order, then finish on your chosen target.', available: true  },
@@ -55,11 +53,11 @@
   }
   const initPrefs = loadPrefs()
 
-  let games = $state<GameDef[]>([])
+  let games = $state<GameInfo[]>([])
   let boards = $state<Board[]>([])
   let selectedMode = $state(initPrefs?.mode ?? 'atc')
   let boardId = $state(initPrefs?.boardId ?? '')
-  let atcMeta = $state<Record<string, FieldMeta>>({})
+  let atcMeta = $state<Record<string, ConfigFieldMeta>>({})
   let youName = $state('')
   let guests = $state<{ name: string }[]>([])
   let error = $state('')
@@ -96,20 +94,19 @@
 
   onMount(async () => {
     const [gr, br, sr] = await Promise.all([
-      fetch('/api/games'),
-      fetch('/api/boards'),
-      fetch('/api/auth/get-session'),
+      api.GET('/api/games'),
+      api.GET('/api/boards'),
+      authClient.getSession(),
     ])
-    if (br.status === 401) { push('/login'); return }
-    const [gd, bd, sd] = await Promise.all([gr.json(), br.json(), sr.json()])
-    games = gd.games ?? []
-    boards = bd.boards ?? []
+    if (!br.data) return   // 401 is redirected to login by the client
+    games = gr.data?.games ?? []
+    boards = br.data.boards
     // A board handed over from the Boards page ("Play on this board") wins over
     // the remembered one; a remembered board that was since unpaired is dropped.
     const preselect = new URLSearchParams($querystring ?? '').get('board')
     if (preselect && boards.some(b => b.id === preselect)) boardId = preselect
     else if (boardId && !boards.some(b => b.id === boardId)) boardId = ''
-    youName = sd.user?.name ?? sd.user?.email ?? 'You'
+    youName = sr.data?.user.name ?? sr.data?.user.email ?? 'You'
 
     const atcGame = games.find(g => g.id === 'atc')
     if (atcGame) {
@@ -145,18 +142,15 @@
       : { startScore: config.startScore, inMode: config.inMode, outMode: config.outMode, bullOff: config.bullOff, bullValue: config.bullValue, maxRounds: config.maxRounds, firstTo: config.firstTo }
     loading = true
     try {
-      const res = await fetch('/api/sessions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ boardId: boardId || null, gameId, config: resolvedConfig, players: allPlayers }),
+      const res = await api.POST('/api/sessions', {
+        body: { boardId: boardId || null, gameId, config: resolvedConfig, players: allPlayers },
       })
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}))
-        error = body.error ?? 'Failed to start'
-        runningSessionId = res.status === 409 ? body.sessionId ?? null : null
+      if (res.error) {
+        error = res.error.error
+        runningSessionId = res.response.status === 409 && 'sessionId' in res.error ? res.error.sessionId ?? null : null
         return
       }
-      push(`/session/${(await res.json()).sessionId}`)
+      push(`/session/${res.data.sessionId}`)
     } finally { loading = false }
   }
 </script>
