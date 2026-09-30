@@ -144,4 +144,54 @@ describe('WS client messages', () => {
     expect(onUserAction).toHaveBeenCalledWith(sessionId, expect.objectContaining({ type: 'undo_dart' }))
     ws.close()
   })
+
+  it('strips unknown fields from segment and the action before they reach the engine/snapshot', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    const { SessionEngine } = await import('../session/engine.js')
+    const { atcModule } = await import('../games/atc.js')
+    const { checkSnapshot } = await import('../session/snapshotValidation.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
+      setSessionFinished: vi.fn().mockResolvedValue(undefined),
+    }
+    const engine = new SessionEngine(store, vi.fn())
+    const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
+    const onUserAction = vi.spyOn(engine, 'onUserAction')
+
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as any).port
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
+    await new Promise<void>((resolve, reject) => {
+      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      setTimeout(() => reject(new Error('no snapshot')), 2000)
+    })
+
+    ws.send(JSON.stringify({
+      type: 'user_action',
+      action: {
+        type: 'add_dart',
+        segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1, extra: 1 },
+        clientVersion: 2,
+      },
+    }))
+    await new Promise(r => setTimeout(r, 200))
+
+    expect(onUserAction).toHaveBeenCalledTimes(1)
+    expect(onUserAction).toHaveBeenCalledWith(sessionId, {
+      type: 'add_dart',
+      segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 },
+    })
+
+    const snap = engine.getSnapshot(sessionId)!
+    expect(() => checkSnapshot(snap, () => {})).not.toThrow()
+    ws.close()
+  })
 })

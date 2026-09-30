@@ -6,12 +6,15 @@ import type { SessionEngine } from '../session/engine.js'
 import { getAuthUser } from '../auth/session.js'
 import { canAccessSession } from '../api/sessions.js'
 import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
-import { WsCloseCode, type ClientMessage } from '../schema/game-ws.js'
+import { WsCloseCode, type ClientMessage, type Segment, type UserAction } from '../schema/game-ws.js'
 import { checkSnapshot } from '../session/snapshotValidation.js'
 
 export const browserConnections = new BrowserConnections()
 
-// Tolerant reader: newer clients may add fields; the engine only reads the known ones.
+// Tolerant reader: newer clients may add fields; only the shape (which action types
+// exist, which fields are required) is validated here. isClientMessage's relaxed
+// additionalProperties still lets those extra fields *through* Ajv — sanitizeAction
+// below is what actually drops them before the engine/snapshot ever see them.
 // (Ajv's removeAdditional can't be used: it strips fields while trying each oneOf branch.)
 function allowExtraFields(schema: unknown): unknown {
   if (Array.isArray(schema)) return schema.map(allowExtraFields)
@@ -23,6 +26,29 @@ function allowExtraFields(schema: unknown): unknown {
 }
 const isClientMessage = new Ajv({ strict: false })
   .compile<ClientMessage>(allowExtraFields(wsSchema.$defs.ClientMessage) as object)
+
+// Rebuilds the action from only its spec'd fields, dropping anything a newer/buggy
+// client added (including inside `segment`, whose own `additionalProperties: false`
+// was loosened by allowExtraFields above) before it reaches the engine and gets
+// persisted/pushed in snapshots.
+function sanitizeSegment(segment: Segment): Segment {
+  const { name, number, bed, multiplier } = segment
+  return { name, number, bed, multiplier }
+}
+function sanitizeAction(action: UserAction): UserAction {
+  switch (action.type) {
+    case 'add_dart':
+      return { type: 'add_dart', segment: sanitizeSegment(action.segment) }
+    case 'correct_dart':
+      return { type: 'correct_dart', visitIndex: action.visitIndex, segment: sanitizeSegment(action.segment) }
+    case 'undo_dart':
+    case 'takeout':
+    case 'bulloff_skip':
+    case 'bulloff_rethrow':
+    case 'bulloff_start':
+      return { type: action.type }
+  }
+}
 
 type Opts = FastifyPluginOptions & { engine: SessionEngine }
 
@@ -61,7 +87,7 @@ export async function browserGwPlugin(app: FastifyInstance, opts: Opts): Promise
           app.log.warn({ sessionId, errors: isClientMessage.errors }, 'ignoring invalid client message')
           return
         }
-        await engine.onUserAction(sessionId, msg.action)
+        await engine.onUserAction(sessionId, sanitizeAction(msg.action))
       })
 
       socket.on('close', () => browserConnections.remove(sessionId, socket))
