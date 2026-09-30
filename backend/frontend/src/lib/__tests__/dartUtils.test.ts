@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseLabel, labelPos, nearbyPicks, checkoutHint } from '../dartUtils.js'
+import { parseLabel, labelPos, nearbyPicks, checkoutHint, labelToSegment } from '../dartUtils.js'
 
 describe('parseLabel', () => {
   it('parses treble', () => expect(parseLabel('T20')).toEqual({ mult: 3, num: 20, score: 60 }))
@@ -48,4 +48,15 @@ describe('checkoutHint', () => {
   it('returns null for remaining < 2', () => expect(checkoutHint(1)).toBeNull())
   it('returns null for unfinishable score 169', () => expect(checkoutHint(169)).toBeNull())
   it('returns null for remaining 0', () => expect(checkoutHint(0)).toBeNull())
+})
+
+describe('labelToSegment', () => {
+  it('maps labels to Board Manager segments', () => {
+    expect(labelToSegment('T20')).toEqual({ name: 'T20', number: 20, bed: 'Triple', multiplier: 3 })
+    expect(labelToSegment('D5')).toEqual({ name: 'D5', number: 5, bed: 'Double', multiplier: 2 })
+    expect(labelToSegment('S3')).toEqual({ name: 'S3', number: 3, bed: 'SingleOuter', multiplier: 1 })
+    expect(labelToSegment('25')).toEqual({ name: '25', number: 25, bed: 'Single', multiplier: 1 })
+    expect(labelToSegment('Bull')).toEqual({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 })
+    expect(labelToSegment('Miss')).toEqual({ name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 })
+  })
 })

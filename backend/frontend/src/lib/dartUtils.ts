@@ -100,3 +100,14 @@ export function checkoutHint(remaining: number, outMode: OutMode = 'double', dar
 
   return null
 }
+
+export type Segment = { name: string; number: number; bed: string; multiplier: number }
+
+/** A picker label (T20, D5, S3, 25, Bull, Miss) as the segment Board Manager would report. */
+export function labelToSegment(label: string): Segment {
+  if (label === 'Bull') return { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }
+  if (label === '25') return { name: '25', number: 25, bed: 'Single', multiplier: 1 }
+  if (label === 'Miss') return { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 }
+  const { mult, num } = parseLabel(label)
+  return { name: label, number: num, bed: mult === 3 ? 'Triple' : mult === 2 ? 'Double' : 'SingleOuter', multiplier: mult }
+}
