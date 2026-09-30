@@ -7,6 +7,7 @@
   import PlayerRow from '$lib/components/PlayerRow.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
   import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'
+  import { authClient } from '$lib/auth'
 
   const MODES = [
     { id: 'atc',        glyph: 'ATC',    name: 'Around the Clock', desc: 'Hit 1 through 20 in order, then finish on your chosen target.', available: true  },
@@ -95,10 +96,9 @@
     const [gr, br, sr] = await Promise.all([
       api.GET('/api/games'),
       api.GET('/api/boards'),
-      fetch('/api/auth/get-session'),
+      authClient.getSession(),
     ])
     if (!br.data) return   // 401 is redirected to login by the client
-    const sd = await sr.json().catch(() => ({}))
     games = gr.data?.games ?? []
     boards = br.data.boards
     // A board handed over from the Boards page ("Play on this board") wins over
@@ -106,7 +106,7 @@
     const preselect = new URLSearchParams($querystring ?? '').get('board')
     if (preselect && boards.some(b => b.id === preselect)) boardId = preselect
     else if (boardId && !boards.some(b => b.id === boardId)) boardId = ''
-    youName = sd.user?.name ?? sd.user?.email ?? 'You'
+    youName = sr.data?.user.name ?? sr.data?.user.email ?? 'You'
 
     const atcGame = games.find(g => g.id === 'atc')
     if (atcGame) {

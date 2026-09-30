@@ -7,6 +7,7 @@
   import Login from './routes/Login.svelte'
   import Register from './routes/Register.svelte'
   import Boards from './routes/Boards.svelte'
+  import { authClient } from '$lib/auth'
 
   const routes = {
     '/': CreateSession,
@@ -22,8 +23,8 @@
     const currentHash = window.location.hash
     if (currentHash.startsWith('#/login')) { checked = true; return }
     try {
-      const res = await fetch('/api/auth/get-session')
-      if (!res.ok || !(await res.json())?.user) push('/login')
+      const { data } = await authClient.getSession()
+      if (!data?.user) push('/login')
     } catch {
       push('/login')
     }

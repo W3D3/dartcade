@@ -1,17 +1,15 @@
 <script lang="ts">
   import { location } from 'svelte-spa-router'
   import { onMount } from 'svelte'
+  import { authClient } from '$lib/auth'
 
   let userName = $state('…')
   let userInitial = $derived(userName?.[0]?.toUpperCase() ?? '?')
 
   onMount(async () => {
     try {
-      const res = await fetch('/api/auth/get-session')
-      if (res.ok) {
-        const d = await res.json()
-        userName = d.user?.name ?? d.user?.email ?? 'User'
-      }
+      const { data } = await authClient.getSession()
+      if (data) userName = data.user.name || data.user.email || 'User'
     } catch { /* leave as placeholder */ }
   })
 
