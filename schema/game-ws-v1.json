@@ -1,0 +1,187 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "game-ws/v1",
+  "title": "GameWs",
+  "description": "Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.",
+  "$defs": {
+    "WsCloseCode": {
+      "title": "WsCloseCode",
+      "description": "Close codes the backend sends. The client stops reconnecting on Unauthorized (go to login), Forbidden and NotFound.",
+      "type": "integer",
+      "enum": [4400, 4401, 4403, 4404, 4500],
+      "tsEnumNames": ["MissingSession", "Unauthorized", "Forbidden", "NotFound", "InternalError"]
+    },
+    "BmStatus": {
+      "title": "BmStatus",
+      "type": "object",
+      "required": ["status", "running", "event"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "type": "string" },
+        "running": { "type": "boolean" },
+        "event": { "type": "string" }
+      }
+    },
+    "BullOffThrow": {
+      "title": "BullOffThrow",
+      "type": "object",
+      "required": ["mm", "segment", "thetaDeg", "estimated"],
+      "additionalProperties": false,
+      "properties": {
+        "mm": { "type": ["number", "null"], "description": "Distance from the centre; null = off the board" },
+        "segment": { "type": "string" },
+        "thetaDeg": { "type": ["number", "null"] },
+        "estimated": { "type": "boolean", "description": "Distance estimated from the segment (manual entry or a corrected dart)" }
+      }
+    },
+    "BullOffResult": {
+      "title": "BullOffResult",
+      "type": "object",
+      "required": ["order", "rethrow"],
+      "additionalProperties": false,
+      "properties": {
+        "order": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "rethrow": { "type": "boolean" },
+        "reason": { "type": "string", "enum": ["tie", "bullseye", "all_missed"] }
+      }
+    },
+    "BullOffView": {
+      "title": "BullOffView",
+      "type": "object",
+      "required": ["throws", "sequence", "currentPlayer", "result"],
+      "additionalProperties": false,
+      "properties": {
+        "throws": { "type": "array", "items": { "anyOf": [{ "$ref": "#/$defs/BullOffThrow" }, { "type": "null" }] } },
+        "sequence": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "currentPlayer": { "type": "integer", "minimum": 0 },
+        "result": { "anyOf": [{ "$ref": "#/$defs/BullOffResult" }, { "type": "null" }] }
+      }
+    },
+    "X01Game": {
+      "title": "X01Game",
+      "description": "X01 view plus the engine's per-session fields and the bull off.",
+      "type": "object",
+      "required": ["scores", "legs", "firstTo", "currentPlayer", "round", "phase", "winner", "opened", "bustThisVisit", "config", "visitLocked", "bullOff", "currentVisitDarts", "totalDarts", "totalVisits"],
+      "additionalProperties": false,
+      "properties": {
+        "scores": { "type": "array", "items": { "type": "integer" } },
+        "legs": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "firstTo": { "type": "integer", "minimum": 1 },
+        "currentPlayer": { "type": "integer", "minimum": 0 },
+        "round": { "type": "integer", "minimum": 1 },
+        "phase": { "type": "string", "enum": ["bulloff", "game", "finished"] },
+        "winner": { "type": ["integer", "null"] },
+        "opened": { "type": "array", "items": { "type": "boolean" } },
+        "bustThisVisit": { "type": "boolean" },
+        "config": {
+          "type": "object",
+          "required": ["outMode", "startScore", "inMode"],
+          "additionalProperties": false,
+          "properties": {
+            "outMode": { "type": "string", "enum": ["straight", "double", "master"] },
+            "startScore": { "type": "integer", "enum": [301, 501, 701] },
+            "inMode": { "type": "string", "enum": ["straight", "double", "master"] }
+          }
+        },
+        "visitLocked": { "type": "boolean" },
+        "bullOff": { "anyOf": [{ "$ref": "#/$defs/BullOffView" }, { "type": "null" }] },
+        "currentVisitDarts": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Dart" } },
+        "totalDarts": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "totalVisits": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "AtcGame": {
+      "title": "AtcGame",
+      "description": "Around the Clock view plus the engine's per-session fields.",
+      "type": "object",
+      "required": ["targets", "sequence", "currentPlayer", "winner", "cfg", "currentVisitHits", "hitCounts", "currentVisitDarts", "totalDarts", "totalVisits"],
+      "additionalProperties": false,
+      "properties": {
+        "targets": { "type": "array", "items": { "type": "integer" } },
+        "sequence": { "type": "array", "items": { "type": "integer" } },
+        "currentPlayer": { "type": "integer", "minimum": 0 },
+        "winner": { "type": ["integer", "null"] },
+        "cfg": {
+          "type": "object",
+          "required": ["throwAgainOnAllHit", "finishOn", "multiplierAdvances", "order"],
+          "additionalProperties": false,
+          "properties": {
+            "throwAgainOnAllHit": { "type": "boolean" },
+            "finishOn": { "type": "string", "enum": ["twenty", "single_bull", "bull"] },
+            "multiplierAdvances": { "type": "boolean" },
+            "order": { "type": "string", "enum": ["asc", "desc", "random"] }
+          }
+        },
+        "currentVisitHits": { "type": "array", "items": { "type": "boolean" } },
+        "hitCounts": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "currentVisitDarts": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Dart" } },
+        "totalDarts": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "totalVisits": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+      }
+    },
+    "X01Snapshot": {
+      "title": "X01Snapshot",
+      "type": "object",
+      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "snapshot" },
+        "sessionId": { "type": "string" },
+        "gameId": { "const": "x01" },
+        "boardId": { "type": ["string", "null"] },
+        "players": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Player" } },
+        "game": { "$ref": "#/$defs/X01Game" },
+        "bmStatus": { "anyOf": [{ "$ref": "#/$defs/BmStatus" }, { "type": "null" }] }
+      }
+    },
+    "AtcSnapshot": {
+      "title": "AtcSnapshot",
+      "type": "object",
+      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "snapshot" },
+        "sessionId": { "type": "string" },
+        "gameId": { "const": "atc" },
+        "boardId": { "type": ["string", "null"] },
+        "players": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Player" } },
+        "game": { "$ref": "#/$defs/AtcGame" },
+        "bmStatus": { "anyOf": [{ "$ref": "#/$defs/BmStatus" }, { "type": "null" }] }
+      }
+    },
+    "Snapshot": {
+      "title": "Snapshot",
+      "description": "Full session state, pushed after every change.",
+      "oneOf": [{ "$ref": "#/$defs/X01Snapshot" }, { "$ref": "#/$defs/AtcSnapshot" }]
+    },
+    "UserAction": {
+      "title": "UserAction",
+      "oneOf": [
+        { "title": "UndoDartAction", "type": "object", "required": ["type"], "additionalProperties": false,
+          "properties": { "type": { "const": "undo_dart" } } },
+        { "title": "TakeoutAction", "type": "object", "required": ["type"], "additionalProperties": false,
+          "properties": { "type": { "const": "takeout" } } },
+        { "title": "AddDartAction", "type": "object", "required": ["type", "segment"], "additionalProperties": false,
+          "properties": { "type": { "const": "add_dart" }, "segment": { "$ref": "common-v1.json#/$defs/Segment" } } },
+        { "title": "CorrectDartAction", "type": "object", "required": ["type", "visitIndex", "segment"], "additionalProperties": false,
+          "properties": { "type": { "const": "correct_dart" }, "visitIndex": { "type": "integer", "minimum": 0 }, "segment": { "$ref": "common-v1.json#/$defs/Segment" } } },
+        { "title": "BullOffSkipAction", "type": "object", "required": ["type"], "additionalProperties": false,
+          "properties": { "type": { "const": "bulloff_skip" } } },
+        { "title": "BullOffRethrowAction", "type": "object", "required": ["type"], "additionalProperties": false,
+          "properties": { "type": { "const": "bulloff_rethrow" } } },
+        { "title": "BullOffStartAction", "type": "object", "required": ["type"], "additionalProperties": false,
+          "properties": { "type": { "const": "bulloff_start" } } }
+      ]
+    },
+    "ClientMessage": {
+      "title": "ClientMessage",
+      "type": "object",
+      "required": ["type", "action"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "user_action" },
+        "action": { "$ref": "#/$defs/UserAction" }
+      }
+    }
+  }
+}

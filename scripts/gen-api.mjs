@@ -6,6 +6,8 @@ import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import openapiTS, { astToString } from 'openapi-typescript'
+import { compileFromFile } from 'json-schema-to-typescript'
+import $RefParser from '@apidevtools/json-schema-ref-parser'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const r = (...p) => join(root, ...p)
@@ -36,4 +38,21 @@ async function genHttp() {
   copyFileSync(join(BACKEND_SCHEMA, 'api.ts'), join(FRONTEND_API, 'schema.ts'))
 }
 
+async function genWs() {
+  const src = r('schema/game-ws-v1.json')
+  const ts = await compileFromFile(src, {
+    bannerComment: '',
+    cwd: r('schema'),
+    unreachableDefinitions: true,   // emit every $def, not only those reachable from the root
+    enableConstEnums: false,        // WsCloseCode must exist at runtime
+    additionalProperties: false,
+    style: { singleQuote: true, semi: false },
+  })
+  writeTs(join(BACKEND_SCHEMA, 'game-ws.ts'), 'schema/game-ws-v1.json', ts)
+  copyFileSync(join(BACKEND_SCHEMA, 'game-ws.ts'), join(FRONTEND_API, 'game-ws.ts'))
+  const deref = await $RefParser.dereference(src)
+  writeFileSync(join(BACKEND_SCHEMA, 'game-ws-v1.deref.json'), JSON.stringify(deref, null, 2) + '\n')
+}
+
 await genHttp()
+await genWs()
