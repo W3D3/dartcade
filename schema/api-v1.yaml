@@ -439,10 +439,10 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     TooManyRequests:
-      description: Rate limit exceeded (body from @fastify/rate-limit)
+      description: Rate limit exceeded
       content:
         application/json:
-          schema: { type: object, additionalProperties: true }
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
     BoardActionDone:
       description: Board Manager accepted the command
       content:

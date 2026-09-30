@@ -74,12 +74,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -181,12 +209,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -316,12 +372,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -463,12 +547,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -696,12 +808,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -875,12 +1015,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1054,12 +1222,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1428,12 +1624,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1640,12 +1864,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -1888,12 +2140,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2136,12 +2416,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2384,12 +2692,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2632,12 +2968,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2759,12 +3123,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -2863,12 +3255,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3130,12 +3550,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3262,12 +3710,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3489,12 +3965,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3705,12 +4209,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3845,12 +4377,40 @@
             }
           },
           "429": {
-            "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+            "description": "Rate limit exceeded",
             "content": {
               "application/json": {
                 "schema": {
+                  "title": "ErrorResponse",
                   "type": "object",
-                  "additionalProperties": true
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -4163,12 +4723,40 @@
         }
       },
       "TooManyRequests": {
-        "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+        "description": "Rate limit exceeded",
         "content": {
           "application/json": {
             "schema": {
+              "title": "ErrorResponse",
               "type": "object",
-              "additionalProperties": true
+              "required": [
+                "error"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "details": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "path",
+                      "message"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "path": {
+                        "type": "string"
+                      },
+                      "message": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
             }
           }
         }

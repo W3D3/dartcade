@@ -895,12 +895,11 @@
         }
       },
       "TooManyRequests": {
-        "description": "Rate limit exceeded (body from @fastify/rate-limit)",
+        "description": "Rate limit exceeded",
         "content": {
           "application/json": {
             "schema": {
-              "type": "object",
-              "additionalProperties": true
+              "$ref": "#/components/schemas/ErrorResponse"
             }
           }
         }

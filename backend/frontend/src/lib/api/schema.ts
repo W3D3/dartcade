@@ -570,15 +570,13 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description Rate limit exceeded (body from @fastify/rate-limit) */
+        /** @description Rate limit exceeded */
         TooManyRequests: {
             headers: {
                 [name: string]: unknown;
             };
             content: {
-                "application/json": {
-                    [key: string]: unknown;
-                };
+                "application/json": components["schemas"]["ErrorResponse"];
             };
         };
         /** @description Board Manager accepted the command */

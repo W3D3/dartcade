@@ -8,11 +8,10 @@ type Responses<K extends keyof operations> = operations[K]['responses']
 /**
  * Fastify route generic for an operation of schema/api-v1.yaml, e.g.
  * `app.post<Route<'createSession'>>(...)` types req.body, req.params and reply.send().
- * 429 is left out of Reply: it's the rate limiter's free-form body, which would accept anything.
  */
 export type Route<K extends keyof operations> = {
   Params: Defined<NonNullable<operations[K]['parameters']['path']>>
   Querystring: Defined<NonNullable<operations[K]['parameters']['query']>>
   Body: Defined<Json<NonNullable<operations[K]['requestBody']>>>
-  Reply: { [S in Exclude<keyof Responses<K>, 429>]: Json<Responses<K>[S]> }[Exclude<keyof Responses<K>, 429>]
+  Reply: { [S in keyof Responses<K>]: Json<Responses<K>[S]> }[keyof Responses<K>]
 }

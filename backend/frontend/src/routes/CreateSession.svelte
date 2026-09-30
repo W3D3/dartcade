@@ -146,14 +146,8 @@
         body: { boardId: boardId || null, gameId, config: resolvedConfig, players: allPlayers },
       })
       if (res.error) {
-        const err: unknown = res.error
-        error = typeof err === 'object' && err !== null && 'error' in err && typeof err.error === 'string'
-          ? err.error
-          : 'Failed to start'
-        runningSessionId = res.response.status === 409
-          && typeof err === 'object' && err !== null && 'sessionId' in err && typeof err.sessionId === 'string'
-          ? err.sessionId
-          : null
+        error = res.error.error
+        runningSessionId = res.response.status === 409 && 'sessionId' in res.error ? res.error.sessionId ?? null : null
         return
       }
       push(`/session/${res.data.sessionId}`)

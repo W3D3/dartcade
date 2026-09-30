@@ -59,7 +59,7 @@ type SessionId = string
 type NotFound = ErrorResponse
 
 // TooManyRequests defines model for TooManyRequests.
-type TooManyRequests map[string]interface{}
+type TooManyRequests = ErrorResponse
 
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
