@@ -167,6 +167,10 @@
 
   const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
   const DOT_STROKE = '#0f100e'
+  // Zoomed content is clipped to the board's round background
+  const uid = $props.id()
+  const clipId = `board-clip-${uid}`
+
   const precise = $derived(!!onBoardClick)
   const interactive = $derived(!precise && !!onSegmentClick)
   // Either way, light up the segment under the cursor
@@ -176,8 +180,10 @@
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <svg bind:this={svgEl} viewBox="-1.15 -1.15 2.3 2.3" class="w-full {hoverable ? 'cursor-crosshair' : ''}"
   xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}>
+  <defs><clipPath id={clipId}><circle cx="0" cy="0" r="1.12" /></clipPath></defs>
   <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
 
+  <g clip-path="url(#{clipId})">
   <g style="transform: scale({zoom}); transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
   <!-- Sector fills and wire dividers -->
   {#each sectors as { num, i, paths, wa }}
@@ -300,5 +306,6 @@
 
   <!-- Overlay marks are informational: clicks go through to the segments -->
   <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
+  </g>
   </g>
 </svg>

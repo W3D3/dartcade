@@ -49,7 +49,8 @@
   const fitMm = $derived.by(() => {
     const hits = bullOff.throws.flatMap(t => t?.mm != null ? [t.mm] : [])
     if (!hits.length) return FULL_VIEW_MM
-    return Math.min(FULL_VIEW_MM, Math.max(35, Math.max(...hits) * 1.3))
+    // Room around the farthest dart for its label inside the round board
+    return Math.min(FULL_VIEW_MM, Math.max(35, Math.max(...hits) * 1.6))
   })
   // Show the whole board while someone still has to throw (so a manual dart
   // can land anywhere), zoom in once they have and on the result. The toggle
@@ -63,6 +64,8 @@
   const viewMm = $derived(zoomedIn ? fitMm : FULL_VIEW_MM)
   const zoom = $derived(FULL_VIEW_MM / viewMm)
   const rings = $derived(zoom > 1.5 ? Array.from({ length: Math.floor(viewMm / 10) }, (_, i) => (i + 1) * 10) : [])
+  // Label only as many rings as fit side by side at this zoom (a label is ~0.21 board units wide)
+  const ringLabelStep = $derived([10, 20, 50, 100].find(step => step * zoom / BOARD_MM >= 0.21) ?? 100)
 
   function markerPos(t: Throw, player: number) {
     // Darts without a camera angle (entered by hand) get a fixed spot per player
@@ -115,8 +118,10 @@
   {#each rings as mm}
     <circle r={mm / BOARD_MM} fill="none" stroke="#efeee6" stroke-opacity="0.22"
       stroke-width={1.2 / z / 170} stroke-dasharray="{4 / z / 170} {4 / z / 170}" />
-    <text x={(mm + 0.6) / BOARD_MM} y={-1 / z / 170} fill="#efeee6" fill-opacity="0.55"
-      font-size={10 / z / 170} font-family="JetBrains Mono, monospace">{mm} mm</text>
+    {#if mm % ringLabelStep === 0}
+      <text x={(mm + 0.6) / BOARD_MM} y={-1 / z / 170} fill="#efeee6" fill-opacity="0.55"
+        font-size={10 / z / 170} font-family="JetBrains Mono, monospace">{mm} mm</text>
+    {/if}
   {/each}
 
   <!-- The ring to beat -->
@@ -131,7 +136,9 @@
       {@const p = markerPos(t, i)}
       {@const lead = best?.player === i}
       {@const color = lead ? '#c6f24e' : '#efeee6'}
-      {@const left = p.x < 0}
+      <!-- Labels point away from the centre, or inwards for darts near the edge of the view -->
+      {@const nearEdge = t.mm / viewMm > 0.4}
+      {@const left = nearEdge ? p.x >= 0 : p.x < 0}
       <line x1="0" y1="0" x2={p.x} y2={p.y} stroke={color} stroke-width={1.5 / z / 170} />
       <circle cx={p.x} cy={p.y} r={7 / z / 170} fill={color} stroke="#0f100e" stroke-width={2.5 / z / 170} />
       <text x={p.x + (left ? -12 : 12) / z / 170} y={p.y} dominant-baseline="central"
@@ -145,15 +152,19 @@
 {/snippet}
 
 {#snippet boardAndStatus()}
-  <div class="relative w-full mx-auto" style="max-width: min(100%, calc(100vh - 330px))">
-    <DartBoard {zoom} overlay={marks}
-      onBoardClick={manual && !result && !currentThrow ? onBoardClick : undefined} />
-    {#if canZoom}
-      <Button variant="outline" class="absolute top-0 right-0 bg-surface-2"
-        onclick={() => zoomOverride = !zoomedIn}>
-        {zoomedIn ? 'Zoom out' : 'Zoom in'}
-      </Button>
-    {/if}
+  <!-- The board takes the height left in the column (capped by its width);
+       status and buttons sit below it at the bottom -->
+  <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
+    <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
+      <DartBoard {zoom} overlay={marks}
+        onBoardClick={manual && !result && !currentThrow ? onBoardClick : undefined} />
+      {#if canZoom}
+        <Button variant="outline" class="absolute top-0 right-0 bg-surface-2"
+          onclick={() => zoomOverride = !zoomedIn}>
+          {zoomedIn ? 'Zoom out' : 'Zoom in'}
+        </Button>
+      {/if}
+    </div>
   </div>
 
   {#if result?.rethrow}
