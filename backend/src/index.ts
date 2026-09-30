@@ -12,7 +12,6 @@ import { bridgeGwPlugin } from './bridge-gw/handler.js'
 import { browserGwPlugin, pushSnapshot } from './browser-gw/handler.js'
 import { sessionsApiPlugin } from './api/sessions.js'
 import { boardsApiPlugin } from './api/boards.js'
-import { boardApiPlugin } from './api/board.js'
 import { pairingApiPlugin } from './api/pairing.js'
 import { auth } from './auth/index.js'
 import { seedDev } from './auth/seed.js'
@@ -56,7 +55,6 @@ await app.register(bridgeGwPlugin, { engine, db })
 await app.register(browserGwPlugin, { engine })
 await app.register(sessionsApiPlugin, { engine, db })
 await app.register(boardsApiPlugin, { db })
-await app.register(boardApiPlugin)
 await app.register(pairingApiPlugin, { db })
 
 app.get('*', async (req, reply) => {

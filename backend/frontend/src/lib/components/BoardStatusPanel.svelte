@@ -24,9 +24,11 @@
     } catch { /* ignore */ }
   }
 
-  async function runAction(name: string, endpoint: string) {
+  // Board Manager commands for this session's board
+  async function runAction(name: string, endpoint: 'start' | 'stop' | 'reset' | 'calibrate') {
+    if (!board) return
     busy = name
-    try { await fetch(`/api/board/${endpoint}`, { method: 'POST' }) }
+    try { await fetch(`/api/boards/${board.id}/${endpoint}`, { method: 'POST' }) }
     catch { /* ignore */ }
     finally { busy = null }
   }
