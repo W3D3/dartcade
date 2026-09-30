@@ -1,16 +1,21 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { labelPos } from '$lib/dartUtils.js'
+  import { labelPos, markerPositions } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
 
-  let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [], onSegmentClick,
+  let { darts = [], target = null, nextTarget = null, dim = false, playerMarkers = [], checkoutTargets = [], onSegmentClick,
         onBoardClick, selectedDart = null, onDartMove, zoom = 1, overlay }: {
     darts?: Array<{
       segment: Segment
       score: number
       coords?: { x: number; y: number }
     }>
-    selectedSegments?: number[]
+    /** ATC target of the thrower: lime wedge (1–20) or bull ring (25, 50). */
+    target?: number | null
+    /** ATC target of the next player: white dashed outline. */
+    nextTarget?: number | null
+    /** Dim the board so the target stands out (ATC). */
+    dim?: boolean
     playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
     checkoutTargets?: string[]
     onSegmentClick?: (seg: Segment) => void
@@ -91,15 +96,6 @@
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
 
-  function markerPos(segNum: number): { x: number; y: number } | null {
-    if (segNum === 25 || segNum === 50) return { x: 0, y: 0 }
-    const si = SEGS.indexOf(segNum)
-    if (si < 0) return null
-    const a = segAngle(si)
-    const r = (R.tr + R.so) / 2
-    return { x: r * Math.cos(a), y: -r * Math.sin(a) }
-  }
-
   /** The segment at a point in board units (y up), as Board Manager would name it. */
   function segmentAt(x: number, y: number): Segment {
     const r = Math.hypot(x, y)
@@ -163,6 +159,9 @@
     onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
   }
 
+  // Markers on the same segment are spread so none hides another
+  const otherMarkerPos = $derived(markerPositions(playerMarkers.filter(m => !m.isActive).map(m => m.segment)))
+
   const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
   const DOT_STROKE = '#0f100e'
   // Zoomed content is clipped to the board's round background
@@ -213,42 +212,40 @@
     onclick={interactive ? () => onSegmentClick?.({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }) : undefined}
     class={hoverable ? 'hover:brightness-125' : ''} />
 
-  <!-- Selected segment: lime wedge overlay -->
-  {#each sectors as { num, a1, a2 }}
-    {#if selectedSegments.includes(num)}
-      <path d={sectorPath(R.bull25, R.db, a1, a2)}
-        fill="#c6f24e" fill-opacity="0.22"
-        stroke="#c6f24e" stroke-width="0.016" stroke-linejoin="round"
-        style="pointer-events:none" />
+  {#if dim}
+    <circle cx="0" cy="0" r="1.12" fill="#0a0b09" fill-opacity="0.45" style="pointer-events:none" />
+  {/if}
+
+  <!-- ATC targets: thrower's in lime, next player's dashed white -->
+  {#each [{ seg: target, next: false }, { seg: nextTarget, next: true }] as t}
+    {#if t.seg}
+      {@const sector = sectors.find(s => s.num === t.seg)}
+      {@const style = t.next
+        ? { fill: 'none', 'fill-opacity': '0', stroke: '#efeee6', 'stroke-width': '0.012', 'stroke-dasharray': '0.035 0.024' }
+        : { fill: '#c6f24e', 'fill-opacity': '0.38', stroke: '#c6f24e', 'stroke-width': '0.018', 'stroke-dasharray': 'none' }}
+      {#if sector}
+        <path d={sectorPath(R.bull25, R.db, sector.a1, sector.a2)} {...style} stroke-linejoin="round" style="pointer-events:none" />
+      {:else if t.seg === 25 || t.seg === 50}
+        <circle cx="0" cy="0" r={t.seg === 25 ? R.bull25 : R.bull50} {...style} style="pointer-events:none" />
+      {/if}
     {/if}
   {/each}
-
-  <!-- Selected bull overlays -->
-  {#if selectedSegments.includes(25)}
-    <circle cx="0" cy="0" r={R.bull25}
-      fill="#c6f24e" fill-opacity="0.28" stroke="#c6f24e" stroke-width="0.016"
-      style="pointer-events:none" />
-  {/if}
-  {#if selectedSegments.includes(50)}
-    <circle cx="0" cy="0" r={R.bull50}
-      fill="#c6f24e" fill-opacity="0.45" stroke="#c6f24e" stroke-width="0.016"
-      style="pointer-events:none" />
-  {/if}
 
   <!-- Number labels — pointer-events:none so clicks go through to paths -->
   {#each sectors as { num, tx, ty }}
     <text x={tx} y={ty} text-anchor="middle" dominant-baseline="central"
-      fill={selectedSegments.includes(num) ? '#c6f24e' : '#efeee6'}
-      font-size={selectedSegments.includes(num) ? '0.105' : '0.09'}
-      font-family="Barlow Condensed, sans-serif" font-weight="bold"
+      fill={num === target ? '#c6f24e' : dim ? '#8f9085' : '#efeee6'}
+      font-size={num === target ? '0.123' : '0.09'}
+      font-family="Barlow Condensed, sans-serif" font-weight={num === target ? '700' : '600'}
       style="pointer-events:none">
       {num}
     </text>
   {/each}
 
+
   <!-- Other-player markers: white circle with initial -->
-  {#each playerMarkers.filter(m => !m.isActive) as marker}
-    {@const pos = markerPos(marker.segment)}
+  {#each playerMarkers.filter(m => !m.isActive) as marker, k}
+    {@const pos = otherMarkerPos[k]}
     {#if pos}
       <circle cx={pos.x} cy={pos.y} r="0.085"
         fill="white" stroke="#0a0b09" stroke-width="0.01"
@@ -296,8 +293,8 @@
   {#each checkoutTargets as label}
     {@const pos = labelPos(label)}
     {#if pos}
-      <circle cx={pos.x} cy={pos.y} r="0.055"
-        fill="none" stroke="#c6f24e" stroke-width="0.018" stroke-dasharray="0.025 0.02"
+      <circle cx={pos.x} cy={pos.y} r="0.076"
+        fill="none" stroke="#c6f24e" stroke-width="0.015" stroke-dasharray="0.024 0.018"
         style="pointer-events:none" />
     {/if}
   {/each}

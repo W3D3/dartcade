@@ -35,17 +35,24 @@ function effectiveDartScore(dart: Dart, bullValue: '25_50' | '50_50'): number {
   return dart.score
 }
 
+// The bull counts as a double however it is reported (Board Manager and manual
+// entry send number 50 with multiplier 1; its score is 50 either way).
+const isDouble = (dart: Dart) => dart.segment.multiplier === 2 || dart.segment.number === 50
+
 function opensPlayer(dart: Dart, inMode: 'straight' | 'double' | 'master'): boolean {
   if (inMode === 'straight') return true
-  if (inMode === 'double') return dart.segment.multiplier === 2
-  return dart.segment.multiplier === 2 || dart.segment.multiplier === 3
+  if (inMode === 'double') return isDouble(dart)
+  return isDouble(dart) || dart.segment.multiplier === 3
 }
 
 function validFinish(dart: Dart, outMode: 'straight' | 'double' | 'master'): boolean {
   if (outMode === 'straight') return true
-  if (outMode === 'double') return dart.segment.multiplier === 2
-  return dart.segment.multiplier === 2 || dart.segment.multiplier === 3
+  if (outMode === 'double') return isDouble(dart)
+  return isDouble(dart) || dart.segment.multiplier === 3
 }
+
+/** Nothing can finish from 1 unless any dart may finish. */
+const deadEnd = (score: number, outMode: 'straight' | 'double' | 'master') => score === 1 && outMode !== 'straight'
 
 // Next thrower in `order`; a new round starts when it wraps to the first thrower.
 function nextTurn(s: X01State): { nextPlayer: number; round: number } {
@@ -167,7 +174,7 @@ export const x01Game: GameModule<X01State, X01Config> = {
           const opened = s.opened.map((o, i) => i === cp ? true : o)
           const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
           const newScore = s.scores[cp] - dartScore
-          if (newScore < 0 || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
+          if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
             return { state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc) } }
           }
           return { state: { ...s, opened, scores: s.scores.map((sc, i) => i === cp ? newScore : sc) } }
@@ -176,7 +183,7 @@ export const x01Game: GameModule<X01State, X01Config> = {
         const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
         const newScore = s.scores[cp] - dartScore
 
-        if (newScore < 0 || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
+        if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
           return { state: { ...s, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc), bustThisVisit: true } }
         }
 

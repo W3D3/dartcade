@@ -438,3 +438,46 @@ describe('view', () => {
     expect(v).not.toHaveProperty('totalDarts')
   })
 })
+
+describe('bull as a double, leaving 1', () => {
+  it('bull finishes a double-out leg', () => {
+    const s = openedVisit(makeState({ scores: [50, 501] }))
+    const { state } = x01Game.onBoardEvent(s, dartEvent(50, 'Double', 1))
+    expect(state.scores[0]).toBe(0)
+    expect(state.bustThisVisit).toBe(false)
+  })
+
+  it('bull opens a double-in player', () => {
+    const s = openedVisit(makeState({ cfg: { ...defaultCfg, inMode: 'double' }, opened: [false, false] }))
+    const { state } = x01Game.onBoardEvent(s, dartEvent(50, 'Double', 1))
+    expect(state.opened[0]).toBe(true)
+    expect(state.scores[0]).toBe(451)
+  })
+
+  it('leaving 1 on double out busts', () => {
+    const s = openedVisit(makeState({ scores: [21, 501] }))
+    const { state } = x01Game.onBoardEvent(s, dartEvent(20, 'SingleOuter', 1))
+    expect(state.scores[0]).toBe(21)
+    expect(state.bustThisVisit).toBe(true)
+  })
+
+  it('leaving 1 on master out busts', () => {
+    const s = openedVisit(makeState({ cfg: { ...defaultCfg, outMode: 'master' }, scores: [21, 501] }))
+    const { state } = x01Game.onBoardEvent(s, dartEvent(20, 'SingleOuter', 1))
+    expect(state.bustThisVisit).toBe(true)
+  })
+
+  it('leaving 1 on straight out is fine', () => {
+    const s = openedVisit(makeState({ cfg: { ...defaultCfg, outMode: 'straight' }, scores: [21, 501] }))
+    const { state } = x01Game.onBoardEvent(s, dartEvent(20, 'SingleOuter', 1))
+    expect(state.scores[0]).toBe(1)
+    expect(state.bustThisVisit).toBe(false)
+  })
+
+  it('leaving 1 with the opening dart on double in / double out busts', () => {
+    const s = openedVisit(makeState({ cfg: { ...defaultCfg, inMode: 'double' }, opened: [false, false], scores: [41, 501] }))
+    const { state } = x01Game.onBoardEvent(s, dartEvent(20, 'Double', 2))
+    expect(state.scores[0]).toBe(41)
+    expect(state.bustThisVisit).toBe(true)
+  })
+})

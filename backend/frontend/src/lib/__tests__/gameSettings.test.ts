@@ -1,0 +1,44 @@
+import { describe, it, expect } from 'vitest'
+import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY } from '../gameSettings.js'
+
+const store = (value: string | null) => ({ getItem: (k: string) => (k === SETTINGS_KEY ? value : null) })
+
+describe('loadSettings', () => {
+  it('returns the defaults without storage or stored value', () => {
+    expect(loadSettings(null)).toEqual(defaultSettings)
+    expect(loadSettings(store(null))).toEqual(defaultSettings)
+  })
+
+  it('merges stored values over the defaults', () => {
+    const s = loadSettings(store(JSON.stringify({ chalkboard: false, soundHit: true, volume: 0.3 })))
+    expect(s).toEqual({ ...defaultSettings, chalkboard: false, soundHit: true, volume: 0.3 })
+  })
+
+  it('ignores unknown keys and values of the wrong type', () => {
+    const s = loadSettings(store(JSON.stringify({ bogus: true, visitSum: 'no', volume: '1' })))
+    expect(s).toEqual(defaultSettings)
+    expect(s).not.toHaveProperty('bogus')
+  })
+
+  it('keeps the setting for other players\' targets on the board', () => {
+    expect(defaultSettings.showMarkers).toBe(false)
+    expect(loadSettings(store(JSON.stringify({ showMarkers: true }))).showMarkers).toBe(true)
+  })
+
+  it('clamps the volume to 0–1', () => {
+    expect(loadSettings(store(JSON.stringify({ volume: 4 }))).volume).toBe(1)
+    expect(loadSettings(store(JSON.stringify({ volume: -1 }))).volume).toBe(0)
+  })
+
+  it('falls back to the defaults on broken JSON', () => {
+    expect(loadSettings(store('{nope'))).toEqual(defaultSettings)
+  })
+})
+
+describe('saveSettings', () => {
+  it('writes JSON under the settings key', () => {
+    const written: Record<string, string> = {}
+    saveSettings({ setItem: (k, v) => { written[k] = v } }, defaultSettings)
+    expect(JSON.parse(written[SETTINGS_KEY])).toEqual(defaultSettings)
+  })
+})

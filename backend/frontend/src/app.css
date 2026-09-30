@@ -16,6 +16,28 @@
   --color-live:           #ff5a4f;
   --color-live-text:      #ff8a80;
 
+  /* Design system (Dartcade Platform Design tokens.json) */
+  --color-bg-deep:        #0a0b09;
+  --color-surface-panel:  #151713;
+  --color-surface-inset:  #1f221c;
+  --color-surface-chip:   #242820;
+  --color-surface-key:    #2a2e26;
+  --color-line-strong:    #65685f;
+  --color-line-chip:      #3a3e36;
+  --color-line-key:       #3a3f35;
+  --color-line-dashed:    #3e4239;
+  --color-line-popover:   #454a3f;
+  --color-line-pip:       #6a6e63;
+  --color-line-next:      #6a6f62;
+  --color-ink-soft:       #d8d8ce;
+  --color-ink-2:          #c9c9bf;
+  --color-ink-3:          #b4b5aa;
+  --color-ink-faint:      #828379;
+  --color-accent-hover:   #dcff7a;
+  --color-live-soft:      #3a1a17;
+  --color-danger-text:    #ff7a70;
+  --color-danger-line:    #4a2e2b;
+
   --font-sans:    'Instrument Sans', system-ui, sans-serif;
   --font-display: 'Barlow Condensed', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;
