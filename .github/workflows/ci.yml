@@ -52,3 +52,15 @@ jobs:
       - uses: jdx/mise-action@v2
       - run: go test ./...
         working-directory: bridge
+
+  check-generated:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: jdx/mise-action@v2
+      - run: npm ci
+      - run: npm run lint:api
+      - name: Generated files are up to date
+        run: |
+          npm run gen:api
+          git diff --exit-code || { echo "::error::Run 'npm run gen:api' at the repo root and commit the result"; exit 1; }

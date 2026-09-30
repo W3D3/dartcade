@@ -1,0 +1,679 @@
+openapi: 3.0.3
+info:
+  title: Dartcade API
+  version: 1.0.0
+  description: |
+    HTTP API of the Dartcade backend, used by the web frontend and the Go bridge.
+    Authentication endpoints (`/api/auth/*`) are provided by better-auth and documented separately.
+    Operations tagged `bridge` are called by deployed bridges: keep them backwards compatible.
+  license:
+    name: Proprietary
+servers:
+  - url: /
+tags:
+  - name: system
+    description: Health checks
+  - name: games
+    description: Available game modes
+  - name: boards
+    description: Paired boards and their Board Manager
+  - name: pairing
+    description: Pairing a bridge with a user account
+  - name: sessions
+    description: Game sessions (one active session per user)
+  - name: bridge
+    description: Operations the Go bridge depends on
+security:
+  - session: []
+
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: Health check
+      tags: [system]
+      security: []
+      responses:
+        '200':
+          description: The server is up
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Health' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/games:
+    get:
+      operationId: listGames
+      summary: List game modes with their default config and config metadata
+      tags: [games]
+      security: []
+      responses:
+        '200':
+          description: Available games
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameList' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards:
+    get:
+      operationId: listBoards
+      summary: List the signed-in user's boards
+      tags: [boards]
+      responses:
+        '200':
+          description: The user's boards with live connection info
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    post:
+      operationId: createBoard
+      summary: Create a board and its bridge token (manual pairing)
+      tags: [boards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateBoardRequest' }
+      responses:
+        '201':
+          description: The board, with the bridge token (shown once)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreatedBoard' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    patch:
+      operationId: renameBoard
+      summary: Rename a board
+      tags: [boards]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RenameBoardRequest' }
+      responses:
+        '200':
+          description: The renamed board
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/RenamedBoard' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      operationId: deleteBoard
+      summary: Unpair (delete) a board
+      tags: [boards]
+      responses:
+        '204':
+          description: Deleted
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/status:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    get:
+      operationId: getBoardStatus
+      summary: Current Board Manager status
+      tags: [boards]
+      responses:
+        '200':
+          description: Board Manager state
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardStatus' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/events:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    get:
+      operationId: getBoardEvents
+      summary: Recent bridge events for the live feed (newest last, in memory)
+      tags: [boards]
+      responses:
+        '200':
+          description: Up to 50 recent events
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardEventList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/camera/{index}:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+      - name: index
+        in: path
+        required: true
+        description: Camera number, 0-based
+        schema: { type: integer, minimum: 0, maximum: 9 }
+    get:
+      operationId: getBoardCamera
+      summary: Latest camera frame
+      description: Clients may append a cache-busting query (e.g. `?t=<timestamp>`); it is ignored.
+      tags: [boards]
+      responses:
+        '200':
+          description: JPEG frame
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/start:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: startBoard
+      summary: Start dart detection
+      tags: [boards]
+      responses:
+        '200': { $ref: '#/components/responses/BoardActionDone' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/stop:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: stopBoard
+      summary: Stop dart detection
+      tags: [boards]
+      responses:
+        '200': { $ref: '#/components/responses/BoardActionDone' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/reset:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: resetBoard
+      summary: Reset the board (clears thrown darts)
+      tags: [boards]
+      responses:
+        '200': { $ref: '#/components/responses/BoardActionDone' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/calibrate:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: calibrateBoard
+      summary: Run automatic calibration
+      tags: [boards]
+      responses:
+        '200': { $ref: '#/components/responses/BoardActionDone' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/pairing/request:
+    post:
+      operationId: requestPairing
+      summary: Request a pairing code (called by the bridge)
+      description: Takes no body. Older bridges send `{}`, which is accepted.
+      tags: [pairing, bridge]
+      security: []
+      responses:
+        '201':
+          description: A new code, valid for 10 minutes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PairingCode' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/pairing/{code}/token:
+    parameters:
+      - name: code
+        in: path
+        required: true
+        description: Pairing code; case and separators are ignored
+        schema: { type: string, minLength: 1, maxLength: 32 }
+    get:
+      operationId: getPairingToken
+      summary: Poll for the bridge token of a claimed code (called by the bridge)
+      tags: [pairing, bridge]
+      security: []
+      responses:
+        '200':
+          description: Pending, claimed (with the one-time token) or already consumed
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PairingTokenStatus' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/pairing/claim:
+    post:
+      operationId: claimPairing
+      summary: Claim a pairing code for the signed-in user, creating the board
+      tags: [pairing]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ClaimPairingRequest' }
+      responses:
+        '201':
+          description: The new board
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ClaimedBoard' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '410':
+          description: The code expired
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/sessions:
+    get:
+      operationId: listSessions
+      summary: List the signed-in user's sessions
+      tags: [sessions]
+      responses:
+        '200':
+          description: The user's sessions (active and recently finished)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionList' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    post:
+      operationId: createSession
+      summary: Start a game session
+      tags: [sessions]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSessionRequest' }
+      responses:
+        '201':
+          description: The new session
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/CreatedSession' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: The user or the board already has an active session (sessionId is set for the user's own)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ActiveSessionError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/sessions/{id}:
+    parameters:
+      - $ref: '#/components/parameters/SessionId'
+    get:
+      operationId: getSession
+      summary: A session with its current game state
+      tags: [sessions]
+      responses:
+        '200':
+          description: The session
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SessionDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      operationId: deleteSession
+      summary: End a session
+      tags: [sessions]
+      responses:
+        '204':
+          description: Ended
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+components:
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: better-auth.session_token
+      description: better-auth session cookie, set by signing in via /api/auth
+
+  parameters:
+    BoardId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+    SessionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
+
+  responses:
+    BadRequest:
+      description: The request doesn't match the spec
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Unauthorized:
+      description: Not signed in
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Forbidden:
+      description: The resource belongs to another user
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    Conflict:
+      description: Conflicts with the current state
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    BoardError:
+      description: Board Manager rejected the request or failed
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    BoardUnavailable:
+      description: The board is offline or unreachable
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/ErrorResponse' }
+    TooManyRequests:
+      description: Rate limit exceeded (body from @fastify/rate-limit)
+      content:
+        application/json:
+          schema: { type: object, additionalProperties: true }
+    BoardActionDone:
+      description: Board Manager accepted the command
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/BoardActionResult' }
+
+  schemas:
+    Player: { $ref: 'common-v1.json#/$defs/Player' }
+    Dart: { $ref: 'common-v1.json#/$defs/Dart' }
+    ErrorResponse: { $ref: 'common-v1.json#/$defs/ErrorResponse' }
+
+    Health:
+      type: object
+      required: [ok]
+      additionalProperties: false
+      properties:
+        ok: { type: boolean }
+
+    ConfigFieldMeta:
+      type: object
+      required: [label]
+      additionalProperties: false
+      properties:
+        label: { type: string }
+        tooltip: { type: string }
+        options:
+          type: array
+          items:
+            type: object
+            required: [value, label]
+            additionalProperties: false
+            properties:
+              value:
+                anyOf:
+                  - { type: string }
+                  - { type: number }
+                  - { type: boolean }
+              label: { type: string }
+    GameInfo:
+      type: object
+      required: [id, defaultConfig, configMeta]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        defaultConfig: { type: object, additionalProperties: true }
+        configMeta:
+          type: object
+          additionalProperties: { $ref: '#/components/schemas/ConfigFieldMeta' }
+    GameList:
+      type: object
+      required: [games]
+      additionalProperties: false
+      properties:
+        games:
+          type: array
+          items: { $ref: '#/components/schemas/GameInfo' }
+
+    Board:
+      type: object
+      required: [id, name, hardwareId, online, bridgeVersion, bmVersion, createdAt, ip, bmUrl]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        hardwareId: { type: string, nullable: true }
+        online: { type: boolean }
+        bridgeVersion: { type: string, nullable: true, description: 'Bridge build, e.g. v0.4.2 or dev+b503493-dirty' }
+        bmVersion: { type: string, nullable: true, description: Board Manager version }
+        createdAt: { type: string, format: date-time, description: When the board was paired }
+        ip: { type: string, nullable: true, description: Board Manager host name }
+        bmUrl: { type: string, nullable: true, description: 'Board Manager origin incl. port, e.g. http://192.168.0.109:3180' }
+    BoardList:
+      type: object
+      required: [boards]
+      additionalProperties: false
+      properties:
+        boards:
+          type: array
+          items: { $ref: '#/components/schemas/Board' }
+    CreateBoardRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { type: string, pattern: '\S', maxLength: 64 }
+    CreatedBoard:
+      type: object
+      required: [id, name, token]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        token: { type: string, description: Bridge token; shown only once }
+    RenameBoardRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { type: string, pattern: '\S', maxLength: 64 }
+    RenamedBoard:
+      type: object
+      required: [id, name]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+    BoardStatus:
+      type: object
+      required: [status, running, event]
+      additionalProperties: false
+      properties:
+        status: { type: string, nullable: true }
+        running: { type: boolean }
+        event: { type: string, nullable: true }
+    BoardEvent:
+      type: object
+      required: [at, kind, data]
+      additionalProperties: false
+      properties:
+        at: { type: string, description: When the bridge received it (ISO timestamp) }
+        kind: { type: string, enum: [dart.detected, dart.corrected, takeout.started, visit.cleared] }
+        data:
+          type: object
+          additionalProperties: true
+          properties:
+            dart: { $ref: '#/components/schemas/Dart' }
+    BoardEventList:
+      type: object
+      required: [events]
+      additionalProperties: false
+      properties:
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/BoardEvent' }
+    BoardActionResult:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status: { type: integer, description: HTTP status Board Manager answered with }
+
+    PairingCode:
+      type: object
+      required: [code, expiresAt]
+      additionalProperties: false
+      properties:
+        code: { type: string }
+        expiresAt: { type: string, format: date-time }
+    PairingTokenStatus:
+      type: object
+      required: [status]
+      additionalProperties: false
+      properties:
+        status: { type: string, enum: [pending, claimed, consumed] }
+        token: { type: string, description: Present only when status is claimed }
+    ClaimPairingRequest:
+      type: object
+      required: [code, name]
+      additionalProperties: false
+      properties:
+        code: { type: string, pattern: '\S', maxLength: 32 }
+        name: { type: string, pattern: '\S', maxLength: 64 }
+    ClaimedBoard:
+      type: object
+      required: [boardId, name]
+      additionalProperties: false
+      properties:
+        boardId: { type: string }
+        name: { type: string }
+
+    SessionSummary:
+      type: object
+      required: [id, boardId, gameId, status, players, createdAt]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        boardId: { type: string, nullable: true }
+        gameId: { type: string }
+        status: { type: string, enum: [active, finished] }
+        players:
+          type: array
+          items: { $ref: '#/components/schemas/Player' }
+        createdAt: { type: string, format: date-time }
+    SessionList:
+      type: object
+      required: [sessions]
+      additionalProperties: false
+      properties:
+        sessions:
+          type: array
+          items: { $ref: '#/components/schemas/SessionSummary' }
+    SessionDetail:
+      type: object
+      required: [id, boardId, gameId, status, players, createdAt, game]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        boardId: { type: string, nullable: true }
+        gameId: { type: string }
+        status: { type: string, enum: [active, finished] }
+        players:
+          type: array
+          items: { $ref: '#/components/schemas/Player' }
+        createdAt: { type: string, format: date-time }
+        game:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Current game state; its shape is specified by schema/game-ws-v1.json
+    CreateSessionRequest:
+      type: object
+      required: [gameId, config, players]
+      additionalProperties: false
+      properties:
+        boardId: { type: string, nullable: true, description: 'null or absent: manual entry without a board' }
+        gameId: { type: string }
+        config: { type: object, additionalProperties: true }
+        players:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/Player' }
+    CreatedSession:
+      type: object
+      required: [sessionId]
+      additionalProperties: false
+      properties:
+        sessionId: { type: string }
+    ActiveSessionError:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error: { type: string }
+        sessionId: { type: string, description: "The user's running session (absent when the board is busy)" }

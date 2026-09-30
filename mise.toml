@@ -33,3 +33,7 @@ run = "cd bridge && go build -ldflags \"-X main.version=$(git describe --tags --
 [tasks."gen:types"]
 description = "Regenerate TS types from schema"
 run = "cd backend && npm run gen:types"
+
+[tasks."gen:api"]
+description = "Regenerate API types/clients from schema/ (HTTP spec, game WebSocket, Go bridge client)"
+run = "npm run gen:api"

@@ -1,0 +1,86 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "common/v1",
+  "title": "Common",
+  "description": "Definitions shared by api-v1.yaml (HTTP) and game-ws-v1.json (game WebSocket). Must stay valid in both OpenAPI 3.0 and JSON Schema draft-07: no `const`, no type arrays, no `nullable`.",
+  "$defs": {
+    "Player": {
+      "title": "Player",
+      "type": "object",
+      "required": ["name"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Segment": {
+      "title": "Segment",
+      "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+      "type": "object",
+      "required": ["name", "number", "bed", "multiplier"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string" },
+        "number": { "type": "integer", "minimum": 0, "maximum": 50 },
+        "bed": { "type": "string", "enum": ["SingleInner", "SingleOuter", "Single", "Double", "Triple", "Outside"] },
+        "multiplier": { "type": "integer", "enum": [0, 1, 2, 3] }
+      }
+    },
+    "Coords": {
+      "title": "Coords",
+      "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+      "type": "object",
+      "required": ["x", "y"],
+      "additionalProperties": false,
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      }
+    },
+    "Polar": {
+      "title": "Polar",
+      "type": "object",
+      "required": ["r", "theta_deg"],
+      "additionalProperties": false,
+      "properties": {
+        "r": { "type": "number", "minimum": 0 },
+        "theta_deg": { "type": "number" }
+      }
+    },
+    "Dart": {
+      "title": "Dart",
+      "description": "A thrown dart. coords/polar are absent for manual entry and bounce-outs.",
+      "type": "object",
+      "required": ["segment", "score"],
+      "additionalProperties": false,
+      "properties": {
+        "segment": { "$ref": "#/$defs/Segment" },
+        "score": { "type": "integer", "minimum": 0 },
+        "coords": { "$ref": "#/$defs/Coords" },
+        "polar": { "$ref": "#/$defs/Polar" },
+        "bouncer": { "type": "boolean" }
+      }
+    },
+    "ErrorResponse": {
+      "title": "ErrorResponse",
+      "type": "object",
+      "required": ["error"],
+      "additionalProperties": false,
+      "properties": {
+        "error": { "type": "string" },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["path", "message"],
+            "additionalProperties": false,
+            "properties": {
+              "path": { "type": "string" },
+              "message": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
