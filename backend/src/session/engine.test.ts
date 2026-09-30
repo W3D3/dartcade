@@ -77,6 +77,19 @@ describe('onBridgeEvent', () => {
     expect(push).not.toHaveBeenCalled()
   })
 
+  it('warns about dart events whose data does not match the bridge schema, and ignores them', async () => {
+    const warn = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, warn)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
+    await engine.onBridgeEvent('board-1', 'dart.detected', {
+      visit_id: 'v1', index: 0, source_seq: 1,
+      dart: { segment: { name: 'X1', number: 1, bed: 'Weird', multiplier: 1 }, score: 1 },
+    })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('dart.detected'), expect.anything())
+    expect(engine.getSession(sessionId)!.openVisitEvents.filter(e => e.kind === 'dart.detected')).toHaveLength(0)
+  })
+
   it('pushes snapshot after visit.opened', async () => {
     const engine = makeEngine()
     await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])

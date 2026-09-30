@@ -10,6 +10,8 @@ import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
 
 type PushFn = (sessionId: string) => void
+/** Reports bridge data the engine had to ignore (message, details). */
+type WarnFn = (message: string, details: unknown) => void
 
 export interface EngineStore {
   insertSession(data: { id: string; owner_user_id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown }): Promise<void>
@@ -54,6 +56,7 @@ export class SessionEngine {
   constructor(
     private readonly store: EngineStore,
     private readonly push: PushFn,
+    private readonly warn: WarnFn = () => undefined,
   ) {}
 
   async create(
@@ -98,6 +101,10 @@ export class SessionEngine {
 
     // Kinds the games don't use (and malformed dart data) change nothing but still push
     const event = parseBoardEvent(kind, data)
+    // A dart the games can't read would otherwise just not count, with no trace
+    if (!event && (kind === 'dart.detected' || kind === 'dart.corrected')) {
+      this.warn(`ignored ${kind} event: data does not match the bridge schema`, { boardId, data })
+    }
 
     switch (event?.kind) {
       case 'visit.opened':

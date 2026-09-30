@@ -290,7 +290,8 @@
   {/each}
 
   <!-- Checkout target dashed circles (x01) -->
-  {#each checkoutTargets as label (label)}
+  <!-- Keyed by position: a checkout can repeat a target (T20 · T20 · D20) -->
+  {#each checkoutTargets as label, i (i)}
     {@const pos = labelPos(label)}
     {#if pos}
       <circle cx={pos.x} cy={pos.y} r="0.076"

@@ -45,7 +45,7 @@
         class="flex items-center gap-3 h-11 px-3 rounded-lg no-underline text-[15px] transition-colors
                {active ? 'bg-[#22251f] text-text font-semibold' : 'text-[#c9c9bf] font-medium'}">
         {#if link.icon === 'play'}
-          <Target size={20} strokeWidth={1.8} />
+          <Target size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'boards'}
           <Monitor size={20} strokeWidth={1.8} />
         {:else if link.icon === 'trophy'}

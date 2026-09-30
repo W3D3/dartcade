@@ -22,7 +22,11 @@ await runMigrations(db)
 await seedDev()
 
 // The push callback only runs after the engine exists
-const engine: SessionEngine = new SessionEngine(createEngineStore(db), sessionId => { pushSnapshot(sessionId, engine) })
+const engine: SessionEngine = new SessionEngine(
+  createEngineStore(db),
+  sessionId => { pushSnapshot(sessionId, engine) },
+  (message, details) => { app.log.warn({ details }, message) },
+)
 await engine.rebuild()
 
 const app = await buildApp({ engine, db, frontendDist: join(__dirname, '../../frontend/dist') })
