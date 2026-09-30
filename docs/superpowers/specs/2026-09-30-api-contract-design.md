@@ -70,7 +70,7 @@ Each route gains `schema: fromSpec('<operationId>')` and a typed generic `Route<
 
 ### Validation
 
-- **Requests:** request schemas use `additionalProperties: false`; unknown or malformed input → 400 before the handler.
+- **Requests:** tolerant reader. Unknown fields are stripped before the handler (Fastify's default `removeAdditional`), so a newer client — e.g. a bridge updated before the backend — keeps working and handlers only ever see spec'd fields. Malformed input (wrong types, missing required fields, invalid values) → 400 before the handler. Our own clients can't send unknown fields anyway: their generated types make that a compile error.
 - **Responses:** Fastify serializes via the response schema (drops undeclared fields, throws on missing required ones). In dev and test an `onSend` hook additionally validates JSON responses with Ajv and turns mismatches into 500, so tests catch drift. Production only serializes.
 
 ### Error format
@@ -114,7 +114,7 @@ Response bodies are specified from the current handlers; the spec documents exis
 - **Server → client — `Snapshot`:** a union discriminated by `gameId`: `{ gameId: 'x01', game: X01Game }` | `{ gameId: 'atc', game: AtcGame }`. Each `*Game` = the game's view + engine fields (`currentVisitDarts`, `totalDarts`, `totalVisits`) + bull off (`phase: 'bulloff'` with `bullOff: BullOffView`, or `bullOff: null`). Other snapshot fields: `type: 'snapshot'`, `sessionId`, `boardId`, `players`, `bmStatus`.
 - **Client → server — `ClientMessage`:** `{ type: 'user_action', action: UserAction }`; `UserAction` is a union by `type`: `undo_dart`, `add_dart`, `correct_dart`, `takeout`, `bulloff_skip`, `bulloff_rethrow`, `bulloff_start`.
 - **Close codes — `WsCloseCode`:** enum with `tsEnumNames` so the generated TS is a runtime `enum`: 4400 missing session, 4401 unauthorized, 4403 forbidden, 4404 not found, 4500 internal error.
-- **Backend:** incoming messages are validated with Ajv; invalid ones are logged and ignored (the socket stays open — a buggy client shouldn't drop a player from the game). Outgoing snapshots are validated in dev/test. Game modules' `view()` return the generated view types instead of `Record<string, unknown>`.
+- **Backend:** incoming messages are validated with Ajv against a tolerant copy of `ClientMessage` (extra fields allowed, as for HTTP requests; Ajv's stripping mode can't be used here because it mangles `oneOf` unions). Invalid ones (unknown action, missing fields, not JSON) are logged and ignored (the socket stays open — a buggy client shouldn't drop a player from the game). Outgoing snapshots are validated in dev/test. Game modules' `view()` return the generated view types instead of `Record<string, unknown>`.
 - **Frontend:** `ws.ts` is typed from the generated file; `send()` accepts only `UserAction`; the casts in `GameDisplay`/`BullOffPanel` go away.
 
 ## 4. Frontend
