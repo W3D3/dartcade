@@ -12,20 +12,12 @@
   import { parseLabel } from '../lib/dartUtils.js'
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
-  import { defaultSettings, type GameSettings } from '../lib/gameSettings.js'
+  import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { api, type Segment, type BullOffView } from '$lib/api'
 
   // ── Settings (persisted to localStorage) ──────────────────────────────────
-  const SETTINGS_KEY = 'dartcade_game_settings'
-  function loadSettings(): GameSettings {
-    try {
-      const s = localStorage.getItem(SETTINGS_KEY)
-      if (s) return { ...defaultSettings, ...JSON.parse(s) }
-    } catch {}
-    return { ...defaultSettings }
-  }
-  let settings = $state<GameSettings>(loadSettings())
-  $effect(() => { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)) })
+  let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
+  $effect(() => { saveSettings(localStorage, settings) })
 
   // ── Sound effects (Web Audio API) ─────────────────────────────────────────
   let audioCtx: AudioContext | null = null
