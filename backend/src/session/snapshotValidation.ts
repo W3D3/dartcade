@@ -1,13 +1,12 @@
 import { Ajv } from 'ajv'
-import addFormatsDefault from 'ajv-formats'
-import type { FormatsPlugin } from 'ajv-formats'
+import addFormatsModule from 'ajv-formats'
 import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
 import type { Snapshot } from './types.js'
 
-// ajv-formats has only a default export; under this project's NodeNext module resolution,
-// TypeScript resolves `import addFormats from 'ajv-formats'` to the module namespace (not
-// callable) rather than its default export, so we re-type it explicitly from the import type.
-const addFormats = addFormatsDefault as unknown as FormatsPlugin
+// ajv-formats is CommonJS: under NodeNext, TypeScript types its default import as the
+// module object, whose `default` is the plugin (at runtime module.exports.default is the
+// plugin itself too).
+const addFormats = addFormatsModule.default
 
 const ajv = new Ajv({ strict: false, allErrors: true })
 addFormats(ajv)

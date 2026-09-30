@@ -21,9 +21,10 @@ describe('refoldVisit', () => {
   })
 
   it('folds events in order', () => {
+    const data = { visit_id: 'v', index: 0, dart: { segment: { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }, score: 1 }, source_seq: 1 } as const
     const events: BoardEvent[] = [
-      { kind: 'dart.detected', data: {} },
-      { kind: 'dart.detected', data: {} },
+      { kind: 'dart.detected', data },
+      { kind: 'dart.detected', data: { ...data, index: 1 } },
     ]
     const result = refoldVisit(countModule, { count: 0 }, events)
     expect(result.count).toBe(2)

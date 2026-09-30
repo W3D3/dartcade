@@ -247,13 +247,7 @@ describe('double in / master in', () => {
   })
 
   it('double in: opened status resets between legs', () => {
-    const cfg = { ...defaultCfg, inMode: 'double' as const, firstTo: 1 }
-    // Win a leg
-    const s = openedVisit(makeState({ cfg, scores: [20, 501], opened: [true, true] }))
-    const { state: afterWin } = x01Game.onBoardEvent(s, dartEvent(10, 'Double', 2))
-    const { state: afterTakeout } = x01Game.onBoardEvent(afterWin, { kind: 'takeout.finished', data: {} })
-    // firstTo=1, so player 0 won — but they need another leg to check reset
-    // Since firstTo=1, match is done; test with firstTo=2 instead
+    // Win a leg; with firstTo=1 that would end the match, so firstTo=2
     const cfg2 = { ...defaultCfg, inMode: 'double' as const, firstTo: 2 }
     const s2 = openedVisit(makeState({ cfg: cfg2, scores: [20, 501], opened: [true, true] }))
     const { state: afterWin2 } = x01Game.onBoardEvent(s2, dartEvent(10, 'Double', 2))

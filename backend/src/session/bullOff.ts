@@ -50,7 +50,7 @@ const BED_ESTIMATE_MM: Record<string, number> = {
 export function initBullOff(cfg: BullOffConfig): BullOffState {
   return {
     active: cfg.mode !== 'off',
-    throws: Array(cfg.playerCount).fill(null),
+    throws: Array<BullOffThrow | null>(cfg.playerCount).fill(null),
     sequence: Array.from({ length: cfg.playerCount }, (_, i) => i),
     step: 0,
     currentPlayer: 0,
@@ -113,7 +113,7 @@ export function clearCurrentBullOffThrow(s: BullOffState): BullOffState {
 /** Everyone throws again, in reverse order: whoever threw last now throws first. */
 export function rethrowBullOff(s: BullOffState): BullOffState {
   const sequence = [...s.sequence].reverse()
-  return { ...s, throws: Array(s.playerCount).fill(null), sequence, step: 0, currentPlayer: sequence[0], result: null }
+  return { ...s, throws: Array<BullOffThrow | null>(s.playerCount).fill(null), sequence, step: 0, currentPlayer: sequence[0], result: null }
 }
 
 /**

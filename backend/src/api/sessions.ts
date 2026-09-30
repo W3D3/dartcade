@@ -1,7 +1,8 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
+import { isRecord, isString } from '../guards.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { games } from '../games/index.js'
+import { gameList } from '../games/index.js'
 import { ActiveSessionError, type SessionEngine } from '../session/engine.js'
 import type { Session } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
@@ -21,15 +22,15 @@ const summary = (s: Session) => ({
   status: s.status, players: s.players, createdAt: s.createdAt.toISOString(),
 })
 
-export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
+export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { engine, db } = opts
 
-  app.get<Route<'health'>>('/health', { schema: fromSpec('health') }, async () => ({ ok: true }))
+  app.get<Route<'health'>>('/health', { schema: fromSpec('health') }, () => ({ ok: true }))
 
-  app.get<Route<'listGames'>>('/api/games', { schema: fromSpec('listGames') }, async () => ({
-    games: Object.values(games).map(m => ({
+  app.get<Route<'listGames'>>('/api/games', { schema: fromSpec('listGames') }, () => ({
+    games: gameList.map(m => ({
       id: m.id,
-      defaultConfig: m.defaultConfig as Record<string, unknown>,
+      defaultConfig: m.defaultConfig,
       configMeta: m.configMeta ?? {},
     })),
   }))
@@ -42,24 +43,26 @@ export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promi
       if (!board) return reply.code(400).send({ error: 'board not found' })
       if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
     }
+    let sessionId: string
     try {
-      const { sessionId } = await engine.create(req.userId, resolvedBoardId, gameId, config, players)
-      return reply.code(201).send({ sessionId })
-    } catch (err: any) {
+      ({ sessionId } = await engine.create(req.userId, resolvedBoardId, gameId, config, players))
+    } catch (err) {
       // One running game per user: point the client at the one they have
       if (err instanceof ActiveSessionError) {
         return reply.code(409).send({ error: 'You already have a game running', sessionId: err.sessionId })
       }
       // Unique index game_sessions_one_active_per_owner as a backstop
-      if (err.code === '23505') return reply.code(409).send({ error: 'You already have a game running' })
-      if (err.message?.includes('unknown game')) return reply.code(400).send({ error: err.message })
-      if (err.message?.startsWith('invalid config')) return reply.code(400).send({ error: err.message })
-      if (err.message?.includes('active session')) return reply.code(409).send({ error: err.message })
+      if (isRecord(err) && err.code === '23505') return reply.code(409).send({ error: 'You already have a game running' })
+      const message = isRecord(err) && isString(err.message) ? err.message : undefined
+      if (message?.includes('unknown game')) return reply.code(400).send({ error: message })
+      if (message?.startsWith('invalid config')) return reply.code(400).send({ error: message })
+      if (message?.includes('active session')) return reply.code(409).send({ error: message })
       throw err
     }
+    return reply.code(201).send({ sessionId })
   })
 
-  app.get<Route<'listSessions'>>('/api/sessions', { preValidation: requireAuth, schema: fromSpec('listSessions') }, async (req) => ({
+  app.get<Route<'listSessions'>>('/api/sessions', { preValidation: requireAuth, schema: fromSpec('listSessions') }, (req) => ({
     sessions: engine.getAllSessions().filter(s => canAccessSession(req.userId, s)).map(summary),
   }))
 
@@ -68,7 +71,7 @@ export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promi
     if (!session) return reply.code(404).send({ error: 'not found' })
     if (!canAccessSession(req.userId, session)) return reply.code(403).send({ error: 'forbidden' })
     const snap = engine.getSnapshot(session.id)
-    return reply.send({ ...summary(session), game: (snap?.game ?? null) as Record<string, unknown> | null })
+    return reply.send({ ...summary(session), game: snap ? { ...snap.game } : null })
   })
 
   app.delete<Route<'deleteSession'>>('/api/sessions/:id', { preValidation: requireAuth, schema: fromSpec('deleteSession') }, async (req, reply) => {
@@ -78,4 +81,6 @@ export async function sessionsApiPlugin(app: FastifyInstance, opts: Opts): Promi
     await engine.deleteSession(session.id)
     return reply.code(204).send()
   })
+
+  done()
 }

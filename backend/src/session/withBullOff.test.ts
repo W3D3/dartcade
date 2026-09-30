@@ -38,7 +38,7 @@ function play(s: ReturnType<typeof game.init>, ...events: BoardEvent[]) {
 describe('withBullOff', () => {
   it('adds the bullOff option to the game config', () => {
     expect(game.defaultConfig.bullOff).toBe('off')
-    expect(game.configMeta?.bullOff?.options?.map(o => o.value)).toEqual(['off', 'wdc', 'pdc'])
+    expect(game.configMeta?.bullOff.options?.map(o => o.value)).toEqual(['off', 'wdc', 'pdc'])
   })
 
   it('passes straight through to the game when bull off is off', () => {

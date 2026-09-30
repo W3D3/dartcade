@@ -7,12 +7,17 @@ import type { SessionEngine } from '../session/engine.js'
 import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
+import { isNumber, isRecord, isString } from '../guards.js'
 
 export { bridgeConnections }
 
 type Opts = FastifyPluginOptions & {
   engine: SessionEngine
   db: Kysely<Database>
+}
+
+function nonEmptyString(v: unknown): string | null {
+  return isString(v) && v !== '' ? v : null
 }
 
 // handleBridgeConnection wires up a single bridge WebSocket. The message
@@ -52,59 +57,69 @@ export function handleBridgeConnection(
 
   socket.on('message', (raw: Buffer) => {
     eventQueue = eventQueue.then(async () => {
-      if (!conn.boardDbId) return // unauthenticated (socket already closed)
+      const boardDbId = conn.boardDbId
+      if (!boardDbId) return // unauthenticated (socket already closed)
 
-      let msg: any
-      try { msg = JSON.parse(raw.toString()) } catch { return }
+      let parsed: unknown
+      try { parsed = JSON.parse(raw.toString()) } catch { return }
+      const msg: Record<string, unknown> = isRecord(parsed) ? parsed : {}
 
       if (!conn.helloReceived) {
         if (msg.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
+        const hello: Record<string, unknown> = isRecord(msg.data) ? msg.data : {}
         conn.helloReceived = true
-        conn.bmVersion = msg.data?.bm_version || null
-        conn.bridgeVersion = msg.data?.bridge_version || null
-        conn.bmUrl = msg.data?.bm_url ?? null
+        conn.bmVersion = nonEmptyString(hello.bm_version)
+        conn.bridgeVersion = nonEmptyString(hello.bridge_version)
+        conn.bmUrl = isString(hello.bm_url) ? hello.bm_url : null
         return
       }
 
-      if (msg.v !== 1 || typeof msg.seq !== 'number' || typeof msg.kind !== 'string') return
+      const { seq, kind, bridge_id: bridgeId, boot_id: bootId, recv_wall: recvWall } = msg
+      if (msg.v !== 1 || !isNumber(seq) || !isString(kind)) return
+      // Envelope fields the event can't be stored without (schema/adbridge-v1.json)
+      if (!isString(bridgeId) || !isString(bootId) || !isString(recvWall)) return
+      const hardwareId = isString(msg.board_id) ? msg.board_id : undefined
+      const data = msg.data ?? {}
 
-      if (!conn.hardwareBoardId && msg.board_id) {
-        conn.hardwareBoardId = msg.board_id
-        await updateBoardHardwareId(db, conn.boardDbId, msg.board_id)
+      if (!conn.hardwareBoardId && hardwareId) {
+        conn.hardwareBoardId = hardwareId
+        await updateBoardHardwareId(db, boardDbId, hardwareId)
       }
 
       if (conn.bridgeId === null) {
-        conn.bridgeId = msg.bridge_id
-        conn.bootId = msg.boot_id
+        conn.bridgeId = bridgeId
+        conn.bootId = bootId
       }
 
       const { inserted } = await insertBridgeEvent(db, {
-        bridge_id: msg.bridge_id,
-        boot_id: msg.boot_id,
-        seq: BigInt(msg.seq),
-        board_id: msg.board_id ?? conn.hardwareBoardId ?? conn.boardDbId,
-        recv_wall: new Date(msg.recv_wall),
-        kind: msg.kind,
-        data: msg.data ?? {},
+        bridge_id: bridgeId,
+        boot_id: bootId,
+        seq: BigInt(seq),
+        board_id: hardwareId ?? conn.hardwareBoardId ?? boardDbId,
+        recv_wall: new Date(recvWall),
+        kind,
+        data,
       })
 
-      socket.send(JSON.stringify({ ack: msg.seq }))
+      socket.send(JSON.stringify({ ack: seq }))
       if (!inserted) return
 
-      bridgeConnections.recordEvent(conn.boardDbId, { at: msg.recv_wall, kind: msg.kind, data: msg.data ?? {} })
+      bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })
 
-      await engine.onBridgeEvent(conn.boardDbId, msg.kind, msg.data ?? {}, new Date(msg.recv_wall))
-    }).catch(err => { console.error('Bridge event processing error:', err) })
+      await engine.onBridgeEvent(boardDbId, kind, data)
+    }).catch((err: unknown) => { console.error('Bridge event processing error:', err) })
   })
 
-  socket.on('close', () => bridgeConnections.remove(conn))
-  socket.on('error', () => bridgeConnections.remove(conn))
+  socket.on('close', () => { bridgeConnections.remove(conn) })
+  socket.on('error', () => { bridgeConnections.remove(conn) })
 }
 
-export async function bridgeGwPlugin(app: FastifyInstance, opts: Opts): Promise<void> {
+export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { engine, db } = opts
 
   app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
-    handleBridgeConnection(connection.socket, req.query as { token?: string }, { db, engine })
+    const token = isRecord(req.query) && isString(req.query.token) ? req.query.token : undefined
+    handleBridgeConnection(connection.socket, { token }, { db, engine })
   })
+  done()
 }

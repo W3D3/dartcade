@@ -1,4 +1,7 @@
 import type { WebSocket } from 'ws'
+import type { components } from '../schema/api.js'
+import { isOneOf, isOptional, isRecord } from '../guards.js'
+import { isDart } from '../session/boardEvent.js'
 
 export type BridgeConn = {
   ws: WebSocket
@@ -12,17 +15,25 @@ export type BridgeConn = {
   helloReceived: boolean
 }
 
+/** A bridge event as received. */
 export type BoardEvent = { at: string; kind: string; data: unknown }
+
+/** An event of the Boards page live feed (BoardEvent in schema/api-v1.yaml). */
+export type FeedEvent = components['schemas']['BoardEvent']
 
 // Kinds worth surfacing in the Boards page live feed. High-rate frames
 // (bm.frame, motion) are deliberately excluded.
-const FEED_KINDS = new Set(['dart.detected', 'dart.corrected', 'takeout.started', 'visit.cleared'])
+const FEED_KINDS = ['dart.detected', 'dart.corrected', 'takeout.started', 'visit.cleared'] as const
 const FEED_LIMIT = 50
+
+function isFeedData(v: unknown): v is FeedEvent['data'] {
+  return isRecord(v) && isOptional(v.dart, isDart)
+}
 
 export class BridgeConnections {
   private byBoard: Map<string, BridgeConn> = new Map()
   private all: Set<BridgeConn> = new Set()
-  private feeds: Map<string, BoardEvent[]> = new Map()
+  private feeds: Map<string, FeedEvent[]> = new Map()
 
   add(conn: BridgeConn): void { this.all.add(conn) }
 
@@ -54,14 +65,16 @@ export class BridgeConnections {
   }
 
   recordEvent(boardDbId: string, ev: BoardEvent): void {
-    if (!FEED_KINDS.has(ev.kind)) return
+    const { at, kind, data } = ev
+    // Data that doesn't match the feed's schema (a malformed dart) is left out too
+    if (!isOneOf(FEED_KINDS, kind) || !isFeedData(data)) return
     const feed = this.feeds.get(boardDbId) ?? []
-    feed.push(ev)
+    feed.push({ at, kind, data })
     if (feed.length > FEED_LIMIT) feed.splice(0, feed.length - FEED_LIMIT)
     this.feeds.set(boardDbId, feed)
   }
 
-  recentEvents(boardDbId: string): BoardEvent[] {
+  recentEvents(boardDbId: string): FeedEvent[] {
     return this.feeds.get(boardDbId) ?? []
   }
 
