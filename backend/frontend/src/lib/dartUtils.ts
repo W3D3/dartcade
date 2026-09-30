@@ -1,3 +1,6 @@
+import type { Segment } from './api/game-ws'
+
+export type { Segment }
 const SEGS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5]
 const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.000 }
 
@@ -101,7 +104,6 @@ export function checkoutHint(remaining: number, outMode: OutMode = 'double', dar
   return null
 }
 
-export type Segment = { name: string; number: number; bed: string; multiplier: number }
 
 /** A picker label (T20, D5, S3, 25, Bull, Miss) as the segment Board Manager would report. */
 export function labelToSegment(label: string): Segment {

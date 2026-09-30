@@ -7,7 +7,7 @@
   import DartBoard from '../lib/components/DartBoard.svelte'
   import DartEntryPanel from '../lib/components/DartEntryPanel.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
-  import BullOffPanel, { type BullOffView } from '../lib/components/BullOffPanel.svelte'
+  import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import BoardLegend from '../lib/components/BoardLegend.svelte'
   import VisitBand from '../lib/components/VisitBand.svelte'
   import DartSlots from '../lib/components/DartSlots.svelte'
@@ -25,7 +25,8 @@
   import { nextButton } from '../lib/controls.js'
   import { x01Player, atcPlayer } from '../lib/playerStats.js'
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
-  import { labelToSegment, type Segment } from '../lib/dartUtils.js'
+  import { labelToSegment } from '../lib/dartUtils.js'
+  import { api, type Segment, type BullOffView, type UserAction } from '$lib/api'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -53,12 +54,15 @@
       if (!snap) { snapshot = null; return }
       // Boardless sessions start on the keypad (once)
       if (!viewModeSetByUser && snap.boardId === null) { viewMode = 'entry'; viewModeSetByUser = true }
-      if (snapshot) playSounds(snapshot.game, snap.game)
-      history = trackVisits(history, snap.game)
+      if (snapshot) playSounds(asRecord(snapshot.game), asRecord(snap.game))
+      history = trackVisits(history, asRecord(snap.game))
       snapshot = snap
     })
   })
   onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
+
+  // The game logic modules read the snapshot's game generically, per game id
+  const asRecord = (g: unknown) => (g ?? {}) as Record<string, unknown>
 
   function playSounds(before: Record<string, unknown>, after: Record<string, unknown>) {
     const oldCount = (before.currentVisitDarts as unknown[] | undefined)?.length ?? 0
@@ -81,7 +85,7 @@
   const isX01 = $derived(gameId === 'x01')
   const boardId = $derived(snapshot?.boardId ?? null)
   const players = $derived(snapshot?.players ?? [])
-  const game = $derived(snapshot?.game ?? {})
+  const game = $derived(asRecord(snapshot?.game))
   const view = $derived(getGameView(gameId))
   const currentPlayer = $derived((game.currentPlayer as number | undefined) ?? 0)
   const winner = $derived((game.winner as number | null | undefined) ?? null)
@@ -172,7 +176,7 @@
     .join(' '))
 
   // ── Actions ───────────────────────────────────────────────────────────────
-  const send = (action: Record<string, unknown>) => sessionStore?.send(action)
+  const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
   const advance = () => send({ type: 'takeout' })
   const next = $derived(nextButton({ manual: boardId === null, dartCount: darts.length, locked, active: isActive }))
@@ -193,7 +197,7 @@
 
   async function endSession() {
     if (!sessionId) return
-    await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' })
+    await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
     push('/')
   }
 </script>
