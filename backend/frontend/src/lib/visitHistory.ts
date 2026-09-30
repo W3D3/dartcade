@@ -11,7 +11,7 @@ export type VisitHistory = {
   all: Visit[][]
   /** Per player: score (X01) or progress (ATC) when their current visit began; null when unknown. */
   start: (number | null)[]
-  prev: { totalVisits: number[]; legs: number[]; darts: number; bust: boolean; cp: number } | null
+  prev: { totalVisits: number[]; totalDarts: number[]; legs: number[]; darts: number; bust: boolean; cp: number } | null
 }
 
 export const emptyHistory = (): VisitHistory => ({ leg: [], all: [], start: [], prev: null })
@@ -25,6 +25,7 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
   const progress = isX01 ? nums(game, 'scores') : nums(game, 'hitCounts')
   const totalVisits = nums(game, 'totalVisits')
   const legs = nums(game, 'legs')
+  const totalDarts = nums(game, 'totalDarts')
   const darts = Array.isArray(game.currentVisitDarts) ? game.currentVisitDarts.length : 0
   const cp = typeof game.currentPlayer === 'number' ? game.currentPlayer : 0
   const n = Math.max(totalVisits.length, progress.length)
@@ -44,9 +45,12 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
       const s = start[i]
       const now = progress[i] ?? s
       if (s !== null && now !== null) { // null: began before the page loaded
+        // The server's dart count also covers darts added at takeout (an empty turn's misses)
+        const dartsAdded = (totalDarts[i] ?? 0) - (p.totalDarts[i] ?? 0)
+        const darts = dartsAdded > 0 ? dartsAdded : p.darts
         const visit: Visit = isX01
-          ? { scored: wonLeg ? s : s - now, left: wonLeg ? 0 : now, darts: p.darts, bust: p.bust }
-          : { scored: now - s, left: 0, darts: p.darts, bust: false }
+          ? { scored: wonLeg ? s : s - now, left: wonLeg ? 0 : now, darts, bust: p.bust }
+          : { scored: now - s, left: 0, darts, bust: false }
         if (visit.scored >= 0) {
           leg[i] = [...leg[i], visit]
           all[i] = [...all[i], visit]
@@ -65,7 +69,7 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
 
   return {
     leg, all, start,
-    prev: { totalVisits: [...totalVisits], legs: [...legs], darts, bust: game.bustThisVisit === true, cp },
+    prev: { totalVisits: [...totalVisits], totalDarts: [...totalDarts], legs: [...legs], darts, bust: game.bustThisVisit === true, cp },
   }
 }
 

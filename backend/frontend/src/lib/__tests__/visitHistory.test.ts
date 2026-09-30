@@ -65,6 +65,16 @@ describe('trackVisits (X01)', () => {
   })
 })
 
+describe('trackVisits dart counts', () => {
+  it('an empty turn counts the three misses the server recorded', () => {
+    const h = run([
+      { ...x01({ scores: [121, 301], totalVisits: [1, 1], cp: 0 }), totalDarts: [3, 3] },
+      { ...x01({ scores: [121, 301], totalVisits: [2, 1], cp: 1 }), totalDarts: [6, 3] },
+    ])
+    expect(h.all[0]).toEqual([{ scored: 0, left: 121, darts: 3, bust: false }])
+  })
+})
+
 describe('trackVisits after a gap (reconnect)', () => {
   it('records nothing when another player checked out while disconnected', () => {
     const h = run([
