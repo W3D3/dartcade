@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseLabel, labelPos, nearbyPicks, checkoutHint, labelToSegment } from '../dartUtils.js'
+import { parseLabel, labelPos, nearbyPicks, checkoutHint, labelToSegment, markerPositions } from '../dartUtils.js'
 
 describe('parseLabel', () => {
   it('parses treble', () => expect(parseLabel('T20')).toEqual({ mult: 3, num: 20, score: 60 }))
@@ -58,5 +58,23 @@ describe('labelToSegment', () => {
     expect(labelToSegment('25')).toEqual({ name: '25', number: 25, bed: 'Single', multiplier: 1 })
     expect(labelToSegment('Bull')).toEqual({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 })
     expect(labelToSegment('Miss')).toEqual({ name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 })
+  })
+})
+
+describe('markerPositions', () => {
+  it('puts a single marker in the middle of the outer single', () => {
+    const [p] = markerPositions([20])
+    expect(Math.abs(p.x)).toBeLessThan(0.001)
+    expect(p.y).toBeLessThan(-0.7)
+  })
+  it('spreads markers on the same segment', () => {
+    const [a, b, c] = markerPositions([20, 20, 6])
+    expect(Math.hypot(a.x - b.x, a.y - b.y)).toBeGreaterThan(0.15)
+    expect(c.x).toBeGreaterThan(0.7)
+  })
+  it('spreads markers on the bull sideways', () => {
+    const [a, b] = markerPositions([50, 50])
+    expect(a.y).toBeCloseTo(b.y)
+    expect(Math.abs(a.x - b.x)).toBeGreaterThan(0.15)
   })
 })

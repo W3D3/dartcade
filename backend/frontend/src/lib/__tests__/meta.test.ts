@@ -20,6 +20,11 @@ describe('x01Meta', () => {
   it('does not count past the last leg once the match is won', () => {
     expect(x01Meta(x01({ legs: [3, 1], winner: 0 }), 2)).toBe('501 · Double out · First to 3 legs · Leg 4')
   })
+
+  it('a match ended by the round limit names the leg in play', () => {
+    expect(x01Meta(x01({ legs: [0, 0], winner: 1 }), 2)).toBe('501 · Double out · First to 3 legs · Leg 1')
+    expect(x01Meta(x01({ legs: [1, 0], winner: 0 }), 2)).toBe('501 · Double out · First to 3 legs · Leg 2')
+  })
 })
 
 describe('atcMeta', () => {

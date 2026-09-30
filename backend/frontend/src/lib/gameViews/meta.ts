@@ -13,8 +13,10 @@ export function x01Meta(game: Record<string, unknown>, playerCount: number): str
   if (cfg.inMode && cfg.inMode !== 'straight') parts.push(`${cap(cfg.inMode)} in`)
   parts.push(`${cap(cfg.outMode ?? 'double')} out`)
   parts.push(playerCount === 1 ? 'Practice' : `First to ${firstTo} ${firstTo === 1 ? 'leg' : 'legs'}`)
-  // Once the match is won the last leg is the one that was just played
-  parts.push(`Leg ${game.winner === null || game.winner === undefined ? played + 1 : played}`)
+  // After the match: the leg in play when it ended (a won final leg, or one cut short by the round limit)
+  const winner = game.winner as number | null | undefined
+  const finalLegWon = winner !== null && winner !== undefined && (legs[winner] ?? 0) >= firstTo
+  parts.push(`Leg ${finalLegWon ? played : played + 1}`)
   return parts.join(' · ')
 }
 

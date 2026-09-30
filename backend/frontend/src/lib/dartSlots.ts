@@ -3,7 +3,7 @@ import { checkoutHint, parseLabel } from './dartUtils.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'bust' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
 export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string }
-export type ThrownDart = { segment?: { name?: string }; score?: number }
+export type ThrownDart = { segment?: { name?: string; number?: number; multiplier?: number }; score?: number }
 
 function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slot {
   const label = d.segment?.name || 'Miss'
@@ -50,7 +50,12 @@ export function x01Slots(o: {
   return [...done, ...openSlots(done.length, suggestions)]
 }
 
-export function atcSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: string | null }): Slot[] {
-  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i] === true, o.hits[i] === true ? '+1' : '0'))
+export function atcSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: string | null; multiplierAdvances?: boolean }): Slot[] {
+  // With multiplierAdvances a double/treble moves 2/3 targets; bulls always move one
+  const steps = (d: ThrownDart) => {
+    const n = d.segment?.number ?? 0
+    return o.multiplierAdvances && n <= 20 ? Math.max(1, d.segment?.multiplier ?? 1) : 1
+  }
+  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i] === true, o.hits[i] === true ? `+${steps(d)}` : '0'))
   return [...done, ...openSlots(done.length, o.target ? [{ label: o.target, foot: 'your target' }] : [])]
 }

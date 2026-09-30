@@ -62,4 +62,13 @@ describe('atcSlots', () => {
   it('no suggestion without a target', () => {
     expect(atcSlots({ darts: [], hits: [], target: null })[0].kind).toBe('empty-next')
   })
+
+  it('a triple advances three when the multiplier advances', () => {
+    const s = atcSlots({ darts: [{ segment: { name: 'T13', number: 13, multiplier: 3 }, score: 39 }], hits: [true], target: '16', multiplierAdvances: true })
+    expect(s[0].points).toBe('+3')
+  })
+  it('a bull always advances one', () => {
+    const s = atcSlots({ darts: [{ segment: { name: 'Bull', number: 50, multiplier: 1 }, score: 50 }], hits: [true], target: '✓', multiplierAdvances: true })
+    expect(s[0].points).toBe('+1')
+  })
 })

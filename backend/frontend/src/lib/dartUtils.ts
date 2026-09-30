@@ -111,3 +111,21 @@ export function labelToSegment(label: string): Segment {
   const { mult, num } = parseLabel(label)
   return { name: label, number: num, bed: mult === 3 ? 'Triple' : mult === 2 ? 'Double' : 'SingleOuter', multiplier: mult }
 }
+
+/** Board positions (SVG coords, y down) for player markers on segments; markers on the
+ *  same segment are spread along the wedge (bull: sideways) so none hides another. */
+export function markerPositions(segments: number[]): { x: number; y: number }[] {
+  const mid = (R.tr + R.so) / 2
+  const seen = new Map<number, number>()
+  const total = new Map<number, number>()
+  segments.forEach(s => total.set(s, (total.get(s) ?? 0) + 1))
+  return segments.map(s => {
+    const k = seen.get(s) ?? 0
+    seen.set(s, k + 1)
+    const off = (k - ((total.get(s) ?? 1) - 1) / 2) * 0.18
+    if (s === 25 || s === 50) return { x: off, y: 0 }
+    const a = Math.PI / 2 - SEGS.indexOf(s) * (Math.PI / 10)
+    const r = mid + off
+    return { x: r * Math.cos(a), y: -r * Math.sin(a) }
+  })
+}

@@ -22,19 +22,21 @@ export type X01PlayerView = {
   firstTo: number
   /** Finished visits of this leg. */
   visits: Visit[]
+  /** Show the "Can finish" line at all (checkout suggestions on). */
+  showFinish: boolean
   /** The thrower's running visit, for the chalkboard's highlighted row. */
-  current: { scored: number; left: number } | null
+  current: { scored: number; left: number; bust: boolean } | null
 }
 
 export function x01Player(
-  game: Record<string, unknown>, i: number, history: VisitHistory, o: { active: boolean; suggest: boolean },
+  game: Record<string, unknown>, i: number, history: VisitHistory, o: { active: boolean; suggest: boolean; bust?: boolean },
 ): X01PlayerView {
   const remaining = nums(game, 'scores')[i] ?? 0
   const opened = (game.opened as boolean[] | undefined)?.[i] ?? true
   const outMode = ((game.config as { outMode?: OutMode } | undefined)?.outMode ?? 'double') as OutMode
   const running = o.active ? ((game.currentVisitDarts as { score?: number }[] | undefined) ?? []) : []
   const dartsLeft = 3 - running.length
-  const hint = o.suggest && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, outMode, dartsLeft) : null
+  const hint = o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, outMode, dartsLeft) : null
   const all = history.all[i] ?? []
   const leg = history.leg[i] ?? []
   return {
@@ -47,7 +49,8 @@ export function x01Player(
     legsWon: nums(game, 'legs')[i] ?? 0,
     firstTo: (game.firstTo as number | undefined) ?? 1,
     visits: leg,
-    current: running.length ? { scored: running.reduce((a, d) => a + (d.score ?? 0), 0), left: remaining } : null,
+    showFinish: o.suggest,
+    current: running.length ? { scored: running.reduce((a, d) => a + (d.score ?? 0), 0), left: remaining, bust: o.bust === true } : null,
   }
 }
 

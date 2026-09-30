@@ -32,3 +32,20 @@ export function atcBand(o: { dartCount: number; advanced: number; target: string
     sum: `+${o.advanced}`, afterLabel: 'Target now', after: o.target, fx: 'none', bigDart: false, bust: false,
   }
 }
+
+/** ATC targets advanced this visit; counts hits when the visit's start is unknown (after a reload). */
+export function atcAdvanced(hitCount: number, start: number | null, hits: boolean[]): number {
+  return start === null ? hits.filter(Boolean).length : Math.max(0, hitCount - start)
+}
+
+/** Replay the celebration only when a celebrating sum goes up (not on undo, not on load). */
+export function shouldReplay(prevSum: number | null, band: BandData): boolean {
+  const sum = Number(band.sum.replace('+', ''))
+  return prevSum !== null && sum > prevSum && (band.fx !== 'none' || band.bigDart)
+}
+
+/** The slot to pop: the last dart when it is worth 50+ and actually scored. */
+export function bigDartIndex(darts: ThrownDart[], o: { opened: boolean; bust: boolean }): number | null {
+  const last = darts.length - 1
+  return last >= 0 && o.opened && !o.bust && isBigDart(darts[last].score ?? 0) ? last : null
+}

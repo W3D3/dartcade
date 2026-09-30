@@ -14,7 +14,7 @@ describe('x01Player', () => {
     const p = x01Player(game(), 0, history([[visit(100, 401), visit(60, 341)]]), { active: true, suggest: true })
     expect(p).toMatchObject({
       remaining: 81, canFinish: 'T19 · D12', avg: '80.0', legAvg: '80.0', last: '60', darts: 16, legsWon: 1, firstTo: 3,
-      current: { scored: 60, left: 81 },
+      current: { scored: 60, left: 81, bust: false },
     })
   })
 
@@ -39,6 +39,17 @@ describe('x01Player', () => {
   it('leg average uses this leg only', () => {
     const p = x01Player(game(), 0, history([[visit(30, 471)]], [[visit(100, 401), visit(30, 471)]]), { active: false, suggest: true })
     expect([p.avg, p.legAvg]).toEqual(['65.0', '30.0'])
+  })
+
+  it('during a bust: no finish, running row marked bust', () => {
+    const p = x01Player(game(), 0, emptyHistory(), { active: true, suggest: true, bust: true })
+    expect(p.canFinish).toBeNull()
+    expect(p.current).toEqual({ scored: 60, left: 81, bust: true })
+  })
+
+  it('showFinish follows the suggestions setting', () => {
+    expect(x01Player(game(), 1, emptyHistory(), { active: false, suggest: false }).showFinish).toBe(false)
+    expect(x01Player(game(), 1, emptyHistory(), { active: false, suggest: true }).showFinish).toBe(true)
   })
 })
 
