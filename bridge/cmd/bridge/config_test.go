@@ -12,6 +12,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"dartcade/bridge/internal/api"
 )
 
 // discardConsole is a console that swallows output, for tests that exercise
@@ -244,6 +246,49 @@ func TestRunPairing_RetryAfterExpiry(t *testing.T) {
 	}
 	if requestCount < 2 {
 		t.Errorf("expected at least 2 pairing requests (retry), got %d", requestCount)
+	}
+}
+
+func TestRunPairingOnce_PairingRequestUnexpectedStatus(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "POST" && r.URL.Path == "/api/pairing/request" {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	_, _, err := runPairingOnce(context.Background(), srv.URL, discardConsole())
+	if err == nil {
+		t.Fatal("expected an error, got nil")
+	}
+	if !strings.Contains(err.Error(), "500") {
+		t.Errorf("expected the error to mention the unexpected status 500, got: %v", err)
+	}
+}
+
+func TestPollPairingToken_ClaimedWithoutToken(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/api/pairing/") {
+			// Backend bug or drift: claimed but the token field is missing.
+			writeJSON(w, http.StatusOK, map[string]string{"status": "claimed"})
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer srv.Close()
+
+	client, err := api.NewClientWithResponses(srv.URL)
+	if err != nil {
+		t.Fatalf("unexpected error creating client: %v", err)
+	}
+	_, _, err = pollPairingToken(context.Background(), client, "ABCD1234")
+	if err == nil {
+		t.Fatal("expected an error, got nil")
+	}
+	if err.Error() != "pairing claimed without a token" {
+		t.Errorf("got error %q, want %q", err.Error(), "pairing claimed without a token")
 	}
 }
 
