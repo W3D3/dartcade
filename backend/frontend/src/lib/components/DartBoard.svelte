@@ -221,14 +221,17 @@
   {#each darts as dart, i}
     {@const pos = dartPos(dart)}
     {#if pos}
-      <circle cx={pos.x} cy={-pos.y} r="0.04"
-        fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008"
-        style="pointer-events:none" />
-      <text x={pos.x + 0.05} y={-pos.y} dominant-baseline="central"
-        fill="#ffe066" font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold"
-        style="pointer-events:none">
-        {dart.segment.name}
-      </text>
+      <!-- The segment label only shows while the dart is hovered -->
+      <g class="group">
+        <circle cx={pos.x} cy={-pos.y} r="0.04"
+          fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008" />
+        <text x={pos.x + 0.05} y={-pos.y} dominant-baseline="central"
+          fill="#ffffff" stroke="#000000" stroke-width="0.016" stroke-linejoin="round" paint-order="stroke"
+          font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold"
+          class="opacity-0 group-hover:opacity-100 transition-opacity" style="pointer-events:none">
+          {dart.segment.name}
+        </text>
+      </g>
     {:else}
       <text x={-0.15 + i * 0.14} y="1.05" text-anchor="middle" dominant-baseline="central"
         fill="#c6f24e" font-size="0.1" font-family="Barlow Condensed, sans-serif"
