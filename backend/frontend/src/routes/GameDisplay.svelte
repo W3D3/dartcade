@@ -16,7 +16,7 @@
   import AtcPanel from '../lib/components/AtcPanel.svelte'
   import X01Row from '../lib/components/X01Row.svelte'
   import AtcRow from '../lib/components/AtcRow.svelte'
-  import type { PillKind } from '../lib/components/PlayerPill.svelte'
+  import type { PillKind } from '../lib/components/pills.js'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { createSounds } from '../lib/sounds.js'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
@@ -152,7 +152,7 @@
   const boardNext = $derived(!isX01 && isActive && layout === 'duel' ? atcTargetSegment(sequence, targets.at(nextPlayer)) : null)
   const markers = $derived(!isX01 && isActive && layout === 'party' && settings.showMarkers
     ? players.map((p, i) => ({
-        initial: p.name.trim()[0]?.toUpperCase() ?? '?',
+        initial: p.name.trim().charAt(0).toUpperCase() || '?',
         segment: atcTargetSegment(sequence, targets.at(i)) ?? 0,
         isActive: i === currentPlayer,
       })).filter(m => m.segment > 0)
@@ -205,7 +205,7 @@
   async function endSession() {
     if (!sessionId) return
     await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
-    push('/')
+    void push('/')
   }
 </script>
 

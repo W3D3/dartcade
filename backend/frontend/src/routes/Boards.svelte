@@ -27,8 +27,8 @@
 
   function startStatusPoll(boardId: string) {
     stopStatusPoll()
-    loadBmStatus(boardId)
-    bmStatusInterval = setInterval(() => loadBmStatus(boardId), 3000)
+    void loadBmStatus(boardId)
+    bmStatusInterval = setInterval(() => void loadBmStatus(boardId), 3000)
   }
 
   function stopStatusPoll() {
@@ -41,6 +41,8 @@
     else stopStatusPoll()
   })
 
+  const currentBoard = (): Board | null => selected ?? null
+
   async function runAction(action: BoardAction) {
     if (!selected) return
     busy = action
@@ -48,7 +50,9 @@
     catch { /* ignore */ }
     finally {
       busy = null
-      if (selected?.online) loadBmStatus(selected.id)
+      // The selection may have changed while the action ran
+      const now = currentBoard()
+      if (now?.online) void loadBmStatus(now.id)
     }
   }
 
@@ -68,8 +72,8 @@
     const id = selectedId
     events = []
     if (!id) return
-    loadEvents(id)
-    eventsInterval = setInterval(() => loadEvents(id), 1500)
+    void loadEvents(id)
+    eventsInterval = setInterval(() => void loadEvents(id), 1500)
     return () => { if (eventsInterval) clearInterval(eventsInterval); eventsInterval = null }
   })
 
@@ -104,8 +108,7 @@
   }
 
   // Camera tiles: dot turns accent once a frame has loaded
-  let camOk = $state<Record<number, boolean>>({})
-  $effect(() => { selectedId; camOk = {} })
+  let camOk = $state<Partial<Record<number, boolean>>>({})
 
   // Rename
   let editing = $state(false)
@@ -120,12 +123,20 @@
     const { error } = await api.PATCH('/api/boards/{id}', { params: { path: { id } }, body: { name } }).catch(() => ({ error: true }))
     if (!error) boards = boards.map(b => b.id === id ? { ...b, name } : b)
   }
-  $effect(() => { selectedId; editing = false })
 
   // Unpair
   let confirmUnpair = $state(false)
   let unpairError = $state<string | null>(null)
-  $effect(() => { selectedId; unpairError = null })
+
+  // A different board: reset its camera tiles, rename field and unpair error
+  let lastSelected: string | null | undefined = undefined
+  $effect(() => {
+    if (selectedId === lastSelected) return
+    lastSelected = selectedId
+    camOk = {}
+    editing = false
+    unpairError = null
+  })
   async function unpair() {
     confirmUnpair = false
     if (!selected) return
@@ -354,7 +365,7 @@
                   autofocus
                   onblur={saveName}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter') saveName()
+                    if (e.key === 'Enter') void saveName()
                     else if (e.key === 'Escape') editing = false
                   }}
                   class="w-full box-border bg-transparent border-0 border-b border-line-3 p-0 outline-none
@@ -473,7 +484,7 @@
               class="flex-grow min-h-[200px] overflow-y-auto scrollbar-themed box-border p-4 rounded-[10px]
                      border border-line-2 bg-bg font-mono text-[13px] leading-[1.8]">
               {#each events as ev, i (i)}
-                {@const seg = ev.data?.dart?.segment}
+                {@const seg = ev.data.dart?.segment}
                 <div class="whitespace-nowrap">
                   <span class="text-text-dim">{fmtTime(ev.at)}</span>
                   <span>{EVENT_VERB[ev.kind] ?? ev.kind}</span>
@@ -528,7 +539,7 @@
   {#if toast}
     <Toast
       actionLabel="Play on it"
-      onaction={() => { selectedId = toast!.boardId; toast = null }}
+      onaction={() => { if (toast) selectedId = toast.boardId; toast = null }}
       onclose={() => { toast = null }}
     >
       <span class="text-text font-semibold">{toast.name}</span> is paired.

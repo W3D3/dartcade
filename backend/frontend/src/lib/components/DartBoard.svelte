@@ -139,7 +139,7 @@
     const c = toBoard(e)
     if (!c) return
     e.preventDefault()
-    ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    if (e.currentTarget instanceof Element) e.currentTarget.setPointerCapture(e.pointerId)
     drag = { index: i, from: c, at: c }
   }
   function dragMove(e: PointerEvent) {
@@ -183,8 +183,8 @@
   <g clip-path="url(#{clipId})">
   <g style="transform: scale({zoom}); transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
   <!-- Sector fills and wire dividers -->
-  {#each sectors as { num, i, paths, wa }}
-    {#each paths as { ring, d }}
+  {#each sectors as { num, i, paths, wa } (num)}
+    {#each paths as { ring, d } (ring)}
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" vector-effect="non-scaling-stroke"
         onclick={interactive ? () => clickSegment(num, ring) : undefined}
@@ -198,7 +198,7 @@
   {/each}
 
   <!-- Ring wire circles -->
-  {#each [R.bull25, R.si, R.tr, R.so, R.db] as r}
+  {#each [R.bull25, R.si, R.tr, R.so, R.db] as r (r)}
     <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke" />
   {/each}
 
@@ -217,7 +217,7 @@
   {/if}
 
   <!-- ATC targets: thrower's in lime, next player's dashed white -->
-  {#each [{ seg: target, next: false }, { seg: nextTarget, next: true }] as t}
+  {#each [{ seg: target, next: false }, { seg: nextTarget, next: true }] as t (t.next)}
     {#if t.seg}
       {@const sector = sectors.find(s => s.num === t.seg)}
       {@const style = t.next
@@ -232,7 +232,7 @@
   {/each}
 
   <!-- Number labels — pointer-events:none so clicks go through to paths -->
-  {#each sectors as { num, tx, ty }}
+  {#each sectors as { num, tx, ty } (num)}
     <text x={tx} y={ty} text-anchor="middle" dominant-baseline="central"
       fill={num === target ? '#c6f24e' : dim ? '#8f9085' : '#efeee6'}
       font-size={num === target ? '0.123' : '0.09'}
@@ -244,7 +244,7 @@
 
 
   <!-- Other-player markers: white circle with initial -->
-  {#each playerMarkers.filter(m => !m.isActive) as marker, k}
+  {#each playerMarkers.filter(m => !m.isActive) as marker, k (k)}
     {@const pos = otherMarkerPos[k]}
     {#if pos}
       <circle cx={pos.x} cy={pos.y} r="0.085"
@@ -259,7 +259,7 @@
   {/each}
 
   <!-- Darts -->
-  {#each darts as dart, i}
+  {#each darts as dart, i (i)}
     {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
     {@const selected = selectedDart === i}
     {#if pos}
@@ -290,7 +290,7 @@
   {/each}
 
   <!-- Checkout target dashed circles (x01) -->
-  {#each checkoutTargets as label}
+  {#each checkoutTargets as label (label)}
     {@const pos = labelPos(label)}
     {#if pos}
       <circle cx={pos.x} cy={pos.y} r="0.076"

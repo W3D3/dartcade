@@ -22,7 +22,7 @@
   let panel: HTMLDivElement | undefined = $state()
   // Focus the drawer while open, and give focus back to the cog when it closes
   $effect(() => {
-    const opener = document.activeElement as HTMLElement | null
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     panel?.focus()
     return () => opener?.focus()
   })
@@ -36,7 +36,7 @@
   }
 </script>
 
-<svelte:window onkeydown={e => { if (e.key === 'Escape') onclose() }} />
+<svelte:window onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') onclose() }} />
 
 <div role="presentation" class="fixed inset-x-0 top-16 bottom-0 z-40 bg-[rgba(8,9,7,0.62)]" onclick={onclose}></div>
 

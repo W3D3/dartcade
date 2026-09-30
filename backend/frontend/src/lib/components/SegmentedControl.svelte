@@ -18,7 +18,7 @@
 </script>
 
 <div class="flex gap-1 p-1 bg-bg rounded-[10px] {className}">
-  {#each options as opt}
+  {#each options as opt (opt.label)}
     <button type="button" onclick={() => pick(opt.value)}
       class="flex-1 h-10 rounded-[7px] text-[15px] transition-colors border-0 cursor-pointer
              {value === opt.value
@@ -32,7 +32,6 @@
           <Tooltip.Root delayDuration={300}>
             <Tooltip.Trigger>
               {#snippet child({ props })}
-                <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
                 <span {...props} onclick={(e) => e.stopPropagation()}
                   class="inline-flex w-[15px] h-[15px] rounded-full border border-current/40 items-center
                          justify-center text-[10px] opacity-50 cursor-help shrink-0">?</span>

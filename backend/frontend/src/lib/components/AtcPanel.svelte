@@ -1,7 +1,7 @@
 <script lang="ts">
   import PanelShell from './PanelShell.svelte'
   import AtcProgress from './AtcProgress.svelte'
-  import type { PillKind } from './PlayerPill.svelte'
+  import type { PillKind } from './pills.js'
   import type { AtcPlayerView } from '$lib/playerStats.js'
 
   let { name, p, active, solo = false, pill }: {

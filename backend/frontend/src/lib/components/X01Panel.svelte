@@ -2,7 +2,7 @@
   import PanelShell from './PanelShell.svelte'
   import LegPips from './LegPips.svelte'
   import Chalkboard from './Chalkboard.svelte'
-  import type { PillKind } from './PlayerPill.svelte'
+  import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
 
   let { name, p, active, solo = false, pill, chalkboard }: {
@@ -36,7 +36,7 @@
   {/if}
 
   <div class="flex gap-9">
-    {#each [{ label: solo ? 'Leg avg' : 'Avg', value: solo ? p.legAvg : p.avg }, { label: 'Darts', value: String(p.darts) }] as s}
+    {#each [{ label: solo ? 'Leg avg' : 'Avg', value: solo ? p.legAvg : p.avg }, { label: 'Darts', value: String(p.darts) }] as s (s.label)}
       <span class="flex flex-col gap-1">
         <span class="text-[13px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
         <span class="font-display font-bold text-[44px] leading-none tabular-nums {active ? 'text-text' : 'text-ink-2'}">{s.value}</span>

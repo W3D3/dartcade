@@ -10,7 +10,7 @@
 		class: className,
 		variant = "primary",
 		ref = $bindable(null),
-		href = undefined,
+		href,
 		type = "button",
 		disabled,
 		children,

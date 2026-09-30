@@ -26,7 +26,7 @@
       {session.gameId}
     </span>
     <span class="text-[13px] text-text-muted truncate">{playerNames}</span>
-    <button type="button" onclick={() => push(`/session/${session!.id}`)}
+    <button type="button" onclick={() => { if (session) void push(`/session/${session.id}`) }}
       class="ml-auto flex items-center gap-[6px] text-[13px] font-semibold text-accent
              bg-transparent border-0 cursor-pointer shrink-0">
       Return to game

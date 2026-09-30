@@ -49,7 +49,7 @@
   const slotLabel = 'font-display font-bold text-[min(66px,7.5vh)] leading-[0.9]'
 </script>
 
-<svelte:window onkeydown={e => { if (e.key === 'Escape' && openDart !== null) close() }} />
+<svelte:window onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape' && openDart !== null) close() }} />
 
 <div class="flex flex-col gap-2 min-w-0">
   <div bind:this={slotRow} class="grid grid-cols-3 gap-[10px]">
@@ -108,7 +108,7 @@
 
       {#if mode === 'quick'}
         <div class="grid gap-[6px]" style:grid-template-columns="repeat({quickPicks.length + 1}, minmax(0, 1fr))">
-          {#each quickPicks as label}
+          {#each quickPicks as label (label)}
             <button type="button" onclick={() => pick(label)}
               class="h-11 flex flex-col items-center justify-center bg-surface-key border border-line-key rounded-[9px] text-text cursor-pointer">
               <span class="font-display font-bold text-[18px] leading-none">{label}</span>
@@ -121,14 +121,14 @@
         </div>
       {:else}
         <div class="grid grid-cols-3 gap-1 p-1 bg-bg rounded-[9px]">
-          {#each (['S', 'D', 'T'] as const) as m}
+          {#each (['S', 'D', 'T'] as const) as m (m)}
             <button type="button" onclick={() => mult = m} aria-pressed={mult === m}
               class="h-9 border-0 rounded-[6px] text-[14px] cursor-pointer
                      {mult === m ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">{multNames[m]}</button>
           {/each}
         </div>
         <div class="grid grid-cols-10 gap-1">
-          {#each nums as n}
+          {#each nums as n (n)}
             <button type="button" onclick={() => pick(`${mult}${n}`)} aria-label="{multNames[mult]} {n}"
               class="h-10 bg-surface-key border border-line-key rounded-[8px] text-text font-display font-bold text-[18px] cursor-pointer">{n}</button>
           {/each}

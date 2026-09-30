@@ -139,7 +139,7 @@
       invalid={cellsInvalid}
       onfocus={() => (helpExpanded = false)}
       oninput={onCodeInput}
-      aria-label="Pairing code"
+      label="Pairing code"
     />
     {#if fieldError}
       <p class="m-0 text-[13px]">

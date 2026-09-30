@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { emptyHistory, trackVisits, threeDartAvg, type VisitHistory } from '../visitHistory.js'
 
 type G = Record<string, unknown>
-const dart = (score: number) => ({ segment: { name: 'S' + score }, score })
+const dart = (score: number) => ({ segment: { name: `S${score}` }, score })
 const x01 = (o: { scores: number[]; totalVisits: number[]; legs?: number[]; cp: number; darts?: number[]; bust?: boolean }): G => ({
   scores: o.scores, totalVisits: o.totalVisits, legs: o.legs ?? o.scores.map(() => 0), currentPlayer: o.cp,
   currentVisitDarts: (o.darts ?? []).map(dart), bustThisVisit: o.bust ?? false, totalDarts: o.scores.map(() => 0),

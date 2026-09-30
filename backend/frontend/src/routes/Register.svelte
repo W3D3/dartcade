@@ -34,7 +34,7 @@
         error = err.message ?? 'Registration failed'
         return
       }
-      push('/')
+      void push('/')
     } finally {
       loading = false
     }
@@ -45,7 +45,7 @@
   <AuthPanel />
 
   <main class="flex flex-grow items-center justify-center">
-    <form onsubmit={(e) => { e.preventDefault(); submit() }} class="flex w-[400px] flex-col gap-7">
+    <form onsubmit={(e) => { e.preventDefault(); void submit() }} class="flex w-[400px] flex-col gap-7">
 
       <div class="flex flex-col gap-2">
         <p class="m-0 font-mono text-[13px] tracking-[0.08em] text-accent">Step 1 of 2</p>
@@ -71,7 +71,7 @@
             autocomplete="new-password" placeholder="At least 8 characters" required />
           {#if password}
             <div class="flex gap-1 mt-1">
-              {#each [1,2,3,4] as lvl}
+              {#each [1,2,3,4] as lvl (lvl)}
                 <div class="h-1 flex-1 rounded-full transition-colors"
                   style:background={lvl <= strength ? strengthColors[strength] : '#2e322b'}>
                 </div>

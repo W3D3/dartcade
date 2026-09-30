@@ -24,9 +24,9 @@
     if (currentHash.startsWith('#/login')) { checked = true; return }
     try {
       const { data } = await authClient.getSession()
-      if (!data?.user) push('/login')
+      if (!data?.user) void push('/login')
     } catch {
-      push('/login')
+      void push('/login')
     }
     checked = true
   })

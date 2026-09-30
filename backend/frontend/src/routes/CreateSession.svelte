@@ -46,18 +46,28 @@
     bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3,
   }
 
-  type SavedPrefs = { mode: string; configs: Record<string, Record<string, unknown>>; boardId?: string }
-  function loadPrefs(): SavedPrefs | null {
-    try { const s = localStorage.getItem(PREFS_KEY); if (s) return JSON.parse(s) } catch {}
-    return null
+  type Config = Record<string, unknown>
+  type SavedPrefs = { mode: string; configs: Partial<Record<string, Config>>; boardId?: string }
+  const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
+  function isSavedPrefs(v: unknown): v is SavedPrefs {
+    return isRecord(v) && typeof v.mode === 'string' && isRecord(v.configs)
+      && (v.boardId === undefined || typeof v.boardId === 'string')
   }
+  function loadPrefs(): SavedPrefs | null {
+    try {
+      const raw: unknown = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null')
+      return isSavedPrefs(raw) ? raw : null
+    } catch { return null }
+  }
+  // A numeric config field, or its default when missing or not a number
+  const num = (v: unknown, d: number) => (typeof v === 'number' ? v : d)
   const initPrefs = loadPrefs()
 
   let games = $state<GameInfo[]>([])
   let boards = $state<Board[]>([])
   let selectedMode = $state(initPrefs?.mode ?? 'atc')
   let boardId = $state(initPrefs?.boardId ?? '')
-  let atcMeta = $state<Record<string, ConfigFieldMeta>>({})
+  let atcMeta = $state<Partial<Record<string, ConfigFieldMeta>>>({})
   let youName = $state('')
   let guests = $state<{ name: string }[]>([])
   let error = $state('')
@@ -65,11 +75,11 @@
   let runningSessionId = $state<string | null>(null)
   let loading = $state(false)
 
-  let gameDefaults = $state<Record<string, Record<string, unknown>>>({ x01: X01_DEFAULTS })
-  let savedConfigs = $state<Record<string, Record<string, unknown>>>(initPrefs?.configs ?? {})
+  let gameDefaults = $state<Partial<Record<string, Config>>>({ x01: X01_DEFAULTS })
+  let savedConfigs = $state<Partial<Record<string, Config>>>(initPrefs?.configs ?? {})
   let config = $state<Record<string, unknown>>({
     ...X01_DEFAULTS,
-    ...(initPrefs?.configs?.[initPrefs?.mode ?? 'atc'] ?? {}),
+    ...(initPrefs?.configs[initPrefs.mode] ?? {}),
   })
 
   // Persist whenever mode, config or board changes
@@ -150,7 +160,7 @@
         runningSessionId = res.response.status === 409 && 'sessionId' in res.error ? res.error.sessionId ?? null : null
         return
       }
-      push(`/session/${res.data.sessionId}`)
+      void push(`/session/${res.data.sessionId}`)
     } finally { loading = false }
   }
 </script>
@@ -172,7 +182,7 @@
     <div class="flex gap-6 flex-grow min-h-0">
       <!-- Mode grid -->
       <div class="flex-grow grid grid-cols-2 grid-rows-2 gap-4">
-        {#each MODES as mode}
+        {#each MODES as mode (mode.id)}
           {@const active = mode.id === selectedMode}
           {@const unavailable = !mode.available}
           <button type="button"
@@ -270,7 +280,7 @@
               <span class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce]">Max rounds <Tooltip text="Maximum number of rounds before the game ends. The player with the lowest score wins if nobody checks out. Set higher for longer games." /></span>
               <div class="flex items-center gap-1">
                 <button type="button" aria-label="Fewer rounds"
-                  onclick={() => config = { ...config, maxRounds: Math.max(1, (config.maxRounds as number) - 1) }}
+                  onclick={() => config = { ...config, maxRounds: Math.max(1, num(config.maxRounds, 50) - 1) }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">−</button>
                 <span class="w-[72px] text-center text-[15px]">
@@ -278,7 +288,7 @@
                                  {isNonDefault('maxRounds') ? 'text-accent' : ''}">{config.maxRounds}</strong>
                 </span>
                 <button type="button" aria-label="More rounds"
-                  onclick={() => config = { ...config, maxRounds: (config.maxRounds as number) + 1 }}
+                  onclick={() => config = { ...config, maxRounds: num(config.maxRounds, 50) + 1 }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">+</button>
               </div>
@@ -288,7 +298,7 @@
               <span class="text-[14px] font-medium text-[#d8d8ce]">First to</span>
               <div class="flex items-center gap-1">
                 <button type="button" aria-label="Fewer legs"
-                  onclick={() => config = { ...config, firstTo: Math.max(1, (config.firstTo as number) - 1) }}
+                  onclick={() => config = { ...config, firstTo: Math.max(1, num(config.firstTo, 3) - 1) }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">−</button>
                 <span class="w-[72px] text-center text-[15px]">
@@ -296,7 +306,7 @@
                                  {isNonDefault('firstTo') ? 'text-accent' : ''}">{config.firstTo}</strong> legs
                 </span>
                 <button type="button" aria-label="More legs"
-                  onclick={() => config = { ...config, firstTo: (config.firstTo as number) + 1 }}
+                  onclick={() => config = { ...config, firstTo: num(config.firstTo, 3) + 1 }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">+</button>
               </div>
@@ -305,7 +315,7 @@
 
         {:else if selectedMode === 'atc'}
           <div class="flex flex-col gap-[18px]">
-            {#each ATC_FIELD_ORDER as fieldKey}
+            {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
               {@const meta = atcMeta[fieldKey]}
               {#if meta?.options}
                 <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
@@ -319,7 +329,7 @@
                     options={meta.options}
                     value={config[fieldKey]}
                     defaultValue={gameDefaults['atc']?.[fieldKey]}
-                    onchange={(v) => config = { ...config, [fieldKey]: v }} />
+                    onchange={(v: unknown) => config = { ...config, [fieldKey]: v }} />
                 </fieldset>
               {/if}
             {/each}
@@ -336,7 +346,7 @@
         <div class="flex flex-col gap-2 pt-[18px] border-t border-line">
           <span class="text-[14px] font-medium text-[#d8d8ce]">Players</span>
           <PlayerRow index={1} name={youName} isYou />
-          {#each guests as guest, i}
+          {#each guests as guest, i (i)}
             <PlayerRow index={i + 2} bind:name={guest.name}
               onRemove={() => guests = guests.filter((_, j) => j !== i)} />
           {/each}

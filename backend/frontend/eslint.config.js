@@ -19,6 +19,16 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-assertions': ['error', { assertionStyle: 'never' }],
       '@typescript-eslint/restrict-template-expressions': ['error', { allowNumber: true }],
       '@typescript-eslint/no-confusing-void-expression': ['error', { ignoreArrowShorthand: true }],
+      // Leading underscore marks a deliberately unused name (e.g. `{#each list as _, i}`)
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+    },
+  },
+  {
+    files: ['**/*.svelte', '**/*.svelte.ts'],
+    rules: {
+      // Svelte syntax the TypeScript rules misread: `{@render snippet()}` and `prop = $bindable()`
+      '@typescript-eslint/no-confusing-void-expression': 'off',
+      '@typescript-eslint/no-useless-default-assignment': 'off',
     },
   },
   {

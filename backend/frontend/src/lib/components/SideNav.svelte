@@ -4,7 +4,7 @@
   import { authClient } from '$lib/auth'
 
   let userName = $state('…')
-  let userInitial = $derived(userName?.[0]?.toUpperCase() ?? '?')
+  let userInitial = $derived(userName.charAt(0).toUpperCase() || '?')
 
   onMount(async () => {
     try {
@@ -40,7 +40,7 @@
 
   <!-- Nav links -->
   <div class="flex flex-col gap-1">
-    {#each links as link}
+    {#each links as link (link.href)}
       {@const active = isActive(link.href)}
       <a href={`#${link.href}`}
         aria-current={active ? 'page' : undefined}

@@ -43,7 +43,7 @@
   <div class="ml-auto flex items-center gap-4 shrink-0">
     {#if showViewToggle}
       <div class="flex items-center p-[3px] bg-bg rounded-[10px] border border-line-2" role="group" aria-label="Dart entry">
-        {#each ([{ m: 'board', label: 'Board' }, { m: 'entry', label: 'Enter' }] as const) as o}
+        {#each ([{ m: 'board', label: 'Board' }, { m: 'entry', label: 'Enter' }] as const) as o (o.m)}
           <button type="button" onclick={() => onviewmode(o.m)} aria-pressed={viewMode === o.m}
             class="h-9 px-3 rounded-[7px] text-[14px] font-medium border-0 cursor-pointer transition-colors
                    {viewMode === o.m ? 'bg-surface-key text-text' : 'bg-transparent text-text-dim hover:text-ink-2'}">{o.label}</button>

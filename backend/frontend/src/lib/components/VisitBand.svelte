@@ -68,7 +68,7 @@
 
 {#snippet burst()}
   <span class="absolute inset-0 pointer-events-none" aria-hidden="true">
-    {#each confetti as p}
+    {#each confetti as p, i (i)}
       <span class="confetti" style="--c:{p.c};--w:{p.w}px;--h:{p.h}px;--x:{p.x}px;--y:{p.y}px;--r:{p.r}deg"></span>
     {/each}
   </span>

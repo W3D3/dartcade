@@ -1,8 +1,5 @@
-<script module lang="ts">
-  export type PillKind = 'throwing' | 'up-next' | 'practice' | 'leading' | 'winner'
-</script>
-
 <script lang="ts">
+  import type { PillKind } from './pills.js'
   let { kind, small = false }: { kind: PillKind; small?: boolean } = $props()
   const LABEL: Record<PillKind, string> = { throwing: 'Throwing', 'up-next': 'Up next', practice: 'Practice', leading: 'Leading', winner: 'Winner' }
 </script>

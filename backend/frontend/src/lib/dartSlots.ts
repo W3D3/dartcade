@@ -17,7 +17,7 @@ function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slo
 function openSlots(from: number, suggestions: { label: string; foot: string }[]): Slot[] {
   const out: Slot[] = []
   for (let i = from; i < 3; i++) {
-    const s = suggestions[i - from]
+    const s = suggestions.at(i - from)
     const next = i === from
     out.push(s
       ? { kind: next ? 'suggested-next' : 'suggested-later', label: s.label, points: '', foot: s.foot, aria: `Dart ${i + 1}: suggested ${s.label}, ${s.foot}` }
