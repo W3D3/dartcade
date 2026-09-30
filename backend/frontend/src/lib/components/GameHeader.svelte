@@ -6,13 +6,14 @@
   import type { Snapshot } from '$lib/ws.js'
 
   let {
-    title, meta = '', sessionId, boardId, bmStatus, viewMode, canEnd, showViewToggle = true,
+    title, meta = '', sessionId, boardId, gameId, bmStatus, viewMode, canEnd, showViewToggle = true,
     settings = $bindable(), onleave, onend, onviewmode,
   }: {
     title: string
     meta?: string
     sessionId: string
     boardId: string | null
+    gameId: string
     bmStatus: Snapshot['bmStatus']
     viewMode: 'board' | 'entry'
     canEnd: boolean
@@ -80,5 +81,5 @@
 </header>
 
 {#if showSettings}
-  <SettingsDrawer bind:settings onclose={() => showSettings = false} />
+  <SettingsDrawer bind:settings {gameId} onclose={() => showSettings = false} />
 {/if}

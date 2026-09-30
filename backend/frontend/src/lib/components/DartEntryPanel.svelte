@@ -1,14 +1,16 @@
 <script lang="ts">
   import type { Segment } from '$lib/api/game-ws'
 
-  let { onDart, dartCount = 0 }: {
+  let { onDart, dartCount = 0, locked = false }: {
     onDart: (seg: Segment) => void
     dartCount?: number
+    /** The visit is over (bust, checkout, win). */
+    locked?: boolean
   } = $props()
 
   let mult = $state<1 | 2 | 3>(1)
 
-  const full = $derived(dartCount >= 3)
+  const full = $derived(locked || dartCount >= 3)
   const nums = Array.from({ length: 20 }, (_, i) => i + 1)
 
   const multLabels: Record<number, string> = { 1: 'Single', 2: 'Double', 3: 'Triple' }
@@ -81,6 +83,8 @@
   </div>
 
   {#if full}
-    <p class="text-center text-[13px] text-text-dim">3 darts thrown — press Takeout to continue</p>
+    <p class="text-center text-[13px] text-text-dim">
+      {locked ? 'Visit over — press Next player' : '3 darts thrown — press Next player'}
+    </p>
   {/if}
 </div>

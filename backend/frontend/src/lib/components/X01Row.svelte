@@ -23,6 +23,7 @@
                {active ? 'text-[min(120px,13vh)] text-text' : 'text-[min(88px,9vh)] text-ink-3'}">{p.remaining}</span>
 
   <div class="grid grid-cols-[minmax(0,1fr)_90px_90px_auto] items-center gap-5 min-w-0">
+    {#if p.showFinish}
     <span class="flex flex-col gap-1 min-w-0">
       <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">Can finish</span>
       {#if !p.opened}
@@ -34,6 +35,9 @@
         <span class="text-[14px] text-text-dim">No finish yet</span>
       {/if}
     </span>
+    {:else}
+      <span></span>
+    {/if}
     {#each [{ label: 'Last', value: p.last }, { label: 'Avg', value: p.avg }] as s}
       <span class="flex flex-col gap-1">
         <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>

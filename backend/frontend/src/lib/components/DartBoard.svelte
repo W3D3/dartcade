@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
-  import { labelPos } from '$lib/dartUtils.js'
+  import { labelPos, markerPositions } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
 
   let { darts = [], target = null, nextTarget = null, dim = false, playerMarkers = [], checkoutTargets = [], onSegmentClick,
@@ -96,15 +96,6 @@
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
 
-  function markerPos(segNum: number): { x: number; y: number } | null {
-    if (segNum === 25 || segNum === 50) return { x: 0, y: 0 }
-    const si = SEGS.indexOf(segNum)
-    if (si < 0) return null
-    const a = segAngle(si)
-    const r = (R.tr + R.so) / 2
-    return { x: r * Math.cos(a), y: -r * Math.sin(a) }
-  }
-
   /** The segment at a point in board units (y up), as Board Manager would name it. */
   function segmentAt(x: number, y: number): Segment {
     const r = Math.hypot(x, y)
@@ -167,6 +158,9 @@
     setTimeout(() => { justDragged = false })
     onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
   }
+
+  // Markers on the same segment are spread so none hides another
+  const otherMarkerPos = $derived(markerPositions(playerMarkers.filter(m => !m.isActive).map(m => m.segment)))
 
   const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
   const DOT_STROKE = '#0f100e'
@@ -250,8 +244,8 @@
 
 
   <!-- Other-player markers: white circle with initial -->
-  {#each playerMarkers.filter(m => !m.isActive) as marker}
-    {@const pos = markerPos(marker.segment)}
+  {#each playerMarkers.filter(m => !m.isActive) as marker, k}
+    {@const pos = otherMarkerPos[k]}
     {#if pos}
       <circle cx={pos.x} cy={pos.y} r="0.085"
         fill="white" stroke="#0a0b09" stroke-width="0.01"

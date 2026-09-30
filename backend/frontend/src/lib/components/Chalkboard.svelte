@@ -5,13 +5,13 @@
 
   let { visits, current, active }: {
     visits: Visit[]
-    current: { scored: number; left: number } | null
+    current: { scored: number; left: number; bust: boolean } | null
     active: boolean
   } = $props()
 </script>
 
 <div class="relative mt-auto min-h-[120px] flex-1 max-h-[340px] flex flex-col box-border px-3 py-[10px] rounded-[12px] border border-line-2
-            {active ? 'bg-surface-chip' : 'bg-surface-inset'}" aria-label="Chalkboard">
+            {active ? 'bg-surface-chip' : 'bg-surface-inset'}" role="region" aria-label="Chalkboard">
   <span class="absolute left-1/2 top-[10px] bottom-[10px] w-px bg-line-chip" aria-hidden="true"></span>
   <div class="grid grid-cols-2 h-7 shrink-0 items-center text-[13px] uppercase tracking-[0.1em] text-text-dim">
     <span class="text-right pr-[14px]">Scored</span><span class="pl-[14px]">Left</span>
@@ -29,7 +29,7 @@
     {/each}
     {#if current}
       <div class="grid grid-cols-2 h-[46px] shrink-0 items-center rounded-[8px] bg-surface-key font-display font-bold text-[34px] leading-none tabular-nums">
-        <span class="text-right pr-[14px] text-accent">{current.scored}…</span>
+        <span class="text-right pr-[14px] {current.bust ? 'text-danger-text' : 'text-accent'}">{current.bust ? 'Bust' : `${current.scored}…`}</span>
         <span class="pl-[14px] text-text">{current.left}</span>
       </div>
     {/if}

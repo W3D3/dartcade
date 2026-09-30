@@ -1,9 +1,12 @@
 <script lang="ts">
   // Undo, and the manual advance. On a board the takeout advances by itself, so
   // "Skip to next" stays quiet; without a board it is the way on, so it is an outline button.
-  let { canUndo, manual, onUndo, onNext }: {
+  let { canUndo, label, prominent, enabled, onUndo, onNext }: {
     canUndo: boolean
-    manual: boolean
+    label: string
+    /** "Next player" is an outline button; the quiet "Skip to next" a text button. */
+    prominent: boolean
+    enabled: boolean
     onUndo: () => void
     onNext: () => void
   } = $props()
@@ -18,11 +21,11 @@
     Undo
   </button>
   <span class="flex-1"></span>
-  <button type="button" onclick={onNext}
-    class="h-12 flex items-center gap-1 rounded-[10px] cursor-pointer
-           {manual ? 'px-4 border border-line-strong bg-transparent text-text text-[15px] font-medium'
+  <button type="button" onclick={onNext} disabled={!enabled}
+    class="h-12 flex items-center gap-1 rounded-[10px] cursor-pointer disabled:opacity-40 disabled:cursor-default
+           {prominent ? 'px-4 border border-line-strong bg-transparent text-text text-[15px] font-medium'
                    : 'px-2 border-0 bg-transparent text-text-muted text-[14px]'}">
-    {manual ? 'Next player' : 'Skip to next'}
+    {label}
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
   </button>

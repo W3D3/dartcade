@@ -2,7 +2,7 @@
   // Game settings as a drawer on the right, below the header (Settings-InGame board).
   import type { GameSettings } from '$lib/gameSettings.js'
 
-  let { settings = $bindable(), onclose }: { settings: GameSettings; onclose: () => void } = $props()
+  let { settings = $bindable(), gameId, onclose }: { settings: GameSettings; gameId: string; onclose: () => void } = $props()
 
   const display = [
     { key: 'checkoutSuggestions', label: 'Checkout suggestions', sub: 'In the dart slots when you can finish' },
@@ -10,6 +10,8 @@
     { key: 'chalkboard', label: 'Chalkboard', sub: 'Scored and left for every visit' },
     { key: 'showMarkers', label: "Other players' targets", sub: 'Around the Clock with 3 or more players' },
   ] as const
+  // Other players' targets only exist in Around the Clock
+  const rows = $derived(display.filter(r => r.key !== 'showMarkers' || gameId === 'atc'))
   const sounds = [
     { key: 'soundHit', label: 'Hit' },
     { key: 'soundMiss', label: 'Miss' },
@@ -39,7 +41,7 @@
 
   <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
     <h3 class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Display</h3>
-    {#each display as row (row.key)}
+    {#each rows as row (row.key)}
       <div class="flex items-center justify-between gap-4">
         <span class="flex flex-col gap-[2px]">
           <span id="setting-{row.key}" class="text-[15px] text-text">{row.label}</span>

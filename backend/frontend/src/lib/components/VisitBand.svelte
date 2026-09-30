@@ -1,22 +1,42 @@
 <script lang="ts">
   // The visit sum under the board (or a compact tile beside the slots), with the
   // VisitFX celebrations: ton plus, maximum, and a tick for a big dart.
-  import type { BandData } from '$lib/visitBand.js'
+  import { shouldReplay, type BandData } from '$lib/visitBand.js'
 
   let { band, compact = false }: { band: BandData; compact?: boolean } = $props()
 
   const tone = $derived(band.bust ? 'bust' : band.fx)
-  // Re-mount on every new celebrating sum so each animation plays once when the dart lands
-  const replayKey = $derived(band.fx !== 'none' || band.bigDart ? band.sum : 'calm')
+  // Re-mount (and so replay the animation) only when a celebrating sum goes up:
+  // not on load, not when a dart is undone
+  let replays = $state(0)
+  let lastSum: number | null = null
+  $effect(() => {
+    if (shouldReplay(lastSum, band)) replays++
+    lastSum = Number(band.sum.replace('+', ''))
+  })
 
+  // 180: confetti bursts from the band across almost the whole screen
+  let bandEl: HTMLDivElement | undefined = $state()
+  let origin = $state({ x: 0, y: 0 })
+  $effect(() => {
+    if (band.fx !== 'max' || !bandEl) return
+    const r = bandEl.getBoundingClientRect()
+    origin = { x: r.left + r.width / 2, y: r.top + r.height / 2 }
+  })
   const CONFETTI = ['#e9dfc4', '#c6f24e', '#d23b36', '#1e7a4f', '#dcff7a', '#efeee6']
-  const confetti = Array.from({ length: 30 }, (_, i) => ({
-    c: CONFETTI[i % CONFETTI.length],
-    w: 6 + ((i * 7) % 5), h: 10 + ((i * 5) % 7),
-    x: Math.round(Math.cos(i * 2.4) * (120 + ((i * 37) % 160))),
-    y: Math.round(-60 - ((i * 53) % 180)),
-    r: ((i * 97) % 720) - 360,
-  }))
+  // Deterministic spread: angles all round, distances out to ~the screen edges (in vw/vh)
+  const confetti = Array.from({ length: 150 }, (_, i) => {
+    const a = i * 2.399963 // golden angle
+    const d = 0.35 + ((i * 37) % 65) / 100
+    return {
+      c: CONFETTI[i % CONFETTI.length],
+      w: 6 + ((i * 7) % 6), h: 10 + ((i * 5) % 9),
+      x: Math.round(Math.cos(a) * d * 60), // vw
+      y: Math.round(Math.sin(a) * d * 70 - 12), // vh, slightly upwards
+      r: ((i * 97) % 1080) - 540,
+      delay: (i % 10) * 25,
+    }
+  })
 
   const box = $derived(
     tone === 'max' ? 'bg-accent border-2 border-accent text-accent-fg fx-max'
@@ -29,9 +49,11 @@
   const afterColor = $derived(tone === 'max' ? '' : 'text-ink-3')
 </script>
 
-{#key replayKey}
+<span class="sr-only" role="status" aria-live="polite">{band.eyebrow}: {band.sum}. {band.afterLabel} {band.after}</span>
+
+{#key replays}
   {#if compact}
-    <div role="status" class="relative h-[min(124px,14vh)] box-border px-[18px] py-3 rounded-[14px] flex flex-col justify-between {box}">
+    <div bind:this={bandEl} class="relative h-[min(124px,14vh)] box-border px-[18px] py-3 rounded-[14px] flex flex-col justify-between {box}">
       <span class="flex justify-between gap-2 text-[13px]">
         <span class={eyebrowColor}>{band.eyebrow}</span><span class={quiet}>{band.progressShort}</span>
       </span>
@@ -40,10 +62,9 @@
         <span class={quiet}>{band.afterLabel}</span>
         <span class="font-display font-bold text-[24px] leading-none {afterColor}">{band.after}</span>
       </span>
-      {#if tone === 'max'}{@render burst()}{/if}
     </div>
   {:else}
-    <div role="status" class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-5 px-[18px] py-[10px] rounded-[14px] {box}">
+    <div bind:this={bandEl} class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-5 px-[18px] py-[10px] rounded-[14px] {box}">
       <span class="flex flex-col items-end gap-[2px] text-right">
         <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
         <span class="text-[13px] {quiet}">{band.progress}</span>
@@ -53,15 +74,17 @@
         <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
         <span class="font-display font-bold text-[30px] leading-none {afterColor}">{band.after}</span>
       </span>
-      {#if tone === 'max'}{@render burst()}{/if}
     </div>
   {/if}
+  <!-- Outside the band: its transform animation would trap a fixed layer inside it -->
+  {#if tone === 'max'}{@render burst()}{/if}
 {/key}
 
 {#snippet burst()}
-  <span class="absolute inset-0 pointer-events-none" aria-hidden="true">
+  <span class="fixed inset-0 z-[60] pointer-events-none overflow-hidden" aria-hidden="true">
     {#each confetti as p}
-      <span class="confetti" style="--c:{p.c};--w:{p.w}px;--h:{p.h}px;--x:{p.x}px;--y:{p.y}px;--r:{p.r}deg"></span>
+      <span class="confetti"
+        style="left:{origin.x}px;top:{origin.y}px;--c:{p.c};--w:{p.w}px;--h:{p.h}px;--x:{p.x}vw;--y:{p.y}vh;--r:{p.r}deg;animation-delay:{p.delay}ms"></span>
     {/each}
   </span>
 {/snippet}
@@ -72,9 +95,9 @@
   .fx-max { animation: dc-max 2.6s cubic-bezier(.2, .8, .2, 1) 1; }
   .fx-tick { animation: dc-tick 0.9s ease-out 1; }
   .confetti {
-    position: absolute; left: 50%; top: 50%;
+    position: absolute;
     width: var(--w); height: var(--h); background: var(--c); border-radius: 2px; opacity: 0;
-    animation: dc-conf 2.6s cubic-bezier(.2, .8, .2, 1) 1 forwards;
+    animation: dc-conf 3.2s cubic-bezier(.15, .7, .3, 1) 1 forwards;
   }
   @keyframes dc-ton {
     0%, 100% { box-shadow: 0 0 0 0 rgba(198, 242, 78, 0); }
@@ -91,7 +114,8 @@
   @keyframes dc-tick { 12% { transform: scale(1.12); } 100% { transform: scale(1); } }
   @keyframes dc-conf {
     0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
-    100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 120px)) rotate(var(--r)); }
+    75% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 18vh)) rotate(var(--r)); }
   }
   @media (prefers-reduced-motion: reduce) {
     .fx-ton, .fx-ton .sum, .fx-max, .fx-tick { animation: none; }

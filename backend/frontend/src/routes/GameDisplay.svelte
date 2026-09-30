@@ -21,7 +21,8 @@
   import { createSounds } from '../lib/sounds.js'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
   import { x01Slots, atcSlots, type ThrownDart } from '../lib/dartSlots.js'
-  import { x01Band, atcBand, isBigDart } from '../lib/visitBand.js'
+  import { x01Band, atcBand, atcAdvanced, bigDartIndex } from '../lib/visitBand.js'
+  import { nextButton } from '../lib/controls.js'
   import { x01Player, atcPlayer } from '../lib/playerStats.js'
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment, type Segment } from '../lib/dartUtils.js'
@@ -35,7 +36,7 @@
   let sessionId = $state('')
   let sessionStore: ReturnType<typeof createSessionStore> | null = null
   let snapshot = $state<Snapshot | null>(null)
-  let history = $state<VisitHistory>(emptyHistory())
+  let history = $state.raw<VisitHistory>(emptyHistory())
   let unsubSnap: (() => void) | null = null
 
   let viewMode = $state<'board' | 'entry'>('board')
@@ -90,12 +91,14 @@
   const darts = $derived((game.currentVisitDarts as VisitDart[] | undefined) ?? [])
   const hits = $derived((game.currentVisitHits as boolean[] | undefined) ?? [])
   const bust = $derived(game.bustThisVisit === true)
+  // The visit is over (bust, checkout, win): no more darts until the next player
+  const locked = $derived(game.visitLocked === true || winner !== null)
   const bullOff = $derived(game.phase === 'bulloff' ? (game.bullOff as BullOffView | undefined) ?? null : null)
   const layout = $derived(players.length === 1 ? 'solo' : players.length === 2 ? 'duel' : 'party')
   const nextPlayer = $derived((currentPlayer + 1) % Math.max(players.length, 1))
 
   const x01Players = $derived(isX01
-    ? players.map((_, i) => x01Player(game, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions }))
+    ? players.map((_, i) => x01Player(game, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions, bust: i === currentPlayer && bust }))
     : [])
   const atcPlayers = $derived(isX01 ? [] : players.map((_, i) => atcPlayer(game, i)))
   const leaders = $derived(isX01 ? [] : atcLeaders((game.hitCounts as number[] | undefined) ?? []))
@@ -109,7 +112,10 @@
         opened: x01Players[currentPlayer]?.opened ?? true,
         suggest: settings.checkoutSuggestions && isActive,
       })
-    : atcSlots({ darts, hits, target: isActive ? atcPlayers[currentPlayer]?.target ?? null : null }))
+    : atcSlots({
+        darts, hits, target: isActive ? atcPlayers[currentPlayer]?.target ?? null : null,
+        multiplierAdvances: (game.cfg as { multiplierAdvances?: boolean } | undefined)?.multiplierAdvances === true,
+      }))
 
   const hitCount = $derived((game.hitCounts as number[] | undefined)?.[currentPlayer] ?? 0)
   const band = $derived(isX01
@@ -123,10 +129,10 @@
       })
     : atcBand({
         dartCount: darts.length,
-        advanced: Math.max(0, hitCount - (history.start[currentPlayer] ?? hitCount)),
+        advanced: atcAdvanced(hitCount, history.start[currentPlayer] ?? null, hits),
         target: atcPlayers[currentPlayer]?.target ?? '',
       }))
-  const popIndex = $derived(isX01 && darts.length && isBigDart(darts[darts.length - 1]?.score ?? 0) ? darts.length - 1 : null)
+  const popIndex = $derived(isX01 ? bigDartIndex(darts, { opened: x01Players[currentPlayer]?.opened ?? true, bust }) : null)
 
   const sequence = $derived((game.sequence as number[] | undefined) ?? [])
   const targets = $derived((game.targets as number[] | undefined) ?? [])
@@ -162,13 +168,14 @@
 
   // Party rows: the X01 thrower's row is taller; rows keep a minimum height and scroll
   const rowTemplate = $derived(players
-    .map((_, i) => (isX01 && isActive && i === currentPlayer ? 'minmax(150px, 1.55fr)' : 'minmax(96px, 1fr)'))
+    .map((_, i) => (!isX01 ? 'minmax(110px, 1fr)' : isActive && i === currentPlayer ? 'minmax(150px, 1.55fr)' : 'minmax(96px, 1fr)'))
     .join(' '))
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const send = (action: Record<string, unknown>) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
-  const next = () => send({ type: 'takeout' })
+  const advance = () => send({ type: 'takeout' })
+  const next = $derived(nextButton({ manual: boardId === null, dartCount: darts.length, locked, active: isActive }))
   const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
   const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
@@ -194,7 +201,7 @@
 {#snippet center(variant: 'solo' | 'duel' | 'party')}
   {#if viewMode === 'entry'}
     <div class="flex-1 min-h-0 overflow-y-auto">
-      <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={darts.length} />
+      <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={darts.length} {locked} />
     </div>
   {:else}
     <!-- The board takes the height the column has left (capped by its width) -->
@@ -202,7 +209,7 @@
       <div class="aspect-square" style="width: min(100cqw, 100cqh)">
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
-          onBoardClick={isActive ? addBoardDart : undefined}
+          onBoardClick={isActive && !locked ? addBoardDart : undefined}
           selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
       </div>
     </div>
@@ -219,7 +226,8 @@
     <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
   {/if}
 
-  <ControlBar canUndo={isActive && darts.length > 0} manual={boardId === null} onUndo={undo} onNext={next} />
+  <ControlBar canUndo={isActive && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+    onUndo={undo} onNext={advance} />
 {/snippet}
 
 {#snippet panel(i: number)}
@@ -242,7 +250,7 @@
       title={bullOff ? 'Bull-off' : view.title}
       meta={bullOff ? `Who throws first in ${view.title}` : view.meta(game, players.length)}
       showViewToggle={!bullOff}
-      {sessionId} {boardId} bmStatus={snapshot.bmStatus} {viewMode}
+      {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode}
       canEnd={winner === null}
       bind:settings
       onleave={() => push('/')}
