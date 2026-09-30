@@ -14,30 +14,13 @@
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { api, type Segment, type BullOffView } from '$lib/api'
+  import { createSounds } from '../lib/sounds.js'
 
   // ── Settings (persisted to localStorage) ──────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
   $effect(() => { saveSettings(localStorage, settings) })
 
-  // ── Sound effects (Web Audio API) ─────────────────────────────────────────
-  let audioCtx: AudioContext | null = null
-  function getAudio(): AudioContext | null {
-    if (typeof AudioContext === 'undefined') return null
-    if (!audioCtx) audioCtx = new AudioContext()
-    return audioCtx
-  }
-  function playTone(freq: number, dur: number, type: OscillatorType = 'sine', vol = 0.25) {
-    const ctx = getAudio(); if (!ctx) return
-    const osc = ctx.createOscillator(), gain = ctx.createGain()
-    osc.connect(gain); gain.connect(ctx.destination)
-    osc.type = type; osc.frequency.value = freq
-    gain.gain.setValueAtTime(vol, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur)
-    osc.start(); osc.stop(ctx.currentTime + dur)
-  }
-  function soundHit()    { playTone(880, 0.12, 'sine', 0.3) }
-  function soundMiss()   { playTone(200, 0.18, 'sawtooth', 0.18) }
-  function soundSwitch() { playTone(440, 0.08, 'sine', 0.2) }
+  const sounds = createSounds(() => settings.volume)
 
   let sessionId = $state('')
   let sessionStore: ReturnType<typeof createSessionStore> | null = null
@@ -85,10 +68,10 @@
       const idx = newDarts.length - 1
       const hits = 'currentVisitHits' in g ? g.currentVisitHits : undefined
       const isHit = hits !== undefined ? hits[idx] === true : (newDarts[idx]?.score ?? 0) > 0
-      if (isHit) { if (settings.soundHit) soundHit() }
-      else { if (settings.soundMiss) soundMiss() }
+      if (isHit) { if (settings.soundHit) sounds.hit() }
+      else { if (settings.soundMiss) sounds.miss() }
     } else if (newPlayer !== oldPlayer) {
-      if (settings.soundSwitch) soundSwitch()
+      if (settings.soundSwitch) sounds.switchPlayer()
     }
   }
 
@@ -232,7 +215,7 @@
   {:else}
     <GameHeader
       title={bullOff ? 'Bull-off' : view.title}
-      subtitle={bullOff ? `Who throws first in ${view.title}` : subtitle}
+      meta={bullOff ? `Who throws first in ${view.title}` : subtitle}
       showViewToggle={!bullOff}
       {sessionId}
       {boardId}
