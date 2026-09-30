@@ -86,12 +86,12 @@
   onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
 
   function playSoundEvents(snap: import('../lib/ws.js').Snapshot, oldCount: number, oldPlayer: number) {
-    const g = snap.game as unknown as Record<string, unknown>
-    const newDarts = (g.currentVisitDarts ?? []) as any[]
-    const newPlayer = g.currentPlayer as number
+    const g = snap.game
+    const newDarts = g.currentVisitDarts
+    const newPlayer = g.currentPlayer
     if (newDarts.length > oldCount) {
       const idx = newDarts.length - 1
-      const hits = g.currentVisitHits as boolean[] | undefined
+      const hits = 'currentVisitHits' in g ? g.currentVisitHits : undefined
       const isHit = hits !== undefined ? hits[idx] === true : (newDarts[idx]?.score ?? 0) > 0
       if (isHit) { if (settings.soundHit) soundHit() }
       else { if (settings.soundMiss) soundMiss() }
@@ -101,11 +101,11 @@
   }
 
   function updateVisitHistory(snap: import('../lib/ws.js').Snapshot) {
-    const g = snap.game as unknown as Record<string, unknown>
-    const newDarts = (g.currentVisitDarts ?? []) as any[]
+    const g = snap.game
+    const newDarts = g.currentVisitDarts
     const newCount = newDarts.length
-    const newPlayer = g.currentPlayer as number
-    const snapTotalVisits = (g.totalVisits as number[] | undefined) ?? []
+    const newPlayer = g.currentPlayer
+    const snapTotalVisits = g.totalVisits ?? []
 
     if (prevDartCount === 0 && newCount > 0) visitOwner = newPlayer
 
