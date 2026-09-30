@@ -2,7 +2,7 @@
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
 
   let { darts = [], hits, onCorrect, onUndo, ontakeout, showVisitScore = true, bust = false,
-        openDart = $bindable(null), popoverHeight = $bindable(0) }: {
+        openDart = $bindable(null) }: {
     darts: Array<{ label: string; score: number }>
     hits?: boolean[]
     onCorrect: (dartIndex: number, label: string) => void
@@ -12,8 +12,6 @@
     bust?: boolean
     /** The dart being corrected (bindable, so the board can let it be dragged). */
     openDart?: number | null
-    /** Height of the open popover in px, so the page can make room for it. */
-    popoverHeight?: number
   } = $props()
 
   // Close the popover when its dart goes away (undo, takeout)
@@ -112,7 +110,7 @@
 
 <!-- Popover: compact, below the tiles, so the board above stays free for dragging -->
 {#if openDart !== null}
-  <div role="dialog" aria-label="Correct dart {openDart + 1}" bind:offsetHeight={popoverHeight}
+  <div role="dialog" aria-label="Correct dart {openDart + 1}"
     class="w-full box-border px-3 pt-2 pb-3 rounded-[14px] bg-[#1f221c] border border-[#454a3f]
            flex flex-col gap-2 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)]">
 
