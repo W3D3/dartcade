@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronRight, LoaderCircle } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import { Chip } from '$lib/components/ui/chip/index.js'
@@ -109,10 +110,7 @@
       onclick={() => (helpExpanded = true)}
       class="flex items-center gap-2 text-[14px] text-text-muted hover:text-text transition-colors self-start"
     >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M9 18l6-6-6-6" />
-      </svg>
+      <ChevronRight size={14} />
       Where do I find the code?
     </button>
   {/if}
@@ -169,10 +167,7 @@
     <Button variant="ghost" class="h-[54px]" onclick={onclose} disabled={loading}>Cancel</Button>
     <Button variant="primary" class="flex-1 max-w-[220px]" onclick={submit} disabled={!canSubmit}>
       {#if loading}
-        <svg class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none"
-          stroke="currentColor" stroke-width="2.5" aria-hidden="true">
-          <path d="M12 3a9 9 0 1 0 9 9" stroke-linecap="round" />
-        </svg>
+        <LoaderCircle size={16} strokeWidth={2.5} class="animate-spin" />
       {/if}
       {buttonLabel}
     </Button>

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import BrandMark from './BrandMark.svelte'
+  import { Clock, Monitor, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import { onMount } from 'svelte'
   import { authClient } from '$lib/auth'
@@ -30,11 +32,7 @@
 
   <!-- Logo -->
   <div class="flex items-center gap-[10px] px-2">
-    <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true">
-      <circle cx="16" cy="16" r="14" fill="none" stroke="#c6f24e" stroke-width="2.5"/>
-      <circle cx="16" cy="16" r="7.5" fill="none" stroke="#c6f24e" stroke-width="2.5"/>
-      <circle cx="16" cy="16" r="2.5" fill="#c6f24e"/>
-    </svg>
+    <BrandMark size={28} />
     <span class="font-display font-bold text-[24px] tracking-[0.06em]">DARTCADE</span>
   </div>
 
@@ -47,29 +45,13 @@
         class="flex items-center gap-3 h-11 px-3 rounded-lg no-underline text-[15px] transition-colors
                {active ? 'bg-[#22251f] text-text font-semibold' : 'text-[#c9c9bf] font-medium'}">
         {#if link.icon === 'play'}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke={active ? '#c6f24e' : 'currentColor'} stroke-width="1.8" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/>
-            <circle cx="12" cy="12" r="5"/>
-            <circle cx="12" cy="12" r="1.5"/>
-          </svg>
+          <Target size={20} strokeWidth={1.8} />
         {:else if link.icon === 'boards'}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-            <rect x="3" y="4" width="18" height="13" rx="2"/>
-            <path d="M8 21h8M12 17v4"/>
-          </svg>
+          <Monitor size={20} strokeWidth={1.8} />
         {:else if link.icon === 'trophy'}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M8 4h8v5a4 4 0 0 1-8 0V4zM8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M9 20h6"/>
-          </svg>
+          <Trophy size={20} strokeWidth={1.8} />
         {:else if link.icon === 'clock'}
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-            stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="9"/>
-            <path d="M12 7v5l3 2"/>
-          </svg>
+          <Clock size={20} strokeWidth={1.8} />
         {/if}
         {link.label}
       </a>

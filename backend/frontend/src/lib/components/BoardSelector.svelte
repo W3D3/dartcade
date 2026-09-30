@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronDown, SquarePen } from '@lucide/svelte'
   import type { Board } from '$lib/api'
 
   let { boards, value = $bindable('') }: { boards: Board[]; value: string } = $props()
@@ -21,11 +22,7 @@
     class="h-12 px-4 flex items-center gap-[10px] bg-surface-2 border border-line-3 rounded-[10px]
            text-text text-[15px] font-[inherit] cursor-pointer">
     {#if isManual}
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-      </svg>
+      <SquarePen size={14} />
       <span class="font-semibold">Manual only</span>
     {:else if selected}
       <span class="w-2 h-2 rounded-full shrink-0 {selected.online ? 'bg-accent' : 'bg-text-dim'}"></span>
@@ -34,10 +31,7 @@
     {:else}
       <span class="text-text-muted">No boards — add one in Boards</span>
     {/if}
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-      <path d="M6 9l6 6 6-6"/>
-    </svg>
+    <ChevronDown size={16} />
   </button>
 
   {#if open}
@@ -61,11 +55,7 @@
         class="w-full flex items-center gap-3 h-11 px-4 text-left text-[15px] border-0
                bg-transparent cursor-pointer transition-colors
                {isManual ? 'text-text font-semibold bg-surface-active' : 'text-[#c9c9bf] hover:bg-surface-active'}">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
-          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
-        </svg>
+        <SquarePen size={13} />
         Manual only
       </button>
     </div>

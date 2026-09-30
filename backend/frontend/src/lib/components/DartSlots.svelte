@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronLeft, X } from '@lucide/svelte'
   // The three dart slots; tapping a thrown dart opens the correction popover below them.
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
   import type { Slot } from '$lib/dartSlots.js'
@@ -91,8 +92,7 @@
         {#if mode === 'full'}
           <button type="button" onclick={() => mode = 'quick'} aria-label="Back to nearby segments"
             class="w-9 h-9 -ml-2 shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            <ChevronLeft size={16} />
           </button>
         {/if}
         <span class="text-[14px] font-semibold whitespace-nowrap">Correct dart {openDart + 1}</span>
@@ -101,8 +101,7 @@
         </span>
         <button type="button" onclick={close} aria-label="Close"
           class="w-9 h-9 -mr-2 ml-auto shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <X size={16} />
         </button>
       </div>
 

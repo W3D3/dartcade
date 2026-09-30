@@ -3,11 +3,7 @@
 
   <!-- Logo -->
   <div class="relative flex items-center gap-3">
-    <svg width="32" height="32" viewBox="0 0 32 32" aria-hidden="true">
-      <circle cx="16" cy="16" r="14" fill="none" stroke="#c6f24e" stroke-width="2.5"/>
-      <circle cx="16" cy="16" r="7.5" fill="none" stroke="#c6f24e" stroke-width="2.5"/>
-      <circle cx="16" cy="16" r="2.5" fill="#c6f24e"/>
-    </svg>
+    <BrandMark size={32} />
     <span class="font-display font-bold text-[28px] tracking-[0.06em]">DARTCADE</span>
   </div>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ArrowRight, Check, Plus } from '@lucide/svelte'
   import { onMount } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
@@ -198,10 +199,7 @@
             {#if active && !unavailable}
               <span class="absolute top-[18px] right-[18px] w-7 h-7 rounded-full bg-accent
                            flex items-center justify-center">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f100e" stroke-width="3"
-                  stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                  <path d="M5 12l5 5 9-10"/>
-                </svg>
+                <Check size={16} strokeWidth={3} />
               </span>
             {/if}
             {#if unavailable}
@@ -353,10 +351,7 @@
           <button type="button" onclick={() => guests = [...guests, { name: '' }]}
             class="h-11 flex items-center justify-center gap-2 border border-dashed border-[#3e4239]
                    rounded-[10px] bg-transparent text-[#c9c9bf] text-[14px] cursor-pointer mt-1">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
+            <Plus size={16} />
             Add player
           </button>
         </div>
@@ -384,10 +379,7 @@
                    border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
             {loading ? 'Starting…' : 'Game on'}
             {#if !loading}
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M5 12h14M13 6l6 6-6 6"/>
-              </svg>
+              <ArrowRight size={20} strokeWidth={2.2} />
             {/if}
           </button>
         </div>

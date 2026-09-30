@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ArrowRight } from '@lucide/svelte'
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
   import { api, type SessionSummary } from '$lib/api'
@@ -30,10 +31,7 @@
       class="ml-auto flex items-center gap-[6px] text-[13px] font-semibold text-accent
              bg-transparent border-0 cursor-pointer shrink-0">
       Return to game
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <path d="M5 12h14M13 6l6 6-6 6"/>
-      </svg>
+      <ArrowRight size={14} strokeWidth={2.5} />
     </button>
   </div>
 {/if}
