@@ -3,16 +3,9 @@
   // the centre throws first. Driven entirely by the snapshot's `bullOff` view.
   import DartBoard from './DartBoard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
-  import type { Segment, UserAction } from '$lib/api/game-ws'
+  import type { Segment, UserAction, BullOffView } from '$lib/api'
 
-  type Throw = { mm: number | null; segment: string; thetaDeg: number | null; estimated: boolean }
-  type Result = { order: number[]; rethrow: boolean; reason?: 'tie' | 'bullseye' | 'all_missed' }
-  export type BullOffView = {
-    throws: (Throw | null)[]
-    sequence: number[]
-    currentPlayer: number
-    result: Result | null
-  }
+  type Throw = NonNullable<BullOffView['throws'][number]>
 
   let { players, bullOff, manual, send }: {
     players: { name: string }[]

@@ -5,6 +5,7 @@
   import { Modal } from '$lib/components/ui/modal/index.js'
   import CodeInput from '$lib/components/CodeInput.svelte'
   import { CODE_LENGTH } from '$lib/pairing'
+  import { api } from '$lib/api'
 
   let { onclose, onpaired }: {
     onclose: () => void
@@ -58,19 +59,14 @@
     loading = true
     errorKind = null
     try {
-      const res = await fetch('/api/pairing/claim', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, name: name.trim() }),
-      })
-      if (res.ok) {
-        const body = await res.json().catch(() => ({}))
-        onpaired({ boardId: body.boardId, name: body.name ?? name.trim() })
+      const { data, response } = await api.POST('/api/pairing/claim', { body: { code, name: name.trim() } })
+      if (data) {
+        onpaired({ boardId: data.boardId, name: data.name })
         return
       }
-      if (res.status === 410) errorKind = 'expired'
-      else if (res.status === 404) errorKind = 'notfound'
-      else if (res.status === 409) errorKind = 'used'
+      if (response.status === 410) errorKind = 'expired'
+      else if (response.status === 404) errorKind = 'notfound'
+      else if (response.status === 409) errorKind = 'used'
       else errorKind = 'network'
     } catch {
       errorKind = 'network'

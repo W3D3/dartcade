@@ -11,9 +11,9 @@
   import CorrectionPanel from '../lib/components/CorrectionPanel.svelte'
   import { parseLabel } from '../lib/dartUtils.js'
   import GameHeader from '../lib/components/GameHeader.svelte'
-  import BullOffPanel, { type BullOffView } from '../lib/components/BullOffPanel.svelte'
+  import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import { defaultSettings, type GameSettings } from '../lib/gameSettings.js'
-  import type { Segment } from '$lib/api/game-ws'
+  import { api, type Segment, type BullOffView } from '$lib/api'
 
   // ── Settings (persisted to localStorage) ──────────────────────────────────
   const SETTINGS_KEY = 'dartcade_game_settings'
@@ -86,12 +86,12 @@
   onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
 
   function playSoundEvents(snap: import('../lib/ws.js').Snapshot, oldCount: number, oldPlayer: number) {
-    const game = snap.game as unknown as Record<string, unknown>
-    const newDarts = (game.currentVisitDarts ?? []) as any[]
-    const newPlayer = game.currentPlayer as number
+    const g = snap.game as unknown as Record<string, unknown>
+    const newDarts = (g.currentVisitDarts ?? []) as any[]
+    const newPlayer = g.currentPlayer as number
     if (newDarts.length > oldCount) {
       const idx = newDarts.length - 1
-      const hits = game.currentVisitHits as boolean[] | undefined
+      const hits = g.currentVisitHits as boolean[] | undefined
       const isHit = hits !== undefined ? hits[idx] === true : (newDarts[idx]?.score ?? 0) > 0
       if (isHit) { if (settings.soundHit) soundHit() }
       else { if (settings.soundMiss) soundMiss() }
@@ -101,11 +101,11 @@
   }
 
   function updateVisitHistory(snap: import('../lib/ws.js').Snapshot) {
-    const game = snap.game as unknown as Record<string, unknown>
-    const newDarts = (game.currentVisitDarts ?? []) as any[]
+    const g = snap.game as unknown as Record<string, unknown>
+    const newDarts = (g.currentVisitDarts ?? []) as any[]
     const newCount = newDarts.length
-    const newPlayer = game.currentPlayer as number
-    const snapTotalVisits = (game.totalVisits as number[] | undefined) ?? []
+    const newPlayer = g.currentPlayer as number
+    const snapTotalVisits = (g.totalVisits as number[] | undefined) ?? []
 
     if (prevDartCount === 0 && newCount > 0) visitOwner = newPlayer
 
@@ -126,23 +126,23 @@
   const gameId        = $derived(snapshot?.gameId ?? '')
   const boardId       = $derived(snapshot?.boardId ?? null)
   const players       = $derived(snapshot?.players ?? [])
-  // The per-game view (X01Game | AtcGame) is read field-by-field below via `as`
-  // casts, same as the rest of this file: there is no single shape to narrow to.
-  const game          = $derived((snapshot?.game ?? {}) as Record<string, unknown>)
-  const currentPlayer = $derived((game.currentPlayer as number) ?? 0)
-  const winner        = $derived((game.winner as number | null) ?? null)
-  const currentDarts  = $derived((game.currentVisitDarts as any[]) ?? [])
-  const visitHits     = $derived((game.currentVisitHits as boolean[] | undefined))
+  const game          = $derived(snapshot?.game)
+  const currentPlayer = $derived(game?.currentPlayer ?? 0)
+  const winner        = $derived(game?.winner ?? null)
+  const currentDarts  = $derived(game?.currentVisitDarts ?? [])
+  const visitHits     = $derived(game && 'currentVisitHits' in game ? game.currentVisitHits : undefined)
+  const bust          = $derived(!!game && 'bustThisVisit' in game && game.bustThisVisit)
+  // Set while a bull off decides the throwing order (games wrapped with withBullOff)
+  const bullOff       = $derived(game && 'bullOff' in game && game.phase === 'bulloff' ? game.bullOff : null)
+  // The per-game view helpers (lib/gameViews) and player cards still take an untyped game
+  const gameRecord    = $derived((game ?? {}) as Record<string, unknown>)
   const view          = $derived(getGameView(gameId))
-  const highlights    = $derived(view.getBoardHighlights(game, currentPlayer))
-  const subtitle      = $derived(view.getSubtitle?.(game, players.length) ?? '')
+  const highlights    = $derived(view.getBoardHighlights(gameRecord, currentPlayer))
+  const subtitle      = $derived(view.getSubtitle?.(gameRecord, players.length) ?? '')
   const isMultiPlayer  = $derived(players.length > 2)
   const showVisitScore = $derived(view.showVisitScore ?? true)
   const bmStatus       = $derived(snapshot?.bmStatus ?? null)
-  const bust           = $derived(!!(game.bustThisVisit))
   const isActive       = $derived(winner === null)
-  // Set while a bull off decides the throwing order (any game using withBullOff)
-  const bullOff        = $derived(game.phase === 'bulloff' ? (game.bullOff as BullOffView | undefined) ?? null : null)
 
   const dartItems = $derived(currentDarts.map((d: any) => ({
     label: d.segment?.name ?? 'Miss',
@@ -153,7 +153,7 @@
     isMultiPlayer && settings.showMarkers
       ? players.map((p, i) => ({
           initial: p.name?.[0]?.toUpperCase() ?? '?',
-          segment: view.getBoardHighlights(game, i)[0] ?? 0,
+          segment: view.getBoardHighlights(gameRecord, i)[0] ?? 0,
           isActive: i === currentPlayer && winner === null,
         })).filter(m => m.segment > 0)
       : []
@@ -162,7 +162,7 @@
   const nextPlayer = $derived((currentPlayer + 1) % Math.max(players.length, 1))
 
   const leadingPlayerIndex = $derived((() => {
-    const hitCounts = game.hitCounts as number[] | undefined
+    const hitCounts = gameRecord.hitCounts as number[] | undefined
     if (!hitCounts || hitCounts.length === 0) return -1
     let maxHits = -1, leadIdx = -1
     hitCounts.forEach((h, i) => { if (h > maxHits) { maxHits = h; leadIdx = i } })
@@ -170,8 +170,8 @@
   })())
 
   const atcTargets = $derived(
-    !isMultiPlayer && (game.targets as number[] | undefined) && players.length > 0
-      ? (game.targets as number[]).map((t, i) => ({
+    !isMultiPlayer && (gameRecord.targets as number[] | undefined) && players.length > 0
+      ? (gameRecord.targets as number[]).map((t, i) => ({
           name: players[i]?.name ?? `Player ${i + 1}`,
           label: t === 22 ? 'Bull' : t === 21 ? '25' : t > 22 ? '✓' : String(t),
           isActive: i === currentPlayer,
@@ -209,7 +209,7 @@
 
   async function endSession() {
     if (!sessionId) return
-    await fetch(`/api/sessions/${sessionId}`, { method: 'DELETE' })
+    await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
     push('/')
   }
 
@@ -257,7 +257,7 @@
               <PlayerListRow
                 {player}
                 playerIndex={i}
-                {game}
+                game={gameRecord}
                 {view}
                 isActive={currentPlayer === i && winner === null}
                 isWinner={winner === i}
@@ -304,7 +304,7 @@
             <PlayerCard
               player={players[0]}
               playerIndex={0}
-              {game}
+              game={gameRecord}
               {view}
               isActive={currentPlayer === 0 && winner === null}
               isWinner={winner === 0}
@@ -354,7 +354,7 @@
             <PlayerCard
               player={players[1]}
               playerIndex={1}
-              {game}
+              game={gameRecord}
               {view}
               isActive={currentPlayer === 1 && winner === null}
               isWinner={winner === 1}
