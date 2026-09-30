@@ -243,7 +243,7 @@ export class SessionEngine {
       if (session.openVisitEvents.length === 0) {
         session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } as any })
       }
-      // visit.opened may have just ended the bull off, so use the state it leads to
+      // Use the state after the (possibly new) visit.opened to find the thrower
       const opened = refoldVisit(session.module, session.committedState, session.openVisitEvents)
       const thrower = session.module.getCurrentPlayer(opened)
       if (!inBullOff(session, opened)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1

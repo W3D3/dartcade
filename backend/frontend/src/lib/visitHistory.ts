@@ -45,9 +45,8 @@ export function trackVisits(h: VisitHistory, game: Record<string, unknown>): Vis
       const s = start[i]
       const now = progress[i] ?? s
       if (s !== null && now !== null) { // null: began before the page loaded
-        // The server's dart count also covers darts added at takeout (an empty turn's misses)
-        const dartsAdded = (totalDarts[i] ?? 0) - (p.totalDarts[i] ?? 0)
-        const darts = dartsAdded > 0 ? dartsAdded : p.darts
+        // Darts seen so far plus any the server counted since (missed snapshots, an empty turn's misses)
+        const darts = Math.max(0, p.darts + (totalDarts[i] ?? 0) - (p.totalDarts[i] ?? 0))
         const visit: Visit = isX01
           ? { scored: wonLeg ? s : s - now, left: wonLeg ? 0 : now, darts, bust: p.bust }
           : { scored: now - s, left: 0, darts, bust: false }

@@ -113,19 +113,23 @@ export function labelToSegment(label: string): Segment {
 }
 
 /** Board positions (SVG coords, y down) for player markers on segments; markers on the
- *  same segment are spread along the wedge (bull: sideways) so none hides another. */
+ *  same segment are spread along the wedge (bull: sideways), squeezed to stay on the board. */
 export function markerPositions(segments: number[]): { x: number; y: number }[] {
   const mid = (R.tr + R.so) / 2
   const seen = new Map<number, number>()
   const total = new Map<number, number>()
   segments.forEach(s => total.set(s, (total.get(s) ?? 0) + 1))
   return segments.map(s => {
+    const n = total.get(s) ?? 1
     const k = seen.get(s) ?? 0
     seen.set(s, k + 1)
-    const off = (k - ((total.get(s) ?? 1) - 1) / 2) * 0.18
+    // Up to 0.18 apart, but never past r 0.95 (the double ring)
+    const step = n > 1 ? Math.min(0.18, 0.6 / (n - 1)) : 0
+    const centre = s === 25 || s === 50 ? 0 : Math.min(mid, 0.95 - (step * (n - 1)) / 2)
+    const off = centre + (k - (n - 1) / 2) * step
     if (s === 25 || s === 50) return { x: off, y: 0 }
-    const a = Math.PI / 2 - SEGS.indexOf(s) * (Math.PI / 10)
-    const r = mid + off
-    return { x: r * Math.cos(a), y: -r * Math.sin(a) }
+    // Crowded: zigzag a few degrees across the wedge so neighbours overlap less
+    const a = Math.PI / 2 - SEGS.indexOf(s) * (Math.PI / 10) + (n > 1 && step < 0.17 ? (k % 2 ? 0.08 : -0.08) : 0)
+    return { x: off * Math.cos(a), y: -off * Math.sin(a) }
   })
 }

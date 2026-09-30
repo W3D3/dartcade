@@ -8,5 +8,11 @@ describe('nextButton', () => {
   it('three darts in: next player', () => expect(nextButton({ ...base, dartCount: 3 })).toEqual({ label: 'Next player', prominent: true, enabled: true }))
   it('visit over (bust, checkout): next player', () => expect(nextButton({ ...base, locked: true }).label).toBe('Next player'))
   it('no board: always next player', () => expect(nextButton({ ...base, manual: true, dartCount: 0 }).label).toBe('Next player'))
-  it('disabled after a win', () => expect(nextButton({ ...base, active: false }).enabled).toBe(false))
+
+  it('after a win with the winning visit still open: next player commits it', () => {
+    expect(nextButton({ ...base, active: false, dartCount: 2, locked: true })).toEqual({ label: 'Next player', prominent: true, enabled: true })
+  })
+  it('after a win with nothing open: disabled', () => {
+    expect(nextButton({ ...base, active: false, dartCount: 0, locked: true }).enabled).toBe(false)
+  })
 })

@@ -30,11 +30,17 @@
     mode = 'quick'
     openDart = openDart === i ? null : i
   }
+  // Give focus back to the dart's slot before the popover (which holds it) goes away
+  let slotRow: HTMLDivElement | undefined = $state()
+  function close() {
+    if (openDart !== null) slotRow?.querySelectorAll<HTMLElement>('button')[openDart]?.focus()
+    openDart = null
+    mode = 'quick'
+  }
   function pick(label: string) {
     if (openDart === null) return
     onCorrect(openDart, label)
-    openDart = null
-    mode = 'quick'
+    close()
   }
 
   const nums = Array.from({ length: 20 }, (_, i) => i + 1)
@@ -43,10 +49,10 @@
   const slotLabel = 'font-display font-bold text-[min(66px,7.5vh)] leading-[0.9]'
 </script>
 
-<svelte:window onkeydown={e => { if (e.key === 'Escape' && openDart !== null) { openDart = null; mode = 'quick' } }} />
+<svelte:window onkeydown={e => { if (e.key === 'Escape' && openDart !== null) close() }} />
 
 <div class="flex flex-col gap-2 min-w-0">
-  <div class="grid grid-cols-3 gap-[10px]">
+  <div bind:this={slotRow} class="grid grid-cols-3 gap-[10px]">
     {#each slots as slot, i (i)}
       {#if slot.kind === 'thrown' || slot.kind === 'miss'}
         <button type="button" onclick={() => toggle(i)} aria-expanded={openDart === i} aria-label={slot.aria}
@@ -93,7 +99,7 @@
         <span class="text-[13px] text-text-muted truncate">
           Detected <strong class="text-text">{slots[openDart]?.label}</strong> · or drag it on the board
         </span>
-        <button type="button" onclick={() => { openDart = null; mode = 'quick' }} aria-label="Close"
+        <button type="button" onclick={close} aria-label="Close"
           class="w-9 h-9 -mr-2 ml-auto shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
             stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>

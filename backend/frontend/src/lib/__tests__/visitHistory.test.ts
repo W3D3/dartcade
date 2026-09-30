@@ -73,6 +73,17 @@ describe('trackVisits dart counts', () => {
     ])
     expect(h.all[0]).toEqual([{ scored: 0, left: 121, darts: 3, bust: false }])
   })
+
+  it('counts darts missed between snapshots within a visit', () => {
+    const h = run([
+      { ...x01({ scores: [301], totalVisits: [0], cp: 0 }), totalDarts: [0] },
+      { ...x01({ scores: [241], totalVisits: [0], cp: 0, darts: [60] }), totalDarts: [1] },
+      { ...x01({ scores: [181], totalVisits: [0], cp: 0, darts: [60, 60] }), totalDarts: [2] },
+      // reconnect: the third dart and the takeout arrive together
+      { ...x01({ scores: [121], totalVisits: [1], cp: 0 }), totalDarts: [3] },
+    ])
+    expect(h.all[0]).toEqual([{ scored: 180, left: 121, darts: 3, bust: false }])
+  })
 })
 
 describe('trackVisits after a gap (reconnect)', () => {

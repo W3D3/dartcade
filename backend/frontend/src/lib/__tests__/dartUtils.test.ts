@@ -77,4 +77,10 @@ describe('markerPositions', () => {
     expect(a.y).toBeCloseTo(b.y)
     expect(Math.abs(a.x - b.x)).toBeGreaterThan(0.15)
   })
+
+  it('keeps many markers on one segment on the board', () => {
+    const ps = markerPositions([1, 1, 1, 1, 1, 1, 1])
+    for (const p of ps) expect(Math.hypot(p.x, p.y)).toBeLessThanOrEqual(1)
+    expect(new Set(ps.map(p => p.x.toFixed(3))).size).toBe(7)
+  })
 })
