@@ -186,7 +186,7 @@
   }
 
   // Clicking the board keeps the exact spot, so the dart shows where it landed
-  function addBoardDart(hit: { segment: { name: string; number: number; bed: string; multiplier: number }; coords: { x: number; y: number } }) {
+  function addBoardDart(hit: { segment: Segment; coords: { x: number; y: number } }) {
     sessionStore?.send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
   }
 
@@ -212,7 +212,7 @@
 
   // Any dart of the open visit can be dragged on the board to correct it
   let correcting = $state<number | null>(null)
-  function moveDart(dartIndex: number, hit: { segment: { name: string; number: number; bed: string; multiplier: number }; coords: { x: number; y: number } }) {
+  function moveDart(dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) {
     sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment: hit.segment, coords: hit.coords })
   }
 

@@ -35,12 +35,22 @@ function sanitizeSegment(segment: Segment): Segment {
   const { name, number, bed, multiplier } = segment
   return { name, number, bed, multiplier }
 }
+function sanitizeCoords(coords: { x: number; y: number }): { x: number; y: number } {
+  const { x, y } = coords
+  return { x, y }
+}
 function sanitizeAction(action: UserAction): UserAction {
   switch (action.type) {
     case 'add_dart':
-      return { type: 'add_dart', segment: sanitizeSegment(action.segment) }
+      return {
+        type: 'add_dart', segment: sanitizeSegment(action.segment),
+        ...(action.coords ? { coords: sanitizeCoords(action.coords) } : {}),
+      }
     case 'correct_dart':
-      return { type: 'correct_dart', visitIndex: action.visitIndex, segment: sanitizeSegment(action.segment) }
+      return {
+        type: 'correct_dart', visitIndex: action.visitIndex, segment: sanitizeSegment(action.segment),
+        ...(action.coords ? { coords: sanitizeCoords(action.coords) } : {}),
+      }
     case 'undo_dart':
     case 'takeout':
     case 'bulloff_skip':

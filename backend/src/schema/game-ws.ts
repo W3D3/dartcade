@@ -188,11 +188,27 @@ export interface TakeoutAction {
 export interface AddDartAction {
   type: 'add_dart'
   segment: Segment
+  coords?: Coords1
+}
+/**
+ * Bull-centred, r = 1 at the outer double wire, x right, y up.
+ */
+export interface Coords1 {
+  x: number
+  y: number
 }
 export interface CorrectDartAction {
   type: 'correct_dart'
   visitIndex: number
   segment: Segment
+  coords?: Coords2
+}
+/**
+ * Bull-centred, r = 1 at the outer double wire, x right, y up.
+ */
+export interface Coords2 {
+  x: number
+  y: number
 }
 export interface BullOffSkipAction {
   type: 'bulloff_skip'

@@ -245,7 +245,7 @@ describe('onUserAction', () => {
       segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 },
       coords: { x: 0.03, y: 0.04 },
     })
-    const bullOff = engine.getSnapshot(sessionId)!.game.bullOff as any
+    const bullOff = (engine.getSnapshot(sessionId)!.game as any).bullOff
     expect(bullOff.throws[0]).toEqual({ mm: 8.5, segment: '25', thetaDeg: expect.closeTo(53.13, 2), estimated: false })
   })
 })

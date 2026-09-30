@@ -2215,6 +2215,24 @@
                   ]
                 }
               }
+            },
+            "coords": {
+              "title": "Coords",
+              "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+              "type": "object",
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                }
+              }
             }
           }
         },
@@ -2274,6 +2292,24 @@
                     2,
                     3
                   ]
+                }
+              }
+            },
+            "coords": {
+              "title": "Coords",
+              "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+              "type": "object",
+              "required": [
+                "x",
+                "y"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
                 }
               }
             }
@@ -2414,6 +2450,24 @@
                       ]
                     }
                   }
+                },
+                "coords": {
+                  "title": "Coords",
+                  "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+                  "type": "object",
+                  "required": [
+                    "x",
+                    "y"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
+                    }
+                  }
                 }
               }
             },
@@ -2473,6 +2527,24 @@
                         2,
                         3
                       ]
+                    }
+                  }
+                },
+                "coords": {
+                  "title": "Coords",
+                  "description": "Bull-centred, r = 1 at the outer double wire, x right, y up.",
+                  "type": "object",
+                  "required": [
+                    "x",
+                    "y"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "x": {
+                      "type": "number"
+                    },
+                    "y": {
+                      "type": "number"
                     }
                   }
                 }
