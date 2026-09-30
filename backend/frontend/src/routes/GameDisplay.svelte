@@ -205,6 +205,12 @@
     sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment })
   }
 
+  // The dart open in the correction panel can also be dragged on the board
+  let correcting = $state<number | null>(null)
+  function moveDart(dartIndex: number, hit: { segment: { name: string; number: number; bed: string; multiplier: number }; coords: { x: number; y: number } }) {
+    sessionStore?.send({ type: 'correct_dart', visitIndex: dartIndex, segment: hit.segment, coords: hit.coords })
+  }
+
   function leaveSession() { push('/') }
 
   async function endSession() {
@@ -274,7 +280,8 @@
             <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={currentDarts.length} />
           {:else}
             <DartBoard darts={currentDarts} selectedSegments={highlights} playerMarkers={boardMarkers}
-              onBoardClick={isActive ? addBoardDart : undefined} />
+              onBoardClick={isActive ? addBoardDart : undefined}
+              selectedDart={correcting} onDartMove={moveDart} />
             <div class="flex gap-5 text-[12px] text-text-dim justify-center">
               <span class="flex items-center gap-[6px]">
                 <span class="w-[9px] h-[9px] rounded-full bg-accent shrink-0"></span>
@@ -289,7 +296,7 @@
             </div>
           {/if}
 
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo}
+          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
             ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
       </div>
@@ -322,7 +329,8 @@
           {:else}
             <div class="w-full" style="max-width: min(100%, calc(100vh - 340px))">
               <DartBoard darts={currentDarts} selectedSegments={highlights}
-                onBoardClick={isActive ? addBoardDart : undefined} />
+                onBoardClick={isActive ? addBoardDart : undefined}
+                selectedDart={correcting} onDartMove={moveDart} />
             </div>
           {/if}
 
@@ -344,7 +352,7 @@
             </div>
           {/if}
 
-          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo}
+          <CorrectionPanel darts={dartItems} hits={visitHits} onCorrect={handleCorrect} onUndo={undo} bind:openDart={correcting}
             ontakeout={() => sessionStore?.send({ type: 'takeout' })} {showVisitScore} {bust} />
         </div>
 

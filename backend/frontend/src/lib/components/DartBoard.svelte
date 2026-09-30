@@ -5,7 +5,7 @@
   type Segment = { name: string; number: number; bed: string; multiplier: number }
 
   let { darts = [], selectedSegments = [], playerMarkers = [], checkoutTargets = [], onSegmentClick,
-        onBoardClick, zoom = 1, overlay }: {
+        onBoardClick, selectedDart = null, onDartMove, zoom = 1, overlay }: {
     darts?: Array<{
       segment: { number: number; bed: string; multiplier: number; name: string }
       score: number
@@ -18,6 +18,10 @@
     /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
      *  and the segment under it. Takes precedence over onSegmentClick. */
     onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
+    /** Index into `darts` of the dart picked for correction; it is highlighted and can be dragged. */
+    selectedDart?: number | null
+    /** The selected dart was dropped at a new spot. */
+    onDartMove?: (index: number, hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** Magnification around the bull (1 = whole board); changes animate. */
     zoom?: number
     /** Extra marks drawn in board units (r = 1 at the outer double wire), zoomed with the board.
@@ -115,14 +119,50 @@
   }
 
   let svgEl: SVGSVGElement
-  function boardClick(e: MouseEvent) {
-    if (!onBoardClick) return
+
+  /** Pointer position in board units: zoom undone, y up like camera coords. */
+  function toBoard(e: MouseEvent): { x: number; y: number } | null {
     const ctm = svgEl.getScreenCTM()
-    if (!ctm) return
+    if (!ctm) return null
     const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(ctm.inverse())
-    // Undo the zoom around the centre; flip y so it points up like camera coords
-    const x = p.x / zoom, y = -p.y / zoom
-    onBoardClick({ segment: segmentAt(x, y), coords: { x, y } })
+    return { x: p.x / zoom, y: -p.y / zoom }
+  }
+
+  function boardClick(e: MouseEvent) {
+    // The click that ends a drag is not a new dart
+    if (!onBoardClick || justDragged) { justDragged = false; return }
+    const c = toBoard(e)
+    if (c) onBoardClick({ segment: segmentAt(c.x, c.y), coords: c })
+  }
+
+  // Dragging the selected dart: preview where it goes, report the drop
+  let drag = $state<{ index: number; from: { x: number; y: number }; at: { x: number; y: number } } | null>(null)
+  let justDragged = false
+  const canDrag = (i: number) => !!onDartMove && selectedDart === i
+
+  function dragStart(e: PointerEvent, i: number) {
+    if (!canDrag(i)) return
+    const c = toBoard(e)
+    if (!c) return
+    e.preventDefault()
+    ;(e.currentTarget as Element).setPointerCapture(e.pointerId)
+    drag = { index: i, from: c, at: c }
+  }
+  function dragMove(e: PointerEvent) {
+    if (!drag) return
+    const c = toBoard(e)
+    if (c) drag = { ...drag, at: c }
+  }
+  function dragEnd(e: PointerEvent) {
+    if (!drag) return
+    const { index, from } = drag
+    const c = toBoard(e) ?? drag.at
+    drag = null
+    justDragged = true
+    setTimeout(() => { justDragged = false })
+    // A tap on the dart without moving it leaves it where it is
+    if (Math.hypot(c.x - from.x, c.y - from.y) < 0.01) return
+    onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
   }
 
   const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
@@ -219,17 +259,26 @@
 
   <!-- Darts -->
   {#each darts as dart, i}
-    {@const pos = dartPos(dart)}
+    {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
+    {@const selected = selectedDart === i}
     {#if pos}
-      <!-- The segment label only shows while the dart is hovered -->
-      <g class="group">
-        <circle cx={pos.x} cy={-pos.y} r="0.04"
+      <!-- The segment label only shows while the dart is hovered, selected or dragged -->
+      <!-- svelte-ignore a11y_no_static_element_interactions -->
+      <g class="group {canDrag(i) ? (drag ? 'cursor-grabbing' : 'cursor-grab') : ''}"
+        style="touch-action:none"
+        onpointerdown={e => dragStart(e, i)} onpointermove={dragMove}
+        onpointerup={dragEnd} onpointercancel={() => drag = null}>
+        {#if selected}
+          <circle cx={pos.x} cy={-pos.y} r="0.075" fill="#c6f24e" fill-opacity="0.18"
+            stroke="#c6f24e" stroke-width="0.012" stroke-dasharray="0.02 0.015" />
+        {/if}
+        <circle cx={pos.x} cy={-pos.y} r={selected ? 0.05 : 0.04}
           fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008" />
-        <text x={pos.x + 0.05} y={-pos.y} dominant-baseline="central"
+        <text x={pos.x + 0.06} y={-pos.y} dominant-baseline="central"
           fill="#ffffff" stroke="#000000" stroke-width="0.016" stroke-linejoin="round" paint-order="stroke"
           font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold"
-          class="opacity-0 group-hover:opacity-100 transition-opacity" style="pointer-events:none">
-          {dart.segment.name}
+          class="{selected ? '' : 'opacity-0'} group-hover:opacity-100 transition-opacity" style="pointer-events:none">
+          {drag?.index === i ? segmentAt(drag.at.x, drag.at.y).name : dart.segment.name}
         </text>
       </g>
     {:else}

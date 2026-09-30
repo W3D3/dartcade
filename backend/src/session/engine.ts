@@ -190,10 +190,10 @@ export class SessionEngine {
       const target = dartEvents[action.visitIndex]
       if (target) {
         const orig = target.data as DartDetectedData
-        const score = action.segment.number * action.segment.multiplier
-        // The camera position no longer matches the corrected segment, so drop it
+        // The camera position no longer matches the corrected segment, so drop it,
+        // unless the dart was moved to a new spot on the board
         const { coords: _c, polar: _p, ...rest } = orig.dart
-        const newDart = { ...rest, segment: action.segment, score }
+        const newDart = { ...rest, ...manualDart(action.segment, action.coords) }
         const idx = session.openVisitEvents.indexOf(target)
         session.openVisitEvents[idx] = {
           kind: 'dart.detected',
