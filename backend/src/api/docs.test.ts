@@ -15,6 +15,34 @@ describe('API docs', () => {
     await app.close()
   })
 
+  it('serves working asset links from /api/docs (no trailing slash)', async () => {
+    const app = await buildApp({ engine: {} as any, db: {} as any })
+
+    let page = await app.inject('/api/docs')
+    let pageUrl = '/api/docs'
+    if ([301, 302, 307, 308].includes(page.statusCode)) {
+      const location = page.headers.location as string
+      pageUrl = location
+      page = await app.inject(location)
+    }
+    expect(page.statusCode).toBe(200)
+
+    const refs = [...page.body.matchAll(/(?:href|src)="([^"]+)"/g)].map(m => m[1])
+    expect(refs.length).toBeGreaterThan(0)
+
+    for (const ref of refs) {
+      const resolvedPath = new URL(ref, 'http://x' + pageUrl).pathname
+      const assetRes = await app.inject(resolvedPath)
+      expect(assetRes.statusCode, `${ref} -> ${resolvedPath}`).toBe(200)
+    }
+
+    const spec = await app.inject('/api/docs/json')
+    expect(spec.statusCode).toBe(200)
+    expect(JSON.parse(spec.body).openapi).toBe('3.0.3')
+
+    await app.close()
+  })
+
   it("generates better-auth's OpenAPI document", async () => {
     const doc = await auth.api.generateOpenAPISchema()
     expect(doc.openapi).toMatch(/^3\.1/)

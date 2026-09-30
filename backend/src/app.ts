@@ -36,16 +36,24 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
 
   // API docs: our spec plus better-auth's generated one, in one Swagger UI
   await app.register(fastifySwagger, { mode: 'static', specification: { document: bundledSpec as any } })
-  await app.register(fastifySwaggerUi, {
-    routePrefix: '/api/docs',
-    uiConfig: {
-      urls: [
-        { url: '/api/docs/json', name: 'Dartcade API' },
-        { url: '/api/auth/open-api/generate-schema', name: 'Auth (better-auth)' },
-      ],
-      'urls.primaryName': 'Dartcade API',
-    } as any,
-  })
+  // @fastify/swagger-ui@4.2.0 builds asset links as `.${routePrefix}/static/...`, assuming a
+  // single-segment routePrefix; with routePrefix: '/api/docs' that resolves (relative to the
+  // no-trailing-slash document URL /api/docs) to /api/api/docs/static/... → 404s, leaving the
+  // UI blank. Registering it with routePrefix: '/docs' inside an '/api'-prefixed scope keeps the
+  // public URLs identical (/api/docs, /api/docs/json, /api/docs/static/*) while the generated
+  // relative links become `./docs/static/...`, which resolves correctly to /api/docs/static/....
+  await app.register(async (api) => {
+    await api.register(fastifySwaggerUi, {
+      routePrefix: '/docs',
+      uiConfig: {
+        urls: [
+          { url: '/api/docs/json', name: 'Dartcade API' },
+          { url: '/api/auth/open-api/generate-schema', name: 'Auth (better-auth)' },
+        ],
+        'urls.primaryName': 'Dartcade API',
+      } as any,
+    })
+  }, { prefix: '/api' })
 
   app.all('/api/auth/*', async (req, reply) => {
     // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
