@@ -99,10 +99,13 @@ shared defs in `common-v1.json`. Generated files are committed and never hand-ed
 
 ```bash
 npm ci             # repo root — installs the codegen tools
-npm run gen:api     # regenerates HTTP/WS types (backend + frontend) and the bridge's Go client
+npm run gen:api     # regenerates HTTP/WS types and zod schemas (backend + frontend) and the bridge's Go client
 npm run lint:api    # validates schema/api-v1.yaml
 cd backend && npm run gen:types   # regenerates adbridge/v1 TS types (backend/src/schema/types.ts)
 ```
+
+`gen:api` also writes the zod schemas (`backend/src/schema/zod.ts` and the frontend copy) used to parse
+incoming data; `oneOf` is generated as a union and unknown fields are stripped.
 
 `mise run gen:api` / `mise run gen:types` run the same from either directory. Once the backend is
 running, `/api/docs` serves a Swagger UI for both our API and better-auth's.
