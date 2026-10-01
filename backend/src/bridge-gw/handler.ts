@@ -129,7 +129,7 @@ export function handleBridgeConnection(
         conn.bootId = bootId
       }
 
-      const { inserted } = await insertBridgeEvent(db, {
+      const { inserted, id } = await insertBridgeEvent(db, {
         bridge_id: bridgeId,
         boot_id: bootId,
         seq: BigInt(seq),
@@ -144,8 +144,14 @@ export function handleBridgeConnection(
 
       bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })
 
-      await engine.onBridgeEvent(boardDbId, kind, data)
-    }).catch((err: unknown) => { console.error('Bridge event processing error:', err) })
+      // Already acked: a failure here (e.g. the game's log write) drops this input, so
+      // name the board and event to keep the dropped dart traceable
+      try {
+        await engine.onBridgeEvent(boardDbId, kind, data, id)
+      } catch (err: unknown) {
+        console.error('Bridge event not applied to the game:', { boardDbId, kind, seq, bridgeEventId: id }, err)
+      }
+    }).catch((err: unknown) => { console.error('Bridge event processing error:', { boardDbId: conn.boardDbId }, err) })
   })
 
   socket.on('close', () => { bridgeConnections.remove(conn) })

@@ -7,6 +7,7 @@
   import Login from './routes/Login.svelte'
   import Register from './routes/Register.svelte'
   import Boards from './routes/Boards.svelte'
+  import History from './routes/History.svelte'
   import { authClient } from '$lib/auth'
 
   const routes = {
@@ -15,6 +16,7 @@
     '/login': Login,
     '/register': Register,
     '/boards': Boards,
+    '/history': History,
   }
 
   let checked = false

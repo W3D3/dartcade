@@ -1,3 +1,7 @@
+<script lang="ts">
+  import BrandMark from './BrandMark.svelte'
+</script>
+
 <div class="relative hidden md:flex w-[820px] flex-shrink-0 flex-col justify-between overflow-hidden
             bg-surface-1 border-r border-line box-border p-[48px_56px]">
 

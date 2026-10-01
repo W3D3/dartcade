@@ -1,0 +1,81 @@
+import { describe, it, expect } from 'vitest'
+import { applyInput, type GameInput } from './apply.js'
+import { atcModule } from '../games/atc.js'
+import { x01Module } from '../games/x01.js'
+import type { AnyGameModule, Session, Segment } from './types.js'
+
+function session(module: AnyGameModule, config: Record<string, unknown>, n = 1): Session {
+  const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}` }))
+  const s = module.init(config, players)
+  return {
+    id: 's1', ownerUserId: 'u1', boardId: 'b1', players, module,
+    committedState: s, currentState: s, openVisitEvents: [], openDarts: [],
+    status: 'active', createdAt: new Date(0), seed: 0, visitCount: 0, nextSeq: 0,
+    totalDarts: Array<number>(n).fill(0), totalVisits: Array<number>(n).fill(0), bmStatus: null,
+  }
+}
+const S1: Segment = { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }
+const S2: Segment = { name: 'S2', number: 2, bed: 'Single', multiplier: 1 }
+const board = (kind: string, data: unknown = {}): GameInput => ({ source: 'board', event: { kind, data } as never })
+const dart = (s: Segment, index: number, coords?: { x: number; y: number }): GameInput =>
+  ({ source: 'board', event: { kind: 'dart.detected', data: { visit_id: 'v', index, source_seq: 1, dart: { segment: s, score: s.number, ...(coords && { coords }) } } } })
+const t = (ms: number) => new Date(Date.UTC(2026, 9, 1, 10, 0, 0, ms))
+
+describe('applyInput', () => {
+  it('commits a camera visit with its darts, seat, leg and phase', () => {
+    const s = session(atcModule, atcModule.defaultConfig)
+    applyInput(s, board('visit.opened'), t(0))
+    applyInput(s, dart(S1, 0, { x: 0.1, y: 0.2 }), t(1))
+    const out = applyInput(s, board('takeout.finished'), t(2))
+    expect(out.won).toBe(false)
+    expect(out.committed).toMatchObject({ visit: 0, seat: 0, leg: 0, phase: 'game', committedAt: t(2).toISOString() })
+    expect(out.committed?.darts).toEqual([{ index: 0, segment: S1, coords: { x: 0.1, y: 0.2 }, source: 'camera', corrected: false, thrownAt: t(1).toISOString() }])
+    expect(s.visitCount).toBe(1)
+    expect(s.openDarts).toEqual([])
+  })
+
+  it('marks manual and corrected darts, and undo drops the last one', () => {
+    const s = session(atcModule, atcModule.defaultConfig)
+    applyInput(s, board('visit.opened'), t(0))
+    applyInput(s, dart(S1, 0), t(1))
+    applyInput(s, { source: 'board', event: { kind: 'dart.corrected', data: { visit_id: 'v', index: 0, source_seq: 2, dart: { segment: S2, score: 2 }, previous: { segment: S1, score: 1 } } } }, t(2))
+    applyInput(s, { source: 'user', action: { type: 'add_dart', segment: S1 } }, t(3))
+    applyInput(s, { source: 'user', action: { type: 'add_dart', segment: S2 } }, t(4))
+    applyInput(s, { source: 'user', action: { type: 'undo_dart' } }, t(5))
+    const out = applyInput(s, { source: 'user', action: { type: 'takeout' } }, t(6))
+    expect(out.committed?.darts.map(d => [d.segment.name, d.source, d.corrected])).toEqual([['S2', 'camera', true], ['S1', 'manual', false]])
+  })
+
+  it('an empty takeout commits three manual misses', () => {
+    const s = session(atcModule, atcModule.defaultConfig)
+    const out = applyInput(s, { source: 'user', action: { type: 'takeout' } }, t(0))
+    expect(out.committed?.darts.map(d => [d.segment.name, d.source])).toEqual([['Miss', 'manual'], ['Miss', 'manual'], ['Miss', 'manual']])
+  })
+
+  it('a resync drops the open darts', () => {
+    const s = session(atcModule, atcModule.defaultConfig)
+    applyInput(s, board('visit.opened'), t(0))
+    applyInput(s, dart(S1, 0), t(1))
+    applyInput(s, board('board.resync'), t(2))
+    expect(s.openDarts).toEqual([])
+    expect(s.totalDarts).toEqual([0])
+  })
+
+  it('reports the win', () => {
+    const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 301, outMode: 'straight', firstTo: 1 })
+    s.committedState = { ...s.committedState as object, game: { ...(s.committedState as any).game, scores: [1] } }
+    s.currentState = s.committedState
+    applyInput(s, board('visit.opened'), t(0))
+    applyInput(s, dart(S1, 0), t(1))
+    expect(applyInput(s, board('takeout.finished'), t(2)).won).toBe(true)
+  })
+
+  it('tags bull off visits', () => {
+    const s = session(x01Module, { ...x01Module.defaultConfig, bullOff: 'wdc' }, 2)
+    applyInput(s, board('visit.opened'), t(0))
+    applyInput(s, dart(S1, 0), t(1))
+    const out = applyInput(s, board('takeout.finished'), t(2))
+    expect(out.committed).toMatchObject({ seat: 0, phase: 'bulloff' })
+    expect(s.totalVisits).toEqual([0, 0])
+  })
+})

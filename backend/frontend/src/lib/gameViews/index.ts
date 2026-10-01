@@ -5,14 +5,18 @@ import { x01Meta, atcMeta } from './meta.js'
 
 export interface GameView {
   title: string
+  /** For tight labels, e.g. "ATC matches". */
+  shortTitle: string
   meta: (snapshot: Snapshot) => string
 }
 
 const titles: Partial<Record<string, string>> = { x01: 'X01', atc: 'Around the Clock' }
+const shortTitles: Partial<Record<string, string>> = { atc: 'ATC' }
 
 export function getGameView(gameId: string): GameView {
   return {
     title: titles[gameId] ?? 'Game',
+    shortTitle: shortTitles[gameId] ?? titles[gameId] ?? 'Game',
     meta: s => {
       // An unknown game (newer backend) gets no meta line rather than a crash
       const { x01, atc } = gameState(s)

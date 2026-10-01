@@ -18,6 +18,7 @@ vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn().mockResolvedValue(undefined),
   deleteBoard: vi.fn().mockResolvedValue(undefined),
   renameBoard: vi.fn().mockResolvedValue(undefined),
+  hasActiveSessionOnBoard: vi.fn().mockResolvedValue(false),
 }))
 
 import * as queries from '../db/queries.js'
@@ -104,15 +105,15 @@ describe('DELETE /api/boards/:id', () => {
     expect(queries.deleteBoard).toHaveBeenCalledWith(expect.anything(), 'board-1')
   })
 
-  it('returns 409 when board has active sessions (FK violation)', async () => {
+  it('refuses to delete a board with a game running', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({
       id: 'board-1', owner_user_id: 'user-1',
     } as any)
-    const fkError = Object.assign(new Error('FK violation'), { code: '23503' })
-    vi.mocked(queries.deleteBoard).mockRejectedValue(fkError)
+    vi.mocked(queries.hasActiveSessionOnBoard).mockResolvedValueOnce(true)
     const app = makeApp()
     const res = await app.inject({ method: 'DELETE', url: '/api/boards/board-1' })
     expect(res.statusCode).toBe(409)
+    expect(queries.deleteBoard).not.toHaveBeenCalled()
   })
 })
 

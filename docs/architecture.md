@@ -282,7 +282,7 @@ Internals:
   appends events to the log, sends acks, and routes commands.
 - **Session engine:** one in-memory actor per active game session. The session state is
   `fold(reducer, events)`. It holds the board→session binding and player turns. After a
-  crash it rebuilds active sessions by replaying the log.
+  crash it rebuilds active sessions by replaying their own input log (`game_session_events`).
 - **Game modules:** one `GameModule` per minigame (§5.5). Each is a pure, deterministic
   function with snapshot tests from recorded real sessions.
 - **Frontend gateway:** WS per client. Sends a full state snapshot and version on connect,

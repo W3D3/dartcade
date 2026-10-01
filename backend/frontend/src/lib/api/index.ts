@@ -8,6 +8,9 @@ export type GameInfo = Schemas['GameInfo']
 export type ConfigFieldMeta = Schemas['ConfigFieldMeta']
 export type SessionSummary = Schemas['SessionSummary']
 export type ErrorResponse = Schemas['ErrorResponse']
+export type GameSummary = Schemas['GameSummary']
+export type GameStats = Schemas['GameStats']
+export type GameSeat = Schemas['GameSeat']
 
 export type { Snapshot, UserAction, Segment, BullOffView, X01Game, AtcGame } from './game-ws'
 export { WsCloseCode } from './game-ws'

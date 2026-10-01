@@ -1,6 +1,8 @@
 import type { GameModule, BoardEvent, Player, Dart } from '../session/types.js'
-import type { ConfigFieldMeta } from '../session/types.js'
+import type { ConfigFieldMeta, AtcDetail, SeatResult } from '../session/types.js'
 import type { AtcView } from '../session/views.js'
+import type { Rng } from '../session/rng.js'
+import { rankSeats } from './ranking.js'
 
 export type ATCConfig = {
   throwAgainOnAllHit: boolean
@@ -20,22 +22,22 @@ export type ATCState = {
   currentVisitHits: boolean[]  // per-dart hit flags for the open visit
 }
 
-function shuffle(arr: number[]): number[] {
+function shuffle(arr: number[], rng: Rng): number[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]]
   }
   return a
 }
 
-export function buildSequence(cfg: ATCConfig): number[] {
+export function buildSequence(cfg: ATCConfig, rng: Rng = Math.random): number[] {
   const nums = Array.from({ length: 20 }, (_, i) => i + 1)
   let ordered: number[]
   if (cfg.order === 'desc') {
     ordered = [...nums].reverse()
   } else if (cfg.order === 'random') {
-    ordered = shuffle(nums)
+    ordered = shuffle(nums, rng)
   } else {
     ordered = nums
   }
@@ -127,13 +129,22 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
   },
 }
 
-export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
+/** Targets each player has completed (the winner: all of them). */
+export function hitCounts(s: ATCState): number[] {
+  return s.targets.map(t => {
+    const idx = s.sequence.indexOf(t)
+    return idx === -1 ? s.sequence.length : idx
+  })
+}
+
+export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetail> = {
   id: 'atc',
+  version: 1,
   defaultConfig: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
   configMeta,
 
-  init(cfg: ATCConfig, players: Player[]): ATCState {
-    const sequence = buildSequence(cfg)
+  init(cfg: ATCConfig, players: Player[], rng?: Rng): ATCState {
+    const sequence = buildSequence(cfg, rng)
     return {
       sequence,
       targets: players.map(() => sequence[0]),
@@ -192,10 +203,6 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
   },
 
   view(s: ATCState): AtcView {
-    const hitCounts = s.targets.map(t => {
-      const idx = s.sequence.indexOf(t)
-      return idx === -1 ? s.sequence.length : idx
-    })
     return {
       targets: s.targets,
       sequence: s.sequence,
@@ -203,7 +210,31 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
       winner: s.winner,
       cfg: s.cfg,
       currentVisitHits: s.currentVisitHits,
-      hitCounts,
+      hitCounts: hitCounts(s),
+    }
+  },
+
+  summarize(s: ATCState, { totalDarts }): SeatResult[] {
+    const hits = hitCounts(s)
+    const placements = rankSeats(s.playerCount, s.winner,
+      (a, b) => (hits[b] - hits[a]) || ((totalDarts[a] ?? 0) - (totalDarts[b] ?? 0)))
+    return placements.map((placement, i) => {
+      const darts = totalDarts[i] ?? 0
+      // Only a player who completed the whole sequence "finished"
+      const finished = hits[i] === s.sequence.length
+      return { placement, stats: { dartsThrown: darts, targetsHit: hits[i], ...(finished && { dartsToFinish: darts }) } }
+    })
+  },
+
+  detail(visits): AtcDetail {
+    return {
+      mode: 'atc',
+      visits: visits.map(v => ({
+        visit: v.visit, seat: v.seat, committedAt: v.committedAt, darts: v.darts,
+        hits: v.end.currentVisitHits.filter(Boolean).length,
+        targetBefore: v.start.targets[v.seat],
+        targetAfter: v.end.targets[v.seat],
+      })),
     }
   },
 }

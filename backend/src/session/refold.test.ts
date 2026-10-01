@@ -5,6 +5,7 @@ import type { GameModule, BoardEvent } from './types.js'
 type CountState = { count: number }
 const countModule: GameModule<CountState> = {
   id: 'count',
+  version: 1,
   defaultConfig: {},
   init: () => ({ count: 0 }),
   onBoardEvent: (s, e) =>
@@ -12,6 +13,8 @@ const countModule: GameModule<CountState> = {
   onUserAction: (s) => ({ state: s }),
   view: (s) => s,
   getCurrentPlayer: () => 0,
+  summarize: () => [],
+  detail: () => ({}),
 }
 
 describe('refoldVisit', () => {

@@ -1,15 +1,20 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ActiveSessionError, SessionEngine } from './engine.js'
 import type { EngineStore } from './engine.js'
+import type { StoredGameSession } from '../db/queries.js'
 import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
+import { atcModule } from '../games/atc.js'
 
 function makeStore() {
   return {
     insertSession: vi.fn().mockResolvedValue(undefined),
     getActiveSessions: vi.fn().mockResolvedValue([]),
-    getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
-    setSessionFinished: vi.fn().mockResolvedValue(undefined),
+    getSessionEvents: vi.fn().mockResolvedValue([]),
+    appendEvent: vi.fn().mockResolvedValue(undefined),
+    insertDarts: vi.fn().mockResolvedValue(undefined),
+    finishSession: vi.fn().mockResolvedValue(undefined),
+    abortSession: vi.fn().mockResolvedValue(undefined),
   } satisfies EngineStore
 }
 
@@ -47,9 +52,11 @@ describe('create', () => {
   })
 
   it('frees the slot once the session ends', async () => {
-    const engine = makeEngine()
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.deleteSession(sessionId)
+    expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date))
     expect(engine.getSessionByOwner('user-1')).toBeUndefined()
     await expect(engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])).resolves.toBeDefined()
   })
@@ -314,77 +321,43 @@ describe('onUserAction', () => {
   })
 
   it('empty takeout is ignored after a win', async () => {
-    const engine = makeEngine()
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 40, firstTo: 1 }, [{ name: 'A' }])
     await engine.onUserAction(sessionId, { type: 'add_dart', segment: { name: 'D20', number: 20, bed: 'Double', multiplier: 2 } })
     await engine.onUserAction(sessionId, { type: 'takeout' })
+    expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [expect.objectContaining({ placement: 1 })])
     await engine.onUserAction(sessionId, { type: 'takeout' })
     expect(engine.getSession(sessionId)!.totalVisits).toEqual([1])
   })
 })
 
 describe('rebuild', () => {
-  it('restores session from store and replays bridge events to rebuild state', async () => {
+  it('aborts a session whose events fail to load, and restores the other', async () => {
+    const good: StoredGameSession = {
+      id: 'good-1', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc',
+      game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
+      created_at: new Date(), players: [{ name: 'Alice', user_id: 'user-1' }],
+    }
+    const bad: StoredGameSession = {
+      id: 'bad-1', owner_user_id: 'user-2', board_db_id: null, game_id: 'atc',
+      game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
+      created_at: new Date(), players: [{ name: 'Bob', user_id: 'user-2' }],
+    }
+    const warn = vi.fn()
     const store = makeStore()
-    vi.mocked(store.getActiveSessions).mockResolvedValue([{
-      id: 'sess-rebuild',
-      owner_user_id: 'user-1',
-      board_db_id: 'board-r',
-      game_id: 'atc',
-      config: {},
-      players: [{ name: 'Alice' }],
-      created_at: new Date(),
-    }])
-    vi.mocked(store.getBridgeEventsForBoard).mockResolvedValue([
-      { kind: 'visit.opened', data: { visit_id: 'v1' }, recv_wall: new Date() },
-      {
-        kind: 'dart.detected',
-        data: { visit_id: 'v1', index: 0, dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 }, source_seq: 1 },
-        recv_wall: new Date(),
-      },
-    ])
+    store.getActiveSessions.mockResolvedValue([good, bad])
+    store.getSessionEvents.mockImplementation((id: string) =>
+      id === 'bad-1' ? Promise.reject(new Error('boom')) : Promise.resolve([]))
+    const engine = new SessionEngine(store, push, warn)
 
-    const engine = new SessionEngine(store, push)
-    await engine.rebuild()
+    await expect(engine.rebuild()).resolves.toBeUndefined()
 
-    const session = engine.getSessionByBoard('board-r')
-    expect(session).toBeDefined()
-    expect(session!.id).toBe('sess-rebuild')
-    // visit.opened + dart.detected → target advances from 1 to 2, one dart in currentVisitDarts
-    const snap = engine.getSnapshot('sess-rebuild')!
-    expect((snap.game as any).currentVisitDarts).toHaveLength(1)
-    expect((snap.game as any).targets[0]).toBe(2)
-    expect(engine.getSessionByOwner('user-1')?.id).toBe('sess-rebuild')
-  })
-
-  it('closes active sessions it cannot restore (boardless or without owner)', async () => {
-    const store = makeStore()
-    vi.mocked(store.getActiveSessions).mockResolvedValue([
-      { id: 'no-board', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc', config: {}, players: [{ name: 'A' }], created_at: new Date() },
-      { id: 'no-owner', owner_user_id: null, board_db_id: 'board-x', game_id: 'atc', config: {}, players: [{ name: 'A' }], created_at: new Date() },
-    ])
-    const engine = new SessionEngine(store, push)
-    await engine.rebuild()
-    expect(store.setSessionFinished).toHaveBeenCalledWith('no-board')
-    expect(store.setSessionFinished).toHaveBeenCalledWith('no-owner')
-    expect(engine.getAllSessions()).toEqual([])
-    // the owner isn't blocked by the closed session
-    await expect(engine.create('user-1', null, 'atc', {}, [{ name: 'A' }])).resolves.toBeDefined()
-  })
-
-  it('closes sessions whose stored players or config are malformed', async () => {
-    const store = makeStore()
-    vi.mocked(store.getActiveSessions).mockResolvedValue([
-      { id: 'bad-players', owner_user_id: 'user-1', board_db_id: 'board-a', game_id: 'atc', config: {}, players: [{ nom: 'A' }], created_at: new Date() },
-      { id: 'bad-config', owner_user_id: 'user-2', board_db_id: 'board-b', game_id: 'atc', config: [], players: [{ name: 'A' }], created_at: new Date() },
-      { id: 'extra-fields', owner_user_id: 'user-3', board_db_id: 'board-c', game_id: 'atc', config: {}, players: [{ name: 'A', legacy: true }], created_at: new Date() },
-    ])
-    const engine = new SessionEngine(store, push)
-    await engine.rebuild()
-    expect(store.setSessionFinished).toHaveBeenCalledWith('bad-players')
-    expect(store.setSessionFinished).toHaveBeenCalledWith('bad-config')
-    // A stored player with an extra field is still restored, without the field
-    expect(engine.getSession('extra-fields')?.players).toEqual([{ name: 'A' }])
+    expect(engine.getSession('good-1')).toBeDefined()
+    expect(engine.getSessionByOwner('user-1')?.id).toBe('good-1')
+    expect(engine.getSession('bad-1')).toBeUndefined()
+    expect(store.abortSession).toHaveBeenCalledWith('bad-1', expect.any(Date))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('rebuild'), expect.objectContaining({ sessionId: 'bad-1' }))
   })
 })
 

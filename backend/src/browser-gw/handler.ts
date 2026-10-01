@@ -62,7 +62,13 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           app.log.warn({ sessionId, issues: parsed.error.issues }, 'ignoring invalid client message')
           return
         }
-        await engine.onUserAction(sessionId, parsed.data.action)
+        // A failed store write (e.g. the input log) must not crash the server or close the
+        // socket: the action is not applied and the player can try again
+        try {
+          await engine.onUserAction(sessionId, parsed.data.action)
+        } catch (err: unknown) {
+          app.log.error({ sessionId, action: parsed.data.action.type, err }, 'user action not applied')
+        }
       }
       socket.on('message', (raw: RawData) => { void onMessage(raw) })
 

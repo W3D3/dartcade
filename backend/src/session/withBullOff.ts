@@ -30,10 +30,10 @@ function enabled(cfg: BullOffGameConfig): boolean {
  * has a result the game starts via `applyStartOrder` and everything else is
  * passed through unchanged.
  */
-export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, Id extends string>(
-  game: GameModule<S, Cfg, V, Id>,
+export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, Id extends string, D>(
+  game: GameModule<S, Cfg, V, Id, D>,
   hooks: BullOffHooks<S>,
-): GameModule<WithBullOffState<S>, Cfg, V & BullOffViewField, Id> {
+): GameModule<WithBullOffState<S>, Cfg, V & BullOffViewField, Id, D> {
   // `order` is the bull off's result
   function startGame(s: WithBullOffState<S>, order: number[]): WithBullOffState<S> {
     return { ...s, stage: 'game', game: hooks.applyStartOrder(s.game, order) }
@@ -46,6 +46,16 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
 
   return {
     id: game.id,
+    version: game.version,
+    getLeg: s => game.getLeg?.(s.game) ?? 0,
+    summarize: (s, ctx) => game.summarize(s.game, ctx),
+    // Empty when the game has no throw order of its own (results() then uses seat order)
+    throwOrder: s => game.throwOrder?.(s.game) ?? [],
+    // Bull off visits stay in the list (phase 'bulloff'); the game decides what to show
+    detail: (visits, final) => game.detail(
+      visits.map(v => ({ ...v, start: v.start.game, end: v.end.game, after: v.after.game })),
+      final.game,
+    ),
     defaultConfig: { bullOff: 'off', ...game.defaultConfig },
     configMeta: {
       ...game.configMeta,
@@ -65,7 +75,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       return game.validate?.(cfg, players) ?? null
     },
 
-    init(cfg, players) {
+    init(cfg, players, rng) {
       const n = players.length
       // A bull off decides throw order between players, so it needs at least two.
       // validate() rejects such new games; this also covers sessions created
@@ -74,7 +84,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       return {
         stage: doBullOff ? 'bulloff' : 'game',
         bullOff: initBullOff({ mode: doBullOff ? (cfg.bullOff ?? 'off') : 'off', playerCount: n }),
-        game: game.init(cfg, players),
+        game: game.init(cfg, players, rng),
       }
     },
 
