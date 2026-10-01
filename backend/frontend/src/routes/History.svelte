@@ -1,0 +1,168 @@
+<script lang="ts">
+  import { onMount } from 'svelte'
+  import { LoaderCircle } from '@lucide/svelte'
+  import Layout from '$lib/components/Layout.svelte'
+  import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
+  import { getGameView } from '$lib/gameViews'
+  import { formatWhen, historyStat, opponents, resultLabel, rulesLine, statTiles } from '$lib/history'
+
+  let modes = $state<GameInfo[]>([])
+  let mode = $state<string | null>(null)
+  let games = $state<GameSummary[]>([])
+  let nextCursor = $state<string | null>(null)
+  let stats = $state<GameStats | null>(null)
+  let loading = $state(true)
+  let loadingMore = $state(false)
+  let error = $state('')
+  const now = new Date()
+
+  const tiles = $derived(stats ? statTiles(stats) : [])
+  const filters = $derived([{ id: null, name: 'All' }, ...modes.map(m => ({ id: m.id, name: getGameView(m.id).title }))])
+
+  async function loadGames(cursor: string | null) {
+    const query = { ...(mode !== null && { mode }), ...(cursor !== null && { cursor }) }
+    const { data, error: err } = await api.GET('/api/games', { params: { query } })
+    if (!data) throw new Error(err.error)
+    games = cursor === null ? data.games : [...games, ...data.games]
+    nextCursor = data.nextCursor
+  }
+
+  async function pick(id: string | null) {
+    if (id === mode) return
+    mode = id
+    loading = true
+    error = ''
+    try { await loadGames(null) }
+    catch (e) { error = e instanceof Error ? e.message : 'Could not load your games' }
+    finally { loading = false }
+  }
+
+  async function more() {
+    if (nextCursor === null) return
+    loadingMore = true
+    try { await loadGames(nextCursor) }
+    catch (e) { error = e instanceof Error ? e.message : 'Could not load more games' }
+    finally { loadingMore = false }
+  }
+
+  onMount(async () => {
+    try {
+      const [m, s] = await Promise.all([api.GET('/api/gamemodes'), api.GET('/api/games/stats'), loadGames(null)])
+      modes = m.data?.modes ?? []
+      stats = s.data ?? null
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'Could not load your games'
+    } finally {
+      loading = false
+    }
+  })
+</script>
+
+<Layout>
+  <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-auto px-4 py-6 md:px-11 md:py-10">
+    <header class="flex flex-wrap items-end justify-between gap-6">
+      <div class="flex flex-col gap-1.5">
+        <h1 class="m-0 font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em]">History</h1>
+        <p class="m-0 text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
+      </div>
+      <div role="group" aria-label="Game mode" class="grid max-w-full auto-cols-max grid-flow-col gap-1 overflow-x-auto rounded-[10px] border border-line bg-surface-1 p-1">
+        {#each filters as f (f.id ?? 'all')}
+          <button type="button" aria-pressed={f.id === mode} onclick={() => void pick(f.id)}
+            class="h-10 whitespace-nowrap rounded-[7px] border-0 px-4 text-[15px] {f.id === mode ? 'bg-line font-semibold text-text' : 'bg-transparent text-[#c9c9bf]'}">
+            {f.name}
+          </button>
+        {/each}
+      </div>
+    </header>
+
+    {#if tiles.length}
+      <dl class="m-0 grid grid-cols-2 rounded-[14px] border border-line-2 bg-surface-panel lg:grid-cols-4">
+        {#each tiles as t, i (t.label)}
+          <div class="flex flex-col gap-1.5 px-[22px] py-[18px] {i % 2 === 1 ? 'border-l border-line-2' : ''} {i >= 2 ? 'max-lg:border-t max-lg:border-line-2 lg:border-l' : ''}">
+            <dt class="text-[12px] uppercase tracking-[0.1em] text-text-dim">{t.label}</dt>
+            <dd class="m-0 flex items-baseline gap-2.5">
+              <span class="font-display text-[40px] font-bold leading-none">{t.value}</span>
+              {#if t.note}<span class="text-[15px] {t.trend === 'up' ? 'text-accent' : 'text-text-muted'}">{t.note}</span>{/if}
+            </dd>
+          </div>
+        {/each}
+      </dl>
+    {/if}
+
+    <section aria-label="Matches" class="flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-line-2 bg-surface-panel">
+      <div class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] text-[12px] uppercase tracking-[0.1em] text-text-dim lg:grid lg:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]">
+        <span>When</span><span>Game</span><span>Players</span><span>Result</span><span>Key stat</span><span>Board</span>
+      </div>
+
+      {#if loading}
+        <p class="m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted"><LoaderCircle size={18} class="animate-spin" /> Loading matches…</p>
+      {:else if error}
+        <p role="alert" class="m-0 px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
+      {:else if games.length === 0}
+        <p class="m-0 px-[22px] py-10 text-[15px] text-text-muted">No matches in this mode yet.</p>
+      {:else}
+        <ul class="m-0 list-none p-0">
+          {#each games as g (g.id)}
+            {@const when = formatWhen(g.finishedAt, now)}
+            {@const result = resultLabel(g)}
+            {@const key = historyStat(g)}
+            {@const vs = opponents(g)}
+            {@const rules = rulesLine(g)}
+            <li class="border-b border-line px-[22px] py-3 lg:min-h-[68px] lg:py-0">
+              <!-- Narrow screens: two lines, title+when / opponents+rules, badge and stat at the end of each -->
+              <div class="flex flex-col gap-1 lg:hidden">
+                <div class="flex items-baseline justify-between gap-3">
+                  <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
+                    <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]">{getGameView(g.mode).title}</span>
+                    <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
+                  </span>
+                  <span class="shrink-0 inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won ? 'bg-accent text-accent-fg' : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span>
+                </div>
+                <div class="flex items-baseline justify-between gap-3">
+                  <span class="min-w-0 truncate text-[13px] text-text-muted">{vs === 'Solo' ? 'Solo' : `vs ${vs}`}{rules ? ` · ${rules}` : ''}</span>
+                  {#if key}
+                    <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span>
+                  {/if}
+                </div>
+              </div>
+
+              <!-- lg and up: the full column grid -->
+              <div class="hidden lg:grid lg:h-[68px] lg:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4">
+                <span class="flex flex-col gap-0.5">
+                  <span class="text-[15px] font-semibold">{when.day}</span>
+                  <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
+                </span>
+                <span class="flex min-w-0 flex-col gap-0.5">
+                  <span class="font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]">{getGameView(g.mode).title}</span>
+                  <span class="text-[13px] text-text-muted">{rules}</span>
+                </span>
+                <span class="flex min-w-0 items-center gap-2.5">
+                  <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-line-chip text-[13px] font-bold">{vs.charAt(0).toUpperCase()}</span>
+                  <span class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] text-[#c9c9bf]">{vs}</span>
+                </span>
+                <span>
+                  <span class="inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won ? 'bg-accent text-accent-fg' : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span>
+                </span>
+                <span class="flex flex-col gap-0.5">
+                  {#if key}
+                    <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>
+                    <span class="text-[12px] text-text-dim">{key.label}</span>
+                  {/if}
+                </span>
+                <span class="text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
+              </div>
+            </li>
+          {/each}
+        </ul>
+        {#if nextCursor !== null}
+          <div class="flex justify-center p-4">
+            <button type="button" onclick={() => void more()} disabled={loadingMore}
+              class="h-10 rounded-lg border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60">
+              {loadingMore ? 'Loading…' : 'Load more'}
+            </button>
+          </div>
+        {/if}
+      {/if}
+    </section>
+  </main>
+</Layout>
