@@ -39,9 +39,9 @@ const mine = (game: GameSummary): GameSeat | undefined => game.players.find(p =>
 const others = (game: GameSummary): GameSeat[] => game.players.filter(p => p.seat !== game.mySeat)
 const stat = (p: GameSeat, key: string): number | undefined => Object.hasOwn(p.stats, key) ? p.stats[key] : undefined
 
-/** Who else played, or "Solo". */
-export function opponents(game: GameSummary): string {
-  return game.players.length === 1 ? 'Solo' : others(game).map(p => p.name).join(', ')
+/** Everyone who played, in seat order; `me` marks the viewer's own seat. */
+export function playerNames(game: GameSummary): { name: string; me: boolean }[] {
+  return game.players.map(p => ({ name: p.name, me: p.seat === game.mySeat }))
 }
 
 const ordinal = (n: number) => {

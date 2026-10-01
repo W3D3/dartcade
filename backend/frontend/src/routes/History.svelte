@@ -4,7 +4,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
-  import { formatWhen, historyStat, opponents, resultLabel, rulesLine, statTiles } from '$lib/history'
+  import { formatWhen, historyStat, playerNames, resultLabel, rulesLine, statTiles } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
 
   // Guards against a stale response winning a race: a quick filter switch leaves the
@@ -123,10 +123,11 @@
             {@const when = formatWhen(g.finishedAt, now)}
             {@const result = resultLabel(g)}
             {@const key = historyStat(g)}
-            {@const vs = opponents(g)}
+            {@const names = playerNames(g)}
+            {@const lead = names.at(0)}
             {@const rules = rulesLine(g)}
             <li class="border-b border-line px-[22px] py-3 lg:min-h-[68px] lg:py-0">
-              <!-- Narrow screens: two lines, title+when / opponents+rules, badge and stat at the end of each -->
+              <!-- Narrow screens: two lines, title+when / players+rules, badge and stat at the end of each -->
               <div class="flex flex-col gap-1 lg:hidden">
                 <div class="flex items-baseline justify-between gap-3">
                   <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
@@ -136,7 +137,7 @@
                   <span class="shrink-0 inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won ? 'bg-accent text-accent-fg' : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span>
                 </div>
                 <div class="flex items-baseline justify-between gap-3">
-                  <span class="min-w-0 truncate text-[13px] text-text-muted">{vs === 'Solo' ? 'Solo' : `vs ${vs}`}{rules ? ` · ${rules}` : ''}</span>
+                  <span class="min-w-0 truncate text-[13px] text-text-muted">{#each names as p, i (i)}{#if i > 0},&nbsp;{/if}<span class={p.me ? 'font-semibold text-text' : ''}>{p.name}</span>{/each}{rules ? ` · ${rules}` : ''}</span>
                   {#if key}
                     <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span>
                   {/if}
@@ -154,8 +155,8 @@
                   <span class="text-[13px] text-text-muted">{rules}</span>
                 </span>
                 <span class="flex min-w-0 items-center gap-2.5">
-                  <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-line-chip text-[13px] font-bold">{vs.charAt(0).toUpperCase()}</span>
-                  <span class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] text-[#c9c9bf]">{vs}</span>
+                  <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-bold {lead?.me ? 'bg-accent text-accent-fg' : 'bg-line-chip'}">{lead?.name.charAt(0).toUpperCase()}</span>
+                  <span class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] text-[#c9c9bf]">{#each names as p, i (i)}{#if i > 0},&nbsp;{/if}<span class={p.me ? 'font-semibold text-text' : ''}>{p.name}</span>{/each}</span>
                 </span>
                 <span>
                   <span class="inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won ? 'bg-accent text-accent-fg' : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span>

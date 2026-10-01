@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatWhen, rulesLine, opponents, resultLabel, historyStat, statTiles } from '../history.js'
+import { formatWhen, rulesLine, playerNames, resultLabel, historyStat, statTiles } from '../history.js'
 import type { GameSummary, GameStats } from '../api'
 
 const game = (o: Partial<GameSummary> = {}): GameSummary => ({
@@ -32,22 +32,23 @@ describe('rulesLine', () => {
   })
 })
 
-describe('opponents and result', () => {
-  it('two players: the other name, won/lost with legs for X01', () => {
-    expect(opponents(game())).toBe('Guest 1')
+describe('players and result', () => {
+  it('two players: both names with mine marked, won/lost with legs for X01', () => {
+    expect(playerNames(game())).toEqual([{ name: 'Christoph', me: true }, { name: 'Guest 1', me: false }])
+    expect(playerNames(game({ mySeat: 1 })).map(p => p.me)).toEqual([false, true])
     expect(resultLabel(game())).toEqual({ text: 'Won 3–1', won: true })
     expect(resultLabel(game({ mySeat: 1 }))).toEqual({ text: 'Lost 1–3', won: false })
     expect(resultLabel(game({ mode: 'atc' }))).toEqual({ text: 'Won', won: true })
   })
   it('three or more: placement of n', () => {
     const party = game({ players: [...game().players, { seat: 2, name: 'Lena', userId: null, placement: 3, stats: {} }] })
-    expect(opponents(party)).toBe('Guest 1, Lena')
+    expect(playerNames(party).map(p => p.name)).toEqual(['Christoph', 'Guest 1', 'Lena'])
     expect(resultLabel({ ...party, mySeat: 1 })).toEqual({ text: '2nd of 3', won: false })
     expect(resultLabel(party)).toEqual({ text: '1st of 3', won: true })
   })
   it('solo', () => {
     const solo = game({ players: [game().players[0]] })
-    expect(opponents(solo)).toBe('Solo')
+    expect(playerNames(solo)).toEqual([{ name: 'Christoph', me: true }])
     expect(resultLabel(solo)).toEqual({ text: 'Finished', won: false })
   })
 })
