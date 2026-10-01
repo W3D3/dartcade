@@ -9,6 +9,7 @@
   import Tooltip from '$lib/components/Tooltip.svelte'
   import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'
   import { authClient } from '$lib/auth'
+  import { loadPrefs, savePrefs } from '$lib/gamePrefs'
 
   const MODES = [
     { id: 'atc',        glyph: 'ATC',    name: 'Around the Clock', desc: 'Hit 1 through 20 in order, then finish on your chosen target.', available: true  },
@@ -41,28 +42,15 @@
   const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
 
   // ── Preference persistence ──────────────────────────────────────────────────
-  const PREFS_KEY = 'dartcade_game_prefs'
   const X01_DEFAULTS: Record<string, unknown> = {
     startScore: 501, inMode: 'straight', outMode: 'double',
     bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3,
   }
 
   type Config = Record<string, unknown>
-  type SavedPrefs = { mode: string; configs: Partial<Record<string, Config>>; boardId?: string }
-  const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
-  function isSavedPrefs(v: unknown): v is SavedPrefs {
-    return isRecord(v) && typeof v.mode === 'string' && isRecord(v.configs)
-      && (v.boardId === undefined || typeof v.boardId === 'string')
-  }
-  function loadPrefs(): SavedPrefs | null {
-    try {
-      const raw: unknown = JSON.parse(localStorage.getItem(PREFS_KEY) ?? 'null')
-      return isSavedPrefs(raw) ? raw : null
-    } catch { return null }
-  }
   // A numeric config field, or its default when missing or not a number
   const num = (v: unknown, d: number) => (typeof v === 'number' ? v : d)
-  const initPrefs = loadPrefs()
+  const initPrefs = loadPrefs(localStorage)
 
   let games = $state<GameInfo[]>([])
   let boards = $state<Board[]>([])
@@ -85,11 +73,11 @@
 
   // Persist whenever mode, config or board changes
   $effect(() => {
-    localStorage.setItem(PREFS_KEY, JSON.stringify({
+    savePrefs(localStorage, {
       mode: selectedMode,
       configs: { ...savedConfigs, [selectedMode]: config },
       boardId,
-    }))
+    })
   })
 
   function selectMode(id: string) {

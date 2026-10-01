@@ -1,3 +1,5 @@
+import { z } from 'zod'
+
 /** In-game display and sound settings, kept per device in localStorage. */
 export interface GameSettings {
   /** 3+ player Around the Clock: other players' targets as initials on the board. */
@@ -31,8 +33,20 @@ export const SETTINGS_KEY = 'dartcade_game_settings'
 /** Keys of the settings that are on/off switches. */
 export type BooleanSettingKey = { [K in keyof GameSettings]: GameSettings[K] extends boolean ? K : never }[keyof GameSettings]
 
-const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
-const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d)
+const d = defaultSettings
+const flag = (def: boolean) => z.boolean().catch(def).default(def)
+// Each setting falls back to its default on its own; unknown keys are dropped
+const SettingsSchema = z.object({
+  showMarkers: flag(d.showMarkers),
+  checkoutSuggestions: flag(d.checkoutSuggestions),
+  visitSum: flag(d.visitSum),
+  chalkboard: flag(d.chalkboard),
+  volume: z.number().refine(Number.isFinite).transform(v => Math.min(1, Math.max(0, v))).catch(d.volume).default(d.volume),
+  soundHit: flag(d.soundHit),
+  soundMiss: flag(d.soundMiss),
+  soundSwitch: flag(d.soundSwitch),
+  soundBust: flag(d.soundBust),
+}).catch({ ...d })
 
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */
 export function loadSettings(storage: Pick<Storage, 'getItem'> | null): GameSettings {
@@ -42,20 +56,7 @@ export function loadSettings(storage: Pick<Storage, 'getItem'> | null): GameSett
   } catch {
     return { ...defaultSettings }
   }
-  const s = isRecord(raw) ? raw : {}
-  const d = defaultSettings
-  const volume = typeof s.volume === 'number' && Number.isFinite(s.volume) ? Math.min(1, Math.max(0, s.volume)) : d.volume
-  return {
-    showMarkers: bool(s.showMarkers, d.showMarkers),
-    checkoutSuggestions: bool(s.checkoutSuggestions, d.checkoutSuggestions),
-    visitSum: bool(s.visitSum, d.visitSum),
-    chalkboard: bool(s.chalkboard, d.chalkboard),
-    volume,
-    soundHit: bool(s.soundHit, d.soundHit),
-    soundMiss: bool(s.soundMiss, d.soundMiss),
-    soundSwitch: bool(s.soundSwitch, d.soundSwitch),
-    soundBust: bool(s.soundBust, d.soundBust),
-  }
+  return SettingsSchema.parse(raw ?? {})
 }
 
 export function saveSettings(storage: Pick<Storage, 'setItem'> | null, s: GameSettings): void {

@@ -1,0 +1,61 @@
+{
+  "type": "snapshot",
+  "sessionId": "01M3VHJSVYSKGQBKDN1S5E8RHR",
+  "boardId": "board-1",
+  "players": [
+    {
+      "name": "Alice"
+    },
+    {
+      "name": "Bob"
+    }
+  ],
+  "gameId": "x01",
+  "game": {
+    "scores": [
+      441,
+      501
+    ],
+    "legs": [
+      0,
+      0
+    ],
+    "firstTo": 3,
+    "currentPlayer": 0,
+    "round": 1,
+    "phase": "game",
+    "winner": null,
+    "opened": [
+      true,
+      true
+    ],
+    "bustThisVisit": false,
+    "config": {
+      "outMode": "double",
+      "startScore": 501,
+      "inMode": "straight"
+    },
+    "visitLocked": false,
+    "bullOff": null,
+    "currentVisitDarts": [
+      {
+        "segment": {
+          "name": "T20",
+          "number": 20,
+          "bed": "Triple",
+          "multiplier": 3
+        },
+        "score": 60
+      }
+    ],
+    "totalDarts": [
+      1,
+      0
+    ],
+    "totalVisits": [
+      0,
+      0
+    ]
+  },
+  "bmStatus": null
+}
