@@ -30,7 +30,7 @@ describe('x01Meta', () => {
 
 describe('atcMeta', () => {
   const atc = (o: Record<string, unknown> = {}): AtcGame => ({
-    cfg: { order: 'asc', multiplierAdvances: false }, sequence: [1, 2, 22], totalVisits: [11, 11], ...o,
+    cfg: { order: 'asc', multiplierAdvances: false, finishOn: 'bull' }, sequence: [1, 2, 22], totalVisits: [11, 11], ...o,
   }) as unknown as AtcGame
   it('two players', () => {
     expect(atcMeta(atc(), 2)).toBe('1–20, then Bull · any segment counts · Round 12')
@@ -40,7 +40,22 @@ describe('atcMeta', () => {
     expect(atcMeta(atc({ totalVisits: [11] }), 1)).toBe('1–20, then Bull · Practice · Round 12')
   })
   it('names the order and the outer bull', () => {
-    expect(atcMeta(atc({ cfg: { order: 'desc', multiplierAdvances: true }, sequence: [20, 21] }), 2))
+    expect(atcMeta(atc({ cfg: { order: 'desc', multiplierAdvances: true, finishOn: 'single_bull' }, sequence: [20, 21] }), 2))
       .toBe('20–1, then 25 · multiplier advances · Round 12')
+  })
+})
+
+import { x01Rules, atcRules } from '../gameViews/meta.js'
+
+describe('rules lines (config only)', () => {
+  it('x01', () => {
+    expect(x01Rules({ startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3 }, 2)).toBe('501 · Double out · First to 3 legs')
+    expect(x01Rules({ startScore: 301, inMode: 'double', outMode: 'master', firstTo: 1 }, 4)).toBe('4 players · 301 · Double in · Master out · First to 1 leg')
+    expect(x01Rules({ startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3 }, 1)).toBe('501 · Double out · Practice')
+  })
+  it('atc', () => {
+    expect(atcRules({ order: 'asc', finishOn: 'bull', multiplierAdvances: false }, 2)).toBe('1–20, then Bull · any segment counts')
+    expect(atcRules({ order: 'random', finishOn: 'twenty', multiplierAdvances: true }, 1)).toBe('Random order · Practice')
+    expect(atcRules({ order: 'desc', finishOn: 'single_bull', multiplierAdvances: false }, 3)).toBe('3 players · 20–1, then 25')
   })
 })
