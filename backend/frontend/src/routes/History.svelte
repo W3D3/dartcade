@@ -20,6 +20,7 @@
   let loading = $state(true)
   let loadingMore = $state(false)
   let error = $state('')
+  let loadMoreError = $state('')
   const now = new Date()
 
   const tiles = $derived(stats ? statTiles(stats) : [])
@@ -41,6 +42,7 @@
     loading = true
     loadingMore = false // any in-flight "load more" for the old filter no longer applies
     error = ''
+    loadMoreError = ''
     try { await loadGames(null, token) }
     catch (e) { if (requests.isCurrent(token)) error = e instanceof Error ? e.message : 'Could not load your games' }
     finally { if (requests.isCurrent(token)) loading = false }
@@ -50,8 +52,10 @@
     if (nextCursor === null || loadingMore) return
     const token = requests.current()
     loadingMore = true
+    loadMoreError = ''
+    // Keep the already-loaded list on screen; only an initial load replaces it with an error.
     try { await loadGames(nextCursor, token) }
-    catch (e) { if (requests.isCurrent(token)) error = e instanceof Error ? e.message : 'Could not load more games' }
+    catch (e) { if (requests.isCurrent(token)) loadMoreError = e instanceof Error ? e.message : 'Could not load more games' }
     finally { if (requests.isCurrent(token)) loadingMore = false }
   }
 
@@ -89,7 +93,9 @@
     {#if tiles.length}
       <dl class="m-0 grid grid-cols-2 rounded-[14px] border border-line-2 bg-surface-panel lg:grid-cols-4">
         {#each tiles as t, i (t.label)}
-          <div class="flex flex-col gap-1.5 px-[22px] py-[18px] {i % 2 === 1 ? 'border-l border-line-2' : ''} {i >= 2 ? 'max-lg:border-t max-lg:border-line-2 lg:border-l' : ''}">
+          <!-- Below lg: 2x2 grid, divider between each row's two tiles and above row 2.
+               At lg: a single row of 4, so every tile after the first gets one left divider. -->
+          <div class="flex flex-col gap-1.5 px-[22px] py-[18px] {i % 2 === 1 ? 'max-lg:border-l max-lg:border-line-2' : ''} {i >= 2 ? 'max-lg:border-t max-lg:border-line-2' : ''} {i > 0 ? 'lg:border-l lg:border-line-2' : ''}">
             <dt class="text-[12px] uppercase tracking-[0.1em] text-text-dim">{t.label}</dt>
             <dd class="m-0 flex items-baseline gap-2.5">
               <span class="font-display text-[40px] font-bold leading-none">{t.value}</span>
@@ -166,11 +172,12 @@
           {/each}
         </ul>
         {#if nextCursor !== null}
-          <div class="flex justify-center p-4">
+          <div class="flex flex-col items-center gap-2 p-4">
             <button type="button" onclick={() => void more()} disabled={loadingMore}
               class="h-10 rounded-lg border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60">
               {loadingMore ? 'Loading…' : 'Load more'}
             </button>
+            {#if loadMoreError}<p role="alert" class="m-0 text-[13px] text-text-muted">{loadMoreError}</p>{/if}
           </div>
         {/if}
       {/if}
