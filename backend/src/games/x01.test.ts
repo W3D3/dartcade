@@ -273,14 +273,32 @@ describe('takeout.finished — rotation and rounds', () => {
     expect(state.round).toBe(2)
   })
 
-  it('leg win: legs incremented, scores and opened reset, leg winner starts', () => {
+  it('leg win: legs incremented, scores and opened reset, the next player in throw order starts', () => {
     const cfg = { ...defaultCfg, firstTo: 3 }
     const s = openedVisit(makeState({ cfg, scores: [0, 501], legs: [0, 0], currentPlayer: 0 }))
     const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.legs[0]).toBe(1)
     expect(state.scores).toEqual([501, 501])
-    expect(state.currentPlayer).toBe(0)
+    expect(state.currentPlayer).toBe(1)
     expect(state.round).toBe(1)
+  })
+
+  it('the start moves on every leg, whoever wins, and rounds count from the leg starter', () => {
+    const cfg = { ...defaultCfg, firstTo: 3 }
+    const three = makeState({ cfg, scores: [501, 501, 501], legs: [0, 0, 0], opened: [true, true, true], order: [0, 1, 2], visitOpenedScores: [501, 501, 501], playerCount: 3, pointsScored: [0, 0, 0], bestCheckout: [0, 0, 0] })
+    const takeout = (st: X01State) => x01Game.onBoardEvent(st, { kind: 'takeout.finished', data: {} }).state
+    // Leg 1: player 2 wins it → leg 2 starts with player 1 (next in order after the leg-1 starter 0)
+    let s = takeout(openedVisit({ ...three, currentPlayer: 2, scores: [100, 100, 0] }))
+    expect([s.currentPlayer, s.round]).toEqual([1, 1])
+    // Leg 2 runs 1, 2, 0, then back to its starter 1 in round 2
+    s = takeout(s); expect([s.currentPlayer, s.round]).toEqual([2, 1])
+    s = takeout(s); expect([s.currentPlayer, s.round]).toEqual([0, 1])
+    s = takeout(s); expect([s.currentPlayer, s.round]).toEqual([1, 2])
+    // Player 1 wins leg 2 → leg 3 starts with player 2, leg 4 would start with player 0 again
+    s = takeout(openedVisit({ ...s, scores: [100, 0, 100] }))
+    expect([s.currentPlayer, s.round, s.legs]).toEqual([2, 1, [0, 1, 1]])
+    s = takeout(openedVisit({ ...s, currentPlayer: 0, scores: [0, 100, 100] }))
+    expect(s.currentPlayer).toBe(0)
   })
 
   it('match win: winner set when legs === firstTo', () => {

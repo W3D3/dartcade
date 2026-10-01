@@ -72,11 +72,18 @@ function validFinish(dart: Dart, outMode: 'straight' | 'double' | 'master'): boo
 /** Nothing can finish from 1 unless any dart may finish. */
 const deadEnd = (score: number, outMode: 'straight' | 'double' | 'master') => score === 1 && outMode !== 'straight'
 
-// Next thrower in `order`; a new round starts when it wraps to the first thrower.
+// Next thrower in `order`; a new round starts when it gets back to the leg's starter.
 function nextTurn(s: X01State): { nextPlayer: number; round: number } {
   const pos = s.order.indexOf(s.currentPlayer)
   const nextPlayer = s.order[(pos + 1) % s.order.length]
-  return { nextPlayer, round: nextPlayer === s.order[0] ? s.round + 1 : s.round }
+  return { nextPlayer, round: nextPlayer === legStarter(s.order, s.legs) ? s.round + 1 : s.round }
+}
+
+// The start moves on every leg, whoever won the last one: leg 1 goes to the first in
+// throw order, leg 2 to the second, and so on, wrapping around
+function legStarter(order: number[], legs: number[]): number {
+  const played = legs.reduce((a, b) => a + b, 0)
+  return order[played % order.length]
 }
 
 function freshLeg(cfg: X01Config, playerCount: number, firstPlayer: number): Partial<X01State> {
@@ -221,7 +228,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           if (legs[cp] >= s.cfg.firstTo) {
             return { state: { ...s, legs, winner: cp, phase: 'finished', pointsScored, bestCheckout } }
           }
-          return { state: { ...s, legs, pointsScored, bestCheckout, ...freshLeg(s.cfg, s.playerCount, cp) } }
+          return { state: { ...s, legs, pointsScored, bestCheckout, ...freshLeg(s.cfg, s.playerCount, legStarter(s.order, legs)) } }
         }
 
         const { nextPlayer, round } = nextTurn(s)
