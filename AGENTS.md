@@ -29,6 +29,7 @@ corrected dart replays the open visit cleanly.
 |---|---|
 | Event schema shared by bridge and backend | `schema/adbridge-v1.json` (source of truth), `schema/diff-rules.md` |
 | Generated TS types for the schema | `backend/src/schema/types.ts` (regenerate with `npm run gen:types`; don't edit by hand) |
+| Generated zod schemas for incoming data (bridge events, browser messages, snapshots) | `backend/src/schema/zod.ts`, copied to `backend/frontend/src/lib/api/zod.ts` (regenerate with `npm run gen:api` at the repo root; don't edit by hand) |
 | Bridge: Board Manager client, snapshot differ, transport | `bridge/internal/{bm,differ,transport}`, CLI in `bridge/cmd/bridge` |
 | Recorded Board Manager sessions for differ tests | `bridge/internal/differ/testdata`, `fixtures/` |
 | Backend entry point, plugin wiring | `backend/src/index.ts` |
@@ -55,9 +56,12 @@ corrected dart replays the open visit cleanly.
    `onUserAction`, `view`, plus `defaultConfig`/`configMeta` for the setup form.
    Keep it a pure reducer; wrap it with `withBullOff` if it needs a throwing order.
 2. Register it in `backend/src/games/index.ts`.
-3. Add its player stats component in `backend/frontend/src/lib/gameViews/<id>.svelte`
-   and a `GameView` entry in `gameViews` in `gameViews/index.ts` (unknown games
-   fall back to `fallback.svelte`).
+3. Describe its view in `schema/game-ws-v1.json` (a `<Id>Game` def and a branch of
+   `Snapshot`) and run `npm run gen:api` at the repo root. The browser parses every
+   snapshot against that schema and drops ones for games it doesn't know.
+4. Frontend: the header title and meta line go in `backend/frontend/src/lib/gameViews/`
+   (`index.ts`, `meta.ts`); panels, rows and slots are picked by game id in
+   `GameDisplay.svelte`.
 
 ## Running and testing
 

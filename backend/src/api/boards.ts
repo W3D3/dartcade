@@ -8,7 +8,15 @@ import { bridgeConnections } from '../bridge-gw/connections.js'
 import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
-import { isBoolean, isRecord, isString } from '../guards.js'
+import { z } from 'zod'
+import { pgErrorCode } from '../db/errors.js'
+
+// Board Manager's /api/state, as far as we pass it on: each field falls back on its own
+const BmStateSchema = z.object({
+  status: z.string().nullable().catch(null).default(null),
+  running: z.boolean().catch(false).default(false),
+  event: z.string().nullable().catch(null).default(null),
+}).catch({ status: null, running: false, event: null })
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
@@ -111,12 +119,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       return reply.code(503).send({ error: 'board unreachable' })
     }
     if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
-    const state: Record<string, unknown> = isRecord(body) ? body : {}
-    return reply.send({
-      status: isString(state.status) ? state.status : null,
-      running: isBoolean(state.running) ? state.running : false,
-      event: isString(state.event) ? state.event : null,
-    })
+    return reply.send(BmStateSchema.parse(body))
   })
 
   // Per-board BM actions
@@ -146,7 +149,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     try {
       await deleteBoard(db, id)
     } catch (err) {
-      if (isRecord(err) && err.code === '23503') return reply.code(409).send({ error: 'board has active sessions' })
+      if (pgErrorCode(err) === '23503') return reply.code(409).send({ error: 'board has active sessions' })
       throw err
     }
     return reply.code(204).send()

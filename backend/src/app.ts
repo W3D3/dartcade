@@ -16,7 +16,7 @@ import { pairingApiPlugin } from './api/pairing.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
-import { isRecord, isString } from './guards.js'
+import { z } from 'zod'
 
 export type AppDeps = {
   engine: SessionEngine
@@ -29,8 +29,9 @@ export type AppDeps = {
 
 // The JSON import types its enums as plain strings, which the OpenAPI types don't accept;
 // the document itself is our generated spec, checked here for its top-level shape
+const OpenApiShapeSchema = z.object({ openapi: z.string(), info: z.record(z.string(), z.unknown()), paths: z.record(z.string(), z.unknown()) })
 function isOpenApiDocument(v: unknown): v is StaticDocumentSpec['document'] {
-  return isRecord(v) && isString(v.openapi) && isRecord(v.info) && isRecord(v.paths)
+  return OpenApiShapeSchema.safeParse(v).success
 }
 
 // 'urls.primaryName' is a Swagger UI option that @fastify/swagger-ui's types leave out

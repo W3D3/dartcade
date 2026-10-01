@@ -371,6 +371,21 @@ describe('rebuild', () => {
     // the owner isn't blocked by the closed session
     await expect(engine.create('user-1', null, 'atc', {}, [{ name: 'A' }])).resolves.toBeDefined()
   })
+
+  it('closes sessions whose stored players or config are malformed', async () => {
+    const store = makeStore()
+    vi.mocked(store.getActiveSessions).mockResolvedValue([
+      { id: 'bad-players', owner_user_id: 'user-1', board_db_id: 'board-a', game_id: 'atc', config: {}, players: [{ nom: 'A' }], created_at: new Date() },
+      { id: 'bad-config', owner_user_id: 'user-2', board_db_id: 'board-b', game_id: 'atc', config: [], players: [{ name: 'A' }], created_at: new Date() },
+      { id: 'extra-fields', owner_user_id: 'user-3', board_db_id: 'board-c', game_id: 'atc', config: {}, players: [{ name: 'A', legacy: true }], created_at: new Date() },
+    ])
+    const engine = new SessionEngine(store, push)
+    await engine.rebuild()
+    expect(store.setSessionFinished).toHaveBeenCalledWith('bad-players')
+    expect(store.setSessionFinished).toHaveBeenCalledWith('bad-config')
+    // A stored player with an extra field is still restored, without the field
+    expect(engine.getSession('extra-fields')?.players).toEqual([{ name: 'A' }])
+  })
 })
 
 describe('getSnapshot', () => {

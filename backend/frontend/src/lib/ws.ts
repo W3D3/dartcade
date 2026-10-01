@@ -1,15 +1,21 @@
 import { writable } from 'svelte/store'
 import { WsCloseCode, type ClientMessage, type Snapshot, type UserAction } from './api/game-ws'
+import { SnapshotSchema } from './api/zod'
 
 export type { Snapshot }
 
-/** A snapshot from the server (shallow check; the backend validates the full shape against the schema). */
-export function isSnapshot(m: unknown): m is Snapshot {
-  return typeof m === 'object' && m !== null
-    && 'type' in m && m.type === 'snapshot'
-    && 'gameId' in m && typeof m.gameId === 'string'
-    && 'game' in m && typeof m.game === 'object' && m.game !== null
-    && 'players' in m && Array.isArray(m.players)
+/**
+ * A snapshot from the server, parsed against schema/game-ws-v1.json (unknown fields
+ * stripped), or null. A snapshot that doesn't parse is dropped with a warning: the page
+ * keeps its last good one (a stale tab after a deploy; reloading fixes it).
+ */
+export function parseSnapshot(m: unknown): Snapshot | null {
+  const r = SnapshotSchema.safeParse(m)
+  if (r.success) return r.data
+  if (typeof m === 'object' && m !== null && 'type' in m && m.type === 'snapshot') {
+    console.warn('Ignoring a snapshot that does not match the schema', r.error.issues)
+  }
+  return null
 }
 
 export function createSessionStore(sessionId: string) {
@@ -24,8 +30,8 @@ export function createSessionStore(sessionId: string) {
     ws.onmessage = (e) => {
       try {
         if (typeof e.data !== 'string') return
-        const msg: unknown = JSON.parse(e.data)
-        if (isSnapshot(msg)) { snapshot.set(msg); backoff = 500 }
+        const msg = parseSnapshot(JSON.parse(e.data))
+        if (msg) { snapshot.set(msg); backoff = 500 }
       } catch {}
     }
     ws.onclose = (e) => {

@@ -812,8 +812,8 @@ func (j *Segment) UnmarshalJSON(value []byte) error {
 	if err := json.Unmarshal(value, &plain); err != nil {
 		return err
 	}
-	if 25 < plain.Number {
-		return fmt.Errorf("field %s: must be <= %v", "number", 25)
+	if 50 < plain.Number {
+		return fmt.Errorf("field %s: must be <= %v", "number", 50)
 	}
 	if 0 > plain.Number {
 		return fmt.Errorf("field %s: must be >= %v", "number", 0)
