@@ -5,6 +5,12 @@
   import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
   import { formatWhen, historyStat, opponents, resultLabel, rulesLine, statTiles } from '$lib/history'
+  import { createRequestGuard } from '$lib/requestGuard'
+
+  // Guards against a stale response winning a race: a quick filter switch leaves the
+  // previous filter's request in flight, and "load more" can be overtaken by a filter
+  // switch too. Only the most recently started request is allowed to apply its result.
+  const requests = createRequestGuard()
 
   let modes = $state<GameInfo[]>([])
   let mode = $state<string | null>(null)
@@ -19,9 +25,10 @@
   const tiles = $derived(stats ? statTiles(stats) : [])
   const filters = $derived([{ id: null, name: 'All' }, ...modes.map(m => ({ id: m.id, name: getGameView(m.id).title }))])
 
-  async function loadGames(cursor: string | null) {
+  async function loadGames(cursor: string | null, token: number) {
     const query = { ...(mode !== null && { mode }), ...(cursor !== null && { cursor }) }
     const { data, error: err } = await api.GET('/api/games', { params: { query } })
+    if (!requests.isCurrent(token)) return // superseded by a newer filter or load-more; drop it
     if (!data) throw new Error(err.error)
     games = cursor === null ? data.games : [...games, ...data.games]
     nextCursor = data.nextCursor
@@ -30,30 +37,34 @@
   async function pick(id: string | null) {
     if (id === mode) return
     mode = id
+    const token = requests.start()
     loading = true
+    loadingMore = false // any in-flight "load more" for the old filter no longer applies
     error = ''
-    try { await loadGames(null) }
-    catch (e) { error = e instanceof Error ? e.message : 'Could not load your games' }
-    finally { loading = false }
+    try { await loadGames(null, token) }
+    catch (e) { if (requests.isCurrent(token)) error = e instanceof Error ? e.message : 'Could not load your games' }
+    finally { if (requests.isCurrent(token)) loading = false }
   }
 
   async function more() {
-    if (nextCursor === null) return
+    if (nextCursor === null || loadingMore) return
+    const token = requests.current()
     loadingMore = true
-    try { await loadGames(nextCursor) }
-    catch (e) { error = e instanceof Error ? e.message : 'Could not load more games' }
-    finally { loadingMore = false }
+    try { await loadGames(nextCursor, token) }
+    catch (e) { if (requests.isCurrent(token)) error = e instanceof Error ? e.message : 'Could not load more games' }
+    finally { if (requests.isCurrent(token)) loadingMore = false }
   }
 
   onMount(async () => {
+    const token = requests.start()
     try {
-      const [m, s] = await Promise.all([api.GET('/api/gamemodes'), api.GET('/api/games/stats'), loadGames(null)])
+      const [m, s] = await Promise.all([api.GET('/api/gamemodes'), api.GET('/api/games/stats'), loadGames(null, token)])
       modes = m.data?.modes ?? []
       stats = s.data ?? null
     } catch (e) {
-      error = e instanceof Error ? e.message : 'Could not load your games'
+      if (requests.isCurrent(token)) error = e instanceof Error ? e.message : 'Could not load your games'
     } finally {
-      loading = false
+      if (requests.isCurrent(token)) loading = false
     }
   })
 </script>
