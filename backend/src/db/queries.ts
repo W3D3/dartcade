@@ -49,8 +49,8 @@ export async function insertGameSession(
       owner_user_id: s.owner_user_id,
       board_db_id: s.board_db_id,
       game_id: s.game_id,
-      config: JSON.stringify(s.config) as any,
-      players: JSON.stringify(s.players) as any,
+      config: JSON.stringify(s.config),
+      players: JSON.stringify(s.players),
       status: 'active',
     })
     .execute()
@@ -97,7 +97,7 @@ export async function insertBridgeEvent(
       board_id: ev.board_id,
       recv_wall: ev.recv_wall,
       kind: ev.kind,
-      data: JSON.stringify(ev.data) as unknown,
+      data: JSON.stringify(ev.data),
     })
     .onConflict(oc => oc.columns(['bridge_id', 'boot_id', 'seq']).doNothing())
     .executeTakeFirst()

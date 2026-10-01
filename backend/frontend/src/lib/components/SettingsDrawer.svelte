@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { X } from '@lucide/svelte'
   // Game settings as a drawer on the right, below the header (Settings-InGame board).
   import type { GameSettings } from '$lib/gameSettings.js'
 
@@ -22,7 +23,7 @@
   let panel: HTMLDivElement | undefined = $state()
   // Focus the drawer while open, and give focus back to the cog when it closes
   $effect(() => {
-    const opener = document.activeElement as HTMLElement | null
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null
     panel?.focus()
     return () => opener?.focus()
   })
@@ -36,7 +37,7 @@
   }
 </script>
 
-<svelte:window onkeydown={e => { if (e.key === 'Escape') onclose() }} />
+<svelte:window onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') onclose() }} />
 
 <div role="presentation" class="fixed inset-x-0 top-16 bottom-0 z-40 bg-[rgba(8,9,7,0.62)]" onclick={onclose}></div>
 
@@ -47,8 +48,7 @@
     <h2 id="game-settings-title" class="m-0 font-display font-bold text-[28px] uppercase">Game settings</h2>
     <button type="button" onclick={onclose} aria-label="Close settings"
       class="w-11 h-11 -mr-2 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-        stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+      <X size={18} />
     </button>
   </div>
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { X } from '@lucide/svelte'
   import { cn } from '$lib/utils.js'
   import type { Snippet } from 'svelte'
 
@@ -73,10 +74,7 @@
             aria-label="Close"
             class="text-text-dim hover:text-text transition-colors -mr-1 -mt-1 p-1"
           >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" />
-            </svg>
+            <X size={20} />
           </button>
         {/if}
       </div>

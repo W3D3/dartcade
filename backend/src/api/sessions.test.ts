@@ -5,7 +5,7 @@ import { sessionsApiPlugin } from './sessions.js'
 import { ActiveSessionError } from '../session/engine.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn(async (req: any, _reply: any) => { req.userId = 'user-1' }),
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
 }))
 vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' }),
@@ -187,7 +187,7 @@ describe('session ownership', () => {
 
 describe('sessions: spec enforcement', () => {
   it('checks auth before the body: signed-out + invalid body is 401, not 400', async () => {
-    vi.mocked(middleware.requireAuth).mockImplementationOnce(async (_req: any, reply: any) => {
+    vi.mocked(middleware.requireAuth).mockImplementationOnce((_req: any, reply: any) => {
       reply.code(401).send({ error: 'unauthorized' })
     })
     const { app } = makeApp()

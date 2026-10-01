@@ -18,7 +18,7 @@
   </div>
   <!-- Newest at the bottom; older rows scroll out of view at the top -->
   <div class="flex-1 min-h-0 flex flex-col justify-end overflow-hidden">
-    {#each visits as v, i}
+    {#each visits as v, i (i)}
       {@const latest = !current && i === visits.length - 1}
       <div class="grid grid-cols-2 h-11 shrink-0 items-center font-display text-[34px] leading-none tabular-nums">
         <span class="text-right pr-[14px] font-bold {v.bust ? 'text-danger-text' : active ? 'text-ink-soft' : 'text-ink-3'}">

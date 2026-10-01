@@ -72,7 +72,8 @@ export function checkoutHint(remaining: number, outMode: OutMode = 'double', dar
   }
 
   // 1-dart finish
-  if (n >= 1 && finishMap.has(remaining)) return [finishMap.get(remaining)!]
+  const one = finishMap.get(remaining)
+  if (n >= 1 && one) return [one]
 
   // Scoring darts (preferred order: triples high→low skipping T1, then singles, then bull)
   // T1 omitted: S3 scores the same and is always the saner suggestion
@@ -85,7 +86,8 @@ export function checkoutHint(remaining: number, outMode: OutMode = 'double', dar
   if (n >= 2) {
     for (const d of scoring) {
       const rest = remaining - d.v
-      if (rest >= 1 && finishMap.has(rest)) return [d.l, finishMap.get(rest)!]
+      const fin = finishMap.get(rest)
+      if (rest >= 1 && fin) return [d.l, fin]
     }
   }
 
@@ -96,7 +98,8 @@ export function checkoutHint(remaining: number, outMode: OutMode = 'double', dar
       if (r1 < 2) continue
       for (const d2 of scoring) {
         const r2 = r1 - d2.v
-        if (r2 >= 1 && finishMap.has(r2)) return [d1.l, d2.l, finishMap.get(r2)!]
+        const fin = finishMap.get(r2)
+        if (r2 >= 1 && fin) return [d1.l, d2.l, fin]
       }
     }
   }

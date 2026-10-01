@@ -23,7 +23,7 @@
         error = err.message ?? 'Invalid credentials'
         return
       }
-      push('/')
+      void push('/')
     } finally {
       loading = false
     }
@@ -40,7 +40,7 @@
   <AuthPanel />
 
   <main class="flex flex-grow items-center justify-center">
-    <form onsubmit={(e) => { e.preventDefault(); submit() }} class="flex w-[400px] flex-col gap-7">
+    <form onsubmit={(e) => { e.preventDefault(); void submit() }} class="flex w-[400px] flex-col gap-7">
 
       <div class="flex flex-col gap-2">
         <h1 class="m-0 font-display font-bold text-[48px] uppercase tracking-[0.02em] leading-none">

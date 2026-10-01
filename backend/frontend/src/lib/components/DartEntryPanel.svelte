@@ -33,7 +33,7 @@
 <div class="flex flex-col gap-4 w-full select-none">
   <!-- Multiplier toggle -->
   <div class="grid grid-cols-3 gap-1 p-1 bg-[#0f100e] rounded-[10px]">
-    {#each ([1, 2, 3] as const) as m}
+    {#each ([1, 2, 3] as const) as m (m)}
       <button type="button" onclick={() => mult = m} aria-pressed={mult === m}
         class="h-12 border-0 rounded-[7px] text-[15px] font-semibold cursor-pointer transition-colors
                {mult === m ? 'bg-accent text-accent-fg' : 'bg-transparent text-[#c9c9bf] hover:bg-surface-2'}">
@@ -44,7 +44,7 @@
 
   <!-- 1–20 grid: 4 cols × 5 rows -->
   <div class="grid grid-cols-4 gap-2">
-    {#each nums as n}
+    {#each nums as n (n)}
       <button type="button" onclick={() => pick(n)} disabled={full}
         aria-label="{multLabels[mult]} {n}"
         class="h-14 rounded-[10px] border border-[#3a3f35] font-display font-bold text-[26px]

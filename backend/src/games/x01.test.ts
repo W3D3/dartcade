@@ -34,7 +34,7 @@ function dartEvent(number: number, bed: string, multiplier: number, index = 0): 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
 function openedVisit(s: X01State): X01State {
-  const { state } = x01Game.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } as any })
+  const { state } = x01Game.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } })
   return state
 }
 
@@ -74,7 +74,7 @@ describe('init', () => {
     expect(s.stage).toBe('game')
     expect(s.bullOff.active).toBe(false)
     // A dart must count down rather than be swallowed by the bull off
-    const opened = x01Module.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } as any }).state
+    const opened = x01Module.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } }).state
     const { state } = x01Module.onBoardEvent(opened, dartEvent(20, 'SingleOuter', 1))
     expect(state.game.scores[0]).toBe(481)
   })
@@ -113,7 +113,7 @@ describe('getCurrentPlayer', () => {
 describe('visit.opened', () => {
   it('snapshots scores for bust revert and resets bustThisVisit', () => {
     const s = makeState({ scores: [180, 501], bustThisVisit: true })
-    const { state } = x01Game.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } })
     expect(state.visitOpenedScores).toEqual([180, 501])
     expect(state.bustThisVisit).toBe(false)
   })
@@ -247,17 +247,11 @@ describe('double in / master in', () => {
   })
 
   it('double in: opened status resets between legs', () => {
-    const cfg = { ...defaultCfg, inMode: 'double' as const, firstTo: 1 }
-    // Win a leg
-    let s = openedVisit(makeState({ cfg, scores: [20, 501], opened: [true, true] }))
-    let { state: afterWin } = x01Game.onBoardEvent(s, dartEvent(10, 'Double', 2))
-    const { state: afterTakeout } = x01Game.onBoardEvent(afterWin, { kind: 'takeout.finished', data: {} as any })
-    // firstTo=1, so player 0 won — but they need another leg to check reset
-    // Since firstTo=1, match is done; test with firstTo=2 instead
+    // Win a leg; with firstTo=1 that would end the match, so firstTo=2
     const cfg2 = { ...defaultCfg, inMode: 'double' as const, firstTo: 2 }
-    let s2 = openedVisit(makeState({ cfg: cfg2, scores: [20, 501], opened: [true, true] }))
+    const s2 = openedVisit(makeState({ cfg: cfg2, scores: [20, 501], opened: [true, true] }))
     const { state: afterWin2 } = x01Game.onBoardEvent(s2, dartEvent(10, 'Double', 2))
-    const { state: newLeg } = x01Game.onBoardEvent(afterWin2, { kind: 'takeout.finished', data: {} as any })
+    const { state: newLeg } = x01Game.onBoardEvent(afterWin2, { kind: 'takeout.finished', data: {} })
     expect(newLeg.opened[0]).toBe(false)
     expect(newLeg.opened[1]).toBe(false)
   })
@@ -268,13 +262,13 @@ describe('double in / master in', () => {
 describe('takeout.finished — rotation and rounds', () => {
   it('advances currentPlayer', () => {
     const s = makeState({ currentPlayer: 0 })
-    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(1)
   })
 
   it('wraps back to player 0 and increments round', () => {
     const s = makeState({ currentPlayer: 1, round: 1 })
-    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
     expect(state.round).toBe(2)
   })
@@ -282,7 +276,7 @@ describe('takeout.finished — rotation and rounds', () => {
   it('leg win: legs incremented, scores and opened reset, leg winner starts', () => {
     const cfg = { ...defaultCfg, firstTo: 3 }
     const s = openedVisit(makeState({ cfg, scores: [0, 501], legs: [0, 0], currentPlayer: 0 }))
-    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.legs[0]).toBe(1)
     expect(state.scores).toEqual([501, 501])
     expect(state.currentPlayer).toBe(0)
@@ -291,7 +285,7 @@ describe('takeout.finished — rotation and rounds', () => {
 
   it('match win: winner set when legs === firstTo', () => {
     const s = openedVisit(makeState({ scores: [0, 501], legs: [2, 0], currentPlayer: 0 }))
-    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.winner).toBe(0)
     expect(state.legs[0]).toBe(3)
     expect(state.phase).toBe('finished')
@@ -301,7 +295,7 @@ describe('takeout.finished — rotation and rounds', () => {
     const cfg = { ...defaultCfg, maxRounds: 2 }
     // Last player (1) just finished round 2 → nextPlayer=0, round=3 > 2 → player 0 (100) wins
     const s = makeState({ cfg, round: 2, currentPlayer: 1, scores: [100, 200] })
-    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.winner).toBe(0)
     expect(state.phase).toBe('finished')
   })
@@ -309,7 +303,7 @@ describe('takeout.finished — rotation and rounds', () => {
   it('max rounds: lowest index wins on tied scores', () => {
     const cfg = { ...defaultCfg, maxRounds: 2 }
     const s = makeState({ cfg, round: 2, currentPlayer: 1, scores: [100, 100] })
-    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.winner).toBe(0)
   })
 })
@@ -319,7 +313,7 @@ describe('takeout.finished — rotation and rounds', () => {
 describe('visit.cleared', () => {
   it('advances currentPlayer without scoring', () => {
     const s = makeState({ scores: [200, 501], currentPlayer: 0 })
-    const { state } = x01Game.onBoardEvent(s, { kind: 'visit.cleared', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'visit.cleared', data: {} })
     expect(state.currentPlayer).toBe(1)
     expect(state.scores[0]).toBe(200)
   })
@@ -327,7 +321,7 @@ describe('visit.cleared', () => {
   it('enforces maxRounds: lowest score wins when round limit exceeded on cleared visit', () => {
     const cfg = { ...defaultCfg, maxRounds: 2 }
     const s = makeState({ cfg, currentPlayer: 1, round: 2, scores: [100, 150] })
-    const { state } = x01Game.onBoardEvent(s, { kind: 'visit.cleared', data: {} as any })
+    const { state } = x01Game.onBoardEvent(s, { kind: 'visit.cleared', data: {} })
     expect(state.phase).toBe('finished')
     expect(state.winner).toBe(0)
   })
@@ -337,7 +331,7 @@ describe('visit.cleared', () => {
 
 describe('throwing order', () => {
   const three: Player[] = [{ name: 'A' }, { name: 'B' }, { name: 'C' }]
-  const takeout: BoardEvent = { kind: 'takeout.finished', data: {} as any }
+  const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
 
   it('rotates through a custom order and counts rounds from its first thrower', () => {
     let s: X01State = { ...x01Game.init(defaultCfg, three), order: [2, 0, 1], currentPlayer: 2 }
@@ -353,8 +347,8 @@ describe('throwing order', () => {
 // ─── bull off integration ────────────────────────────────────────────────────
 
 describe('bull off integration', () => {
-  const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } as any }
-  const takeout: BoardEvent = { kind: 'takeout.finished', data: {} as any }
+  const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } }
+  const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
 
   // A dart at `mm` from the centre, as the cameras report it
   function dartAt(mm: number): BoardEvent {

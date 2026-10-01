@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ExternalLink, LoaderCircle, Pencil, Play, Plus, RotateCcw, Square, Sun } from '@lucide/svelte'
   import { onMount, onDestroy } from 'svelte'
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
@@ -27,8 +28,8 @@
 
   function startStatusPoll(boardId: string) {
     stopStatusPoll()
-    loadBmStatus(boardId)
-    bmStatusInterval = setInterval(() => loadBmStatus(boardId), 3000)
+    void loadBmStatus(boardId)
+    bmStatusInterval = setInterval(() => void loadBmStatus(boardId), 3000)
   }
 
   function stopStatusPoll() {
@@ -41,6 +42,8 @@
     else stopStatusPoll()
   })
 
+  const currentBoard = (): Board | null => selected ?? null
+
   async function runAction(action: BoardAction) {
     if (!selected) return
     busy = action
@@ -48,7 +51,9 @@
     catch { /* ignore */ }
     finally {
       busy = null
-      if (selected?.online) loadBmStatus(selected.id)
+      // The selection may have changed while the action ran
+      const now = currentBoard()
+      if (now?.online) void loadBmStatus(now.id)
     }
   }
 
@@ -68,8 +73,8 @@
     const id = selectedId
     events = []
     if (!id) return
-    loadEvents(id)
-    eventsInterval = setInterval(() => loadEvents(id), 1500)
+    void loadEvents(id)
+    eventsInterval = setInterval(() => void loadEvents(id), 1500)
     return () => { if (eventsInterval) clearInterval(eventsInterval); eventsInterval = null }
   })
 
@@ -104,8 +109,7 @@
   }
 
   // Camera tiles: dot turns accent once a frame has loaded
-  let camOk = $state<Record<number, boolean>>({})
-  $effect(() => { selectedId; camOk = {} })
+  let camOk = $state<Partial<Record<number, boolean>>>({})
 
   // Rename
   let editing = $state(false)
@@ -120,12 +124,20 @@
     const { error } = await api.PATCH('/api/boards/{id}', { params: { path: { id } }, body: { name } }).catch(() => ({ error: true }))
     if (!error) boards = boards.map(b => b.id === id ? { ...b, name } : b)
   }
-  $effect(() => { selectedId; editing = false })
 
   // Unpair
   let confirmUnpair = $state(false)
   let unpairError = $state<string | null>(null)
-  $effect(() => { selectedId; unpairError = null })
+
+  // A different board: reset its camera tiles, rename field and unpair error
+  let lastSelected: string | null | undefined = undefined
+  $effect(() => {
+    if (selectedId === lastSelected) return
+    lastSelected = selectedId
+    camOk = {}
+    editing = false
+    unpairError = null
+  })
   async function unpair() {
     confirmUnpair = false
     if (!selected) return
@@ -216,10 +228,7 @@
            border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
            text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
     {#if busy === action}
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="2" stroke-linecap="round" aria-hidden="true" class="animate-spin">
-        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-      </svg>
+      <LoaderCircle size={12} class="animate-spin" />
     {:else}
       {@render icon()}
     {/if}
@@ -228,28 +237,16 @@
 {/snippet}
 
 {#snippet startIcon()}
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <polygon points="5 3 19 12 5 21 5 3"/>
-  </svg>
+  <Play size={12} fill="currentColor" />
 {/snippet}
 {#snippet stopIcon()}
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-    <rect x="3" y="3" width="18" height="18" rx="2"/>
-  </svg>
+  <Square size={12} fill="currentColor" />
 {/snippet}
 {#snippet resetIcon()}
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-    <path d="M3 3v5h5"/>
-  </svg>
+  <RotateCcw size={12} />
 {/snippet}
 {#snippet calibrateIcon()}
-  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-    <circle cx="12" cy="12" r="3"/>
-    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-  </svg>
+  <Sun size={12} />
 {/snippet}
 
 <Layout>
@@ -268,10 +265,7 @@
         </p>
       </div>
       <Button variant="primary" class="h-12 text-[18px]" onclick={() => { pairOpen = true }}>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-          stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
-          <path d="M12 5v14M5 12h14"/>
-        </svg>
+        <Plus size={18} strokeWidth={2.4} />
         Pair new board
       </Button>
     </header>
@@ -354,7 +348,7 @@
                   autofocus
                   onblur={saveName}
                   onkeydown={(e) => {
-                    if (e.key === 'Enter') saveName()
+                    if (e.key === 'Enter') void saveName()
                     else if (e.key === 'Escape') editing = false
                   }}
                   class="w-full box-border bg-transparent border-0 border-b border-line-3 p-0 outline-none
@@ -367,10 +361,7 @@
             <button type="button" onclick={startEdit} aria-label="Rename board"
               class="shrink-0 w-10 h-10 flex items-center justify-center rounded-[10px] border border-line-3
                      bg-transparent text-text cursor-pointer transition-colors hover:bg-surface-active">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M17 3a2.85 2.85 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/>
-              </svg>
+              <Pencil size={14} />
             </button>
           </div>
 
@@ -420,10 +411,7 @@
                     class="inline-flex items-center gap-[6px] cursor-pointer !text-text underline decoration-line-3
                            underline-offset-4 transition-colors hover:!text-accent hover:decoration-accent">
                     {bmHost(selected)}
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                      <path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-                    </svg>
+                    <ExternalLink size={12} />
                   </a>
                 {:else}—{/if}
               </dd>
@@ -458,10 +446,7 @@
               {:else}
                 <span class="flex items-center gap-[6px] text-[12px] font-medium {dotText}">
                   {#if isSpinning}
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                      stroke-width="3" stroke-linecap="round" aria-hidden="true" class="shrink-0 animate-spin">
-                      <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-                    </svg>
+                    <LoaderCircle size={9} strokeWidth={3} class="shrink-0 animate-spin" />
                   {:else}
                     <span class="w-[6px] h-[6px] rounded-full {dotBg}"></span>
                   {/if}
@@ -473,7 +458,7 @@
               class="flex-grow min-h-[200px] overflow-y-auto scrollbar-themed box-border p-4 rounded-[10px]
                      border border-line-2 bg-bg font-mono text-[13px] leading-[1.8]">
               {#each events as ev, i (i)}
-                {@const seg = ev.data?.dart?.segment}
+                {@const seg = ev.data.dart?.segment}
                 <div class="whitespace-nowrap">
                   <span class="text-text-dim">{fmtTime(ev.at)}</span>
                   <span>{EVENT_VERB[ev.kind] ?? ev.kind}</span>
@@ -528,7 +513,7 @@
   {#if toast}
     <Toast
       actionLabel="Play on it"
-      onaction={() => { selectedId = toast!.boardId; toast = null }}
+      onaction={() => { if (toast) selectedId = toast.boardId; toast = null }}
       onclose={() => { toast = null }}
     >
       <span class="text-text font-semibold">{toast.name}</span> is paired.

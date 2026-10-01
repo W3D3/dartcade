@@ -1,4 +1,4 @@
-import type { GameModule, BoardEvent, Player, Dart, DartDetectedData, ConfigFieldMeta } from '../session/types.js'
+import type { GameModule, BoardEvent, Player, Dart, ConfigFieldMeta } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
 import type { X01View } from '../session/views.js'
 
@@ -63,10 +63,10 @@ function nextTurn(s: X01State): { nextPlayer: number; round: number } {
 
 function freshLeg(cfg: X01Config, playerCount: number, firstPlayer: number): Partial<X01State> {
   return {
-    scores: Array(playerCount).fill(cfg.startScore),
-    opened: Array(playerCount).fill(cfg.inMode === 'straight'),
+    scores: Array<number>(playerCount).fill(cfg.startScore),
+    opened: Array<boolean>(playerCount).fill(cfg.inMode === 'straight'),
     bustThisVisit: false,
-    visitOpenedScores: Array(playerCount).fill(cfg.startScore),
+    visitOpenedScores: Array<number>(playerCount).fill(cfg.startScore),
     currentPlayer: firstPlayer,
     round: 1,
   }
@@ -127,7 +127,7 @@ export const configMeta: Record<keyof X01Config, ConfigFieldMeta> = {
 }
 
 /** X01 without a bull off; `x01Module` below adds it. */
-export const x01Game: GameModule<X01State, X01Config> = {
+export const x01Game: GameModule<X01State, X01Config, X01View, 'x01'> = {
   id: 'x01',
   defaultConfig: {
     startScore: 501, inMode: 'straight', outMode: 'double',
@@ -139,13 +139,13 @@ export const x01Game: GameModule<X01State, X01Config> = {
     const n = players.length
     return {
       cfg, phase: 'game',
-      scores: Array(n).fill(cfg.startScore),
-      legs: Array(n).fill(0),
-      opened: Array(n).fill(cfg.inMode === 'straight'),
+      scores: Array<number>(n).fill(cfg.startScore),
+      legs: Array<number>(n).fill(0),
+      opened: Array<boolean>(n).fill(cfg.inMode === 'straight'),
       order: players.map((_, i) => i),
       currentPlayer: 0, round: 1,
       bustThisVisit: false,
-      visitOpenedScores: Array(n).fill(cfg.startScore),
+      visitOpenedScores: Array<number>(n).fill(cfg.startScore),
       winner: null, playerCount: n,
     }
   },
@@ -161,8 +161,7 @@ export const x01Game: GameModule<X01State, X01Config> = {
       }
 
       case 'dart.detected': {
-        const data = e.data as DartDetectedData
-        const dart = data.dart as Dart
+        const dart = e.data.dart
         const cp = s.currentPlayer
 
         if (s.bustThisVisit) return { state: s }
@@ -234,7 +233,7 @@ export const x01Game: GameModule<X01State, X01Config> = {
     return { state: s }
   },
 
-  view(s: X01State, _players: Player[]): X01View {
+  view(s: X01State): X01View {
     return {
       scores: s.scores, legs: s.legs, firstTo: s.cfg.firstTo,
       currentPlayer: s.currentPlayer, round: s.round, phase: s.phase,

@@ -3,7 +3,7 @@ import { createFastify } from './fastify.js'
 import { boardsApiPlugin } from './boards.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn(async (req: any, _reply: any) => { req.userId = 'user-1' }),
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
 }))
 vi.mock('../bridge-gw/connections.js', () => ({
   bridgeConnections: {
@@ -43,7 +43,7 @@ describe('GET /api/boards', () => {
 
   it('returns boards owned by user', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Living Room', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Living Room', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
@@ -119,10 +119,10 @@ describe('DELETE /api/boards/:id', () => {
 describe('GET /api/boards - bridgeVersion', () => {
   it('reports bridge and Board Manager versions separately', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
-    vi.mocked(connections.bridgeConnections.isOnline).mockReturnValue(true)
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bridgeVersion: 'v0.4.2', bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
+    vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(true)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bridgeVersion: 'v0.4.2', bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
     expect(res.statusCode).toBe(200)
@@ -133,9 +133,9 @@ describe('GET /api/boards - bridgeVersion', () => {
 
   it('keeps the Board Manager port in bmUrl', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
     const board = JSON.parse(res.body).boards[0]
@@ -145,9 +145,9 @@ describe('GET /api/boards - bridgeVersion', () => {
 
   it('bridgeVersion is null when board is offline', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date() as any, owner_user_id: 'user-1', token_hash: 'hash' },
+      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
     ])
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue(undefined)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue(undefined)
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
     expect(JSON.parse(res.body).boards[0].bridgeVersion).toBeNull()
@@ -171,7 +171,7 @@ describe('GET /api/boards/:id/camera/:index', () => {
 
   it('returns 503 when board is offline', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue(undefined)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue(undefined)
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
     expect(res.statusCode).toBe(503)
@@ -179,7 +179,7 @@ describe('GET /api/boards/:id/camera/:index', () => {
 
   it('returns 503 when board has no bmUrl', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmUrl: null } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: null } as any)
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
     expect(res.statusCode).toBe(503)
@@ -187,7 +187,7 @@ describe('GET /api/boards/:id/camera/:index', () => {
 
   it('proxies JPEG from board manager at correct URL', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmUrl: 'http://192.168.0.109:3180' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://192.168.0.109:3180' } as any)
     const fakeJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0])
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
@@ -233,8 +233,8 @@ describe('GET /api/boards/:id/events', () => {
 
   it('returns the recent event feed', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(row)
-    const ev = { at: '2026-09-29T19:14:08Z', kind: 'takeout.started', data: {} }
-    vi.mocked(connections.bridgeConnections.recentEvents).mockReturnValue([ev])
+    const ev = { at: '2026-09-29T19:14:08Z', kind: 'takeout.started' as const, data: {} }
+    vi.mocked(connections.bridgeConnections).recentEvents.mockReturnValue([ev])
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards/board-1/events' })
     expect(res.statusCode).toBe(200)
@@ -253,7 +253,7 @@ describe('boards: spec enforcement', () => {
   const board = { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date('2026-08-12T10:00:00Z') as any, owner_user_id: 'user-1', token_hash: 'hash' }
 
   it('checks auth before the body: signed-out + invalid body is 401, not 400', async () => {
-    vi.mocked(middleware.requireAuth).mockImplementationOnce(async (_req: any, reply: any) => {
+    vi.mocked(middleware.requireAuth).mockImplementationOnce((_req: any, reply: any) => {
       reply.code(401).send({ error: 'unauthorized' })
     })
     const res = await makeApp().inject({ method: 'POST', url: '/api/boards', payload: { bogus: true } })
@@ -267,7 +267,7 @@ describe('boards: spec enforcement', () => {
 
   it('serves camera frames with a cache-busting query', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(board)
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       new Response(new Uint8Array([0xff, 0xd8]), { status: 200, headers: { 'content-type': 'image/jpeg' } })))
     const res = await makeApp().inject({ method: 'GET', url: '/api/boards/board-1/camera/0?t=1790700000000' })
@@ -282,7 +282,7 @@ describe('boards: spec enforcement', () => {
 
   it('reports a Board Manager rejection as 502', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(board)
-    vi.mocked(connections.bridgeConnections.get).mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 500 })))
     const res = await makeApp().inject({ method: 'POST', url: '/api/boards/board-1/reset' })
     expect(res.statusCode).toBe(502)

@@ -8,7 +8,7 @@
     invalid = false,
     onfocus,
     oninput,
-    'aria-label': ariaLabel = 'Code',
+    label = 'Code',
   }: {
     value?: string
     length?: number
@@ -16,7 +16,8 @@
     invalid?: boolean
     onfocus?: () => void
     oninput?: (value: string) => void
-    'aria-label'?: string
+    /** Accessible name of the code field. */
+    label?: string
   } = $props()
 
   let focused = $state(false)
@@ -24,8 +25,8 @@
 
   const activeIndex = $derived(Math.min(value.length, length - 1))
 
-  function onInput(e: Event) {
-    value = normalizePairingCode((e.target as HTMLInputElement).value)
+  function onInput(e: Event & { currentTarget: HTMLInputElement }) {
+    value = normalizePairingCode(e.currentTarget.value)
     oninput?.(value)
   }
 
@@ -76,7 +77,7 @@
     autocapitalize="characters"
     autocomplete="off"
     spellcheck="false"
-    aria-label={ariaLabel}
+    aria-label={label}
     class="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
   />
 </div>

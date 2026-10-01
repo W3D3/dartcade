@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
   import { onMount } from 'svelte'
   import { api, runBoardAction, type Board, type BoardAction } from '$lib/api'
   import type { Snapshot } from '$lib/api'
@@ -95,23 +96,12 @@
              ? 'bg-surface-active border-accent/50 text-text'
              : 'bg-transparent border-line-2 text-text-muted hover:border-line-3 hover:text-text'}">
     {#if isSpinning}
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-        stroke-width="3" stroke-linecap="round" aria-hidden="true"
-        class="shrink-0 animate-spin {dotText}">
-        <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-      </svg>
+      <LoaderCircle size={10} strokeWidth={3} class="shrink-0 animate-spin {dotText}" />
     {:else}
       <span class="w-[7px] h-[7px] rounded-full shrink-0 {dotBg}"></span>
     {/if}
     <span class="font-medium">{board?.name ?? 'Board'}</span>
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-      stroke-width="2" stroke-linecap="round" aria-hidden="true" class="opacity-50">
-      <line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/>
-      <line x1="4" y1="18" x2="20" y2="18"/>
-      <circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
-      <circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
-      <circle cx="9" cy="18" r="2" fill="currentColor" stroke="none"/>
-    </svg>
+    <SlidersHorizontal size={13} class="opacity-50" />
   </button>
 
   {#if open}
@@ -124,11 +114,7 @@
       <div class="px-4 py-3 border-b border-line-2 flex items-center justify-between gap-3">
         <div class="flex items-center gap-[10px] min-w-0">
           {#if isSpinning}
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="3" stroke-linecap="round" aria-hidden="true"
-              class="shrink-0 animate-spin {dotText}">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-            </svg>
+            <LoaderCircle size={11} strokeWidth={3} class="shrink-0 animate-spin {dotText}" />
           {:else}
             <span class="w-[8px] h-[8px] rounded-full shrink-0 {dotBg}"></span>
           {/if}
@@ -150,14 +136,9 @@
                    border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
                    text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
             {#if busy === 'start'}
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" aria-hidden="true" class="animate-spin">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-              </svg>
+              <LoaderCircle size={13} class="animate-spin" />
             {:else}
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <polygon points="5 3 19 12 5 21 5 3"/>
-              </svg>
+              <Play size={13} fill="currentColor" />
             {/if}
             Start
           </button>
@@ -169,14 +150,9 @@
                    border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
                    text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
             {#if busy === 'stop'}
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                stroke-width="2" stroke-linecap="round" aria-hidden="true" class="animate-spin">
-                <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-              </svg>
+              <LoaderCircle size={13} class="animate-spin" />
             {:else}
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                <rect x="3" y="3" width="18" height="18" rx="2"/>
-              </svg>
+              <Square size={13} fill="currentColor" />
             {/if}
             Stop
           </button>
@@ -190,16 +166,9 @@
                  border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
                  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
           {#if busy === 'reset'}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" aria-hidden="true" class="animate-spin">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-            </svg>
+            <LoaderCircle size={13} class="animate-spin" />
           {:else}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
-              <path d="M3 3v5h5"/>
-            </svg>
+            <RotateCcw size={13} />
           {/if}
           Reset
         </button>
@@ -212,16 +181,9 @@
                  border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
                  text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
           {#if busy === 'calibrate'}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" aria-hidden="true" class="animate-spin">
-              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
-            </svg>
+            <LoaderCircle size={13} class="animate-spin" />
           {:else}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-              stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <circle cx="12" cy="12" r="3"/>
-              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
-            </svg>
+            <Sun size={13} />
           {/if}
           Calibrate
         </button>

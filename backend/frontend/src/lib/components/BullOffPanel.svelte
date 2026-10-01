@@ -24,7 +24,7 @@
   const current = $derived(bullOff.currentPlayer)
   const currentThrow = $derived(bullOff.throws[current] ?? null)
   const name = (i: number) => players[i]?.name ?? `Player ${i + 1}`
-  const initial = (i: number) => name(i).trim()[0]?.toUpperCase() ?? '?'
+  const initial = (i: number) => name(i).trim().charAt(0).toUpperCase() || '?'
 
   // Rows: this round's throwing order, or the ranking once decided
   const rows = $derived(result && !result.rethrow ? result.order : bullOff.sequence)
@@ -32,10 +32,10 @@
   // Closest dart so far — the one to beat
   const best = $derived.by(() => {
     let b: { mm: number; player: number } | null = null
-    bullOff.throws.forEach((t, i) => {
+    for (const [i, t] of bullOff.throws.entries()) {
       if (t?.mm != null && (!b || t.mm < b.mm)) b = { mm: t.mm, player: i }
-    })
-    return b as { mm: number; player: number } | null
+    }
+    return b
   })
 
   // Zoomed in: fit every dart so far
@@ -51,7 +51,12 @@
   const autoZoomIn = $derived(!!result || !!currentThrow)
   let zoomOverride = $state<boolean | null>(null)
   const turnKey = $derived(`${current}:${!!currentThrow}:${!!result}`)
-  $effect(() => { turnKey; zoomOverride = null })
+  let lastTurn = ''
+  $effect(() => {
+    if (turnKey === lastTurn) return
+    lastTurn = turnKey
+    zoomOverride = null
+  })
   const zoomedIn = $derived(zoomOverride ?? autoZoomIn)
   const canZoom = $derived(fitMm < FULL_VIEW_MM)
   const viewMm = $derived(zoomedIn ? fitMm : FULL_VIEW_MM)
@@ -103,12 +108,12 @@
   // Two players face off either side of the board; more get a ranked list
   const duel = $derived(players.length === 2)
   const ranked = $derived(!!result && !result.rethrow)
-  const rank = (p: number) => ranked ? result!.order.indexOf(p) : -1
+  const rank = (p: number) => (result && !result.rethrow ? result.order.indexOf(p) : -1)
 </script>
 
 {#snippet marks(z: number)}
   <!-- 10 mm distance rings -->
-  {#each rings as mm}
+  {#each rings as mm (mm)}
     <circle r={mm / BOARD_MM} fill="none" stroke="#efeee6" stroke-opacity="0.22"
       stroke-width={1.2 / z / 170} stroke-dasharray="{4 / z / 170} {4 / z / 170}" />
     {#if mm % ringLabelStep === 0}
@@ -124,7 +129,7 @@
   {/if}
 
   <!-- Darts with their distance -->
-  {#each bullOff.throws as t, i}
+  {#each bullOff.throws as t, i (i)}
     {#if t && t.mm !== null}
       {@const p = markerPos(t, i)}
       {@const lead = best?.player === i}

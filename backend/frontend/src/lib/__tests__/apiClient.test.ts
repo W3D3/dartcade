@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createApi } from '../api/client'
 
 const json = (status: number, body: unknown) =>
-  async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+  () => Promise.resolve(new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }))
 
 describe('api client', () => {
   it('returns typed data on success', async () => {

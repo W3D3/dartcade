@@ -37,3 +37,15 @@ run = "cd backend && npm run gen:types"
 [tasks."gen:api"]
 description = "Regenerate API types/clients from schema/ (HTTP spec, game WebSocket, Go bridge client)"
 run = "npm run gen:api"
+
+[tasks."lint:frontend"]
+description = "Lint the frontend"
+run = "cd backend/frontend && npm run lint"
+
+[tasks."lint:backend"]
+description = "Lint the backend"
+run = "cd backend && npm run lint"
+
+[tasks.lint]
+description = "Lint everything"
+depends = ["lint:frontend", "lint:backend"]

@@ -1,7 +1,8 @@
 <script lang="ts">
   // Frame of a player panel (1–2 players): avatar, name, optional aside (leg pips), pill.
   import type { Snippet } from 'svelte'
-  import PlayerPill, { type PillKind } from './PlayerPill.svelte'
+  import PlayerPill from './PlayerPill.svelte'
+  import type { PillKind } from './pills.js'
 
   let { name, active, solo = false, pill, pillInRow = false, aside, children }: {
     name: string
@@ -14,7 +15,7 @@
     children: Snippet
   } = $props()
 
-  const initial = $derived(name.trim()[0]?.toUpperCase() ?? '?')
+  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
 
 <section aria-label="{name}, {active ? 'throwing' : 'waiting'}"

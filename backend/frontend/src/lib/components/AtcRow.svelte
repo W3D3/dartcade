@@ -1,10 +1,11 @@
 <script lang="ts">
   import AtcProgress from './AtcProgress.svelte'
-  import PlayerPill, { type PillKind } from './PlayerPill.svelte'
+  import PlayerPill from './PlayerPill.svelte'
+  import type { PillKind } from './pills.js'
   import type { AtcPlayerView } from '$lib/playerStats.js'
 
   let { name, p, active, pill }: { name: string; p: AtcPlayerView; active: boolean; pill: PillKind | null } = $props()
-  const initial = $derived(name.trim()[0]?.toUpperCase() ?? '?')
+  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
 
 <section aria-label="{name}, {active ? 'throwing' : 'waiting'}"

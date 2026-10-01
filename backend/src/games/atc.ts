@@ -1,5 +1,5 @@
 import type { GameModule, BoardEvent, Player, Dart } from '../session/types.js'
-import type { DartDetectedData, ConfigFieldMeta } from '../session/types.js'
+import type { ConfigFieldMeta } from '../session/types.js'
 import type { AtcView } from '../session/views.js'
 
 export type ATCConfig = {
@@ -127,7 +127,7 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
   },
 }
 
-export const atcModule: GameModule<ATCState, ATCConfig> = {
+export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
   id: 'atc',
   defaultConfig: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
   configMeta,
@@ -156,10 +156,10 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
         return { state: { ...s, allHitThisVisit: true, currentVisitHits: [] } }
 
       case 'dart.detected': {
-        const data = e.data as DartDetectedData
+        const data = e.data
         const prev = s.targets[s.currentPlayer]
-        const steps = s.cfg.multiplierAdvances ? (data.dart as Dart).segment.multiplier : 1
-        const hit = hitsTarget(prev, data.dart as Dart)
+        const steps = s.cfg.multiplierAdvances ? (data.dart).segment.multiplier : 1
+        const hit = hitsTarget(prev, data.dart)
         const currentVisitHits = [...s.currentVisitHits, hit]
         if (!hit) return { state: { ...s, allHitThisVisit: false, currentVisitHits } }
         const next = advanceInSequence(prev, steps, s.sequence)
@@ -191,7 +191,7 @@ export const atcModule: GameModule<ATCState, ATCConfig> = {
     return { state: s }
   },
 
-  view(s: ATCState, _players: Player[]): AtcView {
+  view(s: ATCState): AtcView {
     const hitCounts = s.targets.map(t => {
       const idx = s.sequence.indexOf(t)
       return idx === -1 ? s.sequence.length : idx

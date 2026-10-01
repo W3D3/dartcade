@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { emptyHistory, trackVisits, threeDartAvg, type VisitHistory } from '../visitHistory.js'
 
 type G = Record<string, unknown>
-const dart = (score: number) => ({ segment: { name: 'S' + score }, score })
+const dart = (score: number) => ({ segment: { name: `S${score}` }, score })
 const x01 = (o: { scores: number[]; totalVisits: number[]; legs?: number[]; cp: number; darts?: number[]; bust?: boolean }): G => ({
   scores: o.scores, totalVisits: o.totalVisits, legs: o.legs ?? o.scores.map(() => 0), currentPlayer: o.cp,
-  currentVisitDarts: (o.darts ?? []).map(dart), bustThisVisit: o.bust ?? false,
+  currentVisitDarts: (o.darts ?? []).map(dart), bustThisVisit: o.bust ?? false, totalDarts: o.scores.map(() => 0),
 })
-const run = (games: G[]) => games.reduce<VisitHistory>((h, g) => trackVisits(h, g), emptyHistory())
+const run = (games: G[]) => games.reduce<VisitHistory>((h, g) => trackVisits(h, g as any), emptyHistory())
 
 describe('trackVisits (X01)', () => {
   it('records scored and left when a visit is taken out', () => {
@@ -110,7 +110,7 @@ describe('trackVisits after a gap (reconnect)', () => {
 describe('trackVisits (ATC)', () => {
   it('records targets advanced per visit', () => {
     const atc = (hitCounts: number[], totalVisits: number[], cp: number, darts: number[] = []): G =>
-      ({ hitCounts, totalVisits, currentPlayer: cp, currentVisitDarts: darts.map(dart) })
+      ({ hitCounts, totalVisits, currentPlayer: cp, currentVisitDarts: darts.map(dart), totalDarts: hitCounts.map(() => 0) })
     const h = run([
       atc([4, 2], [3, 3], 0),
       atc([6, 2], [3, 3], 0, [1, 1, 0]),

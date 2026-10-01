@@ -28,6 +28,8 @@ jobs:
         working-directory: backend
       - run: npm run typecheck
         working-directory: backend
+      - run: npm run lint
+        working-directory: backend
       - run: npm test
         working-directory: backend
         env:
@@ -41,6 +43,8 @@ jobs:
       - run: npm ci
         working-directory: backend/frontend
       - run: npm run typecheck
+        working-directory: backend/frontend
+      - run: npm run lint
         working-directory: backend/frontend
       - run: npm test
         working-directory: backend/frontend

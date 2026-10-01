@@ -1,10 +1,11 @@
 <script lang="ts">
   import LegPips from './LegPips.svelte'
-  import PlayerPill, { type PillKind } from './PlayerPill.svelte'
+  import PlayerPill from './PlayerPill.svelte'
+  import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
 
   let { name, p, active, pill }: { name: string; p: X01PlayerView; active: boolean; pill: PillKind | null } = $props()
-  const initial = $derived(name.trim()[0]?.toUpperCase() ?? '?')
+  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
 
 <section aria-label="{name}, {active ? 'throwing' : 'waiting'}"
@@ -38,7 +39,7 @@
     {:else}
       <span></span>
     {/if}
-    {#each [{ label: 'Last', value: p.last }, { label: 'Avg', value: p.avg }] as s}
+    {#each [{ label: 'Last', value: p.last }, { label: 'Avg', value: p.avg }] as s (s.label)}
       <span class="flex flex-col gap-1">
         <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
         <span class="font-display font-bold leading-none tabular-nums {active ? 'text-[34px] text-text' : 'text-[24px] text-ink-2'}">{s.value}</span>

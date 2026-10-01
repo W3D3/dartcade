@@ -37,7 +37,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       email: 'test@example.com',
       emailVerified: false,
       image: null,
-    } as any).execute()
+    }).execute()
   })
 
   afterAll(async () => {

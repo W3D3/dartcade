@@ -28,22 +28,34 @@ export const defaultSettings: GameSettings = {
 
 export const SETTINGS_KEY = 'dartcade_game_settings'
 
+/** Keys of the settings that are on/off switches. */
+export type BooleanSettingKey = { [K in keyof GameSettings]: GameSettings[K] extends boolean ? K : never }[keyof GameSettings]
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
+const bool = (v: unknown, d: boolean) => (typeof v === 'boolean' ? v : d)
+
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */
 export function loadSettings(storage: Pick<Storage, 'getItem'> | null): GameSettings {
-  const out: GameSettings = { ...defaultSettings }
   let raw: unknown
   try {
     raw = JSON.parse(storage?.getItem(SETTINGS_KEY) ?? 'null')
   } catch {
-    return out
+    return { ...defaultSettings }
   }
-  if (!raw || typeof raw !== 'object') return out
-  const stored = raw as Record<string, unknown>
-  for (const key of Object.keys(defaultSettings) as (keyof GameSettings)[]) {
-    if (typeof stored[key] === typeof defaultSettings[key]) (out as unknown as Record<string, unknown>)[key] = stored[key]
+  const s = isRecord(raw) ? raw : {}
+  const d = defaultSettings
+  const volume = typeof s.volume === 'number' && Number.isFinite(s.volume) ? Math.min(1, Math.max(0, s.volume)) : d.volume
+  return {
+    showMarkers: bool(s.showMarkers, d.showMarkers),
+    checkoutSuggestions: bool(s.checkoutSuggestions, d.checkoutSuggestions),
+    visitSum: bool(s.visitSum, d.visitSum),
+    chalkboard: bool(s.chalkboard, d.chalkboard),
+    volume,
+    soundHit: bool(s.soundHit, d.soundHit),
+    soundMiss: bool(s.soundMiss, d.soundMiss),
+    soundSwitch: bool(s.soundSwitch, d.soundSwitch),
+    soundBust: bool(s.soundBust, d.soundBust),
   }
-  out.volume = Number.isFinite(out.volume) ? Math.min(1, Math.max(0, out.volume)) : defaultSettings.volume
-  return out
 }
 
 export function saveSettings(storage: Pick<Storage, 'setItem'> | null, s: GameSettings): void {

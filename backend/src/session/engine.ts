@@ -2,25 +2,29 @@ import { ulid } from 'ulid'
 import { games } from '../games/index.js'
 import { refoldVisit } from './refold.js'
 import { manualDart } from './manualDart.js'
-import type { GameModule, Session, Player, BoardEvent, UserAction, Snapshot, DartDetectedData } from './types.js'
+import type { GameConfig, Session, Player, UserAction, Snapshot } from './types.js'
+import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
+import { isArrayOf, isRecord, isString } from '../guards.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
 
 type PushFn = (sessionId: string) => void
+/** Reports bridge data the engine had to ignore (message, details). */
+type WarnFn = (message: string, details: unknown) => void
 
 export interface EngineStore {
   insertSession(data: { id: string; owner_user_id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown }): Promise<void>
-  getActiveSessions(): Promise<Array<{ id: string; owner_user_id: string | null; board_db_id: string | null; game_id: string; config: unknown; players: unknown; created_at: unknown }>>
-  getBridgeEventsForBoard(boardDbId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: unknown }>>
+  getActiveSessions(): Promise<Array<{ id: string; owner_user_id: string | null; board_db_id: string | null; game_id: string; config: unknown; players: unknown; created_at: Date }>>
+  getBridgeEventsForBoard(boardDbId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: Date }>>
   setSessionFinished(id: string): Promise<void>
 }
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
   return {
     insertSession: (d) => queries.insertGameSession(db, d),
-    getActiveSessions: () => queries.getActiveGameSessions(db) as any,
-    getBridgeEventsForBoard: (boardDbId, since) => queries.getBridgeEventsForBoardDbId(db, boardDbId, since) as any,
+    getActiveSessions: () => queries.getActiveGameSessions(db),
+    getBridgeEventsForBoard: (boardDbId, since) => queries.getBridgeEventsForBoardDbId(db, boardDbId, since),
     setSessionFinished: (id) => queries.setGameSessionFinished(db, id),
   }
 }
@@ -32,7 +36,16 @@ export class ActiveSessionError extends Error {
 
 // Darts and visits of a bull off (see withBullOff) don't count towards game stats
 function inBullOff(session: Session, state: unknown): boolean {
-  return (session.module.view(state, session.players) as { phase?: unknown }).phase === 'bulloff'
+  const view = session.module.view(state, session.players)
+  return 'phase' in view && view.phase === 'bulloff'
+}
+
+function hasWinner(session: Session, state: unknown): boolean {
+  return session.module.view(state, session.players).winner !== null
+}
+
+function isPlayer(v: unknown): v is Player {
+  return isRecord(v) && isString(v.name)
 }
 
 export class SessionEngine {
@@ -43,13 +56,14 @@ export class SessionEngine {
   constructor(
     private readonly store: EngineStore,
     private readonly push: PushFn,
+    private readonly warn: WarnFn = () => undefined,
   ) {}
 
   async create(
     ownerUserId: string,
     boardId: string | null,
     gameId: string,
-    config: unknown,
+    config: GameConfig,
     players: Player[],
   ): Promise<{ sessionId: string }> {
     const mod = games[gameId]
@@ -57,21 +71,21 @@ export class SessionEngine {
     const running = this.byOwner.get(ownerUserId)
     if (running) throw new ActiveSessionError('active session already exists for user', running.id)
     if (boardId && this.byBoard.has(boardId)) throw new Error(`active session already exists for board ${boardId}`)
-    const invalid = (mod as GameModule<unknown, unknown>).validate?.(config, players)
+    const invalid = mod.validate?.(config, players)
     if (invalid) throw new Error(`invalid config: ${invalid}`)
 
     const sessionId = ulid()
-    const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
+    const initialState = mod.init(config, players)
     const session: Session = {
       id: sessionId, ownerUserId, boardId, players,
-      module: mod as GameModule<unknown, unknown>,
+      module: mod,
       committedState: initialState,
       openVisitEvents: [],
       currentState: initialState,
       status: 'active',
       createdAt: new Date(),
-      totalDarts: new Array(players.length).fill(0),
-      totalVisits: new Array(players.length).fill(0),
+      totalDarts: Array<number>(players.length).fill(0),
+      totalVisits: Array<number>(players.length).fill(0),
       bmStatus: null,
     }
     await this.store.insertSession({ id: sessionId, owner_user_id: ownerUserId, board_db_id: boardId, game_id: gameId, config, players })
@@ -81,21 +95,26 @@ export class SessionEngine {
     return { sessionId }
   }
 
-  async onBridgeEvent(boardId: string, kind: string, data: unknown, _recvWall: Date): Promise<void> {
+  async onBridgeEvent(boardId: string, kind: string, data: unknown): Promise<void> {
     const session = this.byBoard.get(boardId)
     if (!session) return
 
-    const event: BoardEvent = { kind, data } as BoardEvent
+    // Kinds the games don't use (and malformed dart data) change nothing but still push
+    const event = parseBoardEvent(kind, data)
+    // A dart the games can't read would otherwise just not count, with no trace
+    if (!event && (kind === 'dart.detected' || kind === 'dart.corrected')) {
+      this.warn(`ignored ${kind} event: data does not match the bridge schema`, { boardId, data })
+    }
 
-    switch (kind) {
+    switch (event?.kind) {
       case 'visit.opened':
         session.openVisitEvents.push(event)
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         break
 
       case 'dart.detected': {
-        const view = session.module.view(session.currentState, session.players) as any
-        if (view.visitLocked) break
+        const view = session.module.view(session.currentState, session.players)
+        if ('visitLocked' in view && view.visitLocked) break
         const thrower = session.module.getCurrentPlayer(session.currentState)
         if (!inBullOff(session, session.currentState)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
         session.openVisitEvents.push(event)
@@ -104,16 +123,14 @@ export class SessionEngine {
       }
 
       case 'dart.corrected': {
-        const d = data as any
-        const idx = session.openVisitEvents.findIndex(
-          e => e.kind === 'dart.detected' && (e.data as DartDetectedData).index === d.index,
-        )
-        if (idx !== -1) {
-          const orig = session.openVisitEvents[idx].data as DartDetectedData
+        const d = event.data
+        const idx = session.openVisitEvents.findIndex(e => e.kind === 'dart.detected' && e.data.index === d.index)
+        const orig = session.openVisitEvents[idx]
+        if (idx !== -1 && orig.kind === 'dart.detected') {
           session.openVisitEvents[idx] = {
             kind: 'dart.detected',
-            data: { ...orig, dart: d.dart },
-          } as BoardEvent
+            data: { ...orig.data, dart: d.dart },
+          }
         }
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         break
@@ -127,8 +144,7 @@ export class SessionEngine {
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
         session.committedState = session.currentState
         session.openVisitEvents = []
-        const view = session.module.view(session.currentState, session.players) as any
-        if (view.winner !== null && view.winner !== undefined) {
+        if (hasWinner(session, session.currentState)) {
           session.status = 'finished'
           await this.store.setSessionFinished(session.id)
           this.release(session)
@@ -136,15 +152,9 @@ export class SessionEngine {
         break
       }
 
-      case 'board.status': {
-        const d = data as { status?: string; running?: boolean; event?: string }
-        session.bmStatus = {
-          status:  d.status  ?? '',
-          running: d.running ?? false,
-          event:   d.event   ?? '',
-        }
+      case 'board.status':
+        session.bmStatus = readBoardStatus(event.data)
         break
-      }
 
       case 'board.resync': {
         const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
@@ -187,32 +197,33 @@ export class SessionEngine {
       }
     } else if (action.type === 'correct_dart') {
       const dartEvents = session.openVisitEvents.filter(e => e.kind === 'dart.detected')
-      const target = dartEvents[action.visitIndex]
+      const target = dartEvents.find((_, i) => i === action.visitIndex)
       if (target) {
-        const orig = target.data as DartDetectedData
+        const orig = target.data
         // The camera position no longer matches the corrected segment, so drop it,
         // unless the dart was moved to a new spot on the board
-        const { coords: _c, polar: _p, ...rest } = orig.dart
+        const rest = { ...orig.dart }
+        delete rest.coords
+        delete rest.polar
         const newDart = { ...rest, ...manualDart(action.segment, action.coords) }
         const idx = session.openVisitEvents.indexOf(target)
         session.openVisitEvents[idx] = {
           kind: 'dart.detected',
           data: { ...orig, dart: newDart },
-        } as BoardEvent
+        }
       }
     } else if (action.type === 'takeout') {
       // An empty turn (nothing thrown or nothing detected) counts as three misses
-      const current = session.module.view(session.currentState, session.players) as { winner?: number | null }
       if (session.openVisitEvents.length === 0 && !inBullOff(session, session.currentState)
-          && (current.winner === null || current.winner === undefined)) {
+          && !hasWinner(session, session.currentState)) {
         const thrower = session.module.getCurrentPlayer(session.currentState)
         const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
         session.openVisitEvents = [
-          { kind: 'visit.opened', data: { visit_id: 'manual' } as any },
+          { kind: 'visit.opened', data: { visit_id: 'manual' } },
           ...[0, 1, 2].map(index => ({
-            kind: 'dart.detected',
-            data: { visit_id: 'manual', index, dart: manualDart({ ...miss }), source_seq: 0 } as any,
-          } as BoardEvent)),
+            kind: 'dart.detected' as const,
+            data: { visit_id: 'manual', index, dart: manualDart({ ...miss }), source_seq: 0 },
+          })),
         ]
         session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 3
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
@@ -222,13 +233,12 @@ export class SessionEngine {
         if (!inBullOff(session, session.currentState)) session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
         const finalState = session.module.onBoardEvent(
           session.currentState,
-          { kind: 'takeout.finished', data: {} as any },
+          { kind: 'takeout.finished', data: {} },
         ).state
         session.committedState = finalState
         session.currentState = finalState
         session.openVisitEvents = []
-        const view = session.module.view(finalState, session.players) as any
-        if (view.winner !== null && view.winner !== undefined) {
+        if (hasWinner(session, finalState)) {
           session.status = 'finished'
           await this.store.setSessionFinished(session.id)
           this.release(session)
@@ -238,10 +248,10 @@ export class SessionEngine {
       const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
       if (dartCount >= 3) return
       // A finished visit (bust, checkout, win) takes no more darts
-      const now = session.module.view(session.currentState, session.players) as { visitLocked?: boolean; winner?: number | null }
-      if (now.visitLocked === true || (now.winner !== null && now.winner !== undefined)) return
+      const now = session.module.view(session.currentState, session.players)
+      if (('visitLocked' in now && now.visitLocked) || now.winner !== null) return
       if (session.openVisitEvents.length === 0) {
-        session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } as any })
+        session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } })
       }
       // Use the state after the (possibly new) visit.opened to find the thrower
       const opened = refoldVisit(session.module, session.committedState, session.openVisitEvents)
@@ -249,7 +259,7 @@ export class SessionEngine {
       if (!inBullOff(session, opened)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
       session.openVisitEvents.push({
         kind: 'dart.detected',
-        data: { visit_id: 'manual', index: dartCount, dart: manualDart(action.segment, action.coords), source_seq: 0 } as any,
+        data: { visit_id: 'manual', index: dartCount, dart: manualDart(action.segment, action.coords), source_seq: 0 },
       })
     } else {
       // Anything else is the game module's own action (e.g. the bull off's
@@ -276,19 +286,23 @@ export class SessionEngine {
         continue
       }
       const boardId = row.board_db_id
-      const players = row.players as Player[]
-      const config = row.config
-      const initialState = (mod as GameModule<unknown, unknown>).init(config as any, players)
+      const { players, config } = row
+      // Stored by create(); anything else can't be restored either
+      if (!isArrayOf(players, isPlayer) || !isRecord(config)) {
+        await this.store.setSessionFinished(row.id)
+        continue
+      }
+      const initialState = mod.init(config, players)
       const session: Session = {
         id: row.id, ownerUserId: row.owner_user_id, boardId, players,
-        module: mod as GameModule<unknown, unknown>,
+        module: mod,
         committedState: initialState,
         openVisitEvents: [],
         currentState: initialState,
         status: 'active',
-        createdAt: (row.created_at as unknown as Date) ?? new Date(),
-        totalDarts: new Array(players.length).fill(0),
-        totalVisits: new Array(players.length).fill(0),
+        createdAt: row.created_at,
+        totalDarts: Array<number>(players.length).fill(0),
+        totalVisits: Array<number>(players.length).fill(0),
         bmStatus: null,
       }
       this.byBoard.set(boardId, session)
@@ -297,7 +311,7 @@ export class SessionEngine {
 
       const events = await this.store.getBridgeEventsForBoard(boardId, session.createdAt)
       for (const ev of events) {
-        await this.onBridgeEvent(boardId, ev.kind, ev.data, ev.recv_wall as unknown as Date)
+        await this.onBridgeEvent(boardId, ev.kind, ev.data)
       }
     }
   }
@@ -305,23 +319,29 @@ export class SessionEngine {
   getSnapshot(sessionId: string): Snapshot | undefined {
     const session = this.byId.get(sessionId)
     if (!session) return undefined
-    const currentVisitDarts = session.openVisitEvents
-      .filter(e => e.kind === 'dart.detected')
-      .map(e => (e.data as DartDetectedData).dart)
-    return {
-      type: 'snapshot',
+    const currentVisitDarts = session.openVisitEvents.flatMap(e => e.kind === 'dart.detected' ? [e.data.dart] : [])
+    const engineFields = { currentVisitDarts, totalDarts: session.totalDarts, totalVisits: session.totalVisits }
+    const common = {
+      type: 'snapshot' as const,
       sessionId: session.id,
-      gameId: session.module.id,
       boardId: session.boardId,
       players: session.players,
-      game: {
-        ...session.module.view(session.currentState, session.players),
-        currentVisitDarts,
-        totalDarts: session.totalDarts,
-        totalVisits: session.totalVisits,
-      },
+    }
+    // The module's id tells which view (and snapshot shape) it produces; the shape per
+    // game is also checked by snapshot.contract.test.ts and checkSnapshot()
+    const mod = session.module
+    if (mod.id === 'x01') {
+      return {
+        ...common, gameId: mod.id,
+        game: { ...mod.view(session.currentState, session.players), ...engineFields },
+        bmStatus: session.bmStatus,
+      }
+    }
+    return {
+      ...common, gameId: mod.id,
+      game: { ...mod.view(session.currentState, session.players), ...engineFields },
       bmStatus: session.bmStatus,
-    } as Snapshot   // shape per game is enforced by snapshot.contract.test.ts and checkSnapshot()
+    }
   }
 
   getSession(sessionId: string): Session | undefined {

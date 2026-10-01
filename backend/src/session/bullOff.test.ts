@@ -9,7 +9,7 @@ import type { Dart } from './types.js'
 const at = (mm: number | null): BullOffThrow => ({ mm, segment: '', thetaDeg: null, estimated: false })
 
 function dart(overrides: Partial<Dart> = {}): Dart {
-  return { segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 }, score: 25, ...overrides } as Dart
+  return { segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 }, score: 25, ...overrides }
 }
 
 describe('initBullOff', () => {
@@ -69,7 +69,7 @@ describe('turns', () => {
   })
 
   it('skip counts the current player as off the board and moves on', () => {
-    let s = skipBullOffThrow(initBullOff({ mode: 'wdc', playerCount: 2 }))
+    const s = skipBullOffThrow(initBullOff({ mode: 'wdc', playerCount: 2 }))
     expect(s.throws[0]?.mm).toBeNull()
     expect(s.currentPlayer).toBe(1)
   })

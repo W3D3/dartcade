@@ -1,16 +1,15 @@
 import { describe, it, expect, vi } from 'vitest'
 import { Ajv } from 'ajv'
-import addFormatsDefault from 'ajv-formats'
-import type { FormatsPlugin } from 'ajv-formats'
+import addFormatsModule from 'ajv-formats'
 import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
 import { SessionEngine, type EngineStore } from './engine.js'
 import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
 
-// ajv-formats has only a default export; under this project's NodeNext module resolution,
-// TypeScript resolves `import addFormats from 'ajv-formats'` to the module namespace (not
-// callable) rather than its default export, so we re-type it explicitly from the import type.
-const addFormats = addFormatsDefault as unknown as FormatsPlugin
+// ajv-formats is CommonJS: under NodeNext, TypeScript types its default import as the
+// module object, whose `default` is the plugin (at runtime module.exports.default is the
+// plugin itself too).
+const addFormats = addFormatsModule.default
 
 const ajv = new Ajv({ strict: false, allErrors: true })
 addFormats(ajv)
@@ -30,7 +29,7 @@ const dart = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
   dart: { segment: { name: 'S20', number: 20, bed: 'SingleInner', multiplier: 1 }, score: 20, polar: { r, theta_deg: 90 } } })
 
 async function play(e: SessionEngine, ...events: [string, unknown][]) {
-  for (const [kind, data] of events) await e.onBridgeEvent('board-1', kind, data, new Date())
+  for (const [kind, data] of events) await e.onBridgeEvent('board-1', kind, data)
 }
 
 function expectValid(snap: unknown) {

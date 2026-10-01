@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { ChevronLeft, X } from '@lucide/svelte'
   // The three dart slots; tapping a thrown dart opens the correction popover below them.
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
   import type { Slot } from '$lib/dartSlots.js'
@@ -49,7 +50,7 @@
   const slotLabel = 'font-display font-bold text-[min(66px,7.5vh)] leading-[0.9]'
 </script>
 
-<svelte:window onkeydown={e => { if (e.key === 'Escape' && openDart !== null) close() }} />
+<svelte:window onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape' && openDart !== null) close() }} />
 
 <div class="flex flex-col gap-2 min-w-0">
   <div bind:this={slotRow} class="grid grid-cols-3 gap-[10px]">
@@ -91,8 +92,7 @@
         {#if mode === 'full'}
           <button type="button" onclick={() => mode = 'quick'} aria-label="Back to nearby segments"
             class="w-9 h-9 -ml-2 shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-              stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>
+            <ChevronLeft size={16} />
           </button>
         {/if}
         <span class="text-[14px] font-semibold whitespace-nowrap">Correct dart {openDart + 1}</span>
@@ -101,14 +101,13 @@
         </span>
         <button type="button" onclick={close} aria-label="Close"
           class="w-9 h-9 -mr-2 ml-auto shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
-            stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          <X size={16} />
         </button>
       </div>
 
       {#if mode === 'quick'}
         <div class="grid gap-[6px]" style:grid-template-columns="repeat({quickPicks.length + 1}, minmax(0, 1fr))">
-          {#each quickPicks as label}
+          {#each quickPicks as label (label)}
             <button type="button" onclick={() => pick(label)}
               class="h-11 flex flex-col items-center justify-center bg-surface-key border border-line-key rounded-[9px] text-text cursor-pointer">
               <span class="font-display font-bold text-[18px] leading-none">{label}</span>
@@ -121,14 +120,14 @@
         </div>
       {:else}
         <div class="grid grid-cols-3 gap-1 p-1 bg-bg rounded-[9px]">
-          {#each (['S', 'D', 'T'] as const) as m}
+          {#each (['S', 'D', 'T'] as const) as m (m)}
             <button type="button" onclick={() => mult = m} aria-pressed={mult === m}
               class="h-9 border-0 rounded-[6px] text-[14px] cursor-pointer
                      {mult === m ? 'bg-accent text-accent-fg font-bold' : 'bg-transparent text-ink-2'}">{multNames[m]}</button>
           {/each}
         </div>
         <div class="grid grid-cols-10 gap-1">
-          {#each nums as n}
+          {#each nums as n (n)}
             <button type="button" onclick={() => pick(`${mult}${n}`)} aria-label="{multNames[mult]} {n}"
               class="h-10 bg-surface-key border border-line-key rounded-[8px] text-text font-display font-bold text-[18px] cursor-pointer">{n}</button>
           {/each}

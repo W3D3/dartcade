@@ -3,6 +3,15 @@ import { WsCloseCode, type ClientMessage, type Snapshot, type UserAction } from 
 
 export type { Snapshot }
 
+/** A snapshot from the server (shallow check; the backend validates the full shape against the schema). */
+export function isSnapshot(m: unknown): m is Snapshot {
+  return typeof m === 'object' && m !== null
+    && 'type' in m && m.type === 'snapshot'
+    && 'gameId' in m && typeof m.gameId === 'string'
+    && 'game' in m && typeof m.game === 'object' && m.game !== null
+    && 'players' in m && Array.isArray(m.players)
+}
+
 export function createSessionStore(sessionId: string) {
   const snapshot = writable<Snapshot | null>(null)
   let ws: WebSocket | null = null
@@ -14,17 +23,20 @@ export function createSessionStore(sessionId: string) {
     ws = new WebSocket(`/ws?sessionId=${encodeURIComponent(sessionId)}`)
     ws.onmessage = (e) => {
       try {
-        const msg = JSON.parse(e.data)
-        if (msg.type === 'snapshot') { snapshot.set(msg); backoff = 500 }
+        if (typeof e.data !== 'string') return
+        const msg: unknown = JSON.parse(e.data)
+        if (isSnapshot(msg)) { snapshot.set(msg); backoff = 500 }
       } catch {}
     }
     ws.onclose = (e) => {
-      if (e.code === WsCloseCode.Unauthorized) {
+      // The close code's name, when it is one of ours
+      const code: string | undefined = WsCloseCode[e.code]
+      if (code === 'Unauthorized') {
         window.location.hash = '#/login'
         return
       }
       // Not this user's session, or it no longer exists: retrying won't help
-      if (e.code === WsCloseCode.Forbidden || e.code === WsCloseCode.NotFound) {
+      if (code === 'Forbidden' || code === 'NotFound') {
         closed = true
         window.location.hash = '#/'
         return

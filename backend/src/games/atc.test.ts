@@ -111,7 +111,7 @@ describe('onBoardEvent dart.detected', () => {
 describe('onBoardEvent visit.opened', () => {
   it('resets allHitThisVisit to true', () => {
     const s = makeState({ allHitThisVisit: false })
-    const { state } = atcModule.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v2' } as any })
+    const { state } = atcModule.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v2' } })
     expect(state.allHitThisVisit).toBe(true)
   })
 })
@@ -119,25 +119,25 @@ describe('onBoardEvent visit.opened', () => {
 describe('onBoardEvent takeout.finished', () => {
   it('advances currentPlayer', () => {
     const s = makeState({ currentPlayer: 0 })
-    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(1)
   })
 
   it('wraps back to player 0', () => {
     const s = makeState({ currentPlayer: 1 })
-    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
   })
 
   it('does nothing when winner is set', () => {
     const s = makeState({ winner: 0, currentPlayer: 0 })
-    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
   })
 
   it('throwAgainOnAllHit: does not advance when all darts hit', () => {
     const s = makeState({ cfg: { ...defaultCfg, throwAgainOnAllHit: true }, allHitThisVisit: true, currentPlayer: 0 })
-    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
   })
 
@@ -146,7 +146,7 @@ describe('onBoardEvent takeout.finished', () => {
       cfg: { ...defaultCfg, throwAgainOnAllHit: true },
       allHitThisVisit: true, winner: 0, currentPlayer: 0,
     })
-    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} as any })
+    const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
     expect(state.winner).toBe(0)
   })
@@ -260,7 +260,7 @@ describe('finishOn bull', () => {
 describe('visit.cleared', () => {
   it('advances currentPlayer without scoring', () => {
     const s = makeState({ targets: [5, 1], currentPlayer: 0 })
-    const { state } = atcModule.onBoardEvent(s, { kind: 'visit.cleared', data: {} as any })
+    const { state } = atcModule.onBoardEvent(s, { kind: 'visit.cleared', data: {} })
     expect(state.currentPlayer).toBe(1)
     expect(state.targets[0]).toBe(5)
   })

@@ -17,7 +17,7 @@ function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slo
 function openSlots(from: number, suggestions: { label: string; foot: string }[]): Slot[] {
   const out: Slot[] = []
   for (let i = from; i < 3; i++) {
-    const s = suggestions[i - from]
+    const s = suggestions.at(i - from)
     const next = i === from
     out.push(s
       ? { kind: next ? 'suggested-next' : 'suggested-later', label: s.label, points: '', foot: s.foot, aria: `Dart ${i + 1}: suggested ${s.label}, ${s.foot}` }
@@ -56,6 +56,6 @@ export function atcSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: stri
     const n = d.segment?.number ?? 0
     return o.multiplierAdvances && n <= 20 ? Math.max(1, d.segment?.multiplier ?? 1) : 1
   }
-  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i] === true, o.hits[i] === true ? `+${steps(d)}` : '0'))
+  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i], o.hits[i] ? `+${steps(d)}` : '0'))
   return [...done, ...openSlots(done.length, o.target ? [{ label: o.target, foot: 'your target' }] : [])]
 }

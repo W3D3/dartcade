@@ -8,7 +8,8 @@
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties"
+    "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties",
+    "lint": "eslint src"
   },
   "dependencies": {
     "@fastify/rate-limit": "^9.1.0",
@@ -28,9 +29,12 @@
     "@types/node": "22.20.4",
     "@types/pg": "8.23.1",
     "@types/ws": "8.18.1",
+    "eslint": "^9.39.5",
+    "globals": "^16.5.0",
     "json-schema-to-typescript": "14.1.0",
     "tsx": "4.23.15",
     "typescript": "5.9.3",
+    "typescript-eslint": "^8.71.0",
     "vitest": "2.1.9"
   }
 }

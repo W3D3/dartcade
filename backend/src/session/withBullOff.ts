@@ -1,4 +1,5 @@
-import type { BoardEvent, DartDetectedData, GameModule, Player, UserAction } from './types.js'
+import type { BoardEvent, Effect, GameModule, Player, UserAction } from './types.js'
+import type { BullOffViewField } from './views.js'
 import {
   clearCurrentBullOffThrow, initBullOff, onBullOffDart, onBullOffTakeout, rethrowBullOff,
   skipBullOffThrow, type BullOffMode, type BullOffState,
@@ -29,23 +30,23 @@ function enabled(cfg: BullOffGameConfig): boolean {
  * has a result the game starts via `applyStartOrder` and everything else is
  * passed through unchanged.
  */
-export function withBullOff<S, Cfg extends BullOffGameConfig>(
-  game: GameModule<S, Cfg>,
+export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, Id extends string>(
+  game: GameModule<S, Cfg, V, Id>,
   hooks: BullOffHooks<S>,
-): GameModule<WithBullOffState<S>, Cfg> {
-  function startGame(s: WithBullOffState<S>): WithBullOffState<S> {
-    const order = s.bullOff.result!.order
+): GameModule<WithBullOffState<S>, Cfg, V & BullOffViewField, Id> {
+  // `order` is the bull off's result
+  function startGame(s: WithBullOffState<S>, order: number[]): WithBullOffState<S> {
     return { ...s, stage: 'game', game: hooks.applyStartOrder(s.game, order) }
   }
 
   // Pass a game-stage result through, keeping the wrapper around it.
-  function inGame(s: WithBullOffState<S>, r: { state: S; effects?: any[] }) {
+  function inGame(s: WithBullOffState<S>, r: { state: S; effects?: Effect[] }) {
     return { state: { ...s, game: r.state }, effects: r.effects }
   }
 
   return {
     id: game.id,
-    defaultConfig: { bullOff: 'off', ...game.defaultConfig } as Cfg,
+    defaultConfig: { bullOff: 'off', ...game.defaultConfig },
     configMeta: {
       ...game.configMeta,
       bullOff: game.configMeta?.bullOff ?? {
@@ -72,7 +73,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig>(
       const doBullOff = enabled(cfg) && n >= 2
       return {
         stage: doBullOff ? 'bulloff' : 'game',
-        bullOff: initBullOff({ mode: doBullOff ? cfg.bullOff! : 'off', playerCount: n }),
+        bullOff: initBullOff({ mode: doBullOff ? (cfg.bullOff ?? 'off') : 'off', playerCount: n }),
         game: game.init(cfg, players),
       }
     },
@@ -90,11 +91,11 @@ export function withBullOff<S, Cfg extends BullOffGameConfig>(
           if (!bullOff.result) return { state: s }
           // The next visit after a result either rethrows or is the game's first visit.
           if (bullOff.result.rethrow) return { state: { ...s, bullOff: rethrowBullOff(bullOff) } }
-          const started = startGame(s)
+          const started = startGame(s, bullOff.result.order)
           return inGame(started, game.onBoardEvent(started.game, e))
         }
         case 'dart.detected':
-          return { state: { ...s, bullOff: onBullOffDart(bullOff, (e.data as DartDetectedData).dart) } }
+          return { state: { ...s, bullOff: onBullOffDart(bullOff, e.data.dart) } }
         case 'takeout.finished':
           return { state: { ...s, bullOff: onBullOffTakeout(bullOff) } }
         case 'visit.cleared':
@@ -113,7 +114,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig>(
         case 'bulloff_rethrow':
           return { state: { ...s, bullOff: rethrowBullOff(s.bullOff) } }
         case 'bulloff_start':
-          return { state: s.bullOff.result && !s.bullOff.result.rethrow ? startGame(s) : s }
+          return { state: s.bullOff.result && !s.bullOff.result.rethrow ? startGame(s, s.bullOff.result.order) : s }
         default:
           return { state: s }
       }

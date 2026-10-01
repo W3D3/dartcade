@@ -1,17 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ActiveSessionError, SessionEngine } from './engine.js'
 import type { EngineStore } from './engine.js'
-import type { BoardEvent } from './types.js'
 import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
 
-function makeStore(): EngineStore {
+function makeStore() {
   return {
     insertSession: vi.fn().mockResolvedValue(undefined),
     getActiveSessions: vi.fn().mockResolvedValue([]),
     getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
     setSessionFinished: vi.fn().mockResolvedValue(undefined),
-  }
+  } satisfies EngineStore
 }
 
 const push = vi.fn()
@@ -39,9 +38,9 @@ describe('create', () => {
   it('allows one active session per user, with or without a board', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'atc', {}, [{ name: 'Alice' }])
-    const err = await engine.create('user-1', 'board-2', 'atc', {}, [{ name: 'Alice' }]).catch(e => e)
+    const err = await engine.create('user-1', 'board-2', 'atc', {}, [{ name: 'Alice' }]).catch((e: unknown) => e)
     expect(err).toBeInstanceOf(ActiveSessionError)
-    expect(err.sessionId).toBe(sessionId)
+    expect(err instanceof ActiveSessionError && err.sessionId).toBe(sessionId)
     // other users are unaffected
     await expect(engine.create('user-2', null, 'atc', {}, [{ name: 'Bob' }])).resolves.toBeDefined()
     expect(engine.getSessionByOwner('user-1')?.id).toBe(sessionId)
@@ -74,22 +73,35 @@ describe('create', () => {
 describe('onBridgeEvent', () => {
   it('no-ops when no active session for boardId', async () => {
     const engine = makeEngine()
-    await engine.onBridgeEvent('unknown-board', 'dart.detected', {}, new Date())
+    await engine.onBridgeEvent('unknown-board', 'dart.detected', {})
     expect(push).not.toHaveBeenCalled()
+  })
+
+  it('warns about dart events whose data does not match the bridge schema, and ignores them', async () => {
+    const warn = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, warn)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
+    await engine.onBridgeEvent('board-1', 'dart.detected', {
+      visit_id: 'v1', index: 0, source_seq: 1,
+      dart: { segment: { name: 'X1', number: 1, bed: 'Weird', multiplier: 1 }, score: 1 },
+    })
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('dart.detected'), expect.anything())
+    expect(engine.getSession(sessionId)!.openVisitEvents.filter(e => e.kind === 'dart.detected')).toHaveLength(0)
   })
 
   it('pushes snapshot after visit.opened', async () => {
     const engine = makeEngine()
     await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
     expect(push).toHaveBeenCalledWith(expect.any(String))
   })
 
   it('flushes openVisitEvents on takeout.finished', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
-    await engine.onBridgeEvent('board-1', 'takeout.finished', { visit_id: 'v1', trigger: 'numThrows.zero', duration_ms: 1000 }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
+    await engine.onBridgeEvent('board-1', 'takeout.finished', { visit_id: 'v1', trigger: 'numThrows.zero', duration_ms: 1000 })
     const session = engine.getSession(sessionId)
     expect(session?.openVisitEvents).toHaveLength(0)
   })
@@ -98,18 +110,18 @@ describe('onBridgeEvent', () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     const visitId = 'v1'
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: visitId }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: visitId })
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: visitId, index: 0,
       dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3 },
       source_seq: 1,
-    }, new Date())
+    })
     await engine.onBridgeEvent('board-1', 'dart.corrected', {
       visit_id: visitId, index: 0,
       dart: { segment: { number: 5, bed: 'Single', multiplier: 1, name: 'S5' }, score: 5 },
       previous: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3 },
       source_seq: 2,
-    }, new Date())
+    })
     const session = engine.getSession(sessionId)!
     const dartEv = session.openVisitEvents.find(e => e.kind === 'dart.detected') as any
     expect(dartEv.data.dart.segment.number).toBe(5)
@@ -118,8 +130,8 @@ describe('onBridgeEvent', () => {
   it('board.resync clears openVisitEvents, preserves committedState', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
-    await engine.onBridgeEvent('board-1', 'board.resync', { throws: [] }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
+    await engine.onBridgeEvent('board-1', 'board.resync', { throws: [] })
     const session = engine.getSession(sessionId)!
     expect(session.openVisitEvents).toHaveLength(0)
     expect(session.currentState).toEqual(session.committedState)
@@ -130,12 +142,12 @@ describe('onUserAction', () => {
   it('undo_dart removes last dart.detected from openVisitEvents', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0,
       dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 },
       source_seq: 1,
-    }, new Date())
+    })
     await engine.onUserAction(sessionId, { type: 'undo_dart' })
     const session = engine.getSession(sessionId)!
     const darts = session.openVisitEvents.filter(e => e.kind === 'dart.detected')
@@ -145,12 +157,12 @@ describe('onUserAction', () => {
   it('correct_dart replaces segment at visitIndex', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0,
       dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3 },
       source_seq: 1,
-    }, new Date())
+    })
     await engine.onUserAction(sessionId, {
       type: 'correct_dart', visitIndex: 0,
       segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' },
@@ -163,12 +175,12 @@ describe('onUserAction', () => {
   it('correct_dart drops the camera position, which no longer matches the segment', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0, source_seq: 1,
       dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3,
         coords: { x: 0.1, y: 0.2 }, polar: { r: 0.22, theta_deg: 63 } },
-    }, new Date())
+    })
     await engine.onUserAction(sessionId, {
       type: 'correct_dart', visitIndex: 0,
       segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' },
@@ -181,12 +193,12 @@ describe('onUserAction', () => {
   it('correct_dart with coords moves the dart to that spot', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0, source_seq: 1,
       dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3,
         coords: { x: 0.1, y: -0.3 }, polar: { r: 0.32, theta_deg: -72 } },
-    }, new Date())
+    })
     await engine.onUserAction(sessionId, {
       type: 'correct_dart', visitIndex: 0,
       segment: { number: 20, bed: 'Triple', multiplier: 3, name: 'T20' },
@@ -203,18 +215,18 @@ describe('onUserAction', () => {
     const dart = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
       dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } } })
     for (const r of [0.2, 0.05]) {
-      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' }, new Date())
-      await engine.onBridgeEvent('board-1', 'dart.detected', dart(r), new Date())
-      await engine.onBridgeEvent('board-1', 'takeout.finished', {}, new Date())
+      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' })
+      await engine.onBridgeEvent('board-1', 'dart.detected', dart(r))
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
     }
     let session = engine.getSession(sessionId)!
     expect(session.totalDarts).toEqual([0, 0])
     expect(session.totalVisits).toEqual([0, 0])
 
     // Bob won the bull off; the next visit is the game's first
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'g1' }, new Date())
-    await engine.onBridgeEvent('board-1', 'dart.detected', dart(0.5), new Date())
-    await engine.onBridgeEvent('board-1', 'takeout.finished', {}, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'g1' })
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart(0.5))
+    await engine.onBridgeEvent('board-1', 'takeout.finished', {})
     session = engine.getSession(sessionId)!
     expect(session.totalDarts).toEqual([0, 1])
     expect(session.totalVisits).toEqual([0, 1])
@@ -227,9 +239,9 @@ describe('onUserAction', () => {
     const dart = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
       dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } } })
     for (const r of [0.2, 0.05]) {
-      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' }, new Date())
-      await engine.onBridgeEvent('board-1', 'dart.detected', dart(r), new Date())
-      await engine.onBridgeEvent('board-1', 'takeout.finished', {}, new Date())
+      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' })
+      await engine.onBridgeEvent('board-1', 'dart.detected', dart(r))
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
     }
     await engine.onUserAction(sessionId, { type: 'bulloff_start' })
     const snap = engine.getSnapshot(sessionId)!
@@ -322,7 +334,7 @@ describe('rebuild', () => {
       config: {},
       players: [{ name: 'Alice' }],
       created_at: new Date(),
-    }] as any)
+    }])
     vi.mocked(store.getBridgeEventsForBoard).mockResolvedValue([
       { kind: 'visit.opened', data: { visit_id: 'v1' }, recv_wall: new Date() },
       {
@@ -330,7 +342,7 @@ describe('rebuild', () => {
         data: { visit_id: 'v1', index: 0, dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 }, source_seq: 1 },
         recv_wall: new Date(),
       },
-    ] as any)
+    ])
 
     const engine = new SessionEngine(store, push)
     await engine.rebuild()
@@ -365,12 +377,12 @@ describe('getSnapshot', () => {
   it('returns snapshot with currentVisitDarts from openVisitEvents', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
-    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' }, new Date())
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
     await engine.onBridgeEvent('board-1', 'dart.detected', {
       visit_id: 'v1', index: 0,
       dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 },
       source_seq: 1,
-    }, new Date())
+    })
     const snap = engine.getSnapshot(sessionId)!
     expect(snap.type).toBe('snapshot')
     expect(snap.gameId).toBe('atc')
