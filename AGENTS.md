@@ -56,9 +56,12 @@ corrected dart replays the open visit cleanly.
    `onUserAction`, `view`, plus `defaultConfig`/`configMeta` for the setup form.
    Keep it a pure reducer; wrap it with `withBullOff` if it needs a throwing order.
 2. Register it in `backend/src/games/index.ts`.
-3. Add its player stats component in `backend/frontend/src/lib/gameViews/<id>.svelte`
-   and a `GameView` entry in `gameViews` in `gameViews/index.ts` (unknown games
-   fall back to `fallback.svelte`).
+3. Describe its view in `schema/game-ws-v1.json` (a `<Id>Game` def and a branch of
+   `Snapshot`) and run `npm run gen:api` at the repo root. The browser parses every
+   snapshot against that schema and drops ones for games it doesn't know.
+4. Frontend: the header title and meta line go in `backend/frontend/src/lib/gameViews/`
+   (`index.ts`, `meta.ts`); panels, rows and slots are picked by game id in
+   `GameDisplay.svelte`.
 
 ## Running and testing
 

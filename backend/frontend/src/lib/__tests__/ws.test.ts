@@ -16,6 +16,13 @@ describe('parseSnapshot', () => {
     expect(s && 'extra' in s.game).toBe(false)
   })
 
+  it('stays silent about messages that are not snapshots', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    for (const m of [null, 'x', 42, {}, { type: 'hello' }]) expect(parseSnapshot(m)).toBeNull()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('rejects anything else, with a warning for snapshot-like messages', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     for (const m of [null, 'x', 42, {}, { type: 'hello' }, { ...fixture, game: {} }, { ...fixture, gameId: 'cricket' }]) {

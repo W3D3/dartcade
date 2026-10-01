@@ -7,6 +7,8 @@ import type { SessionEngine } from '../session/engine.js'
 import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
+import { z } from 'zod'
+import { BaseEnvelopeSchema } from '../schema/zod.js'
 
 export { bridgeConnections }
 
@@ -15,8 +17,6 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
 }
 
-import { z } from 'zod'
-import { BaseEnvelopeSchema } from '../schema/zod.js'
 
 // The envelope fields an event is stored and acked by (schema/adbridge-v1.json). The rest
 // of BaseEnvelope (bm_version, recv_mono_ns, …) isn't required, as before.
@@ -26,8 +26,15 @@ const EnvelopeSchema = BaseEnvelopeSchema
 
 export function parseEnvelope(msg: unknown): z.output<typeof EnvelopeSchema> | null {
   const r = EnvelopeSchema.safeParse(msg)
-  return r.success ? r.data : null
+  if (r.success) return r.data
+  // Not acked, so the bridge's next (cumulative) ack covers it: this warning is the only trace
+  const id = EventIdSchema.parse(msg)
+  console.warn('Ignoring a bridge event whose envelope does not match the schema', { ...id, issues: r.error.issues })
+  return null
 }
+
+// What identifies an event in a log line, as far as the message has it
+const EventIdSchema = z.object({ kind: z.unknown(), seq: z.unknown() }).partial().catch({})
 
 // bridge.hello is informational: each field is kept or dropped on its own
 const nonEmpty = z.string().min(1).nullable().catch(null)

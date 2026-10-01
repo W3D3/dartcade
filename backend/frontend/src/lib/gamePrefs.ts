@@ -5,8 +5,8 @@ export const PREFS_KEY = 'dartcade_game_prefs'
 
 const PrefsSchema = z.object({
   mode: z.string(),
-  // Per game id; a game without saved config has no entry
-  configs: z.record(z.string(), z.record(z.string(), z.unknown()).optional()).catch({}),
+  // Per game id; a game without (or with a broken) saved config has no entry
+  configs: z.record(z.string(), z.record(z.string(), z.unknown()).optional().catch(undefined)).catch({}),
   boardId: z.string().optional().catch(undefined),
 })
 export type SavedPrefs = z.output<typeof PrefsSchema>

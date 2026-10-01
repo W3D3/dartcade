@@ -20,6 +20,11 @@ describe('loadPrefs', () => {
       .toEqual({ mode: 'atc', configs: {} })
   })
 
+  it('drops one broken game config, keeping the others', () => {
+    expect(loadPrefs(storage(JSON.stringify({ mode: 'atc', configs: { x01: 'bad', atc: { order: 'asc' } } }))))
+      .toEqual({ mode: 'atc', configs: { atc: { order: 'asc' } } })
+  })
+
   it('is null without a mode', () => {
     expect(loadPrefs(storage(JSON.stringify({ configs: {} })))).toBeNull()
   })

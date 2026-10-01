@@ -14,7 +14,8 @@ describe('parseBoardEvent', () => {
     ['a bounce-out', { segment: { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 }, score: 0, bouncer: true }],
     ['a near-miss', { segment: { name: 'M5', number: 5, bed: 'Outside', multiplier: 0 }, score: 0, coords: { x: 0, y: 1.1 } }],
     ['the outer bull', { segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 }, score: 25 }],
-    ['the inner bull', { segment: { name: 'Bull', number: 25, bed: 'Double', multiplier: 2 }, score: 50 }],
+    // How Board Manager (docs/architecture.md) and manual entry report the inner bull
+    ['the inner bull', { segment: { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }, score: 50 }],
   ])('accepts %s', (_, dart) => {
     expect(parseBoardEvent('dart.detected', detected(dart))?.kind).toBe('dart.detected')
   })

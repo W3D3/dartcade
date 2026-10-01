@@ -140,6 +140,24 @@ describe('handleBridgeConnection', () => {
     expect(conn?.bridgeVersion).toBe('v0.4.2')
     expect(conn?.bmVersion).toBe('1.0')
   })
+
+  it('warns about an event whose envelope does not match the schema, and does not ack it', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-2', hardware_id: null } as any)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined) } as any
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    socket.emit('message', Buffer.from(JSON.stringify({
+      v: 1, seq: 5, kind: 'dart.detected', bridge_id: 'br', boot_id: 'boot', recv_wall: '', data: {},
+    })))
+    await flush(); await flush()
+
+    // The next ack would silently cover it on the bridge side: the warning is the only trace
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('envelope'), expect.objectContaining({ kind: 'dart.detected', seq: 5 }))
+    expect(socket.send).not.toHaveBeenCalledWith(JSON.stringify({ ack: 5 }))
+    warn.mockRestore()
+  })
 })
 
 describe('BridgeConnections event feed', () => {

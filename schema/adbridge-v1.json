@@ -14,7 +14,7 @@
       "additionalProperties": false,
       "properties": {
         "name":       { "type": "string",  "examples": ["T20", "D5", "S1", "25", "50", "Miss", "M17"] },
-        "number":     { "type": "integer", "minimum": 0, "maximum": 25 },
+        "number":     { "type": "integer", "minimum": 0, "maximum": 50 },
         "bed":        { "type": "string",  "enum": ["SingleInner", "SingleOuter", "Single", "Double", "Triple", "Outside"] },
         "multiplier": { "type": "integer", "enum": [0, 1, 2, 3] }
       }
