@@ -25,16 +25,12 @@ export type X01State = {
   currentPlayer: number
   round: number
   bustThisVisit: boolean
-  visitOpenedScores: number[]
   /**
-   * Whether a dart has landed in the open visit yet. Reset wherever visitOpenedScores is
-   * (visit.opened, a fresh leg, after a commit), it lets dart.detected re-snapshot
-   * visitOpenedScores on the visit's first dart when no visit.opened preceded it — the
-   * engine drops a pending visit.opened on a board.resync, so without this the stale
-   * snapshot from the visit before last would be used and that visit's points double
-   * counted (see withVisitScored).
+   * Scores at the start of the open visit. Taken when the previous visit is committed
+   * (and again on visit.opened), so it is right even when a board.resync drops the
+   * visit.opened: a bust reverts to it and withVisitScored counts from it.
    */
-  visitHasDarts: boolean
+  visitOpenedScores: number[]
   winner: number | null
   playerCount: number
   /** Points each player scored, busts counting 0; for the 3-dart average. */
@@ -87,7 +83,6 @@ function freshLeg(cfg: X01Config, playerCount: number, firstPlayer: number): Par
     opened: Array<boolean>(playerCount).fill(cfg.inMode === 'straight'),
     bustThisVisit: false,
     visitOpenedScores: Array<number>(playerCount).fill(cfg.startScore),
-    visitHasDarts: false,
     currentPlayer: firstPlayer,
     round: 1,
   }
@@ -168,7 +163,6 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       currentPlayer: 0, round: 1,
       bustThisVisit: false,
       visitOpenedScores: Array<number>(n).fill(cfg.startScore),
-      visitHasDarts: false,
       winner: null, playerCount: n,
       pointsScored: Array<number>(n).fill(0),
     }
@@ -181,7 +175,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   onBoardEvent(s: X01State, e: BoardEvent): { state: X01State } {
     switch (e.kind) {
       case 'visit.opened': {
-        return { state: { ...s, bustThisVisit: false, visitOpenedScores: [...s.scores], visitHasDarts: false } }
+        return { state: { ...s, bustThisVisit: false, visitOpenedScores: [...s.scores] } }
       }
 
       case 'dart.detected': {
@@ -191,34 +185,26 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         if (s.bustThisVisit) return { state: s }
         if (s.scores[cp] === 0) return { state: s }
 
-        // A board.resync drops the open visit at the engine level, including any
-        // visit.opened already pushed for it. If darts then arrive with visitHasDarts
-        // still false, this is still the visit's first dart, so snapshot the pre-visit
-        // score here instead of leaving the stale one from the visit before last: scores
-        // still hold the pre-visit value because nothing from this visit has committed.
-        const visitOpenedScores = s.visitHasDarts ? s.visitOpenedScores : s.scores
-        const b: X01State = { ...s, visitOpenedScores, visitHasDarts: true }
-
-        if (!b.opened[cp]) {
-          const opens = opensPlayer(dart, b.cfg.inMode)
-          if (!opens) return { state: b }
-          const opened = b.opened.map((o, i) => i === cp ? true : o)
-          const dartScore = effectiveDartScore(dart, b.cfg.bullValue)
-          const newScore = b.scores[cp] - dartScore
-          if (newScore < 0 || deadEnd(newScore, b.cfg.outMode) || (newScore === 0 && !validFinish(dart, b.cfg.outMode))) {
-            return { state: { ...b, opened, bustThisVisit: true, scores: b.scores.map((sc, i) => i === cp ? b.visitOpenedScores[cp] : sc) } }
+        if (!s.opened[cp]) {
+          const opens = opensPlayer(dart, s.cfg.inMode)
+          if (!opens) return { state: s }
+          const opened = s.opened.map((o, i) => i === cp ? true : o)
+          const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
+          const newScore = s.scores[cp] - dartScore
+          if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
+            return { state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc) } }
           }
-          return { state: { ...b, opened, scores: b.scores.map((sc, i) => i === cp ? newScore : sc) } }
+          return { state: { ...s, opened, scores: s.scores.map((sc, i) => i === cp ? newScore : sc) } }
         }
 
-        const dartScore = effectiveDartScore(dart, b.cfg.bullValue)
-        const newScore = b.scores[cp] - dartScore
+        const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
+        const newScore = s.scores[cp] - dartScore
 
-        if (newScore < 0 || deadEnd(newScore, b.cfg.outMode) || (newScore === 0 && !validFinish(dart, b.cfg.outMode))) {
-          return { state: { ...b, scores: b.scores.map((sc, i) => i === cp ? b.visitOpenedScores[cp] : sc), bustThisVisit: true } }
+        if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
+          return { state: { ...s, scores: s.scores.map((sc, i) => i === cp ? s.visitOpenedScores[cp] : sc), bustThisVisit: true } }
         }
 
-        return { state: { ...b, scores: b.scores.map((sc, i) => i === cp ? newScore : sc) } }
+        return { state: { ...s, scores: s.scores.map((sc, i) => i === cp ? newScore : sc) } }
       }
 
       case 'takeout.finished': {
@@ -242,7 +228,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished', pointsScored } }
         }
 
-        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false, visitHasDarts: false, pointsScored } }
+        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored } }
       }
 
       case 'visit.cleared': {
@@ -255,7 +241,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished', pointsScored } }
         }
 
-        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false, visitHasDarts: false, pointsScored } }
+        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored } }
       }
 
       default:

@@ -51,6 +51,16 @@ describe('X01 pointsScored', () => {
     // 180 + 20 actually scored; the bug would also re-add the 180 from the first visit.
     expect(s.pointsScored).toEqual([200])
   })
+
+  it('does not double count the previous visit when a resync leaves the next visit empty', () => {
+    const solo = [{ name: 'Solo' }]
+    let s = x01Game.init({ ...cfg, firstTo: 5 }, solo)
+    s = visit(s, [T20, T20, T20])          // 180 scored, 121 left
+    // The resync swallowed the visit and the board closes it with no darts
+    s = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state
+    expect(s.scores).toEqual([121])
+    expect(s.pointsScored).toEqual([180])
+  })
 })
 
 describe('X01 summarize', () => {
