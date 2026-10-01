@@ -45,6 +45,7 @@ corrected dart replays the open visit cleanly.
 | Per-game UI (stats, board highlights) | `backend/frontend/src/lib/gameViews/` |
 | Components (dartboard, bull off, correction, entry) | `backend/frontend/src/lib/components/`; shadcn-style primitives in `ui/` |
 | Dart helpers (labels, checkout hints) | `backend/frontend/src/lib/dartUtils.ts` |
+| Game history: input log, replay, results | `backend/src/session/{apply,replay}.ts`, `backend/src/history/`, `backend/src/db/history.ts`, `backend/src/api/games.ts` |
 | Architecture, Board Manager API findings | `docs/architecture.md` |
 | Feature specs and implementation plans | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
 | Setup, tests, builds | `DEVELOPMENT.md`, `mise.toml` |
@@ -52,9 +53,13 @@ corrected dart replays the open visit cleanly.
 
 ## Adding a game
 
-1. Write a `GameModule` in `backend/src/games/<id>.ts`: `init`, `onBoardEvent`,
-   `onUserAction`, `view`, plus `defaultConfig`/`configMeta` for the setup form.
-   Keep it a pure reducer; wrap it with `withBullOff` if it needs a throwing order.
+1. Write a `GameModule` in `backend/src/games/<id>.ts`: `init` (use the `rng` it gets for
+   anything random), `onBoardEvent`, `onUserAction`, `view`, `defaultConfig`/`configMeta`
+   for the setup form, and for the history `version`, `summarize` (placement and stats per
+   seat), `detail` (its per-mode detail; add the schema to `schema/api-v1.yaml` and the
+   `GameDetail.detail` union) and `getLeg` if it has legs. Keep it a pure reducer: games
+   are rebuilt by replaying their input log. Wrap it with `withBullOff` if it needs a
+   throwing order.
 2. Register it in `backend/src/games/index.ts`.
 3. Describe its view in `schema/game-ws-v1.json` (a `<Id>Game` def and a branch of
    `Snapshot`) and run `npm run gen:api` at the repo root. The browser parses every
