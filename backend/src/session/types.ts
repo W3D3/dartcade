@@ -76,6 +76,9 @@ export interface CommittedVisit<S> {
 /** One seat's result once a game is won. */
 export type SeatResult = { placement: number; stats: Record<string, number> }
 
+/** A seat's result as stored: the module's result plus where the seat threw in the game (0 = first). */
+export type FinishedSeat = SeatResult & { throwPosition: number }
+
 /** Counts the engine keeps per seat (bull off excluded). */
 export type SummaryContext = { totalDarts: number[]; totalVisits: number[] }
 
@@ -102,6 +105,8 @@ export interface GameModule<S, Cfg = Record<string, never>, V extends object = R
   getLeg?(s: S): number
   /** The result once the game is won: one entry per seat, in seat order. */
   summarize(s: S, ctx: SummaryContext): SeatResult[]
+  /** Seats in the order they threw (e.g. as a bull off decided); seat order when left out. */
+  throwOrder?(s: S): number[]
   /** The game's detail for GET /api/games/:id, built from its replayed visits. */
   detail(visits: CommittedVisit<S>[], final: S): D
 }

@@ -63,6 +63,24 @@ describe('X01 pointsScored', () => {
   })
 })
 
+describe('X01 best checkout', () => {
+  it('keeps the highest checkout per player, and no stat without one', () => {
+    let s = x01Game.init({ ...cfg, firstTo: 2 }, players)
+    s = visit(s, [T20, T20, T20])          // A: 121 left
+    s = visit(s, [S20])                    // B
+    s = visit(s, [T20, T20, S1])           // A checks out 121, leg 1
+    expect(s.bestCheckout).toEqual([121, 0])
+    const r = x01Game.summarize({ ...s, winner: 0 }, { totalDarts: [6, 4], totalVisits: [2, 2] })
+    expect(r[0].stats.bestCheckout).toBe(121)
+    expect(r[1].stats).not.toHaveProperty('bestCheckout')
+  })
+
+  it('reports the throw order', () => {
+    const s = x01Game.init(cfg, players)
+    expect(x01Game.throwOrder?.({ ...s, order: [1, 0] })).toEqual([1, 0])
+  })
+})
+
 describe('X01 summarize', () => {
   const base = x01Game.init({ ...cfg, firstTo: 3 }, [{ name: 'A' }, { name: 'B' }, { name: 'C' }])
   it('ranks by legs, then remaining score, winner first', () => {
@@ -138,7 +156,8 @@ describe('ATC summarize and detail', () => {
     const s: ATCState = { ...s0, targets: [21, 5, 5], winner: 0 }
     const r = atcModule.summarize(s, { totalDarts: [40, 30, 33], totalVisits: [14, 10, 11] })
     expect(r.map(x => x.placement)).toEqual([1, 2, 3])
-    expect(r[0].stats).toEqual({ dartsThrown: 40, targetsHit: 20 })
+    // All 20 targets done: finished, so it counts as darts to finish; the others didn't finish
+    expect(r[0].stats).toEqual({ dartsThrown: 40, targetsHit: 20, dartsToFinish: 40 })
     expect(r[1].stats).toEqual({ dartsThrown: 30, targetsHit: 4 })
   })
 

@@ -50,6 +50,8 @@ export interface GamePlayersTable {
   user_id: string | null
   placement: number | null
   stats: unknown
+  /** Where the seat threw in the game (0 = first); set with the result. */
+  throw_position: number | null
 }
 
 export interface GameSessionEventsTable {

@@ -49,6 +49,8 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
     version: game.version,
     getLeg: s => game.getLeg?.(s.game) ?? 0,
     summarize: (s, ctx) => game.summarize(s.game, ctx),
+    // Empty when the game has no throw order of its own (results() then uses seat order)
+    throwOrder: s => game.throwOrder?.(s.game) ?? [],
     // Bull off visits stay in the list (phase 'bulloff'); the game decides what to show
     detail: (visits, final) => game.detail(
       visits.map(v => ({ ...v, start: v.start.game, end: v.end.game, after: v.after.game })),

@@ -218,7 +218,12 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
     const hits = hitCounts(s)
     const placements = rankSeats(s.playerCount, s.winner,
       (a, b) => (hits[b] - hits[a]) || ((totalDarts[a] ?? 0) - (totalDarts[b] ?? 0)))
-    return placements.map((placement, i) => ({ placement, stats: { dartsThrown: totalDarts[i] ?? 0, targetsHit: hits[i] } }))
+    return placements.map((placement, i) => {
+      const darts = totalDarts[i] ?? 0
+      // Only a player who completed the whole sequence "finished"
+      const finished = hits[i] === s.sequence.length
+      return { placement, stats: { dartsThrown: darts, targetsHit: hits[i], ...(finished && { dartsToFinish: darts }) } }
+    })
   },
 
   detail(visits): AtcDetail {

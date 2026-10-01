@@ -21,8 +21,8 @@ const game = (o: Partial<HistoryGame> = {}): HistoryGame => ({
   rng_seed: 0, created_at: new Date('2026-10-01T09:00:00Z'), finished_at: new Date('2026-10-01T09:30:00Z'),
   board: { id: 'b1', name: 'Living room' }, mySeat: 0,
   seats: [
-    { seat: 0, name: 'Christoph', user_id: 'user-1', placement: 1, stats: { average: 83.9, legsWon: 3 } },
-    { seat: 1, name: 'Guest', user_id: null, placement: 2, stats: { average: 71.6, legsWon: 1 } },
+    { seat: 0, name: 'Christoph', user_id: 'user-1', placement: 1, throw_position: 1, stats: { average: 83.9, legsWon: 3 } },
+    { seat: 1, name: 'Guest', user_id: null, placement: 2, throw_position: 0, stats: { average: 71.6, legsWon: 1 } },
   ],
   ...o,
 })
@@ -51,7 +51,7 @@ describe('GET /api/games', () => {
     expect(history.listFinishedGames).toHaveBeenCalledWith(expect.anything(), 'user-1', { mode: 'x01', limit: 10, after: null })
     const body = res.json()
     expect(body.games[0]).toMatchObject({ id: 'g1', mode: 'x01', mySeat: 0, board: { name: 'Living room' }, finishedAt: '2026-10-01T09:30:00.000Z' })
-    expect(body.games[0].players[1]).toEqual({ seat: 1, name: 'Guest', userId: null, placement: 2, stats: { average: 71.6, legsWon: 1 } })
+    expect(body.games[0].players[1]).toEqual({ seat: 1, name: 'Guest', userId: null, placement: 2, throwPosition: 0, stats: { average: 71.6, legsWon: 1 } })
     expect(typeof body.nextCursor).toBe('string')
   })
 

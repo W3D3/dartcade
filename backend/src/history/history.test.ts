@@ -35,7 +35,7 @@ describe('aggregateStats', () => {
       row({ finishedAt: daysAgo(45), stats: { average: 50 } }),
       row({ finishedAt: daysAgo(70), stats: { average: 10 } }),
     ], 30, now)
-    expect(s.modes.x01.stats.average).toEqual({ avg: 70, min: 60, max: 80, previousAvg: 50 })
+    expect(s.modes.x01.stats.average).toEqual({ avg: 70, min: 60, max: 80, sum: 140, previousAvg: 50 })
   })
 
   it('previousAvg is null without earlier games', () => {
@@ -51,7 +51,7 @@ describe('buildDetail', () => {
   const game: HistoryGame = {
     id: 'g1', game_id: 'atc', config: { throwAgainOnAllHit: false, finishOn: 'twenty', multiplierAdvances: false, order: 'asc' },
     rng_seed: 0, created_at: new Date(0), finished_at: new Date(1), board: null, mySeat: 0,
-    seats: [{ seat: 0, name: 'A', user_id: 'u1', placement: 1, stats: {} }],
+    seats: [{ seat: 0, name: 'A', user_id: 'u1', placement: 1, throw_position: 0, stats: {} }],
   }
   const at = new Date('2026-10-01T10:00:00.000Z')
   it('replays the log into the mode detail', () => {

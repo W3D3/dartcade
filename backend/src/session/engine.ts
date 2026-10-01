@@ -1,7 +1,7 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
 import { applyInput, type GameInput } from './apply.js'
-import type { GameConfig, Session, Player, SeatResult, UserAction, Snapshot } from './types.js'
+import type { GameConfig, Session, Player, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { newSeed } from './rng.js'
 import { StoredConfigSchema, dartRows, newSession, replay, results, type WarnFn } from './replay.js'
@@ -18,7 +18,7 @@ export interface EngineStore {
   getSessionEvents(sessionId: string): Promise<StoredSessionEvent[]>
   appendEvent(event: NewSessionEvent): Promise<void>
   insertDarts(rows: NewGameDart[]): Promise<void>
-  finishSession(id: string, finishedAt: Date, results: SeatResult[]): Promise<void>
+  finishSession(id: string, finishedAt: Date, results: FinishedSeat[]): Promise<void>
   abortSession(id: string, finishedAt: Date): Promise<void>
 }
 

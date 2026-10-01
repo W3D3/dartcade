@@ -17,7 +17,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
   async function game(id: string, mode: string, owner: string, seats: { name: string; user_id: string | null }[], finishedAt: Date | 'abort' | 'active', board: string | null = null) {
     await insertGameSession(db, { id, owner_user_id: owner, board_db_id: board, game_id: mode, game_version: 1, rng_seed: 0, config: {}, players: seats })
     if (finishedAt === 'abort') await abortGameSession(db, id, t(0))
-    else if (finishedAt !== 'active') await finishGameSession(db, id, finishedAt, seats.map((_, i) => ({ placement: i + 1, stats: { dartsThrown: 10 + i } })))
+    else if (finishedAt !== 'active') await finishGameSession(db, id, finishedAt, seats.map((_, i) => ({ placement: i + 1, stats: { dartsThrown: 10 + i }, throwPosition: seats.length - 1 - i })))
   }
 
   beforeAll(async () => {
@@ -50,7 +50,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     expect(games.map(g => g.id)).toEqual(['x-2', 'a-1', 'x-1'])
     expect(next).toBeNull()
     expect(games[2]).toMatchObject({ board: { id: 'b1', name: 'Living room' }, mySeat: 0, finished_at: t(1) })
-    expect(games[2].seats.map(s => [s.name, s.placement, s.stats])).toEqual([['One', 1, { dartsThrown: 10 }], ['Guest', 2, { dartsThrown: 11 }]])
+    expect(games[2].seats.map(s => [s.name, s.placement, s.throw_position, s.stats])).toEqual([['One', 1, 1, { dartsThrown: 10 }], ['Guest', 2, 0, { dartsThrown: 11 }]])
   })
 
   it('filters by mode and pages with the cursor', async () => {

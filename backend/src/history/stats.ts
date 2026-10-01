@@ -35,7 +35,7 @@ export function aggregateStats(rows: StatRow[], days: number, now: Date): GameSt
     for (const key of new Set(mine.flatMap(r => Object.keys(r.stats)))) {
       const values = valuesOf(mine, key)
       const prev = valuesOf(before, key)
-      stats[key] = { avg: mean(values), min: Math.min(...values), max: Math.max(...values), previousAvg: prev.length > 0 ? mean(prev) : null }
+      stats[key] = { avg: mean(values), min: Math.min(...values), max: Math.max(...values), sum: values.reduce((a, b) => a + b, 0), previousAvg: prev.length > 0 ? mean(prev) : null }
     }
     modes[mode] = { ...counts(mine), stats }
   }

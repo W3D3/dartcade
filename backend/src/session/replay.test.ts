@@ -3,13 +3,13 @@ import { SessionEngine, type EngineStore } from './engine.js'
 import { newSession, replay, dartRows } from './replay.js'
 import { games } from '../games/index.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredSessionEvent } from '../db/queries.js'
-import type { SeatResult, Segment, UserAction } from './types.js'
+import type { FinishedSeat, Segment, UserAction } from './types.js'
 
 function memoryStore() {
   const sessions = new Map<string, NewGameSession & { status: string; created_at: Date }>()
   const events: (NewSessionEvent)[] = []
   const darts: NewGameDart[] = []
-  const finished = new Map<string, SeatResult[]>()
+  const finished = new Map<string, FinishedSeat[]>()
   const aborted: string[] = []
   const store: EngineStore = {
     insertSession: (s) => { sessions.set(s.id, { ...s, status: 'active', created_at: new Date() }); return Promise.resolve() },
@@ -80,6 +80,8 @@ describe('the input log', () => {
     const played = live.getSession(sessionId)!
     expect(played.status).toBe('finished')
     expect(mem.finished.get(sessionId)?.map(r => r.placement)).toEqual([2, 1])
+    // The bull off made B (seat 1) throw first
+    expect(mem.finished.get(sessionId)?.map(r => r.throwPosition)).toEqual([1, 0])
 
     const row = mem.sessions.get(sessionId)!
     const again = newSession({ id: sessionId, ownerUserId: 'user-1', boardId: 'board-1', module: games.x01!, config: CONFIG, players: PLAYERS, seed: row.rng_seed, createdAt: row.created_at })
@@ -126,7 +128,7 @@ describe('the input log', () => {
     await play(live, sessionId, SCRIPT)
     await play(live, sessionId, ENDING).catch(() => undefined)
     const fresh = memoryStore()
-    Object.assign(fresh.store, { ...mem.store, finishSession: (id: string, _at: Date, r: SeatResult[]) => { fresh.finished.set(id, r); return Promise.resolve() } })
+    Object.assign(fresh.store, { ...mem.store, finishSession: (id: string, _at: Date, r: FinishedSeat[]) => { fresh.finished.set(id, r); return Promise.resolve() } })
     const restarted = new SessionEngine(fresh.store, vi.fn())
     await restarted.rebuild()
     expect(fresh.finished.get(sessionId)?.map(r => r.placement)).toEqual([2, 1])

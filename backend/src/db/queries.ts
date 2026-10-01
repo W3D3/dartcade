@@ -140,12 +140,12 @@ export async function insertGameDarts(db: Kysely<Database>, rows: NewGameDart[])
 }
 
 /** The game was won: placements and stats per seat (in seat order). */
-export async function finishGameSession(db: Kysely<Database>, id: string, finishedAt: Date, results: { placement: number; stats: Record<string, number> }[]): Promise<void> {
+export async function finishGameSession(db: Kysely<Database>, id: string, finishedAt: Date, results: { placement: number; stats: Record<string, number>; throwPosition: number }[]): Promise<void> {
   await db.transaction().execute(async (trx) => {
     await trx.updateTable('game_sessions').set({ status: 'finished', finished_at: finishedAt }).where('id', '=', id).execute()
     for (const [seat, r] of results.entries()) {
       await trx.updateTable('game_players')
-        .set({ placement: r.placement, stats: JSON.stringify(r.stats) })
+        .set({ placement: r.placement, stats: JSON.stringify(r.stats), throw_position: r.throwPosition })
         .where('session_id', '=', id).where('seat', '=', seat)
         .execute()
     }

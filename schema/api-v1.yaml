@@ -637,10 +637,11 @@ components:
 
     GameSeat:
       type: object
-      required: [seat, name, userId, placement, stats]
+      required: [seat, name, userId, placement, throwPosition, stats]
       additionalProperties: false
       properties:
         seat: { type: integer, minimum: 0 }
+        throwPosition: { type: integer, minimum: 0, nullable: true, description: 'Where the seat threw in the game (0 = first; a bull off can change it from the seat order). null for games finished before it was recorded' }
         name: { type: string }
         userId: { type: string, nullable: true, description: "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in" }
         placement: { type: integer, minimum: 1 }
@@ -681,10 +682,11 @@ components:
         nextCursor: { type: string, nullable: true }
     StatAggregate:
       type: object
-      required: [avg, min, max, previousAvg]
+      required: [avg, min, max, sum, previousAvg]
       additionalProperties: false
       properties:
         avg: { type: number }
+        sum: { type: number }
         min: { type: number }
         max: { type: number }
         previousAvg: { type: number, nullable: true, description: Average over the period before; null without games then }

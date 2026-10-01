@@ -4,7 +4,7 @@ import type { Database } from './schema.js'
 import type { Cursor } from '../history/cursor.js'
 import type { StatRow } from '../history/stats.js'
 
-export type HistorySeat = { seat: number; name: string; user_id: string | null; placement: number; stats: Record<string, number> }
+export type HistorySeat = { seat: number; name: string; user_id: string | null; placement: number; throw_position: number | null; stats: Record<string, number> }
 export type HistoryGame = {
   id: string; game_id: string; config: Record<string, unknown>; rng_seed: number
   created_at: Date; finished_at: Date; board: { id: string; name: string } | null
@@ -22,14 +22,14 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
   const by = new Map<string, HistorySeat[]>()
   if (ids.length === 0) return by
   const rows = await db.selectFrom('game_players')
-    .select(['session_id', 'seat', 'name', 'user_id', 'placement', 'stats'])
+    .select(['session_id', 'seat', 'name', 'user_id', 'placement', 'throw_position', 'stats'])
     .where('session_id', 'in', ids)
     .where('placement', 'is not', null)
     .$narrowType<{ placement: NotNull }>()
     .orderBy('session_id').orderBy('seat')
     .execute()
   for (const r of rows) {
-    const seat = { seat: r.seat, name: r.name, user_id: r.user_id, placement: r.placement, stats: StatsSchema.parse(r.stats) }
+    const seat = { seat: r.seat, name: r.name, user_id: r.user_id, placement: r.placement, throw_position: r.throw_position, stats: StatsSchema.parse(r.stats) }
     by.set(r.session_id, [...(by.get(r.session_id) ?? []), seat])
   }
   return by

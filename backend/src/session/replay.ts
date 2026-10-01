@@ -4,7 +4,7 @@ import { parseBoardEvent } from './boardEvent.js'
 import { applyInput, type GameInput } from './apply.js'
 import { seededRng } from './rng.js'
 import type { NewGameDart } from '../db/queries.js'
-import type { AnyGameModule, CommittedVisit, GameConfig, Player, SeatResult, Session } from './types.js'
+import type { AnyGameModule, CommittedVisit, GameConfig, Player, FinishedSeat, Session } from './types.js'
 
 /** Reports data the engine had to skip (message, details). */
 export type WarnFn = (message: string, details: unknown) => void
@@ -70,6 +70,11 @@ export function dartRows(sessionId: string, v: CommittedVisit<unknown>): NewGame
 }
 
 /** Each seat's placement and stats for a won game. */
-export function results(session: Session): SeatResult[] {
-  return session.module.summarize(session.committedState, { totalDarts: session.totalDarts, totalVisits: session.totalVisits })
+export function results(session: Session): FinishedSeat[] {
+  const state = session.committedState
+  const seats = session.module.summarize(state, { totalDarts: session.totalDarts, totalVisits: session.totalVisits })
+  const order = session.module.throwOrder?.(state) ?? []
+  // A throw order that doesn't name every seat once falls back to seat order
+  const valid = order.length === seats.length && seats.every((_, seat) => order.includes(seat))
+  return seats.map((r, seat) => ({ ...r, throwPosition: valid ? order.indexOf(seat) : seat }))
 }

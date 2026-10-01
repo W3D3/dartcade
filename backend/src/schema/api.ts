@@ -485,6 +485,8 @@ export interface components {
         };
         GameSeat: {
             seat: number;
+            /** @description Where the seat threw in the game (0 = first; a bull off can change it from the seat order). null for games finished before it was recorded */
+            throwPosition: number | null;
             name: string;
             /** @description The seat's account; null for guests, and for everyone when viewing a public game you didn't play in */
             userId: string | null;
@@ -517,6 +519,7 @@ export interface components {
         };
         StatAggregate: {
             avg: number;
+            sum: number;
             min: number;
             max: number;
             /** @description Average over the period before; null without games then */

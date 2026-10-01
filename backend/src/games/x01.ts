@@ -35,6 +35,8 @@ export type X01State = {
   playerCount: number
   /** Points each player scored, busts counting 0; for the 3-dart average. */
   pointsScored: number[]
+  /** Each player's highest checkout (the score left when the checkout visit started); 0 = none yet. */
+  bestCheckout: number[]
 }
 
 // What the current player's visit scored: a bust resets the score and an unopened
@@ -165,6 +167,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       visitOpenedScores: Array<number>(n).fill(cfg.startScore),
       winner: null, playerCount: n,
       pointsScored: Array<number>(n).fill(0),
+      bestCheckout: Array<number>(n).fill(0),
     }
   },
 
@@ -214,10 +217,11 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         // Leg win
         if (s.scores[cp] === 0) {
           const legs = s.legs.map((l, i) => i === cp ? l + 1 : l)
+          const bestCheckout = s.bestCheckout.map((b, i) => i === cp ? Math.max(b, s.visitOpenedScores[cp]) : b)
           if (legs[cp] >= s.cfg.firstTo) {
-            return { state: { ...s, legs, winner: cp, phase: 'finished', pointsScored } }
+            return { state: { ...s, legs, winner: cp, phase: 'finished', pointsScored, bestCheckout } }
           }
-          return { state: { ...s, legs, pointsScored, ...freshLeg(s.cfg, s.playerCount, cp) } }
+          return { state: { ...s, legs, pointsScored, bestCheckout, ...freshLeg(s.cfg, s.playerCount, cp) } }
         }
 
         const { nextPlayer, round } = nextTurn(s)
@@ -267,6 +271,10 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
     return s.legs.reduce((a, b) => a + b, 0)
   },
 
+  throwOrder(s: X01State): number[] {
+    return s.order
+  },
+
   summarize(s: X01State, { totalDarts }): SeatResult[] {
     const placements = rankSeats(s.playerCount, s.winner, (a, b) => (s.legs[b] - s.legs[a]) || (s.scores[a] - s.scores[b]))
     return placements.map((placement, i) => {
@@ -278,6 +286,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           dartsThrown: darts,
           legsWon: s.legs[i],
           pointsScored: s.pointsScored[i],
+          // Only for players who checked out a leg, so min/avg over games stay meaningful
+          ...(s.bestCheckout[i] > 0 && { bestCheckout: s.bestCheckout[i] }),
         },
       }
     })

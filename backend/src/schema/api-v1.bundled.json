@@ -1509,6 +1509,7 @@
           "name",
           "userId",
           "placement",
+          "throwPosition",
           "stats"
         ],
         "additionalProperties": false,
@@ -1516,6 +1517,12 @@
           "seat": {
             "type": "integer",
             "minimum": 0
+          },
+          "throwPosition": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Where the seat threw in the game (0 = first; a bull off can change it from the seat order). null for games finished before it was recorded"
           },
           "name": {
             "type": "string"
@@ -1626,11 +1633,15 @@
           "avg",
           "min",
           "max",
+          "sum",
           "previousAvg"
         ],
         "additionalProperties": false,
         "properties": {
           "avg": {
+            "type": "number"
+          },
+          "sum": {
             "type": "number"
           },
           "min": {
