@@ -49,6 +49,10 @@ export function parseHello(data: unknown): { bridgeVersion: string | null; bmVer
   return { bridgeVersion: h.bridge_version, bmVersion: h.bm_version, bmUrl: h.bm_url }
 }
 
+// The bridge's keepalive (bridge/internal/transport): not an event, never acked. Any
+// message from us resets the bridge's read deadline, so it gets a pong back.
+const PingSchema = z.object({ ping: z.string() })
+
 const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
 const TokenQuerySchema = z.object({ token: z.string() })
 
@@ -105,6 +109,9 @@ export function handleBridgeConnection(
         conn.bmUrl = hello.bmUrl
         return
       }
+
+      const ping = PingSchema.safeParse(parsed)
+      if (ping.success) { socket.send(JSON.stringify({ pong: ping.data.ping })); return }
 
       const env = parseEnvelope(parsed)
       if (!env) return

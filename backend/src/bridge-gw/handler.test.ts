@@ -141,6 +141,23 @@ describe('handleBridgeConnection', () => {
     expect(conn?.bmVersion).toBe('1.0')
   })
 
+  it('answers the bridge heartbeat ping with a pong, without a warning', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-3', hardware_id: null } as any)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined) } as any
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    // transport.go sends this every 20 s; any reply resets the bridge's 45 s read deadline
+    socket.emit('message', Buffer.from(JSON.stringify({ ping: '1' })))
+    await flush(); await flush()
+
+    expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ pong: '1' }))
+    expect(warn).not.toHaveBeenCalled()
+    expect(engine.onBridgeEvent).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
   it('warns about an event whose envelope does not match the schema, and does not ack it', async () => {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-2', hardware_id: null } as any)
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
