@@ -49,6 +49,9 @@ export type ConfigFieldMeta = {
 /** A dart of a committed visit, as the history keeps it. */
 export type HistoryDart = components['schemas']['HistoryDart']
 export type DartSource = HistoryDart['source']
+
+/** What the engine knows about a dart of the open visit (in dart order). */
+export type DartMeta = { source: DartSource; corrected: boolean; thrownAt: Date }
 export type X01Detail = components['schemas']['X01Detail']
 export type AtcDetail = components['schemas']['AtcDetail']
 export type VisitPhase = 'game' | 'bulloff'
@@ -120,11 +123,17 @@ export interface Session {
   module: AnyGameModule
   committedState: unknown
   openVisitEvents: BoardEvent[]
+  /** One entry per dart.detected in openVisitEvents, same order. */
+  openDarts: DartMeta[]
   currentState: unknown
   status: 'active' | 'finished'
   createdAt: Date
   /** Seed of the generator passed to init(); stored so a replay sets the game up the same way. */
   seed: number
+  /** Visits committed so far; numbers the next one. */
+  visitCount: number
+  /** seq of the next input log entry. */
+  nextSeq: number
   totalDarts: number[]
   totalVisits: number[]
   bmStatus: { status: string; running: boolean; event: string } | null

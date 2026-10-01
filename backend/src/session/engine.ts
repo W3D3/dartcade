@@ -1,7 +1,6 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
-import { refoldVisit } from './refold.js'
-import { manualDart } from './manualDart.js'
+import { applyInput, type ApplyOutcome } from './apply.js'
 import type { GameConfig, Session, Player, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { newSeed, seededRng } from './rng.js'
@@ -34,16 +33,6 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
 /** Thrown when the user already has a session running; carries that session's id. */
 export class ActiveSessionError extends Error {
   constructor(message: string, readonly sessionId: string) { super(message) }
-}
-
-// Darts and visits of a bull off (see withBullOff) don't count towards game stats
-function inBullOff(session: Session, state: unknown): boolean {
-  const view = session.module.view(state, session.players)
-  return 'phase' in view && view.phase === 'bulloff'
-}
-
-function hasWinner(session: Session, state: unknown): boolean {
-  return session.module.view(state, session.players).winner !== null
 }
 
 // Rows written by create(): JSONB, so validated before a session is restored from them
@@ -83,10 +72,13 @@ export class SessionEngine {
       module: mod,
       committedState: initialState,
       openVisitEvents: [],
+      openDarts: [],
       currentState: initialState,
       status: 'active',
       createdAt: new Date(),
       seed,
+      visitCount: 0,
+      nextSeq: 0,
       totalDarts: Array<number>(players.length).fill(0),
       totalVisits: Array<number>(players.length).fill(0),
       bmStatus: null,
@@ -113,174 +105,23 @@ export class SessionEngine {
     if (!event && (kind === 'dart.detected' || kind === 'dart.corrected')) {
       this.warn(`ignored ${kind} event: data does not match the bridge schema`, { boardId, data })
     }
-
-    switch (event?.kind) {
-      case 'visit.opened':
-        session.openVisitEvents.push(event)
-        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
-        break
-
-      case 'dart.detected': {
-        const view = session.module.view(session.currentState, session.players)
-        if ('visitLocked' in view && view.visitLocked) break
-        const thrower = session.module.getCurrentPlayer(session.currentState)
-        if (!inBullOff(session, session.currentState)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
-        session.openVisitEvents.push(event)
-        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
-        break
-      }
-
-      case 'dart.corrected': {
-        const d = event.data
-        const idx = session.openVisitEvents.findIndex(e => e.kind === 'dart.detected' && e.data.index === d.index)
-        const orig = session.openVisitEvents[idx]
-        if (idx !== -1 && orig.kind === 'dart.detected') {
-          session.openVisitEvents[idx] = {
-            kind: 'dart.detected',
-            data: { ...orig.data, dart: d.dart },
-          }
-        }
-        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
-        break
-      }
-
-      case 'takeout.finished':
-      case 'visit.cleared': {
-        const visitOwner = session.module.getCurrentPlayer(session.currentState)
-        if (!inBullOff(session, session.currentState)) session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
-        session.openVisitEvents.push(event)
-        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
-        session.committedState = session.currentState
-        session.openVisitEvents = []
-        if (hasWinner(session, session.currentState)) {
-          session.status = 'finished'
-          await this.store.setSessionFinished(session.id)
-          this.release(session)
-        }
-        break
-      }
-
-      case 'board.status':
-        session.bmStatus = readBoardStatus(event.data)
-        break
-
-      case 'board.resync': {
-        const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
-        if (dartCount > 0 && !inBullOff(session, session.currentState)) {
-          const thrower = session.module.getCurrentPlayer(session.currentState)
-          session.totalDarts[thrower] = Math.max(0, (session.totalDarts[thrower] ?? 0) - dartCount)
-        }
-        session.openVisitEvents = []
-        session.currentState = session.committedState
-        break
-      }
-    }
-
+    if (event?.kind === 'board.status') session.bmStatus = readBoardStatus(event.data)
+    else if (event) await this.settle(session, applyInput(session, { source: 'board', event }, new Date()))
     this.push(session.id)
   }
 
   async onUserAction(sessionId: string, action: UserAction): Promise<void> {
     const session = this.byId.get(sessionId)
     if (!session) return
-
-    if (action.type === 'undo_dart') {
-      let dartRemoved = false
-      for (let i = session.openVisitEvents.length - 1; i >= 0; i--) {
-        if (session.openVisitEvents[i].kind === 'dart.detected') {
-          session.openVisitEvents.splice(i, 1)
-          dartRemoved = true
-          if (
-            i > 0 &&
-            session.openVisitEvents[i - 1]?.kind === 'visit.opened' &&
-            !session.openVisitEvents.slice(i).some(e => e.kind === 'dart.detected')
-          ) {
-            session.openVisitEvents.splice(i - 1, 1)
-          }
-          break
-        }
-      }
-      if (dartRemoved && !inBullOff(session, session.currentState)) {
-        const thrower = session.module.getCurrentPlayer(session.currentState)
-        session.totalDarts[thrower] = Math.max(0, (session.totalDarts[thrower] ?? 0) - 1)
-      }
-    } else if (action.type === 'correct_dart') {
-      const dartEvents = session.openVisitEvents.filter(e => e.kind === 'dart.detected')
-      const target = dartEvents.find((_, i) => i === action.visitIndex)
-      if (target) {
-        const orig = target.data
-        // The camera position no longer matches the corrected segment, so drop it,
-        // unless the dart was moved to a new spot on the board
-        const rest = { ...orig.dart }
-        delete rest.coords
-        delete rest.polar
-        const newDart = { ...rest, ...manualDart(action.segment, action.coords) }
-        const idx = session.openVisitEvents.indexOf(target)
-        session.openVisitEvents[idx] = {
-          kind: 'dart.detected',
-          data: { ...orig, dart: newDart },
-        }
-      }
-    } else if (action.type === 'takeout') {
-      // An empty turn (nothing thrown or nothing detected) counts as three misses
-      if (session.openVisitEvents.length === 0 && !inBullOff(session, session.currentState)
-          && !hasWinner(session, session.currentState)) {
-        const thrower = session.module.getCurrentPlayer(session.currentState)
-        const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
-        session.openVisitEvents = [
-          { kind: 'visit.opened', data: { visit_id: 'manual' } },
-          ...[0, 1, 2].map(index => ({
-            kind: 'dart.detected' as const,
-            data: { visit_id: 'manual', index, dart: manualDart({ ...miss }), source_seq: 0 },
-          })),
-        ]
-        session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 3
-        session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
-      }
-      if (session.openVisitEvents.length > 0) {
-        const visitOwner = session.module.getCurrentPlayer(session.currentState)
-        if (!inBullOff(session, session.currentState)) session.totalVisits[visitOwner] = (session.totalVisits[visitOwner] ?? 0) + 1
-        const finalState = session.module.onBoardEvent(
-          session.currentState,
-          { kind: 'takeout.finished', data: {} },
-        ).state
-        session.committedState = finalState
-        session.currentState = finalState
-        session.openVisitEvents = []
-        if (hasWinner(session, finalState)) {
-          session.status = 'finished'
-          await this.store.setSessionFinished(session.id)
-          this.release(session)
-        }
-      }
-    } else if (action.type === 'add_dart') {
-      const dartCount = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
-      if (dartCount >= 3) return
-      // A finished visit (bust, checkout, win) takes no more darts
-      const now = session.module.view(session.currentState, session.players)
-      if (('visitLocked' in now && now.visitLocked) || now.winner !== null) return
-      if (session.openVisitEvents.length === 0) {
-        session.openVisitEvents.push({ kind: 'visit.opened', data: { visit_id: 'manual' } })
-      }
-      // Use the state after the (possibly new) visit.opened to find the thrower
-      const opened = refoldVisit(session.module, session.committedState, session.openVisitEvents)
-      const thrower = session.module.getCurrentPlayer(opened)
-      if (!inBullOff(session, opened)) session.totalDarts[thrower] = (session.totalDarts[thrower] ?? 0) + 1
-      session.openVisitEvents.push({
-        kind: 'dart.detected',
-        data: { visit_id: 'manual', index: dartCount, dart: manualDart(action.segment, action.coords), source_seq: 0 },
-      })
-    } else {
-      // Anything else is the game module's own action (e.g. the bull off's
-      // skip/rethrow/start). It ends the open visit and becomes committed state.
-      const next = session.module.onUserAction(session.currentState, action).state
-      if (next !== session.currentState) {
-        session.committedState = next
-        session.openVisitEvents = []
-      }
-    }
-
-    session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
+    await this.settle(session, applyInput(session, { source: 'user', action }, new Date()))
     this.push(session.id)
+  }
+
+  private async settle(session: Session, outcome: ApplyOutcome): Promise<void> {
+    if (!outcome.won) return
+    session.status = 'finished'
+    await this.store.setSessionFinished(session.id)
+    this.release(session)
   }
 
   async rebuild(): Promise<void> {
@@ -308,10 +149,13 @@ export class SessionEngine {
         module: mod,
         committedState: initialState,
         openVisitEvents: [],
+        openDarts: [],
         currentState: initialState,
         status: 'active',
         createdAt: row.created_at,
         seed,
+        visitCount: 0,
+        nextSeq: 0,
         totalDarts: Array<number>(players.length).fill(0),
         totalVisits: Array<number>(players.length).fill(0),
         bmStatus: null,
