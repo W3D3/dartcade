@@ -251,4 +251,52 @@ describe('WS client messages', () => {
     })
     ws.close()
   })
+
+  it('logs an action the engine fails to apply (e.g. the log write) and keeps the socket open', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    const { SessionEngine } = await import('../session/engine.js')
+    const { atcModule } = await import('../games/atc.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
+    }
+    const engine = new SessionEngine(store, vi.fn())
+    const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+
+    testApp = Fastify()
+    const logError = vi.spyOn(testApp.log, 'error')
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
+    let closed = false
+    ws.addEventListener('close', () => { closed = true })
+    await new Promise<void>((resolve, reject) => {
+      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      setTimeout(() => reject(new Error('no snapshot')), 2000)
+    })
+
+    const s1 = { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }
+    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart', segment: s1 } }))   // append fails
+    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart', segment: s1 } }))   // applied
+    await new Promise(r => setTimeout(r, 200))
+    process.off('unhandledRejection', unhandled)
+
+    expect(unhandled).not.toHaveBeenCalled()
+    expect(closed).toBe(false)
+    expect(logError).toHaveBeenCalledWith(expect.objectContaining({ sessionId }), 'user action not applied')
+    expect(engine.getSession(sessionId)!.openDarts).toHaveLength(1)
+    ws.close()
+  })
 })
