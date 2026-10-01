@@ -7,7 +7,6 @@ import type { SessionEngine } from '../session/engine.js'
 import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { isNumber, isRecord, isString } from '../guards.js'
 
 export { bridgeConnections }
 
@@ -16,9 +15,35 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
 }
 
-function nonEmptyString(v: unknown): string | null {
-  return isString(v) && v !== '' ? v : null
+import { z } from 'zod'
+import { BaseEnvelopeSchema } from '../schema/zod.js'
+
+// The envelope fields an event is stored and acked by (schema/adbridge-v1.json). The rest
+// of BaseEnvelope (bm_version, recv_mono_ns, …) isn't required, as before.
+const EnvelopeSchema = BaseEnvelopeSchema
+  .pick({ v: true, seq: true, kind: true, bridge_id: true, boot_id: true, recv_wall: true })
+  .extend({ board_id: z.string().optional(), data: z.unknown() })
+
+export function parseEnvelope(msg: unknown): z.output<typeof EnvelopeSchema> | null {
+  const r = EnvelopeSchema.safeParse(msg)
+  return r.success ? r.data : null
 }
+
+// bridge.hello is informational: each field is kept or dropped on its own
+const nonEmpty = z.string().min(1).nullable().catch(null)
+const HelloSchema = z.object({
+  bridge_version: nonEmpty.default(null),
+  bm_version: nonEmpty.default(null),
+  bm_url: z.string().nullable().catch(null).default(null),
+}).catch({ bridge_version: null, bm_version: null, bm_url: null })
+
+export function parseHello(data: unknown): { bridgeVersion: string | null; bmVersion: string | null; bmUrl: string | null } {
+  const h = HelloSchema.parse(data)
+  return { bridgeVersion: h.bridge_version, bmVersion: h.bm_version, bmUrl: h.bm_url }
+}
+
+const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
+const TokenQuerySchema = z.object({ token: z.string() })
 
 // handleBridgeConnection wires up a single bridge WebSocket. The message
 // listener is attached synchronously and message *processing* is gated on the
@@ -62,24 +87,23 @@ export function handleBridgeConnection(
 
       let parsed: unknown
       try { parsed = JSON.parse(raw.toString()) } catch { return }
-      const msg: Record<string, unknown> = isRecord(parsed) ? parsed : {}
 
       if (!conn.helloReceived) {
-        if (msg.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
-        const hello: Record<string, unknown> = isRecord(msg.data) ? msg.data : {}
+        const first = MessageKindSchema.safeParse(parsed)
+        if (!first.success || first.data.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
+        const hello = parseHello(first.data.data)
         conn.helloReceived = true
-        conn.bmVersion = nonEmptyString(hello.bm_version)
-        conn.bridgeVersion = nonEmptyString(hello.bridge_version)
-        conn.bmUrl = isString(hello.bm_url) ? hello.bm_url : null
+        conn.bmVersion = hello.bmVersion
+        conn.bridgeVersion = hello.bridgeVersion
+        conn.bmUrl = hello.bmUrl
         return
       }
 
-      const { seq, kind, bridge_id: bridgeId, boot_id: bootId, recv_wall: recvWall } = msg
-      if (msg.v !== 1 || !isNumber(seq) || !isString(kind)) return
-      // Envelope fields the event can't be stored without (schema/adbridge-v1.json)
-      if (!isString(bridgeId) || !isString(bootId) || !isString(recvWall)) return
-      const hardwareId = isString(msg.board_id) ? msg.board_id : undefined
-      const data = msg.data ?? {}
+      const env = parseEnvelope(parsed)
+      if (!env) return
+      const { seq, kind, bridge_id: bridgeId, boot_id: bootId, recv_wall: recvWall } = env
+      const hardwareId = env.board_id
+      const data = env.data ?? {}
 
       if (!conn.hardwareBoardId && hardwareId) {
         conn.hardwareBoardId = hardwareId
@@ -118,8 +142,8 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   const { engine, db } = opts
 
   app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
-    const token = isRecord(req.query) && isString(req.query.token) ? req.query.token : undefined
-    handleBridgeConnection(connection.socket, { token }, { db, engine })
+    const q = TokenQuerySchema.safeParse(req.query)
+    handleBridgeConnection(connection.socket, { token: q.success ? q.data.token : undefined }, { db, engine })
   })
   done()
 }

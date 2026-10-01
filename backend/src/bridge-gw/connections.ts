@@ -1,7 +1,6 @@
 import type { WebSocket } from 'ws'
 import type { components } from '../schema/api.js'
-import { isOneOf, isOptional, isRecord } from '../guards.js'
-import { isDart } from '../session/boardEvent.js'
+import { FeedEventDataSchema } from '../schema/zod.js'
 
 export type BridgeConn = {
   ws: WebSocket
@@ -24,11 +23,10 @@ export type FeedEvent = components['schemas']['BoardEvent']
 // Kinds worth surfacing in the Boards page live feed. High-rate frames
 // (bm.frame, motion) are deliberately excluded.
 const FEED_KINDS = ['dart.detected', 'dart.corrected', 'takeout.started', 'visit.cleared'] as const
-const FEED_LIMIT = 50
-
-function isFeedData(v: unknown): v is FeedEvent['data'] {
-  return isRecord(v) && isOptional(v.dart, isDart)
+function isFeedKind(k: string): k is FeedEvent['kind'] {
+  return FEED_KINDS.some(f => f === k)
 }
+const FEED_LIMIT = 50
 
 export class BridgeConnections {
   private byBoard: Map<string, BridgeConn> = new Map()
@@ -67,9 +65,10 @@ export class BridgeConnections {
   recordEvent(boardDbId: string, ev: BoardEvent): void {
     const { at, kind, data } = ev
     // Data that doesn't match the feed's schema (a malformed dart) is left out too
-    if (!isOneOf(FEED_KINDS, kind) || !isFeedData(data)) return
+    const parsed = FeedEventDataSchema.safeParse(data)
+    if (!isFeedKind(kind) || !parsed.success) return
     const feed = this.feeds.get(boardDbId) ?? []
-    feed.push({ at, kind, data })
+    feed.push({ at, kind, data: parsed.data })
     if (feed.length > FEED_LIMIT) feed.splice(0, feed.length - FEED_LIMIT)
     this.feeds.set(boardDbId, feed)
   }

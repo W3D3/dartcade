@@ -9,7 +9,7 @@ vi.mock('../db/queries.js', () => ({
   updateBoardHardwareId: vi.fn().mockResolvedValue(undefined),
 }))
 import * as queries from '../db/queries.js'
-import { handleBridgeConnection, bridgeConnections } from './handler.js'
+import { handleBridgeConnection, bridgeConnections, parseEnvelope, parseHello } from './handler.js'
 
 describe('bridge-gw token auth', () => {
   it('SHA-256 of token produces consistent hash', () => {
@@ -152,5 +152,33 @@ describe('BridgeConnections event feed', () => {
     expect(feed[0].at).toBe('10')
     expect(feed.every(e => e.kind === 'dart.detected')).toBe(true)
     expect(bc.recentEvents('other')).toEqual([])
+  })
+})
+
+describe('bridge message parsing', () => {
+  const envelope = { v: 1, seq: 7, kind: 'dart.detected', bridge_id: 'b', boot_id: 'o', recv_wall: '2026-10-01T10:00:00.123456789Z', board_id: 'hw', data: { a: 1 } }
+
+  it('envelope accepts UTC and offset timestamps', () => {
+    expect(parseEnvelope(envelope)?.seq).toBe(7)
+    expect(parseEnvelope({ ...envelope, recv_wall: '2026-10-01T12:00:00+02:00' })?.seq).toBe(7)
+  })
+
+  it('envelope is null when a field the event is stored by is missing or wrong', () => {
+    for (const bad of [{ ...envelope, v: 2 }, { ...envelope, seq: '7' }, { ...envelope, boot_id: undefined }, { ...envelope, recv_wall: 'yesterday' }, null, 'x']) {
+      expect(parseEnvelope(bad)).toBeNull()
+    }
+  })
+
+  it('envelope keeps data as sent and board_id optional', () => {
+    const { board_id: _, ...noBoard } = envelope
+    const env = parseEnvelope(noBoard)
+    expect(env?.data).toEqual({ a: 1 })
+    expect(env?.board_id).toBeUndefined()
+  })
+
+  it('hello keeps each valid field even when another is broken', () => {
+    expect(parseHello({ bridge_version: '1.2', bm_version: 3, bm_url: 'http://bm' }))
+      .toEqual({ bridgeVersion: '1.2', bmVersion: null, bmUrl: 'http://bm' })
+    expect(parseHello(null)).toEqual({ bridgeVersion: null, bmVersion: null, bmUrl: null })
   })
 })
