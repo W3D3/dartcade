@@ -134,32 +134,50 @@ export class SessionEngine {
 
   async rebuild(): Promise<void> {
     for (const row of await this.store.getActiveSessions()) {
-      const mod = games[row.game_id]
-      const config = StoredConfigSchema.safeParse(row.config)
-      // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
-      if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
-        await this.store.abortSession(row.id, new Date())
-        continue
+      try {
+        await this.rebuildOne(row)
+      } catch (err) {
+        // One session that can't be replayed (a bad log, a store error, a game module
+        // throwing) must not keep the rest from coming back or block the server from
+        // starting. Abort it instead of leaving it 'active': that would lock its owner
+        // out of starting a new game (one-active-per-owner); its log stays untouched
+        // for later recovery.
+        this.warn('failed to rebuild session, aborting it', { sessionId: row.id, error: String(err) })
+        try {
+          await this.store.abortSession(row.id, new Date())
+        } catch (abortErr) {
+          this.warn('failed to abort an unrebuildable session', { sessionId: row.id, error: String(abortErr) })
+        }
       }
-      const session = newSession({
-        id: row.id, ownerUserId: row.owner_user_id, boardId: row.board_db_id, module: mod,
-        config: config.data, players: row.players.map(p => ({ name: p.name })),
-        seed: row.rng_seed, createdAt: row.created_at,
-      })
-      const events = await this.store.getSessionEvents(row.id)
-      const { visits, won } = replay(session, events, this.warn)
-      // Darts a crash kept from being stored; the ones already there are skipped
-      await this.store.insertDarts(visits.flatMap(v => dartRows(row.id, v)))
-      // The log ends in a win that wasn't saved: save it instead of resuming
-      if (won) {
-        session.status = 'finished'
-        await this.store.finishSession(row.id, events.at(-1)?.created_at ?? new Date(), results(session))
-        continue
-      }
-      if (session.boardId) this.byBoard.set(session.boardId, session)
-      this.byOwner.set(session.ownerUserId, session)
-      this.byId.set(session.id, session)
     }
+  }
+
+  private async rebuildOne(row: StoredGameSession): Promise<void> {
+    const mod = games[row.game_id]
+    const config = StoredConfigSchema.safeParse(row.config)
+    // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
+    if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
+      await this.store.abortSession(row.id, new Date())
+      return
+    }
+    const session = newSession({
+      id: row.id, ownerUserId: row.owner_user_id, boardId: row.board_db_id, module: mod,
+      config: config.data, players: row.players.map(p => ({ name: p.name })),
+      seed: row.rng_seed, createdAt: row.created_at,
+    })
+    const events = await this.store.getSessionEvents(row.id)
+    const { visits, won } = replay(session, events, this.warn)
+    // Darts a crash kept from being stored; the ones already there are skipped
+    await this.store.insertDarts(visits.flatMap(v => dartRows(row.id, v)))
+    // The log ends in a win that wasn't saved: save it instead of resuming
+    if (won) {
+      session.status = 'finished'
+      await this.store.finishSession(row.id, events.at(-1)?.created_at ?? new Date(), results(session))
+      return
+    }
+    if (session.boardId) this.byBoard.set(session.boardId, session)
+    this.byOwner.set(session.ownerUserId, session)
+    this.byId.set(session.id, session)
   }
 
   getSnapshot(sessionId: string): Snapshot | undefined {

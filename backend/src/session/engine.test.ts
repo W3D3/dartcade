@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { ActiveSessionError, SessionEngine } from './engine.js'
 import type { EngineStore } from './engine.js'
+import type { StoredGameSession } from '../db/queries.js'
 import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
+import { atcModule } from '../games/atc.js'
 
 function makeStore() {
   return {
@@ -327,6 +329,35 @@ describe('onUserAction', () => {
     expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [expect.objectContaining({ placement: 1 })])
     await engine.onUserAction(sessionId, { type: 'takeout' })
     expect(engine.getSession(sessionId)!.totalVisits).toEqual([1])
+  })
+})
+
+describe('rebuild', () => {
+  it('aborts a session whose events fail to load, and restores the other', async () => {
+    const good: StoredGameSession = {
+      id: 'good-1', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc',
+      game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
+      created_at: new Date(), players: [{ name: 'Alice', user_id: 'user-1' }],
+    }
+    const bad: StoredGameSession = {
+      id: 'bad-1', owner_user_id: 'user-2', board_db_id: null, game_id: 'atc',
+      game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
+      created_at: new Date(), players: [{ name: 'Bob', user_id: 'user-2' }],
+    }
+    const warn = vi.fn()
+    const store = makeStore()
+    store.getActiveSessions.mockResolvedValue([good, bad])
+    store.getSessionEvents.mockImplementation((id: string) =>
+      id === 'bad-1' ? Promise.reject(new Error('boom')) : Promise.resolve([]))
+    const engine = new SessionEngine(store, push, warn)
+
+    await expect(engine.rebuild()).resolves.toBeUndefined()
+
+    expect(engine.getSession('good-1')).toBeDefined()
+    expect(engine.getSessionByOwner('user-1')?.id).toBe('good-1')
+    expect(engine.getSession('bad-1')).toBeUndefined()
+    expect(store.abortSession).toHaveBeenCalledWith('bad-1', expect.any(Date))
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('rebuild'), expect.objectContaining({ sessionId: 'bad-1' }))
   })
 })
 
