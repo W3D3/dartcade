@@ -50,6 +50,11 @@ Migration `006_game_history.sql`.
   below).
 - `finished_at TIMESTAMPTZ NULL`: set on finish and on abort.
 - `game_version INT NOT NULL DEFAULT 1`: the module's `version` when the game was created.
+- `rng_seed INT NOT NULL DEFAULT 0`: seed for the game's random setup (ATC's random order).
+  `init` gets a seeded generator, so a replay rebuilds the same game. Today a restart
+  reshuffles a random-order ATC game; this fixes that too.
+- `board_db_id` foreign key becomes `ON DELETE SET NULL`: kept games must not block
+  deleting a board. Deleting a board with a running game is still refused (409).
 - `visibility TEXT NOT NULL DEFAULT 'private'`, `CHECK (visibility IN ('private','public'))`.
 - `players JSONB` is dropped; seats live in `game_players`.
 
@@ -149,7 +154,13 @@ events through `parseBoardEvent`, user actions through the generated user action
 an entry that doesn't parse is skipped with a warning. The old rule "only board sessions
 can be restored" goes away: manual darts, corrections and boardless games all come back.
 
-During a replay nothing is appended and no darts are written (they already are).
+During a replay nothing is appended to the log. `rebuild()` re-inserts the replayed
+visits' darts with `ON CONFLICT DO NOTHING`, which fills any gap left by a crash between
+the append and the dart insert. If the replayed log ends in a win that was never saved,
+`rebuild()` finishes the game instead of restoring it.
+
+Inputs to a session that is no longer active (e.g. `undo_dart` after the winning visit)
+are ignored and not logged.
 
 ### Versions
 
@@ -178,7 +189,8 @@ detail(visits: CommittedVisit<S>[], final: S): D   // D: the module's own detail
 ```
 
 `CommittedVisit<S>` is `{ visit, seat, leg, phase, committedAt, darts: HistoryDart[],
-before: S, after: S }`, collected while replaying the log. `HistoryDart` matches the
+start: S, end: S, after: S }` (`start`: after the visit's `visit.opened`; `end`: after its
+last dart; `after`: once committed), collected while replaying the log. `HistoryDart` matches the
 `game_darts` row (`index, segment, coords | null, source, corrected, thrownAt`).
 
 `ctx` passes the engine's existing per-seat dart and visit counts (bull off excluded).
@@ -186,19 +198,22 @@ before: S, after: S }`, collected while replaying the log. `HistoryDart` matches
 ### X01
 
 - `getLeg`: the number of legs played so far.
-- `summarize` placement: legs won (descending), then remaining score in the current leg
-  (ascending); equal on both share a placement.
+- `summarize` placement: the winner is always 1st (X01's round limit can pick a winner
+  with fewer legs). The rest by legs won (descending), then remaining score in the
+  current leg (ascending), from 2nd on; equal on both share a placement.
 - `summarize` stats: `average` (3-dart average: points scored / darts × 3, busts count as
   0 points), `dartsThrown`, `legsWon`, `pointsScored`. This needs a running per-player
   `pointsScored` in the X01 state (the state only keeps remaining scores today).
-- `detail`: `{ legs: [{ leg, starter, winner, visits: [{ visit, seat, phase, committedAt,
-  darts, scored, remaining, bust }] }] }`.
+- `detail`: `{ mode: 'x01', legs: [{ leg, starter, winner, visits: [{ visit, seat,
+  committedAt, darts, scored, remaining, bust }] }] }`. Bull off visits are left out of
+  the detail (their darts stay in `game_darts`).
 
 ### Around the Clock
 
-- `summarize` placement: targets completed (descending), then darts thrown (ascending).
+- `summarize` placement: the winner 1st, the rest by targets completed (descending), then
+  darts thrown (ascending).
 - `summarize` stats: `dartsThrown`, `targetsHit`.
-- `detail`: `{ visits: [{ visit, seat, phase, committedAt, darts, hits, targetBefore,
+- `detail`: `{ mode: 'atc', visits: [{ visit, seat, committedAt, darts, hits, targetBefore,
   targetAfter }] }`.
 
 Solo games get placement 1.
@@ -255,10 +270,11 @@ Allowed when the user holds a seat, or the game is `public`. Otherwise **404** (
 so the game's existence isn't revealed). Only `finished` games; anything else is 404.
 
 ```
-200 GameSummary & { detail: X01Detail | AtcDetail }   // oneOf, discriminator `mode`
+200 { game: GameSummary, detail: X01Detail | AtcDetail }   // oneOf, discriminator `detail.mode`
 ```
 
-For a viewer without a seat, `userId` is null on every player and `mySeat` is null.
+For a viewer without a seat, `userId` is null on every player and `mySeat` is null. A game
+whose mode no longer exists is 404 too.
 
 Built by replaying the game's input log through `apply` and the module's `detail()`. A
 contract test checks each module's `detail()` output against its schema; a new game mode
