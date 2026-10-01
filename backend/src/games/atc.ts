@@ -1,6 +1,7 @@
 import type { GameModule, BoardEvent, Player, Dart } from '../session/types.js'
 import type { ConfigFieldMeta } from '../session/types.js'
 import type { AtcView } from '../session/views.js'
+import type { Rng } from '../session/rng.js'
 
 export type ATCConfig = {
   throwAgainOnAllHit: boolean
@@ -20,22 +21,22 @@ export type ATCState = {
   currentVisitHits: boolean[]  // per-dart hit flags for the open visit
 }
 
-function shuffle(arr: number[]): number[] {
+function shuffle(arr: number[], rng: Rng): number[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
+    const j = Math.floor(rng() * (i + 1));
     [a[i], a[j]] = [a[j], a[i]]
   }
   return a
 }
 
-export function buildSequence(cfg: ATCConfig): number[] {
+export function buildSequence(cfg: ATCConfig, rng: Rng = Math.random): number[] {
   const nums = Array.from({ length: 20 }, (_, i) => i + 1)
   let ordered: number[]
   if (cfg.order === 'desc') {
     ordered = [...nums].reverse()
   } else if (cfg.order === 'random') {
-    ordered = shuffle(nums)
+    ordered = shuffle(nums, rng)
   } else {
     ordered = nums
   }
@@ -132,8 +133,8 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
   defaultConfig: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
   configMeta,
 
-  init(cfg: ATCConfig, players: Player[]): ATCState {
-    const sequence = buildSequence(cfg)
+  init(cfg: ATCConfig, players: Player[], rng?: Rng): ATCState {
+    const sequence = buildSequence(cfg, rng)
     return {
       sequence,
       targets: players.map(() => sequence[0]),

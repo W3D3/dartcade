@@ -65,7 +65,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       return game.validate?.(cfg, players) ?? null
     },
 
-    init(cfg, players) {
+    init(cfg, players, rng) {
       const n = players.length
       // A bull off decides throw order between players, so it needs at least two.
       // validate() rejects such new games; this also covers sessions created
@@ -74,7 +74,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       return {
         stage: doBullOff ? 'bulloff' : 'game',
         bullOff: initBullOff({ mode: doBullOff ? (cfg.bullOff ?? 'off') : 'off', playerCount: n }),
-        game: game.init(cfg, players),
+        game: game.init(cfg, players, rng),
       }
     },
 

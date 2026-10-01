@@ -9,7 +9,7 @@ type CountConfig = { bullOff?: 'off' | 'wdc' | 'pdc' }
 const countGame: GameModule<CountState, CountConfig> = {
   id: 'count',
   defaultConfig: {},
-  init: (_cfg, players) => ({ order: players.map((_, i) => i), current: 0, darts: 0 }),
+  init: (_cfg, players, _rng) => ({ order: players.map((_, i) => i), current: 0, darts: 0 }),
   getCurrentPlayer: s => s.current,
   onBoardEvent: (s, e) => ({ state: e.kind === 'dart.detected' ? { ...s, darts: s.darts + 1 } : s }),
   onUserAction: s => ({ state: s }),

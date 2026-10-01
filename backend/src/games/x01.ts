@@ -1,6 +1,7 @@
 import type { GameModule, BoardEvent, Player, Dart, ConfigFieldMeta } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
 import type { X01View } from '../session/views.js'
+import type { Rng } from '../session/rng.js'
 
 export type X01Config = {
   startScore: 301 | 501 | 701
@@ -135,7 +136,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01'> = {
   },
   configMeta,
 
-  init(cfg: X01Config, players: Player[]): X01State {
+  init(cfg: X01Config, players: Player[], _rng?: Rng): X01State {
     const n = players.length
     return {
       cfg, phase: 'game',

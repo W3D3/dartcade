@@ -11,6 +11,7 @@ import type {
 } from '../schema/types.js'
 import type { UserAction } from '../schema/game-ws.js'
 import type { AtcView, X01ModuleView } from './views.js'
+import type { Rng } from './rng.js'
 
 // Aliases for shorter names throughout the backend
 export type Dart = ADetectedDart
@@ -54,7 +55,8 @@ export interface GameModule<S, Cfg = Record<string, never>, V extends object = R
   configMeta?: Record<string, ConfigFieldMeta>
   /** Reject a config that can't be played with these players; returns the reason. */
   validate?(cfg: Cfg, players: Player[]): string | null
-  init(cfg: Cfg, players: Player[]): S
+  /** `rng` drives any random setup; the engine passes one seeded per game. */
+  init(cfg: Cfg, players: Player[], rng?: Rng): S
   getCurrentPlayer(s: S): number
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }
   onUserAction(s: S, a: UserAction): { state: S; effects?: Effect[] }
@@ -81,6 +83,8 @@ export interface Session {
   currentState: unknown
   status: 'active' | 'finished'
   createdAt: Date
+  /** Seed of the generator passed to init(); stored so a replay sets the game up the same way. */
+  seed: number
   totalDarts: number[]
   totalVisits: number[]
   bmStatus: { status: string; running: boolean; event: string } | null

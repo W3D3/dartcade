@@ -4,6 +4,7 @@ import { refoldVisit } from './refold.js'
 import { manualDart } from './manualDart.js'
 import type { GameConfig, Session, Player, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
+import { newSeed, seededRng } from './rng.js'
 import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -75,7 +76,8 @@ export class SessionEngine {
     if (invalid) throw new Error(`invalid config: ${invalid}`)
 
     const sessionId = ulid()
-    const initialState = mod.init(config, players)
+    const seed = newSeed()
+    const initialState = mod.init(config, players, seededRng(seed))
     const session: Session = {
       id: sessionId, ownerUserId, boardId, players,
       module: mod,
@@ -84,6 +86,7 @@ export class SessionEngine {
       currentState: initialState,
       status: 'active',
       createdAt: new Date(),
+      seed,
       totalDarts: Array<number>(players.length).fill(0),
       totalVisits: Array<number>(players.length).fill(0),
       bmStatus: null,
@@ -294,7 +297,8 @@ export class SessionEngine {
         continue
       }
       const players = parsedPlayers.data
-      const initialState = mod.init(parsedConfig.data, players)
+      const seed = newSeed()
+      const initialState = mod.init(parsedConfig.data, players, seededRng(seed))
       const session: Session = {
         id: row.id, ownerUserId: row.owner_user_id, boardId, players,
         module: mod,
@@ -303,6 +307,7 @@ export class SessionEngine {
         currentState: initialState,
         status: 'active',
         createdAt: row.created_at,
+        seed,
         totalDarts: Array<number>(players.length).fill(0),
         totalVisits: Array<number>(players.length).fill(0),
         bmStatus: null,

@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { atcModule, buildSequence } from './atc.js'
 import type { ATCConfig, ATCState } from './atc.js'
 import type { BoardEvent, Player } from '../session/types.js'
+import { seededRng } from '../session/rng.js'
 
 const players: Player[] = [{ name: 'Alice' }, { name: 'Bob' }]
 const defaultCfg: ATCConfig = {
@@ -274,5 +275,17 @@ describe('view', () => {
     expect(v.sequence).toBeDefined()
     expect(v.currentPlayer).toBe(1)
     expect(v.winner).toBeNull()
+  })
+})
+
+describe('random order', () => {
+  const cfg = { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'random' } as const
+
+  it('shuffles the same way for the same seed', () => {
+    const a = atcModule.init(cfg, [{ name: 'A' }], seededRng(42))
+    const b = atcModule.init(cfg, [{ name: 'A' }], seededRng(42))
+    expect(a.sequence).toEqual(b.sequence)
+    expect(a.sequence).not.toEqual(buildSequence({ ...cfg, order: 'asc' }))
+    expect([...a.sequence].sort((x, y) => x - y)).toEqual(buildSequence({ ...cfg, order: 'asc' }))
   })
 })
