@@ -4,7 +4,7 @@ import svelte from 'eslint-plugin-svelte'
 import globals from 'globals'
 
 export default tseslint.config(
-  { ignores: ["dist/**", "src/lib/api/schema.ts", "src/lib/api/game-ws.ts", "eslint.config.js"] },
+  { ignores: ["dist/**", "src/lib/api/schema.ts", "src/lib/api/game-ws.ts", "src/lib/api/zod.ts", "eslint.config.js"] },
   ...tseslint.configs.strictTypeChecked,
   ...svelte.configs.recommended,
   {

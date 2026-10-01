@@ -2,12 +2,13 @@
 // Regenerates everything derived from schema/. Run from anywhere: `npm run gen:api` at the repo root.
 // Design: docs/superpowers/specs/2026-09-30-api-contract-design.md
 import { execFileSync } from 'node:child_process'
-import { copyFileSync, mkdirSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import openapiTS, { astToString } from 'openapi-typescript'
 import { compileFromFile } from 'json-schema-to-typescript'
 import $RefParser from '@apidevtools/json-schema-ref-parser'
+import { jsonSchemaToZod } from 'json-schema-to-zod'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 const r = (...p) => join(root, ...p)
@@ -54,10 +55,46 @@ async function genWs() {
   writeFileSync(join(BACKEND_SCHEMA, 'game-ws-v1.deref.json'), JSON.stringify(deref, null, 2) + '\n')
 }
 
+// zod schemas for parsing incoming data. Two rewrites before converting:
+// - oneOf → anyOf: json-schema-to-zod turns oneOf into z.any().superRefine(...), which infers `any`.
+//   Ours are discriminated by const fields, so anyOf accepts exactly the same data.
+// - additionalProperties: false is dropped: zod objects then strip unknown fields (tolerant
+//   reader) instead of rejecting the whole message. ajv (checkSnapshot, Fastify) stays strict.
+function prepForZod(s) {
+  if (Array.isArray(s)) return s.map(prepForZod)
+  if (!s || typeof s !== 'object') return s
+  return Object.fromEntries(Object.entries(s)
+    .filter(([k, v]) => !(k === 'additionalProperties' && v === false))
+    .map(([k, v]) => [k === 'oneOf' ? 'anyOf' : k, prepForZod(v)]))
+}
+
+async function genZod() {
+  const ws = prepForZod(await $RefParser.dereference(r('schema/game-ws-v1.json')))
+  const ab = prepForZod(await $RefParser.dereference(r('schema/adbridge-v1.json')))
+  const api = prepForZod(JSON.parse(readFileSync(join(BACKEND_SCHEMA, 'api-v1.deref.json'), 'utf8')))
+  const schemas = {
+    SnapshotSchema: ws.$defs.Snapshot,
+    ClientMessageSchema: ws.$defs.ClientMessage,
+    DartSchema: ab.$defs.Dart,
+    DartDetectedDataSchema: ab.$defs.DartDetectedData,
+    DartCorrectedDataSchema: ab.$defs.DartCorrectedData,
+    BaseEnvelopeSchema: ab.$defs.BaseEnvelope,
+    FeedEventDataSchema: api.components.schemas.BoardEvent.properties.data,
+  }
+  const body = "import { z } from 'zod'\n\n" + Object.entries(schemas)
+    .map(([name, schema]) => `export const ${name} = ${jsonSchemaToZod(schema, { withoutDescribes: true })}\n`)
+    .join('\n')
+    // Free-form values (additionalProperties: true, untyped data) as unknown, never any
+    .replaceAll('z.any()', 'z.unknown()')
+  writeTs(join(BACKEND_SCHEMA, 'zod.ts'), 'schema/*.json (zod schemas)', body)
+  copyFileSync(join(BACKEND_SCHEMA, 'zod.ts'), join(FRONTEND_API, 'zod.ts'))
+}
+
 function genGo() {
   run('go', ['generate', './internal/api'], r('bridge'))
 }
 
 await genHttp()
 await genWs()
+await genZod()
 genGo()

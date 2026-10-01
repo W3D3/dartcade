@@ -23,7 +23,8 @@
     "fastify": "4.29.1",
     "kysely": "0.28.17",
     "pg": "8.23.0",
-    "ulid": "2.4.0"
+    "ulid": "2.4.0",
+    "zod": "4.6.5"
   },
   "devDependencies": {
     "@types/node": "22.20.4",
