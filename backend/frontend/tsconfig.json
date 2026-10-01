@@ -5,6 +5,7 @@
     "moduleResolution": "bundler",
     "strict": true,
     "allowJs": true,
+    "checkJs": true,
     "skipLibCheck": true,
     "paths": {
       "$lib": ["./src/lib"],

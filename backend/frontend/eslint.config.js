@@ -32,6 +32,14 @@ export default tseslint.config(
     },
   },
   {
+    // Every component has a TypeScript script block, so svelte-check type-checks its
+    // template too (a component without one once rendered an unimported <BrandMark>)
+    files: ['**/*.svelte'],
+    rules: {
+      'svelte/block-lang': ['error', { enforceScriptPresent: true, script: 'ts', style: null }],
+    },
+  },
+  {
     // Tests may cast and use any to build partial fixtures
     files: ['**/*.test.ts'],
     rules: {
