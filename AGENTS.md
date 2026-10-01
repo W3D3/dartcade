@@ -77,6 +77,17 @@ corrected dart replays the open visit cleanly.
   `cd bridge && go test ./...`.
 - Type checks: `cd backend && npm run typecheck`, `cd backend/frontend && npm run typecheck`.
 
+## Commits and merging
+
+- Commit messages follow commitlint's conventional format: `type(scope): subject`
+  (`feat`, `fix`, `refactor`, `test`, `docs`, `chore`, …). Keep the subject short
+  and to the point: lower case, imperative, no trailing period, under 72
+  characters. Add a body only when the why isn't obvious.
+- Before merging, rewrite the branch into atomic commits: each one a single
+  self-contained change that builds and passes tests. Fold review fixes into the
+  commit they fix; no "address review" or "fix lint" commits.
+- Merge by rebasing onto `main` and fast-forwarding. Never squash-merge.
+
 ## UI design
 
 The UI design lives in the **Dartcade Platform Design** canvas on claude.ai:
