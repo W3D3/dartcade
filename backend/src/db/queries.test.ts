@@ -5,7 +5,6 @@ import {
   insertGameSession,
   getActiveGameSessions,
   getGameSessionById,
-  setGameSessionFinished,
   getSeats,
   appendSessionEvent,
   getSessionEvents,
@@ -14,7 +13,6 @@ import {
   abortGameSession,
   hasActiveSessionOnBoard,
   insertBridgeEvent,
-  getBridgeEventsForBoardDbId,
   insertPairingCode,
   getPairingCode,
   claimPairingCode,
@@ -82,8 +80,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       expect(row!.id).toBe('01JTEST00000000000000000AA')
     })
 
-    it('setGameSessionFinished removes from active', async () => {
-      await setGameSessionFinished(db, '01JTEST00000000000000000AA')
+    it('abortGameSession removes from active', async () => {
+      await abortGameSession(db, '01JTEST00000000000000000AA', new Date())
       const rows = await getActiveGameSessions(db)
       expect(rows).toHaveLength(0)
     })
@@ -108,13 +106,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       }
       const r2 = await insertBridgeEvent(db, ev)
       expect(r2).toEqual({ inserted: false, id: null })
-    })
-
-    it('getBridgeEventsForBoardDbId returns empty when board has no hardware_id', async () => {
-      const since = new Date(Date.now() - 60_000)
-      const rows = await getBridgeEventsForBoardDbId(db, 'board-db-1', since)
-      // board-db-1 has no hardware_id yet, so no events
-      expect(rows).toHaveLength(0)
     })
   })
 

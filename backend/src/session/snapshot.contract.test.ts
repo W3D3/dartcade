@@ -19,8 +19,11 @@ function engine() {
   const store: EngineStore = {
     insertSession: vi.fn().mockResolvedValue(undefined),
     getActiveSessions: vi.fn().mockResolvedValue([]),
-    getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
-    setSessionFinished: vi.fn().mockResolvedValue(undefined),
+    getSessionEvents: vi.fn().mockResolvedValue([]),
+    appendEvent: vi.fn().mockResolvedValue(undefined),
+    insertDarts: vi.fn().mockResolvedValue(undefined),
+    finishSession: vi.fn().mockResolvedValue(undefined),
+    abortSession: vi.fn().mockResolvedValue(undefined),
   }
   return new SessionEngine(store, vi.fn())
 }

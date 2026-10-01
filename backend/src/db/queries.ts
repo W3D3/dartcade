@@ -104,10 +104,6 @@ export async function getGameSessionById(db: Kysely<Database>, id: string) {
   return db.selectFrom('game_sessions').selectAll().where('id', '=', id).executeTakeFirst()
 }
 
-export async function setGameSessionFinished(db: Kysely<Database>, id: string): Promise<void> {
-  await db.updateTable('game_sessions').set({ status: 'finished' }).where('id', '=', id).execute()
-}
-
 export async function appendSessionEvent(db: Kysely<Database>, e: NewSessionEvent): Promise<void> {
   await db.insertInto('game_session_events').values({ ...e, data: JSON.stringify(e.data) }).execute()
 }
@@ -187,24 +183,6 @@ export async function insertBridgeEvent(
     .returning('id')
     .executeTakeFirst()
   return { inserted: row !== undefined, id: row === undefined ? null : String(row.id) }
-}
-
-export async function getBridgeEventsForBoardDbId(
-  db: Kysely<Database>,
-  boardDbId: string,
-  since: Date,
-) {
-  const board = await db.selectFrom('boards')
-    .select('hardware_id')
-    .where('id', '=', boardDbId)
-    .executeTakeFirst()
-  if (!board?.hardware_id) return []
-  return db.selectFrom('bridge_events')
-    .selectAll()
-    .where('board_id', '=', board.hardware_id)
-    .where('inserted_at', '>=', since)
-    .orderBy('inserted_at', 'asc')
-    .execute()
 }
 
 // ---------------------------------------------------------------------------

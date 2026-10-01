@@ -1,32 +1,36 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
-import { applyInput, type ApplyOutcome } from './apply.js'
-import type { GameConfig, Session, Player, UserAction, Snapshot } from './types.js'
+import { applyInput, type GameInput } from './apply.js'
+import type { GameConfig, Session, Player, SeatResult, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
-import { newSeed, seededRng } from './rng.js'
-import { z } from 'zod'
+import { newSeed } from './rng.js'
+import { StoredConfigSchema, dartRows, newSession, replay, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
-import type { NewGameSession, StoredGameSession } from '../db/queries.js'
+import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 
 type PushFn = (sessionId: string) => void
-/** Reports bridge data the engine had to ignore (message, details). */
-type WarnFn = (message: string, details: unknown) => void
 
 export interface EngineStore {
   insertSession(data: NewGameSession): Promise<void>
   getActiveSessions(): Promise<StoredGameSession[]>
-  getBridgeEventsForBoard(boardDbId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: Date }>>
-  setSessionFinished(id: string): Promise<void>
+  getSessionEvents(sessionId: string): Promise<StoredSessionEvent[]>
+  appendEvent(event: NewSessionEvent): Promise<void>
+  insertDarts(rows: NewGameDart[]): Promise<void>
+  finishSession(id: string, finishedAt: Date, results: SeatResult[]): Promise<void>
+  abortSession(id: string, finishedAt: Date): Promise<void>
 }
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
   return {
     insertSession: (d) => queries.insertGameSession(db, d),
     getActiveSessions: () => queries.getActiveGameSessions(db),
-    getBridgeEventsForBoard: (boardDbId, since) => queries.getBridgeEventsForBoardDbId(db, boardDbId, since),
-    setSessionFinished: (id) => queries.setGameSessionFinished(db, id),
+    getSessionEvents: (id) => queries.getSessionEvents(db, id),
+    appendEvent: (e) => queries.appendSessionEvent(db, e),
+    insertDarts: (rows) => queries.insertGameDarts(db, rows),
+    finishSession: (id, at, r) => queries.finishGameSession(db, id, at, r),
+    abortSession: (id, at) => queries.abortGameSession(db, id, at),
   }
 }
 
@@ -35,13 +39,13 @@ export class ActiveSessionError extends Error {
   constructor(message: string, readonly sessionId: string) { super(message) }
 }
 
-// Rows written by create(): JSONB, so validated before a session is restored from them
-const StoredConfigSchema = z.record(z.string(), z.unknown())
-
 export class SessionEngine {
   private byBoard: Map<string, Session> = new Map()
   private byId: Map<string, Session> = new Map()
   private byOwner: Map<string, Session> = new Map()
+  // Inputs of one session are logged and applied strictly one after another, so the
+  // log's order is the order they were applied in
+  private queues = new Map<string, Promise<unknown>>()
 
   constructor(
     private readonly store: EngineStore,
@@ -66,23 +70,7 @@ export class SessionEngine {
 
     const sessionId = ulid()
     const seed = newSeed()
-    const initialState = mod.init(config, players, seededRng(seed))
-    const session: Session = {
-      id: sessionId, ownerUserId, boardId, players,
-      module: mod,
-      committedState: initialState,
-      openVisitEvents: [],
-      openDarts: [],
-      currentState: initialState,
-      status: 'active',
-      createdAt: new Date(),
-      seed,
-      visitCount: 0,
-      nextSeq: 0,
-      totalDarts: Array<number>(players.length).fill(0),
-      totalVisits: Array<number>(players.length).fill(0),
-      bmStatus: null,
-    }
+    const session = newSession({ id: sessionId, ownerUserId, boardId, module: mod, config, players, seed, createdAt: new Date() })
     await this.store.insertSession({
       id: sessionId, owner_user_id: ownerUserId, board_db_id: boardId, game_id: gameId,
       game_version: mod.version, rng_seed: seed, config,
@@ -95,79 +83,82 @@ export class SessionEngine {
     return { sessionId }
   }
 
-  async onBridgeEvent(boardId: string, kind: string, data: unknown, _bridgeEventId: string | null = null): Promise<void> {
+  private enqueue<T>(sessionId: string, task: () => Promise<T>): Promise<T> {
+    const run = (this.queues.get(sessionId) ?? Promise.resolve()).then(task)
+    this.queues.set(sessionId, run.catch(() => undefined))
+    return run
+  }
+
+  async onBridgeEvent(boardId: string, kind: string, data: unknown, bridgeEventId: string | null = null): Promise<void> {
     const session = this.byBoard.get(boardId)
     if (!session) return
-
-    // Kinds the games don't use (and malformed dart data) change nothing but still push
     const event = parseBoardEvent(kind, data)
-    // A dart the games can't read would otherwise just not count, with no trace
     if (!event && (kind === 'dart.detected' || kind === 'dart.corrected')) {
       this.warn(`ignored ${kind} event: data does not match the bridge schema`, { boardId, data })
     }
+    // board.status only feeds the status pill: kept on the session, not logged
     if (event?.kind === 'board.status') session.bmStatus = readBoardStatus(event.data)
-    else if (event) await this.settle(session, applyInput(session, { source: 'board', event }, new Date()))
+    else if (event) await this.record(session, { source: 'board', event }, { kind, data }, bridgeEventId)
     this.push(session.id)
   }
 
   async onUserAction(sessionId: string, action: UserAction): Promise<void> {
     const session = this.byId.get(sessionId)
     if (!session) return
-    await this.settle(session, applyInput(session, { source: 'user', action }, new Date()))
+    await this.record(session, { source: 'user', action }, { kind: action.type, data: action }, null)
     this.push(session.id)
   }
 
-  private async settle(session: Session, outcome: ApplyOutcome): Promise<void> {
-    if (!outcome.won) return
+  // Log the input (raw, as received), then apply it and store what it committed
+  private record(session: Session, input: GameInput, raw: { kind: string; data: unknown }, bridgeEventId: string | null): Promise<void> {
+    return this.enqueue(session.id, async () => {
+      // A won or aborted game takes no more input
+      if (session.status !== 'active') return
+      const at = new Date()
+      await this.store.appendEvent({
+        session_id: session.id, seq: session.nextSeq, source: input.source,
+        kind: raw.kind, data: raw.data, bridge_event_id: bridgeEventId, created_at: at,
+      })
+      session.nextSeq++
+      const outcome = applyInput(session, input, at)
+      if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
+      if (outcome.won) await this.finish(session, at)
+    })
+  }
+
+  private async finish(session: Session, at: Date): Promise<void> {
     session.status = 'finished'
-    await this.store.setSessionFinished(session.id)
+    await this.store.finishSession(session.id, at, results(session))
     this.release(session)
   }
 
   async rebuild(): Promise<void> {
-    const rows = await this.store.getActiveSessions()
-    for (const row of rows) {
+    for (const row of await this.store.getActiveSessions()) {
       const mod = games[row.game_id]
-      // Only board sessions can be restored (their darts are stored as bridge
-      // events); close the rest so they don't block their owner forever.
-      if (!mod || !row.board_db_id || !row.owner_user_id) {
-        await this.store.setSessionFinished(row.id)
+      const config = StoredConfigSchema.safeParse(row.config)
+      // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
+      if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
+        await this.store.abortSession(row.id, new Date())
         continue
       }
-      const boardId = row.board_db_id
-      // Stored by create(); anything else can't be restored either
-      const parsedConfig = StoredConfigSchema.safeParse(row.config)
-      const players = row.players.map(p => ({ name: p.name }))
-      if (players.length === 0 || !parsedConfig.success) {
-        await this.store.setSessionFinished(row.id)
+      const session = newSession({
+        id: row.id, ownerUserId: row.owner_user_id, boardId: row.board_db_id, module: mod,
+        config: config.data, players: row.players.map(p => ({ name: p.name })),
+        seed: row.rng_seed, createdAt: row.created_at,
+      })
+      const events = await this.store.getSessionEvents(row.id)
+      const { visits, won } = replay(session, events, this.warn)
+      // Darts a crash kept from being stored; the ones already there are skipped
+      await this.store.insertDarts(visits.flatMap(v => dartRows(row.id, v)))
+      // The log ends in a win that wasn't saved: save it instead of resuming
+      if (won) {
+        session.status = 'finished'
+        await this.store.finishSession(row.id, events.at(-1)?.created_at ?? new Date(), results(session))
         continue
       }
-      const seed = row.rng_seed
-      const initialState = mod.init(parsedConfig.data, players, seededRng(seed))
-      const session: Session = {
-        id: row.id, ownerUserId: row.owner_user_id, boardId, players,
-        module: mod,
-        committedState: initialState,
-        openVisitEvents: [],
-        openDarts: [],
-        currentState: initialState,
-        status: 'active',
-        createdAt: row.created_at,
-        seed,
-        visitCount: 0,
-        nextSeq: 0,
-        totalDarts: Array<number>(players.length).fill(0),
-        totalVisits: Array<number>(players.length).fill(0),
-        bmStatus: null,
-      }
-      this.byBoard.set(boardId, session)
-      this.byOwner.set(row.owner_user_id, session)
-      this.byId.set(row.id, session)
-
-      const events = await this.store.getBridgeEventsForBoard(boardId, session.createdAt)
-      for (const ev of events) {
-        await this.onBridgeEvent(boardId, ev.kind, ev.data)
-      }
+      if (session.boardId) this.byBoard.set(session.boardId, session)
+      this.byOwner.set(session.ownerUserId, session)
+      this.byId.set(session.id, session)
     }
   }
 
@@ -219,10 +210,12 @@ export class SessionEngine {
   async deleteSession(sessionId: string): Promise<boolean> {
     const session = this.byId.get(sessionId)
     if (!session) return false
-    session.status = 'finished'
-    await this.store.setSessionFinished(sessionId)
-    this.release(session)
-    this.byId.delete(sessionId)
+    await this.enqueue(sessionId, async () => {
+      if (session.status === 'active') await this.store.abortSession(sessionId, new Date())
+      session.status = 'finished'
+      this.release(session)
+      this.byId.delete(sessionId)
+    })
     return true
   }
 

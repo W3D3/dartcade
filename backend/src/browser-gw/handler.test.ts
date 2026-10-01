@@ -111,8 +111,11 @@ describe('WS client messages', () => {
     const store = {
       insertSession: vi.fn().mockResolvedValue(undefined),
       getActiveSessions: vi.fn().mockResolvedValue([]),
-      getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
-      setSessionFinished: vi.fn().mockResolvedValue(undefined),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
@@ -155,8 +158,11 @@ describe('WS client messages', () => {
     const store = {
       insertSession: vi.fn().mockResolvedValue(undefined),
       getActiveSessions: vi.fn().mockResolvedValue([]),
-      getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
-      setSessionFinished: vi.fn().mockResolvedValue(undefined),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
@@ -204,8 +210,11 @@ describe('WS client messages', () => {
     const store = {
       insertSession: vi.fn().mockResolvedValue(undefined),
       getActiveSessions: vi.fn().mockResolvedValue([]),
-      getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
-      setSessionFinished: vi.fn().mockResolvedValue(undefined),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])

@@ -8,8 +8,11 @@ function makeStore() {
   return {
     insertSession: vi.fn().mockResolvedValue(undefined),
     getActiveSessions: vi.fn().mockResolvedValue([]),
-    getBridgeEventsForBoard: vi.fn().mockResolvedValue([]),
-    setSessionFinished: vi.fn().mockResolvedValue(undefined),
+    getSessionEvents: vi.fn().mockResolvedValue([]),
+    appendEvent: vi.fn().mockResolvedValue(undefined),
+    insertDarts: vi.fn().mockResolvedValue(undefined),
+    finishSession: vi.fn().mockResolvedValue(undefined),
+    abortSession: vi.fn().mockResolvedValue(undefined),
   } satisfies EngineStore
 }
 
@@ -47,9 +50,11 @@ describe('create', () => {
   })
 
   it('frees the slot once the session ends', async () => {
-    const engine = makeEngine()
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.deleteSession(sessionId)
+    expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date))
     expect(engine.getSessionByOwner('user-1')).toBeUndefined()
     await expect(engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])).resolves.toBeDefined()
   })
@@ -314,78 +319,14 @@ describe('onUserAction', () => {
   })
 
   it('empty takeout is ignored after a win', async () => {
-    const engine = makeEngine()
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 40, firstTo: 1 }, [{ name: 'A' }])
     await engine.onUserAction(sessionId, { type: 'add_dart', segment: { name: 'D20', number: 20, bed: 'Double', multiplier: 2 } })
     await engine.onUserAction(sessionId, { type: 'takeout' })
+    expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [expect.objectContaining({ placement: 1 })])
     await engine.onUserAction(sessionId, { type: 'takeout' })
     expect(engine.getSession(sessionId)!.totalVisits).toEqual([1])
-  })
-})
-
-describe('rebuild', () => {
-  it('restores session from store and replays bridge events to rebuild state', async () => {
-    const store = makeStore()
-    vi.mocked(store.getActiveSessions).mockResolvedValue([{
-      id: 'sess-rebuild',
-      owner_user_id: 'user-1',
-      board_db_id: 'board-r',
-      game_id: 'atc',
-      game_version: 1,
-      rng_seed: 0,
-      config: {},
-      players: [{ name: 'Alice', user_id: 'user-1' }],
-      created_at: new Date(),
-    }])
-    vi.mocked(store.getBridgeEventsForBoard).mockResolvedValue([
-      { kind: 'visit.opened', data: { visit_id: 'v1' }, recv_wall: new Date() },
-      {
-        kind: 'dart.detected',
-        data: { visit_id: 'v1', index: 0, dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 }, source_seq: 1 },
-        recv_wall: new Date(),
-      },
-    ])
-
-    const engine = new SessionEngine(store, push)
-    await engine.rebuild()
-
-    const session = engine.getSessionByBoard('board-r')
-    expect(session).toBeDefined()
-    expect(session!.id).toBe('sess-rebuild')
-    // visit.opened + dart.detected → target advances from 1 to 2, one dart in currentVisitDarts
-    const snap = engine.getSnapshot('sess-rebuild')!
-    expect((snap.game as any).currentVisitDarts).toHaveLength(1)
-    expect((snap.game as any).targets[0]).toBe(2)
-    expect(engine.getSessionByOwner('user-1')?.id).toBe('sess-rebuild')
-  })
-
-  it('closes active sessions it cannot restore (boardless or without owner)', async () => {
-    const store = makeStore()
-    vi.mocked(store.getActiveSessions).mockResolvedValue([
-      { id: 'no-board', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'A', user_id: 'user-1' }], created_at: new Date() },
-      { id: 'no-owner', owner_user_id: null, board_db_id: 'board-x', game_id: 'atc', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'A', user_id: null }], created_at: new Date() },
-    ])
-    const engine = new SessionEngine(store, push)
-    await engine.rebuild()
-    expect(store.setSessionFinished).toHaveBeenCalledWith('no-board')
-    expect(store.setSessionFinished).toHaveBeenCalledWith('no-owner')
-    expect(engine.getAllSessions()).toEqual([])
-    // the owner isn't blocked by the closed session
-    await expect(engine.create('user-1', null, 'atc', {}, [{ name: 'A' }])).resolves.toBeDefined()
-  })
-
-  // Seats now come from a typed query (game_players), not freeform JSONB, so only the
-  // config shape and an empty seat list (no row.players at all) can still be malformed.
-  it('closes sessions whose stored config is malformed, or with no seats', async () => {
-    const store = makeStore()
-    vi.mocked(store.getActiveSessions).mockResolvedValue([
-      { id: 'no-players', owner_user_id: 'user-1', board_db_id: 'board-a', game_id: 'atc', game_version: 1, rng_seed: 0, config: {}, players: [], created_at: new Date() },
-      { id: 'bad-config', owner_user_id: 'user-2', board_db_id: 'board-b', game_id: 'atc', game_version: 1, rng_seed: 0, config: [], players: [{ name: 'A', user_id: 'user-2' }], created_at: new Date() },
-    ])
-    const engine = new SessionEngine(store, push)
-    await engine.rebuild()
-    expect(store.setSessionFinished).toHaveBeenCalledWith('no-players')
-    expect(store.setSessionFinished).toHaveBeenCalledWith('bad-config')
   })
 })
 
