@@ -16,7 +16,7 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
     opened: [true, true], phase: 'game', order: [0, 1],
     currentPlayer: 0, round: 1,
     bustThisVisit: false, visitOpenedScores: [501, 501],
-    winner: null, playerCount: 2, ...overrides,
+    winner: null, playerCount: 2, pointsScored: [0, 0], ...overrides,
   }
 }
 

@@ -1,7 +1,8 @@
-import type { GameModule, BoardEvent, Player, Dart, ConfigFieldMeta } from '../session/types.js'
+import type { GameModule, BoardEvent, Player, Dart, ConfigFieldMeta, X01Detail, SeatResult } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
 import type { X01View } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
+import { rankSeats } from './ranking.js'
 
 export type X01Config = {
   startScore: 301 | 501 | 701
@@ -27,6 +28,15 @@ export type X01State = {
   visitOpenedScores: number[]
   winner: number | null
   playerCount: number
+  /** Points each player scored, busts counting 0; for the 3-dart average. */
+  pointsScored: number[]
+}
+
+// What the current player's visit scored: a bust resets the score and an unopened
+// player doesn't score, so the difference from the visit's start is exact
+function withVisitScored(s: X01State): number[] {
+  const cp = s.currentPlayer
+  return s.pointsScored.map((p, i) => i === cp ? p + s.visitOpenedScores[cp] - s.scores[cp] : p)
 }
 
 function effectiveDartScore(dart: Dart, bullValue: '25_50' | '50_50'): number {
@@ -128,8 +138,9 @@ export const configMeta: Record<keyof X01Config, ConfigFieldMeta> = {
 }
 
 /** X01 without a bull off; `x01Module` below adds it. */
-export const x01Game: GameModule<X01State, X01Config, X01View, 'x01'> = {
+export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail> = {
   id: 'x01',
+  version: 1,
   defaultConfig: {
     startScore: 501, inMode: 'straight', outMode: 'double',
     bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3,
@@ -148,6 +159,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01'> = {
       bustThisVisit: false,
       visitOpenedScores: Array<number>(n).fill(cfg.startScore),
       winner: null, playerCount: n,
+      pointsScored: Array<number>(n).fill(0),
     }
   },
 
@@ -192,14 +204,15 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01'> = {
 
       case 'takeout.finished': {
         const cp = s.currentPlayer
+        const pointsScored = withVisitScored(s)
 
         // Leg win
         if (s.scores[cp] === 0) {
           const legs = s.legs.map((l, i) => i === cp ? l + 1 : l)
           if (legs[cp] >= s.cfg.firstTo) {
-            return { state: { ...s, legs, winner: cp, phase: 'finished' } }
+            return { state: { ...s, legs, winner: cp, phase: 'finished', pointsScored } }
           }
-          return { state: { ...s, legs, ...freshLeg(s.cfg, s.playerCount, cp) } }
+          return { state: { ...s, legs, pointsScored, ...freshLeg(s.cfg, s.playerCount, cp) } }
         }
 
         const { nextPlayer, round } = nextTurn(s)
@@ -207,22 +220,23 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01'> = {
         if (round > s.cfg.maxRounds) {
           const minScore = Math.min(...s.scores)
           const winner = s.scores.indexOf(minScore)
-          return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished' } }
+          return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished', pointsScored } }
         }
 
-        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false } }
+        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false, pointsScored } }
       }
 
       case 'visit.cleared': {
+        const pointsScored = withVisitScored(s)
         const { nextPlayer, round } = nextTurn(s)
 
         if (round > s.cfg.maxRounds) {
           const minScore = Math.min(...s.scores)
           const winner = s.scores.indexOf(minScore)
-          return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished' } }
+          return { state: { ...s, currentPlayer: nextPlayer, round, winner, phase: 'finished', pointsScored } }
         }
 
-        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false } }
+        return { state: { ...s, currentPlayer: nextPlayer, round, bustThisVisit: false, pointsScored } }
       }
 
       default:
@@ -242,6 +256,47 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01'> = {
       config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode },
       visitLocked: s.bustThisVisit || s.scores[s.currentPlayer] === 0,
     }
+  },
+
+  getLeg(s: X01State): number {
+    return s.legs.reduce((a, b) => a + b, 0)
+  },
+
+  summarize(s: X01State, { totalDarts }): SeatResult[] {
+    const placements = rankSeats(s.playerCount, s.winner, (a, b) => (s.legs[b] - s.legs[a]) || (s.scores[a] - s.scores[b]))
+    return placements.map((placement, i) => {
+      const darts = totalDarts[i] ?? 0
+      return {
+        placement,
+        stats: {
+          average: darts > 0 ? s.pointsScored[i] / darts * 3 : 0,
+          dartsThrown: darts,
+          legsWon: s.legs[i],
+          pointsScored: s.pointsScored[i],
+        },
+      }
+    })
+  },
+
+  detail(visits): X01Detail {
+    const legs: X01Detail['legs'] = []
+    for (const v of visits) {
+      if (v.phase !== 'game') continue
+      let leg = legs.find(l => l.leg === v.leg)
+      if (!leg) {
+        leg = { leg: v.leg, starter: v.seat, winner: null, visits: [] }
+        legs.push(leg)
+      }
+      const bust = v.end.bustThisVisit
+      const remaining = v.end.scores[v.seat]
+      if (v.after.legs[v.seat] > v.start.legs[v.seat]) leg.winner = v.seat
+      leg.visits.push({
+        visit: v.visit, seat: v.seat, committedAt: v.committedAt, darts: v.darts,
+        scored: bust ? 0 : v.start.scores[v.seat] - remaining,
+        remaining, bust,
+      })
+    }
+    return { mode: 'x01', legs }
   },
 }
 

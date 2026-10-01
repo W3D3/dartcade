@@ -5004,6 +5004,485 @@
           }
         }
       },
+      "Segment": {
+        "title": "Segment",
+        "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+        "type": "object",
+        "required": [
+          "name",
+          "number",
+          "bed",
+          "multiplier"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 50
+          },
+          "bed": {
+            "type": "string",
+            "enum": [
+              "SingleInner",
+              "SingleOuter",
+              "Single",
+              "Double",
+              "Triple",
+              "Outside"
+            ]
+          },
+          "multiplier": {
+            "type": "integer",
+            "enum": [
+              0,
+              1,
+              2,
+              3
+            ]
+          }
+        }
+      },
+      "HistoryDart": {
+        "type": "object",
+        "required": [
+          "index",
+          "segment",
+          "coords",
+          "source",
+          "corrected",
+          "thrownAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 2,
+            "description": "Position in the visit"
+          },
+          "segment": {
+            "title": "Segment",
+            "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+            "type": "object",
+            "required": [
+              "name",
+              "number",
+              "bed",
+              "multiplier"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "number": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 50
+              },
+              "bed": {
+                "type": "string",
+                "enum": [
+                  "SingleInner",
+                  "SingleOuter",
+                  "Single",
+                  "Double",
+                  "Triple",
+                  "Outside"
+                ]
+              },
+              "multiplier": {
+                "type": "integer",
+                "enum": [
+                  0,
+                  1,
+                  2,
+                  3
+                ]
+              }
+            }
+          },
+          "coords": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "x",
+              "y"
+            ],
+            "additionalProperties": false,
+            "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+            "properties": {
+              "x": {
+                "type": "number"
+              },
+              "y": {
+                "type": "number"
+              }
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "camera",
+              "manual"
+            ]
+          },
+          "corrected": {
+            "type": "boolean",
+            "description": "A correction (camera or by hand) changed this dart"
+          },
+          "thrownAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "X01Detail": {
+        "type": "object",
+        "required": [
+          "mode",
+          "legs"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "x01"
+            ]
+          },
+          "legs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "leg",
+                "starter",
+                "winner",
+                "visits"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "leg": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "starter": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Seat that threw first in this leg"
+                },
+                "winner": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "nullable": true,
+                  "description": "null: the leg was cut short by the round limit"
+                },
+                "visits": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "visit",
+                      "seat",
+                      "committedAt",
+                      "darts",
+                      "scored",
+                      "remaining",
+                      "bust"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "visit": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "seat": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "committedAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "darts": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "index",
+                            "segment",
+                            "coords",
+                            "source",
+                            "corrected",
+                            "thrownAt"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "index": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "maximum": 2,
+                              "description": "Position in the visit"
+                            },
+                            "segment": {
+                              "title": "Segment",
+                              "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                              "type": "object",
+                              "required": [
+                                "name",
+                                "number",
+                                "bed",
+                                "multiplier"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "number": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 50
+                                },
+                                "bed": {
+                                  "type": "string",
+                                  "enum": [
+                                    "SingleInner",
+                                    "SingleOuter",
+                                    "Single",
+                                    "Double",
+                                    "Triple",
+                                    "Outside"
+                                  ]
+                                },
+                                "multiplier": {
+                                  "type": "integer",
+                                  "enum": [
+                                    0,
+                                    1,
+                                    2,
+                                    3
+                                  ]
+                                }
+                              }
+                            },
+                            "coords": {
+                              "type": "object",
+                              "nullable": true,
+                              "required": [
+                                "x",
+                                "y"
+                              ],
+                              "additionalProperties": false,
+                              "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                              "properties": {
+                                "x": {
+                                  "type": "number"
+                                },
+                                "y": {
+                                  "type": "number"
+                                }
+                              }
+                            },
+                            "source": {
+                              "type": "string",
+                              "enum": [
+                                "camera",
+                                "manual"
+                              ]
+                            },
+                            "corrected": {
+                              "type": "boolean",
+                              "description": "A correction (camera or by hand) changed this dart"
+                            },
+                            "thrownAt": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
+                      },
+                      "scored": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "remaining": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "bust": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "AtcDetail": {
+        "type": "object",
+        "required": [
+          "mode",
+          "visits"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "atc"
+            ]
+          },
+          "visits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "visit",
+                "seat",
+                "committedAt",
+                "darts",
+                "hits",
+                "targetBefore",
+                "targetAfter"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "visit": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "seat": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "committedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "darts": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "index",
+                      "segment",
+                      "coords",
+                      "source",
+                      "corrected",
+                      "thrownAt"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 2,
+                        "description": "Position in the visit"
+                      },
+                      "segment": {
+                        "title": "Segment",
+                        "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "number",
+                          "bed",
+                          "multiplier"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "number": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 50
+                          },
+                          "bed": {
+                            "type": "string",
+                            "enum": [
+                              "SingleInner",
+                              "SingleOuter",
+                              "Single",
+                              "Double",
+                              "Triple",
+                              "Outside"
+                            ]
+                          },
+                          "multiplier": {
+                            "type": "integer",
+                            "enum": [
+                              0,
+                              1,
+                              2,
+                              3
+                            ]
+                          }
+                        }
+                      },
+                      "coords": {
+                        "type": "object",
+                        "nullable": true,
+                        "required": [
+                          "x",
+                          "y"
+                        ],
+                        "additionalProperties": false,
+                        "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                        "properties": {
+                          "x": {
+                            "type": "number"
+                          },
+                          "y": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "source": {
+                        "type": "string",
+                        "enum": [
+                          "camera",
+                          "manual"
+                        ]
+                      },
+                      "corrected": {
+                        "type": "boolean",
+                        "description": "A correction (camera or by hand) changed this dart"
+                      },
+                      "thrownAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "hits": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 3
+                },
+                "targetBefore": {
+                  "type": "integer",
+                  "description": "Target at the start of the visit (1–20, 21 = 25, 22 = bull)"
+                },
+                "targetAfter": {
+                  "type": "integer",
+                  "description": "Target after the visit; past the last target means finished"
+                }
+              }
+            }
+          }
+        }
+      },
       "Health": {
         "type": "object",
         "required": [
@@ -6005,48 +6484,6 @@
           "sessionId": {
             "type": "string",
             "description": "The user's running session (absent when the board is busy)"
-          }
-        }
-      },
-      "Segment": {
-        "title": "Segment",
-        "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
-        "type": "object",
-        "required": [
-          "name",
-          "number",
-          "bed",
-          "multiplier"
-        ],
-        "additionalProperties": false,
-        "properties": {
-          "name": {
-            "type": "string"
-          },
-          "number": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 50
-          },
-          "bed": {
-            "type": "string",
-            "enum": [
-              "SingleInner",
-              "SingleOuter",
-              "Single",
-              "Double",
-              "Triple",
-              "Outside"
-            ]
-          },
-          "multiplier": {
-            "type": "integer",
-            "enum": [
-              0,
-              1,
-              2,
-              3
-            ]
           }
         }
       },

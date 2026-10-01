@@ -333,6 +333,71 @@ export interface components {
                 message: string;
             }[];
         };
+        /**
+         * Segment
+         * @description A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.
+         */
+        Segment: {
+            name: string;
+            number: number;
+            /** @enum {string} */
+            bed: "SingleInner" | "SingleOuter" | "Single" | "Double" | "Triple" | "Outside";
+            /** @enum {integer} */
+            multiplier: 0 | 1 | 2 | 3;
+        };
+        HistoryDart: {
+            /** @description Position in the visit */
+            index: number;
+            segment: components["schemas"]["Segment"];
+            /** @description Normalised board position (r = 1 at the outer double wire); null for a manual dart without one */
+            coords: {
+                x: number;
+                y: number;
+            } | null;
+            /** @enum {string} */
+            source: "camera" | "manual";
+            /** @description A correction (camera or by hand) changed this dart */
+            corrected: boolean;
+            /** Format: date-time */
+            thrownAt: string;
+        };
+        X01Detail: {
+            /** @enum {string} */
+            mode: "x01";
+            legs: {
+                leg: number;
+                /** @description Seat that threw first in this leg */
+                starter: number;
+                /** @description null: the leg was cut short by the round limit */
+                winner: number | null;
+                visits: {
+                    visit: number;
+                    seat: number;
+                    /** Format: date-time */
+                    committedAt: string;
+                    darts: components["schemas"]["HistoryDart"][];
+                    scored: number;
+                    remaining: number;
+                    bust: boolean;
+                }[];
+            }[];
+        };
+        AtcDetail: {
+            /** @enum {string} */
+            mode: "atc";
+            visits: {
+                visit: number;
+                seat: number;
+                /** Format: date-time */
+                committedAt: string;
+                darts: components["schemas"]["HistoryDart"][];
+                hits: number;
+                /** @description Target at the start of the visit (1–20, 21 = 25, 22 = bull) */
+                targetBefore: number;
+                /** @description Target after the visit; past the last target means finished */
+                targetAfter: number;
+            }[];
+        };
         Health: {
             ok: boolean;
         };
@@ -479,18 +544,6 @@ export interface components {
             error: string;
             /** @description The user's running session (absent when the board is busy) */
             sessionId?: string;
-        };
-        /**
-         * Segment
-         * @description A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.
-         */
-        Segment: {
-            name: string;
-            number: number;
-            /** @enum {string} */
-            bed: "SingleInner" | "SingleOuter" | "Single" | "Double" | "Triple" | "Outside";
-            /** @enum {integer} */
-            multiplier: 0 | 1 | 2 | 3;
         };
         /**
          * Coords

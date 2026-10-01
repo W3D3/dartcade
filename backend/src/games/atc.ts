@@ -1,7 +1,8 @@
 import type { GameModule, BoardEvent, Player, Dart } from '../session/types.js'
-import type { ConfigFieldMeta } from '../session/types.js'
+import type { ConfigFieldMeta, AtcDetail, SeatResult } from '../session/types.js'
 import type { AtcView } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
+import { rankSeats } from './ranking.js'
 
 export type ATCConfig = {
   throwAgainOnAllHit: boolean
@@ -128,8 +129,17 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
   },
 }
 
-export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
+/** Targets each player has completed (the winner: all of them). */
+export function hitCounts(s: ATCState): number[] {
+  return s.targets.map(t => {
+    const idx = s.sequence.indexOf(t)
+    return idx === -1 ? s.sequence.length : idx
+  })
+}
+
+export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetail> = {
   id: 'atc',
+  version: 1,
   defaultConfig: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
   configMeta,
 
@@ -193,10 +203,6 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
   },
 
   view(s: ATCState): AtcView {
-    const hitCounts = s.targets.map(t => {
-      const idx = s.sequence.indexOf(t)
-      return idx === -1 ? s.sequence.length : idx
-    })
     return {
       targets: s.targets,
       sequence: s.sequence,
@@ -204,7 +210,26 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc'> = {
       winner: s.winner,
       cfg: s.cfg,
       currentVisitHits: s.currentVisitHits,
-      hitCounts,
+      hitCounts: hitCounts(s),
+    }
+  },
+
+  summarize(s: ATCState, { totalDarts }): SeatResult[] {
+    const hits = hitCounts(s)
+    const placements = rankSeats(s.playerCount, s.winner,
+      (a, b) => (hits[b] - hits[a]) || ((totalDarts[a] ?? 0) - (totalDarts[b] ?? 0)))
+    return placements.map((placement, i) => ({ placement, stats: { dartsThrown: totalDarts[i] ?? 0, targetsHit: hits[i] } }))
+  },
+
+  detail(visits): AtcDetail {
+    return {
+      mode: 'atc',
+      visits: visits.map(v => ({
+        visit: v.visit, seat: v.seat, committedAt: v.committedAt, darts: v.darts,
+        hits: v.end.currentVisitHits.filter(Boolean).length,
+        targetBefore: v.start.targets[v.seat],
+        targetAfter: v.end.targets[v.seat],
+      })),
     }
   },
 }
