@@ -39,9 +39,11 @@ const mine = (game: GameSummary): GameSeat | undefined => game.players.find(p =>
 const others = (game: GameSummary): GameSeat[] => game.players.filter(p => p.seat !== game.mySeat)
 const stat = (p: GameSeat, key: string): number | undefined => Object.hasOwn(p.stats, key) ? p.stats[key] : undefined
 
-/** Everyone who played, in seat order; `me` marks the viewer's own seat. */
-export function playerNames(game: GameSummary): { name: string; me: boolean }[] {
-  return game.players.map(p => ({ name: p.name, me: p.seat === game.mySeat }))
+/** Everyone who played, in the order they threw (seat order for older games), numbered from 1. */
+export function playerBadges(game: GameSummary): { n: number; name: string; me: boolean }[] {
+  return [...game.players]
+    .sort((a, b) => (a.throwPosition ?? a.seat) - (b.throwPosition ?? b.seat))
+    .map((p, i) => ({ n: i + 1, name: p.name, me: p.seat === game.mySeat }))
 }
 
 const ordinal = (n: number) => {
@@ -80,27 +82,51 @@ export function historyStat(game: GameSummary): { value: string; label: string }
 
 export type Tile = { label: string; value: string; note: string | null; trend: 'up' | 'down' | null }
 
+const NONE = '–'
+const modeStats = (s: GameStats, mode: string) => Object.hasOwn(s.modes, mode) ? s.modes[mode] : undefined
 const modeStat = (s: GameStats, mode: string, key: string) => {
-  const m = Object.hasOwn(s.modes, mode) ? s.modes[mode] : undefined
+  const m = modeStats(s, mode)
   return m && Object.hasOwn(m.stats, key) ? m.stats[key] : undefined
 }
+const plain = (label: string, value: string, note: string | null = null): Tile => ({ label, value, note, trend: null })
+const won = (wins: number, contested: number): Tile =>
+  contested > 0 ? plain('Won', String(wins), `${Math.round(wins / contested * 100)}%`) : plain('Won', NONE)
+const period = (days: number) => days === 30 ? 'last month' : `previous ${days} days`
 
-/** The four tiles above the list (design: History). "–" where there's nothing yet. */
-export function statTiles(s: GameStats): Tile[] {
-  const avg = modeStat(s, 'x01', 'average')
-  const atc = modeStat(s, 'atc', 'dartsThrown')
-  const delta = avg && avg.previousAvg !== null ? avg.avg - avg.previousAvg : null
-  return [
-    { label: `Matches · ${s.days} days`, value: String(s.matches), note: null, trend: null },
-    s.contested > 0
-      ? { label: 'Won', value: String(s.wins), note: `${Math.round(s.wins / s.contested * 100)}%`, trend: null }
-      : { label: 'Won', value: '–', note: null, trend: null },
-    {
-      label: 'X01 3-dart average',
-      value: avg ? avg.avg.toFixed(1) : '–',
-      note: delta === null ? null : `${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)} vs previous ${s.days} days`,
+/**
+ * The tiles above the list (design: History). "All" shows your overall numbers; a game
+ * mode shows only that mode's, so the tiles change with the filter. "–" where there's
+ * nothing yet.
+ */
+export function statTiles(s: GameStats, mode: string | null, title: (mode: string) => string): Tile[] {
+  if (mode === null) {
+    const darts = Object.values(s.modes).reduce((sum, m) => sum + (Object.hasOwn(m.stats, 'dartsThrown') ? m.stats.dartsThrown.sum : 0), 0)
+    const most = Object.entries(s.modes).sort(([, a], [, b]) => b.matches - a.matches).at(0)
+    return [
+      plain(`Matches · ${s.days} days`, String(s.matches)),
+      won(s.wins, s.contested),
+      plain('Darts thrown', s.matches > 0 ? darts.toLocaleString('en-GB') : NONE),
+      most ? plain('Most played', title(most[0]), `${most[1].matches} ${most[1].matches === 1 ? 'match' : 'matches'}`) : plain('Most played', NONE),
+    ]
+  }
+  const m = modeStats(s, mode)
+  const head = [plain(`${title(mode)} matches · ${s.days} days`, String(m?.matches ?? 0)), won(m?.wins ?? 0, m?.contested ?? 0)]
+  if (mode === 'x01') {
+    const avg = modeStat(s, 'x01', 'average')
+    const checkout = modeStat(s, 'x01', 'bestCheckout')
+    const delta = avg && avg.previousAvg !== null ? avg.avg - avg.previousAvg : null
+    return [...head, {
+      label: '3-dart average',
+      value: avg ? avg.avg.toFixed(1) : NONE,
+      note: delta === null ? null : `${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)} vs ${period(s.days)}`,
       trend: delta === null ? null : delta >= 0 ? 'up' : 'down',
-    },
-    { label: 'Around the Clock best', value: atc ? String(atc.min) : '–', note: atc ? 'darts' : null, trend: null },
-  ]
+    }, plain('Best checkout', checkout ? String(checkout.max) : NONE)]
+  }
+  if (mode === 'atc') {
+    const finish = modeStat(s, 'atc', 'dartsToFinish')
+    return [...head,
+      plain('Best finish', finish ? String(finish.min) : NONE, finish ? 'darts' : null),
+      plain('Average finish', finish ? String(Math.round(finish.avg)) : NONE, finish ? 'darts' : null)]
+  }
+  return head
 }

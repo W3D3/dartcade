@@ -4,7 +4,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
-  import { formatWhen, historyStat, playerNames, resultLabel, rulesLine, statTiles } from '$lib/history'
+  import { formatWhen, historyStat, playerBadges, resultLabel, rulesLine, statTiles } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
 
   // Guards against a stale response winning a race: a quick filter switch leaves the
@@ -23,7 +23,9 @@
   let loadMoreError = $state('')
   const now = new Date()
 
-  const tiles = $derived(stats ? statTiles(stats) : [])
+  // The tiles follow the filter: overall numbers for All, that mode's own otherwise
+  const tiles = $derived(stats ? statTiles(stats, mode, m => getGameView(m).shortTitle) : [])
+  const tilesLabel = $derived(`${mode === null ? 'Your' : getGameView(mode).title} stats, last ${stats?.days ?? 30} days`)
   const filters = $derived([{ id: null, name: 'All' }, ...modes.map(m => ({ id: m.id, name: getGameView(m.id).title }))])
 
   async function loadGames(cursor: string | null, token: number) {
@@ -73,6 +75,13 @@
   })
 </script>
 
+<!-- A player in throw order; your own badge is outlined in the accent colour -->
+{#snippet badge(p: { n: number; name: string; me: boolean })}
+  <span class="inline-flex h-[26px] items-center gap-[5px] whitespace-nowrap rounded-md border py-0 pl-[7px] pr-[9px] text-[13px] {p.me ? 'border-accent bg-[#2b3417] font-bold text-text' : 'border-line-2 bg-surface-inset font-medium text-[#c9c9bf]'}">
+    <span class="font-mono text-[11px] {p.me ? 'font-medium text-accent' : 'text-text-dim'}">{p.n}</span>{p.name}
+  </span>
+{/snippet}
+
 <Layout>
   <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-auto px-4 py-6 md:px-11 md:py-10">
     <header class="flex flex-wrap items-end justify-between gap-6">
@@ -91,15 +100,14 @@
     </header>
 
     {#if tiles.length}
-      <dl class="m-0 grid grid-cols-2 rounded-[14px] border border-line-2 bg-surface-panel lg:grid-cols-4">
-        {#each tiles as t, i (t.label)}
-          <!-- Below lg: 2x2 grid, divider between each row's two tiles and above row 2.
-               At lg: a single row of 4, so every tile after the first gets one left divider. -->
-          <div class="flex flex-col gap-1.5 px-[22px] py-[18px] {i % 2 === 1 ? 'max-lg:border-l max-lg:border-line-2' : ''} {i >= 2 ? 'max-lg:border-t max-lg:border-line-2' : ''} {i > 0 ? 'lg:border-l lg:border-line-2' : ''}">
+      <!-- 1px gaps over the line colour draw the dividers, in the 2x2 and the single row alike -->
+      <dl aria-label={tilesLabel} class="m-0 grid flex-shrink-0 grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-line-2 bg-line-2 lg:grid-cols-4">
+        {#each tiles as t (t.label)}
+          <div class="flex flex-col gap-1.5 bg-surface-panel px-[22px] py-[18px]">
             <dt class="text-[12px] uppercase tracking-[0.1em] text-text-dim">{t.label}</dt>
             <dd class="m-0 flex items-baseline gap-2.5">
               <span class="font-display text-[40px] font-bold leading-none">{t.value}</span>
-              {#if t.note}<span class="text-[15px] {t.trend === 'up' ? 'text-accent' : 'text-text-muted'}">{t.note}</span>{/if}
+              {#if t.note}<span class="whitespace-nowrap text-[15px] {t.trend === 'up' ? 'text-accent' : 'text-text-muted'}">{t.note}</span>{/if}
             </dd>
           </div>
         {/each}
@@ -123,11 +131,10 @@
             {@const when = formatWhen(g.finishedAt, now)}
             {@const result = resultLabel(g)}
             {@const key = historyStat(g)}
-            {@const names = playerNames(g)}
-            {@const lead = names.at(0)}
+            {@const badges = playerBadges(g)}
             {@const rules = rulesLine(g)}
             <li class="border-b border-line px-[22px] py-3 lg:min-h-[68px] lg:py-0">
-              <!-- Narrow screens: two lines, title+when / players+rules, badge and stat at the end of each -->
+              <!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
               <div class="flex flex-col gap-1 lg:hidden">
                 <div class="flex items-baseline justify-between gap-3">
                   <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
@@ -137,15 +144,16 @@
                   <span class="shrink-0 inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won ? 'bg-accent text-accent-fg' : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span>
                 </div>
                 <div class="flex items-baseline justify-between gap-3">
-                  <span class="min-w-0 truncate text-[13px] text-text-muted">{#each names as p, i (i)}{#if i > 0},&nbsp;{/if}<span class={p.me ? 'font-semibold text-text' : ''}>{p.name}</span>{/each}{rules ? ` · ${rules}` : ''}</span>
+                  <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">{#each badges as p (p.n)}{@render badge(p)}{/each}</span>
                   {#if key}
                     <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span>
                   {/if}
                 </div>
+                {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
               </div>
 
               <!-- lg and up: the full column grid -->
-              <div class="hidden lg:grid lg:h-[68px] lg:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4">
+              <div class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4">
                 <span class="flex flex-col gap-0.5">
                   <span class="text-[15px] font-semibold">{when.day}</span>
                   <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
@@ -154,9 +162,8 @@
                   <span class="font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]">{getGameView(g.mode).title}</span>
                   <span class="text-[13px] text-text-muted">{rules}</span>
                 </span>
-                <span class="flex min-w-0 items-center gap-2.5">
-                  <span class="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-bold {lead?.me ? 'bg-accent text-accent-fg' : 'bg-line-chip'}">{lead?.name.charAt(0).toUpperCase()}</span>
-                  <span class="overflow-hidden text-ellipsis whitespace-nowrap text-[15px] text-[#c9c9bf]">{#each names as p, i (i)}{#if i > 0},&nbsp;{/if}<span class={p.me ? 'font-semibold text-text' : ''}>{p.name}</span>{/each}</span>
+                <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-2.5">
+                  {#each badges as p (p.n)}{@render badge(p)}{/each}
                 </span>
                 <span>
                   <span class="inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won ? 'bg-accent text-accent-fg' : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span>
