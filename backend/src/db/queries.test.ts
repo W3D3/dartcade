@@ -146,6 +146,20 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       await abortGameSession(db, 'g-darts', new Date())
     })
 
+    it('inserts more rows than fit in one statement (chunked)', async () => {
+      await newGame('g-darts-many')
+      const rowCount = 2500 // several chunks at the 1000-row chunk size
+      const rows = Array.from({ length: rowCount }, (_, visit) => ({
+        session_id: 'g-darts-many', visit, dart_index: 0, seat: 0, leg: 0, phase: 'game' as const,
+        segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }, coords: null,
+        source: 'camera' as const, corrected: false, thrown_at: new Date(),
+      }))
+      await insertGameDarts(db, rows)
+      const n = await db.selectFrom('game_darts').select(db.fn.countAll<string>().as('n')).where('session_id', '=', 'g-darts-many').executeTakeFirstOrThrow()
+      expect(Number(n.n)).toBe(rowCount)
+      await abortGameSession(db, 'g-darts-many', new Date())
+    })
+
     it('finishes with placements and stats, aborts without', async () => {
       const at = new Date('2026-10-01T11:00:00.000Z')
       // Created and finished one at a time: game_sessions_one_active_per_owner (migration 005)

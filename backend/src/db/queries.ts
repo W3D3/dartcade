@@ -31,10 +31,15 @@ export async function runMigrations(db: Kysely<Database>, opts: { until?: string
     const statements = migrationSql
       .split('\n').filter(l => !l.trimStart().startsWith('--')).join('\n')
       .split(';').map(s => s.trim()).filter(s => s.length > 0)
-    for (const stmt of statements) {
-      await sql.raw(stmt).execute(db)
-    }
-    await sql`INSERT INTO schema_migrations (name) VALUES (${file})`.execute(db)
+    // All of a file's statements plus its schema_migrations row commit together, so a
+    // failure partway through (e.g. 006's FK rewrite) leaves nothing half-applied to
+    // make the next run fail on.
+    await db.transaction().execute(async (trx) => {
+      for (const stmt of statements) {
+        await sql.raw(stmt).execute(trx)
+      }
+      await sql`INSERT INTO schema_migrations (name) VALUES (${file})`.execute(trx)
+    })
     if (file === opts.until) break
   }
 }
@@ -117,13 +122,21 @@ export async function getSessionEvents(db: Kysely<Database>, sessionId: string):
     .execute()
 }
 
+// Keeps one insert well under Postgres' 65535 bind-parameter limit regardless of how
+// many columns game_darts has (a very long game can commit thousands of darts at once,
+// e.g. rebuild() re-inserting a whole session's history).
+const DART_INSERT_CHUNK_SIZE = 1000
+
 /** Darts of committed visits; ones already stored are skipped (a rebuild re-inserts them all). */
 export async function insertGameDarts(db: Kysely<Database>, rows: NewGameDart[]): Promise<void> {
   if (rows.length === 0) return
-  await db.insertInto('game_darts')
-    .values(rows.map(r => ({ ...r, segment: JSON.stringify(r.segment), coords: r.coords === null ? null : JSON.stringify(r.coords) })))
-    .onConflict(oc => oc.columns(['session_id', 'visit', 'dart_index']).doNothing())
-    .execute()
+  const values = rows.map(r => ({ ...r, segment: JSON.stringify(r.segment), coords: r.coords === null ? null : JSON.stringify(r.coords) }))
+  for (let i = 0; i < values.length; i += DART_INSERT_CHUNK_SIZE) {
+    await db.insertInto('game_darts')
+      .values(values.slice(i, i + DART_INSERT_CHUNK_SIZE))
+      .onConflict(oc => oc.columns(['session_id', 'visit', 'dart_index']).doNothing())
+      .execute()
+  }
 }
 
 /** The game was won: placements and stats per seat (in seat order). */
