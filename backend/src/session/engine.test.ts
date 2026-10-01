@@ -331,8 +331,10 @@ describe('rebuild', () => {
       owner_user_id: 'user-1',
       board_db_id: 'board-r',
       game_id: 'atc',
+      game_version: 1,
+      rng_seed: 0,
       config: {},
-      players: [{ name: 'Alice' }],
+      players: [{ name: 'Alice', user_id: 'user-1' }],
       created_at: new Date(),
     }])
     vi.mocked(store.getBridgeEventsForBoard).mockResolvedValue([
@@ -360,8 +362,8 @@ describe('rebuild', () => {
   it('closes active sessions it cannot restore (boardless or without owner)', async () => {
     const store = makeStore()
     vi.mocked(store.getActiveSessions).mockResolvedValue([
-      { id: 'no-board', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc', config: {}, players: [{ name: 'A' }], created_at: new Date() },
-      { id: 'no-owner', owner_user_id: null, board_db_id: 'board-x', game_id: 'atc', config: {}, players: [{ name: 'A' }], created_at: new Date() },
+      { id: 'no-board', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'A', user_id: 'user-1' }], created_at: new Date() },
+      { id: 'no-owner', owner_user_id: null, board_db_id: 'board-x', game_id: 'atc', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'A', user_id: null }], created_at: new Date() },
     ])
     const engine = new SessionEngine(store, push)
     await engine.rebuild()
@@ -372,19 +374,18 @@ describe('rebuild', () => {
     await expect(engine.create('user-1', null, 'atc', {}, [{ name: 'A' }])).resolves.toBeDefined()
   })
 
-  it('closes sessions whose stored players or config are malformed', async () => {
+  // Seats now come from a typed query (game_players), not freeform JSONB, so only the
+  // config shape and an empty seat list (no row.players at all) can still be malformed.
+  it('closes sessions whose stored config is malformed, or with no seats', async () => {
     const store = makeStore()
     vi.mocked(store.getActiveSessions).mockResolvedValue([
-      { id: 'bad-players', owner_user_id: 'user-1', board_db_id: 'board-a', game_id: 'atc', config: {}, players: [{ nom: 'A' }], created_at: new Date() },
-      { id: 'bad-config', owner_user_id: 'user-2', board_db_id: 'board-b', game_id: 'atc', config: [], players: [{ name: 'A' }], created_at: new Date() },
-      { id: 'extra-fields', owner_user_id: 'user-3', board_db_id: 'board-c', game_id: 'atc', config: {}, players: [{ name: 'A', legacy: true }], created_at: new Date() },
+      { id: 'no-players', owner_user_id: 'user-1', board_db_id: 'board-a', game_id: 'atc', game_version: 1, rng_seed: 0, config: {}, players: [], created_at: new Date() },
+      { id: 'bad-config', owner_user_id: 'user-2', board_db_id: 'board-b', game_id: 'atc', game_version: 1, rng_seed: 0, config: [], players: [{ name: 'A', user_id: 'user-2' }], created_at: new Date() },
     ])
     const engine = new SessionEngine(store, push)
     await engine.rebuild()
-    expect(store.setSessionFinished).toHaveBeenCalledWith('bad-players')
+    expect(store.setSessionFinished).toHaveBeenCalledWith('no-players')
     expect(store.setSessionFinished).toHaveBeenCalledWith('bad-config')
-    // A stored player with an extra field is still restored, without the field
-    expect(engine.getSession('extra-fields')?.players).toEqual([{ name: 'A' }])
   })
 })
 

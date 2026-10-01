@@ -5,11 +5,10 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
-import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard } from '../db/queries.js'
+import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard, hasActiveSessionOnBoard } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import { z } from 'zod'
-import { pgErrorCode } from '../db/errors.js'
 
 // Board Manager's /api/state, as far as we pass it on: each field falls back on its own
 const BmStateSchema = z.object({
@@ -146,12 +145,8 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   app.delete<Route<'deleteBoard'>>('/api/boards/:id', { preValidation: requireAuth, schema: fromSpec('deleteBoard') }, async (req, reply) => {
     const { id } = req.params
     if (!await ownBoard(id, req.userId, reply)) return reply
-    try {
-      await deleteBoard(db, id)
-    } catch (err) {
-      if (pgErrorCode(err) === '23503') return reply.code(409).send({ error: 'board has active sessions' })
-      throw err
-    }
+    if (await hasActiveSessionOnBoard(db, id)) return reply.code(409).send({ error: 'board has a game running' })
+    await deleteBoard(db, id)
     return reply.code(204).send()
   })
 

@@ -122,7 +122,7 @@ export function handleBridgeConnection(
         conn.bootId = bootId
       }
 
-      const { inserted } = await insertBridgeEvent(db, {
+      const { inserted, id } = await insertBridgeEvent(db, {
         bridge_id: bridgeId,
         boot_id: bootId,
         seq: BigInt(seq),
@@ -137,7 +137,7 @@ export function handleBridgeConnection(
 
       bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })
 
-      await engine.onBridgeEvent(boardDbId, kind, data)
+      await engine.onBridgeEvent(boardDbId, kind, data, id)
     }).catch((err: unknown) => { console.error('Bridge event processing error:', err) })
   })
 

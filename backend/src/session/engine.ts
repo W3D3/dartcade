@@ -9,14 +9,15 @@ import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
+import type { NewGameSession, StoredGameSession } from '../db/queries.js'
 
 type PushFn = (sessionId: string) => void
 /** Reports bridge data the engine had to ignore (message, details). */
 type WarnFn = (message: string, details: unknown) => void
 
 export interface EngineStore {
-  insertSession(data: { id: string; owner_user_id: string; board_db_id: string | null; game_id: string; config: unknown; players: unknown }): Promise<void>
-  getActiveSessions(): Promise<Array<{ id: string; owner_user_id: string | null; board_db_id: string | null; game_id: string; config: unknown; players: unknown; created_at: Date }>>
+  insertSession(data: NewGameSession): Promise<void>
+  getActiveSessions(): Promise<StoredGameSession[]>
   getBridgeEventsForBoard(boardDbId: string, since: Date): Promise<Array<{ kind: string; data: unknown; recv_wall: Date }>>
   setSessionFinished(id: string): Promise<void>
 }
@@ -46,7 +47,6 @@ function hasWinner(session: Session, state: unknown): boolean {
 }
 
 // Rows written by create(): JSONB, so validated before a session is restored from them
-const StoredPlayersSchema = z.array(z.object({ name: z.string() }))
 const StoredConfigSchema = z.record(z.string(), z.unknown())
 
 export class SessionEngine {
@@ -91,14 +91,19 @@ export class SessionEngine {
       totalVisits: Array<number>(players.length).fill(0),
       bmStatus: null,
     }
-    await this.store.insertSession({ id: sessionId, owner_user_id: ownerUserId, board_db_id: boardId, game_id: gameId, config, players })
+    await this.store.insertSession({
+      id: sessionId, owner_user_id: ownerUserId, board_db_id: boardId, game_id: gameId,
+      game_version: mod.version, rng_seed: seed, config,
+      // Only the creator's seat is an account for now (#41 adds others)
+      players: players.map((p, seat) => ({ name: p.name, user_id: seat === 0 ? ownerUserId : null })),
+    })
     if (boardId) this.byBoard.set(boardId, session)
     this.byOwner.set(ownerUserId, session)
     this.byId.set(sessionId, session)
     return { sessionId }
   }
 
-  async onBridgeEvent(boardId: string, kind: string, data: unknown): Promise<void> {
+  async onBridgeEvent(boardId: string, kind: string, data: unknown, _bridgeEventId: string | null = null): Promise<void> {
     const session = this.byBoard.get(boardId)
     if (!session) return
 
@@ -290,14 +295,13 @@ export class SessionEngine {
       }
       const boardId = row.board_db_id
       // Stored by create(); anything else can't be restored either
-      const parsedPlayers = StoredPlayersSchema.safeParse(row.players)
       const parsedConfig = StoredConfigSchema.safeParse(row.config)
-      if (!parsedPlayers.success || !parsedConfig.success) {
+      const players = row.players.map(p => ({ name: p.name }))
+      if (players.length === 0 || !parsedConfig.success) {
         await this.store.setSessionFinished(row.id)
         continue
       }
-      const players = parsedPlayers.data
-      const seed = newSeed()
+      const seed = row.rng_seed
       const initialState = mod.init(parsedConfig.data, players, seededRng(seed))
       const session: Session = {
         id: row.id, ownerUserId: row.owner_user_id, boardId, players,
