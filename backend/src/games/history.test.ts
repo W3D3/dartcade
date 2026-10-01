@@ -36,6 +36,21 @@ describe('X01 pointsScored', () => {
     expect(s.pointsScored).toEqual([301, 1])
     expect(s.winner).toBe(0)
   })
+
+  it('does not double count the previous visit when a board.resync drops the next visit.opened', () => {
+    // The engine clears the open visit (including a pending visit.opened) on a
+    // board.resync (see apply.ts applyBoardEvent 'board.resync'); the next visit's
+    // darts then arrive straight after a commit, with no visit.opened in between.
+    const solo = [{ name: 'Solo' }]
+    let s = x01Game.init({ ...cfg, firstTo: 5 }, solo)
+    s = visit(s, [T20, T20, T20])          // 180 scored, 121 left
+    // No visit.opened here: simulates a resync swallowing it.
+    s = x01Game.onBoardEvent(s, dartEvent(S20, 0)).state
+    s = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state
+    expect(s.scores).toEqual([101])
+    // 180 + 20 actually scored; the bug would also re-add the 180 from the first visit.
+    expect(s.pointsScored).toEqual([200])
+  })
 })
 
 describe('X01 summarize', () => {
