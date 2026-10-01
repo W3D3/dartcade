@@ -25,6 +25,10 @@
     },
     {
       "name": "games",
+      "description": "Finished games (history)"
+    },
+    {
+      "name": "gamemodes",
       "description": "Available game modes"
     },
     {
@@ -115,27 +119,27 @@
         }
       }
     },
-    "/api/games": {
+    "/api/gamemodes": {
       "get": {
-        "operationId": "listGames",
+        "operationId": "listGameModes",
         "summary": "List game modes with their default config and config metadata",
         "tags": [
-          "games"
+          "gamemodes"
         ],
         "security": [],
         "responses": {
           "200": {
-            "description": "Available games",
+            "description": "Available game modes",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "required": [
-                    "games"
+                    "modes"
                   ],
                   "additionalProperties": false,
                   "properties": {
-                    "games": {
+                    "modes": {
                       "type": "array",
                       "items": {
                         "type": "object",
@@ -199,6 +203,1127 @@
                                 }
                               }
                             }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games": {
+      "get": {
+        "operationId": "listGames",
+        "summary": "Finished games the signed-in user played in, newest first",
+        "tags": [
+          "games"
+        ],
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Only this game mode"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 25
+            }
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "nextCursor of the previous page"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of games",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "games",
+                    "nextCursor"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "games": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "mode",
+                          "config",
+                          "createdAt",
+                          "finishedAt",
+                          "board",
+                          "mySeat",
+                          "players"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "mode": {
+                            "type": "string"
+                          },
+                          "config": {
+                            "type": "object",
+                            "additionalProperties": true
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "finishedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "board": {
+                            "type": "object",
+                            "nullable": true,
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "mySeat": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "nullable": true
+                          },
+                          "players": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "seat",
+                                "name",
+                                "userId",
+                                "placement",
+                                "stats"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "seat": {
+                                  "type": "integer",
+                                  "minimum": 0
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "userId": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                                },
+                                "placement": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "stats": {
+                                  "type": "object",
+                                  "additionalProperties": {
+                                    "type": "number"
+                                  },
+                                  "description": "Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "nextCursor": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/stats": {
+      "get": {
+        "operationId": "getGameStats",
+        "summary": "The signed-in user's results over the last days, per game mode",
+        "tags": [
+          "games"
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Totals and per-mode stat aggregates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "days",
+                    "matches",
+                    "wins",
+                    "contested",
+                    "modes"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "days": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "matches": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "wins": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "1st place in a contested game"
+                    },
+                    "contested": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Games with two or more seats; win rate = wins / contested"
+                    },
+                    "modes": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "required": [
+                          "matches",
+                          "wins",
+                          "contested",
+                          "stats"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "matches": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "wins": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "contested": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Games with two or more seats"
+                          },
+                          "stats": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "object",
+                              "required": [
+                                "avg",
+                                "min",
+                                "max",
+                                "previousAvg"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "avg": {
+                                  "type": "number"
+                                },
+                                "min": {
+                                  "type": "number"
+                                },
+                                "max": {
+                                  "type": "number"
+                                },
+                                "previousAvg": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Average over the period before; null without games then"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/games/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getGame",
+        "summary": "A finished game with its per-mode detail",
+        "description": "Visible to the players holding a seat, or to anyone signed in if the game is public. Anything else is 404.",
+        "tags": [
+          "games"
+        ],
+        "responses": {
+          "200": {
+            "description": "The game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "game",
+                    "detail"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "game": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "mode",
+                        "config",
+                        "createdAt",
+                        "finishedAt",
+                        "board",
+                        "mySeat",
+                        "players"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "mode": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "type": "object",
+                          "additionalProperties": true
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "finishedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "board": {
+                          "type": "object",
+                          "nullable": true,
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "mySeat": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "nullable": true
+                        },
+                        "players": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "seat",
+                              "name",
+                              "userId",
+                              "placement",
+                              "stats"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "seat": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "name": {
+                                "type": "string"
+                              },
+                              "userId": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                              },
+                              "placement": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "stats": {
+                                "type": "object",
+                                "additionalProperties": {
+                                  "type": "number"
+                                },
+                                "description": "Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "detail": {
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "mode",
+                            "legs"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "x01"
+                              ]
+                            },
+                            "legs": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "leg",
+                                  "starter",
+                                  "winner",
+                                  "visits"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "leg": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "starter": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "Seat that threw first in this leg"
+                                  },
+                                  "winner": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "nullable": true,
+                                    "description": "null: the leg was cut short by the round limit"
+                                  },
+                                  "visits": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "visit",
+                                        "seat",
+                                        "committedAt",
+                                        "darts",
+                                        "scored",
+                                        "remaining",
+                                        "bust"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "visit": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "seat": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "committedAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        },
+                                        "darts": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "required": [
+                                              "index",
+                                              "segment",
+                                              "coords",
+                                              "source",
+                                              "corrected",
+                                              "thrownAt"
+                                            ],
+                                            "additionalProperties": false,
+                                            "properties": {
+                                              "index": {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 2,
+                                                "description": "Position in the visit"
+                                              },
+                                              "segment": {
+                                                "title": "Segment",
+                                                "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                                "type": "object",
+                                                "required": [
+                                                  "name",
+                                                  "number",
+                                                  "bed",
+                                                  "multiplier"
+                                                ],
+                                                "additionalProperties": false,
+                                                "properties": {
+                                                  "name": {
+                                                    "type": "string"
+                                                  },
+                                                  "number": {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 50
+                                                  },
+                                                  "bed": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "SingleInner",
+                                                      "SingleOuter",
+                                                      "Single",
+                                                      "Double",
+                                                      "Triple",
+                                                      "Outside"
+                                                    ]
+                                                  },
+                                                  "multiplier": {
+                                                    "type": "integer",
+                                                    "enum": [
+                                                      0,
+                                                      1,
+                                                      2,
+                                                      3
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "coords": {
+                                                "type": "object",
+                                                "nullable": true,
+                                                "required": [
+                                                  "x",
+                                                  "y"
+                                                ],
+                                                "additionalProperties": false,
+                                                "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                                "properties": {
+                                                  "x": {
+                                                    "type": "number"
+                                                  },
+                                                  "y": {
+                                                    "type": "number"
+                                                  }
+                                                }
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "camera",
+                                                  "manual"
+                                                ]
+                                              },
+                                              "corrected": {
+                                                "type": "boolean",
+                                                "description": "A correction (camera or by hand) changed this dart"
+                                              },
+                                              "thrownAt": {
+                                                "type": "string",
+                                                "format": "date-time"
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "scored": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "remaining": {
+                                          "type": "integer",
+                                          "minimum": 0
+                                        },
+                                        "bust": {
+                                          "type": "boolean"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "mode",
+                            "visits"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "atc"
+                              ]
+                            },
+                            "visits": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "visit",
+                                  "seat",
+                                  "committedAt",
+                                  "darts",
+                                  "hits",
+                                  "targetBefore",
+                                  "targetAfter"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "visit": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "seat": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "committedAt": {
+                                    "type": "string",
+                                    "format": "date-time"
+                                  },
+                                  "darts": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "required": [
+                                        "index",
+                                        "segment",
+                                        "coords",
+                                        "source",
+                                        "corrected",
+                                        "thrownAt"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "index": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 2,
+                                          "description": "Position in the visit"
+                                        },
+                                        "segment": {
+                                          "title": "Segment",
+                                          "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                          "type": "object",
+                                          "required": [
+                                            "name",
+                                            "number",
+                                            "bed",
+                                            "multiplier"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "name": {
+                                              "type": "string"
+                                            },
+                                            "number": {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 50
+                                            },
+                                            "bed": {
+                                              "type": "string",
+                                              "enum": [
+                                                "SingleInner",
+                                                "SingleOuter",
+                                                "Single",
+                                                "Double",
+                                                "Triple",
+                                                "Outside"
+                                              ]
+                                            },
+                                            "multiplier": {
+                                              "type": "integer",
+                                              "enum": [
+                                                0,
+                                                1,
+                                                2,
+                                                3
+                                              ]
+                                            }
+                                          }
+                                        },
+                                        "coords": {
+                                          "type": "object",
+                                          "nullable": true,
+                                          "required": [
+                                            "x",
+                                            "y"
+                                          ],
+                                          "additionalProperties": false,
+                                          "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                          "properties": {
+                                            "x": {
+                                              "type": "number"
+                                            },
+                                            "y": {
+                                              "type": "number"
+                                            }
+                                          }
+                                        },
+                                        "source": {
+                                          "type": "string",
+                                          "enum": [
+                                            "camera",
+                                            "manual"
+                                          ]
+                                        },
+                                        "corrected": {
+                                          "type": "boolean",
+                                          "description": "A correction (camera or by hand) changed this dart"
+                                        },
+                                        "thrownAt": {
+                                          "type": "string",
+                                          "format": "date-time"
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "hits": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 3
+                                  },
+                                  "targetBefore": {
+                                    "type": "integer",
+                                    "description": "Target at the start of the visit (1–20, 21 = 25, 22 = bull)"
+                                  },
+                                  "targetAfter": {
+                                    "type": "integer",
+                                    "description": "Target after the visit; past the last target means finished"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "discriminator": {
+                        "propertyName": "mode",
+                        "mapping": {
+                          "x01": "#/components/schemas/X01Detail",
+                          "atc": "#/components/schemas/AtcDetail"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
                           }
                         }
                       }
@@ -4524,6 +5649,15 @@
           "type": "string",
           "minLength": 1
         }
+      },
+      "GameId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "responses": {
@@ -5604,14 +6738,14 @@
           }
         }
       },
-      "GameList": {
+      "GameModeList": {
         "type": "object",
         "required": [
-          "games"
+          "modes"
         ],
         "additionalProperties": false,
         "properties": {
-          "games": {
+          "modes": {
             "type": "array",
             "items": {
               "type": "object",
@@ -5676,6 +6810,875 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        }
+      },
+      "GameSeat": {
+        "type": "object",
+        "required": [
+          "seat",
+          "name",
+          "userId",
+          "placement",
+          "stats"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "seat": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "name": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+          },
+          "placement": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "stats": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit"
+          }
+        }
+      },
+      "GameSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "mode",
+          "config",
+          "createdAt",
+          "finishedAt",
+          "board",
+          "mySeat",
+          "players"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string"
+          },
+          "config": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "finishedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "board": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "mySeat": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true
+          },
+          "players": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "seat",
+                "name",
+                "userId",
+                "placement",
+                "stats"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "seat": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "name": {
+                  "type": "string"
+                },
+                "userId": {
+                  "type": "string",
+                  "nullable": true,
+                  "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                },
+                "placement": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "stats": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number"
+                  },
+                  "description": "Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit"
+                }
+              }
+            }
+          }
+        }
+      },
+      "GameList": {
+        "type": "object",
+        "required": [
+          "games",
+          "nextCursor"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "games": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "mode",
+                "config",
+                "createdAt",
+                "finishedAt",
+                "board",
+                "mySeat",
+                "players"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "mode": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "additionalProperties": true
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "finishedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "board": {
+                  "type": "object",
+                  "nullable": true,
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "mySeat": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "nullable": true
+                },
+                "players": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "seat",
+                      "name",
+                      "userId",
+                      "placement",
+                      "stats"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "seat": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": "string",
+                        "nullable": true,
+                        "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                      },
+                      "placement": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "stats": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "number"
+                        },
+                        "description": "Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "nextCursor": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "StatAggregate": {
+        "type": "object",
+        "required": [
+          "avg",
+          "min",
+          "max",
+          "previousAvg"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "avg": {
+            "type": "number"
+          },
+          "min": {
+            "type": "number"
+          },
+          "max": {
+            "type": "number"
+          },
+          "previousAvg": {
+            "type": "number",
+            "nullable": true,
+            "description": "Average over the period before; null without games then"
+          }
+        }
+      },
+      "ModeStats": {
+        "type": "object",
+        "required": [
+          "matches",
+          "wins",
+          "contested",
+          "stats"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "matches": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "contested": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Games with two or more seats"
+          },
+          "stats": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "avg",
+                "min",
+                "max",
+                "previousAvg"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "avg": {
+                  "type": "number"
+                },
+                "min": {
+                  "type": "number"
+                },
+                "max": {
+                  "type": "number"
+                },
+                "previousAvg": {
+                  "type": "number",
+                  "nullable": true,
+                  "description": "Average over the period before; null without games then"
+                }
+              }
+            }
+          }
+        }
+      },
+      "GameStats": {
+        "type": "object",
+        "required": [
+          "days",
+          "matches",
+          "wins",
+          "contested",
+          "modes"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "days": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "matches": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wins": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "1st place in a contested game"
+          },
+          "contested": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Games with two or more seats; win rate = wins / contested"
+          },
+          "modes": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "matches",
+                "wins",
+                "contested",
+                "stats"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "matches": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "wins": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "contested": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Games with two or more seats"
+                },
+                "stats": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "object",
+                    "required": [
+                      "avg",
+                      "min",
+                      "max",
+                      "previousAvg"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "avg": {
+                        "type": "number"
+                      },
+                      "min": {
+                        "type": "number"
+                      },
+                      "max": {
+                        "type": "number"
+                      },
+                      "previousAvg": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Average over the period before; null without games then"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "GameDetail": {
+        "type": "object",
+        "required": [
+          "game",
+          "detail"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "game": {
+            "type": "object",
+            "required": [
+              "id",
+              "mode",
+              "config",
+              "createdAt",
+              "finishedAt",
+              "board",
+              "mySeat",
+              "players"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "mode": {
+                "type": "string"
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": true
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "finishedAt": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "board": {
+                "type": "object",
+                "nullable": true,
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "mySeat": {
+                "type": "integer",
+                "minimum": 0,
+                "nullable": true
+              },
+              "players": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "seat",
+                    "name",
+                    "userId",
+                    "placement",
+                    "stats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "seat": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "userId": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                    },
+                    "placement": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "stats": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "number"
+                      },
+                      "description": "Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "detail": {
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "legs"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "x01"
+                    ]
+                  },
+                  "legs": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "leg",
+                        "starter",
+                        "winner",
+                        "visits"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "leg": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "starter": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Seat that threw first in this leg"
+                        },
+                        "winner": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "nullable": true,
+                          "description": "null: the leg was cut short by the round limit"
+                        },
+                        "visits": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "visit",
+                              "seat",
+                              "committedAt",
+                              "darts",
+                              "scored",
+                              "remaining",
+                              "bust"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "visit": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "seat": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "committedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              },
+                              "darts": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "index",
+                                    "segment",
+                                    "coords",
+                                    "source",
+                                    "corrected",
+                                    "thrownAt"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index": {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 2,
+                                      "description": "Position in the visit"
+                                    },
+                                    "segment": {
+                                      "title": "Segment",
+                                      "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                      "type": "object",
+                                      "required": [
+                                        "name",
+                                        "number",
+                                        "bed",
+                                        "multiplier"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "name": {
+                                          "type": "string"
+                                        },
+                                        "number": {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 50
+                                        },
+                                        "bed": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SingleInner",
+                                            "SingleOuter",
+                                            "Single",
+                                            "Double",
+                                            "Triple",
+                                            "Outside"
+                                          ]
+                                        },
+                                        "multiplier": {
+                                          "type": "integer",
+                                          "enum": [
+                                            0,
+                                            1,
+                                            2,
+                                            3
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    "coords": {
+                                      "type": "object",
+                                      "nullable": true,
+                                      "required": [
+                                        "x",
+                                        "y"
+                                      ],
+                                      "additionalProperties": false,
+                                      "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                      "properties": {
+                                        "x": {
+                                          "type": "number"
+                                        },
+                                        "y": {
+                                          "type": "number"
+                                        }
+                                      }
+                                    },
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "camera",
+                                        "manual"
+                                      ]
+                                    },
+                                    "corrected": {
+                                      "type": "boolean",
+                                      "description": "A correction (camera or by hand) changed this dart"
+                                    },
+                                    "thrownAt": {
+                                      "type": "string",
+                                      "format": "date-time"
+                                    }
+                                  }
+                                }
+                              },
+                              "scored": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "remaining": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "bust": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "visits"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "atc"
+                    ]
+                  },
+                  "visits": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "visit",
+                        "seat",
+                        "committedAt",
+                        "darts",
+                        "hits",
+                        "targetBefore",
+                        "targetAfter"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "visit": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "seat": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "committedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "darts": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "index",
+                              "segment",
+                              "coords",
+                              "source",
+                              "corrected",
+                              "thrownAt"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "index": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "maximum": 2,
+                                "description": "Position in the visit"
+                              },
+                              "segment": {
+                                "title": "Segment",
+                                "description": "A board segment as Board Manager reports it. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50. Miss: name=Miss, number=0, bed=Outside, multiplier=0.",
+                                "type": "object",
+                                "required": [
+                                  "name",
+                                  "number",
+                                  "bed",
+                                  "multiplier"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "name": {
+                                    "type": "string"
+                                  },
+                                  "number": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 50
+                                  },
+                                  "bed": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SingleInner",
+                                      "SingleOuter",
+                                      "Single",
+                                      "Double",
+                                      "Triple",
+                                      "Outside"
+                                    ]
+                                  },
+                                  "multiplier": {
+                                    "type": "integer",
+                                    "enum": [
+                                      0,
+                                      1,
+                                      2,
+                                      3
+                                    ]
+                                  }
+                                }
+                              },
+                              "coords": {
+                                "type": "object",
+                                "nullable": true,
+                                "required": [
+                                  "x",
+                                  "y"
+                                ],
+                                "additionalProperties": false,
+                                "description": "Normalised board position (r = 1 at the outer double wire); null for a manual dart without one",
+                                "properties": {
+                                  "x": {
+                                    "type": "number"
+                                  },
+                                  "y": {
+                                    "type": "number"
+                                  }
+                                }
+                              },
+                              "source": {
+                                "type": "string",
+                                "enum": [
+                                  "camera",
+                                  "manual"
+                                ]
+                              },
+                              "corrected": {
+                                "type": "boolean",
+                                "description": "A correction (camera or by hand) changed this dart"
+                              },
+                              "thrownAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          }
+                        },
+                        "hits": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 3
+                        },
+                        "targetBefore": {
+                          "type": "integer",
+                          "description": "Target at the start of the visit (1–20, 21 = 25, 22 = bull)"
+                        },
+                        "targetAfter": {
+                          "type": "integer",
+                          "description": "Target after the visit; past the last target means finished"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            ],
+            "discriminator": {
+              "propertyName": "mode",
+              "mapping": {
+                "x01": "#/components/schemas/X01Detail",
+                "atc": "#/components/schemas/AtcDetail"
               }
             }
           }

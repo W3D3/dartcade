@@ -2,7 +2,6 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import { pgErrorCode } from '../db/errors.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { gameList } from '../games/index.js'
 import { ActiveSessionError, type SessionEngine } from '../session/engine.js'
 import type { Session } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
@@ -26,14 +25,6 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
   const { engine, db } = opts
 
   app.get<Route<'health'>>('/health', { schema: fromSpec('health') }, () => ({ ok: true }))
-
-  app.get<Route<'listGames'>>('/api/games', { schema: fromSpec('listGames') }, () => ({
-    games: gameList.map(m => ({
-      id: m.id,
-      defaultConfig: m.defaultConfig,
-      configMeta: m.configMeta ?? {},
-    })),
-  }))
 
   app.post<Route<'createSession'>>('/api/sessions', { preValidation: requireAuth, schema: fromSpec('createSession') }, async (req, reply) => {
     const { boardId, gameId, config, players } = req.body

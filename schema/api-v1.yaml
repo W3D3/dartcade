@@ -14,6 +14,8 @@ tags:
   - name: system
     description: Health checks
   - name: games
+    description: Finished games (history)
+  - name: gamemodes
     description: Available game modes
   - name: boards
     description: Paired boards and their Board Manager
@@ -41,18 +43,72 @@ paths:
               schema: { $ref: '#/components/schemas/Health' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
-  /api/games:
+  /api/gamemodes:
     get:
-      operationId: listGames
+      operationId: listGameModes
       summary: List game modes with their default config and config metadata
-      tags: [games]
+      tags: [gamemodes]
       security: []
       responses:
         '200':
-          description: Available games
+          description: Available game modes
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameModeList' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/games:
+    get:
+      operationId: listGames
+      summary: Finished games the signed-in user played in, newest first
+      tags: [games]
+      parameters:
+        - { name: mode, in: query, required: false, schema: { type: string, minLength: 1 }, description: Only this game mode }
+        - { name: limit, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - { name: cursor, in: query, required: false, schema: { type: string, minLength: 1 }, description: nextCursor of the previous page }
+      responses:
+        '200':
+          description: A page of games
           content:
             application/json:
               schema: { $ref: '#/components/schemas/GameList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/games/stats:
+    get:
+      operationId: getGameStats
+      summary: The signed-in user's results over the last days, per game mode
+      tags: [games]
+      parameters:
+        - { name: days, in: query, required: false, schema: { type: integer, minimum: 1, maximum: 365, default: 30 } }
+      responses:
+        '200':
+          description: Totals and per-mode stat aggregates
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameStats' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/games/{id}:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    get:
+      operationId: getGame
+      summary: A finished game with its per-mode detail
+      description: Visible to the players holding a seat, or to anyone signed in if the game is public. Anything else is 404.
+      tags: [games]
+      responses:
+        '200':
+          description: The game
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GameDetail' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/boards:
@@ -403,6 +459,11 @@ components:
       in: path
       required: true
       schema: { type: string, minLength: 1 }
+    GameId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
 
   responses:
     BadRequest:
@@ -565,14 +626,106 @@ components:
         configMeta:
           type: object
           additionalProperties: { $ref: '#/components/schemas/ConfigFieldMeta' }
+    GameModeList:
+      type: object
+      required: [modes]
+      additionalProperties: false
+      properties:
+        modes:
+          type: array
+          items: { $ref: '#/components/schemas/GameInfo' }
+
+    GameSeat:
+      type: object
+      required: [seat, name, userId, placement, stats]
+      additionalProperties: false
+      properties:
+        seat: { type: integer, minimum: 0 }
+        name: { type: string }
+        userId: { type: string, nullable: true, description: "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in" }
+        placement: { type: integer, minimum: 1 }
+        stats:
+          type: object
+          additionalProperties: { type: number }
+          description: Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit
+    GameSummary:
+      type: object
+      required: [id, mode, config, createdAt, finishedAt, board, mySeat, players]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        mode: { type: string }
+        config: { type: object, additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+        finishedAt: { type: string, format: date-time }
+        board:
+          type: object
+          nullable: true
+          required: [id, name]
+          additionalProperties: false
+          properties:
+            id: { type: string }
+            name: { type: string }
+        mySeat: { type: integer, minimum: 0, nullable: true }
+        players:
+          type: array
+          items: { $ref: '#/components/schemas/GameSeat' }
     GameList:
       type: object
-      required: [games]
+      required: [games, nextCursor]
       additionalProperties: false
       properties:
         games:
           type: array
-          items: { $ref: '#/components/schemas/GameInfo' }
+          items: { $ref: '#/components/schemas/GameSummary' }
+        nextCursor: { type: string, nullable: true }
+    StatAggregate:
+      type: object
+      required: [avg, min, max, previousAvg]
+      additionalProperties: false
+      properties:
+        avg: { type: number }
+        min: { type: number }
+        max: { type: number }
+        previousAvg: { type: number, nullable: true, description: Average over the period before; null without games then }
+    ModeStats:
+      type: object
+      required: [matches, wins, contested, stats]
+      additionalProperties: false
+      properties:
+        matches: { type: integer, minimum: 0 }
+        wins: { type: integer, minimum: 0 }
+        contested: { type: integer, minimum: 0, description: Games with two or more seats }
+        stats:
+          type: object
+          additionalProperties: { $ref: '#/components/schemas/StatAggregate' }
+    GameStats:
+      type: object
+      required: [days, matches, wins, contested, modes]
+      additionalProperties: false
+      properties:
+        days: { type: integer, minimum: 1 }
+        matches: { type: integer, minimum: 0 }
+        wins: { type: integer, minimum: 0, description: 1st place in a contested game }
+        contested: { type: integer, minimum: 0, description: Games with two or more seats; win rate = wins / contested }
+        modes:
+          type: object
+          additionalProperties: { $ref: '#/components/schemas/ModeStats' }
+    GameDetail:
+      type: object
+      required: [game, detail]
+      additionalProperties: false
+      properties:
+        game: { $ref: '#/components/schemas/GameSummary' }
+        detail:
+          oneOf:
+            - $ref: '#/components/schemas/X01Detail'
+            - $ref: '#/components/schemas/AtcDetail'
+          discriminator:
+            propertyName: mode
+            mapping:
+              x01: '#/components/schemas/X01Detail'
+              atc: '#/components/schemas/AtcDetail'
 
     Board:
       type: object

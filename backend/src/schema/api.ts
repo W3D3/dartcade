@@ -18,7 +18,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/games": {
+    "/api/gamemodes": {
         parameters: {
             query?: never;
             header?: never;
@@ -26,7 +26,63 @@ export interface paths {
             cookie?: never;
         };
         /** List game modes with their default config and config metadata */
+        get: operations["listGameModes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Finished games the signed-in user played in, newest first */
         get: operations["listGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's results over the last days, per game mode */
+        get: operations["getGameStats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/games/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * A finished game with its per-mode detail
+         * @description Visible to the players holding a seat, or to anyone signed in if the game is public. Anything else is 404.
+         */
+        get: operations["getGame"];
         put?: never;
         post?: never;
         delete?: never;
@@ -362,7 +418,10 @@ export interface components {
             thrownAt: string;
         };
         X01Detail: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             mode: "x01";
             legs: {
                 leg: number;
@@ -383,7 +442,10 @@ export interface components {
             }[];
         };
         AtcDetail: {
-            /** @enum {string} */
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
             mode: "atc";
             visits: {
                 visit: number;
@@ -418,8 +480,71 @@ export interface components {
                 [key: string]: components["schemas"]["ConfigFieldMeta"];
             };
         };
+        GameModeList: {
+            modes: components["schemas"]["GameInfo"][];
+        };
+        GameSeat: {
+            seat: number;
+            name: string;
+            /** @description The seat's account; null for guests, and for everyone when viewing a public game you didn't play in */
+            userId: string | null;
+            placement: number;
+            /** @description Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit */
+            stats: {
+                [key: string]: number;
+            };
+        };
+        GameSummary: {
+            id: string;
+            mode: string;
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            finishedAt: string;
+            board: {
+                id: string;
+                name: string;
+            } | null;
+            mySeat: number | null;
+            players: components["schemas"]["GameSeat"][];
+        };
         GameList: {
-            games: components["schemas"]["GameInfo"][];
+            games: components["schemas"]["GameSummary"][];
+            nextCursor: string | null;
+        };
+        StatAggregate: {
+            avg: number;
+            min: number;
+            max: number;
+            /** @description Average over the period before; null without games then */
+            previousAvg: number | null;
+        };
+        ModeStats: {
+            matches: number;
+            wins: number;
+            /** @description Games with two or more seats */
+            contested: number;
+            stats: {
+                [key: string]: components["schemas"]["StatAggregate"];
+            };
+        };
+        GameStats: {
+            days: number;
+            matches: number;
+            /** @description 1st place in a contested game */
+            wins: number;
+            /** @description Games with two or more seats; win rate = wins / contested */
+            contested: number;
+            modes: {
+                [key: string]: components["schemas"]["ModeStats"];
+            };
+        };
+        GameDetail: {
+            game: components["schemas"]["GameSummary"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"];
         };
         Board: {
             id: string;
@@ -645,6 +770,7 @@ export interface components {
     parameters: {
         BoardId: string;
         SessionId: string;
+        GameId: string;
     };
     requestBodies: never;
     headers: never;
@@ -673,7 +799,7 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
-    listGames: {
+    listGameModes: {
         parameters: {
             query?: never;
             header?: never;
@@ -682,7 +808,34 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Available games */
+            /** @description Available game modes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameModeList"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listGames: {
+        parameters: {
+            query?: {
+                /** @description Only this game mode */
+                mode?: string;
+                limit?: number;
+                /** @description nextCursor of the previous page */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of games */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -691,6 +844,58 @@ export interface operations {
                     "application/json": components["schemas"]["GameList"];
                 };
             };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getGameStats: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Totals and per-mode stat aggregates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameStats"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The game */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

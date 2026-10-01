@@ -93,12 +93,12 @@
 
   onMount(async () => {
     const [gr, br, sr] = await Promise.all([
-      api.GET('/api/games'),
+      api.GET('/api/gamemodes'),
       api.GET('/api/boards'),
       authClient.getSession(),
     ])
     if (!br.data) return   // 401 is redirected to login by the client
-    games = gr.data?.games ?? []
+    games = gr.data?.modes ?? []
     boards = br.data.boards
     // A board handed over from the Boards page ("Play on this board") wins over
     // the remembered one; a remembered board that was since unpaired is dropped.

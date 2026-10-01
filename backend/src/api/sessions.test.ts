@@ -59,16 +59,6 @@ describe('GET /health', () => {
   })
 })
 
-describe('GET /api/games', () => {
-  it('returns atc in the games list', async () => {
-    const { app } = makeApp()
-    const res = await app.inject({ method: 'GET', url: '/api/games' })
-    expect(res.statusCode).toBe(200)
-    const body = JSON.parse(res.body)
-    expect(body.games.find((g: any) => g.id === 'atc')).toBeDefined()
-  })
-})
-
 describe('POST /api/sessions', () => {
   it('returns 201 with sessionId on success', async () => {
     const { app } = makeApp()
