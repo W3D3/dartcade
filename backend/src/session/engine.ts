@@ -4,7 +4,7 @@ import { refoldVisit } from './refold.js'
 import { manualDart } from './manualDart.js'
 import type { GameConfig, Session, Player, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
-import { isArrayOf, isRecord, isString } from '../guards.js'
+import { z } from 'zod'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
@@ -44,9 +44,9 @@ function hasWinner(session: Session, state: unknown): boolean {
   return session.module.view(state, session.players).winner !== null
 }
 
-function isPlayer(v: unknown): v is Player {
-  return isRecord(v) && isString(v.name)
-}
+// Rows written by create(): JSONB, so validated before a session is restored from them
+const StoredPlayersSchema = z.array(z.object({ name: z.string() }))
+const StoredConfigSchema = z.record(z.string(), z.unknown())
 
 export class SessionEngine {
   private byBoard: Map<string, Session> = new Map()
@@ -286,13 +286,15 @@ export class SessionEngine {
         continue
       }
       const boardId = row.board_db_id
-      const { players, config } = row
       // Stored by create(); anything else can't be restored either
-      if (!isArrayOf(players, isPlayer) || !isRecord(config)) {
+      const parsedPlayers = StoredPlayersSchema.safeParse(row.players)
+      const parsedConfig = StoredConfigSchema.safeParse(row.config)
+      if (!parsedPlayers.success || !parsedConfig.success) {
         await this.store.setSessionFinished(row.id)
         continue
       }
-      const initialState = mod.init(config, players)
+      const players = parsedPlayers.data
+      const initialState = mod.init(parsedConfig.data, players)
       const session: Session = {
         id: row.id, ownerUserId: row.owner_user_id, boardId, players,
         module: mod,

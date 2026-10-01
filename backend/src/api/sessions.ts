@@ -1,5 +1,5 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
-import { isRecord, isString } from '../guards.js'
+import { pgErrorCode } from '../db/errors.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { gameList } from '../games/index.js'
@@ -52,8 +52,8 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         return reply.code(409).send({ error: 'You already have a game running', sessionId: err.sessionId })
       }
       // Unique index game_sessions_one_active_per_owner as a backstop
-      if (isRecord(err) && err.code === '23505') return reply.code(409).send({ error: 'You already have a game running' })
-      const message = isRecord(err) && isString(err.message) ? err.message : undefined
+      if (pgErrorCode(err) === '23505') return reply.code(409).send({ error: 'You already have a game running' })
+      const message = err instanceof Error ? err.message : undefined
       if (message?.includes('unknown game')) return reply.code(400).send({ error: message })
       if (message?.startsWith('invalid config')) return reply.code(400).send({ error: message })
       if (message?.includes('active session')) return reply.code(409).send({ error: message })
