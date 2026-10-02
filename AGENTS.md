@@ -29,7 +29,7 @@ corrected dart replays the open visit cleanly.
 |---|---|
 | Event schema shared by bridge and backend | `schema/adbridge-v1.json` (source of truth), `schema/diff-rules.md` |
 | Generated TS types for the schema | `backend/src/schema/types.ts` (regenerate with `npm run gen:types`; don't edit by hand) |
-| Generated zod schemas for incoming data (bridge events, browser messages, snapshots) | `backend/src/schema/zod.ts`, copied to `backend/frontend/src/lib/api/zod.ts` (regenerate with `npm run gen:api` at the repo root; don't edit by hand) |
+| Generated zod schemas for incoming data (bridge events, browser messages, snapshots) | `backend/src/schema/zod.ts` (and `lobby-ws.ts` for the lobby sockets), copied to `backend/frontend/src/lib/api/` (regenerate with `npm run gen:api` at the repo root; don't edit by hand) |
 | Bridge: Board Manager client, snapshot differ, transport | `bridge/internal/{bm,differ,transport}`, CLI in `bridge/cmd/bridge` |
 | Recorded Board Manager sessions for differ tests | `bridge/internal/differ/testdata`, `fixtures/` |
 | Backend entry point, plugin wiring | `backend/src/index.ts` |
@@ -45,6 +45,8 @@ corrected dart replays the open visit cleanly.
 | Frontend pages (svelte-spa-router, hash routes) | `backend/frontend/src/routes/`; the match screen is `GameDisplay.svelte` |
 | Per-game UI (stats, board highlights) | `backend/frontend/src/lib/gameViews/` |
 | Match screen in remote games (seat boards, live/offline/waiting centre, not-your-turn toast) | `backend/frontend/src/lib/remote.ts`, `lib/toast.ts`; components `SeatBoardLine`, `BoardCaption`, `TurnStatusBar`, `OfflineNotice`, `WaitingCard`, `NotTurnToast` |
+| Lobbies: rules, start and rematch, resets after games, pushes | `backend/src/lobby/` (`service.ts` is the entry point; pure rules in `rules.ts`, `startPlan.ts`, `view.ts`), queries in `backend/src/db/lobbies.ts` |
+| Lobby socket and per-user socket (`/ws/lobby`, `/ws/me`) | `backend/src/browser-gw/lobby.ts`, messages in `schema/lobby-ws-v1.json` |
 | Components (dartboard, bull off, correction, entry) | `backend/frontend/src/lib/components/`; shadcn-style primitives in `ui/` |
 | Dart helpers (labels, checkout hints) | `backend/frontend/src/lib/dartUtils.ts` |
 | Game history: input log, replay, results | `backend/src/session/{apply,replay}.ts`, `backend/src/history/`, `backend/src/db/history.ts`, `backend/src/api/games.ts` |

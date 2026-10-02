@@ -74,7 +74,7 @@ Out:
 
 ## Data model
 
-Migration `008_lobbies.sql`. Lobbies are plain mutable rows. Only games keep an event
+Migration `009_lobbies.sql`. Lobbies are plain mutable rows. Only games keep an event
 log.
 
 ### `lobbies`
@@ -83,10 +83,11 @@ log.
 |---|---|
 | `id UUID PK` | |
 | `name TEXT` | Defaults to "<host name>'s lobby"; the host can rename it. |
-| `host_user_id` | FK user |
-| `code TEXT UNIQUE` | 6 characters from an unambiguous alphabet, shown as `K7Q4-MD`. The host can regenerate it. |
+| `host_user_id NULL` | FK user (null after the host's account is deleted; the next change hands over) |
+| `code TEXT` | Unique among open lobbies. 6 characters from an unambiguous alphabet, shown as `K7Q4-MD`. The host can regenerate it. |
 | `throw_order TEXT` | `lobby \| random \| bulloff`, default `lobby` |
-| `next_game JSONB NULL` | `{ mode, config }` as the host last set it |
+| `next_game JSONB NULL` | `{ gameId, config }` as the host last set it |
+| `last_game JSONB NULL` | `{ gameId, config, personIds }` of the last game started here; Rematch repeats it |
 | `created_at` | |
 | `closed_at NULL` | |
 
@@ -385,19 +386,22 @@ All under `requireAuth`. The schemas go in `schema/api-v1.yaml`.
 |---|---|
 | `POST /api/lobbies` | create (host = me) |
 | `GET /api/lobbies/current` | my open lobby, or 404 |
-| `GET /api/lobbies/by-code/:code` | preview for the Join page: name, host, board names, people count |
-| `POST /api/lobbies/:id/join` | body `{ code }` or an accepted invite |
+| `GET /api/lobby-codes/:code` | preview for the Join page: name, host, board names, people count |
+| `POST /api/lobbies/:id/join` | body `{ code }` (invites are accepted with `POST /api/invites/:id/accept`) |
 | `POST /api/lobbies/:id/leave` | |
 | `PATCH /api/lobbies/:id` | host: name, throw order, next game, regenerate code |
 | `POST /api/lobbies/:id/people` | add a guest `{ name, boardId? }` |
-| `PATCH /api/lobbies/:id/people/:pid` | board, plays, position (by permission, see Lifecycle) |
+| `PATCH /api/lobbies/:id/people/:pid` | board, plays, ready, position (by permission, see Lifecycle) |
 | `DELETE /api/lobbies/:id/people/:pid` | host removes anyone; a member removes their own guests |
 | `POST /api/lobbies/:id/start` | host: creates the session and returns its id |
+| `POST /api/lobbies/:id/rematch` | host: the last game again, same people and settings |
 | `POST /api/lobbies/:id/close` | host |
-| `GET /api/users/search?q=` | username search for invites (removed by #54) |
+| `GET /api/users?q=` | username search for invites (existing endpoint; removed by #54) |
 | `POST /api/lobbies/:id/invites` | `{ userId }` |
 | `GET /api/invites` | my pending invites |
 | `POST /api/invites/:id/accept`, `/decline` | |
+
+Live state: `GET /ws/lobby?lobbyId=` and `GET /ws/me`, messages in `schema/lobby-ws-v1.json`.
 
 ## Frontend
 
@@ -574,3 +578,49 @@ they differ from the sections above, this decides:
   place in the party layout and on phones.
 - The match starts on the keypad when none of the viewer's seats has a board; the Next
   button is "manual" when the up seat has no board or (remote) its board is offline.
+
+## Decided while planning the lobby backend (2026-10-02)
+
+1. **Migration number.** `008` is taken (`008_multiplayer_seats.sql`), so this is `009_lobbies.sql`.
+2. **Codes.** 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no I, L, O, 0, 1). They're unique among *open* lobbies only (partial unique index), so closed lobbies keep theirs. Input is normalized: case and any non-alphanumeric characters (`K7Q4-MD`, `k7q4 md`) are ignored. The API returns the raw code; the client formats it.
+3. **Rematch.** `lobbies.last_game` (JSONB `{ gameId, config, personIds }`) records each lobby game at start. A rematch repeats exactly that: the same people (minus anyone who left the lobby), mode and settings. It ignores the current "Who plays" flags and the next-game card. It works after a finished or an aborted game, with the same soft ready gate as Start.
+4. **Soft ready gate.** Start and rematch answer `409 { code: 'not_ready', notReady: [{ personId, name }] }`. The client confirms by sending the same request with `{ "force": true }`. `force` only skips the ready check. Hard problems (unknown game, nobody plays, an offline board, a busy board, someone already in a game) are checked first and always refuse.
+5. **Throw order.**
+   - `bulloff` turns the game's own `bullOff` setting on: it keeps `wdc`/`pdc` if the host set one, otherwise `wdc`.
+   - `lobby` and `random` force `bullOff: 'off'`.
+   - A game without a bull off (ATC) refuses `bulloff` at start (400).
+   - `random` shuffles the seats in the engine with the game's `rng_seed` (`createWithSeats({ shuffleSeats: true })`). Seats are stored in the shuffled order, so a replay needs nothing extra.
+6. **Next game.** Stored as `{ gameId, config }` (the spec's "mode" is the API's `gameId`). It defaults to null, and Start then answers 400 "pick a game first". At start the config is merged over the module's `defaultConfig`.
+7. **Ready** is a field of `PATCH /api/lobbies/:id/people/:pid`, next to `boardId`, `plays` and `position`. A PATCH is all-or-nothing: if one field isn't allowed, nothing is written.
+8. **Invites.**
+   - Any member may invite (the Update section lets members invite from their phone).
+   - Inviting yourself is 400. Inviting a member or someone with a pending invite is 409.
+   - `POST /api/lobbies/:id/join` takes only `{ code }`. An invite is accepted with `POST /api/invites/:id/accept`, which joins directly.
+   - Accepting while in another lobby is `409 in_lobby`, and the invite stays pending.
+   - Joining by code marks your pending invite to that lobby accepted.
+9. **Leaving.** A member who leaves (or is removed) takes their guests along. People on the leaver's boards go to Manual. A left member's lobby sockets are closed with 4403.
+10. **Host handover.**
+    - If the host leaves between games, the member who joined longest ago becomes host (ties: lobby order), with a `host_changed` line.
+    - If the host leaves during a game, `host_user_id` stays until the game ends; then the role passes on.
+    - A lobby whose last member leaves during a game stays open (empty) until the game ends, then closes.
+    - `host_user_id` is nullable (`ON DELETE SET NULL`, for account deletion). The next change to the lobby hands over.
+11. **Board changes.**
+    - `board_moved_by` is set when someone other than the person (or the guest's adder) puts them on a board. It's cleared on any change made by the person themselves and on any move to Manual.
+    - Every board change, including take-backs, logs `board_moved`.
+    - "Busy" at assignment means the board is in an active game that isn't this lobby's own.
+12. **Activity data** stores names at write time (`data.name`, board names, `winnerName`, `players`), so the feed still reads right after people leave. `game_played` has no actor. `game_aborted`'s actor is whoever aborted.
+13. **Where the lobby schema lives.** `schema/lobby-ws-v1.json` is a new draft-07 schema for both push sockets. It isn't in `game-ws-v1.json` for three reasons:
+    - Lobby messages aren't game messages.
+    - The match-remote plan edits `game-ws-v1.json` in parallel.
+    - The full lobby needs nullable fields (`type: [string, null]`), which `common-v1.json` can't hold (it must stay valid OpenAPI 3.0).
+
+    REST answers with small shapes (`LobbyRef`, `LobbyPreview`, `Invite`) in `api-v1.yaml`, the same way `SessionDetail.game` points at `game-ws-v1.json`. The full lobby only comes over the socket. `PendingInvite` (socket) and `Invite` (REST) are the same shape, built by one function (`inviteView`).
+14. **`/ws/me` summary.**
+    - `youThrowNext`: the viewer controls the seat that's up now in the lobby's running game.
+    - `leg`: 0-based, from the module's `getLeg`; null for games without legs.
+    - A message equal to the last one sent to that user isn't sent again. Game snapshots trigger a check after every dart.
+15. **Presence.** A member is `online` while they have at least one lobby socket open, otherwise `away`. Guests have `presence: null`.
+16. **Watching lobby games.** Members of the game's lobby may open its socket and `GET /api/sessions/:id`, besides the host and seat controllers. `GET /api/sessions` (my sessions) is unchanged.
+17. **Lobby name in the match header.** It's taken at start, so a rename shows from the next game. After a server restart, a running game shows the lobby's current name.
+18. **User search** reuses the existing `GET /api/users?q=` (the spec's `/api/users/search` isn't added).
+19. **Snapshot `lobbyId`.** It's added now (the spec lists it under "comes with lobbies").
