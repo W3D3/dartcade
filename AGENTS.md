@@ -48,7 +48,7 @@ corrected dart replays the open visit cleanly.
 | Components (dartboard, bull off, correction, entry) | `backend/frontend/src/lib/components/`; shadcn-style primitives in `ui/` |
 | Dart helpers (labels, checkout hints) | `backend/frontend/src/lib/dartUtils.ts` |
 | Game history: input log, replay, results | `backend/src/session/{apply,replay}.ts`, `backend/src/history/`, `backend/src/db/history.ts`, `backend/src/api/games.ts` |
-| Architecture, Board Manager API findings | `docs/architecture.md` |
+| Architecture overview | `ARCHITECTURE.md`; the original research and Board Manager API findings in `docs/architecture.md` |
 | Feature specs and implementation plans | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
 | Setup, tests, builds | `DEVELOPMENT.md`, `mise.toml` |
 | Early experiments (not shipped) | `spike/` |

@@ -6,6 +6,15 @@
 - **Node 22 LTS** (`nvm install 22`) — for running backend tests locally
 - **Go 1.23+** — for working on the bridge outside Docker
 
+[mise](https://mise.jdx.dev) pins the tool versions (Node 22, Go 1.23) and has the common tasks:
+
+```bash
+mise run dev          # full dev stack with hot reload (same as scripts/dev.sh)
+mise run test         # backend, frontend and bridge tests
+mise run gen:api      # regenerate HTTP/WS types and clients from schema/
+mise run gen:types    # regenerate the adbridge/v1 TS types
+```
+
 Run npm through mise's pinned Node 22 (`mise exec -- npm …`), not a newer system Node — npm 11 rewrites `package-lock.json` in a way `npm ci` on npm 10/Node 22 (and CI) rejects.
 
 ## Repository layout
@@ -47,6 +56,15 @@ Tagged releases report the tag (e.g. `v0.4.2`) instead.
 | bridge   | —                          | connects to your board on LAN  |
 
 Once the bridge connects, open http://localhost:5173, pick your board in the dropdown, add players, and start a game.
+
+**No board?** Start a game without one and enter the darts by tapping the board or using the keypad.
+
+**Dev logins.** In development the backend seeds an `Admin` account (with a `Dev Board`) and four
+players: Luke, Phil, Michael and Gerwyn (`<name>@dartcade.local`). The sign-in page has a button
+for each, and the account menu (the avatar on phones, the side nav on desktop) switches between them
+in one tap. To try a game with two people on one machine, sign in as one of them in a private
+window. Start a game with `@Luke` as a player, and Luke throws his own turns from the other window.
+The passwords are in `backend/src/auth/seed.ts`.
 
 ## Environment variables
 
@@ -109,6 +127,24 @@ incoming data; `oneOf` is generated as a union and unknown fields are stripped.
 
 `mise run gen:api` / `mise run gen:types` run the same from either directory. Once the backend is
 running, `/api/docs` serves a Swagger UI for both our API and better-auth's.
+
+## Connecting a board
+
+In production the bridge runs on a machine on the same network as the board (often the board PC
+itself) and connects out to your dartcade backend.
+
+1. Download the bridge for your platform from [GitHub Releases](https://github.com/W3D3/dartcade/releases)
+   (Linux, macOS and Windows builds are published for every `v*` tag), or use the
+   `ghcr.io/w3d3/dartcade-bridge` image.
+2. Start it:
+   ```bash
+   dartcade-bridge --board-url http://<board-ip>:3180 --backend-url wss://<your-dartcade-host>
+   ```
+3. With no token configured, the bridge prints a pairing code such as `7KQ4-M2XD`.
+4. In dartcade, open **Boards → Pair a board**, enter the code and give the board a name.
+
+The bridge saves its token and pairs automatically from then on. Run `dartcade-bridge --help` for
+all options.
 
 ## Production build
 
