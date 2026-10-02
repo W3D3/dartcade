@@ -1,0 +1,502 @@
+# Online multiplayer: design
+
+Date: 2026-10-02
+Issue: [#41 Multiplayer: invite other accounts into a game](https://github.com/W3D3/dartcade/issues/41)
+Follow-ups: [#53 Matchmaking](https://github.com/W3D3/dartcade/issues/53),
+[#54 Friends system](https://github.com/W3D3/dartcade/issues/54)
+
+## Goal
+
+Friends play one match together from different places. Each person throws on their own
+Autodarts board, or enters darts by hand if they have none. People at the same board can
+play too: anyone in the lobby can add guests at a board. Everyone sees the same live
+game, and the result lands in every account holder's history.
+
+This is the base for matchmaking (#53). Results must be tied to accounts, and only the
+person who owns a seat can act for it.
+
+## Decisions
+
+- **Who plays:** friends with accounts. There are no strangers and no public lobbies.
+  Matchmaking comes later on top of the same model.
+- **Lobbies are private** and not tied to a game mode. A lobby lives across many games
+  (rematch, then another mode, with the same people and boards).
+- **Getting in:** a lobby code, link or QR code. In v1 the host can also invite by
+  username into the invitee's pending invites. Username invites are replaced by friends
+  in #54.
+- **Seat control is strict.** Only a seat's controller can add, correct or undo darts or
+  trigger a takeout for it. There is no host override.
+- **Boards:**
+  - A person who hasn't picked a board themselves can be put on a board by anyone who
+    owns it. This covers joining while you're at someone else's place: the host of the
+    place puts you on their board.
+  - Once you pick a board yourself (one you own, or manual), nobody else can change it.
+  - A guest's board is picked by the member who added them, which counts as picking it
+    themselves.
+  - A joiner starts on their most recently used board, and a guest on their adder's
+    board. Neither counts as a choice.
+  - The host has no extra rights over boards.
+- **Disconnects:** the game waits ("waiting for X"). A dead bridge falls back to manual
+  entry for that seat. There is no forfeit timeout in v1; it's tracked in #53.
+- **Ending a game early:**
+  - The host **aborts**: the game ends with no result.
+  - A member **abandons**: their seats forfeit and are placed last. The game ends and
+    the others are ranked by their current standing. The result counts.
+- **The local flow stays.** "New game" without a lobby works exactly as today: a single
+  owner who controls everything, named seats, one board.
+
+## Scope
+
+In:
+
+- Lobbies: create, join by code/link, invite by username, roster, guests, board
+  assignment, a soft ready state, sitting out a single game, throw order, host handover,
+  close.
+- Live lobby updates over WebSocket, plus presence.
+- Starting sessions from a lobby, with seats tied to a controller account and a board.
+- Routing board events across several boards in one session.
+- Checking each action against the seat it targets.
+- Forfeit and abort.
+- The lobby activity feed (joins, leaves, board moves, games played).
+- Frontend: Lobby (host and member views), Join, lobby indicator, pending invites, and
+  the remote states on the match screen.
+
+Out:
+
+- Linking a guest at the board to an account with confirmation on their phone ([#55](https://github.com/W3D3/dartcade/issues/55)). The
+  canvas shows this ("Who's playing as Guest 1?").
+- The forfeit timeout, ratings and matchmaking (#53).
+- Friends (#54): the "Friends:" chips with online dots and "All friends" in the canvas.
+  In v1 that slot holds the username search.
+- Public lobbies, spectators who aren't in the lobby.
+- Video or camera streams.
+
+## Data model
+
+Migration `008_lobbies.sql`. Lobbies are plain mutable rows. Only games keep an event
+log.
+
+### `lobbies`
+
+| Column | Notes |
+|---|---|
+| `id UUID PK` | |
+| `name TEXT` | Defaults to "<host name>'s lobby"; the host can rename it. |
+| `host_user_id` | FK user |
+| `code TEXT UNIQUE` | 6 characters from an unambiguous alphabet, shown as `K7Q4-MD`. The host can regenerate it. |
+| `throw_order TEXT` | `lobby \| random \| bulloff`, default `lobby` |
+| `next_game JSONB NULL` | `{ mode, config }` as the host last set it |
+| `created_at` | |
+| `closed_at NULL` | |
+
+### `lobby_people`
+
+One row per person in the lobby, member or guest, in lobby order.
+
+| Column | Notes |
+|---|---|
+| `id UUID PK` | |
+| `lobby_id` | FK lobbies |
+| `user_id NULL` | Set for members. Null for a guest. |
+| `added_by_user_id` | The member themselves; for a guest, the member who added them. This member becomes the seat's controller. |
+| `name TEXT` | Account name for members, free text for guests |
+| `board_id NULL` | FK boards. Null means manual entry. |
+| `position INT` | Lobby order, which is the default throw order |
+| `plays BOOL` | False means sitting out the next game. It resets to true after every game. |
+| `ready BOOL` | Soft ready. It resets after every game: to false for members, to true for guests. |
+| `board_self_chosen BOOL` | True once the person (or a guest's adder) picked the board. After that, nobody else can change it. |
+| `board_moved_by NULL` | Who put them on the current board when it wasn't their own pick, for the "Moved by you" hint |
+| `joined_at` | |
+
+A unique index on `user_id` (where it isn't null) enforces **one open lobby per user**.
+That works because rows only exist for open lobbies:
+- When a member leaves, their row and their guests' rows are deleted.
+- When a lobby closes, all its rows are deleted.
+
+Games played in a lobby stay linked through `game_sessions.lobby_id`.
+
+### `lobby_activity`
+
+The feed in the lobby's "Lobby history" panel, newest first. Columns: `lobby_id`, `at`,
+`kind`, `actor_user_id`, `data JSONB`. Kinds:
+- `opened`
+- `joined`
+- `left`
+- `removed`
+- `guest_added`
+- `board_moved` (who, from, to)
+- `game_played` (session id, mode, summary, winner)
+- `game_aborted`
+- `host_changed`
+
+The rows are deleted when the lobby closes.
+
+### `lobby_invites`
+
+`lobby_id`, `invitee_user_id`, `inviter_user_id`, `status` (`pending | accepted |
+declined | expired`), `created_at`. Invites expire when the lobby closes.
+
+Pending invites show in the lobby's people list as "Pending · Waiting for X to
+confirm", after the joined people. They don't count as players until accepted.
+
+### `game_sessions` (changed)
+
+- **`lobby_id NULL`:** FK lobbies. Null for local games.
+- **Owner:** for a lobby game, `owner_user_id` is the host at start.
+- **Index:** `game_sessions_one_active_per_owner` is dropped. It's replaced by the
+  per-user rule in [Active-session rules](#active-session-rules).
+- **`board_db_id`:** stays for local games. It's null for lobby games, which use
+  per-seat boards.
+
+### `game_players` (changed)
+
+- **`controller_user_id`:** who may act for the seat. For local games this is the owner,
+  backfilled.
+- **`board_db_id NULL`:** where the seat's darts come from. For local games it's
+  backfilled from the session's board.
+- **`forfeited BOOL DEFAULT false`.**
+- **`user_id`:** as before. Set for members and null for guests.
+
+### `game_session_events` (changed)
+
+- `board_db_id NULL`: which board a `board` event came from. Recorded for inspection;
+  replay doesn't read it back — only accepted events are logged, so replay stays
+  deterministic without re-checking routing.
+
+## Lobby lifecycle
+
+1. **Create.** From the sidebar, "Create lobby" opens a new lobby with you as host on
+   your most recently used board. If you're already in a lobby, you're asked to leave it
+   first.
+2. **Join.**
+   - You join by code (`#/join` page), link (`#/join/K7Q4MD`), QR code, or by accepting
+     an invite.
+   - You must be signed in. Opening a join link while signed out goes through sign-in
+     and back.
+   - Joining while in another lobby asks you to leave that one first.
+   - A joiner comes in with their most recently used board, or manual if they own none.
+3. **Open.**
+   - **Everyone:**
+     - add guests at a board
+     - pick their own board (one they own, or manual), which locks it for others
+     - pick the board of their guests (one they own, or manual)
+     - put anyone whose board isn't self-chosen on a board they own
+     - set ready and "I'm in" / "sitting out" for themselves and their guests
+   - **Host only:**
+     - reorder people
+     - remove people
+     - sit anyone out (the "Who plays" chips)
+     - pick throw order and the next game: mode, plus settings edited in place in the
+       next-game card. Changes reach everyone live.
+     - start the game
+   - **Nobody** sets someone else's ready, not even the host.
+4. **In game.**
+   - Start needs at least one playing seat and a config the module accepts (`validate`).
+   - **Soft ready gate:**
+     - The start button reads "Start · N players". The people list header shows
+       "R of M ready".
+     - If any playing person isn't ready, the host gets a confirmation ("Lena and Max
+       aren't ready. Start anyway?") and can still start.
+     - A hard gate would let one person who stepped away block the lobby, and v1 has no
+       timeout to get past them.
+   - Every playing person's board must be free and online; manual seats are always
+     free.
+   - The roster is copied into seats. While the game runs, the roster is frozen for that
+     session, but people can still join or leave the lobby for the next game.
+5. **Back to open.** The lobby returns to open when the game finishes, is aborted, or
+   ends through a forfeit. When it does:
+   - Everyone who sat out is back in, because sitting out lasts a single game.
+   - Members' ready resets to false, and guests' ready resets to true.
+   - A `game_played` or `game_aborted` line goes into the activity feed.
+6. **Close.**
+   - The lobby closes when the host closes it or the last member leaves.
+   - It can't close while a game is running: the host aborts first.
+   - Pending invites expire, and members get a "lobby closed" toast.
+
+**Host handover.** If the host leaves, the member who has been in the lobby longest
+becomes host. During a game, a member who leaves the lobby stays in the game's seats,
+because leaving the lobby isn't abandoning. The game waits for them as with a
+disconnect.
+
+**Who is in a lobby.** A member counts as in a lobby while they have a lobby socket
+open, so the roster can show them as Away. The lobby socket stays open while they play.
+
+## Sessions from a lobby
+
+### Seats
+
+- **What a seat holds:** each playing person becomes a seat with `name`, `user_id`
+  (members only), `controller_user_id` and `board_db_id`.
+- **Order:**
+  - **Lobby order:** as the lobby lists people.
+  - **Random:** shuffled with the session's `rng_seed`, so it's deterministic.
+  - **Bull-off:** the module is wrapped in `withBullOff` as today. Each player throws
+    their bull on their own board, because bull-off is turn-based too. Once the bull
+    off is decided (not a rethrow), the winner is the seat that's up, so the game's
+    first visit is opened on the winner's board and the others' boards are ignored; a
+    rethrow starts with whoever threw last, on their board.
+
+### Routing board events
+
+- **Indexing.** The engine's `byBoard` index maps every board used by an active session
+  to that session.
+- **Logging.** `onBridgeEvent(boardId, e)` finds the session. It logs and applies the
+  event only if `boardId` is the board of the seat whose turn it is
+  (`getCurrentPlayer`).
+- **Out of turn.** Any other board's darts, takeout or resync are dropped before
+  logging. Only a dropped dart (`dart.detected`) tells that board's people with a
+  transient `notice` ("Not your turn"); a dropped takeout or other housekeeping event is
+  silently ignored. Because only accepted events are in the log, a replay stays
+  deterministic. `board_db_id` is still stored with each event, for inspection; replay
+  doesn't read it back.
+- **Turn changes** stay as today: a seat's turn ends on takeout. In a remote game, your
+  turn ends when you pull your darts.
+- **Status.** `board.status` from any board in the session updates that board's online
+  status in the snapshot. As today, it isn't logged.
+
+### Manual entry
+
+The controller of a seat can always send `add_dart` and `takeout` for it, board or not.
+This covers boardless players and a dead bridge without a separate mode. A visit that
+mixes board and manual darts already works.
+
+### Active-session rules
+
+- **Boards:** a board is in at most one active session. The engine checks this at start,
+  as it does for one board today.
+- **Users:** a user controls seats in at most one active session, local or lobby.
+- **Collisions:** starting a local game while your lobby game runs is refused, and the
+  other way round.
+
+## Access
+
+### Opening a session socket
+
+- **Local game:** the owner, as today.
+- **Lobby game:** any person with a seat controller account in it, or any member of its
+  lobby.
+- **REST:** `GET /api/sessions/:id` follows the same rule.
+
+### Actions
+
+The engine takes the sender's user id with every action and resolves which seat it
+targets.
+
+| Action | Targets | Who may send it |
+|---|---|---|
+| `add_dart`, `undo_dart`, `takeout`, `correct_dart`, `bulloff_skip` | the current seat | its controller |
+| `bulloff_start`, `bulloff_rethrow` | the match | the host (owner) |
+| `forfeit` | all seats the sender controls | any controller in the game |
+| game-specific actions | the match | the host (owner) |
+
+- **Game-specific actions:** there's no `actionScope` hook; no current game action is
+  per-seat, so unknown and game-specific actions are host only, same as the bull off's
+  `bulloff_start`/`bulloff_rethrow`. `bulloff_skip` skips the current thrower, so it's
+  per seat like the other turn actions.
+- **Rejections:** a rejected action is answered with `{ type: 'error', code: 'forbidden'
+  }` and isn't logged.
+- **Local games:** the owner controls every seat, so nothing changes for them.
+- **Abort** isn't a WS action: it's the existing `DELETE /api/sessions/:id` (host only,
+  as today). See [Ending early](#ending-early).
+
+## Ending early
+
+### Abort (host)
+
+- Abort is the existing `DELETE /api/sessions/:id` (host only), not a new WS action.
+  Lobby games use it the same way local games do today: no placements, nothing counted
+  toward stats. It now pushes a final snapshot with `status: 'aborted'` to every socket
+  before dropping the session, so lobby members see the game end.
+- **Local games:** "Abandon" in the canvas (`Play-Abandon`) means this abort and keeps
+  its wording.
+
+### Forfeit (member, labelled "Abandon" in lobby games)
+
+- `forfeit` is a logged user event.
+- **Seats:** all seats the sender controls (their own and their guests') are marked
+  `forfeited`.
+- **Status:** the session finishes with `status = 'finished'`.
+- **Discarding the open visit:** a forfeit drops the visit in progress, the same way a
+  `board.resync` does, and rolls its darts back out of the thrower's dart count. This can
+  be a different seat than the one forfeiting (the forfeiter isn't necessarily up), and
+  it means nothing half-thrown counts in stats.
+- **Ranked by committed state:** placements come from the state before the open visit.
+  A checkout dart that has been thrown but not yet taken out when someone forfeits is
+  discarded with the open visit, so it doesn't win the game.
+- **Placements:** there's no `standings` hook. `summarize` already ranks seats by
+  standing when `winner` is null (`rankSeats`), so a forfeit reuses it:
+  - X01: legs won, then lowest remaining score.
+  - Around the Clock: most hits, then fewer darts.
+  - Forfeited seats come last, tied; the rest keep the order `summarize` gave them.
+- **Stats:** `summarize` must accept a game that isn't won yet. The engine takes the
+  stats from it and replaces the placements.
+- **Nobody left to lose to:** there's no "one controller wins" rule. Instead, a forfeit
+  is rejected outright if the sender controls every seat that hasn't forfeited yet,
+  because there'd be nobody left to rank ahead of them.
+
+## Snapshots
+
+New fields on the session snapshot (`schema/game-ws-v1.json`, then `npm run gen:api`).
+
+**Per seat:**
+- `controllerUserId`
+- `boardId`, `boardName`
+- `boardOnline`
+- `controllerConnected`
+- `forfeited`
+
+**Top level:**
+- `ownerUserId` (the host)
+- `lobbyId` (comes with lobbies, plans 2/3)
+- `mySeats`: computed for each socket, so snapshots are now sent to each socket, not
+  broadcast byte-for-byte.
+
+**New server messages:**
+- `notice` (`not_your_turn`; `board_offline` comes with lobbies and the frontend,
+  plans 2/3)
+- `error` (`forbidden`, `board_busy`, …)
+
+### Lobby channel
+
+A new lobby channel, `GET /ws/lobby?lobbyId=…`, follows the session channel's pattern
+in `browser-gw/` with its own `LobbyConnections`. It pushes a full lobby snapshot on
+every change:
+- name, code
+- host
+- people, with presence and board
+- throw order
+- next game
+- current session id
+- pending invites
+- the activity feed (latest 50)
+
+Lobby changes go through REST (below). The socket only pushes; it doesn't take
+commands.
+
+## API
+
+All under `requireAuth`. The schemas go in `schema/api-v1.yaml`.
+
+| Endpoint | Purpose |
+|---|---|
+| `POST /api/lobbies` | create (host = me) |
+| `GET /api/lobbies/current` | my open lobby, or 404 |
+| `GET /api/lobbies/by-code/:code` | preview for the Join page: name, host, board names, people count |
+| `POST /api/lobbies/:id/join` | body `{ code }` or an accepted invite |
+| `POST /api/lobbies/:id/leave` | |
+| `PATCH /api/lobbies/:id` | host: name, throw order, next game, regenerate code |
+| `POST /api/lobbies/:id/people` | add a guest `{ name, boardId? }` |
+| `PATCH /api/lobbies/:id/people/:pid` | board, plays, position (by permission, see Lifecycle) |
+| `DELETE /api/lobbies/:id/people/:pid` | host removes anyone; a member removes their own guests |
+| `POST /api/lobbies/:id/start` | host: creates the session and returns its id |
+| `POST /api/lobbies/:id/close` | host |
+| `GET /api/users/search?q=` | username search for invites (removed by #54) |
+| `POST /api/lobbies/:id/invites` | `{ userId }` |
+| `GET /api/invites` | my pending invites |
+| `POST /api/invites/:id/accept`, `/decline` | |
+
+## Frontend
+
+Screens follow the **Dartcade Platform Design** canvas:
+
+| Screen | Canvas | Route / place |
+|---|---|---|
+| Lobby, host view | `Lobby.dc.html` | `#/lobby` |
+| Lobby, member view (phone) | `Lobby-Phone.dc.html` | `#/lobby` |
+| Join lobby | `Lobby-Join.dc.html` | `#/join`, `#/join/:code` |
+| Lobby indicator | `Lobby-Indicator.dc.html` | sidebar, tablet rail, phone strip |
+| Play page with lobby entry | `Play-InProgress`, `Play-Abandon` | `#/` (CreateSession.svelte) |
+
+- **Lobby screen:**
+  - a people table (Player, Board, Status) with board chips and "Moved by you · usually
+    X"
+  - a ready toggle for your own rows and read-only ready for others
+  - a row menu for Move up/down and Remove
+  - "Add someone: name or @username": a plain name adds a guest, an @username sends an
+    invite
+  - the next-game card with inline settings
+  - "Who plays" chips
+  - throw order selector
+  - Start · N players
+  - "Lobby history" (the activity feed)
+- **Shared pieces:** the next-game card reuses the mode setup from `CreateSession.svelte`.
+- **Phone member view:** `Lobby-Phone` still shows one combined "I'm in · ready" /
+  "Sitting this one out" toggle. It needs a separate Ready button to match the host
+  view.
+
+### Not in the canvas yet (to design first, then build)
+
+- **Pending invites for the invitee:** the list or nav badge, and the accept/decline
+  screen. The inviting side is already in `Lobby`.
+- **Match screen remote states:**
+  - "Waiting for X (disconnected)" on the active seat
+  - "Board offline, enter darts manually" for the active seat's controller
+  - the "Not your turn" toast
+  - inputs locked when it isn't your seat
+  - each seat's board name in the panel or row
+- **Abandon/abort dialogs** for lobby games:
+  - the host sees "Abort game", which records no result
+  - a member sees "Abandon", which counts as a loss
+- **After the game:** a "Back to lobby" action.
+
+## Errors and edge cases
+
+- **Wrong seat:** an action for a seat you don't control is rejected with `forbidden`.
+  The UI shouldn't offer it.
+- **Board busy:** a board in another active session is refused at assignment and again
+  at start (`board_busy`).
+- **Board offline at start:** start is refused with the names of the offline boards.
+  The host can move those people to manual.
+- **Bridge drops mid-game:** `boardOnline` turns false and the controller enters darts
+  manually. When it reconnects, board darts count again.
+- **Restart:**
+  - Lobbies reload from the DB.
+  - Sessions rebuild from the log, including `byBoard` for every seat's board.
+  - Presence starts empty and fills as sockets reconnect.
+- **Joining a full or closed lobby:** 404 for an unknown or closed code. There's no size
+  limit in v1.
+- **Deleting a board** that a lobby uses sets those people to manual. Deleting one used
+  in a running game is refused (409), as today.
+- **Account deletion:** the account's lobby rows cascade away. Seats keep their names,
+  because `user_id` and `controller_user_id` are set to null.
+
+## Testing
+
+- **Engine unit tests:**
+  - routing: the active seat's board is accepted; other boards are dropped and not
+    logged
+  - access per action and seat
+  - forfeit placements, ranked by standing
+  - a forfeit rejected when the sender controls every seat still in the game
+  - abort
+  - replay determinism with several boards
+  - the local flow is unchanged
+- **Module tests:** `summarize` on a game that isn't won, ranked by standing (X01 by legs
+  then score, ATC by hits then darts).
+- **API and DB tests:**
+  - lobby lifecycle
+  - ready and plays reset after a game
+  - the soft-gate start with people who aren't ready
+  - activity feed entries
+  - code join, regenerating the code
+  - invites
+  - host handover
+  - the one-open-lobby and one-active-session rules
+  - board permissions: owner-assigns while not self-chosen, self-choice locks it,
+    `board_busy`
+  - start validation
+- **E2E**, building on the e2e plan:
+  - two browser contexts as two accounts, each with its own fake bridge
+  - create, join by code, play a full X01 leg across both boards
+  - a dart thrown out of turn is ignored
+  - kill a bridge, continue manually
+  - forfeit records a result
+  - host abort records none
+
+## Decided after review
+
+- **Board assignment:** see Decisions → Boards. Anyone can put a person on a board they
+  own, as long as that person hasn't picked a board themselves.
+- **Wording:** in lobby games, the member action stays labelled **Abandon**. Its dialog
+  states that it counts as a loss for your seats. The host action is **Abort game**, and
+  local games keep `Play-Abandon` as designed.
