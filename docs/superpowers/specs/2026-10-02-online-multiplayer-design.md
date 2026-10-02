@@ -26,15 +26,16 @@ person who owns a seat can act for it.
   in #54.
 - **Seat control is strict.** Only a seat's controller can add, correct or undo darts or
   trigger a takeout for it. There is no host override.
-- **Boards:**
-  - A person who hasn't picked a board themselves can be put on a board by anyone who
-    owns it. This covers joining while you're at someone else's place: the host of the
-    place puts you on their board.
-  - Once you pick a board yourself (one you own, or manual), nobody else can change it.
-  - A guest's board is picked by the member who added them, which counts as picking it
-    themselves.
-  - A joiner starts on their most recently used board, and a guest on their adder's
-    board. Neither counts as a choice.
+- **Boards:** a board menu only ever lists *your own* boards (plus Manual where you may
+  choose it).
+  - **No board yet** (Manual): anyone can put that person on one of their own boards. This
+    covers joining while you're at someone else's place: whoever owns the board there
+    gives you theirs.
+  - **Has a board:** only the person themselves (for a guest, the member who added them)
+    changes it, to one of their own boards or Manual. The board's owner can also take it
+    back, which sets the person to Manual.
+  - A joiner starts on their most recently used board (Manual if they own none), a guest
+    on their adder's board.
   - The host has no extra rights over boards.
 - **Disconnects:** the game waits ("waiting for X"). A dead bridge falls back to manual
   entry for that seat. There is no forfeit timeout in v1; it's tracked in #53.
@@ -104,7 +105,6 @@ One row per person in the lobby, member or guest, in lobby order.
 | `position INT` | Lobby order, which is the default throw order |
 | `plays BOOL` | False means sitting out the next game. It resets to true after every game. |
 | `ready BOOL` | Soft ready. It resets after every game: to false for members, to true for guests. |
-| `board_self_chosen BOOL` | True once the person (or a guest's adder) picked the board. After that, nobody else can change it. |
 | `board_moved_by NULL` | Who put them on the current board when it wasn't their own pick, for the "Moved by you" hint |
 | `joined_at` | |
 
@@ -178,9 +178,9 @@ confirm", after the joined people. They don't count as players until accepted.
 3. **Open.**
    - **Everyone:**
      - add guests at a board
-     - pick their own board (one they own, or manual), which locks it for others
-     - pick the board of their guests (one they own, or manual)
-     - put anyone whose board isn't self-chosen on a board they own
+     - pick their own board, and their guests' (one they own, or Manual)
+     - give anyone without a board (Manual) one of their own boards
+     - take their own board back from anyone on it (they go to Manual)
      - set ready and "I'm in" / "sitting out" for themselves and their guests
    - **Host only:**
      - reorder people
@@ -424,20 +424,14 @@ Screens follow the **Dartcade Platform Design** canvas:
   "Sitting this one out" toggle. It needs a separate Ready button to match the host
   view.
 
-### Not in the canvas yet (to design first, then build)
+### Designed since (canvas, 2026-10-02 afternoon)
 
-- **Pending invites for the invitee:** the list or nav badge, and the accept/decline
-  screen. The inviting side is already in `Lobby`.
-- **Match screen remote states:**
-  - "Waiting for X (disconnected)" on the active seat
-  - "Board offline, enter darts manually" for the active seat's controller
-  - the "Not your turn" toast
-  - inputs locked when it isn't your seat
-  - each seat's board name in the panel or row
-- **Abandon/abort dialogs** for lobby games:
-  - the host sees "Abort game", which records no result
-  - a member sees "Abandon", which counts as a loss
-- **After the game:** a "Back to lobby" action.
+`Lobby-Host-Phone`, `Lobby-Phone` (member, with a separate Ready), `Invites-Phone`,
+`Match-Remote`, `Match-Remote-Waiting`, `Match-Remote-Manual`, `Mobile-Match-Manual`,
+`Match-Toast`, `Mobile-Match-Toast`, `Match-Leave`, `Match-Leave-Member`,
+`Mobile-Leave-Host`, `Mobile-Leave-Member`, `Match-End-Lobby`, `Match-End-Forfeit`,
+`Match-End-Aborted`. Where they differ from this spec, "Update after the lobby designs"
+below decides.
 
 ## Errors and edge cases
 
@@ -500,3 +494,61 @@ Screens follow the **Dartcade Platform Design** canvas:
 - **Wording:** in lobby games, the member action stays labelled **Abandon**. Its dialog
   states that it counts as a loss for your seats. The host action is **Abort game**, and
   local games keep `Play-Abandon` as designed.
+
+## Update after the lobby designs (2026-10-02, 18:40)
+
+The canvas gained the lobby, invite, remote-play, leave and end-of-game screens. Where
+they differ from the sections above, this decides:
+
+- **Boards:** as in Decisions → Boards (only your own boards in the menu). Where the
+  canvas lets the host move anyone onto any board, it follows this rule instead. The
+  "picked it myself" lock is gone.
+- **Members on their phone** (`Lobby-Phone`): besides "I'm in" and Ready, they pick
+  their own board, add guests and invite, as in Lobby lifecycle → Open. The canvas
+  member view lacks these; they reuse the host view's patterns.
+- **Sitting out** lasts a single game: everyone is back in after each game (the
+  end-of-game screens' "I'm in stays as it was" is not followed).
+- **Rematch** (`Match-End-*`): host only, the same players and settings, the same soft
+  ready gate as Start, also after an abort. `POST /api/lobbies/:id/rematch`.
+- **"At the board" vs "joined from phone":** not modelled. A member has an account, a
+  guest sits at a member's board.
+- **Forfeit ranking and the abandon preview** ("If you leave now", `Match-Leave-Member`)
+  use the committed score (before the open visit), as built. The engine exposes the
+  preview in the snapshot so the dialog shows the real outcome.
+- **Host:** aborts; the host can't abandon. A host who leaves the lobby mid-game stays in
+  the game; the host role passes on after it.
+- **Aborted games** keep their row with `status = 'aborted'` and a new
+  `aborted_by_user_id`, and the final snapshot carries the standings, so
+  `Match-End-Aborted` can show them. History still hides aborted games.
+- **Waiting and manual entry** (`Match-Remote-Waiting`, `Match-Remote-Manual`):
+  - the controller of the seat that's up has no socket open → everyone sees
+    "Waiting for Lena · disconnected 1:12" (the time from a server-side
+    `disconnectedAt` per seat); only the host also gets Abort
+  - the seat's board is offline → its controller enters darts by hand (keypad), the
+    others see "Lena's board is offline"
+- **Not your turn** (`Match-Toast`): the notice also names the thrower and their board
+  (`throwerName`, `throwerBoard`). It goes to the controllers of the seats on the board
+  the dart came from.
+- **Lobby name in the match header** (`Match-Remote`): the snapshot gets `lobbyName`.
+- **QR code:** the host's lobby shows a QR code of the join link; people scan it with the
+  phone's camera (no in-app scanner).
+- **Live per-user updates** (invite badge, lobby indicator with "you throw next · Leg 2"):
+  a per-user socket, `GET /ws/me`, pushes the user's pending invites and their lobby
+  summary.
+- **New game inside a lobby** (`Play`, `Mobile-Play`): "Game on" starts the lobby game
+  with the lobby's players; the players card ("From your lobby · Manage") opens the
+  lobby. Outside a lobby, New game works as now (including `@` account players).
+
+### Work split
+
+1. **Match remote states** (frontend + small snapshot additions): board names, lobby
+   name, waiting with `disconnectedAt`, manual entry when the board is offline, the
+   richer not-your-turn toast.
+2. **Backend lobbies:** migration, REST, lobby socket, `/ws/me`, invites, start and
+   rematch, resets, activity feed, `lobby_id` on sessions.
+3. **Frontend lobby screens:** Lobby (host desktop and phone, member phone), Join, the
+   indicator, Invites with badge, the Play page's lobby card.
+4. **Leave and end-of-game flows:** the Abort and Abandon dialogs (with the preview), the
+   three result screens, Back to lobby and Rematch.
+
+1 and 2 can run in parallel; 3 needs 2; 4 needs 2 and the engine's abort/preview changes.
