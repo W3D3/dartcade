@@ -33,14 +33,18 @@ const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
   sessionId => {
     pushSnapshot(sessionId, engine)
-    lobbies.onSessionPush(sessionId).catch((err: unknown) => { console.warn('lobby indicator push failed', { sessionId, err }) })
+    lobbies.onSessionPush(sessionId).catch((err: unknown) => { warn('lobby indicator push failed', { sessionId, error: String(err) }) })
   },
   (message, details) => { warn(message, details) },
   (sessionId, userIds, notice) => { pushNotice(sessionId, userIds, notice) },
   ended => { lobbies.onGameEnded(ended) },
 )
-const lobbies: LobbyService = new LobbyService({ db, engine, hub, isBoardOnline: boardId => bridgeConnections.isOnline(boardId) })
+const lobbies: LobbyService = new LobbyService({
+  db, engine, hub, isBoardOnline: boardId => bridgeConnections.isOnline(boardId), warn: (message, details) => { warn(message, details) },
+})
 await engine.rebuild()
+// A game that ended while the server was down never told its lobby: settle the lobbies now
+await lobbies.settleAll()
 
 const app = await buildApp({ engine, db, lobbies, hub, frontendDist: join(__dirname, '../../frontend/dist') })
 warn = (message, details) => { app.log.warn({ details }, message) }
