@@ -211,9 +211,13 @@ describe('bridge message parsing', () => {
   })
 
   it('envelope is null when a field the event is stored by is missing or wrong', () => {
+    // An event that still says which one it is gets a warning: it's never acked, so that's its only trace
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     for (const bad of [{ ...envelope, v: 2 }, { ...envelope, seq: '7' }, { ...envelope, boot_id: undefined }, { ...envelope, recv_wall: 'yesterday' }, null, 'x']) {
       expect(parseEnvelope(bad)).toBeNull()
     }
+    expect(warn).toHaveBeenCalledWith('Ignoring a bridge event whose envelope does not match the schema', expect.objectContaining({ kind: 'dart.detected' }))
+    warn.mockRestore()
   })
 
   it('envelope keeps data as sent and board_id optional', () => {

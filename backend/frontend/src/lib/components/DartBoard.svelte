@@ -4,7 +4,7 @@
   import { labelPos, markerPositions } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
 
-  let { darts = [], target = null, nextTarget = null, dim = false, playerMarkers = [], checkoutTargets = [], onSegmentClick,
+  let { darts = [], target = null, nextTarget = null, dim = false, playerMarkers = [], checkoutTargets = [],
         onBoardClick, selectedDart = null, onDartMove, zoom = 1, overlay }: {
     darts?: Array<{
       segment: Segment
@@ -19,9 +19,8 @@
     dim?: boolean
     playerMarkers?: Array<{ initial: string; segment: number; isActive: boolean }>
     checkoutTargets?: string[]
-    onSegmentClick?: (seg: Segment) => void
     /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
-     *  and the segment under it. Takes precedence over onSegmentClick. */
+     *  and the segment under it. */
     onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** Index into `darts` of the dart picked for correction; it is highlighted. */
     selectedDart?: number | null
@@ -73,13 +72,6 @@
       wa: c + HALF,
     }
   })
-
-  function clickSegment(num: number, ring: string) {
-    if (!onSegmentClick) return
-    const { bed, multiplier } = RING_BED[ring]
-    const name = multiplier === 3 ? `T${num}` : multiplier === 2 ? `D${num}` : `S${num}`
-    onSegmentClick({ name, number: num, bed, multiplier })
-  }
 
   function dartPos(dart: typeof darts[0]): { x: number; y: number } | null {
     if (dart.coords) return dart.coords
@@ -253,13 +245,12 @@
   const clipId = `board-clip-${uid}`
 
   const precise = $derived(!!onBoardClick)
-  const interactive = $derived(!precise && !!onSegmentClick)
-  // Either way, light up the segment under the cursor
-  const hoverable = $derived(interactive || precise)
+  // Light up the segment under the cursor
+  const hoverable = $derived(precise)
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<svg bind:this={svgEl} viewBox={zoomBox ? `${zoomBox.x} ${zoomBox.y} ${zoomBox.w} ${zoomBox.w}` : '-1.15 -1.15 2.3 2.3'} class="w-full select-none {hoverable ? 'cursor-crosshair' : ''}"
+<!-- Pointer-only: tapping where the dart landed; the keypad is the keyboard way to enter darts -->
+<svg bind:this={svgEl} role={precise || onDartMove ? 'application' : 'img'} aria-label="Dartboard" viewBox={zoomBox ? `${zoomBox.x} ${zoomBox.y} ${zoomBox.w} ${zoomBox.w}` : '-1.15 -1.15 2.3 2.3'} class="w-full select-none {hoverable ? 'cursor-crosshair' : ''}"
   xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}
   style={precise || onDartMove ? 'touch-action:none;-webkit-touch-callout:none' : undefined}
   onpointerdown={precise || onDartMove ? pressStart : undefined} onpointermove={pressMove}
@@ -273,9 +264,7 @@
   <!-- Sector fills and wire dividers -->
   {#each sectors as { num, i, paths, wa } (num)}
     {#each paths as { ring, d } (ring)}
-      <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" vector-effect="non-scaling-stroke"
-        onclick={interactive ? () => clickSegment(num, ring) : undefined}
         class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
     {/each}
     <line
@@ -291,13 +280,9 @@
   {/each}
 
   <!-- Bull fills -->
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
-    onclick={interactive ? () => onSegmentClick?.({ name: '25', number: 25, bed: 'Single', multiplier: 1 }) : undefined}
     class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
-  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
-    onclick={interactive ? () => onSegmentClick?.({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }) : undefined}
     class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
 
   {#if dim}
