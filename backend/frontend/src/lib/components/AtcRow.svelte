@@ -1,10 +1,12 @@
 <script lang="ts">
   import AtcProgress from './AtcProgress.svelte'
   import PlayerPill from './PlayerPill.svelte'
+  import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
   import type { AtcPlayerView } from '$lib/playerStats.js'
+  import type { SeatLine } from '$lib/remote'
 
-  let { name, p, active, pill }: { name: string; p: AtcPlayerView; active: boolean; pill: PillKind | null } = $props()
+  let { name, p, active, pill, seat = null }: { name: string; p: AtcPlayerView; active: boolean; pill: PillKind | null; seat?: SeatLine | null } = $props()
   const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
 
@@ -15,7 +17,14 @@
     <span class="flex items-center gap-3 min-w-0">
       <span class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-[17px]
                    {active ? 'bg-accent text-accent-fg' : 'bg-line-chip text-text'}">{initial}</span>
-      <span class="text-[21px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}</span>
+      {#if seat}
+        <span class="flex flex-col gap-[2px] min-w-0">
+          <span class="text-[21px] leading-[1.1] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}{#if seat.you}<span class="text-[13px] font-medium text-accent"> · you</span>{/if}</span>
+          <SeatBoardLine line={seat} />
+        </span>
+      {:else}
+        <span class="text-[21px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}</span>
+      {/if}
     </span>
     {#if pill}<PlayerPill kind={pill} small />{/if}
   </div>

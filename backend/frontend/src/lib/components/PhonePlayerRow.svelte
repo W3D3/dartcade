@@ -4,7 +4,7 @@
   import PlayerPill from './PlayerPill.svelte'
   import type { PillKind } from './pills.js'
 
-  let { name, pill, sub, value, valueLabel, legs, active = false }: {
+  let { name, pill, sub, value, valueLabel, legs, active = false, you = false }: {
     name: string
     pill: PillKind | null
     sub: string
@@ -13,6 +13,8 @@
     legs?: { total: number; won: number }
     /** The thrower, collapsed to a row (phone keypad mode). */
     active?: boolean
+    /** The viewer's own seat (remote games). */
+    you?: boolean
   } = $props()
 
   const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
@@ -22,7 +24,7 @@
   class="shrink-0 h-[58px] box-border px-[14px] flex items-center gap-[10px] rounded-[12px] {active ? 'bg-surface-active border-2 border-accent' : 'bg-surface-panel border border-line-2'}">
   <span class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center font-bold text-[13px] {active ? 'bg-accent text-accent-fg' : 'bg-line-chip text-text'}">{initial}</span>
   <span class="flex flex-col gap-[2px] min-w-0">
-    <span class="text-[15px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}</span>
+    <span class="text-[15px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}{#if you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span>
     <span class="text-[12px] text-text-dim truncate">{sub}</span>
   </span>
   {#if pill === 'winner' || pill === 'leading' || (active && pill)}<PlayerPill kind={pill} small />{/if}

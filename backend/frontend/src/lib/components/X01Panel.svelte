@@ -4,18 +4,20 @@
   import Chalkboard from './Chalkboard.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
+  import type { SeatLine } from '$lib/remote'
 
-  let { name, p, active, solo = false, pill, chalkboard }: {
+  let { name, p, active, solo = false, pill, seat = null, chalkboard }: {
     name: string
     p: X01PlayerView
     active: boolean
     solo?: boolean
     pill: PillKind | null
+    seat?: SeatLine | null
     chalkboard: boolean
   } = $props()
 </script>
 
-<PanelShell {name} {active} {solo} {pill} pillInRow={solo}>
+<PanelShell {name} {active} {solo} {pill} {seat} pillInRow={solo}>
   {#snippet aside()}
     {#if !solo}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

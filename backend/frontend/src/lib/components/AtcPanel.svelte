@@ -3,17 +3,19 @@
   import AtcProgress from './AtcProgress.svelte'
   import type { PillKind } from './pills.js'
   import type { AtcPlayerView } from '$lib/playerStats.js'
+  import type { SeatLine } from '$lib/remote'
 
-  let { name, p, active, solo = false, pill }: {
+  let { name, p, active, solo = false, pill, seat = null }: {
     name: string
     p: AtcPlayerView
     active: boolean
     solo?: boolean
     pill: PillKind | null
+    seat?: SeatLine | null
   } = $props()
 </script>
 
-<PanelShell {name} {active} {solo} {pill} pillInRow>
+<PanelShell {name} {active} {solo} {pill} {seat} pillInRow>
   <div class="flex flex-col gap-[6px]">
     <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
     <span class="font-display font-bold text-[min(220px,24vh)] leading-[0.8] tracking-[-0.02em]

@@ -2,15 +2,19 @@
   // Frame of a player panel (1–2 players): avatar, name, optional aside (leg pips), pill.
   import type { Snippet } from 'svelte'
   import PlayerPill from './PlayerPill.svelte'
+  import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
+  import type { SeatLine } from '$lib/remote'
 
-  let { name, active, solo = false, pill, pillInRow = false, aside, children }: {
+  let { name, active, solo = false, pill, pillInRow = false, seat = null, aside, children }: {
     name: string
     active: boolean
     solo?: boolean
     pill: PillKind | null
     /** Put the pill at the end of the name row (ATC and solo) instead of under it. */
     pillInRow?: boolean
+    /** Remote games: the seat's board under the name, and "· you". */
+    seat?: SeatLine | null
     aside?: Snippet
     children: Snippet
   } = $props()
@@ -24,7 +28,14 @@
   <div class="flex items-center gap-3 min-w-0">
     <span class="w-10 h-10 shrink-0 rounded-full flex items-center justify-center font-bold text-[17px]
                  {active ? 'bg-accent text-accent-fg' : 'bg-line-chip text-text'}">{initial}</span>
-    <span class="text-[22px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}</span>
+    {#if seat}
+      <span class="flex flex-col gap-[3px] min-w-0">
+        <span class="text-[22px] leading-[1.1] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}{#if seat.you}<span class="text-[14px] font-medium text-accent"> · you</span>{/if}</span>
+        <SeatBoardLine line={seat} size="lg" />
+      </span>
+    {:else}
+      <span class="text-[22px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}">{name}</span>
+    {/if}
     <span class="ml-auto flex items-center gap-3 shrink-0">
       {@render aside?.()}
       {#if pill && pillInRow}<PlayerPill kind={pill} />{/if}

@@ -1,17 +1,18 @@
 <script lang="ts">
   // The X01 thrower on a phone: name, board, Throwing pill, leg pips, big score, averages, chalkboard.
-  import { Target } from '@lucide/svelte'
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
   import PlayerPill from './PlayerPill.svelte'
+  import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats'
+  import type { SeatLine } from '$lib/remote'
 
-  let { name, p, pill, boardName, chalkboard }: {
+  let { name, p, pill, seat, chalkboard }: {
     name: string
     p: X01PlayerView
     pill: PillKind | null
-    boardName: string | null
+    seat: SeatLine | null
     chalkboard: boolean
   } = $props()
 
@@ -28,8 +29,8 @@
   <div class="flex items-center gap-2 min-w-0">
     <span class="w-[30px] h-[30px] shrink-0 rounded-full flex items-center justify-center font-bold text-[13px] bg-accent text-accent-fg">{initial}</span>
     <span class="flex flex-col gap-[1px] min-w-0">
-      <span class="text-[16px] font-semibold leading-[1.1] truncate">{name}</span>
-      {#if boardName}<span class="flex items-center gap-[5px] text-[12px] text-text-muted truncate"><Target size={13} strokeWidth={1.8} />{boardName}</span>{/if}
+      <span class="text-[16px] font-semibold leading-[1.1] truncate">{name}{#if seat?.you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span>
+      {#if seat}<SeatBoardLine line={seat} size="sm" />{/if}
     </span>
     {#if pill}<PlayerPill kind={pill} small />{/if}
     {#if p.firstTo > 1}<span class="ml-auto"><LegPips total={p.firstTo} won={p.legsWon} active /></span>{/if}

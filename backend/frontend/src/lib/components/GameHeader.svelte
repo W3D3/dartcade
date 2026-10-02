@@ -1,13 +1,15 @@
 <script lang="ts">
   import { ChevronLeft, Grid3x3, Settings, Target, X } from '@lucide/svelte'
-  // Top bar of a live game: leave, title and meta, board/entry toggle, end, live, board, settings.
+  // Top bar of a live game: leave, title, meta and lobby, board/entry toggle, end, live or paused, board, settings.
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
   import type { GameSettings } from '$lib/gameSettings.js'
+  import type { MyBoard } from '$lib/remote'
   import type { Snapshot } from '$lib/ws.js'
 
   let {
     title, meta = '', sessionId, boardId, gameId, bmStatus, viewMode, canEnd, showViewToggle = true, compact = false,
+    lobbyName = null, paused = false, myBoard = null,
     settings = $bindable(), onleave, onend, onviewmode,
   }: {
     title: string
@@ -21,6 +23,12 @@
     showViewToggle?: boolean
     /** The phone header: back, title with LIVE and meta, keypad toggle, end, settings. */
     compact?: boolean
+    /** The lobby the game was started from (lobby games). */
+    lobbyName?: string | null
+    /** The game waits for a disconnected player: PAUSED instead of LIVE. */
+    paused?: boolean
+    /** Remote games: the viewer's own board, and whether its bridge is connected. */
+    myBoard?: MyBoard | null
     settings: GameSettings
     onleave: () => void
     onend: () => void
@@ -38,11 +46,24 @@
     <ChevronLeft size={18} />
   </button>
   <div class="flex flex-col gap-[3px] min-w-0">
-    <span class="flex items-center gap-[6px]">
+    <span class="flex items-center gap-[6px] min-w-0">
       <h1 class="m-0 font-display font-bold text-[20px] leading-none uppercase tracking-[0.04em] whitespace-nowrap">{title}</h1>
-      <span class="h-[18px] px-[6px] inline-flex items-center gap-1 rounded-full bg-live-soft text-live-text text-[10px] font-bold tracking-[0.1em]">
-        <span class="w-[6px] h-[6px] rounded-full bg-live"></span>LIVE
-      </span>
+      {#if paused}
+        <span class="h-[18px] px-[6px] shrink-0 inline-flex items-center gap-1 rounded-full bg-surface-paused text-ink-2 text-[10px] font-bold tracking-[0.1em]">
+          <span class="w-[6px] h-[6px] rounded-[1px] bg-text-muted"></span>PAUSED
+        </span>
+      {:else if myBoard && !myBoard.online}
+        <span role="status" class="h-[18px] px-[6px] shrink-0 inline-flex items-center gap-1 rounded-full border border-warn-line bg-warn-soft text-warn text-[10px] font-bold tracking-[0.04em] whitespace-nowrap">
+          <span class="w-[6px] h-[6px] box-border rounded-full border-[1.5px] border-warn"></span>BOARD OFFLINE
+        </span>
+      {:else}
+        <span class="h-[18px] px-[6px] inline-flex items-center gap-1 rounded-full bg-live-soft text-live-text text-[10px] font-bold tracking-[0.1em]">
+          <span class="w-[6px] h-[6px] rounded-full bg-live"></span>LIVE
+        </span>
+      {/if}
+      {#if lobbyName}
+        <span title="Lobby game" class="h-[18px] px-[6px] min-w-0 inline-flex items-center rounded-full border border-accent-line text-accent text-[10px] font-semibold"><span class="truncate">{lobbyName}</span></span>
+      {/if}
     </span>
     {#if meta}<span class="text-[12px] text-text-muted truncate">{meta}</span>{/if}
   </div>
@@ -79,6 +100,9 @@
   <div class="flex items-baseline gap-3 min-w-0">
     <h1 class="m-0 font-display font-bold text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
     {#if meta}<span class="text-[14px] text-text-muted truncate">{meta}</span>{/if}
+    {#if lobbyName}
+      <span title="Lobby game" class="self-center shrink-0 max-w-[240px] h-7 px-[10px] inline-flex items-center rounded-full bg-surface-active border border-accent-line text-accent text-[13px] font-semibold"><span class="truncate">{lobbyName}</span></span>
+    {/if}
   </div>
 
   <div class="ml-auto flex items-center gap-4 shrink-0">
@@ -99,9 +123,27 @@
       </button>
     {/if}
 
-    <span class="h-[30px] px-3 inline-flex items-center gap-2 rounded-full bg-live-soft text-live-text text-[13px] font-bold tracking-[0.1em]">
-      <span class="w-2 h-2 rounded-full bg-live"></span>LIVE
-    </span>
+    {#if paused}
+      <span class="h-[30px] px-3 inline-flex items-center gap-2 rounded-full bg-surface-paused text-ink-2 text-[13px] font-bold tracking-[0.1em]">
+        <span class="w-2 h-2 rounded-[2px] bg-text-muted"></span>PAUSED
+      </span>
+    {:else}
+      <span class="h-[30px] px-3 inline-flex items-center gap-2 rounded-full bg-live-soft text-live-text text-[13px] font-bold tracking-[0.1em]">
+        <span class="w-2 h-2 rounded-full bg-live"></span>LIVE
+      </span>
+    {/if}
+
+    {#if myBoard}
+      {#if myBoard.online}
+        <span title="Board connected" class="h-[30px] px-3 inline-flex items-center gap-[7px] rounded-full border border-line-chip text-ink-2 text-[13px] font-medium whitespace-nowrap">
+          <span class="w-2 h-2 rounded-full bg-accent"></span>{myBoard.name}
+        </span>
+      {:else}
+        <span role="status" class="h-[30px] px-3 inline-flex items-center gap-[7px] rounded-full border border-warn-line bg-warn-soft text-warn text-[13px] font-semibold whitespace-nowrap">
+          <span class="w-2 h-2 box-border rounded-full border-[1.5px] border-warn"></span>{myBoard.name} · offline
+        </span>
+      {/if}
+    {/if}
 
     {#if boardId !== null}
       <BoardStatusPanel {sessionId} {bmStatus} />

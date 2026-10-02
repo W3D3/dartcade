@@ -38,6 +38,23 @@
   --color-danger-text:    #ff7a70;
   --color-danger-line:    #4a2e2b;
 
+  /* Remote match states (board offline, not your turn, paused) */
+  --color-warn:            #e6cf7a;
+  --color-warn-soft:       #24210f;
+  --color-warn-line:       #8a7a3a;
+  --color-warn-panel:      #1d1c12;
+  --color-warn-panel-line: #5a5128;
+  --color-warn-icon:       #2a2714;
+  --color-accent-line:     #44521f;
+  --color-surface-paused:  #22251f;
+
+  /* The not-your-turn toast's bar runs out with it (6 s, lib/toast.ts) */
+  --animate-drain: drain 6s linear forwards;
+  @keyframes drain {
+    from { transform: scaleX(1); }
+    to { transform: scaleX(0); }
+  }
+
   --font-sans:    'Instrument Sans', system-ui, sans-serif;
   --font-display: 'Barlow Condensed', sans-serif;
   --font-mono:    'JetBrains Mono', monospace;

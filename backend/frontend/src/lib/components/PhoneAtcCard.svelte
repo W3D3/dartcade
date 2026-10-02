@@ -1,12 +1,13 @@
 <script lang="ts">
   // The Around the Clock thrower on a phone: name, board, pill, the current target, progress, darts and hit rate.
-  import { Target } from '@lucide/svelte'
   import AtcProgress from './AtcProgress.svelte'
   import PlayerPill from './PlayerPill.svelte'
+  import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
   import type { AtcPlayerView } from '$lib/playerStats'
+  import type { SeatLine } from '$lib/remote'
 
-  let { name, p, pill, boardName }: { name: string; p: AtcPlayerView; pill: PillKind | null; boardName: string | null } = $props()
+  let { name, p, pill, seat }: { name: string; p: AtcPlayerView; pill: PillKind | null; seat: SeatLine | null } = $props()
 
   const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
@@ -16,8 +17,8 @@
   <div class="flex items-center gap-2 min-w-0">
     <span class="w-[30px] h-[30px] shrink-0 rounded-full flex items-center justify-center font-bold text-[13px] bg-accent text-accent-fg">{initial}</span>
     <span class="flex flex-col gap-[1px] min-w-0">
-      <span class="text-[16px] font-semibold leading-[1.1] truncate">{name}</span>
-      {#if boardName}<span class="flex items-center gap-[5px] text-[12px] text-text-muted truncate"><Target size={13} strokeWidth={1.8} />{boardName}</span>{/if}
+      <span class="text-[16px] font-semibold leading-[1.1] truncate">{name}{#if seat?.you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span>
+      {#if seat}<SeatBoardLine line={seat} size="sm" />{/if}
     </span>
     {#if pill}<PlayerPill kind={pill} small />{/if}
   </div>

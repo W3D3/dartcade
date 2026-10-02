@@ -36,6 +36,8 @@
   import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
   import DartKeypad from '../lib/components/DartKeypad.svelte'
   import type { AtcGame, X01Game } from '$lib/api/game-ws'
+  import { authClient } from '$lib/auth'
+  import { centerState, myBoard, rowSub, seatLines } from '$lib/remote'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -48,6 +50,8 @@
   let snapshot = $state<Snapshot | null>(null)
   let history = $state.raw<VisitHistory>(emptyHistory())
   let unsubSnap: (() => void) | null = null
+  // The signed-in user: the host gets Abort while the game waits for someone
+  let viewerId = $state<string | null>(null)
 
   let viewMode = $state<'board' | 'entry'>('board')
   let viewModeSetByUser = false
@@ -73,6 +77,7 @@
       }
       snapshot = snap
     })
+    authClient.getSession().then(r => { viewerId = r.data?.user.id ?? null }).catch(() => undefined)
   })
   onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
 
@@ -112,6 +117,9 @@
   const myTurn = $derived(isMyTurn(snapshot))
   const canThrow = $derived(isActive && myTurn)
   const throwerName = $derived(snapshot ? players[upSeat(snapshot)]?.name ?? '' : '')
+  // Remote games: what the centre shows when it isn't your turn, and where each seat throws
+  const remote = $derived(centerState(snapshot, viewerId))
+  const lines = $derived(seatLines(snapshot))
   const darts = $derived(game?.currentVisitDarts ?? [])
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
@@ -314,10 +322,10 @@
 {#snippet panel(i: number)}
   {#if isX01}
     <X01Panel name={players[i]?.name ?? ''} p={x01Players[i]} active={i === currentPlayer && isActive}
-      solo={layout === 'solo'} pill={pillFor(i, false)} chalkboard={settings.chalkboard} />
+      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null} chalkboard={settings.chalkboard} />
   {:else}
     <AtcPanel name={players[i]?.name ?? ''} p={atcPlayers[i]} active={i === currentPlayer && isActive}
-      solo={layout === 'solo'} pill={pillFor(i, false)} />
+      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null} />
   {/if}
 {/snippet}
 
@@ -332,6 +340,7 @@
       meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
       showViewToggle={!bullOff}
       {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode} compact={$isPhone}
+      lobbyName={snapshot.lobbyName} paused={remote.kind === 'waiting'} myBoard={myBoard(snapshot)}
       canEnd={winner === null}
       bind:settings
       onleave={() => push('/')}
@@ -354,23 +363,24 @@
         <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
           {#each players as player, i (i)}
             {@const up = i === currentPlayer}
+            {@const line = lines[i] ?? null}
             <div data-up={up ? upKey : undefined}
               class={!up && viewMode === 'entry' ? '[@media(max-height:599px)]:hidden' : ''}>
               {#if up && viewMode === 'board'}
                 {#if isX01}
-                  <PhoneX01Card name={player.name} p={x01Players[i]} pill={pillFor(i, false)} boardName={null} chalkboard={settings.chalkboard} />
+                  <PhoneX01Card name={player.name} p={x01Players[i]} pill={pillFor(i, false)} seat={line} chalkboard={settings.chalkboard} />
                 {:else}
-                  <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} boardName={null} />
+                  <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
                 {/if}
               {:else if isX01}
-                <PhonePlayerRow active={up} name={player.name} pill={up ? null : pillFor(i, true)}
-                  sub={up ? (x01Players[i]?.canFinish ? `Throwing · can finish ${x01Players[i]?.canFinish}` : 'Throwing')
-                    : i === nextPlayer ? (x01Players[i]?.canFinish ? `Up next · can finish ${x01Players[i]?.canFinish}` : 'Up next') : `Avg ${x01Players[i]?.avg ?? '0.0'}`}
+                <PhonePlayerRow active={up} name={player.name} you={line?.you ?? false} pill={up ? null : pillFor(i, true)}
+                  sub={rowSub(up ? (x01Players[i]?.canFinish ? `Throwing · can finish ${x01Players[i]?.canFinish}` : 'Throwing')
+                    : i === nextPlayer ? (x01Players[i]?.canFinish ? `Up next · can finish ${x01Players[i]?.canFinish}` : 'Up next') : `Avg ${x01Players[i]?.avg ?? '0.0'}`, line)}
                   valueLabel="Left" value={String(x01Players[i]?.remaining ?? '')}
                   legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }} />
               {:else}
-                <PhonePlayerRow active={up} name={player.name} pill={up ? null : pillFor(i, true)}
-                  sub={up ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done` : i === nextPlayer ? 'Up next' : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`}
+                <PhonePlayerRow active={up} name={player.name} you={line?.you ?? false} pill={up ? null : pillFor(i, true)}
+                  sub={rowSub(up ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done` : i === nextPlayer ? 'Up next' : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`, line)}
                   valueLabel="Target" value={atcPlayers[i]?.target ?? ''} />
               {/if}
             </div>
@@ -397,9 +407,9 @@
         <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
           {#each players as player, i (i)}
             {#if isX01}
-              <X01Row name={player.name} p={x01Players[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} />
+              <X01Row name={player.name} p={x01Players[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
             {:else}
-              <AtcRow name={player.name} p={atcPlayers[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} />
+              <AtcRow name={player.name} p={atcPlayers[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
             {/if}
           {/each}
         </div>
