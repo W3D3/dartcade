@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte'
+  import { onMount, onDestroy, untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
   import { createSessionStore, type Snapshot } from '../lib/ws.js'
@@ -62,8 +62,10 @@
   // "Not your turn": a dart on your board while someone else is up (6 s, the newest wins)
   const toast = createToast<NoticeMessage>(6000)
 
-  let viewMode = $state<'board' | 'entry'>('board')
-  let viewModeSetByUser = false
+  // Board or keypad as last picked on this device; until then the game decides (see below)
+  const savedView = untrack(() => settings.inputView)
+  let viewMode = $state<'board' | 'entry'>(savedView ?? 'board')
+  let viewModeSetByUser = savedView !== null
   let showEndConfirm = $state(false)
   /** Dart open in the correction popover; also highlighted on the board. */
   let correcting = $state<number | null>(null)
@@ -247,6 +249,7 @@
   function setViewMode(m: 'board' | 'entry') {
     viewMode = m
     viewModeSetByUser = true
+    settings.inputView = m
   }
 
   async function endSession() {

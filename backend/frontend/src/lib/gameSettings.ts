@@ -14,6 +14,8 @@ export interface GameSettings {
   soundMiss: boolean
   soundSwitch: boolean
   soundBust: boolean
+  /** The match screen's input: the board or the keypad, as last picked; null until picked. */
+  inputView: 'board' | 'entry' | null
 }
 
 export const defaultSettings: GameSettings = {
@@ -26,6 +28,7 @@ export const defaultSettings: GameSettings = {
   soundMiss: false,
   soundSwitch: false,
   soundBust: false,
+  inputView: null,
 }
 
 export const SETTINGS_KEY = 'dartcade_game_settings'
@@ -46,6 +49,7 @@ const SettingsSchema = z.object({
   soundMiss: flag(d.soundMiss),
   soundSwitch: flag(d.soundSwitch),
   soundBust: flag(d.soundBust),
+  inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
 }).catch({ ...d })
 
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */
