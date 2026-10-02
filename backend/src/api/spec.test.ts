@@ -11,6 +11,7 @@ async function registeredRoutes() {
   const app = await buildApp({
     engine: {} as any,
     db: {} as any,
+    lobbies: {} as any,
     onRoute: (r: RouteOptions) => {
       for (const method of ([] as string[]).concat(r.method)) {
         if (method === 'HEAD') continue   // auto-added for every GET

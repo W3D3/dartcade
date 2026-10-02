@@ -49,6 +49,14 @@
       "description": "Other accounts, to play with"
     },
     {
+      "name": "lobbies",
+      "description": "Lobbies, to play games with friends (live state is on the lobby socket, schema/lobby-ws-v1.json)"
+    },
+    {
+      "name": "invites",
+      "description": "Invites into lobbies"
+    },
+    {
       "name": "bridge",
       "description": "Operations the Go bridge depends on"
     }
@@ -992,6 +1000,646 @@
           }
         }
       }
+    },
+    "/api/lobbies": {
+      "post": {
+        "operationId": "createLobby",
+        "summary": "Open a lobby with the signed-in user as host, on their usual board",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "201": {
+            "description": "The new lobby",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LobbyRef"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/current": {
+      "get": {
+        "operationId": "getCurrentLobby",
+        "summary": "The signed-in user's open lobby",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "200": {
+            "description": "The lobby; open /ws/lobby?lobbyId= for its live state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LobbyRef"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobby-codes/{code}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyCode"
+        }
+      ],
+      "get": {
+        "operationId": "getLobbyByCode",
+        "summary": "What the Join page shows about an open lobby before joining",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "200": {
+            "description": "The lobby's preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LobbyPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "patch": {
+        "operationId": "updateLobby",
+        "summary": "Host: rename, set the throw order or the next game, regenerate the code",
+        "tags": [
+          "lobbies"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateLobbyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Changed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/join": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "joinLobby",
+        "summary": "Join an open lobby by its code",
+        "tags": [
+          "lobbies"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinLobbyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The lobby (joining again is fine)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LobbyRef"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/leave": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "leaveLobby",
+        "summary": "Leave the lobby, with your guests",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "204": {
+            "description": "Left"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/close": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "closeLobby",
+        "summary": "Host: close the lobby (not while a game runs)",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "204": {
+            "description": "Closed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/people": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "addLobbyGuest",
+        "summary": "Add a guest at a board; the adder acts for them in games",
+        "tags": [
+          "lobbies"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddGuestRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The guest's person id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/people/{personId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        },
+        {
+          "$ref": "#/components/parameters/PersonId"
+        }
+      ],
+      "patch": {
+        "operationId": "updateLobbyPerson",
+        "summary": "A person's board, ready, whether they play, or their place in the order (as the lobby's rules allow)",
+        "tags": [
+          "lobbies"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePersonRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Changed"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "removeLobbyPerson",
+        "summary": "Remove someone: the host anyone, a member their own guests",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/start": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "startLobbyGame",
+        "summary": "Host: start the next game with everyone who plays",
+        "description": "Answers 409 not_ready (with the names) when someone who plays isn't ready; send it again with force: true to start anyway.",
+        "tags": [
+          "lobbies"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLobbyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/rematch": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "rematchLobbyGame",
+        "summary": "Host: play the last game again with the same players and settings",
+        "description": "The same soft ready gate as start. Works after a finished or an aborted game.",
+        "tags": [
+          "lobbies"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartLobbyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new game",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedSession"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/invites": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "inviteToLobby",
+        "summary": "Invite an account into the lobby (any member)",
+        "tags": [
+          "invites"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The invite's id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreatedId"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/invites": {
+      "get": {
+        "operationId": "listInvites",
+        "summary": "The signed-in user's pending invites to open lobbies, newest first",
+        "tags": [
+          "invites"
+        ],
+        "responses": {
+          "200": {
+            "description": "Pending invites",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InviteList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/invites/{id}/accept": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/InviteId"
+        }
+      ],
+      "post": {
+        "operationId": "acceptInvite",
+        "summary": "Accept an invite and join its lobby",
+        "tags": [
+          "invites"
+        ],
+        "responses": {
+          "200": {
+            "description": "The lobby joined",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LobbyRef"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/invites/{id}/decline": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/InviteId"
+        }
+      ],
+      "post": {
+        "operationId": "declineInvite",
+        "summary": "Decline an invite",
+        "tags": [
+          "invites"
+        ],
+        "responses": {
+          "204": {
+            "description": "Declined"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1029,6 +1677,44 @@
         "schema": {
           "type": "string",
           "minLength": 1
+        }
+      },
+      "LobbyId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "PersonId": {
+        "name": "personId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "InviteId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "LobbyCode": {
+        "name": "code",
+        "in": "path",
+        "required": true,
+        "description": "Lobby code; case, dashes and spaces are ignored",
+        "schema": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 16
         }
       }
     },
@@ -1119,6 +1805,16 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/BoardActionResult"
+            }
+          }
+        }
+      },
+      "LobbyConflict": {
+        "description": "Conflicts with the lobby's state (see code)",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/LobbyConflict"
             }
           }
         }
@@ -2309,6 +3005,307 @@
           "sessionId": {
             "type": "string",
             "description": "The user's running session (absent when the board is busy)"
+          }
+        }
+      },
+      "LobbyRef": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "code"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "description": "6 characters; shown as K7Q4-MD"
+          }
+        }
+      },
+      "LobbyPreview": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "hostName",
+          "peopleCount",
+          "boardNames"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "hostName": {
+            "type": "string",
+            "nullable": true
+          },
+          "peopleCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boardNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "UpdateLobbyRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "\\S",
+            "maxLength": 48
+          },
+          "throwOrder": {
+            "type": "string",
+            "enum": [
+              "lobby",
+              "random",
+              "bulloff"
+            ]
+          },
+          "nextGame": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "gameId",
+              "config"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "gameId": {
+                "type": "string",
+                "minLength": 1
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
+          "regenerateCode": {
+            "type": "boolean"
+          }
+        }
+      },
+      "JoinLobbyRequest": {
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          }
+        }
+      },
+      "AddGuestRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "pattern": "\\S",
+            "maxLength": 32
+          },
+          "boardId": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "description": "Absent: the adder's board. null: Manual. Otherwise one of the adder's own boards"
+          }
+        }
+      },
+      "UpdatePersonRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "boardId": {
+            "type": "string",
+            "nullable": true,
+            "minLength": 1,
+            "description": "One of your own boards, or null for Manual"
+          },
+          "plays": {
+            "type": "boolean",
+            "description": "false: sits out the next game"
+          },
+          "ready": {
+            "type": "boolean"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Host: move to this place in the lobby order"
+          }
+        }
+      },
+      "StartLobbyRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "force": {
+            "type": "boolean",
+            "description": "Start even though people who play aren't ready"
+          }
+        }
+      },
+      "CreateInviteRequest": {
+        "type": "object",
+        "required": [
+          "userId"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "CreatedId": {
+        "type": "object",
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          }
+        }
+      },
+      "LobbyConflict": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "in_lobby",
+              "not_ready",
+              "board_offline",
+              "board_busy",
+              "active_session",
+              "game_running",
+              "already_member",
+              "already_invited"
+            ]
+          },
+          "lobbyId": {
+            "type": "string",
+            "description": "in_lobby: the lobby you are in; leave it first"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "game_running: the lobby's game. active_session: your own running game"
+          },
+          "notReady": {
+            "type": "array",
+            "description": "not_ready: who plays but isn't ready",
+            "items": {
+              "type": "object",
+              "required": [
+                "personId",
+                "name"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "personId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "offlineBoards": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "board_offline: the boards that are offline"
+          }
+        }
+      },
+      "Invite": {
+        "type": "object",
+        "required": [
+          "id",
+          "lobbyId",
+          "lobbyName",
+          "inviterUserId",
+          "inviterName",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "description": "Same shape as PendingInvite in schema/lobby-ws-v1.json",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "lobbyId": {
+            "type": "string"
+          },
+          "lobbyName": {
+            "type": "string"
+          },
+          "inviterUserId": {
+            "type": "string",
+            "nullable": true
+          },
+          "inviterName": {
+            "type": "string",
+            "nullable": true
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "InviteList": {
+        "type": "object",
+        "required": [
+          "invites"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "invites": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Invite"
+            }
           }
         }
       },

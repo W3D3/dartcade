@@ -6,6 +6,9 @@ import { SessionEngine, createEngineStore } from './session/engine.js'
 import { pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
 import { buildApp } from './app.js'
+import { LobbyHub } from './lobby/hub.js'
+import { LobbyService } from './lobby/service.js'
+import { bridgeConnections } from './bridge-gw/connections.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -21,14 +24,17 @@ if (!DATABASE_URL) throw new Error('DATABASE_URL or PG* env vars are required')
 await runMigrations(db)
 await seedDev()
 
-// The push callback only runs after the engine exists
+const hub = new LobbyHub()
+// The callbacks only run after the engine and the lobbies exist
 const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
   sessionId => { pushSnapshot(sessionId, engine) },
   (message, details) => { app.log.warn({ details }, message) },
   (sessionId, userIds, notice) => { pushNotice(sessionId, userIds, notice) },
+  ended => { lobbies.onGameEnded(ended) },
 )
+const lobbies: LobbyService = new LobbyService({ db, engine, hub, isBoardOnline: boardId => bridgeConnections.isOnline(boardId) })
 await engine.rebuild()
 
-const app = await buildApp({ engine, db, frontendDist: join(__dirname, '../../frontend/dist') })
+const app = await buildApp({ engine, db, lobbies, frontendDist: join(__dirname, '../../frontend/dist') })
 await app.listen({ port: PORT, host: '0.0.0.0' })

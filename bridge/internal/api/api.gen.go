@@ -55,6 +55,18 @@ type BoardId = string
 // GameId defines model for GameId.
 type GameId = string
 
+// InviteId defines model for InviteId.
+type InviteId = string
+
+// LobbyCode defines model for LobbyCode.
+type LobbyCode = string
+
+// LobbyId defines model for LobbyId.
+type LobbyId = string
+
+// PersonId defines model for PersonId.
+type PersonId = string
+
 // SessionId defines model for SessionId.
 type SessionId = string
 

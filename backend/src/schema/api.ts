@@ -379,6 +379,294 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lobbies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open a lobby with the signed-in user as host, on their usual board */
+        post: operations["createLobby"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/current": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's open lobby */
+        get: operations["getCurrentLobby"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobby-codes/{code}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lobby code; case, dashes and spaces are ignored */
+                code: components["parameters"]["LobbyCode"];
+            };
+            cookie?: never;
+        };
+        /** What the Join page shows about an open lobby before joining */
+        get: operations["getLobbyByCode"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Host: rename, set the throw order or the next game, regenerate the code */
+        patch: operations["updateLobby"];
+        trace?: never;
+    };
+    "/api/lobbies/{id}/join": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Join an open lobby by its code */
+        post: operations["joinLobby"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/{id}/leave": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Leave the lobby, with your guests */
+        post: operations["leaveLobby"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/{id}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Host: close the lobby (not while a game runs) */
+        post: operations["closeLobby"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/{id}/people": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add a guest at a board; the adder acts for them in games */
+        post: operations["addLobbyGuest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/{id}/people/{personId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove someone: the host anyone, a member their own guests */
+        delete: operations["removeLobbyPerson"];
+        options?: never;
+        head?: never;
+        /** A person's board, ready, whether they play, or their place in the order (as the lobby's rules allow) */
+        patch: operations["updateLobbyPerson"];
+        trace?: never;
+    };
+    "/api/lobbies/{id}/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Host: start the next game with everyone who plays
+         * @description Answers 409 not_ready (with the names) when someone who plays isn't ready; send it again with force: true to start anyway.
+         */
+        post: operations["startLobbyGame"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/{id}/rematch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Host: play the last game again with the same players and settings
+         * @description The same soft ready gate as start. Works after a finished or an aborted game.
+         */
+        post: operations["rematchLobbyGame"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/lobbies/{id}/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Invite an account into the lobby (any member) */
+        post: operations["inviteToLobby"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's pending invites to open lobbies, newest first */
+        get: operations["listInvites"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["InviteId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept an invite and join its lobby */
+        post: operations["acceptInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/invites/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["InviteId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline an invite */
+        post: operations["declineInvite"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -705,6 +993,87 @@ export interface components {
             /** @description The user's running session (absent when the board is busy) */
             sessionId?: string;
         };
+        LobbyRef: {
+            id: string;
+            name: string;
+            /** @description 6 characters; shown as K7Q4-MD */
+            code: string;
+        };
+        LobbyPreview: {
+            id: string;
+            name: string;
+            hostName: string | null;
+            peopleCount: number;
+            boardNames: string[];
+        };
+        UpdateLobbyRequest: {
+            name?: string;
+            /** @enum {string} */
+            throwOrder?: "lobby" | "random" | "bulloff";
+            nextGame?: {
+                gameId: string;
+                config: {
+                    [key: string]: unknown;
+                };
+            } | null;
+            regenerateCode?: boolean;
+        };
+        JoinLobbyRequest: {
+            code: string;
+        };
+        AddGuestRequest: {
+            name: string;
+            /** @description Absent: the adder's board. null: Manual. Otherwise one of the adder's own boards */
+            boardId?: string | null;
+        };
+        UpdatePersonRequest: {
+            /** @description One of your own boards, or null for Manual */
+            boardId?: string | null;
+            /** @description false: sits out the next game */
+            plays?: boolean;
+            ready?: boolean;
+            /** @description Host: move to this place in the lobby order */
+            position?: number;
+        };
+        StartLobbyRequest: {
+            /** @description Start even though people who play aren't ready */
+            force?: boolean;
+        };
+        CreateInviteRequest: {
+            userId: string;
+        };
+        CreatedId: {
+            id: string;
+        };
+        LobbyConflict: {
+            error: string;
+            /** @enum {string} */
+            code?: "in_lobby" | "not_ready" | "board_offline" | "board_busy" | "active_session" | "game_running" | "already_member" | "already_invited";
+            /** @description in_lobby: the lobby you are in; leave it first */
+            lobbyId?: string;
+            /** @description game_running: the lobby's game. active_session: your own running game */
+            sessionId?: string;
+            /** @description not_ready: who plays but isn't ready */
+            notReady?: {
+                personId: string;
+                name: string;
+            }[];
+            /** @description board_offline: the boards that are offline */
+            offlineBoards?: string[];
+        };
+        /** @description Same shape as PendingInvite in schema/lobby-ws-v1.json */
+        Invite: {
+            id: string;
+            lobbyId: string;
+            lobbyName: string;
+            inviterUserId: string | null;
+            inviterName: string | null;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        InviteList: {
+            invites: components["schemas"]["Invite"][];
+        };
         /**
          * Coords
          * @description Bull-centred, r = 1 at the outer double wire, x right, y up.
@@ -801,11 +1170,25 @@ export interface components {
                 "application/json": components["schemas"]["BoardActionResult"];
             };
         };
+        /** @description Conflicts with the lobby's state (see code) */
+        LobbyConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["LobbyConflict"];
+            };
+        };
     };
     parameters: {
         BoardId: string;
         SessionId: string;
         GameId: string;
+        LobbyId: string;
+        PersonId: string;
+        InviteId: string;
+        /** @description Lobby code; case, dashes and spaces are ignored */
+        LobbyCode: string;
     };
     requestBodies: never;
     headers: never;
@@ -1421,6 +1804,442 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    createLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The new lobby */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LobbyRef"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getCurrentLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lobby; open /ws/lobby?lobbyId= for its live state */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LobbyRef"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getLobbyByCode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description Lobby code; case, dashes and spaces are ignored */
+                code: components["parameters"]["LobbyCode"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lobby's preview */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LobbyPreview"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateLobbyRequest"];
+            };
+        };
+        responses: {
+            /** @description Changed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    joinLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["JoinLobbyRequest"];
+            };
+        };
+        responses: {
+            /** @description The lobby (joining again is fine) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LobbyRef"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    leaveLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Left */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    closeLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Closed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    addLobbyGuest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AddGuestRequest"];
+            };
+        };
+        responses: {
+            /** @description The guest's person id */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedId"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    removeLobbyPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateLobbyPerson: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+                personId: components["parameters"]["PersonId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdatePersonRequest"];
+            };
+        };
+        responses: {
+            /** @description Changed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    startLobbyGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartLobbyRequest"];
+            };
+        };
+        responses: {
+            /** @description The new game */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedSession"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    rematchLobbyGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartLobbyRequest"];
+            };
+        };
+        responses: {
+            /** @description The new game */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedSession"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    inviteToLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateInviteRequest"];
+            };
+        };
+        responses: {
+            /** @description The invite's id */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedId"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listInvites: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Pending invites */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["InviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lobby joined */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LobbyRef"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    declineInvite: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["InviteId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };

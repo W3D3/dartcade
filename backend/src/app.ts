@@ -15,14 +15,18 @@ import { gamesApiPlugin } from './api/games.js'
 import { boardsApiPlugin } from './api/boards.js'
 import { pairingApiPlugin } from './api/pairing.js'
 import { usersApiPlugin } from './api/users.js'
+import { lobbiesApiPlugin } from './api/lobbies.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
+import type { LobbyService } from './lobby/service.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
 
 export type AppDeps = {
   engine: SessionEngine
   db: Kysely<Database>
+  /** Lobby rules and pushes (see lobby/service.ts). */
+  lobbies: LobbyService
   /** Built frontend to serve; omitted in tests. */
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
@@ -46,7 +50,7 @@ const swaggerUiConfig = {
 }
 
 /** All HTTP/WebSocket routes of the backend, without listening or touching the database. */
-export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ engine, db, lobbies, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
   const app = createFastify()
   if (onRoute) app.addHook('onRoute', onRoute)
 
@@ -86,6 +90,7 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
   await app.register(browserGwPlugin, { engine })
   await app.register(sessionsApiPlugin, { engine, db })
   await app.register(usersApiPlugin, { db })
+  await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
   await app.register(boardsApiPlugin, { db })
   await app.register(pairingApiPlugin, { db })
