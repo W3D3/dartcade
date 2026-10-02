@@ -68,6 +68,60 @@ describe('BrowserConnections', () => {
   })
 })
 
+describe('BrowserConnections: when a player left', () => {
+  const at = new Date('2026-10-02T18:00:00.000Z')
+  const sock = () => ({ readyState: 1, send: vi.fn() }) as any
+
+  it('records when a user\'s last socket of the game closed', () => {
+    const bc = new BrowserConnections()
+    const ws = sock()
+    bc.add('s1', ws, 'lena')
+    expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
+    bc.remove('s1', ws, at)
+    expect(bc.disconnectedAt('s1', 'lena')).toEqual(at)
+  })
+
+  it('a user with another socket still open is not disconnected', () => {
+    const bc = new BrowserConnections()
+    const a = sock(); const b = sock()
+    bc.add('s1', a, 'lena'); bc.add('s1', b, 'lena')
+    bc.remove('s1', a, at)
+    expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
+    expect(bc.connectedUsers('s1')).toEqual(new Set(['lena']))
+    const later = new Date('2026-10-02T18:05:00.000Z')
+    bc.remove('s1', b, later)
+    expect(bc.disconnectedAt('s1', 'lena')).toEqual(later)
+  })
+
+  it('opening the game again clears it', () => {
+    const bc = new BrowserConnections()
+    const ws = sock()
+    bc.add('s1', ws, 'lena')
+    bc.remove('s1', ws, at)
+    bc.add('s1', sock(), 'lena')
+    expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
+  })
+
+  it('knows nothing of a user who never opened the game', () => {
+    expect(new BrowserConnections().disconnectedAt('s1', 'max')).toBeNull()
+  })
+
+  it('keeps the time per game', () => {
+    const bc = new BrowserConnections()
+    const one = sock(); const two = sock()
+    bc.add('s1', one, 'lena'); bc.add('s2', two, 'lena')
+    bc.remove('s1', one, at)
+    expect(bc.disconnectedAt('s1', 'lena')).toEqual(at)
+    expect(bc.disconnectedAt('s2', 'lena')).toBeNull()
+  })
+
+  it('ignores a socket it doesn\'t know', () => {
+    const bc = new BrowserConnections()
+    bc.remove('s1', sock(), at)
+    expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
+  })
+})
+
 describe('WS auth', () => {
   let testApp: FastifyInstance | null = null
   afterEach(async () => { await testApp?.close(); testApp = null })
