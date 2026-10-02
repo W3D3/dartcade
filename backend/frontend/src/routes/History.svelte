@@ -82,10 +82,10 @@
   </span>
 {/snippet}
 
-<Layout>
+<Layout title="History">
   <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-auto px-4 py-6 md:px-11 md:py-10">
     <header class="flex flex-wrap items-end justify-between gap-6">
-      <div class="flex flex-col gap-1.5">
+      <div class="hidden md:flex flex-col gap-1.5">
         <h1 class="m-0 font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em]">History</h1>
         <p class="m-0 text-[15px] text-text-muted">Every match you played. Open one to see it leg by leg.</p>
       </div>

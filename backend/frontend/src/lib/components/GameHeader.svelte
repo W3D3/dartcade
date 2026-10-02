@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronLeft, Settings, X } from '@lucide/svelte'
+  import { ChevronLeft, Grid3x3, Settings, Target, X } from '@lucide/svelte'
   // Top bar of a live game: leave, title and meta, board/entry toggle, end, live, board, settings.
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
@@ -7,7 +7,7 @@
   import type { Snapshot } from '$lib/ws.js'
 
   let {
-    title, meta = '', sessionId, boardId, gameId, bmStatus, viewMode, canEnd, showViewToggle = true,
+    title, meta = '', sessionId, boardId, gameId, bmStatus, viewMode, canEnd, showViewToggle = true, compact = false,
     settings = $bindable(), onleave, onend, onviewmode,
   }: {
     title: string
@@ -19,6 +19,8 @@
     viewMode: 'board' | 'entry'
     canEnd: boolean
     showViewToggle?: boolean
+    /** The phone header: back, title with LIVE and meta, keypad toggle, end, settings. */
+    compact?: boolean
     settings: GameSettings
     onleave: () => void
     onend: () => void
@@ -29,6 +31,45 @@
   const outline = 'h-11 flex items-center gap-2 rounded-[10px] border border-line-strong bg-transparent text-[14px] font-medium cursor-pointer shrink-0'
 </script>
 
+{#if compact}
+<header class="h-14 shrink-0 box-border pl-1 pr-3 flex items-center gap-[6px] border-b border-line bg-surface-1">
+  <button type="button" onclick={onleave} aria-label="Leave game"
+    class="w-11 h-11 shrink-0 flex items-center justify-center bg-transparent border-0 text-ink-2 cursor-pointer">
+    <ChevronLeft size={18} />
+  </button>
+  <div class="flex flex-col gap-[3px] min-w-0">
+    <span class="flex items-center gap-[6px]">
+      <h1 class="m-0 font-display font-bold text-[20px] leading-none uppercase tracking-[0.04em] whitespace-nowrap">{title}</h1>
+      <span class="h-[18px] px-[6px] inline-flex items-center gap-1 rounded-full bg-live-soft text-live-text text-[10px] font-bold tracking-[0.1em]">
+        <span class="w-[6px] h-[6px] rounded-full bg-live"></span>LIVE
+      </span>
+    </span>
+    {#if meta}<span class="text-[12px] text-text-muted truncate">{meta}</span>{/if}
+  </div>
+  <span class="ml-auto flex items-center gap-[6px] shrink-0">
+    {#if showViewToggle}
+      <button type="button" onclick={() => onviewmode(viewMode === 'board' ? 'entry' : 'board')}
+        aria-label={viewMode === 'board' ? 'Enter darts by number' : 'Enter darts on the board'}
+        class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-chip bg-transparent text-ink-2 cursor-pointer">
+        {#if viewMode === 'board'}<Grid3x3 size={19} />{:else}<Target size={19} />{/if}
+      </button>
+    {/if}
+    {#if canEnd}
+      <button type="button" onclick={onend} aria-label="End game"
+        class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-chip bg-transparent text-live-text cursor-pointer">
+        <X size={18} />
+      </button>
+    {/if}
+    {#if boardId !== null}<BoardStatusPanel {sessionId} {bmStatus} compact />{/if}
+    <button type="button" onclick={() => showSettings = !showSettings}
+      aria-label="Game settings" aria-haspopup="dialog" aria-expanded={showSettings}
+      class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-chip cursor-pointer
+             {showSettings ? 'bg-surface-key text-text' : 'bg-transparent text-ink-2'}">
+      <Settings size={19} />
+    </button>
+  </span>
+</header>
+{:else}
 <header class="h-16 shrink-0 box-border px-7 flex items-center gap-6 border-b border-line bg-surface-1">
   <button type="button" onclick={onleave} class="{outline} pl-[10px] pr-[14px] text-ink-2">
     <ChevronLeft size={18} />
@@ -74,6 +115,7 @@
     </button>
   </div>
 </header>
+{/if}
 
 {#if showSettings}
   <SettingsDrawer bind:settings {gameId} onclose={() => showSettings = false} />

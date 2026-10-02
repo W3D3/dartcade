@@ -3,6 +3,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
+  import AuthHero from '$lib/components/AuthHero.svelte'
   import { authClient } from '$lib/auth'
 
   let name = $state('')
@@ -41,18 +42,19 @@
   }
 </script>
 
-<div class="flex min-h-screen bg-bg">
+<div class="flex flex-col md:flex-row min-h-dvh bg-bg">
   <AuthPanel />
+  <AuthHero />
 
-  <main class="flex flex-grow items-center justify-center">
-    <form onsubmit={(e) => { e.preventDefault(); void submit() }} class="flex w-[400px] flex-col gap-7">
+  <main class="flex flex-grow md:items-center md:justify-center">
+    <form onsubmit={(e) => { e.preventDefault(); void submit() }} class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
 
       <div class="flex flex-col gap-2">
         <p class="m-0 font-mono text-[13px] tracking-[0.08em] text-accent">Step 1 of 2</p>
-        <h1 class="m-0 font-display font-bold text-[48px] uppercase tracking-[0.02em] leading-none">
+        <h1 class="m-0 font-display font-bold text-[34px] md:text-[48px] uppercase tracking-[0.02em] leading-none">
           Create account
         </h1>
-        <p class="m-0 text-[16px] text-text-muted">Your player name will show in game.</p>
+        <p class="hidden md:block m-0 text-[16px] text-text-muted">Your player name will show in game.</p>
       </div>
 
       <div class="flex flex-col gap-[18px]">
@@ -93,7 +95,7 @@
         <p class="m-0 text-[14px] text-live-text">{error}</p>
       {/if}
 
-      <Button type="submit" variant="primary" disabled={loading || !acceptTerms} class="w-full">
+      <Button type="submit" variant="primary" disabled={loading || !acceptTerms} class="w-full mt-auto md:mt-0">
         {loading ? '…' : 'Create account'}
       </Button>
 

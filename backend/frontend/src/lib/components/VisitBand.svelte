@@ -39,27 +39,27 @@
 
 {#key replays}
   {#if compact}
-    <div class="relative h-[min(124px,14vh)] box-border px-[18px] py-3 rounded-[14px] flex flex-col justify-between {box}">
-      <span class="flex justify-between gap-2 text-[13px]">
-        <span class={eyebrowColor}>{band.eyebrow}</span><span class={quiet}>{band.progressShort}</span>
+    <div class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}">
+      <span class="flex justify-between gap-2 text-[10px] md:text-[13px] leading-none">
+        <span class="{eyebrowColor} truncate">{band.eyebrow}</span><span class="hidden md:inline {quiet}">{band.progressShort}</span>
       </span>
-      <span class="font-display font-bold text-[80px] leading-[0.85] tabular-nums self-center {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
-      <span class="flex items-baseline justify-between gap-2 text-[13px]">
-        <span class={quiet}>{band.afterLabel}</span>
-        <span class="font-display font-bold text-[24px] leading-none {afterColor}">{band.after}</span>
+      <span class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
+      <span class="flex items-baseline justify-between gap-1 text-[10px] md:text-[13px] leading-none">
+        <span class="{quiet} truncate">{band.afterLabel}</span>
+        <span class="font-display font-bold text-[13px] md:text-[24px] leading-none {afterColor}">{band.after}</span>
       </span>
       {#if tone === 'max'}{@render burst()}{/if}
     </div>
   {:else}
-    <div class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-5 px-[18px] py-[10px] rounded-[14px] {box}">
+    <div class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}">
       <span class="flex flex-col items-end gap-[2px] text-right">
         <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
-        <span class="text-[13px] {quiet}">{band.progress}</span>
+        <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
       </span>
-      <span class="sum font-display font-bold text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
+      <span class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
       <span class="flex flex-col gap-[2px]">
         <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
-        <span class="font-display font-bold text-[30px] leading-none {afterColor}">{band.after}</span>
+        <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
       </span>
       {#if tone === 'max'}{@render burst()}{/if}
     </div>

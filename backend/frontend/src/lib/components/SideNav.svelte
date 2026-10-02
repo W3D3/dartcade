@@ -3,7 +3,8 @@
   import { Clock, Monitor, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import { onMount } from 'svelte'
-  import { authClient } from '$lib/auth'
+  import { authClient, signOut } from '$lib/auth'
+  import { isActiveRoute } from '$lib/nav'
 
   let userName = $state('…')
   let userInitial = $derived(userName.charAt(0).toUpperCase() || '?')
@@ -23,12 +24,12 @@
   ]
 
   function isActive(href: string) {
-    return $location === href || ($location === '' && href === '/')
+    return isActiveRoute($location, href)
   }
 </script>
 
 <nav aria-label="Main"
-  class="flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]">
+  class="hidden md:flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]">
 
   <!-- Logo -->
   <div class="flex items-center gap-[10px] px-2">
@@ -66,7 +67,7 @@
     </span>
     <div class="flex flex-col gap-[2px] flex-grow min-w-0">
       <span class="text-[14px] font-semibold truncate">{userName}</span>
-      <a href="#/login" class="text-[13px] text-text-muted no-underline">Sign out</a>
+      <button type="button" onclick={() => void signOut()} class="self-start p-0 bg-transparent border-0 text-[13px] text-text-muted cursor-pointer font-[inherit]">Sign out</button>
     </div>
   </div>
 </nav>

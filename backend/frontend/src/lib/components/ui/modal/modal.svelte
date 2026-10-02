@@ -37,7 +37,7 @@
 <svelte:window onkeydown={onKeydown} />
 
 <div
-  class={cn('fixed inset-0 flex items-center justify-center bg-black/60 p-4', zClass)}
+  class={cn('fixed inset-0 flex items-end md:items-center justify-center bg-black/60 p-0 md:p-4', zClass)}
   role="dialog"
   aria-modal="true"
   aria-labelledby={title ? titleId : undefined}
@@ -48,8 +48,8 @@
 
   <div
     class={cn(
-      'relative w-full box-border p-8 rounded-[18px] bg-surface-1 border border-line-2',
-      'flex flex-col gap-5 max-h-[90vh] overflow-y-auto',
+      'relative w-full box-border p-5 md:p-8 rounded-t-[18px] md:rounded-[18px] bg-surface-1 border border-line-2',
+      'flex flex-col gap-5 max-h-[90dvh] md:max-h-[90vh] overflow-y-auto pb-[calc(20px+env(safe-area-inset-bottom))] md:pb-8',
       '[box-shadow:0_24px_60px_rgba(0,0,0,0.5)]',
       widthClass,
       className,

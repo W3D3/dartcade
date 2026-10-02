@@ -5,7 +5,6 @@
   import { createSessionStore, type Snapshot } from '../lib/ws.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
-  import DartEntryPanel from '../lib/components/DartEntryPanel.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import BoardLegend from '../lib/components/BoardLegend.svelte'
@@ -28,6 +27,12 @@
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Segment, type UserAction } from '$lib/api'
+  import { isPhone } from '$lib/viewport'
+  import { matchLayout } from '$lib/matchLayout'
+  import PhonePlayerRow from '../lib/components/PhonePlayerRow.svelte'
+  import PhoneX01Card from '../lib/components/PhoneX01Card.svelte'
+  import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
+  import DartKeypad from '../lib/components/DartKeypad.svelte'
   import type { AtcGame, X01Game } from '$lib/api/game-ws'
 
   // ── Settings and sound ────────────────────────────────────────────────────
@@ -106,8 +111,15 @@
   // The visit is over (bust, checkout, win): no more darts until the next player
   const locked = $derived(x01?.visitLocked === true || winner !== null)
   const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
-  const layout = $derived(players.length === 1 ? 'solo' : players.length === 2 ? 'duel' : 'party')
+  const layout = $derived(matchLayout(players.length, $isPhone))
   const nextPlayer = $derived((currentPlayer + 1) % Math.max(players.length, 1))
+  // On a phone the players stay in seat order; when the turn passes, keep the thrower in view
+  let phonePlayers = $state<HTMLDivElement | undefined>()
+  // Changes when the turn passes or the view switches; the thrower's entry carries it
+  const upKey = $derived(`${currentPlayer}-${viewMode}`)
+  $effect(() => {
+    phonePlayers?.querySelector(`[data-up="${upKey}"]`)?.scrollIntoView({ block: 'nearest' })
+  })
 
   const x01Players = $derived(x01
     ? players.map((_, i) => x01Player(x01, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions, bust: i === currentPlayer && bust }))
@@ -149,8 +161,8 @@
   const targets = $derived(atc?.targets ?? [])
   const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next' || s.kind === 'suggested-later').map(s => s.label))
   const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets.at(currentPlayer)) : null)
-  const boardNext = $derived(!isX01 && isActive && layout === 'duel' ? atcTargetSegment(sequence, targets.at(nextPlayer)) : null)
-  const markers = $derived(!isX01 && isActive && layout === 'party' && settings.showMarkers
+  const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(nextPlayer)) : null)
+  const markers = $derived(!isX01 && isActive && players.length > 2 && settings.showMarkers
     ? players.map((p, i) => ({
         initial: p.name.trim().charAt(0).toUpperCase() || '?',
         segment: atcTargetSegment(sequence, targets.at(i)) ?? 0,
@@ -158,8 +170,8 @@
       })).filter(m => m.segment > 0)
     : [])
   const legend = $derived.by((): { label: string; kind: 'current' | 'next' | 'others' }[] => {
-    if (isX01 || !isActive || layout === 'solo') return []
-    if (layout === 'party') return settings.showMarkers
+    if (isX01 || !isActive || players.length === 1) return []
+    if (players.length > 2) return settings.showMarkers
       ? [{ label: 'Current target', kind: 'current' }, { label: "Others' targets", kind: 'others' }]
       : [{ label: 'Current target', kind: 'current' }]
     return [
@@ -171,7 +183,7 @@
   function pillFor(i: number, rows: boolean): PillKind | null {
     if (winner === i) return 'winner'
     if (!isActive) return null
-    if (layout === 'solo') return 'practice'
+    if (players.length === 1) return 'practice'
     if (i === currentPlayer) return 'throwing'
     if (rows && leaders.includes(i)) return 'leading'
     return i === nextPlayer ? 'up-next' : null
@@ -191,6 +203,12 @@
   // Clicking the board keeps the exact spot, so the dart shows where it landed
   const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
     send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
+  // Phone keypad: with a thrown dart selected, the key replaces it; otherwise it adds a dart
+  function keypadDart(segment: Segment) {
+    if (correcting === null) { addManualDart(segment); return }
+    send({ type: 'correct_dart', visitIndex: correcting, segment })
+    correcting = null
+  }
   const correct = (dartIndex: number, label: string) =>
     send({ type: 'correct_dart', visitIndex: dartIndex, segment: labelToSegment(label) })
   // Any dart of the open visit can be dragged on the board to correct it
@@ -209,10 +227,41 @@
   }
 </script>
 
+{#snippet phoneCenter()}
+  <!-- Phones: everything fits without scrolling; the board or keypad takes what's left -->
+  {#if viewMode === 'board'}
+    <div class="flex-1 min-h-[160px] w-full [container-type:size] flex items-center justify-center">
+      <div class="aspect-square" style="width: min(100cqw, 100cqh)">
+        <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
+          checkoutTargets={isActive ? checkoutTargets : []}
+          onBoardClick={isActive && !locked ? addBoardDart : undefined}
+          selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
+      </div>
+    </div>
+  {/if}
+  <!-- relative: the board view's correction picker opens above this row, over the board, full width -->
+  <div class="relative shrink-0 grid gap-2 items-start {settings.visitSum ? 'grid-cols-[minmax(0,3fr)_minmax(0,1fr)]' : 'grid-cols-1'}">
+    <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} showPopover={viewMode === 'board'} popoverAbove />
+    {#if settings.visitSum}<VisitBand {band} compact />{/if}
+  </div>
+  {#if viewMode === 'entry'}
+    <div class="flex-1 min-h-[220px]">
+      <DartKeypad onDart={isActive ? keypadDart : () => {}} dartCount={darts.length} {locked} replacing={correcting}
+        canUndo={isActive && darts.length > 0} onUndo={undo}
+        nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
+    </div>
+  {:else}
+    <ControlBar compact canUndo={isActive && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+      onUndo={undo} onNext={advance} />
+  {/if}
+{/snippet}
+
 {#snippet center(variant: 'solo' | 'duel' | 'party')}
   {#if viewMode === 'entry'}
-    <div class="flex-1 min-h-0 overflow-y-auto">
-      <DartEntryPanel onDart={isActive ? addManualDart : () => {}} dartCount={darts.length} {locked} />
+    <div class="flex-1 min-h-0">
+      <DartKeypad onDart={isActive ? addManualDart : () => {}} dartCount={darts.length} {locked}
+        canUndo={isActive && darts.length > 0} onUndo={undo}
+        nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
     </div>
   {:else}
     <!-- The board takes the height the column has left (capped by its width) -->
@@ -237,8 +286,10 @@
     <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
   {/if}
 
-  <ControlBar canUndo={isActive && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
-    onUndo={undo} onNext={advance} />
+  {#if viewMode === 'board'}
+    <ControlBar canUndo={isActive && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+      onUndo={undo} onNext={advance} />
+  {/if}
 {/snippet}
 
 {#snippet panel(i: number)}
@@ -251,7 +302,7 @@
   {/if}
 {/snippet}
 
-<div class="flex flex-col h-screen bg-bg text-text overflow-hidden">
+<div class="flex flex-col h-dvh bg-bg text-text overflow-hidden">
   {#if !snapshot}
     <div class="flex-1 flex items-center justify-center">
       <span class="text-text-muted text-lg">Connecting…</span>
@@ -261,7 +312,7 @@
       title={bullOff ? 'Bull-off' : view.title}
       meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
       showViewToggle={!bullOff}
-      {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode}
+      {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode} compact={$isPhone}
       canEnd={winner === null}
       bind:settings
       onleave={() => push('/')}
@@ -275,6 +326,38 @@
     {:else if !game}
       <main class="flex-grow flex items-center justify-center">
         <p class="text-text-muted">Unsupported game</p>
+      </main>
+
+    {:else if layout === 'phone'}
+      <main class="flex-grow min-h-0 overflow-hidden box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2">
+        <!-- Everyone in seat order; the thrower's entry is the active one (card on the board, a row with the keypad).
+             Many players scroll, and the thrower is kept in view. -->
+        <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
+          {#each players as player, i (i)}
+            {@const up = i === currentPlayer}
+            <div data-up={up ? upKey : undefined}
+              class={!up && viewMode === 'entry' ? '[@media(max-height:599px)]:hidden' : ''}>
+              {#if up && viewMode === 'board'}
+                {#if isX01}
+                  <PhoneX01Card name={player.name} p={x01Players[i]} pill={pillFor(i, false)} boardName={null} chalkboard={settings.chalkboard} />
+                {:else}
+                  <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} boardName={null} />
+                {/if}
+              {:else if isX01}
+                <PhonePlayerRow active={up} name={player.name} pill={up ? null : pillFor(i, true)}
+                  sub={up ? (x01Players[i]?.canFinish ? `Throwing · can finish ${x01Players[i]?.canFinish}` : 'Throwing')
+                    : i === nextPlayer ? (x01Players[i]?.canFinish ? `Up next · can finish ${x01Players[i]?.canFinish}` : 'Up next') : `Avg ${x01Players[i]?.avg ?? '0.0'}`}
+                  valueLabel="Left" value={String(x01Players[i]?.remaining ?? '')}
+                  legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }} />
+              {:else}
+                <PhonePlayerRow active={up} name={player.name} pill={up ? null : pillFor(i, true)}
+                  sub={up ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done` : i === nextPlayer ? 'Up next' : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`}
+                  valueLabel="Target" value={atcPlayers[i]?.target ?? ''} />
+              {/if}
+            </div>
+          {/each}
+        </div>
+        <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
       </main>
 
     {:else if layout === 'solo'}
@@ -308,13 +391,13 @@
     <!-- Winner overlay (unchanged; a designed win state is out of scope) -->
     {#if winner !== null}
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="rounded-[18px] px-10 py-8 text-center pointer-events-auto
+        <div class="rounded-[18px] mx-4 px-6 py-6 md:mx-0 md:px-10 md:py-8 text-center pointer-events-auto
                     border border-line bg-[rgba(15,16,14,0.92)] [box-shadow:0_24px_60px_rgba(0,0,0,0.7)]">
-          <p class="m-0 font-display font-bold text-[48px] text-accent uppercase mb-1">
+          <p class="m-0 font-display font-bold text-[32px] md:text-[48px] text-accent uppercase mb-1">
             {players[winner]?.name} wins!
           </p>
           <button onclick={endSession}
-            class="mt-6 h-[54px] px-8 rounded-[10px] bg-accent text-accent-fg font-display
+            class="mt-6 h-[54px] px-6 md:px-8 rounded-[10px] bg-accent text-accent-fg font-display
                    font-bold text-xl uppercase tracking-widest border-0 cursor-pointer">
             Back to lobby
           </button>

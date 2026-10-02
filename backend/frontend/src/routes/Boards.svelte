@@ -249,13 +249,13 @@
   <Sun size={12} />
 {/snippet}
 
-<Layout>
+<Layout title="Boards">
 
-  <main class="flex flex-grow flex-col gap-7 box-border min-w-0 overflow-y-auto p-[40px_44px]">
+  <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_44px]">
 
     <!-- Header -->
     <header class="flex items-end justify-between">
-      <div class="flex flex-col gap-[6px]">
+      <div class="hidden md:flex flex-col gap-[6px]">
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">
           Boards
         </h1>
@@ -270,9 +270,9 @@
       </Button>
     </header>
 
-    <div class="flex gap-6 flex-grow min-h-0">
+    <div class="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-grow md:min-h-0">
       <!-- Board grid -->
-      <div class="flex-grow grid grid-cols-2 grid-rows-2 gap-4 content-start">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:flex-grow md:grid-rows-2 md:gap-4 content-start">
         {#each boards as board (board.id)}
           {@const active = board.id === selectedId}
           {@const justPaired = board.id === justPairedId}
@@ -334,7 +334,7 @@
 
       <!-- Detail panel (shown when board selected) -->
       {#if selected}
-        <aside class="w-[clamp(420px,50%,720px)] flex-shrink-0 box-border p-6 border border-line-2 rounded-[14px]
+        <aside class="w-full md:w-[clamp(420px,50%,720px)] md:flex-shrink-0 box-border p-4 md:p-6 border border-line-2 rounded-[14px]
                        bg-surface-2 flex flex-col gap-5">
 
           <!-- Header: eyebrow + name + edit -->
@@ -393,7 +393,7 @@
 
           <!-- Board controls -->
           {#if selected.online}
-            <div class="grid grid-cols-4 gap-2">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
               {@render control('start', 'Start', isRunning, startIcon)}
               {@render control('stop', 'Stop', !isRunning, stopIcon)}
               {@render control('reset', 'Reset', false, resetIcon)}

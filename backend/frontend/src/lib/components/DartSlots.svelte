@@ -4,13 +4,20 @@
   import { nearbyPicks, parseLabel } from '$lib/dartUtils.js'
   import type { Slot } from '$lib/dartSlots.js'
 
-  let { slots, onCorrect, popIndex = null, openDart = $bindable(null) }: {
+  let { slots, onCorrect, popIndex = null, openDart = $bindable(null), showPopover = true, popoverAbove = false }: {
     slots: Slot[]
     onCorrect: (dartIndex: number, label: string) => void
     /** Slot of a dart that just landed big (≥ 50): it pops once. */
     popIndex?: number | null
     /** The dart being corrected (bindable, so the board can highlight it). */
     openDart?: number | null
+    /** Off: tapping a dart only selects it (the phone keypad then replaces it). */
+    showPopover?: boolean
+    /**
+     * Open the picker as an overlay above the slots, as wide as the nearest positioned
+     * ancestor (phones: over the board, where there's room).
+     */
+    popoverAbove?: boolean
   } = $props()
 
   let mode = $state<'quick' | 'full'>('quick')
@@ -46,8 +53,9 @@
 
   const nums = Array.from({ length: 20 }, (_, i) => i + 1)
   const multNames: Record<string, string> = { S: 'Single', D: 'Double', T: 'Treble' }
-  const slotBox = 'h-[min(124px,14vh)] box-border rounded-[14px] px-[14px] pt-[10px] pb-3 flex flex-col items-center justify-center gap-2'
-  const slotLabel = 'font-display font-bold text-[min(66px,7.5vh)] leading-[0.9]'
+  // Phones: 58 px slots per Mobile-Match; desktop as before
+  const slotBox = 'h-[58px] md:h-[min(124px,14vh)] box-border rounded-[12px] md:rounded-[14px] px-1 md:px-[14px] py-1 md:pt-[10px] md:pb-3 flex flex-col items-center justify-center gap-[2px] md:gap-2'
+  const slotLabel = 'font-display font-bold text-[26px] md:text-[min(66px,7.5vh)] leading-[0.9]'
 </script>
 
 <svelte:window onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape' && openDart !== null) close() }} />
@@ -62,7 +70,7 @@
                  {openDart === i ? '[box-shadow:0_0_0_3px_#0f100e,0_0_0_5px_#c6f24e]' : ''}"
           class:fx-pop={popIndex === i}>
           <span class={slotLabel}>{slot.label}</span>
-          <span class="font-display font-bold text-[30px] leading-none {slot.kind === 'miss' ? 'text-text-muted' : ''}">{slot.points}</span>
+          <span class="font-display font-bold text-[14px] md:text-[30px] leading-none {slot.kind === 'miss' ? 'text-text-muted' : ''}">{slot.points}</span>
         </button>
       {:else}
         <div class="{slotBox}
@@ -77,16 +85,16 @@
             <span aria-hidden="true" class="w-3 h-3 rounded-full bg-accent"></span>
           {:else if slot.label}
             <span aria-hidden="true" class="{slotLabel} text-text-dim">{slot.label}</span>
-            <span aria-hidden="true" class="text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint">{slot.foot}</span>
+            <span aria-hidden="true" class="text-[10px] md:text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint truncate max-w-full">{slot.foot}</span>
           {/if}
         </div>
       {/if}
     {/each}
   </div>
 
-  {#if openDart !== null}
+  {#if openDart !== null && showPopover}
     <div bind:this={popover} role="dialog" aria-label="Correct dart {openDart + 1}"
-      class="w-full box-border px-3 pt-2 pb-3 rounded-[14px] bg-surface-inset border border-line-popover
+      class="{popoverAbove ? 'absolute left-0 right-0 bottom-full mb-2 z-30' : 'w-full'} box-border px-3 pt-2 pb-3 rounded-[14px] bg-surface-inset border border-line-popover
              flex flex-col gap-2 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)]">
       <div class="flex items-center gap-2 min-w-0">
         {#if mode === 'full'}

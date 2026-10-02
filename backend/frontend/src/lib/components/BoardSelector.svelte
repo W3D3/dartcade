@@ -2,7 +2,12 @@
   import { ChevronDown, SquarePen } from '@lucide/svelte'
   import type { Board } from '$lib/api'
 
-  let { boards, value = $bindable('') }: { boards: Board[]; value: string } = $props()
+  let { boards, value = $bindable(''), compact = false }: {
+    boards: Board[]
+    value: string
+    /** A small chip for the phone header: status dot and board name only. */
+    compact?: boolean
+  } = $props()
 
   let open = $state(false)
   const selected = $derived(boards.find(b => b.id === value))
@@ -17,26 +22,26 @@
 
 <svelte:window onkeydown={onkeydown} />
 
-<div class="relative">
+<div class="relative {compact ? 'min-w-0' : ''}">
   <button type="button" onclick={() => open = !open} aria-label="Change board"
-    class="h-12 px-4 flex items-center gap-[10px] bg-surface-2 border border-line-3 rounded-[10px]
-           text-text text-[15px] font-[inherit] cursor-pointer">
+    class="{compact ? 'h-11 px-3 gap-2 text-[14px] min-w-0 w-full max-w-[150px]' : 'h-12 px-4 gap-[10px] text-[15px]'} flex items-center bg-surface-2 border border-line-3 rounded-[10px]
+           text-text font-[inherit] cursor-pointer">
     {#if isManual}
-      <SquarePen size={14} />
-      <span class="font-semibold">Manual only</span>
+      <SquarePen size={14} class="shrink-0" />
+      <span class="font-semibold truncate">{compact ? 'Manual' : 'Manual only'}</span>
     {:else if selected}
       <span class="w-2 h-2 rounded-full shrink-0 {selected.online ? 'bg-accent' : 'bg-text-dim'}"></span>
-      <span class="text-text-muted">Board</span>
-      <span class="font-semibold">{selected.name}</span>
+      {#if !compact}<span class="text-text-muted">Board</span>{/if}
+      <span class="font-semibold truncate">{selected.name}</span>
     {:else}
-      <span class="text-text-muted">No boards — add one in Boards</span>
+      <span class="text-text-muted truncate">{compact ? 'No board' : 'No boards — add one in Boards'}</span>
     {/if}
-    <ChevronDown size={16} />
+    <ChevronDown size={16} class="shrink-0" />
   </button>
 
   {#if open}
     <!-- svelte-ignore a11y_no_static_element_interactions -->
-    <div class="absolute right-0 top-full mt-1 min-w-[220px] bg-surface-2 border border-line-3
+    <div class="absolute right-0 top-full mt-1 min-w-[220px] max-w-[calc(100vw-32px)] bg-surface-2 border border-line-3
                 rounded-[10px] overflow-hidden z-50 [box-shadow:0_8px_24px_rgba(0,0,0,0.5)]"
       onmouseleave={() => {}}>
       {#each boards as b (b.id)}

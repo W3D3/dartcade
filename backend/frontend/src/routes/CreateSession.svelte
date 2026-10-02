@@ -154,11 +154,12 @@
   }
 </script>
 
-<Layout>
-  <main class="flex flex-grow flex-col gap-7 box-border min-w-0 overflow-y-auto p-[40px_44px]">
+<Layout title="New game">
+  {#snippet headerAction()}<BoardSelector {boards} bind:value={boardId} compact />{/snippet}
+  <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_44px]">
 
-    <!-- Header -->
-    <header class="flex items-end justify-between">
+    <!-- Header (phones: the title and board chip are in the phone header) -->
+    <header class="hidden md:flex items-end justify-between">
       <div class="flex flex-col gap-[6px]">
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">
           New game
@@ -168,16 +169,16 @@
       <BoardSelector {boards} bind:value={boardId} />
     </header>
 
-    <div class="flex gap-6 flex-grow min-h-0">
+    <div class="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-grow md:min-h-0">
       <!-- Mode grid -->
-      <div class="flex-grow grid grid-cols-2 grid-rows-2 gap-4">
+      <div class="grid grid-cols-2 gap-[10px] md:flex-grow md:grid-rows-2 md:gap-4">
         {#each MODES as mode (mode.id)}
           {@const active = mode.id === selectedMode}
           {@const unavailable = !mode.available}
           <button type="button"
             onclick={() => { if (mode.available) selectMode(mode.id) }}
             disabled={unavailable}
-            class="relative text-left box-border p-6 rounded-[14px] flex flex-col gap-[10px]
+            class="relative text-left box-border h-[92px] px-[14px] py-3 md:h-auto md:p-6 rounded-[12px] md:rounded-[14px] flex flex-col gap-[10px]
                    overflow-hidden transition-colors font-[inherit]
                    {unavailable
                      ? 'bg-surface-2 border border-line-2 opacity-40 cursor-not-allowed'
@@ -185,7 +186,7 @@
                        ? 'bg-surface-active border-2 border-accent cursor-pointer'
                        : 'bg-surface-2 border border-line-2 cursor-pointer'}">
             {#if active && !unavailable}
-              <span class="absolute top-[18px] right-[18px] w-7 h-7 rounded-full bg-accent
+              <span class="absolute top-2 right-2 w-6 h-6 md:top-[18px] md:right-[18px] md:w-7 md:h-7 rounded-full bg-accent
                            flex items-center justify-center">
                 <Check size={16} strokeWidth={3} />
               </span>
@@ -196,14 +197,14 @@
                 Soon
               </span>
             {/if}
-            <span class="font-display font-bold text-[88px] leading-[0.9]
+            <span class="font-display font-bold text-[34px] md:text-[88px] leading-[0.9]
                          {active && !unavailable ? 'text-accent' : 'text-transparent [-webkit-text-stroke:1.5px_#5a5e53]'}">
               {mode.glyph}
             </span>
-            <span class="mt-auto font-display font-bold text-[30px] uppercase tracking-[0.02em] text-text">
+            <span class="mt-auto font-display font-bold text-[18px] md:text-[30px] uppercase tracking-[0.02em] text-text">
               {mode.name}
             </span>
-            <span class="text-[15px] leading-[1.45] {active && !unavailable ? 'text-[#b4b5aa]' : 'text-text-muted'}">
+            <span class="hidden md:block text-[15px] leading-[1.45] {active && !unavailable ? 'text-[#b4b5aa]' : 'text-text-muted'}">
               {mode.desc}
             </span>
           </button>
@@ -211,10 +212,10 @@
       </div>
 
       <!-- Setup aside -->
-      <aside class="w-[400px] flex-shrink-0 box-border border border-line-2 rounded-[14px]
-                    bg-[#151713] flex flex-col overflow-hidden">
+      <aside class="w-full md:w-[400px] md:flex-shrink-0 box-border border border-line-2 rounded-[14px]
+                    bg-[#151713] flex flex-col md:overflow-hidden">
         <!-- Scrollable body: title + config + players -->
-        <div class="flex-1 min-h-0 overflow-y-auto scrollbar-themed p-6 pb-4 flex flex-col gap-[22px]">
+        <div class="md:flex-1 md:min-h-0 md:overflow-y-auto scrollbar-themed p-4 md:p-6 pb-4 md:pb-4 flex flex-col gap-[22px]">
         <div class="flex flex-col gap-1">
           <span class="text-[12px] tracking-[0.1em] uppercase text-text-dim">Setup</span>
           <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
@@ -269,7 +270,7 @@
                   onclick={() => config = { ...config, maxRounds: Math.max(1, num(config.maxRounds, 50) - 1) }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">−</button>
-                <span class="w-[72px] text-center text-[15px]">
+                <span class="w-12 md:w-[72px] text-center text-[15px]">
                   <strong class="font-display text-[24px]
                                  {isNonDefault('maxRounds') ? 'text-accent' : ''}">{config.maxRounds}</strong>
                 </span>
@@ -287,7 +288,7 @@
                   onclick={() => config = { ...config, firstTo: Math.max(1, num(config.firstTo, 3) - 1) }}
                   class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
                          cursor-pointer">−</button>
-                <span class="w-[72px] text-center text-[15px]">
+                <span class="w-12 md:w-[72px] text-center text-[15px]">
                   <strong class="font-display text-[24px]
                                  {isNonDefault('firstTo') ? 'text-accent' : ''}">{config.firstTo}</strong> legs
                 </span>
@@ -347,7 +348,7 @@
         </div><!-- end scrollable body -->
 
         <!-- Sticky bottom: error + start button -->
-        <div class="px-6 pb-6 pt-3 flex flex-col gap-3 border-t border-line">
+        <div class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[14px] px-4 pb-6 md:px-6 md:pb-6 pt-2 md:pt-3 flex flex-col gap-3 border-t border-line">
           {#if error}
             <p class="m-0 flex items-center justify-between gap-3 text-[14px] text-live-text">
               {error}
@@ -362,8 +363,8 @@
           {/if}
           <button type="button" onclick={start} disabled={loading || bullOffBlocked}
             title={bullOffBlocked ? 'Bull off needs at least two players' : undefined}
-            class="h-14 flex items-center justify-center gap-[10px] bg-accent text-accent-fg
-                   rounded-[10px] font-display font-bold text-[22px] tracking-[0.08em] uppercase
+            class="h-12 md:h-14 flex items-center justify-center gap-[10px] bg-accent text-accent-fg
+                   rounded-[10px] font-display font-bold text-[20px] md:text-[22px] tracking-[0.08em] uppercase
                    border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
             {loading ? 'Starting…' : 'Game on'}
             {#if !loading}

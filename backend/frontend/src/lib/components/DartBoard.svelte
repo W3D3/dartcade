@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { AIM_EDGE_SPEED, AIM_HOLD_MS, AIM_OFFSET_PX, AIM_ZOOM, edgePush, moveAim, shownAt, viewBoxFor, type Pt } from '$lib/boardAim'
   import type { Snippet } from 'svelte'
   import { labelPos, markerPositions } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
@@ -123,7 +124,7 @@
   }
 
   function boardClick(e: MouseEvent) {
-    // The click that ends a drag is not a new dart
+    // The click that ends a drag or a long-press aim is not a new dart
     if (!onBoardClick || justDragged) { justDragged = false; return }
     const c = toBoard(e)
     if (c) onBoardClick({ segment: segmentAt(c.x, c.y), coords: c })
@@ -143,12 +144,12 @@
     drag = { index: i, from: c, at: c }
   }
   function dragMove(e: PointerEvent) {
-    if (!drag) return
+    if (!drag || aim) return
     const c = toBoard(e)
     if (c) drag = { ...drag, at: c }
   }
   function dragEnd(e: PointerEvent) {
-    if (!drag) return
+    if (!drag || aim) return
     const { index, from } = drag
     const c = toBoard(e) ?? drag.at
     drag = null
@@ -157,6 +158,89 @@
     justDragged = true
     setTimeout(() => { justDragged = false })
     onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
+  }
+
+  // Long press: zoom in around the spot and aim a little above the finger (see boardAim.ts).
+  // A quick tap still places the dart (or starts a drag) as before. The zoom is a viewBox, so
+  // nothing on the board is transformed (iOS Safari leaves black trails under transforms).
+  const BOX = { half: 1.15, margin: 0.1 }
+  let aim = $state<{ at: Pt; finger: Pt; offset: number; dart: number | null } | null>(null)
+  let hold: { timer: ReturnType<typeof setTimeout>; start: Pt } | null = null
+  let edgeTimer: ReturnType<typeof setInterval> | null = null
+
+  /** Pointer position in unzoomed view units (y down), whatever the current viewBox. */
+  function viewPt(e: PointerEvent): Pt | null {
+    const r = svgEl.getBoundingClientRect()
+    if (!r.width) return null
+    return { x: -1.15 + ((e.clientX - r.left) * 2.3) / r.width, y: -1.15 + ((e.clientY - r.top) * 2.3) / r.height }
+  }
+  const pxPerUnit = () => svgEl.getBoundingClientRect().width / 2.3 || 1
+  /** View point → board units (zoom undone, y up). */
+  const boardAt = (p: Pt) => ({ x: p.x / zoom, y: -p.y / zoom })
+  // The aim can go a little past the board (to cancel), not forever
+  const clampAt = (p: Pt) => ({ x: Math.max(-1.4, Math.min(1.4, p.x)), y: Math.max(-1.4, Math.min(1.4, p.y)) })
+  const aimed = $derived(aim ? boardAt(aim.at) : null)
+  const shown = $derived(aim ? shownAt(aim.finger, aim.offset, BOX) : null)
+  const zoomBox = $derived(aim && shown ? viewBoxFor(aim.at, shown, AIM_ZOOM, BOX.half) : null)
+  // Off the board's round background: lifting there places nothing
+  const aimOff = $derived(aimed !== null && Math.hypot(aimed.x, aimed.y) > 1.12)
+
+  function cancelHold() {
+    if (hold) clearTimeout(hold.timer)
+    hold = null
+  }
+  function stopAim() {
+    if (edgeTimer) clearInterval(edgeTimer)
+    edgeTimer = null
+    aim = null
+  }
+  // Held past the edge of the board area, the board keeps scrolling that way
+  function edgeTick() {
+    if (!aim) return
+    const push = edgePush(aim.finger, aim.offset, BOX)
+    if (!push.x && !push.y) return
+    const step = AIM_EDGE_SPEED * 0.016
+    aim = { ...aim, at: clampAt({ x: aim.at.x + push.x * step, y: aim.at.y + push.y * step }) }
+  }
+  function pressStart(e: PointerEvent) {
+    if (!onBoardClick && !drag) return
+    const start = viewPt(e)
+    if (!start) return
+    // A press on a thrown dart (dragStart ran first) zooms to move that dart
+    const dart = drag?.index ?? null
+    cancelHold()
+    hold = { start, timer: setTimeout(() => {
+      hold = null
+      aim = { at: start, finger: start, offset: AIM_OFFSET_PX / pxPerUnit(), dart }
+      edgeTimer = setInterval(edgeTick, 16)
+    }, AIM_HOLD_MS) }
+  }
+  function pressMove(e: PointerEvent) {
+    const p = viewPt(e)
+    if (!p) return
+    if (aim) { aim = { ...aim, at: clampAt(moveAim(aim.at, aim.finger, p)), finger: p }; return }
+    // Moving before the hold is up is a drag or a scroll, not a long press
+    if (hold && Math.hypot(p.x - hold.start.x, p.y - hold.start.y) * pxPerUnit() > 8) cancelHold()
+  }
+  function pressEnd() {
+    cancelHold()
+    if (!aim) return
+    const { dart } = aim
+    const at = aimed
+    const off = aimOff
+    stopAim()
+    drag = null
+    // The click that follows is not another dart
+    justDragged = true
+    setTimeout(() => { justDragged = false })
+    if (!at || off) return
+    const hit = { segment: segmentAt(at.x, at.y), coords: at }
+    if (dart !== null) onDartMove?.(dart, hit)
+    else onBoardClick?.(hit)
+  }
+  function pressCancel() {
+    cancelHold()
+    stopAim()
   }
 
   // Markers on the same segment are spread so none hides another
@@ -175,20 +259,24 @@
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
-<svg bind:this={svgEl} viewBox="-1.15 -1.15 2.3 2.3" class="w-full {hoverable ? 'cursor-crosshair' : ''}"
-  xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}>
-  <defs><clipPath id={clipId}><circle cx="0" cy="0" r="1.12" /></clipPath></defs>
-  <circle cx="0" cy="0" r="1.12" fill="#0a0b09" />
+<svg bind:this={svgEl} viewBox={zoomBox ? `${zoomBox.x} ${zoomBox.y} ${zoomBox.w} ${zoomBox.w}` : '-1.15 -1.15 2.3 2.3'} class="w-full select-none {hoverable ? 'cursor-crosshair' : ''}"
+  xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}
+  style={precise || onDartMove ? 'touch-action:none;-webkit-touch-callout:none' : undefined}
+  onpointerdown={precise || onDartMove ? pressStart : undefined} onpointermove={pressMove}
+  onpointerup={pressEnd} onpointercancel={pressCancel} oncontextmenu={e => { if (precise) e.preventDefault() }}>
+  <!-- Round normally; zoomed in, the whole square shows the board -->
+  <defs><clipPath id={clipId}>{#if zoomBox}<rect x="-5" y="-5" width="10" height="10" />{:else}<circle cx="0" cy="0" r="1.12" />{/if}</clipPath></defs>
+  {#if zoomBox}<rect x="-5" y="-5" width="10" height="10" fill="#0a0b09" />{:else}<circle cx="0" cy="0" r="1.12" fill="#0a0b09" />{/if}
 
   <g clip-path="url(#{clipId})">
-  <g style="transform: scale({zoom}); transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
+  <g style="transform: {zoom === 1 ? 'none' : `scale(${zoom})`}; transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
   <!-- Sector fills and wire dividers -->
   {#each sectors as { num, i, paths, wa } (num)}
     {#each paths as { ring, d } (ring)}
       <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
       <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" vector-effect="non-scaling-stroke"
         onclick={interactive ? () => clickSegment(num, ring) : undefined}
-        class={hoverable ? 'hover:brightness-125' : ''} />
+        class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
@@ -206,11 +294,11 @@
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: '25', number: 25, bed: 'Single', multiplier: 1 }) : undefined}
-    class={hoverable ? 'hover:brightness-125' : ''} />
+    class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
   <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
   <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
     onclick={interactive ? () => onSegmentClick?.({ name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }) : undefined}
-    class={hoverable ? 'hover:brightness-125' : ''} />
+    class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
 
   {#if dim}
     <circle cx="0" cy="0" r="1.12" fill="#0a0b09" fill-opacity="0.45" style="pointer-events:none" />
@@ -304,4 +392,19 @@
   <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
   </g>
   </g>
+
+  <!-- Long-press aim: crosshair above the finger and the segment it's on, drawn unzoomed -->
+  {#if zoomBox && shown && aimed}
+    {@const at = shown}
+    {@const tone = aimOff ? '#ff8a80' : '#c6f24e'}
+    <svg x={zoomBox.x} y={zoomBox.y} width={zoomBox.w} height={zoomBox.w} viewBox="-1.15 -1.15 2.3 2.3" style="pointer-events:none">
+      <circle cx={at.x} cy={at.y} r="0.045" fill="none" stroke={tone} stroke-width="0.012" />
+      <path d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
+        stroke={tone} stroke-width="0.012" />
+      <circle cx={at.x} cy={at.y} r="0.008" fill={tone} />
+      <rect x="-0.26" y="-1.12" width="0.52" height="0.16" rx="0.08" fill="#0f100e" fill-opacity="0.85" stroke={tone} stroke-width="0.008" />
+      <text x="0" y="-1.04" text-anchor="middle" dominant-baseline="central" fill={tone}
+        font-size="0.1" font-family="Barlow Condensed, sans-serif" font-weight="700">{aimOff ? 'Cancel' : segmentAt(aimed.x, aimed.y).name}</text>
+    </svg>
+  {/if}
 </svg>

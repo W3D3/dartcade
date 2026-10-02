@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isPhone } from '$lib/viewport'
   // Bull off for any game wrapped with withBullOff: one dart each, closest to
   // the centre throws first. Driven entirely by the snapshot's `bullOff` view.
   import DartBoard from './DartBoard.svelte'
@@ -247,7 +248,7 @@
   </section>
 {/snippet}
 
-{#if duel}
+{#if duel && !$isPhone}
   <div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-6">
     {@render duelCard(0)}
     <aside class="w-[min(40%,560px)] flex-shrink-0 flex flex-col gap-3" aria-label="Board">
@@ -256,10 +257,10 @@
     {@render duelCard(1)}
   </div>
 {:else}
-<div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-6">
+<div class="flex-grow min-h-0 box-border p-4 md:p-[20px_24px] flex flex-col md:flex-row gap-3 md:gap-6">
 
-  <!-- Players -->
-  <section class="flex-1 min-w-0 flex flex-col gap-3" aria-label="Bull off players">
+  <!-- Players (phones: above the board, scrolling if many) -->
+  <section class="shrink-0 max-h-[40%] overflow-y-auto md:max-h-none md:overflow-visible md:shrink md:flex-1 min-w-0 flex flex-col gap-3" aria-label="Bull off players">
     <div class="flex items-baseline justify-between">
       <h2 class="m-0 font-display font-bold text-[30px] uppercase leading-none">
         {result && !result.rethrow ? 'Result' : 'One dart each'}
@@ -315,7 +316,7 @@
   </section>
 
   <!-- Board + status -->
-  <aside class="w-[min(46%,560px)] flex-shrink-0 flex flex-col gap-3" aria-label="Board">
+  <aside class="flex-1 min-h-[220px] md:min-h-0 md:flex-none md:w-[min(46%,560px)] md:flex-shrink-0 flex flex-col gap-3" aria-label="Board">
     {@render boardAndStatus()}
   </aside>
 </div>

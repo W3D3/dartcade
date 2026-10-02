@@ -4,7 +4,12 @@
   import { api, runBoardAction, type Board, type BoardAction } from '$lib/api'
   import type { Snapshot } from '$lib/api'
 
-  let { sessionId, bmStatus }: { sessionId: string; bmStatus: Snapshot['bmStatus'] } = $props()
+  let { sessionId, bmStatus, compact = false }: {
+    sessionId: string
+    bmStatus: Snapshot['bmStatus']
+    /** The phone header: a 44 px button with only the status dot. */
+    compact?: boolean
+  } = $props()
 
   let open = $state(false)
   let board = $state<Board | null>(null)
@@ -90,7 +95,8 @@
 <div class="relative">
   <!-- Trigger -->
   <button type="button" onclick={() => open = !open}
-    class="flex items-center gap-[8px] h-9 px-3 rounded-[8px] text-[13px] font-[inherit] cursor-pointer
+    aria-label={compact ? `Board ${board?.name ?? ''}: status and controls` : undefined}
+    class="flex items-center gap-[8px] {compact ? 'w-11 h-11 justify-center rounded-[10px]' : 'h-9 px-3 rounded-[8px]'} text-[13px] font-[inherit] cursor-pointer
            transition-colors border
            {open
              ? 'bg-surface-active border-accent/50 text-text'
@@ -100,14 +106,16 @@
     {:else}
       <span class="w-[7px] h-[7px] rounded-full shrink-0 {dotBg}"></span>
     {/if}
-    <span class="font-medium">{board?.name ?? 'Board'}</span>
-    <SlidersHorizontal size={13} class="opacity-50" />
+    {#if !compact}
+      <span class="font-medium">{board?.name ?? 'Board'}</span>
+      <SlidersHorizontal size={13} class="opacity-50" />
+    {/if}
   </button>
 
   {#if open}
     <div class="fixed inset-0 z-40" onclick={() => open = false} aria-hidden="true"></div>
 
-    <div class="absolute right-0 top-full mt-2 w-[260px] z-50 rounded-[14px] border border-line-3
+    <div class="absolute right-0 top-full mt-2 w-[min(260px,calc(100vw-32px))] z-50 rounded-[14px] border border-line-3
                 bg-[#191c17] [box-shadow:0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden">
 
       <!-- Header -->
