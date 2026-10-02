@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { parseSnapshot } from '../ws.js'
+import { parseNotice, parseSnapshot } from '../ws.js'
 import fixture from './fixtures/x01-snapshot.json'
 
 describe('parseSnapshot', () => {
@@ -29,6 +29,27 @@ describe('parseSnapshot', () => {
       expect(parseSnapshot(m)).toBeNull()
     }
     expect(warn).toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})
+
+describe('parseNotice', () => {
+  const notice = { type: 'notice', code: 'not_your_turn', boardId: 'b', throwerName: 'Lena', throwerBoard: "Lena's place" }
+
+  it('parses a not-your-turn notice', () => {
+    expect(parseNotice(notice)).toEqual(notice)
+  })
+
+  it('takes a thrower who enters darts by hand', () => {
+    expect(parseNotice({ ...notice, throwerBoard: null })?.throwerBoard).toBeNull()
+  })
+
+  it('ignores anything else, silently', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    for (const m of [null, 'x', { type: 'notice' }, { ...notice, code: 'other' }, { ...notice, throwerName: undefined }, fixture]) {
+      expect(parseNotice(m)).toBeNull()
+    }
+    expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
   })
 })

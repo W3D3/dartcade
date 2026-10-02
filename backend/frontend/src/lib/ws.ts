@@ -1,6 +1,6 @@
-import { writable } from 'svelte/store'
-import { WsCloseCode, type ClientMessage, type Snapshot, type UserAction } from './api/game-ws'
-import { SnapshotSchema } from './api/zod'
+import { writable, type Readable } from 'svelte/store'
+import { WsCloseCode, type ClientMessage, type NoticeMessage, type Snapshot, type UserAction } from './api/game-ws'
+import { NoticeMessageSchema, SnapshotSchema } from './api/zod'
 
 export type { Snapshot }
 
@@ -18,8 +18,15 @@ export function parseSnapshot(m: unknown): Snapshot | null {
   return null
 }
 
+/** A transient notice from the server (a dart on your board out of turn), or null. Never warns. */
+export function parseNotice(m: unknown): NoticeMessage | null {
+  const r = NoticeMessageSchema.safeParse(m)
+  return r.success ? r.data : null
+}
+
 export function createSessionStore(sessionId: string) {
   const snapshot = writable<Snapshot | null>(null)
+  const notice = writable<NoticeMessage | null>(null)
   let ws: WebSocket | null = null
   let closed = false
   let backoff = 500
@@ -30,8 +37,12 @@ export function createSessionStore(sessionId: string) {
     ws.onmessage = (e) => {
       try {
         if (typeof e.data !== 'string') return
-        const msg = parseSnapshot(JSON.parse(e.data))
-        if (msg) { snapshot.set(msg); backoff = 500 }
+        const data: unknown = JSON.parse(e.data)
+        const snap = parseSnapshot(data)
+        if (snap) { snapshot.set(snap); backoff = 500; return }
+        // Each notice is a new object, so subscribers hear the same notice twice in a row too
+        const n = parseNotice(data)
+        if (n) notice.set(n)
       } catch {}
     }
     ws.onclose = (e) => {
@@ -65,5 +76,6 @@ export function createSessionStore(sessionId: string) {
     ws?.close()
   }
 
-  return { snapshot, send, destroy }
+  const noticeStore: Readable<NoticeMessage | null> = { subscribe: notice.subscribe }
+  return { snapshot, notice: noticeStore, send, destroy }
 }
