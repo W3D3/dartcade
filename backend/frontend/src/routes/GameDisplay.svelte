@@ -35,13 +35,15 @@
   import PhoneX01Card from '../lib/components/PhoneX01Card.svelte'
   import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
   import DartKeypad from '../lib/components/DartKeypad.svelte'
-  import type { AtcGame, X01Game } from '$lib/api/game-ws'
+  import type { AtcGame, NoticeMessage, X01Game } from '$lib/api/game-ws'
   import { authClient } from '$lib/auth'
-  import { boardCaption, centerState, isManualTurn, myBoard, rowSub, seatLines, startsOnKeypad, turnStatus } from '$lib/remote'
+  import { boardCaption, centerState, isManualTurn, myBoard, noticeLines, rowSub, seatLines, startsOnKeypad, turnStatus } from '$lib/remote'
   import BoardCaption from '../lib/components/BoardCaption.svelte'
   import TurnStatusBar from '../lib/components/TurnStatusBar.svelte'
   import OfflineNotice from '../lib/components/OfflineNotice.svelte'
   import WaitingCard from '../lib/components/WaitingCard.svelte'
+  import NotTurnToast from '../lib/components/NotTurnToast.svelte'
+  import { createToast } from '$lib/toast'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -56,6 +58,9 @@
   let unsubSnap: (() => void) | null = null
   // The signed-in user: the host gets Abort while the game waits for someone
   let viewerId = $state<string | null>(null)
+  let unsubNotice: (() => void) | null = null
+  // "Not your turn": a dart on your board while someone else is up (6 s, the newest wins)
+  const toast = createToast<NoticeMessage>(6000)
 
   let viewMode = $state<'board' | 'entry'>('board')
   let viewModeSetByUser = false
@@ -81,9 +86,10 @@
       }
       snapshot = snap
     })
+    unsubNotice = sessionStore.notice.subscribe(n => { if (n) toast.show(n) })
     authClient.getSession().then(r => { viewerId = r.data?.user.id ?? null }).catch(() => undefined)
   })
-  onDestroy(() => { unsubSnap?.(); sessionStore?.destroy() })
+  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); toast.dismiss(); sessionStore?.destroy() })
 
   function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
     const oldCount = before.currentVisitDarts.length
@@ -473,4 +479,11 @@
     danger
     onconfirm={endSession}
     oncancel={() => showEndConfirm = false} />
+{/if}
+
+{#if $toast}
+  <!-- Keyed by the toast's id: a new notice restarts the bar -->
+  {#key $toast.id}
+    <NotTurnToast lines={noticeLines($toast.value)} compact={$isPhone} ondismiss={toast.dismiss} />
+  {/key}
 {/if}
