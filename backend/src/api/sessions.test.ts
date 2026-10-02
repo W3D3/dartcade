@@ -8,6 +8,7 @@ vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
 }))
 vi.mock('../db/queries.js', () => ({
+  getUsersByIds: vi.fn().mockResolvedValue([{ id: 'user-2', name: 'Lena' }]),
   getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1', name: 'Living room' }),
   getBoardsByOwner: vi.fn().mockResolvedValue([{ id: 'b1' }]),
 }))
@@ -18,6 +19,7 @@ import * as middleware from '../auth/middleware.js'
 function makeApp() {
   const engine = {
     create: vi.fn().mockResolvedValue({ sessionId: 'sess-1' }),
+    createWithSeats: vi.fn().mockResolvedValue({ sessionId: 'sess-2' }),
     getSession: vi.fn().mockReturnValue(undefined),
     getAllSessions: vi.fn().mockReturnValue([]),
     getSnapshot: vi.fn().mockReturnValue(undefined),
@@ -56,6 +58,49 @@ describe('GET /health', () => {
     const second = await app.inject({ method: 'GET', url: '/health' })
     expect(second.statusCode).toBe(429)
     expect(JSON.parse(second.body)).toEqual({ error: expect.any(String) })
+  })
+})
+
+describe('POST /api/sessions with another account', () => {
+  it('seats the account on its own device, with its own name', async () => {
+    const { app, engine } = makeApp()
+    const res = await app.inject({
+      method: 'POST', url: '/api/sessions',
+      payload: { boardId: 'b1', gameId: 'x01', config: {}, players: [{ name: 'Me' }, { name: 'Guest' }, { name: 'whatever', userId: 'user-2' }] },
+    })
+    expect(res.statusCode).toBe(201)
+    expect(engine.create).not.toHaveBeenCalled()
+    expect(engine.createWithSeats).toHaveBeenCalledWith({
+      ownerUserId: 'user-1', gameId: 'x01', config: {},
+      seats: [
+        { name: 'Me', userId: 'user-1', controllerUserId: 'user-1', boardId: 'b1', boardName: 'Living room' },
+        { name: 'Guest', userId: null, controllerUserId: 'user-1', boardId: 'b1', boardName: 'Living room' },
+        { name: 'Lena', userId: 'user-2', controllerUserId: 'user-2', boardId: null, boardName: null },
+      ],
+    })
+  })
+
+  it('refuses an unknown account, yourself, or the same account twice', async () => {
+    const { app } = makeApp()
+    for (const players of [
+      [{ name: 'Me' }, { name: 'x', userId: 'nobody' }],
+      [{ name: 'Me' }, { name: 'x', userId: 'user-1' }],
+      [{ name: 'Me' }, { name: 'x', userId: 'user-2' }, { name: 'y', userId: 'user-2' }],
+    ]) {
+      const res = await app.inject({ method: 'POST', url: '/api/sessions', payload: { gameId: 'x01', config: {}, players } })
+      expect(res.statusCode).toBe(400)
+    }
+  })
+
+  it('says who is busy when the other account already has a game', async () => {
+    const { app, engine } = makeApp()
+    engine.createWithSeats.mockRejectedValue(new ActiveSessionError('active session already exists for user', 'other', 'user-2'))
+    const res = await app.inject({
+      method: 'POST', url: '/api/sessions',
+      payload: { gameId: 'x01', config: {}, players: [{ name: 'Me' }, { name: 'x', userId: 'user-2' }] },
+    })
+    expect(res.statusCode).toBe(409)
+    expect(JSON.parse(res.body)).toEqual({ error: 'Lena already has a game running' })
   })
 })
 

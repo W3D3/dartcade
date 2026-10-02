@@ -324,6 +324,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Find other accounts by name or email, to add them to a game */
+        get: operations["searchUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions": {
         parameters: {
             query?: never;
@@ -665,7 +682,20 @@ export interface components {
             config: {
                 [key: string]: unknown;
             };
-            players: components["schemas"]["Player"][];
+            /** @description The first player is the signed-in user; the others are guests or, with userId, other accounts */
+            players: components["schemas"]["SeatRequest"][];
+        };
+        SeatRequest: {
+            name: string;
+            /** @description Another account plays this seat from their own device (entering darts by hand); its name comes from the account */
+            userId?: string;
+        };
+        UserSummary: {
+            id: string;
+            name: string;
+        };
+        UserList: {
+            users: components["schemas"]["UserSummary"][];
         };
         CreatedSession: {
             sessionId: string;
@@ -1257,6 +1287,32 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    searchUsers: {
+        parameters: {
+            query: {
+                /** @description Start of a name or email */
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Up to 8 matching accounts, the signed-in user excluded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
             429: components["responses"]["TooManyRequests"];
         };
     };

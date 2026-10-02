@@ -2,10 +2,10 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { ActiveSessionError, BoardBusyError, type SessionEngine } from '../session/engine.js'
-import type { Session } from '../session/types.js'
+import type { Seat, Session } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
 import { canAccessSession, isHost } from '../session/access.js'
-import { getBoardById } from '../db/queries.js'
+import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -35,13 +35,32 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
       boardName = board.name
     }
+    // Players with a userId are other accounts: they play from their own device, entering
+    // darts by hand, and the seat goes by the account's name
+    const accountIds = players.flatMap(p => p.userId ? [p.userId] : [])
+    const accounts = new Map((await getUsersByIds(db, accountIds)).map(u => [u.id, u]))
+    if (accountIds.some(id => id === req.userId || !accounts.has(id)) || new Set(accountIds).size !== accountIds.length) {
+      return reply.code(400).send({ error: 'unknown or repeated player account' })
+    }
     let sessionId: string
     try {
-      ({ sessionId } = await engine.create(req.userId, resolvedBoardId, gameId, config, players, boardName))
+      if (accountIds.length === 0) {
+        ({ sessionId } = await engine.create(req.userId, resolvedBoardId, gameId, config, players, boardName))
+      } else {
+        const seats = players.map((p, i): Seat => {
+          const account = p.userId ? accounts.get(p.userId) : undefined
+          if (account) return { name: account.name, userId: account.id, controllerUserId: account.id, boardId: null, boardName: null }
+          return { name: p.name, userId: i === 0 ? req.userId : null, controllerUserId: req.userId, boardId: resolvedBoardId, boardName }
+        })
+        ;({ sessionId } = await engine.createWithSeats({ ownerUserId: req.userId, gameId, config, seats }))
+      }
     } catch (err) {
       // One running game per user (the engine enforces it, also for concurrent creates):
-      // point the client at the one they have
+      // point the client at the one they have, or say which player is busy
       if (err instanceof ActiveSessionError) {
+        if (err.userId !== req.userId) {
+          return reply.code(409).send({ error: `${accounts.get(err.userId)?.name ?? 'A player'} already has a game running` })
+        }
         return reply.code(409).send({ error: 'You already have a game running', sessionId: err.sessionId })
       }
       const message = err instanceof Error ? err.message : undefined

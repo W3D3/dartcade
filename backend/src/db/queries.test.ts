@@ -19,6 +19,8 @@ import {
   consumePairingToken,
   insertBoard,
   deleteBoard,
+  searchUsers,
+  getUsersByIds,
 } from './queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
@@ -287,6 +289,25 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       await appendSessionEvent(db, { session_id: 'mp-1', seq: 0, source: 'board', kind: 'takeout.finished', data: {}, bridge_event_id: null, board_db_id: 'mb-1', created_at: new Date() })
       const row = await db.selectFrom('game_session_events').select('board_db_id').where('session_id', '=', 'mp-1').executeTakeFirst()
       expect(row?.board_db_id).toBe('mb-1')
+    })
+  })
+
+  describe('users to play with', () => {
+    it('finds other accounts by the start of their name or email, not yourself', async () => {
+      const byName = await searchUsers(db, 'test 2', 'u-test-1')
+      expect(byName).toEqual([{ id: 'u-test-2', name: 'Test 2' }])
+      const byEmail = await searchUsers(db, 'TEST2@', 'u-test-1')
+      expect(byEmail).toEqual([{ id: 'u-test-2', name: 'Test 2' }])
+      expect(await searchUsers(db, 'test', 'u-test-2')).toEqual([{ id: 'u-test-1', name: 'Test' }])
+    })
+
+    it('treats % and _ as plain characters', async () => {
+      expect(await searchUsers(db, '%', 'nobody')).toEqual([])
+    })
+
+    it('reads accounts by id', async () => {
+      const rows = await getUsersByIds(db, ['u-test-2', 'missing'])
+      expect(rows).toEqual([{ id: 'u-test-2', name: 'Test 2' }])
     })
   })
 })

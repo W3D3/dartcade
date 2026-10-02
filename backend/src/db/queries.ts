@@ -315,3 +315,29 @@ export async function consumePairingToken(db: Kysely<Database>, code: string): P
     return row.raw_token
   })
 }
+
+// ---------------------------------------------------------------------------
+// Accounts to play with
+// ---------------------------------------------------------------------------
+
+export type UserSummary = { id: string; name: string }
+
+// % and _ are wildcards in LIKE; a search treats them as plain characters
+const likePrefix = (q: string) => `${q.replace(/[\\%_]/g, c => `\\${c}`)}%`
+
+/** Other accounts whose name or email starts with `q` (case-insensitive), at most 8. */
+export async function searchUsers(db: Kysely<Database>, q: string, excludeUserId: string): Promise<UserSummary[]> {
+  const pattern = likePrefix(q.trim())
+  return db.selectFrom('user').select(['id', 'name'])
+    .where('id', '!=', excludeUserId)
+    .where(eb => eb.or([eb('name', 'ilike', pattern), eb('email', 'ilike', pattern)]))
+    .orderBy('name')
+    .limit(8)
+    .execute()
+}
+
+/** The accounts among `ids` that exist. */
+export async function getUsersByIds(db: Kysely<Database>, ids: string[]): Promise<UserSummary[]> {
+  if (ids.length === 0) return []
+  return db.selectFrom('user').select(['id', 'name']).where('id', 'in', ids).execute()
+}

@@ -23,6 +23,8 @@ tags:
     description: Pairing a bridge with a user account
   - name: sessions
     description: Game sessions (one active session per user)
+  - name: users
+    description: Other accounts, to play with
   - name: bridge
     description: Operations the Go bridge depends on
 security:
@@ -371,6 +373,23 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/users:
+    get:
+      operationId: searchUsers
+      summary: Find other accounts by name or email, to add them to a game
+      tags: [users]
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 100 }, description: Start of a name or email }
+      responses:
+        '200':
+          description: Up to 8 matching accounts, the signed-in user excluded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UserList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/sessions:
@@ -895,7 +914,33 @@ components:
         players:
           type: array
           minItems: 1
-          items: { $ref: '#/components/schemas/Player' }
+          description: The first player is the signed-in user; the others are guests or, with userId, other accounts
+          items: { $ref: '#/components/schemas/SeatRequest' }
+    SeatRequest:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1 }
+        userId:
+          type: string
+          minLength: 1
+          description: Another account plays this seat from their own device (entering darts by hand); its name comes from the account
+    UserSummary:
+      type: object
+      required: [id, name]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+    UserList:
+      type: object
+      required: [users]
+      additionalProperties: false
+      properties:
+        users:
+          type: array
+          items: { $ref: '#/components/schemas/UserSummary' }
     CreatedSession:
       type: object
       required: [sessionId]

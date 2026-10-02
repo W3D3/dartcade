@@ -14,6 +14,7 @@ import { sessionsApiPlugin } from './api/sessions.js'
 import { gamesApiPlugin } from './api/games.js'
 import { boardsApiPlugin } from './api/boards.js'
 import { pairingApiPlugin } from './api/pairing.js'
+import { usersApiPlugin } from './api/users.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
@@ -84,6 +85,7 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
   await app.register(bridgeGwPlugin, { engine, db })
   await app.register(browserGwPlugin, { engine })
   await app.register(sessionsApiPlugin, { engine, db })
+  await app.register(usersApiPlugin, { db })
   await app.register(gamesApiPlugin, { db })
   await app.register(boardsApiPlugin, { db })
   await app.register(pairingApiPlugin, { db })
