@@ -169,41 +169,43 @@
     "X01Snapshot": {
       "title": "X01Snapshot",
       "type": "object",
-      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats", "lobbyName"],
+      "required": ["type", "sessionId", "gameId", "boardId", "lobbyId", "lobbyName", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "snapshot" },
         "sessionId": { "type": "string" },
         "gameId": { "const": "x01" },
         "boardId": { "type": ["string", "null"] },
+        "lobbyId": { "type": ["string", "null"], "description": "The lobby the game was started from; null for a local game." },
+        "lobbyName": { "type": ["string", "null"], "description": "The lobby's name, for the match header; null for a local game." },
         "players": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Player" } },
         "game": { "$ref": "#/$defs/X01Game" },
         "bmStatus": { "anyOf": [{ "$ref": "#/$defs/BmStatus" }, { "type": "null" }], "description": "Status of the board of the seat that's up." },
         "status": { "$ref": "#/$defs/SessionStatus" },
         "ownerUserId": { "type": "string", "description": "The host: starts the bull off, aborts the game." },
         "seats": { "type": "array", "items": { "$ref": "#/$defs/SeatInfo" }, "description": "Same order as players." },
-        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." },
-        "lobbyName": { "type": ["string", "null"], "description": "The lobby the game was started from; null for a local game." }
+        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." }
       }
     },
     "AtcSnapshot": {
       "title": "AtcSnapshot",
       "type": "object",
-      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats", "lobbyName"],
+      "required": ["type", "sessionId", "gameId", "boardId", "lobbyId", "lobbyName", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "snapshot" },
         "sessionId": { "type": "string" },
         "gameId": { "const": "atc" },
         "boardId": { "type": ["string", "null"] },
+        "lobbyId": { "type": ["string", "null"], "description": "The lobby the game was started from; null for a local game." },
+        "lobbyName": { "type": ["string", "null"], "description": "The lobby's name, for the match header; null for a local game." },
         "players": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Player" } },
         "game": { "$ref": "#/$defs/AtcGame" },
         "bmStatus": { "anyOf": [{ "$ref": "#/$defs/BmStatus" }, { "type": "null" }], "description": "Status of the board of the seat that's up." },
         "status": { "$ref": "#/$defs/SessionStatus" },
         "ownerUserId": { "type": "string", "description": "The host: starts the bull off, aborts the game." },
         "seats": { "type": "array", "items": { "$ref": "#/$defs/SeatInfo" }, "description": "Same order as players." },
-        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." },
-        "lobbyName": { "type": ["string", "null"], "description": "The lobby the game was started from; null for a local game." }
+        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." }
       }
     },
     "Snapshot": {

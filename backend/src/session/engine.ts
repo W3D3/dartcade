@@ -4,7 +4,7 @@ import { applyInput, type GameInput } from './apply.js'
 import type { GameConfig, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
-import { newSeed } from './rng.js'
+import { newSeed, seededRng, shuffle } from './rng.js'
 import { StoredConfigSchema, dartRows, newSession, replay, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -17,6 +17,18 @@ export type Notice = { type: 'notice'; code: 'not_your_turn'; boardId: string; t
 export type NotifyFn = (sessionId: string, userIds: string[], notice: Notice) => void
 
 export type ActionResult = { ok: true } | { ok: false; code: 'forbidden' }
+
+/** A game ended: the lobby it came from resets and logs it (see LobbyService.onGameEnded). */
+export type GameEnded = {
+  sessionId: string
+  lobbyId: string | null
+  gameId: string
+  status: 'finished' | 'aborted'
+  abortedByUserId: string | null
+  /** Seat results in seat order; empty when aborted. */
+  results: { name: string; placement: number; forfeited: boolean }[]
+}
+export type EndedFn = (e: GameEnded) => void
 
 /**
  * Who is looking: the viewer's own seats, who has the game open (and since when not),
@@ -41,7 +53,7 @@ export interface EngineStore {
   appendEvent(event: NewSessionEvent): Promise<void>
   insertDarts(rows: NewGameDart[]): Promise<void>
   finishSession(id: string, finishedAt: Date, results: FinishedSeat[]): Promise<void>
-  abortSession(id: string, finishedAt: Date): Promise<void>
+  abortSession(id: string, finishedAt: Date, abortedByUserId: string | null): Promise<void>
 }
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
@@ -52,7 +64,7 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
     appendEvent: (e) => queries.appendSessionEvent(db, e),
     insertDarts: (rows) => queries.insertGameDarts(db, rows),
     finishSession: (id, at, r) => queries.finishGameSession(db, id, at, r),
-    abortSession: (id, at) => queries.abortGameSession(db, id, at),
+    abortSession: (id, at, by) => queries.abortGameSession(db, id, at, by),
   }
 }
 
@@ -66,7 +78,13 @@ export class BoardBusyError extends Error {
   constructor(readonly boardId: string) { super(`active session already exists for board ${boardId}`) }
 }
 
-export type NewSessionSpec = { ownerUserId: string; gameId: string; config: GameConfig; seats: Seat[] }
+export type NewSessionSpec = {
+  ownerUserId: string; gameId: string; config: GameConfig; seats: Seat[]
+  /** A lobby game: its lobby and that lobby's name (for the match header). */
+  lobbyId?: string | null; lobbyName?: string | null
+  /** Random throw order: the seats are shuffled with the game's seed before they're stored. */
+  shuffleSeats?: boolean
+}
 
 const distinct = <T>(xs: (T | null)[]): T[] => [...new Set(xs.filter((x): x is T => x !== null))]
 const seatBoards = (s: Session): string[] => distinct(s.seats.map(x => x.boardId))
@@ -85,6 +103,7 @@ export class SessionEngine {
     private readonly push: PushFn,
     private readonly warn: WarnFn = () => undefined,
     private readonly notify: NotifyFn = () => undefined,
+    private readonly ended: EndedFn = () => undefined,
   ) {}
 
   async create(
@@ -120,15 +139,21 @@ export class SessionEngine {
 
     const sessionId = ulid()
     const seed = newSeed()
-    const session = newSession({ id: sessionId, ownerUserId: spec.ownerUserId, boardId: sessionBoardId, module: mod, config: spec.config, seats: spec.seats, seed, createdAt: new Date() })
+    // Stored in this order, so a replay needs no shuffle of its own
+    const seats = spec.shuffleSeats === true ? shuffle(spec.seats, seededRng(seed)) : spec.seats
+    const lobbyId = spec.lobbyId ?? null
+    const session = newSession({
+      id: sessionId, ownerUserId: spec.ownerUserId, boardId: sessionBoardId, module: mod, config: spec.config,
+      seats, seed, createdAt: new Date(), lobbyId, lobbyName: spec.lobbyName ?? null,
+    })
     // Claim the players and boards before the first await, so a second create running
     // at the same time sees them taken; give them back if the session can't be stored
     this.index(session)
     try {
       await this.store.insertSession({
         id: sessionId, owner_user_id: spec.ownerUserId, board_db_id: sessionBoardId, game_id: spec.gameId,
-        game_version: mod.version, rng_seed: seed, config: spec.config,
-        players: spec.seats.map(s => ({ name: s.name, user_id: s.userId, controller_user_id: s.controllerUserId, board_db_id: s.boardId })),
+        game_version: mod.version, rng_seed: seed, config: spec.config, lobby_id: lobbyId,
+        players: seats.map(s => ({ name: s.name, user_id: s.userId, controller_user_id: s.controllerUserId, board_db_id: s.boardId })),
       })
     } catch (err) {
       this.release(session)
@@ -223,10 +248,28 @@ export class SessionEngine {
     return true
   }
 
+  /** The game-end listener must not undo the end: whatever it throws is logged, never passed on. */
+  private notifyEnded(e: GameEnded): void {
+    try {
+      this.ended(e)
+    } catch (err) {
+      this.warn('game-end listener failed', { sessionId: e.sessionId, error: String(err) })
+    }
+  }
+
+  private endedOf(session: Session, status: GameEnded['status'], abortedByUserId: string | null, seatResults: FinishedSeat[]): GameEnded {
+    return {
+      sessionId: session.id, lobbyId: session.lobbyId, gameId: session.module.id, status, abortedByUserId,
+      results: seatResults.map((r, i) => ({ name: session.players[i].name, placement: r.placement, forfeited: r.forfeited })),
+    }
+  }
+
   private async finish(session: Session, at: Date): Promise<void> {
     session.status = 'finished'
-    await this.store.finishSession(session.id, at, results(session))
+    const seatResults = results(session)
+    await this.store.finishSession(session.id, at, seatResults)
     this.release(session)
+    this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
   }
 
   async rebuild(): Promise<void> {
@@ -240,7 +283,8 @@ export class SessionEngine {
         // (and fail) to bring it back; its log stays untouched for later recovery.
         this.warn('failed to rebuild session, aborting it', { sessionId: row.id, error: String(err) })
         try {
-          await this.store.abortSession(row.id, new Date())
+          await this.store.abortSession(row.id, new Date(), null)
+          this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [] })
         } catch (abortErr) {
           this.warn('failed to abort an unrebuildable session', { sessionId: row.id, error: String(abortErr) })
         }
@@ -253,7 +297,8 @@ export class SessionEngine {
     const config = StoredConfigSchema.safeParse(row.config)
     // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
     if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
-      await this.store.abortSession(row.id, new Date())
+      await this.store.abortSession(row.id, new Date(), null)
+      this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [] })
       return
     }
     const owner = row.owner_user_id
@@ -267,6 +312,7 @@ export class SessionEngine {
     const session = newSession({
       id: row.id, ownerUserId: owner, boardId: row.board_db_id, module: mod,
       config: config.data, seats, seed: row.rng_seed, createdAt: row.created_at,
+      lobbyId: row.lobby_id, lobbyName: row.lobby_name,
     })
     const events = await this.store.getSessionEvents(row.id)
     const { visits, won } = replay(session, events, this.warn)
@@ -275,7 +321,9 @@ export class SessionEngine {
     // The log ends in a win that wasn't saved: save it instead of resuming
     if (won) {
       session.status = 'finished'
-      await this.store.finishSession(row.id, events.at(-1)?.created_at ?? new Date(), results(session))
+      const seatResults = results(session)
+      await this.store.finishSession(row.id, events.at(-1)?.created_at ?? new Date(), seatResults)
+      this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
       return
     }
     this.index(session)
@@ -291,6 +339,8 @@ export class SessionEngine {
       type: 'snapshot' as const,
       sessionId: session.id,
       boardId: session.boardId,
+      lobbyId: session.lobbyId,
+      lobbyName: session.lobbyName,
       players: session.players,
       status: session.status,
       ownerUserId: session.ownerUserId,
@@ -306,7 +356,6 @@ export class SessionEngine {
         }
       }),
       mySeats: session.seats.flatMap((s, i) => s.controllerUserId === view.viewerUserId ? [i] : []),
-      lobbyName: session.lobbyName,
       // The status pill follows the board of the seat that's up
       bmStatus: upBoard === null ? null : session.boardStatus.get(upBoard) ?? null,
     }
@@ -332,22 +381,30 @@ export class SessionEngine {
     return this.byUser.get(userId)
   }
 
+  /** The lobby's running game, if any. */
+  getLobbySession(lobbyId: string): Session | undefined {
+    for (const s of this.byId.values()) if (s.lobbyId === lobbyId && s.status === 'active') return s
+    return undefined
+  }
+
   getAllSessions(): Session[] {
     return Array.from(this.byId.values())
   }
 
-  async deleteSession(sessionId: string): Promise<boolean> {
+  async deleteSession(sessionId: string, abortedByUserId: string | null = null): Promise<boolean> {
     const session = this.byId.get(sessionId)
     if (!session) return false
     await this.enqueue(sessionId, async () => {
-      if (session.status === 'active') {
-        await this.store.abortSession(sessionId, new Date())
+      const wasActive = session.status === 'active'
+      if (wasActive) {
+        await this.store.abortSession(sessionId, new Date(), abortedByUserId)
         session.status = 'aborted'
       }
       this.release(session)
       // Everyone still watching sees the game end before it goes away
       this.push(sessionId)
       this.byId.delete(sessionId)
+      if (wasActive) this.notifyEnded(this.endedOf(session, 'aborted', abortedByUserId, []))
     })
     return true
   }

@@ -888,14 +888,15 @@
         "sessionId",
         "gameId",
         "boardId",
+        "lobbyId",
+        "lobbyName",
         "players",
         "game",
         "bmStatus",
         "status",
         "ownerUserId",
         "seats",
-        "mySeats",
-        "lobbyName"
+        "mySeats"
       ],
       "additionalProperties": false,
       "properties": {
@@ -913,6 +914,20 @@
             "string",
             "null"
           ]
+        },
+        "lobbyId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby the game was started from; null for a local game."
+        },
+        "lobbyName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby's name, for the match header; null for a local game."
         },
         "players": {
           "type": "array",
@@ -1379,13 +1394,6 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
-        },
-        "lobbyName": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "The lobby the game was started from; null for a local game."
         }
       }
     },
@@ -1397,14 +1405,15 @@
         "sessionId",
         "gameId",
         "boardId",
+        "lobbyId",
+        "lobbyName",
         "players",
         "game",
         "bmStatus",
         "status",
         "ownerUserId",
         "seats",
-        "mySeats",
-        "lobbyName"
+        "mySeats"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1422,6 +1431,20 @@
             "string",
             "null"
           ]
+        },
+        "lobbyId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby the game was started from; null for a local game."
+        },
+        "lobbyName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby's name, for the match header; null for a local game."
         },
         "players": {
           "type": "array",
@@ -1760,13 +1783,6 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
-        },
-        "lobbyName": {
-          "type": [
-            "string",
-            "null"
-          ],
-          "description": "The lobby the game was started from; null for a local game."
         }
       }
     },
@@ -1782,14 +1798,15 @@
             "sessionId",
             "gameId",
             "boardId",
+            "lobbyId",
+            "lobbyName",
             "players",
             "game",
             "bmStatus",
             "status",
             "ownerUserId",
             "seats",
-            "mySeats",
-            "lobbyName"
+            "mySeats"
           ],
           "additionalProperties": false,
           "properties": {
@@ -1807,6 +1824,20 @@
                 "string",
                 "null"
               ]
+            },
+            "lobbyId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby the game was started from; null for a local game."
+            },
+            "lobbyName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby's name, for the match header; null for a local game."
             },
             "players": {
               "type": "array",
@@ -2273,13 +2304,6 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
-            },
-            "lobbyName": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "The lobby the game was started from; null for a local game."
             }
           }
         },
@@ -2291,14 +2315,15 @@
             "sessionId",
             "gameId",
             "boardId",
+            "lobbyId",
+            "lobbyName",
             "players",
             "game",
             "bmStatus",
             "status",
             "ownerUserId",
             "seats",
-            "mySeats",
-            "lobbyName"
+            "mySeats"
           ],
           "additionalProperties": false,
           "properties": {
@@ -2316,6 +2341,20 @@
                 "string",
                 "null"
               ]
+            },
+            "lobbyId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby the game was started from; null for a local game."
+            },
+            "lobbyName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby's name, for the match header; null for a local game."
             },
             "players": {
               "type": "array",
@@ -2654,13 +2693,6 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
-            },
-            "lobbyName": {
-              "type": [
-                "string",
-                "null"
-              ],
-              "description": "The lobby the game was started from; null for a local game."
             }
           }
         }

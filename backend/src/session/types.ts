@@ -128,10 +128,12 @@ export interface Session {
   id: string
   /** The host: started the game; may start the bull off and abort. */
   ownerUserId: string
-  /** The lobby the game was started from; null for a local game (the lobbies plan sets it). */
-  lobbyName: string | null
   /** The local game's board (null for lobby games: see seats). */
   boardId: string | null
+  /** The lobby the game was started from; null for a local game. */
+  lobbyId: string | null
+  /** The lobby's name at the start, for the match header; null for a local game. */
+  lobbyName: string | null
   seats: Seat[]
   players: Player[]
   module: AnyGameModule

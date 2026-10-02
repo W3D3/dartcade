@@ -60,6 +60,8 @@
   "bmStatus": null,
   "status": "active",
   "ownerUserId": "u1",
+  "lobbyId": null,
+  "lobbyName": null,
   "seats": [
     {
       "controllerUserId": "u1",

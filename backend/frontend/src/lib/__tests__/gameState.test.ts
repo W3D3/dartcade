@@ -3,7 +3,7 @@ import { gameState } from '../gameState.js'
 
 const base = {
   type: 'snapshot' as const, sessionId: 's', boardId: null, players: [{ name: 'A' }], bmStatus: null,
-  status: 'active' as const, ownerUserId: 'u1', mySeats: [0], lobbyName: null,
+  status: 'active' as const, ownerUserId: 'u1', lobbyId: null, lobbyName: null, mySeats: [0],
   seats: [{ controllerUserId: 'u1', userId: null, boardId: 'b1', boardName: 'Board', boardOnline: true, controllerConnected: true, disconnectedAt: null, forfeited: false }],
 }
 

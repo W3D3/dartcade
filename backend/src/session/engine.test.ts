@@ -6,6 +6,7 @@ import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
 import type { Seat } from './types.js'
+import { seededRng, shuffle } from './rng.js'
 
 const seat = (name: string, controllerUserId: string, boardId: string | null, userId: string | null = controllerUserId): Seat =>
   ({ name, userId, controllerUserId, boardId, boardName: boardId })
@@ -60,7 +61,7 @@ describe('create', () => {
     const engine = new SessionEngine(store, push)
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.deleteSession(sessionId)
-    expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date))
+    expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date), null)
     expect(engine.getSessionByUser('user-1')).toBeUndefined()
     await expect(engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])).resolves.toBeDefined()
   })
@@ -403,7 +404,7 @@ describe('rebuild', () => {
     expect(engine.getSession('good-1')).toBeDefined()
     expect(engine.getSessionByUser('user-1')?.id).toBe('good-1')
     expect(engine.getSession('bad-1')).toBeUndefined()
-    expect(store.abortSession).toHaveBeenCalledWith('bad-1', expect.any(Date))
+    expect(store.abortSession).toHaveBeenCalledWith('bad-1', expect.any(Date), null)
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('rebuild'), expect.objectContaining({ sessionId: 'bad-1' }))
   })
 })
@@ -832,5 +833,98 @@ describe('remote states in the snapshot', () => {
     expect(notify).toHaveBeenCalledWith(sessionId, ['lena'], {
       type: 'notice', code: 'not_your_turn', boardId: 'board-b', throwerName: 'Host', throwerBoard: null,
     })
+  })
+})
+
+describe('lobby games', () => {
+  const lobbySeats = () => [seat('Christoph', 'chris', 'living'), seat('Lena', 'lena', 'lenas')]
+  const lobbyGame = { ownerUserId: 'chris', gameId: 'x01', config: x01Module.defaultConfig, lobbyId: 'l1', lobbyName: "Christoph's lobby" }
+
+  it('keeps the lobby on the game and in its snapshot', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
+    expect(store.insertSession).toHaveBeenCalledWith(expect.objectContaining({ lobby_id: 'l1', board_db_id: null }))
+    expect(engine.getLobbySession('l1')?.id).toBe(sessionId)
+    expect(engine.getSnapshot(sessionId)).toMatchObject({ lobbyId: 'l1', lobbyName: "Christoph's lobby" })
+  })
+
+  it('a local game has no lobby', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', null, 'atc', {}, [{ name: 'Alice' }])
+    expect(engine.getSnapshot(sessionId)).toMatchObject({ lobbyId: null, lobbyName: null })
+    expect(engine.getLobbySession('l1')).toBeUndefined()
+  })
+
+  it('shuffles the seats with the game\'s own seed for a random throw order', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const seats = ['A', 'B', 'C', 'D', 'E', 'F'].map(n => seat(n, n.toLowerCase(), null))
+    await engine.createWithSeats({ ownerUserId: 'a', gameId: 'atc', config: {}, seats, shuffleSeats: true })
+    const stored = store.insertSession.mock.calls[0][0]
+    const names = stored.players.map((p: { name: string }) => p.name)
+    expect(names).toEqual(shuffle(seats, seededRng(stored.rng_seed)).map(s => s.name))
+    expect([...names].sort()).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
+  })
+
+  it('tells the lobby when its game is won, with the results', async () => {
+    const ended = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, ended)
+    const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+    expect(ended).toHaveBeenCalledWith({
+      sessionId, lobbyId: 'l1', gameId: 'x01', status: 'finished', abortedByUserId: null,
+      results: [{ name: 'Christoph', placement: 1, forfeited: false }, { name: 'Lena', placement: 2, forfeited: true }],
+    })
+    expect(engine.getLobbySession('l1')).toBeUndefined()
+  })
+
+  it('records who aborted, and tells the lobby', async () => {
+    const store = makeStore()
+    const ended = vi.fn()
+    const engine = new SessionEngine(store, push, undefined, undefined, ended)
+    const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
+    await engine.deleteSession(sessionId, 'chris')
+    expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date), 'chris')
+    expect(ended).toHaveBeenCalledWith({ sessionId, lobbyId: 'l1', gameId: 'x01', status: 'aborted', abortedByUserId: 'chris', results: [] })
+  })
+
+  it('restores a lobby game after a restart, and tells the lobby about one it can\'t restore', async () => {
+    const store = makeStore()
+    const ended = vi.fn()
+    const row = (id: string, owner: string | null): StoredGameSession => ({
+      id, owner_user_id: owner, board_db_id: null, game_id: 'x01', game_version: 1, rng_seed: 1, config: x01Module.defaultConfig,
+      created_at: new Date(), lobby_id: id === 'ok' ? 'l1' : 'l2', lobby_name: 'Friday darts',
+      players: [
+        { name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null, board_name: null },
+        { name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null },
+      ],
+    })
+    // No owner: it can't be played on, so it's aborted
+    store.getActiveSessions.mockResolvedValue([row('ok', 'chris'), row('gone', null)])
+    const engine = new SessionEngine(store, push, undefined, undefined, ended)
+    await engine.rebuild()
+    expect(engine.getLobbySession('l1')).toMatchObject({ id: 'ok', lobbyId: 'l1', lobbyName: 'Friday darts' })
+    expect(ended).toHaveBeenCalledWith({ sessionId: 'gone', lobbyId: 'l2', gameId: 'x01', status: 'aborted', abortedByUserId: null, results: [] })
+    expect(ended).toHaveBeenCalledTimes(1)
+  })
+  it('keeps going when the lobby listener throws: no double abort, no error to the caller', async () => {
+    const store = makeStore()
+    const warn = vi.fn()
+    const ended = vi.fn(() => { throw new Error('lobby broke') })
+    const row: StoredGameSession = {
+      id: 'gone', owner_user_id: null, board_db_id: null, game_id: 'x01', game_version: 1, rng_seed: 1, config: x01Module.defaultConfig,
+      created_at: new Date(), lobby_id: 'l2', lobby_name: 'Friday darts',
+      players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null }],
+    }
+    store.getActiveSessions.mockResolvedValue([row])
+    const engine = new SessionEngine(store, push, warn, undefined, ended)
+    await engine.rebuild()
+    expect(store.abortSession).toHaveBeenCalledTimes(1)
+    expect(ended).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith('game-end listener failed', expect.objectContaining({ sessionId: 'gone' }))
+
+    const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
+    await expect(engine.deleteSession(sessionId, 'chris')).resolves.not.toThrow()
   })
 })

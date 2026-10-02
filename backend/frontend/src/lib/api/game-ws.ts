@@ -229,6 +229,14 @@ export interface X01Snapshot {
   sessionId: string
   gameId: 'x01'
   boardId: string | null
+  /**
+   * The lobby the game was started from; null for a local game.
+   */
+  lobbyId: string | null
+  /**
+   * The lobby's name, for the match header; null for a local game.
+   */
+  lobbyName: string | null
   players: Player[]
   game: X01Game
   /**
@@ -248,10 +256,6 @@ export interface X01Snapshot {
    * Seats the viewer controls.
    */
   mySeats: number[]
-  /**
-   * The lobby the game was started from; null for a local game.
-   */
-  lobbyName: string | null
 }
 export interface Player {
   name: string
@@ -265,6 +269,14 @@ export interface AtcSnapshot {
   sessionId: string
   gameId: 'atc'
   boardId: string | null
+  /**
+   * The lobby the game was started from; null for a local game.
+   */
+  lobbyId: string | null
+  /**
+   * The lobby's name, for the match header; null for a local game.
+   */
+  lobbyName: string | null
   players: Player[]
   game: AtcGame
   /**
@@ -284,10 +296,6 @@ export interface AtcSnapshot {
    * Seats the viewer controls.
    */
   mySeats: number[]
-  /**
-   * The lobby the game was started from; null for a local game.
-   */
-  lobbyName: string | null
 }
 export interface UndoDartAction {
   type: 'undo_dart'
