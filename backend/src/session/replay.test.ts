@@ -16,7 +16,7 @@ function memoryStore() {
     getActiveSessions: () => Promise.resolve([...sessions.values()].filter(s => s.status === 'active')
       .map(s => ({
         id: s.id, owner_user_id: s.owner_user_id, board_db_id: s.board_db_id, game_id: s.game_id, game_version: s.game_version,
-        rng_seed: s.rng_seed, config: s.config, created_at: s.created_at,
+        rng_seed: s.rng_seed, config: s.config, created_at: s.created_at, lobby_id: null, lobby_name: null,
         players: s.players.map(p => ({ ...p, board_name: null })),
       }))),
     getSessionEvents: (id): Promise<StoredSessionEvent[]> => Promise.resolve(events.filter(e => e.session_id === id).sort((a, b) => a.seq - b.seq)

@@ -52,12 +52,16 @@ export type SeatRow = { name: string; user_id: string | null; controller_user_id
 export type NewGameSession = {
   id: string; owner_user_id: string; board_db_id: string | null; game_id: string
   game_version: number; rng_seed: number; config: unknown; players: SeatRow[]
+  /** The lobby the game is started from; absent or null for a local game. */
+  lobby_id?: string | null
 }
 /** A seat as read back: the controller can be gone (account deleted), the board's name comes along. */
 export type StoredSeatRow = { name: string; user_id: string | null; controller_user_id: string | null; board_db_id: string | null; board_name: string | null }
 export type StoredGameSession = {
   id: string; owner_user_id: string | null; board_db_id: string | null; game_id: string
   game_version: number; rng_seed: number; config: unknown; created_at: Date; players: StoredSeatRow[]
+  /** The lobby of a lobby game, with its current name (null for local games). */
+  lobby_id: string | null; lobby_name: string | null
 }
 export type GamePlayerRow = Selectable<GamePlayersTable>
 export type NewSessionEvent = {
@@ -78,6 +82,7 @@ export async function insertGameSession(db: Kysely<Database>, s: NewGameSession)
       .values({
         id: s.id, owner_user_id: s.owner_user_id, board_db_id: s.board_db_id, game_id: s.game_id,
         game_version: s.game_version, rng_seed: s.rng_seed, config: JSON.stringify(s.config), status: 'active',
+        lobby_id: s.lobby_id ?? null,
       })
       .execute()
     await trx.insertInto('game_players')
@@ -102,9 +107,10 @@ export async function getSeats(db: Kysely<Database>, sessionIds: string[]): Prom
 }
 
 export async function getActiveGameSessions(db: Kysely<Database>): Promise<StoredGameSession[]> {
-  const rows = await db.selectFrom('game_sessions')
-    .select(['id', 'owner_user_id', 'board_db_id', 'game_id', 'game_version', 'rng_seed', 'config', 'created_at'])
-    .where('status', '=', 'active')
+  const rows = await db.selectFrom('game_sessions as gs')
+    .leftJoin('lobbies as l', 'l.id', 'gs.lobby_id')
+    .select(['gs.id', 'gs.owner_user_id', 'gs.board_db_id', 'gs.game_id', 'gs.game_version', 'gs.rng_seed', 'gs.config', 'gs.created_at', 'gs.lobby_id', 'l.name as lobby_name'])
+    .where('gs.status', '=', 'active')
     .execute()
   if (rows.length === 0) return []
   const seats = await db.selectFrom('game_players as gp')
@@ -170,8 +176,10 @@ export async function finishGameSession(db: Kysely<Database>, id: string, finish
 }
 
 /** The game was ended without a result; its log and darts stay. */
-export async function abortGameSession(db: Kysely<Database>, id: string, finishedAt: Date): Promise<void> {
-  await db.updateTable('game_sessions').set({ status: 'aborted', finished_at: finishedAt }).where('id', '=', id).execute()
+export async function abortGameSession(db: Kysely<Database>, id: string, finishedAt: Date, abortedByUserId: string | null = null): Promise<void> {
+  await db.updateTable('game_sessions')
+    .set({ status: 'aborted', finished_at: finishedAt, aborted_by_user_id: abortedByUserId })
+    .where('id', '=', id).execute()
 }
 
 /** A board is busy if an active game uses it as its own board or as any seat's board. */

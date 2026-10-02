@@ -41,6 +41,10 @@ export interface GameSessionsTable {
   game_version: ColumnType<number, number | undefined, number>
   rng_seed: ColumnType<number, number | undefined, number>
   visibility: ColumnType<string, string | undefined, string>
+  /** The lobby the game was started from; null for local games. */
+  lobby_id: ColumnType<string | null, string | null | undefined, string | null>
+  /** Who aborted the game (the host); null otherwise. */
+  aborted_by_user_id: ColumnType<string | null, string | null | undefined, string | null>
 }
 
 export interface GamePlayersTable {
@@ -98,6 +102,59 @@ export interface BridgeEventsTable {
   inserted_at: ColumnType<Date, never, never>
 }
 
+export interface LobbiesTable {
+  id: string
+  name: string
+  /** null only once the host's account is gone; the next change hands over. */
+  host_user_id: string | null
+  /** 6 characters, unique among open lobbies. */
+  code: string
+  throw_order: ColumnType<string, string | undefined, string>
+  /** { gameId, config } as the host last set it. */
+  next_game: unknown
+  /** { gameId, config, personIds } of the last game started here: what a rematch repeats. */
+  last_game: unknown
+  created_at: ColumnType<Date, never, never>
+  closed_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+}
+
+export interface LobbyPeopleTable {
+  id: string
+  lobby_id: string
+  /** Set for members, null for a guest. */
+  user_id: string | null
+  /** The member themselves; for a guest, who added them (and acts for them in games). */
+  added_by_user_id: string
+  name: string
+  /** null: Manual (darts entered by hand). */
+  board_id: string | null
+  position: number
+  plays: ColumnType<boolean, boolean | undefined, boolean>
+  ready: ColumnType<boolean, boolean | undefined, boolean>
+  /** Who put them on their board when it wasn't their own (or their adder's) pick. */
+  board_moved_by: string | null
+  joined_at: ColumnType<Date, Date | undefined, never>
+}
+
+export interface LobbyInvitesTable {
+  id: string
+  lobby_id: string
+  invitee_user_id: string
+  inviter_user_id: string | null
+  status: ColumnType<string, string | undefined, string>
+  created_at: ColumnType<Date, never, never>
+}
+
+export interface LobbyActivityTable {
+  /** BIGSERIAL; node-postgres returns it as a string */
+  id: Generated<string>
+  lobby_id: string
+  at: ColumnType<Date, Date | undefined, never>
+  kind: string
+  actor_user_id: string | null
+  data: unknown
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -107,4 +164,8 @@ export interface Database {
   game_session_events: GameSessionEventsTable
   game_darts: GameDartsTable
   bridge_events: BridgeEventsTable
+  lobbies: LobbiesTable
+  lobby_people: LobbyPeopleTable
+  lobby_invites: LobbyInvitesTable
+  lobby_activity: LobbyActivityTable
 }

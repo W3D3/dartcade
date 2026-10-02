@@ -383,11 +383,13 @@ describe('rebuild', () => {
       id: 'good-1', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc',
       game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
       created_at: new Date(), players: [{ name: 'Alice', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null, board_name: null }],
+      lobby_id: null, lobby_name: null,
     }
     const bad: StoredGameSession = {
       id: 'bad-1', owner_user_id: 'user-2', board_db_id: null, game_id: 'atc',
       game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
       created_at: new Date(), players: [{ name: 'Bob', user_id: 'user-2', controller_user_id: 'user-2', board_db_id: null, board_name: null }],
+      lobby_id: null, lobby_name: null,
     }
     const warn = vi.fn()
     const store = makeStore()
@@ -573,6 +575,7 @@ describe('rebuild with seats', () => {
         { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'board-a', board_name: 'Living room' },
         { name: 'Lena', user_id: 'lena', controller_user_id: null, board_db_id: 'board-b', board_name: "Lena's place" },
       ],
+      lobby_id: null, lobby_name: null,
     } satisfies StoredGameSession])
     const engine = new SessionEngine(store, push)
     await engine.rebuild()
