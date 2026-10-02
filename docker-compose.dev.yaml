@@ -23,7 +23,8 @@ services:
       NODE_ENV: development
       PORT: "3000"
       BETTER_AUTH_URL: http://localhost:3000
-      BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5173
+      # Extra origins (e.g. this machine's tailnet address) come from .env
+      BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5173,${DARTCADE_EXTRA_ORIGINS:-}
     ports:
       - "3000:3000"
     depends_on:
@@ -45,6 +46,8 @@ services:
     command: sh -c "npm install --prefer-offline && npm run dev -- --host 0.0.0.0"
     environment:
       BACKEND_HOST: backend
+      # Extra hostnames Vite answers to (e.g. a MagicDNS name) come from .env
+      VITE_ALLOWED_HOSTS: ${DARTCADE_EXTRA_HOSTS:-}
     ports:
       - "5173:5173"
     depends_on:
