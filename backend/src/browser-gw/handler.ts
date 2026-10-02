@@ -96,7 +96,12 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
 }
 
 function viewFor(sessionId: string, userId: string): SnapshotView {
-  return { viewerUserId: userId, connectedUserIds: browserConnections.connectedUsers(sessionId), isBoardOnline: b => bridgeConnections.isOnline(b) }
+  return {
+    viewerUserId: userId,
+    connectedUserIds: browserConnections.connectedUsers(sessionId),
+    disconnectedAt: u => browserConnections.disconnectedAt(sessionId, u),
+    isBoardOnline: b => bridgeConnections.isOnline(b),
+  }
 }
 
 /** Sends every viewer of the game their own snapshot. */

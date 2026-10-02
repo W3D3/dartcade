@@ -754,6 +754,7 @@
         "boardName",
         "boardOnline",
         "controllerConnected",
+        "disconnectedAt",
         "forfeited"
       ],
       "additionalProperties": false,
@@ -789,6 +790,18 @@
           "type": "boolean",
           "description": "The controller has this game open."
         },
+        "disconnectedAt": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+        },
         "forfeited": {
           "type": "boolean"
         }
@@ -810,7 +823,9 @@
       "required": [
         "type",
         "code",
-        "boardId"
+        "boardId",
+        "throwerName",
+        "throwerBoard"
       ],
       "additionalProperties": false,
       "properties": {
@@ -825,6 +840,17 @@
         },
         "boardId": {
           "type": "string"
+        },
+        "throwerName": {
+          "type": "string",
+          "description": "The player who is up."
+        },
+        "throwerBoard": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Name of the board they throw on; null when they enter darts by hand."
         }
       }
     },
@@ -868,7 +894,8 @@
         "status",
         "ownerUserId",
         "seats",
-        "mySeats"
+        "mySeats",
+        "lobbyName"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1290,6 +1317,7 @@
               "boardName",
               "boardOnline",
               "controllerConnected",
+              "disconnectedAt",
               "forfeited"
             ],
             "additionalProperties": false,
@@ -1325,6 +1353,18 @@
                 "type": "boolean",
                 "description": "The controller has this game open."
               },
+              "disconnectedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+              },
               "forfeited": {
                 "type": "boolean"
               }
@@ -1339,6 +1379,13 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
+        },
+        "lobbyName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby the game was started from; null for a local game."
         }
       }
     },
@@ -1356,7 +1403,8 @@
         "status",
         "ownerUserId",
         "seats",
-        "mySeats"
+        "mySeats",
+        "lobbyName"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1650,6 +1698,7 @@
               "boardName",
               "boardOnline",
               "controllerConnected",
+              "disconnectedAt",
               "forfeited"
             ],
             "additionalProperties": false,
@@ -1685,6 +1734,18 @@
                 "type": "boolean",
                 "description": "The controller has this game open."
               },
+              "disconnectedAt": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+              },
               "forfeited": {
                 "type": "boolean"
               }
@@ -1699,6 +1760,13 @@
             "minimum": 0
           },
           "description": "Seats the viewer controls."
+        },
+        "lobbyName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby the game was started from; null for a local game."
         }
       }
     },
@@ -1720,7 +1788,8 @@
             "status",
             "ownerUserId",
             "seats",
-            "mySeats"
+            "mySeats",
+            "lobbyName"
           ],
           "additionalProperties": false,
           "properties": {
@@ -2142,6 +2211,7 @@
                   "boardName",
                   "boardOnline",
                   "controllerConnected",
+                  "disconnectedAt",
                   "forfeited"
                 ],
                 "additionalProperties": false,
@@ -2177,6 +2247,18 @@
                     "type": "boolean",
                     "description": "The controller has this game open."
                   },
+                  "disconnectedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+                  },
                   "forfeited": {
                     "type": "boolean"
                   }
@@ -2191,6 +2273,13 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "lobbyName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby the game was started from; null for a local game."
             }
           }
         },
@@ -2208,7 +2297,8 @@
             "status",
             "ownerUserId",
             "seats",
-            "mySeats"
+            "mySeats",
+            "lobbyName"
           ],
           "additionalProperties": false,
           "properties": {
@@ -2502,6 +2592,7 @@
                   "boardName",
                   "boardOnline",
                   "controllerConnected",
+                  "disconnectedAt",
                   "forfeited"
                 ],
                 "additionalProperties": false,
@@ -2537,6 +2628,18 @@
                     "type": "boolean",
                     "description": "The controller has this game open."
                   },
+                  "disconnectedAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+                  },
                   "forfeited": {
                     "type": "boolean"
                   }
@@ -2551,6 +2654,13 @@
                 "minimum": 0
               },
               "description": "Seats the viewer controls."
+            },
+            "lobbyName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby the game was started from; null for a local game."
             }
           }
         }

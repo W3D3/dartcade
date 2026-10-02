@@ -123,7 +123,7 @@
       "title": "SeatInfo",
       "description": "Who acts for a seat and where its darts come from.",
       "type": "object",
-      "required": ["controllerUserId", "userId", "boardId", "boardName", "boardOnline", "controllerConnected", "forfeited"],
+      "required": ["controllerUserId", "userId", "boardId", "boardName", "boardOnline", "controllerConnected", "disconnectedAt", "forfeited"],
       "additionalProperties": false,
       "properties": {
         "controllerUserId": { "type": "string" },
@@ -132,6 +132,10 @@
         "boardName": { "type": ["string", "null"] },
         "boardOnline": { "type": "boolean", "description": "The board's bridge is connected." },
         "controllerConnected": { "type": "boolean", "description": "The controller has this game open." },
+        "disconnectedAt": {
+          "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],
+          "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
+        },
         "forfeited": { "type": "boolean" }
       }
     },
@@ -140,12 +144,14 @@
       "title": "NoticeMessage",
       "description": "A transient hint for this viewer, e.g. a dart thrown on a board that isn't up.",
       "type": "object",
-      "required": ["type", "code", "boardId"],
+      "required": ["type", "code", "boardId", "throwerName", "throwerBoard"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "notice" },
         "code": { "type": "string", "enum": ["not_your_turn"] },
-        "boardId": { "type": "string" }
+        "boardId": { "type": "string" },
+        "throwerName": { "type": "string", "description": "The player who is up." },
+        "throwerBoard": { "type": ["string", "null"], "description": "Name of the board they throw on; null when they enter darts by hand." }
       }
     },
     "ErrorMessage": {
@@ -163,7 +169,7 @@
     "X01Snapshot": {
       "title": "X01Snapshot",
       "type": "object",
-      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats"],
+      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats", "lobbyName"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "snapshot" },
@@ -176,13 +182,14 @@
         "status": { "$ref": "#/$defs/SessionStatus" },
         "ownerUserId": { "type": "string", "description": "The host: starts the bull off, aborts the game." },
         "seats": { "type": "array", "items": { "$ref": "#/$defs/SeatInfo" }, "description": "Same order as players." },
-        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." }
+        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." },
+        "lobbyName": { "type": ["string", "null"], "description": "The lobby the game was started from; null for a local game." }
       }
     },
     "AtcSnapshot": {
       "title": "AtcSnapshot",
       "type": "object",
-      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats"],
+      "required": ["type", "sessionId", "gameId", "boardId", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats", "lobbyName"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "snapshot" },
@@ -195,7 +202,8 @@
         "status": { "$ref": "#/$defs/SessionStatus" },
         "ownerUserId": { "type": "string", "description": "The host: starts the bull off, aborts the game." },
         "seats": { "type": "array", "items": { "$ref": "#/$defs/SeatInfo" }, "description": "Same order as players." },
-        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." }
+        "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." },
+        "lobbyName": { "type": ["string", "null"], "description": "The lobby the game was started from; null for a local game." }
       }
     },
     "Snapshot": {

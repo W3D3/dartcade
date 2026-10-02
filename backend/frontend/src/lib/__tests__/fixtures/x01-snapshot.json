@@ -68,6 +68,7 @@
       "boardName": "Board",
       "boardOnline": true,
       "controllerConnected": true,
+      "disconnectedAt": null,
       "forfeited": false
     },
     {
@@ -77,11 +78,13 @@
       "boardName": "Board",
       "boardOnline": true,
       "controllerConnected": true,
+      "disconnectedAt": null,
       "forfeited": false
     }
   ],
   "mySeats": [
     0,
     1
-  ]
+  ],
+  "lobbyName": null
 }

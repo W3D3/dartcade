@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ActiveSessionError, BoardBusyError, SessionEngine } from './engine.js'
+import { ActiveSessionError, BoardBusyError, SessionEngine, type SnapshotView } from './engine.js'
 import type { EngineStore } from './engine.js'
 import type { StoredGameSession } from '../db/queries.js'
 import type { X01Game } from '../schema/game-ws.js'
@@ -510,7 +510,20 @@ describe('routing board events', () => {
     await engine.onBridgeEvent('board-b', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
     expect(store.appendEvent).not.toHaveBeenCalled()
     expect((engine.getSnapshot(sessionId)?.game as X01Game).scores).toEqual([301, 301])
-    expect(notify).toHaveBeenCalledWith(sessionId, ['lena'], { type: 'notice', code: 'not_your_turn', boardId: 'board-b' })
+    expect(notify).toHaveBeenCalledWith(sessionId, ['lena'], {
+      type: 'notice', code: 'not_your_turn', boardId: 'board-b', throwerName: 'Host', throwerBoard: 'board-a',
+    })
+  })
+
+  it('names the thrower\'s board "Board" when its name is gone', async () => {
+    const notify = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, notify)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: { ...x01Module.defaultConfig, startScore: 301 },
+      seats: [{ ...seat('Host', 'host', 'board-a'), boardName: null }, seat('Lena', 'lena', 'board-b')],
+    })
+    await engine.onBridgeEvent('board-b', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    expect(notify).toHaveBeenCalledWith(sessionId, ['lena'], expect.objectContaining({ throwerBoard: 'Board' }))
   })
 
   it('ignores a takeout on a board that is not up', async () => {
@@ -676,7 +689,7 @@ describe('forfeit', () => {
 describe('getSnapshot per viewer', () => {
   it('describes each seat and the viewer\'s own seats', async () => {
     const { engine, sessionId } = await twoBoardGame()
-    const snap = engine.getSnapshot(sessionId, { viewerUserId: 'lena', connectedUserIds: new Set(['host']), isBoardOnline: b => b === 'board-a' })
+    const snap = engine.getSnapshot(sessionId, { viewerUserId: 'lena', connectedUserIds: new Set(['host']), disconnectedAt: () => null, isBoardOnline: b => b === 'board-a' })
     expect(snap).toMatchObject({
       status: 'active', ownerUserId: 'host', mySeats: [1],
       seats: [
@@ -770,5 +783,51 @@ describe('bull off across boards', () => {
       expect.objectContaining({ placement: 1, forfeited: false }),
     ])
     expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+  })
+})
+
+describe('remote states in the snapshot', () => {
+  const view = (over: Partial<SnapshotView> = {}): SnapshotView =>
+    ({ viewerUserId: 'host', connectedUserIds: new Set(['host']), disconnectedAt: () => null, isBoardOnline: () => true, ...over })
+  const left = new Date('2026-10-02T18:00:00.000Z')
+
+  it('says since when a seat\'s controller has the game closed', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    const snap = engine.getSnapshot(sessionId, view({ disconnectedAt: u => u === 'lena' ? left : null }))
+    expect(snap?.seats.map(s => [s.controllerConnected, s.disconnectedAt])).toEqual([[true, null], [false, '2026-10-02T18:00:00.000Z']])
+  })
+
+  it('has no time for a connected controller, even if an old one is around', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    const snap = engine.getSnapshot(sessionId, view({ disconnectedAt: () => left }))
+    expect(snap?.seats[0]?.disconnectedAt).toBeNull()
+    expect(snap?.seats[1]?.disconnectedAt).toBe('2026-10-02T18:00:00.000Z')
+  })
+
+  it('has no time for a controller who never opened the game', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    const snap = engine.getSnapshot(sessionId, view())
+    expect(snap?.seats[1]).toMatchObject({ controllerConnected: false, disconnectedAt: null })
+  })
+
+  it('carries the lobby name: null outside a lobby', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    expect(engine.getSnapshot(sessionId)?.lobbyName).toBeNull()
+    const session = engine.getSession(sessionId)!
+    session.lobbyName = 'Friday darts'
+    expect(engine.getSnapshot(sessionId)?.lobbyName).toBe('Friday darts')
+  })
+
+  it('names who is up in the not-your-turn notice; no board for a seat entering by hand', async () => {
+    const notify = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, notify)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      seats: [seat('Host', 'host', null), seat('Lena', 'lena', 'board-b')],
+    })
+    await engine.onBridgeEvent('board-b', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    expect(notify).toHaveBeenCalledWith(sessionId, ['lena'], {
+      type: 'notice', code: 'not_your_turn', boardId: 'board-b', throwerName: 'Host', throwerBoard: null,
+    })
   })
 })

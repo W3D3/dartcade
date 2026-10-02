@@ -31,12 +31,12 @@ export function parseLoggedInput(row: LoggedInput): GameInput | null {
 /** A session at its start, set up exactly like create() set it up. */
 export function newSession(a: {
   id: string; ownerUserId: string; boardId: string | null; module: AnyGameModule
-  config: GameConfig; seats: Seat[]; seed: number; createdAt: Date
+  config: GameConfig; seats: Seat[]; seed: number; createdAt: Date; lobbyName?: string | null
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const initial = a.module.init(a.config, players, seededRng(a.seed))
   return {
-    id: a.id, ownerUserId: a.ownerUserId, boardId: a.boardId, seats: a.seats, players, module: a.module,
+    id: a.id, ownerUserId: a.ownerUserId, lobbyName: a.lobbyName ?? null, boardId: a.boardId, seats: a.seats, players, module: a.module,
     committedState: initial, currentState: initial, openVisitEvents: [], openDarts: [],
     status: 'active', createdAt: a.createdAt, seed: a.seed, visitCount: 0, nextSeq: 0,
     totalDarts: Array<number>(players.length).fill(0),

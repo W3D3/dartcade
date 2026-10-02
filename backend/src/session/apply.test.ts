@@ -8,7 +8,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
   const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}` }))
   const s = module.init(config, players)
   return {
-    id: 's1', ownerUserId: 'u1', boardId: 'b1', players, module,
+    id: 's1', ownerUserId: 'u1', lobbyName: null, boardId: 'b1', players, module,
     seats: players.map(p => ({ name: p.name, userId: null, controllerUserId: 'u1', boardId: 'b1', boardName: null })),
     committedState: s, currentState: s, openVisitEvents: [], openDarts: [],
     status: 'active', createdAt: new Date(0), seed: 0, visitCount: 0, nextSeq: 0,

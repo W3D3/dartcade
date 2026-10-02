@@ -13,14 +13,23 @@ import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, S
 
 type PushFn = (sessionId: string) => void
 
-export type Notice = { type: 'notice'; code: 'not_your_turn'; boardId: string }
+export type Notice = { type: 'notice'; code: 'not_your_turn'; boardId: string; throwerName: string; throwerBoard: string | null }
 export type NotifyFn = (sessionId: string, userIds: string[], notice: Notice) => void
 
 export type ActionResult = { ok: true } | { ok: false; code: 'forbidden' }
 
-/** Who is looking: the viewer's own seats, who has the game open, which boards are online. */
-export type SnapshotView = { viewerUserId: string | null; connectedUserIds: ReadonlySet<string>; isBoardOnline: (boardId: string) => boolean }
-const NO_VIEWER: SnapshotView = { viewerUserId: null, connectedUserIds: new Set(), isBoardOnline: () => false }
+/**
+ * Who is looking: the viewer's own seats, who has the game open (and since when not),
+ * which boards are online.
+ */
+export type SnapshotView = {
+  viewerUserId: string | null
+  connectedUserIds: ReadonlySet<string>
+  /** When the user's last socket of the game closed; null if open or never opened. */
+  disconnectedAt: (userId: string) => Date | null
+  isBoardOnline: (boardId: string) => boolean
+}
+const NO_VIEWER: SnapshotView = { viewerUserId: null, connectedUserIds: new Set(), disconnectedAt: () => null, isBoardOnline: () => false }
 
 // Where an input came from: the bridge event it was, and the board it was thrown on
 type Origin = { bridgeEventId: string | null; boardId: string | null }
@@ -194,8 +203,11 @@ export class SessionEngine {
     if (origin.boardId !== null && session.seats[currentSeat(session)].boardId !== origin.boardId) {
       if (input.source === 'board' && input.event.kind === 'dart.detected') {
         const boardId = origin.boardId
+        const up = session.seats[currentSeat(session)]
         const users = [...new Set(session.seats.filter(s => s.boardId === boardId).map(s => s.controllerUserId))]
-        this.notify(session.id, users, { type: 'notice', code: 'not_your_turn', boardId })
+        this.notify(session.id, users, { type: 'notice', code: 'not_your_turn', boardId, throwerName: up.name,
+          // a board whose name is gone (deleted) is still a board, not hand entry
+          throwerBoard: up.boardId === null ? null : up.boardName ?? 'Board' })
       }
       return false
     }
@@ -282,13 +294,19 @@ export class SessionEngine {
       players: session.players,
       status: session.status,
       ownerUserId: session.ownerUserId,
-      seats: session.seats.map((s, i) => ({
-        controllerUserId: s.controllerUserId, userId: s.userId, boardId: s.boardId, boardName: s.boardName,
-        boardOnline: s.boardId !== null && view.isBoardOnline(s.boardId),
-        controllerConnected: view.connectedUserIds.has(s.controllerUserId),
-        forfeited: session.forfeited.includes(i),
-      })),
+      seats: session.seats.map((s, i) => {
+        const connected = view.connectedUserIds.has(s.controllerUserId)
+        return {
+          controllerUserId: s.controllerUserId, userId: s.userId, boardId: s.boardId, boardName: s.boardName,
+          boardOnline: s.boardId !== null && view.isBoardOnline(s.boardId),
+          controllerConnected: connected,
+          // Only a controller without the game open has a time; it says how long the game waits
+          disconnectedAt: connected ? null : view.disconnectedAt(s.controllerUserId)?.toISOString() ?? null,
+          forfeited: session.forfeited.includes(i),
+        }
+      }),
       mySeats: session.seats.flatMap((s, i) => s.controllerUserId === view.viewerUserId ? [i] : []),
+      lobbyName: session.lobbyName,
       // The status pill follows the board of the seat that's up
       bmStatus: upBoard === null ? null : session.boardStatus.get(upBoard) ?? null,
     }

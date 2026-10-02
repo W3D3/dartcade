@@ -181,6 +181,10 @@ export interface SeatInfo {
    * The controller has this game open.
    */
   controllerConnected: boolean
+  /**
+   * Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started.
+   */
+  disconnectedAt: string | null
   forfeited: boolean
 }
 /**
@@ -193,6 +197,14 @@ export interface NoticeMessage {
   type: 'notice'
   code: 'not_your_turn'
   boardId: string
+  /**
+   * The player who is up.
+   */
+  throwerName: string
+  /**
+   * Name of the board they throw on; null when they enter darts by hand.
+   */
+  throwerBoard: string | null
 }
 /**
  * An action of this viewer was refused.
@@ -236,6 +248,10 @@ export interface X01Snapshot {
    * Seats the viewer controls.
    */
   mySeats: number[]
+  /**
+   * The lobby the game was started from; null for a local game.
+   */
+  lobbyName: string | null
 }
 export interface Player {
   name: string
@@ -268,6 +284,10 @@ export interface AtcSnapshot {
    * Seats the viewer controls.
    */
   mySeats: number[]
+  /**
+   * The lobby the game was started from; null for a local game.
+   */
+  lobbyName: string | null
 }
 export interface UndoDartAction {
   type: 'undo_dart'

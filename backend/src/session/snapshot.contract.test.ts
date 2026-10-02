@@ -85,7 +85,11 @@ describe('snapshots match schema/game-ws-v1.json', () => {
       ],
     })
     await e.onBridgeEvent('board-a', 'board.status', { status: 'Throw', running: true, event: 'x' })
-    const snap = e.getSnapshot(sessionId, { viewerUserId: 'lena', connectedUserIds: new Set(['host', 'lena']), isBoardOnline: () => true })
+    const snap = e.getSnapshot(sessionId, {
+      viewerUserId: 'lena', connectedUserIds: new Set(['lena']),
+      disconnectedAt: u => u === 'host' ? new Date('2026-10-02T18:00:00.000Z') : null, isBoardOnline: () => true,
+    })
+    expect(snap?.seats[0]?.disconnectedAt).toBe('2026-10-02T18:00:00.000Z')
     expectValid(snap)
     expect(SnapshotSchema.safeParse(snap).success).toBe(true)
   })
