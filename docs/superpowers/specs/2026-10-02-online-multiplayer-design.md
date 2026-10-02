@@ -343,17 +343,21 @@ New fields on the session snapshot (`schema/game-ws-v1.json`, then `npm run gen:
 - `boardId`, `boardName`
 - `boardOnline`
 - `controllerConnected`
+- `disconnectedAt`: server time the controller's last socket of the game closed; null while
+  they have it open, or if they haven't opened it since the server started
 - `forfeited`
 
 **Top level:**
 - `ownerUserId` (the host)
+- `lobbyName` (null for a local game; set by the lobbies plan)
 - `lobbyId` (comes with lobbies, plans 2/3)
 - `mySeats`: computed for each socket, so snapshots are now sent to each socket, not
   broadcast byte-for-byte.
 
 **New server messages:**
-- `notice` (`not_your_turn`; `board_offline` comes with lobbies and the frontend,
-  plans 2/3)
+- `notice` (`not_your_turn`, with `throwerName` and `throwerBoard`, the up seat's board
+  name or null when they enter by hand; `board_offline` comes with lobbies and the
+  frontend, plans 2/3)
 - `error` (`forbidden`, `board_busy`, …)
 
 ### Lobby channel
@@ -552,3 +556,21 @@ they differ from the sections above, this decides:
    three result screens, Back to lobby and Rematch.
 
 1 and 2 can run in parallel; 3 needs 2; 4 needs 2 and the engine's abort/preview changes.
+
+### Match remote states, as built
+
+- A game is **remote** when its seats have more than one controller or more than one board.
+  Seat board lines, "Live from", the offline fallback and the header board pill apply only
+  there; local games look as before.
+- Waiting: `disconnectedAt` is null when the controller never opened the game since the
+  server started; the card then says "Not connected yet". Waiting beats board offline.
+- The timer counts from `disconnectedAt` with the browser clock, clamped at 0:00.
+- Abort in the waiting card uses the existing end-game confirm (`DELETE /api/sessions/:id`)
+  until plan 4's dialogs.
+- Copy is gender-neutral: "Their score is kept. The game carries on as soon as Lena is back."
+- Not your turn: the centre always shows the board; the toast lasts 6 s, the newest replaces
+  it, and it can be dismissed.
+- Placement of the waiting card: over the seat's panel in the duel layout, in the board's
+  place in the party layout and on phones.
+- The match starts on the keypad when none of the viewer's seats has a board; the Next
+  button is "manual" when the up seat has no board or (remote) its board is offline.
