@@ -55,9 +55,10 @@ describe('lobbySummary', () => {
     const session = engine.getSession(sessionId)
     expect(lobbySummary(lobby, 'chris', session)).toEqual({
       id: 'l1', name: "Christoph's lobby", peopleCount: 3, nextGame: { gameId: 'x01', config: { startScore: 501 } },
-      sessionId, gameId: 'x01', youThrowNext: true, leg: 0,
+      sessionId, gameId: 'x01', youThrowNext: true, leg: 0, youHost: true,
     })
     expect(lobbySummary(lobby, 'max', session).youThrowNext).toBe(false)
+    expect(lobbySummary(lobby, 'max', session).youHost).toBe(false)
     expect(lobbySummary(lobby, 'max', undefined)).toMatchObject({ sessionId: null, gameId: null, youThrowNext: false, leg: null })
     const me = { type: 'me' as const, invites: [inviteView({ id: 'i1', lobbyId: 'l1', lobbyName: 'L', inviterUserId: null, inviterName: null, createdAt: at })], lobby: lobbySummary(lobby, 'chris', session) }
     expect(() => { checkLobbyMessage(me, () => undefined) }).not.toThrow()

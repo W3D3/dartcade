@@ -165,7 +165,7 @@
       "title": "LobbySummary",
       "description": "The viewer's lobby for the lobby indicator.",
       "type": "object",
-      "required": ["id", "name", "peopleCount", "nextGame", "sessionId", "gameId", "youThrowNext", "leg"],
+      "required": ["id", "name", "peopleCount", "nextGame", "sessionId", "gameId", "youThrowNext", "leg", "youHost"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
@@ -175,7 +175,8 @@
         "sessionId": { "type": ["string", "null"], "description": "The lobby's running game." },
         "gameId": { "type": ["string", "null"], "description": "Its game mode." },
         "youThrowNext": { "type": "boolean", "description": "The viewer controls the seat that's up in the running game." },
-        "leg": { "type": ["integer", "null"], "minimum": 0, "description": "The running game's leg, 0-based; null for games without legs or without a game." }
+        "leg": { "type": ["integer", "null"], "minimum": 0, "description": "The running game's leg, 0-based; null for games without legs or without a game." },
+        "youHost": { "type": "boolean", "description": "The viewer is the lobby's host." }
       }
     },
     "MeMessage": {
