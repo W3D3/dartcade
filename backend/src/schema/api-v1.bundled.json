@@ -3,10 +3,11 @@
   "info": {
     "title": "Dartcade API",
     "version": "1.0.0",
-    "description": "HTTP API of the Dartcade backend, used by the web frontend and the Go bridge.\nAuthentication endpoints (`/api/auth/*`) are provided by better-auth and documented separately.\nOperations tagged `bridge` are called by deployed bridges: keep them backwards compatible.\n",
     "license": {
-      "name": "Proprietary"
-    }
+      "name": "MIT",
+      "url": "https://opensource.org/licenses/MIT"
+    },
+    "description": "HTTP API of the Dartcade backend, used by the web frontend and the Go bridge.\nAuthentication endpoints (`/api/auth/*`) are provided by better-auth and documented separately.\nOperations tagged `bridge` are called by deployed bridges: keep them backwards compatible.\n"
   },
   "servers": [
     {

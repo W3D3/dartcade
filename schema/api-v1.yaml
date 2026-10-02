@@ -2,12 +2,13 @@ openapi: 3.0.3
 info:
   title: Dartcade API
   version: 1.0.0
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
   description: |
     HTTP API of the Dartcade backend, used by the web frontend and the Go bridge.
     Authentication endpoints (`/api/auth/*`) are provided by better-auth and documented separately.
     Operations tagged `bridge` are called by deployed bridges: keep them backwards compatible.
-  license:
-    name: Proprietary
 servers:
   - url: /
 tags:
