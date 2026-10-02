@@ -4,9 +4,18 @@ import { z } from 'zod'
 // Extra detail ajv puts on additionalProperties errors
 const ParamsSchema = z.object({ additionalProperty: z.string() })
 
+/**
+ * Thrown by a handler to answer with this status and body: an ErrorResponse, or the
+ * richer body the spec gives that status (e.g. LobbyConflict).
+ */
+export class ApiError extends Error {
+  constructor(readonly statusCode: number, readonly body: { error: string }) { super(body.error) }
+}
+
 /** All errors leave as ErrorResponse: { error, details? } (schema/common-v1.json). */
 export function registerErrorHandler(app: FastifyInstance): void {
   app.setErrorHandler((err, req, reply) => {
+    if (err instanceof ApiError) return reply.code(err.statusCode).send(err.body)
     if (err.validation) {
       return reply.code(400).send({
         error: 'invalid request',

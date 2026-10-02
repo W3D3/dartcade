@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { createFastify } from './fastify.js'
 import { fromSpec } from './spec.js'
+import { ApiError } from './errors.js'
 
 // The handler echoes the body keys it received (in `token`) so tests can see what reached it
 function app() {
@@ -40,5 +41,15 @@ describe('request validation and error format', () => {
     const tea = await a.inject('/teapot')
     expect(tea.statusCode).toBe(418)
     expect(JSON.parse(tea.body)).toEqual({ error: 'short and stout' })
+  })
+})
+
+describe('ApiError', () => {
+  it('answers with its status and body', async () => {
+    const a = createFastify()
+    a.get('/boom', () => { throw new ApiError(409, { error: 'taken', code: 'in_lobby' } as { error: string }) })
+    const res = await a.inject({ method: 'GET', url: '/boom' })
+    expect(res.statusCode).toBe(409)
+    expect(JSON.parse(res.body)).toEqual({ error: 'taken', code: 'in_lobby' })
   })
 })
