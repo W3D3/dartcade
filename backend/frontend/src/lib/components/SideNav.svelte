@@ -3,6 +3,7 @@
   import { Clock, Monitor, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import { currentUser, signOut } from '$lib/auth'
+  import DevUserSwitch from './DevUserSwitch.svelte'
   import { isActiveRoute } from '$lib/nav'
 
   const userName = $derived($currentUser?.name ?? '')
@@ -51,8 +52,13 @@
     {/each}
   </div>
 
+  <div class="mt-auto flex flex-col gap-4">
+  {#if import.meta.env.DEV}
+    <DevUserSwitch label="Dev: switch to" />
+  {/if}
+
   <!-- User footer -->
-  <div class="mt-auto flex items-center gap-3 p-3 border border-line rounded-[10px]">
+  <div class="flex items-center gap-3 p-3 border border-line rounded-[10px]">
     <span class="w-9 h-9 rounded-full bg-accent text-accent-fg flex items-center justify-center
                  font-bold text-[15px] shrink-0">
       {userInitial}
@@ -61,5 +67,6 @@
       <span class="text-[14px] font-semibold truncate">{userName}</span>
       <button type="button" onclick={() => void signOut()} class="self-start p-0 bg-transparent border-0 text-[13px] text-text-muted cursor-pointer font-[inherit]">Sign out</button>
     </div>
+  </div>
   </div>
 </nav>

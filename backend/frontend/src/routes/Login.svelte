@@ -6,15 +6,13 @@
   import AuthHero from '$lib/components/AuthHero.svelte'
   import { authClient, currentUser } from '$lib/auth'
   import { activeSessionId } from '$lib/activeSession'
+  import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
 
   let email = $state('')
   let password = $state('')
   let keepSignedIn = $state(true)
   let error = $state('')
   let loading = $state(false)
-
-  const devEmail = import.meta.env.VITE_DEV_EMAIL ?? 'admin@dartcade.local'
-  const devPassword = import.meta.env.VITE_DEV_PASSWORD ?? 'admin1234'
 
   async function submit() {
     loading = true
@@ -30,12 +28,6 @@
     } finally {
       loading = false
     }
-  }
-
-  async function devLogin() {
-    email = devEmail
-    password = devPassword
-    await submit()
   }
 </script>
 
@@ -86,9 +78,7 @@
         </Button>
 
         {#if import.meta.env.DEV}
-          <Button type="button" variant="ghost" onclick={devLogin} class="w-full text-text-dim">
-            Dev: sign in as admin
-          </Button>
+          <DevUserSwitch />
         {/if}
       </div>
 

@@ -2,6 +2,7 @@
   // Who's signed in, and signing out: the avatar in the phone header opens it.
   import { LogOut } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
+  import DevUserSwitch from './DevUserSwitch.svelte'
 
   const name = $derived($currentUser?.name ?? '')
   const email = $derived($currentUser?.email ?? '')
@@ -37,6 +38,9 @@
         <LogOut size={17} />
         Sign out
       </button>
+      {#if import.meta.env.DEV}
+        <DevUserSwitch label="Dev: switch to" />
+      {/if}
     </div>
   {/if}
 </div>
