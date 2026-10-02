@@ -573,6 +573,37 @@ describe('rebuild with seats', () => {
   })
 })
 
+describe('pushes only what changed something', () => {
+  it('does not push a refused action', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    push.mockClear()
+    await engine.onUserAction(sessionId, 'lena', { type: 'takeout' })
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('does not push a board event from a board that is not up', async () => {
+    const { engine } = await twoBoardGame()
+    push.mockClear()
+    await engine.onBridgeEvent('board-b', 'dart.detected', dartData(0, 'S5', 5, 1))
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('does not push input after the game ended', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+    push.mockClear()
+    await engine.onUserAction(sessionId, 'host', { type: 'add_dart', segment: { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 } })
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('still pushes an accepted action', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    push.mockClear()
+    await engine.onUserAction(sessionId, 'host', { type: 'add_dart', segment: { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 } })
+    expect(push).toHaveBeenCalledWith(sessionId)
+  })
+})
+
 describe('onUserAction authorization', () => {
   it('refuses another player\'s action without logging it', async () => {
     const { engine, sessionId, store } = await twoBoardGame()

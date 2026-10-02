@@ -149,9 +149,15 @@ export class SessionEngine {
       this.warn(`ignored ${kind} event: data does not match the bridge schema`, { boardId, data })
     }
     // board.status only feeds the status pill: kept per board, not logged
-    if (event?.kind === 'board.status') session.boardStatus.set(boardId, readBoardStatus(event.data))
-    else if (event) await this.record(session, { source: 'board', event }, { kind, data }, { bridgeEventId, boardId })
-    this.push(session.id)
+    let changed = false
+    if (event?.kind === 'board.status') {
+      session.boardStatus.set(boardId, readBoardStatus(event.data))
+      changed = true
+    } else if (event) {
+      changed = await this.record(session, { source: 'board', event }, { kind, data }, { bridgeEventId, boardId })
+    }
+    // Dropped input (another board's turn, a game that's over) changes nothing to show
+    if (changed) this.push(session.id)
   }
 
   /** A board's bridge connected or dropped: its game shows the new board state. */
@@ -163,34 +169,35 @@ export class SessionEngine {
   async onUserAction(sessionId: string, userId: string, action: UserAction): Promise<ActionResult> {
     const session = this.byId.get(sessionId)
     if (!session) return { ok: true }
-    const result = await this.enqueue(session.id, async (): Promise<ActionResult> => {
+    const { result, changed } = await this.enqueue(session.id, async () => {
       // Decided inside the queue: whose turn it is can change with every input.
       // A game that's over takes no input anyway (apply drops it).
       const allowed = session.status === 'active' ? authorizeAction(session, userId, action) : action
-      if (!allowed) return { ok: false, code: 'forbidden' }
-      await this.apply(session, { source: 'user', action: allowed }, { kind: allowed.type, data: allowed }, { bridgeEventId: null, boardId: null })
-      return { ok: true }
+      if (!allowed) return { result: { ok: false, code: 'forbidden' } satisfies ActionResult, changed: false }
+      const applied = await this.apply(session, { source: 'user', action: allowed }, { kind: allowed.type, data: allowed }, { bridgeEventId: null, boardId: null })
+      return { result: { ok: true } satisfies ActionResult, changed: applied }
     })
-    this.push(session.id)
+    // A refused or dropped action changes nothing: no snapshot for everyone
+    if (changed) this.push(session.id)
     return result
   }
 
-  private record(session: Session, input: GameInput, raw: { kind: string; data: unknown }, origin: Origin): Promise<void> {
+  private record(session: Session, input: GameInput, raw: { kind: string; data: unknown }, origin: Origin): Promise<boolean> {
     return this.enqueue(session.id, () => this.apply(session, input, raw, origin))
   }
 
   // Runs inside the session's queue. Logs the input (raw, as received), then applies it and
   // stores what it committed. A board event from a board whose seat isn't up is dropped
-  // before it's logged.
-  private async apply(session: Session, input: GameInput, raw: { kind: string; data: unknown }, origin: Origin): Promise<void> {
-    if (session.status !== 'active') return
+  // before it's logged. True when the input was applied.
+  private async apply(session: Session, input: GameInput, raw: { kind: string; data: unknown }, origin: Origin): Promise<boolean> {
+    if (session.status !== 'active') return false
     if (origin.boardId !== null && session.seats[currentSeat(session)].boardId !== origin.boardId) {
       if (input.source === 'board' && input.event.kind === 'dart.detected') {
         const boardId = origin.boardId
         const users = [...new Set(session.seats.filter(s => s.boardId === boardId).map(s => s.controllerUserId))]
         this.notify(session.id, users, { type: 'notice', code: 'not_your_turn', boardId })
       }
-      return
+      return false
     }
     const at = new Date()
     await this.store.appendEvent({
@@ -201,6 +208,7 @@ export class SessionEngine {
     const outcome = applyInput(session, input, at)
     if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
     if (outcome.won) await this.finish(session, at)
+    return true
   }
 
   private async finish(session: Session, at: Date): Promise<void> {
