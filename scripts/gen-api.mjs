@@ -39,8 +39,9 @@ async function genHttp() {
   copyFileSync(join(BACKEND_SCHEMA, 'api.ts'), join(FRONTEND_API, 'schema.ts'))
 }
 
-async function genWs() {
-  const src = r('schema/game-ws-v1.json')
+// TypeScript types (backend + frontend copy) and the fully inlined JSON (runtime checks)
+async function genWsFile(name) {
+  const src = r(`schema/${name}-v1.json`)
   const ts = await compileFromFile(src, {
     bannerComment: '',
     cwd: r('schema'),
@@ -49,10 +50,15 @@ async function genWs() {
     additionalProperties: false,
     style: { singleQuote: true, semi: false },
   })
-  writeTs(join(BACKEND_SCHEMA, 'game-ws.ts'), 'schema/game-ws-v1.json', ts)
-  copyFileSync(join(BACKEND_SCHEMA, 'game-ws.ts'), join(FRONTEND_API, 'game-ws.ts'))
+  writeTs(join(BACKEND_SCHEMA, `${name}.ts`), `schema/${name}-v1.json`, ts)
+  copyFileSync(join(BACKEND_SCHEMA, `${name}.ts`), join(FRONTEND_API, `${name}.ts`))
   const deref = await $RefParser.dereference(src)
-  writeFileSync(join(BACKEND_SCHEMA, 'game-ws-v1.deref.json'), JSON.stringify(deref, null, 2) + '\n')
+  writeFileSync(join(BACKEND_SCHEMA, `${name}-v1.deref.json`), JSON.stringify(deref, null, 2) + '\n')
+}
+
+async function genWs() {
+  await genWsFile('game-ws')
+  await genWsFile('lobby-ws')
 }
 
 // zod schemas for parsing incoming data. Two rewrites before converting:
@@ -70,6 +76,7 @@ function prepForZod(s) {
 
 async function genZod() {
   const ws = prepForZod(await $RefParser.dereference(r('schema/game-ws-v1.json')))
+  const lobby = prepForZod(await $RefParser.dereference(r('schema/lobby-ws-v1.json')))
   const ab = prepForZod(await $RefParser.dereference(r('schema/adbridge-v1.json')))
   const api = prepForZod(JSON.parse(readFileSync(join(BACKEND_SCHEMA, 'api-v1.deref.json'), 'utf8')))
   const schemas = {
@@ -77,6 +84,8 @@ async function genZod() {
     ClientMessageSchema: ws.$defs.ClientMessage,
     NoticeMessageSchema: ws.$defs.NoticeMessage,
     ErrorMessageSchema: ws.$defs.ErrorMessage,
+    LobbyServerMessageSchema: lobby.$defs.LobbyServerMessage,
+    MeMessageSchema: lobby.$defs.MeMessage,
     DartSchema: ab.$defs.Dart,
     DartDetectedDataSchema: ab.$defs.DartDetectedData,
     DartCorrectedDataSchema: ab.$defs.DartCorrectedData,

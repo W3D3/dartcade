@@ -1,0 +1,1691 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "lobby-ws/v1",
+  "title": "LobbyWs",
+  "description": "Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.",
+  "$defs": {
+    "ThrowOrder": {
+      "title": "ThrowOrder",
+      "description": "lobby: as the lobby lists people. random: shuffled for each game. bulloff: a bull off decides (games that have one).",
+      "type": "string",
+      "enum": [
+        "lobby",
+        "random",
+        "bulloff"
+      ]
+    },
+    "NextGame": {
+      "title": "NextGame",
+      "type": "object",
+      "required": [
+        "gameId",
+        "config"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "gameId": {
+          "type": "string"
+        },
+        "config": {
+          "type": "object",
+          "additionalProperties": true
+        }
+      }
+    },
+    "LobbyPerson": {
+      "title": "LobbyPerson",
+      "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+      "type": "object",
+      "required": [
+        "id",
+        "userId",
+        "addedByUserId",
+        "name",
+        "boardId",
+        "boardName",
+        "boardOwnerUserId",
+        "boardOnline",
+        "boardMovedBy",
+        "usualBoardName",
+        "plays",
+        "ready",
+        "presence"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "addedByUserId": {
+          "type": "string",
+          "description": "The member themselves; for a guest, who added them (and acts for them in games)."
+        },
+        "name": {
+          "type": "string"
+        },
+        "boardId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "null: Manual (darts entered by hand)."
+        },
+        "boardName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "boardOwnerUserId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The board's owner, who can take it back."
+        },
+        "boardOnline": {
+          "type": "boolean",
+          "description": "The board's bridge is connected."
+        },
+        "boardMovedBy": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Who put them on this board when it wasn't their own pick (\"Moved by you\")."
+        },
+        "usualBoardName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A member's usual board (\"usually X\"); null for guests."
+        },
+        "plays": {
+          "type": "boolean",
+          "description": "false: sits out the next game. Back to true after every game."
+        },
+        "ready": {
+          "type": "boolean",
+          "description": "Soft ready. After every game: false for members, true for guests."
+        },
+        "presence": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "online",
+                "away"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Members: online while they have the lobby open. null for guests."
+        }
+      }
+    },
+    "LobbyInvitee": {
+      "title": "LobbyInvitee",
+      "description": "A pending invite, shown after the joined people (\"Waiting for X to confirm\").",
+      "type": "object",
+      "required": [
+        "id",
+        "userId",
+        "name",
+        "invitedByUserId",
+        "createdAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "userId": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "invitedByUserId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "LobbyActivityData": {
+      "title": "LobbyActivityData",
+      "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "fromBoardName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "toBoardName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "gameId": {
+          "type": "string"
+        },
+        "winnerName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "players": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "placement",
+              "forfeited"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "placement": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "forfeited": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    "LobbyActivity": {
+      "title": "LobbyActivity",
+      "type": "object",
+      "required": [
+        "id",
+        "at",
+        "kind",
+        "actorUserId",
+        "actorName",
+        "data"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "opened",
+            "joined",
+            "left",
+            "removed",
+            "guest_added",
+            "board_moved",
+            "game_played",
+            "game_aborted",
+            "host_changed"
+          ]
+        },
+        "actorUserId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Who did it; null for game_played."
+        },
+        "actorName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "data": {
+          "title": "LobbyActivityData",
+          "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "fromBoardName": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "toBoardName": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sessionId": {
+              "type": "string"
+            },
+            "gameId": {
+              "type": "string"
+            },
+            "winnerName": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "players": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "placement",
+                  "forfeited"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "placement": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "forfeited": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "Lobby": {
+      "title": "Lobby",
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "code",
+        "hostUserId",
+        "throwOrder",
+        "nextGame",
+        "canRematch",
+        "currentSessionId",
+        "createdAt",
+        "people",
+        "invites",
+        "activity"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "code": {
+          "type": "string",
+          "description": "6 characters; shown as K7Q4-MD."
+        },
+        "hostUserId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "throwOrder": {
+          "title": "ThrowOrder",
+          "description": "lobby: as the lobby lists people. random: shuffled for each game. bulloff: a bull off decides (games that have one).",
+          "type": "string",
+          "enum": [
+            "lobby",
+            "random",
+            "bulloff"
+          ]
+        },
+        "nextGame": {
+          "anyOf": [
+            {
+              "title": "NextGame",
+              "type": "object",
+              "required": [
+                "gameId",
+                "config"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "gameId": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "canRematch": {
+          "type": "boolean",
+          "description": "A game was played here: Rematch repeats it."
+        },
+        "currentSessionId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby's running game."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "people": {
+          "type": "array",
+          "items": {
+            "title": "LobbyPerson",
+            "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+            "type": "object",
+            "required": [
+              "id",
+              "userId",
+              "addedByUserId",
+              "name",
+              "boardId",
+              "boardName",
+              "boardOwnerUserId",
+              "boardOnline",
+              "boardMovedBy",
+              "usualBoardName",
+              "plays",
+              "ready",
+              "presence"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "userId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "addedByUserId": {
+                "type": "string",
+                "description": "The member themselves; for a guest, who added them (and acts for them in games)."
+              },
+              "name": {
+                "type": "string"
+              },
+              "boardId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "null: Manual (darts entered by hand)."
+              },
+              "boardName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "boardOwnerUserId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The board's owner, who can take it back."
+              },
+              "boardOnline": {
+                "type": "boolean",
+                "description": "The board's bridge is connected."
+              },
+              "boardMovedBy": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Who put them on this board when it wasn't their own pick (\"Moved by you\")."
+              },
+              "usualBoardName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "A member's usual board (\"usually X\"); null for guests."
+              },
+              "plays": {
+                "type": "boolean",
+                "description": "false: sits out the next game. Back to true after every game."
+              },
+              "ready": {
+                "type": "boolean",
+                "description": "Soft ready. After every game: false for members, true for guests."
+              },
+              "presence": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "online",
+                      "away"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Members: online while they have the lobby open. null for guests."
+              }
+            }
+          }
+        },
+        "invites": {
+          "type": "array",
+          "items": {
+            "title": "LobbyInvitee",
+            "description": "A pending invite, shown after the joined people (\"Waiting for X to confirm\").",
+            "type": "object",
+            "required": [
+              "id",
+              "userId",
+              "name",
+              "invitedByUserId",
+              "createdAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "userId": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "invitedByUserId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "activity": {
+          "type": "array",
+          "items": {
+            "title": "LobbyActivity",
+            "type": "object",
+            "required": [
+              "id",
+              "at",
+              "kind",
+              "actorUserId",
+              "actorName",
+              "data"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "opened",
+                  "joined",
+                  "left",
+                  "removed",
+                  "guest_added",
+                  "board_moved",
+                  "game_played",
+                  "game_aborted",
+                  "host_changed"
+                ]
+              },
+              "actorUserId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Who did it; null for game_played."
+              },
+              "actorName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "data": {
+                "title": "LobbyActivityData",
+                "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "fromBoardName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "toBoardName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "sessionId": {
+                    "type": "string"
+                  },
+                  "gameId": {
+                    "type": "string"
+                  },
+                  "winnerName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "players": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "placement",
+                        "forfeited"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "placement": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "forfeited": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Newest first, at most 50."
+        }
+      }
+    },
+    "LobbyMessage": {
+      "title": "LobbyMessage",
+      "description": "The whole lobby, after every change and when presence changes.",
+      "type": "object",
+      "required": [
+        "type",
+        "lobby"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "lobby"
+        },
+        "lobby": {
+          "title": "Lobby",
+          "type": "object",
+          "required": [
+            "id",
+            "name",
+            "code",
+            "hostUserId",
+            "throwOrder",
+            "nextGame",
+            "canRematch",
+            "currentSessionId",
+            "createdAt",
+            "people",
+            "invites",
+            "activity"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "name": {
+              "type": "string"
+            },
+            "code": {
+              "type": "string",
+              "description": "6 characters; shown as K7Q4-MD."
+            },
+            "hostUserId": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "throwOrder": {
+              "title": "ThrowOrder",
+              "description": "lobby: as the lobby lists people. random: shuffled for each game. bulloff: a bull off decides (games that have one).",
+              "type": "string",
+              "enum": [
+                "lobby",
+                "random",
+                "bulloff"
+              ]
+            },
+            "nextGame": {
+              "anyOf": [
+                {
+                  "title": "NextGame",
+                  "type": "object",
+                  "required": [
+                    "gameId",
+                    "config"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "config": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "canRematch": {
+              "type": "boolean",
+              "description": "A game was played here: Rematch repeats it."
+            },
+            "currentSessionId": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "The lobby's running game."
+            },
+            "createdAt": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "people": {
+              "type": "array",
+              "items": {
+                "title": "LobbyPerson",
+                "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+                "type": "object",
+                "required": [
+                  "id",
+                  "userId",
+                  "addedByUserId",
+                  "name",
+                  "boardId",
+                  "boardName",
+                  "boardOwnerUserId",
+                  "boardOnline",
+                  "boardMovedBy",
+                  "usualBoardName",
+                  "plays",
+                  "ready",
+                  "presence"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "addedByUserId": {
+                    "type": "string",
+                    "description": "The member themselves; for a guest, who added them (and acts for them in games)."
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "boardId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "null: Manual (darts entered by hand)."
+                  },
+                  "boardName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boardOwnerUserId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "The board's owner, who can take it back."
+                  },
+                  "boardOnline": {
+                    "type": "boolean",
+                    "description": "The board's bridge is connected."
+                  },
+                  "boardMovedBy": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Who put them on this board when it wasn't their own pick (\"Moved by you\")."
+                  },
+                  "usualBoardName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "A member's usual board (\"usually X\"); null for guests."
+                  },
+                  "plays": {
+                    "type": "boolean",
+                    "description": "false: sits out the next game. Back to true after every game."
+                  },
+                  "ready": {
+                    "type": "boolean",
+                    "description": "Soft ready. After every game: false for members, true for guests."
+                  },
+                  "presence": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "online",
+                          "away"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Members: online while they have the lobby open. null for guests."
+                  }
+                }
+              }
+            },
+            "invites": {
+              "type": "array",
+              "items": {
+                "title": "LobbyInvitee",
+                "description": "A pending invite, shown after the joined people (\"Waiting for X to confirm\").",
+                "type": "object",
+                "required": [
+                  "id",
+                  "userId",
+                  "name",
+                  "invitedByUserId",
+                  "createdAt"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "invitedByUserId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "activity": {
+              "type": "array",
+              "items": {
+                "title": "LobbyActivity",
+                "type": "object",
+                "required": [
+                  "id",
+                  "at",
+                  "kind",
+                  "actorUserId",
+                  "actorName",
+                  "data"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "at": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "opened",
+                      "joined",
+                      "left",
+                      "removed",
+                      "guest_added",
+                      "board_moved",
+                      "game_played",
+                      "game_aborted",
+                      "host_changed"
+                    ]
+                  },
+                  "actorUserId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Who did it; null for game_played."
+                  },
+                  "actorName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "data": {
+                    "title": "LobbyActivityData",
+                    "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+                    "type": "object",
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "fromBoardName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "toBoardName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "sessionId": {
+                        "type": "string"
+                      },
+                      "gameId": {
+                        "type": "string"
+                      },
+                      "winnerName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "players": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "placement",
+                            "forfeited"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "placement": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "forfeited": {
+                              "type": "boolean"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "description": "Newest first, at most 50."
+            }
+          }
+        }
+      }
+    },
+    "LobbyClosedMessage": {
+      "title": "LobbyClosedMessage",
+      "description": "The lobby closed; the socket closes next (4404).",
+      "type": "object",
+      "required": [
+        "type",
+        "lobbyId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "lobby_closed"
+        },
+        "lobbyId": {
+          "type": "string"
+        }
+      }
+    },
+    "LobbyServerMessage": {
+      "title": "LobbyServerMessage",
+      "oneOf": [
+        {
+          "title": "LobbyMessage",
+          "description": "The whole lobby, after every change and when presence changes.",
+          "type": "object",
+          "required": [
+            "type",
+            "lobby"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "lobby"
+            },
+            "lobby": {
+              "title": "Lobby",
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "code",
+                "hostUserId",
+                "throwOrder",
+                "nextGame",
+                "canRematch",
+                "currentSessionId",
+                "createdAt",
+                "people",
+                "invites",
+                "activity"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "6 characters; shown as K7Q4-MD."
+                },
+                "hostUserId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "throwOrder": {
+                  "title": "ThrowOrder",
+                  "description": "lobby: as the lobby lists people. random: shuffled for each game. bulloff: a bull off decides (games that have one).",
+                  "type": "string",
+                  "enum": [
+                    "lobby",
+                    "random",
+                    "bulloff"
+                  ]
+                },
+                "nextGame": {
+                  "anyOf": [
+                    {
+                      "title": "NextGame",
+                      "type": "object",
+                      "required": [
+                        "gameId",
+                        "config"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "gameId": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "canRematch": {
+                  "type": "boolean",
+                  "description": "A game was played here: Rematch repeats it."
+                },
+                "currentSessionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The lobby's running game."
+                },
+                "createdAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "people": {
+                  "type": "array",
+                  "items": {
+                    "title": "LobbyPerson",
+                    "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "userId",
+                      "addedByUserId",
+                      "name",
+                      "boardId",
+                      "boardName",
+                      "boardOwnerUserId",
+                      "boardOnline",
+                      "boardMovedBy",
+                      "usualBoardName",
+                      "plays",
+                      "ready",
+                      "presence"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "addedByUserId": {
+                        "type": "string",
+                        "description": "The member themselves; for a guest, who added them (and acts for them in games)."
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "boardId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "null: Manual (darts entered by hand)."
+                      },
+                      "boardName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "boardOwnerUserId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "The board's owner, who can take it back."
+                      },
+                      "boardOnline": {
+                        "type": "boolean",
+                        "description": "The board's bridge is connected."
+                      },
+                      "boardMovedBy": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Who put them on this board when it wasn't their own pick (\"Moved by you\")."
+                      },
+                      "usualBoardName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "A member's usual board (\"usually X\"); null for guests."
+                      },
+                      "plays": {
+                        "type": "boolean",
+                        "description": "false: sits out the next game. Back to true after every game."
+                      },
+                      "ready": {
+                        "type": "boolean",
+                        "description": "Soft ready. After every game: false for members, true for guests."
+                      },
+                      "presence": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "online",
+                              "away"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Members: online while they have the lobby open. null for guests."
+                      }
+                    }
+                  }
+                },
+                "invites": {
+                  "type": "array",
+                  "items": {
+                    "title": "LobbyInvitee",
+                    "description": "A pending invite, shown after the joined people (\"Waiting for X to confirm\").",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "userId",
+                      "name",
+                      "invitedByUserId",
+                      "createdAt"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "userId": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "invitedByUserId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "createdAt": {
+                        "type": "string",
+                        "format": "date-time"
+                      }
+                    }
+                  }
+                },
+                "activity": {
+                  "type": "array",
+                  "items": {
+                    "title": "LobbyActivity",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "at",
+                      "kind",
+                      "actorUserId",
+                      "actorName",
+                      "data"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "at": {
+                        "type": "string",
+                        "format": "date-time"
+                      },
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "opened",
+                          "joined",
+                          "left",
+                          "removed",
+                          "guest_added",
+                          "board_moved",
+                          "game_played",
+                          "game_aborted",
+                          "host_changed"
+                        ]
+                      },
+                      "actorUserId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "Who did it; null for game_played."
+                      },
+                      "actorName": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      },
+                      "data": {
+                        "title": "LobbyActivityData",
+                        "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "fromBoardName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "toBoardName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "sessionId": {
+                            "type": "string"
+                          },
+                          "gameId": {
+                            "type": "string"
+                          },
+                          "winnerName": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          },
+                          "players": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "name",
+                                "placement",
+                                "forfeited"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "placement": {
+                                  "type": "integer",
+                                  "minimum": 1
+                                },
+                                "forfeited": {
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "description": "Newest first, at most 50."
+                }
+              }
+            }
+          }
+        },
+        {
+          "title": "LobbyClosedMessage",
+          "description": "The lobby closed; the socket closes next (4404).",
+          "type": "object",
+          "required": [
+            "type",
+            "lobbyId"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "lobby_closed"
+            },
+            "lobbyId": {
+              "type": "string"
+            }
+          }
+        }
+      ]
+    },
+    "PendingInvite": {
+      "title": "PendingInvite",
+      "description": "An invite waiting for the viewer's answer (same shape as Invite in api-v1.yaml).",
+      "type": "object",
+      "required": [
+        "id",
+        "lobbyId",
+        "lobbyName",
+        "inviterUserId",
+        "inviterName",
+        "createdAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "lobbyId": {
+          "type": "string"
+        },
+        "lobbyName": {
+          "type": "string"
+        },
+        "inviterUserId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inviterName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "LobbySummary": {
+      "title": "LobbySummary",
+      "description": "The viewer's lobby for the lobby indicator.",
+      "type": "object",
+      "required": [
+        "id",
+        "name",
+        "peopleCount",
+        "nextGame",
+        "sessionId",
+        "gameId",
+        "youThrowNext",
+        "leg"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nextGame": {
+          "anyOf": [
+            {
+              "title": "NextGame",
+              "type": "object",
+              "required": [
+                "gameId",
+                "config"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "gameId": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "sessionId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The lobby's running game."
+        },
+        "gameId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Its game mode."
+        },
+        "youThrowNext": {
+          "type": "boolean",
+          "description": "The viewer controls the seat that's up in the running game."
+        },
+        "leg": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "The running game's leg, 0-based; null for games without legs or without a game."
+        }
+      }
+    },
+    "MeMessage": {
+      "title": "MeMessage",
+      "description": "Pushed on /ws/me when it opens and whenever it changes.",
+      "type": "object",
+      "required": [
+        "type",
+        "invites",
+        "lobby"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "me"
+        },
+        "invites": {
+          "type": "array",
+          "items": {
+            "title": "PendingInvite",
+            "description": "An invite waiting for the viewer's answer (same shape as Invite in api-v1.yaml).",
+            "type": "object",
+            "required": [
+              "id",
+              "lobbyId",
+              "lobbyName",
+              "inviterUserId",
+              "inviterName",
+              "createdAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "lobbyId": {
+                "type": "string"
+              },
+              "lobbyName": {
+                "type": "string"
+              },
+              "inviterUserId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inviterName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "lobby": {
+          "anyOf": [
+            {
+              "title": "LobbySummary",
+              "description": "The viewer's lobby for the lobby indicator.",
+              "type": "object",
+              "required": [
+                "id",
+                "name",
+                "peopleCount",
+                "nextGame",
+                "sessionId",
+                "gameId",
+                "youThrowNext",
+                "leg"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "peopleCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "nextGame": {
+                  "anyOf": [
+                    {
+                      "title": "NextGame",
+                      "type": "object",
+                      "required": [
+                        "gameId",
+                        "config"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "gameId": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "sessionId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "The lobby's running game."
+                },
+                "gameId": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Its game mode."
+                },
+                "youThrowNext": {
+                  "type": "boolean",
+                  "description": "The viewer controls the seat that's up in the running game."
+                },
+                "leg": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "The running game's leg, 0-based; null for games without legs or without a game."
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
