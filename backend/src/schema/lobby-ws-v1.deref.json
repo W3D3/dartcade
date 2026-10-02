@@ -1474,7 +1474,8 @@
         "sessionId",
         "gameId",
         "youThrowNext",
-        "leg"
+        "leg",
+        "youHost"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1538,6 +1539,10 @@
           ],
           "minimum": 0,
           "description": "The running game's leg, 0-based; null for games without legs or without a game."
+        },
+        "youHost": {
+          "type": "boolean",
+          "description": "The viewer is the lobby's host."
         }
       }
     },
@@ -1613,7 +1618,8 @@
                 "sessionId",
                 "gameId",
                 "youThrowNext",
-                "leg"
+                "leg",
+                "youHost"
               ],
               "additionalProperties": false,
               "properties": {
@@ -1677,6 +1683,10 @@
                   ],
                   "minimum": 0,
                   "description": "The running game's leg, 0-based; null for games without legs or without a game."
+                },
+                "youHost": {
+                  "type": "boolean",
+                  "description": "The viewer is the lobby's host."
                 }
               }
             },

@@ -45,6 +45,7 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
     gameId: session?.module.id ?? null,
     youThrowNext: session !== undefined && session.seats[currentSeat(session)].controllerUserId === userId,
     leg: session?.module.getLeg?.(session.currentState) ?? null,
+    youHost: lobby.hostUserId === userId,
   }
 }
 

@@ -224,6 +224,10 @@ export interface LobbySummary {
    * The running game's leg, 0-based; null for games without legs or without a game.
    */
   leg: number | null
+  /**
+   * The viewer is the lobby's host.
+   */
+  youHost: boolean
 }
 /**
  * Pushed on /ws/me when it opens and whenever it changes.
