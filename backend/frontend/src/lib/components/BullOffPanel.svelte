@@ -140,7 +140,7 @@
       {@const left = nearEdge ? p.x >= 0 : p.x < 0}
       <line x1="0" y1="0" x2={p.x} y2={p.y} stroke={color} stroke-width={1.5 / z / 170} />
       <circle cx={p.x} cy={p.y} r={7 / z / 170} fill={color} stroke="#0f100e" stroke-width={2.5 / z / 170} />
-      <text x={p.x + (left ? -12 : 12) / z / 170} y={p.y} dominant-baseline="central"
+      <text x={p.x + (left ? -12 : 12) / z / 170} y={p.y} dy="0.35em"
         text-anchor={left ? 'end' : 'start'} fill={color} font-size={13 / z / 170} font-weight="700"
         font-family="Instrument Sans, sans-serif" paint-order="stroke" stroke="#0f100e"
         stroke-width={4 / z / 170} stroke-linejoin="round">

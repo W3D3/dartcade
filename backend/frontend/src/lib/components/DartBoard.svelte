@@ -321,7 +321,7 @@
 
   <!-- Number labels — pointer-events:none so clicks go through to paths -->
   {#each sectors as { num, tx, ty } (num)}
-    <text x={tx} y={ty} text-anchor="middle" dominant-baseline="central"
+    <text x={tx} y={ty} text-anchor="middle" dy="0.35em"
       fill={num === target ? '#c6f24e' : dim ? '#8f9085' : '#efeee6'}
       font-size={num === target ? '0.123' : '0.09'}
       font-family="Barlow Condensed, sans-serif" font-weight={num === target ? '700' : '600'}
@@ -338,7 +338,7 @@
       <circle cx={pos.x} cy={pos.y} r="0.085"
         fill="white" stroke="#0a0b09" stroke-width="0.01"
         style="pointer-events:none" />
-      <text x={pos.x} y={pos.y} text-anchor="middle" dominant-baseline="central"
+      <text x={pos.x} y={pos.y} text-anchor="middle" dy="0.35em"
         fill="#0a0b09" font-size="0.072" font-family="Barlow Condensed, sans-serif" font-weight="bold"
         style="pointer-events:none">
         {marker.initial}
@@ -363,7 +363,7 @@
         {/if}
         <circle cx={pos.x} cy={-pos.y} r={selected ? 0.05 : 0.04}
           fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008" />
-        <text x={pos.x + 0.06} y={-pos.y} dominant-baseline="central"
+        <text x={pos.x + 0.06} y={-pos.y} dy="0.35em"
           fill="#ffffff" stroke="#000000" stroke-width="0.016" stroke-linejoin="round" paint-order="stroke"
           font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold"
           class="{selected ? '' : 'opacity-0'} group-hover:opacity-100 transition-opacity" style="pointer-events:none">
@@ -371,7 +371,7 @@
         </text>
       </g>
     {:else}
-      <text x={-0.15 + i * 0.14} y="1.05" text-anchor="middle" dominant-baseline="central"
+      <text x={-0.15 + i * 0.14} y="1.05" text-anchor="middle" dy="0.35em"
         fill="#c6f24e" font-size="0.1" font-family="Barlow Condensed, sans-serif"
         style="pointer-events:none">✕</text>
     {/if}
@@ -403,7 +403,7 @@
         stroke={tone} stroke-width="0.012" />
       <circle cx={at.x} cy={at.y} r="0.008" fill={tone} />
       <rect x="-0.26" y="-1.12" width="0.52" height="0.16" rx="0.08" fill="#0f100e" fill-opacity="0.85" stroke={tone} stroke-width="0.008" />
-      <text x="0" y="-1.04" text-anchor="middle" dominant-baseline="central" fill={tone}
+      <text x="0" y="-1.04" text-anchor="middle" dy="0.35em" fill={tone}
         font-size="0.1" font-family="Barlow Condensed, sans-serif" font-weight="700">{aimOff ? 'Cancel' : segmentAt(aimed.x, aimed.y).name}</text>
     </svg>
   {/if}
