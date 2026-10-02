@@ -2,7 +2,7 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/lobbies.js'
-import { getUsersByIds } from '../db/queries.js'
+import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { pgErrorCode } from '../db/errors.js'
 import type { SessionEngine } from '../session/engine.js'
 import { WsCloseCode } from '../schema/game-ws.js'
@@ -14,7 +14,7 @@ import * as rules from './rules.js'
 import { newLobbyCode, normalizeCode } from './code.js'
 import { inviteView, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
-import type { LobbyState, NextGame, ThrowOrder } from './types.js'
+import type { LobbyPerson, LobbyState, NextGame, ThrowOrder } from './types.js'
 
 const UNIQUE_VIOLATION = '23505'
 const CODE_ATTEMPTS = 5
@@ -22,6 +22,7 @@ const CODE_ATTEMPTS = 5
 export type LobbyRef = { id: string; name: string; code: string }
 export type LobbyPreview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
 export type LobbyPatch = { name?: string; throwOrder?: ThrowOrder; nextGame?: NextGame | null; regenerateCode?: boolean }
+export type PersonPatch = { boardId?: string | null; plays?: boolean; ready?: boolean; position?: number }
 
 export type LobbyDeps = {
   db: Kysely<Database>
@@ -335,6 +336,107 @@ export class LobbyService {
       }
       if (Object.keys(set).length > 0) await q.updateLobby(this.db, lobbyId, set)
       if (patch.regenerateCode === true) await this.withFreshCode(null, code => q.updateLobby(this.db, lobbyId, { code }))
+      await this.reload(lobbyId)
+      await this.publish(lobbyId)
+    })
+  }
+
+  // ---- people -----------------------------------------------------------------------
+
+  async addGuest(userId: string, lobbyId: string, guest: { name: string; boardId?: string | null }): Promise<{ id: string }> {
+    return this.enqueue(lobbyId, async () => {
+      const lobby = await this.openFor(lobbyId, userId)
+      const name = guest.name.trim()
+      if (name === '') throw LobbyError.badRequest('the name is empty')
+      // A guest sits at their adder's board, unless the adder picks one of their own or Manual
+      let boardId: string | null
+      if (guest.boardId === undefined) boardId = rules.memberOf(lobby, userId)?.boardId ?? null
+      else if (guest.boardId === null) boardId = null
+      else boardId = (await this.ownFreeBoard(lobbyId, userId, guest.boardId)).id
+      const id = ulid()
+      await this.db.transaction().execute(async (trx) => {
+        await q.insertPerson(trx, { id, lobbyId, userId: null, addedByUserId: userId, name, boardId, ready: true })
+        await q.addActivity(trx, lobbyId, 'guest_added', userId, { name })
+      })
+      await this.reload(lobbyId)
+      await this.publish(lobbyId)
+      return { id }
+    })
+  }
+
+  // A board the user owns that isn't in another game
+  private async ownFreeBoard(lobbyId: string, userId: string, boardId: string): Promise<{ id: string; name: string }> {
+    const board = await getBoardById(this.db, boardId)
+    if (!board) throw LobbyError.badRequest('board not found')
+    if (board.owner_user_id !== userId) throw LobbyError.forbidden('you can only pick your own boards')
+    this.assertBoardFree(lobbyId, board.id)
+    return { id: board.id, name: board.name }
+  }
+
+  // Busy: in an active game that isn't this lobby's own (that one ends before the next starts)
+  private assertBoardFree(lobbyId: string, boardId: string): void {
+    const session = this.deps.engine.getSessionByBoard(boardId)
+    if (session && session.lobbyId !== lobbyId) throw LobbyError.conflict({ error: 'that board is in another game', code: 'board_busy' })
+  }
+
+  async updatePerson(userId: string, lobbyId: string, personId: string, patch: PersonPatch): Promise<void> {
+    await this.enqueue(lobbyId, async () => {
+      const lobby = await this.openFor(lobbyId, userId)
+      const person = lobby.people.find(p => p.id === personId)
+      if (!person) throw LobbyError.notFound('person not found')
+      // Every field is checked before anything is written
+      if (patch.ready !== undefined && !rules.canSetReady(userId, person)) throw LobbyError.forbidden('only they set their own ready')
+      if (patch.plays !== undefined && !rules.canSetPlays(lobby, userId, person)) throw LobbyError.forbidden('only they or the host decide whether they play')
+      if (patch.position !== undefined && !rules.canMove(lobby, userId)) throw LobbyError.forbidden('only the host reorders people')
+      const board = patch.boardId === undefined ? undefined : await this.boardChange(lobby, userId, person, patch.boardId)
+
+      const set: q.PersonUpdate = {}
+      if (patch.ready !== undefined) set.ready = patch.ready
+      if (patch.plays !== undefined) set.plays = patch.plays
+      if (board) {
+        set.board_id = board.boardId
+        set.board_moved_by = board.movedBy
+      }
+      await this.db.transaction().execute(async (trx) => {
+        if (Object.keys(set).length > 0) await q.updatePerson(trx, personId, set)
+        if (patch.position !== undefined) await q.setPositions(trx, lobbyId, rules.reorder(lobby.people, personId, patch.position))
+        if (board) {
+          await q.addActivity(trx, lobbyId, 'board_moved', userId, { name: person.name, fromBoardName: person.boardName, toBoardName: board.boardName })
+        }
+      })
+      await this.reload(lobbyId)
+      await this.publish(lobbyId)
+    })
+  }
+
+  // The board rule (spec, Decisions → Boards); undefined when the board stays the same
+  private async boardChange(lobby: LobbyState, userId: string, person: LobbyPerson, boardId: string | null):
+    Promise<{ boardId: string | null; boardName: string | null; movedBy: string | null } | undefined> {
+    const target = boardId === null ? null : await getBoardById(this.db, boardId)
+    if (target === undefined) throw LobbyError.badRequest('board not found')
+    const allowed = rules.canSetBoard(userId, person, target === null ? null : { boardId: target.id, ownerUserId: target.owner_user_id })
+    if (!allowed) throw LobbyError.forbidden('you can give out your own boards to people on Manual, change your own rows, or take your board back')
+    if ((target?.id ?? null) === person.boardId) return undefined
+    if (target !== null) this.assertBoardFree(lobby.id, target.id)
+    // "Moved by you": someone put them on a board they (or their adder) didn't pick
+    const movedBy = target !== null && rules.controllerOf(person) !== userId ? userId : null
+    return { boardId: target?.id ?? null, boardName: target?.name ?? null, movedBy }
+  }
+
+  async removePerson(userId: string, lobbyId: string, personId: string): Promise<void> {
+    await this.enqueue(lobbyId, async () => {
+      const lobby = await this.openFor(lobbyId, userId)
+      const person = lobby.people.find(p => p.id === personId)
+      if (!person) throw LobbyError.notFound('person not found')
+      if (!rules.canRemove(lobby, userId, person)) throw LobbyError.forbidden('the host removes people; members remove their own guests')
+      if (person.userId !== null) {
+        await this.dropMember(lobby, person.userId, 'removed', userId)
+        return
+      }
+      await this.db.transaction().execute(async (trx) => {
+        await q.deletePeople(trx, [person.id])
+        await q.addActivity(trx, lobbyId, 'removed', userId, { name: person.name })
+      })
       await this.reload(lobbyId)
       await this.publish(lobbyId)
     })

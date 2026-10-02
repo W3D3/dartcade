@@ -203,4 +203,107 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await lobbies.isMember(id, 'lena')).toBe(false)
     })
   })
+
+  describe('people', () => {
+    let id: string
+    const person = async (name: string) => {
+      const p = (await lobbies.view(id))?.people.find(x => x.name === name)
+      if (!p) throw new Error(`${name} is not in the lobby`)
+      return p
+    }
+
+    beforeEach(async () => {
+      const lobby = await lobbies.create('chris')
+      id = lobby.id
+      await lobbies.join('lena', id, lobby.code)
+      await lobbies.join('max', id, lobby.code)
+    })
+
+    it('adds a guest at the adder\'s board, ready to play', async () => {
+      const { id: guestId } = await lobbies.addGuest('lena', id, { name: '  Guest 1 ' })
+      expect(await person('Guest 1')).toMatchObject({ id: guestId, userId: null, addedByUserId: 'lena', boardId: 'lenas', ready: true, plays: true })
+      expect((await lobbies.view(id))?.activity[0]).toMatchObject({ kind: 'guest_added', actorUserId: 'lena', data: { name: 'Guest 1' } })
+    })
+
+    it('puts a guest on Manual or on one of the adder\'s own boards only', async () => {
+      await lobbies.addGuest('chris', id, { name: 'Pia', boardId: null })
+      await lobbies.addGuest('chris', id, { name: 'Tom', boardId: 'garage' })
+      expect(await person('Pia')).toMatchObject({ boardId: null })
+      expect(await person('Tom')).toMatchObject({ boardId: 'garage', boardMovedBy: null })
+      await expect(lobbies.addGuest('chris', id, { name: 'Ann', boardId: 'lenas' })).rejects.toMatchObject({ statusCode: 403 })
+      await expect(lobbies.addGuest('chris', id, { name: ' ' })).rejects.toMatchObject({ statusCode: 400 })
+    })
+
+    it('anyone gives a person on Manual one of their own boards, marked as moved', async () => {
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' })
+      expect(await person('Max')).toMatchObject({ boardId: 'garage', boardName: 'Garage', boardMovedBy: 'chris' })
+      expect((await lobbies.view(id))?.activity[0]).toMatchObject({
+        kind: 'board_moved', actorUserId: 'chris', data: { name: 'Max', fromBoardName: null, toBoardName: 'Garage' },
+      })
+    })
+
+    it('after that only the person, or the board\'s owner taking it back', async () => {
+      const max = await person('Max')
+      await lobbies.updatePerson('chris', id, max.id, { boardId: 'garage' })
+      await expect(lobbies.updatePerson('lena', id, max.id, { boardId: 'lenas' })).rejects.toMatchObject({ statusCode: 403 })
+      await expect(lobbies.updatePerson('lena', id, max.id, { boardId: null })).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.updatePerson('chris', id, max.id, { boardId: null })
+      expect(await person('Max')).toMatchObject({ boardId: null, boardMovedBy: null })
+      // On Manual again: anyone may give theirs
+      await lobbies.updatePerson('lena', id, max.id, { boardId: 'lenas' })
+      expect(await person('Max')).toMatchObject({ boardId: 'lenas', boardMovedBy: 'lena' })
+      await lobbies.updatePerson('max', id, max.id, { boardId: null })
+      expect(await person('Max')).toMatchObject({ boardId: null })
+    })
+
+    it('the host has no extra board rights', async () => {
+      await expect(lobbies.updatePerson('chris', id, (await person('Lena')).id, { boardId: 'living' })).rejects.toMatchObject({ statusCode: 403 })
+    })
+
+    it('refuses a board that is in another game', async () => {
+      await engine.create('chris', 'garage', 'atc', {}, [{ name: 'Christoph' }])
+      await expect(lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' }))
+        .rejects.toMatchObject({ statusCode: 409, body: { code: 'board_busy' } })
+    })
+
+    it('ready: only the person, not even the host; plays: the person or the host', async () => {
+      const lena = await person('Lena')
+      await expect(lobbies.updatePerson('chris', id, lena.id, { ready: true })).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.updatePerson('lena', id, lena.id, { ready: true })
+      await lobbies.updatePerson('chris', id, lena.id, { plays: false })
+      await expect(lobbies.updatePerson('max', id, lena.id, { plays: true })).rejects.toMatchObject({ statusCode: 403 })
+      expect(await person('Lena')).toMatchObject({ ready: true, plays: false })
+    })
+
+    it('writes nothing when one field of a change is refused', async () => {
+      const lena = await person('Lena')
+      await expect(lobbies.updatePerson('lena', id, lena.id, { ready: true, position: 0 })).rejects.toMatchObject({ statusCode: 403 })
+      expect(await person('Lena')).toMatchObject({ ready: false })
+    })
+
+    it('the host reorders people', async () => {
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { position: 0 })
+      expect((await lobbies.view(id))?.people.map(p => p.name)).toEqual(['Max', 'Christoph', 'Lena'])
+    })
+
+    it('the host removes a member with their guests; a member removes only their own guests', async () => {
+      await lobbies.addGuest('lena', id, { name: 'Guest 1' })
+      await expect(lobbies.removePerson('max', id, (await person('Guest 1')).id)).rejects.toMatchObject({ statusCode: 403 })
+      const lenaWs = sock()
+      hub.addLobbySocket(id, lenaWs, 'lena')
+      await lobbies.removePerson('chris', id, (await person('Lena')).id)
+      expect((await lobbies.view(id))?.people.map(p => p.name)).toEqual(['Christoph', 'Max'])
+      expect(lenaWs.close).toHaveBeenCalledWith(4403, 'removed from the lobby')
+      await lobbies.addGuest('max', id, { name: 'Pia' })
+      await lobbies.removePerson('max', id, (await person('Pia')).id)
+      expect((await lobbies.view(id))?.activity.slice(0, 1)).toMatchObject([{ kind: 'removed', actorUserId: 'max', data: { name: 'Pia' } }])
+    })
+
+    it('a member who leaves takes their boards along: people on them go to Manual', async () => {
+      const max = await person('Max')
+      await lobbies.updatePerson('lena', id, max.id, { boardId: 'lenas' })
+      await lobbies.leave('lena', id)
+      expect(await person('Max')).toMatchObject({ boardId: null, boardMovedBy: null })
+    })
+  })
 })
