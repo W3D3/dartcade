@@ -32,7 +32,7 @@ export function seatLines(snap: Snapshot | null): (SeatLine | null)[] {
 /** A phone row's line with the seat's board in front: "Lena's place · up next". */
 export function rowSub(sub: string, line: SeatLine | null): string {
   if (!line) return sub
-  return `${line.board ?? 'By hand'} · ${sub.charAt(0).toLowerCase()}${sub.slice(1)}`
+  return `${line.board ?? 'Manual entry'} · ${sub.charAt(0).toLowerCase()}${sub.slice(1)}`
 }
 
 export type MyBoard = { name: string; online: boolean }
@@ -82,7 +82,7 @@ export type TurnStatus = { text: string; name: string; tone: 'watch' | 'warn' | 
 export function turnStatus(c: CenterState): TurnStatus | null {
   switch (c.kind) {
     case 'watch':
-      return { text: c.board ? `${c.name} is throwing at ${c.board}` : `${c.name} is entering darts by hand`, name: c.name, tone: 'watch' }
+      return { text: c.board ? `${c.name} is throwing at ${c.board}` : `${c.name} is on manual entry`, name: c.name, tone: 'watch' }
     case 'watch-offline':
       return { text: `${c.name}'s board is offline`, name: c.name, tone: 'warn' }
     case 'waiting':
@@ -98,7 +98,7 @@ export type Caption = { text: string; tone: 'live' | 'warn' | 'paused' | 'muted'
 export function boardCaption(c: CenterState): Caption | null {
   switch (c.kind) {
     case 'watch':
-      return c.board ? { text: `Live from ${c.board}`, tone: 'live' } : { text: `${c.name} · entering by hand`, tone: 'muted' }
+      return c.board ? { text: `Live from ${c.board}`, tone: 'live' } : { text: `${c.name} · manual entry`, tone: 'muted' }
     case 'watch-offline':
       return { text: `${c.board} · offline`, tone: 'warn' }
     case 'waiting':
@@ -126,7 +126,7 @@ export function noticeLines(n: NoticeMessage): NoticeLines {
   return {
     title: 'Not your turn.',
     body: "That dart wasn't counted.",
-    detail: n.throwerBoard ? `${n.throwerName} is throwing at ${n.throwerBoard}.` : `${n.throwerName} is entering darts by hand.`,
+    detail: n.throwerBoard ? `${n.throwerName} is throwing at ${n.throwerBoard}.` : `${n.throwerName} is on manual entry.`,
   }
 }
 

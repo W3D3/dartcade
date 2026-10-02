@@ -72,7 +72,7 @@ describe('rowSub', () => {
   it('puts the seat\'s board in front of a phone row\'s line', () => {
     expect(rowSub('Up next · can finish T17 D18', null)).toBe('Up next · can finish T17 D18')
     expect(rowSub('Up next', { board: "Lena's place", byHand: false, offline: false, disconnected: false, you: false })).toBe("Lena's place · up next")
-    expect(rowSub('Avg 45.0', { board: null, byHand: true, offline: false, disconnected: false, you: false })).toBe('By hand · avg 45.0')
+    expect(rowSub('Avg 45.0', { board: null, byHand: true, offline: false, disconnected: false, you: false })).toBe('Manual entry · avg 45.0')
   })
 })
 
@@ -134,8 +134,8 @@ describe('turnStatus and boardCaption', () => {
   })
   it('watching someone enter darts by hand', () => {
     const c = { kind: 'watch', name: 'Lena', board: null } as const
-    expect(turnStatus(c)?.text).toBe('Lena is entering darts by hand')
-    expect(boardCaption(c)).toEqual({ text: 'Lena · entering by hand', tone: 'muted' })
+    expect(turnStatus(c)?.text).toBe('Lena is on manual entry')
+    expect(boardCaption(c)).toEqual({ text: 'Lena · manual entry', tone: 'muted' })
   })
   it('their board is offline', () => {
     const c = { kind: 'watch-offline', name: 'Lena', board: "Lena's place" } as const
@@ -170,7 +170,7 @@ describe('noticeLines', () => {
       title: 'Not your turn.', body: "That dart wasn't counted.", detail: "Lena is throwing at Lena's place.",
     })
     expect(noticeLines({ type: 'notice', code: 'not_your_turn', boardId: 'b', throwerName: 'Lena', throwerBoard: null }).detail)
-      .toBe('Lena is entering darts by hand.')
+      .toBe('Lena is on manual entry.')
   })
 })
 
