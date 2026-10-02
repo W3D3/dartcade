@@ -30,14 +30,18 @@
   import { activeSessionId } from '$lib/activeSession'
   import { isPhone } from '$lib/viewport'
   import { matchLayout } from '$lib/matchLayout'
-  import { isMyTurn, upSeat } from '$lib/turn'
+  import { isMyTurn } from '$lib/turn'
   import PhonePlayerRow from '../lib/components/PhonePlayerRow.svelte'
   import PhoneX01Card from '../lib/components/PhoneX01Card.svelte'
   import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
   import DartKeypad from '../lib/components/DartKeypad.svelte'
   import type { AtcGame, X01Game } from '$lib/api/game-ws'
   import { authClient } from '$lib/auth'
-  import { centerState, myBoard, rowSub, seatLines } from '$lib/remote'
+  import { boardCaption, centerState, isManualTurn, myBoard, rowSub, seatLines, startsOnKeypad, turnStatus } from '$lib/remote'
+  import BoardCaption from '../lib/components/BoardCaption.svelte'
+  import TurnStatusBar from '../lib/components/TurnStatusBar.svelte'
+  import OfflineNotice from '../lib/components/OfflineNotice.svelte'
+  import WaitingCard from '../lib/components/WaitingCard.svelte'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -65,8 +69,8 @@
     sessionStore = createSessionStore(sessionId)
     unsubSnap = sessionStore.snapshot.subscribe(snap => {
       if (!snap) { snapshot = null; return }
-      // Boardless sessions start on the keypad (once)
-      if (!viewModeSetByUser && snap.boardId === null) { viewMode = 'entry'; viewModeSetByUser = true }
+      // Without a board of your own you start on the keypad (once)
+      if (!viewModeSetByUser && startsOnKeypad(snap)) { viewMode = 'entry'; viewModeSetByUser = true }
       const next = gameState(snap)
       const g = next.x01 ?? next.atc
       if (g) {
@@ -116,10 +120,14 @@
   // Online: only the seat's controller enters its darts (a local game's owner controls every seat)
   const myTurn = $derived(isMyTurn(snapshot))
   const canThrow = $derived(isActive && myTurn)
-  const throwerName = $derived(snapshot ? players[upSeat(snapshot)]?.name ?? '' : '')
   // Remote games: what the centre shows when it isn't your turn, and where each seat throws
   const remote = $derived(centerState(snapshot, viewerId))
   const lines = $derived(seatLines(snapshot))
+  const turn = $derived(turnStatus(remote))
+  const caption = $derived(boardCaption(remote))
+  // The keypad: picked with Enter on your turn, or forced while your board is offline.
+  // Someone else's turn always shows the board, live.
+  const keypad = $derived(remote.kind === 'play-offline' || (remote.kind === 'play' && viewMode === 'entry'))
   const darts = $derived(game?.currentVisitDarts ?? [])
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
@@ -131,7 +139,7 @@
   // On a phone the players stay in seat order; when the turn passes, keep the thrower in view
   let phonePlayers = $state<HTMLDivElement | undefined>()
   // Changes when the turn passes or the view switches; the thrower's entry carries it
-  const upKey = $derived(`${currentPlayer}-${viewMode}`)
+  const upKey = $derived(`${currentPlayer}-${keypad ? 'entry' : 'board'}`)
   $effect(() => {
     phonePlayers?.querySelector(`[data-up="${upKey}"]`)?.scrollIntoView({ block: 'nearest' })
   })
@@ -213,7 +221,7 @@
   const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
   const advance = () => send({ type: 'takeout' })
-  const next = $derived(nextButton({ manual: boardId === null, dartCount: darts.length, locked, active: canThrow }))
+  const next = $derived(nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow }))
   const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
   const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
@@ -243,19 +251,20 @@
   }
 </script>
 
-{#snippet waiting()}
-  {#if isActive && !myTurn}
-    <p role="status" class="shrink-0 m-0 h-9 flex items-center justify-center gap-2 rounded-[10px] bg-surface-panel border border-line-2 text-[14px] text-text-muted">
-      <span class="w-2 h-2 rounded-full bg-accent animate-pulse" aria-hidden="true"></span>
-      <strong class="text-text font-semibold">{throwerName}</strong> is throwing
-    </p>
+{#snippet waitingCard(compact: boolean)}
+  {#if remote.kind === 'waiting'}
+    <WaitingCard name={remote.name} disconnectedAt={remote.disconnectedAt} canAbort={remote.canAbort}
+      onabort={() => showEndConfirm = true} {compact} />
   {/if}
 {/snippet}
 
 {#snippet phoneCenter()}
-  {@render waiting()}
-  <!-- Phones: everything fits without scrolling; the board or keypad takes what's left -->
-  {#if viewMode === 'board'}
+  {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} compact />{/if}
+  <!-- Phones: everything fits without scrolling; the board, keypad or waiting card takes what's left -->
+  {#if remote.kind === 'waiting'}
+    <div class="flex-1 min-h-[160px] flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(true)}</div>
+  {:else if !keypad}
+    {#if caption}<BoardCaption {caption} compact />{/if}
     <div class="flex-1 min-h-[160px] w-full [container-type:size] flex items-center justify-center">
       <div class="aspect-square" style="width: min(100cqw, 100cqh)">
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
@@ -267,15 +276,17 @@
   {/if}
   <!-- relative: the board view's correction picker opens above this row, over the board, full width -->
   <div class="relative shrink-0 grid gap-2 items-start {settings.visitSum ? 'grid-cols-[minmax(0,3fr)_minmax(0,1fr)]' : 'grid-cols-1'}">
-    <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} showPopover={viewMode === 'board'} popoverAbove />
+    <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} showPopover={!keypad} popoverAbove />
     {#if settings.visitSum}<VisitBand {band} compact />{/if}
   </div>
-  {#if viewMode === 'entry'}
+  {#if keypad}
     <div class="flex-1 min-h-[220px]">
       <DartKeypad onDart={canThrow ? keypadDart : () => {}} dartCount={darts.length} {locked} replacing={correcting} disabled={!canThrow}
         canUndo={canThrow && darts.length > 0} onUndo={undo}
         nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
     </div>
+  {:else if turn}
+    <TurnStatusBar status={turn} compact />
   {:else}
     <ControlBar compact canUndo={canThrow && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
       onUndo={undo} onNext={advance} />
@@ -283,14 +294,18 @@
 {/snippet}
 
 {#snippet center(variant: 'solo' | 'duel' | 'party')}
-  {@render waiting()}
-  {#if viewMode === 'entry'}
+  {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
+  {#if keypad}
     <div class="flex-1 min-h-0">
       <DartKeypad onDart={canThrow ? addManualDart : () => {}} dartCount={darts.length} {locked} disabled={!canThrow}
         canUndo={canThrow && darts.length > 0} onUndo={undo}
         nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
     </div>
+  {:else if remote.kind === 'waiting' && variant === 'party'}
+    <!-- Rows have no room for an overlay: the waiting card takes the board's place -->
+    <div class="flex-1 min-h-0 flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
   {:else}
+    {#if caption}<BoardCaption {caption} />{/if}
     <!-- The board takes the height the column has left (capped by its width) -->
     <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
       <div class="aspect-square" style="width: min(100cqw, 100cqh)">
@@ -313,9 +328,13 @@
     <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
   {/if}
 
-  {#if viewMode === 'board'}
-    <ControlBar canUndo={canThrow && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
-      onUndo={undo} onNext={advance} />
+  {#if !keypad}
+    {#if turn}
+      <TurnStatusBar status={turn} />
+    {:else}
+      <ControlBar canUndo={canThrow && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+        onUndo={undo} onNext={advance} />
+    {/if}
   {/if}
 {/snippet}
 
@@ -329,6 +348,16 @@
   {/if}
 {/snippet}
 
+{#snippet duelPanel(i: number)}
+  <!-- A disconnected thrower's panel is covered by the waiting card, below the name row -->
+  <div class="relative flex-1 min-w-0 min-h-0 flex">
+    {@render panel(i)}
+    {#if remote.kind === 'waiting' && remote.seat === i}
+      <div class="absolute left-0 right-0 bottom-0 top-[104px] rounded-b-[18px] bg-surface-panel/90 flex">{@render waitingCard(false)}</div>
+    {/if}
+  </div>
+{/snippet}
+
 <div class="flex flex-col h-dvh bg-bg text-text overflow-hidden">
   {#if !snapshot}
     <div class="flex-1 flex items-center justify-center">
@@ -338,7 +367,7 @@
     <GameHeader
       title={bullOff ? 'Bull-off' : view.title}
       meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-      showViewToggle={!bullOff}
+      showViewToggle={!bullOff && remote.kind === 'play'}
       {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode} compact={$isPhone}
       lobbyName={snapshot.lobbyName} paused={remote.kind === 'waiting'} myBoard={myBoard(snapshot)}
       canEnd={winner === null}
@@ -365,8 +394,8 @@
             {@const up = i === currentPlayer}
             {@const line = lines[i] ?? null}
             <div data-up={up ? upKey : undefined}
-              class={!up && viewMode === 'entry' ? '[@media(max-height:599px)]:hidden' : ''}>
-              {#if up && viewMode === 'board'}
+              class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
+              {#if up && !keypad}
                 {#if isX01}
                   <PhoneX01Card name={player.name} p={x01Players[i]} pill={pillFor(i, false)} seat={line} chalkboard={settings.chalkboard} />
                 {:else}
@@ -397,9 +426,9 @@
 
     {:else if layout === 'duel'}
       <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-        {@render panel(0)}
+        {@render duelPanel(0)}
         <div class="w-[560px] shrink-0 min-h-0 flex flex-col gap-3">{@render center('duel')}</div>
-        {@render panel(1)}
+        {@render duelPanel(1)}
       </main>
 
     {:else}
