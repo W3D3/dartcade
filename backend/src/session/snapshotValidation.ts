@@ -18,7 +18,7 @@ const validate = ajv.compile(wsSchema.$defs.Snapshot)
  */
 export function checkSnapshot(snap: Snapshot, log: (msg: string) => void): void {
   if (process.env.NODE_ENV === 'production' || validate(snap)) return
-  const message = `snapshot does not match schema/game-ws-v1.json: ${ajv.errorsText(validate.errors)}`
+  const message = `snapshot of game ${snap.sessionId} (${snap.gameId}) does not match schema/game-ws-v1.json: ${ajv.errorsText(validate.errors)}`
   if (process.env.NODE_ENV === 'test') throw new Error(message)
   log(message)
 }

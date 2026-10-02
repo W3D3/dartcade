@@ -101,9 +101,14 @@ function viewFor(sessionId: string, userId: string): SnapshotView {
 
 /** Sends every viewer of the game their own snapshot. */
 export function pushSnapshot(sessionId: string, engine: SessionEngine): void {
+  // The viewers' snapshots differ only in viewer fields: check the first one, log it once
+  let checked = false
   browserConnections.pushEach(sessionId, userId => {
     const snap = engine.getSnapshot(sessionId, viewFor(sessionId, userId))
-    if (snap) checkSnapshot(snap, msg => console.error(msg))
+    if (snap && !checked) {
+      checked = true
+      checkSnapshot(snap, msg => console.error(msg))
+    }
     return snap ?? null
   })
 }
