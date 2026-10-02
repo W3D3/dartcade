@@ -15,6 +15,18 @@ export function isHost(userId: string, session: Session): boolean {
   return session.ownerUserId === userId
 }
 
+/** Whether the user is a member of the lobby (LobbyService.isMember). */
+export type IsLobbyMember = (lobbyId: string, userId: string) => Promise<boolean>
+
+/** For callers without lobbies (tests, the local flow): nobody is a lobby member. */
+export const noLobbies: IsLobbyMember = () => Promise.resolve(false)
+
+/** Who may watch a game: its host and seat controllers and, for a lobby game, everyone in the lobby. */
+export async function canWatchSession(userId: string, session: Session, isLobbyMember: IsLobbyMember): Promise<boolean> {
+  if (canAccessSession(userId, session)) return true
+  return session.lobbyId !== null && await isLobbyMember(session.lobbyId, userId)
+}
+
 // Actions on the turn in progress: only whoever controls the seat that's up
 const SEAT_ACTIONS = new Set(['add_dart', 'undo_dart', 'takeout', 'correct_dart', 'bulloff_skip'])
 

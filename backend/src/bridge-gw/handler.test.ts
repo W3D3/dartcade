@@ -187,6 +187,18 @@ describe('handleBridgeConnection', () => {
     expect(socket.send).not.toHaveBeenCalledWith(JSON.stringify({ ack: 5 }))
     warn.mockRestore()
   })
+
+  it('tells the lobbies when a board comes online and when it drops', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-9', hardware_id: null } as any)
+    const engine = { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any
+    const onBoardPresence = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, onBoardPresence })
+    await flush()
+    expect(onBoardPresence).toHaveBeenCalledWith('board-9')
+    socket.emit('close')
+    expect(onBoardPresence).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('BridgeConnections event feed', () => {

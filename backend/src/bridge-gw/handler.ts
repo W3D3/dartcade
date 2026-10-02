@@ -15,6 +15,8 @@ export { bridgeConnections }
 type Opts = FastifyPluginOptions & {
   engine: SessionEngine
   db: Kysely<Database>
+  /** A board's bridge connected or dropped (the lobbies that use it). */
+  onBoardPresence?: (boardId: string) => void
 }
 
 
@@ -63,9 +65,14 @@ const TokenQuerySchema = z.object({ token: z.string() })
 export function handleBridgeConnection(
   socket: WebSocket,
   query: { token?: string },
-  opts: { db: Kysely<Database>; engine: SessionEngine },
+  opts: { db: Kysely<Database>; engine: SessionEngine; onBoardPresence?: (boardId: string) => void },
 ): void {
   const { db, engine } = opts
+  // A board came online or dropped: its game and the lobbies using it show it
+  const presence = (boardId: string) => {
+    engine.onBoardPresence(boardId)
+    opts.onBoardPresence?.(boardId)
+  }
   const providedToken = query.token ?? ''
   const tokenHash = createHash('sha256').update(providedToken).digest('hex')
 
@@ -83,7 +90,7 @@ export function handleBridgeConnection(
     conn.hardwareBoardId = board.hardware_id ?? null
     bridgeConnections.add(conn)
     bridgeConnections.register(conn, board.id)
-    engine.onBoardPresence(board.id)
+    presence(board.id)
     return true
   }).catch(() => { socket.close(4500, 'internal error'); return false })
 
@@ -158,12 +165,12 @@ export function handleBridgeConnection(
   socket.on('close', () => {
     const boardDbId = conn.boardDbId
     bridgeConnections.remove(conn)
-    if (boardDbId) engine.onBoardPresence(boardDbId)
+    if (boardDbId) presence(boardDbId)
   })
   socket.on('error', () => {
     const boardDbId = conn.boardDbId
     bridgeConnections.remove(conn)
-    if (boardDbId) engine.onBoardPresence(boardDbId)
+    if (boardDbId) presence(boardDbId)
   })
 }
 
@@ -172,7 +179,7 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
 
   app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
     const q = TokenQuerySchema.safeParse(req.query)
-    handleBridgeConnection(connection.socket, { token: q.success ? q.data.token : undefined }, { db, engine })
+    handleBridgeConnection(connection.socket, { token: q.success ? q.data.token : undefined }, { db, engine, onBoardPresence: opts.onBoardPresence })
   })
   done()
 }

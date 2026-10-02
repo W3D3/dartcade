@@ -115,6 +115,16 @@ describe('DELETE /api/boards/:id', () => {
     expect(res.statusCode).toBe(409)
     expect(queries.deleteBoard).not.toHaveBeenCalled()
   })
+
+  it('sends people on the board to Manual in their lobbies before deleting it', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'board-1', owner_user_id: 'user-1' } as any)
+    const releaseBoard = vi.fn().mockResolvedValue(undefined)
+    const app = createFastify()
+    app.register(boardsApiPlugin, { db: {} as any, releaseBoard })
+    expect((await app.inject({ method: 'DELETE', url: '/api/boards/board-1' })).statusCode).toBe(204)
+    expect(releaseBoard).toHaveBeenCalledWith('board-1')
+    expect(releaseBoard.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(queries.deleteBoard).mock.invocationCallOrder[0])
+  })
 })
 
 describe('GET /api/boards - bridgeVersion', () => {

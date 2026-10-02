@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
-import { authorizeAction, canAccessSession, isHost } from './access.js'
+import { describe, it, expect, vi } from 'vitest'
+import { authorizeAction, canAccessSession, canWatchSession, isHost } from './access.js'
 import { newSession } from './replay.js'
 import { x01Module } from '../games/x01.js'
 import type { Seat } from './types.js'
@@ -50,5 +50,29 @@ describe('canAccessSession / isHost', () => {
   it('knows the host', () => {
     expect(isHost('host', s)).toBe(true)
     expect(isHost('lena', s)).toBe(false)
+  })
+})
+
+describe('canWatchSession', () => {
+  const lobbyGame = () => newSession({
+    id: 's1', ownerUserId: 'host', boardId: null, module: x01Module, config: x01Module.defaultConfig, seed: 1, createdAt: new Date(), lobbyId: 'l1',
+    seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null }],
+  })
+
+  it('lets the lobby\'s members watch its game, besides the host and controllers', async () => {
+    const isMember = vi.fn((lobbyId: string, userId: string) => Promise.resolve(lobbyId === 'l1' && userId === 'lena'))
+    expect(await canWatchSession('lena', lobbyGame(), isMember)).toBe(true)
+    expect(await canWatchSession('max', lobbyGame(), isMember)).toBe(false)
+    expect(await canWatchSession('host', lobbyGame(), isMember)).toBe(true)
+  })
+
+  it('never asks about lobbies for a local game', async () => {
+    const isMember = vi.fn(() => Promise.resolve(true))
+    const local = newSession({
+      id: 's2', ownerUserId: 'host', boardId: null, module: x01Module, config: x01Module.defaultConfig, seed: 1, createdAt: new Date(),
+      seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null }],
+    })
+    expect(await canWatchSession('lena', local, isMember)).toBe(false)
+    expect(isMember).not.toHaveBeenCalled()
   })
 })

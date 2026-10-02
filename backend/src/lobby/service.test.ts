@@ -535,4 +535,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(row.closed_at).toBeInstanceOf(Date)
     })
   })
+
+  describe('boards going away or offline', () => {
+    it('a deleted board sends everyone on it to Manual, live', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('max', id, code)
+      const max = (await lobbies.view(id))?.people.find(p => p.name === 'Max')
+      await lobbies.updatePerson('chris', id, max?.id ?? '', { boardId: 'garage' })
+      const ws = sock()
+      hub.addLobbySocket(id, ws, 'max')
+      await lobbies.releaseBoard('garage')
+      expect(lastMsg(ws).lobby.people[1]).toMatchObject({ name: 'Max', boardId: null, boardMovedBy: null })
+    })
+
+    it('pushes a lobby when one of its boards goes on- or offline', async () => {
+      const { id } = await lobbies.create('chris')
+      const ws = sock()
+      hub.addLobbySocket(id, ws, 'chris')
+      await lobbies.refreshPresence(id)
+      online.delete('living')
+      lobbies.onBoardPresence('living')
+      expect(lastMsg(ws).lobby.people[0].boardOnline).toBe(false)
+      const sent = ws.send.mock.calls.length
+      lobbies.onBoardPresence('lenas')
+      expect(ws.send.mock.calls.length).toBe(sent)
+    })
+  })
 })

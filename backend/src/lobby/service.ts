@@ -596,4 +596,24 @@ export class LobbyService {
       if (await this.settleHost(lobbyId) === 'open') await this.publish(lobbyId)
     }).catch((err: unknown) => { this.warn('lobby reset after a game failed', { lobbyId, sessionId: e.sessionId, error: String(err) }) })
   }
+
+  // ---- boards -----------------------------------------------------------------------
+
+  /** A board is being deleted: everyone on it, in any lobby, goes to Manual. */
+  async releaseBoard(boardId: string): Promise<void> {
+    const lobbyIds = await q.releaseBoard(this.db, boardId)
+    for (const id of lobbyIds) {
+      await this.enqueue(id, async () => {
+        await this.reload(id)
+        await this.publish(id)
+      })
+    }
+  }
+
+  /** A board's bridge connected or dropped: lobbies using it show it. */
+  onBoardPresence(boardId: string): void {
+    for (const lobby of this.cache.values()) {
+      if (lobby.people.some(p => p.boardId === boardId)) this.send(lobby)
+    }
+  }
 }

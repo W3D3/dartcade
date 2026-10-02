@@ -4,12 +4,12 @@ import type { Database } from '../db/schema.js'
 import { ActiveSessionError, BoardBusyError, type SessionEngine } from '../session/engine.js'
 import type { Seat, Session } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
-import { canAccessSession, isHost } from '../session/access.js'
+import { canAccessSession, canWatchSession, isHost, noLobbies, type IsLobbyMember } from '../session/access.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
-type Opts = FastifyPluginOptions & { engine: SessionEngine; db: Kysely<Database> }
+type Opts = FastifyPluginOptions & { engine: SessionEngine; db: Kysely<Database>; isLobbyMember?: IsLobbyMember }
 
 // The REST API doesn't report 'aborted' sessions separately yet; they read as finished.
 const apiStatus = (status: Session['status']): 'active' | 'finished' => status === 'active' ? 'active' : 'finished'
@@ -20,7 +20,7 @@ const summary = (s: Session) => ({
 })
 
 export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { engine, db } = opts
+  const { engine, db, isLobbyMember = noLobbies } = opts
 
   app.get<Route<'health'>>('/health', { schema: fromSpec('health') }, () => ({ ok: true }))
 
@@ -80,7 +80,7 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
   app.get<Route<'getSession'>>('/api/sessions/:id', { preValidation: requireAuth, schema: fromSpec('getSession') }, async (req, reply) => {
     const session = engine.getSession(req.params.id)
     if (!session) return reply.code(404).send({ error: 'not found' })
-    if (!canAccessSession(req.userId, session)) return reply.code(403).send({ error: 'forbidden' })
+    if (!await canWatchSession(req.userId, session, isLobbyMember)) return reply.code(403).send({ error: 'forbidden' })
     const snap = engine.getSnapshot(session.id)
     return reply.send({ ...summary(session), game: snap ? { ...snap.game } : null })
   })
@@ -90,7 +90,7 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
     if (!session) return reply.code(404).send({ error: 'not found' })
     // Only the host ends the game for everyone
     if (!isHost(req.userId, session)) return reply.code(403).send({ error: 'forbidden' })
-    await engine.deleteSession(session.id)
+    await engine.deleteSession(session.id, req.userId)
     return reply.code(204).send()
   })
 

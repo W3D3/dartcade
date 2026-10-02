@@ -5,7 +5,7 @@ import { z } from 'zod'
 import { BrowserConnections } from './connections.js'
 import type { Notice, SessionEngine, SnapshotView } from '../session/engine.js'
 import { getAuthUser } from '../auth/session.js'
-import { canAccessSession } from '../session/access.js'
+import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
 import { WsCloseCode, type ErrorMessage, type NoticeMessage } from '../schema/game-ws.js'
 import { ClientMessageSchema } from '../schema/zod.js'
@@ -24,15 +24,15 @@ function rawText(raw: RawData): string {
   return Buffer.isBuffer(raw) ? raw.toString() : Buffer.from(raw).toString()
 }
 
-type Opts = FastifyPluginOptions & { engine: SessionEngine }
+type Opts = FastifyPluginOptions & { engine: SessionEngine; isLobbyMember?: IsLobbyMember }
 
 export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { engine } = opts
+  const { engine, isLobbyMember = noLobbies } = opts
 
   app.get('/ws', { websocket: true }, (connection: SocketStream, req) => {
     const socket = connection.socket
 
-    getAuthUser(req).then(user => {
+    getAuthUser(req).then(async user => {
       // Closed while sign-in was checked: no close event will come to remove it again
       if (socket.readyState !== socket.OPEN) return
       if (!user) {
@@ -46,7 +46,10 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
 
       const session = engine.getSession(sessionId)
       if (!session) { socket.close(WsCloseCode.NotFound, 'session not found'); return }
-      if (!canAccessSession(user.userId, session)) { socket.close(WsCloseCode.Forbidden, 'forbidden'); return }
+      if (!await canWatchSession(user.userId, session, isLobbyMember)) { socket.close(WsCloseCode.Forbidden, 'forbidden'); return }
+      // Closed while access was checked: no close event will come to remove it again
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- readyState can change across the await, though TS doesn't see it
+      if (socket.readyState !== socket.OPEN) return
 
       browserConnections.add(sessionId, socket, user.userId)
       const snap = engine.getSnapshot(sessionId, viewFor(sessionId, user.userId))

@@ -17,7 +17,7 @@ const BmStateSchema = z.object({
   event: z.string().nullable().catch(null).default(null),
 }).catch({ status: null, running: false, event: null })
 
-type Opts = FastifyPluginOptions & { db: Kysely<Database> }
+type Opts = FastifyPluginOptions & { db: Kysely<Database>; releaseBoard?: (boardId: string) => Promise<void> }
 
 // The camera route answers with a JPEG, which the spec'd (JSON) Reply type leaves out.
 // TODO(api): declare image/jpeg for getBoardCamera in schema/api-v1 so this widening can go.
@@ -32,7 +32,7 @@ const ACTIONS = [
 ] as const
 
 export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db } = opts
+  const { db, releaseBoard = () => Promise.resolve() } = opts
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
   async function ownBoard(id: string, userId: string, reply: { code(n: number): { send(b: { error: string }): unknown } }) {
@@ -146,6 +146,8 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     const { id } = req.params
     if (!await ownBoard(id, req.userId, reply)) return reply
     if (await hasActiveSessionOnBoard(db, id)) return reply.code(409).send({ error: 'board has a game running' })
+    // Lobbies first: people on the board go to Manual, and their lobbies see it
+    await releaseBoard(id)
     await deleteBoard(db, id)
     return reply.code(204).send()
   })

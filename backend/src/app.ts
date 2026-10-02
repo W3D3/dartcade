@@ -86,13 +86,13 @@ export async function buildApp({ engine, db, lobbies, frontendDist, onRoute }: A
     } catch { /* not built yet */ }
   }
 
-  await app.register(bridgeGwPlugin, { engine, db })
-  await app.register(browserGwPlugin, { engine })
-  await app.register(sessionsApiPlugin, { engine, db })
+  await app.register(bridgeGwPlugin, { engine, db, onBoardPresence: boardId => { lobbies.onBoardPresence(boardId) } })
+  await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
+  await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
-  await app.register(boardsApiPlugin, { db })
+  await app.register(boardsApiPlugin, { db, releaseBoard: boardId => lobbies.releaseBoard(boardId) })
   await app.register(pairingApiPlugin, { db })
 
   // Any unmatched method+path under our reserved prefixes gets our ErrorResponse 404

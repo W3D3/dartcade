@@ -169,6 +169,43 @@ describe('WS auth', () => {
 
     expect(code).toBe(WsCloseCode.Forbidden)
   })
+
+  it('lets a member of the game\'s lobby open it, without seats', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'lena' })
+    const { SessionEngine } = await import('../session/engine.js')
+    const { x01Module } = await import('../games/x01.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
+    }
+    const engine = new SessionEngine(store, vi.fn())
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig, lobbyId: 'l1', lobbyName: 'L',
+      seats: [
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null },
+        { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null },
+      ],
+    })
+    const isLobbyMember = vi.fn().mockResolvedValue(true)
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine, isLobbyMember })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+
+    const first = await new Promise<any>((resolve, reject) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
+      ws.addEventListener('message', e => { resolve(JSON.parse(String(e.data))); ws.close() })
+      ws.addEventListener('close', e => { reject(new Error(`closed ${(e as any).code}`)) })
+      setTimeout(() => reject(new Error('timeout')), 2000)
+    })
+    expect(first).toMatchObject({ type: 'snapshot', lobbyId: 'l1', mySeats: [] })
+    expect(isLobbyMember).toHaveBeenCalledWith('l1', 'lena')
+  })
 })
 
 describe('WS client messages', () => {

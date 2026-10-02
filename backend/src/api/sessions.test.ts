@@ -265,3 +265,29 @@ describe('sessions: spec enforcement', () => {
     expect(res.statusCode).toBe(400)
   })
 })
+
+describe('lobby games', () => {
+  const lobbySession = {
+    id: 's1', ownerUserId: 'host', boardId: null, lobbyId: 'l1', status: 'active', createdAt: new Date(),
+    players: [{ name: 'Host' }], module: { id: 'x01' },
+    seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null }],
+  }
+
+  it('lets a member of the game\'s lobby read it', async () => {
+    const engine = { getSession: vi.fn().mockReturnValue(lobbySession), getSnapshot: vi.fn().mockReturnValue(undefined) } as any
+    const isLobbyMember = vi.fn().mockResolvedValue(true)
+    const app = createFastify()
+    app.register(sessionsApiPlugin, { engine, db: {} as any, isLobbyMember })
+    const res = await app.inject({ method: 'GET', url: '/api/sessions/s1' })
+    expect(res.statusCode).toBe(200)
+    expect(isLobbyMember).toHaveBeenCalledWith('l1', 'user-1')
+  })
+
+  it('records who aborted', async () => {
+    const engine = { getSession: vi.fn().mockReturnValue({ ...lobbySession, ownerUserId: 'user-1' }), deleteSession: vi.fn().mockResolvedValue(true) } as any
+    const app = createFastify()
+    app.register(sessionsApiPlugin, { engine, db: {} as any })
+    expect((await app.inject({ method: 'DELETE', url: '/api/sessions/s1' })).statusCode).toBe(204)
+    expect(engine.deleteSession).toHaveBeenCalledWith('s1', 'user-1')
+  })
+})
