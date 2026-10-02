@@ -57,6 +57,12 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     expectValid(e.getSnapshot(sessionId))
   })
 
+  it('X01 with any start score', async () => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', 'x01', { ...x01Module.defaultConfig, startScore: 101 }, players)
+    expectValid(e.getSnapshot(sessionId))
+  })
+
   it('X01 during and after a bull off', async () => {
     const e = engine()
     const { sessionId } = await e.create('u1', 'board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, players)

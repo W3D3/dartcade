@@ -94,7 +94,7 @@ export interface X01Game {
   bustThisVisit: boolean
   config: {
     outMode: 'straight' | 'double' | 'master'
-    startScore: 301 | 501 | 701
+    startScore: number
     inMode: 'straight' | 'double' | 'master'
   }
   visitLocked: boolean

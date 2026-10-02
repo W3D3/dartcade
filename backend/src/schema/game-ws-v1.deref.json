@@ -299,11 +299,7 @@
             },
             "startScore": {
               "type": "integer",
-              "enum": [
-                301,
-                501,
-                701
-              ]
+              "minimum": 2
             },
             "inMode": {
               "type": "string",
@@ -998,11 +994,7 @@
                 },
                 "startScore": {
                   "type": "integer",
-                  "enum": [
-                    301,
-                    501,
-                    701
-                  ]
+                  "minimum": 2
                 },
                 "inMode": {
                   "type": "string",
@@ -1854,11 +1846,7 @@
                     },
                     "startScore": {
                       "type": "integer",
-                      "enum": [
-                        301,
-                        501,
-                        701
-                      ]
+                      "minimum": 2
                     },
                     "inMode": {
                       "type": "string",

@@ -5,7 +5,8 @@ import type { Rng } from '../session/rng.js'
 import { rankSeats } from './ranking.js'
 
 export type X01Config = {
-  startScore: 301 | 501 | 701
+  /** Any score; the setup offers 301, 501 and 701. */
+  startScore: number
   inMode:  'straight' | 'double' | 'master'
   outMode: 'straight' | 'double' | 'master'
   bullOff: 'off' | 'wdc' | 'pdc'

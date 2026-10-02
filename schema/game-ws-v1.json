@@ -79,7 +79,7 @@
           "additionalProperties": false,
           "properties": {
             "outMode": { "type": "string", "enum": ["straight", "double", "master"] },
-            "startScore": { "type": "integer", "enum": [301, 501, 701] },
+            "startScore": { "type": "integer", "minimum": 2 },
             "inMode": { "type": "string", "enum": ["straight", "double", "master"] }
           }
         },
