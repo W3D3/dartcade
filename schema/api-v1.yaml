@@ -637,7 +637,7 @@ components:
 
     GameSeat:
       type: object
-      required: [seat, name, userId, placement, throwPosition, stats]
+      required: [seat, name, userId, placement, throwPosition, stats, forfeited]
       additionalProperties: false
       properties:
         seat: { type: integer, minimum: 0 }
@@ -649,6 +649,9 @@ components:
           type: object
           additionalProperties: { type: number }
           description: Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit
+        forfeited:
+          type: boolean
+          description: The seat gave up (abandoned) the game; placed last.
     GameSummary:
       type: object
       required: [id, mode, config, createdAt, finishedAt, board, mySeat, players]

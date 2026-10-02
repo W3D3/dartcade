@@ -170,6 +170,18 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
       return NONE
     }
 
+    case 'forfeit': {
+      // The engine fills in the seats (see authorizeAction); a forfeit without any changes nothing
+      const seats = action.seats ?? []
+      if (seats.length === 0) return NONE
+      session.forfeited = [...new Set([...session.forfeited, ...seats])].sort((a, b) => a - b)
+      // The visit in progress doesn't count (mirrors board.resync)
+      countDarts(session, session.currentState, -dartEvents(session).length)
+      session.openVisitEvents = []
+      session.openDarts = []
+      return { committed: null, won: true }
+    }
+
     default: {
       // The game module's own actions (e.g. the bull off's skip/rethrow/start) end the
       // open visit and become committed state

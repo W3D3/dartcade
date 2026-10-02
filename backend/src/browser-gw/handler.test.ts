@@ -4,48 +4,66 @@ import type { AddressInfo } from 'net'
 import fastifyWebsocket from '@fastify/websocket'
 import { BrowserConnections } from './connections.js'
 import { WsCloseCode } from '../schema/game-ws.js'
-import type { Snapshot } from '../session/types.js'
 
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
 
 describe('BrowserConnections', () => {
-  it('push sends snapshot JSON to all sockets for a sessionId', () => {
+  it('pushEach sends every socket of a game its payload', () => {
     const bc = new BrowserConnections()
     const ws1 = { readyState: 1, send: vi.fn() } as any
     const ws2 = { readyState: 1, send: vi.fn() } as any
-    bc.add('session-1', ws1)
-    bc.add('session-1', ws2)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null } as unknown as Snapshot
-    bc.push('session-1', snap)
-    expect(ws1.send).toHaveBeenCalledWith(JSON.stringify(snap))
-    expect(ws2.send).toHaveBeenCalledWith(JSON.stringify(snap))
+    bc.add('session-1', ws1, 'u1')
+    bc.add('session-1', ws2, 'u1')
+    bc.pushEach('session-1', () => ({ type: 'snapshot' }))
+    expect(ws1.send).toHaveBeenCalledWith(JSON.stringify({ type: 'snapshot' }))
+    expect(ws2.send).toHaveBeenCalledWith(JSON.stringify({ type: 'snapshot' }))
   })
 
-  it('push to sender: sender also receives snapshot', () => {
+  it('sends each socket its own payload', () => {
     const bc = new BrowserConnections()
-    const sender = { readyState: 1, send: vi.fn() } as any
-    bc.add('session-1', sender)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null } as unknown as Snapshot
-    bc.push('session-1', snap)
-    expect(sender.send).toHaveBeenCalledOnce()
+    const a = { readyState: 1, send: vi.fn() } as any
+    const b = { readyState: 1, send: vi.fn() } as any
+    bc.add('s1', a, 'host'); bc.add('s1', b, 'lena')
+    bc.pushEach('s1', userId => ({ for: userId }))
+    expect(a.send).toHaveBeenCalledWith(JSON.stringify({ for: 'host' }))
+    expect(b.send).toHaveBeenCalledWith(JSON.stringify({ for: 'lena' }))
+    expect(bc.connectedUsers('s1')).toEqual(new Set(['host', 'lena']))
   })
 
-  it('remove cleans up the socket', () => {
+  it('sends a message only to the named users', () => {
+    const bc = new BrowserConnections()
+    const a = { readyState: 1, send: vi.fn() } as any
+    const b = { readyState: 1, send: vi.fn() } as any
+    bc.add('s1', a, 'host'); bc.add('s1', b, 'lena')
+    bc.sendTo('s1', ['lena'], { type: 'notice' })
+    expect(a.send).not.toHaveBeenCalled()
+    expect(b.send).toHaveBeenCalledOnce()
+  })
+
+  it('pushEach sends nothing when the payload is null', () => {
     const bc = new BrowserConnections()
     const ws = { readyState: 1, send: vi.fn() } as any
-    bc.add('session-1', ws)
-    bc.remove('session-1', ws)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null } as unknown as Snapshot
-    bc.push('session-1', snap)
+    bc.add('s1', ws, 'u1')
+    bc.pushEach('s1', () => null)
     expect(ws.send).not.toHaveBeenCalled()
   })
 
-  it('push skips closed sockets (readyState !== 1)', () => {
+  it('remove cleans up the socket and its user', () => {
+    const bc = new BrowserConnections()
+    const ws = { readyState: 1, send: vi.fn() } as any
+    bc.add('session-1', ws, 'u1')
+    bc.remove('session-1', ws)
+    bc.pushEach('session-1', () => ({ type: 'snapshot' }))
+    expect(ws.send).not.toHaveBeenCalled()
+    expect(bc.connectedUsers('session-1')).toEqual(new Set())
+  })
+
+  it('skips closed sockets (readyState !== 1)', () => {
     const bc = new BrowserConnections()
     const ws = { readyState: 3, send: vi.fn() } as any
-    bc.add('session-1', ws)
-    const snap = { type: 'snapshot' as const, sessionId: 'session-1', gameId: 'x01', boardId: null, players: [], game: {}, bmStatus: null } as unknown as Snapshot
-    bc.push('session-1', snap)
+    bc.add('session-1', ws, 'u1')
+    bc.pushEach('session-1', () => ({ type: 'snapshot' }))
+    bc.sendTo('session-1', ['u1'], { type: 'notice' })
     expect(ws.send).not.toHaveBeenCalled()
   })
 })
@@ -77,7 +95,7 @@ describe('WS auth', () => {
     const { getAuthUser } = await import('../auth/session.js')
     vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'user-1' })
     const engine = {
-      getSession: vi.fn().mockReturnValue({ id: 's1', ownerUserId: 'user-2' }),
+      getSession: vi.fn().mockReturnValue({ id: 's1', ownerUserId: 'user-2', seats: [] }),
       getSnapshot: vi.fn().mockReturnValue({ type: 'snapshot' }),
       onUserAction: vi.fn(),
     } as any
@@ -102,6 +120,53 @@ describe('WS auth', () => {
 describe('WS client messages', () => {
   let testApp: FastifyInstance | null = null
   afterEach(async () => { await testApp?.close(); testApp = null })
+
+  it('answers a refused action with an error', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
+    const { SessionEngine } = await import('../session/engine.js')
+    const { x01Module } = await import('../games/x01.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
+    }
+    const engine = new SessionEngine(store, vi.fn())
+    // The host's seat is up: Lena may watch, not take out
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      seats: [
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null },
+      ],
+    })
+    const onUserAction = vi.spyOn(engine, 'onUserAction')
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
+    const messages: unknown[] = []
+    ws.addEventListener('message', e => { messages.push(JSON.parse(String(e.data))) })
+    await new Promise<void>((resolve, reject) => {
+      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      setTimeout(() => reject(new Error('no snapshot')), 2000)
+    })
+    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'takeout' } }))
+    await new Promise(r => setTimeout(r, 200))
+
+    expect(onUserAction).toHaveBeenCalledWith(sessionId, 'lena', { type: 'takeout' })
+    expect(messages).toContainEqual({ type: 'error', code: 'forbidden', action: 'takeout' })
+    expect(store.appendEvent).not.toHaveBeenCalled()
+    ws.close()
+  })
 
   it('ignores malformed messages without closing, then applies a valid action', async () => {
     const { getAuthUser } = await import('../auth/session.js')
@@ -145,7 +210,7 @@ describe('WS client messages', () => {
 
     expect(closed).toBe(false)
     expect(onUserAction).toHaveBeenCalledTimes(1)
-    expect(onUserAction).toHaveBeenCalledWith(sessionId, expect.objectContaining({ type: 'undo_dart' }))
+    expect(onUserAction).toHaveBeenCalledWith(sessionId, 'user-1', expect.objectContaining({ type: 'undo_dart' }))
     ws.close()
   })
 
@@ -192,7 +257,7 @@ describe('WS client messages', () => {
     await new Promise(r => setTimeout(r, 200))
 
     expect(onUserAction).toHaveBeenCalledTimes(1)
-    expect(onUserAction).toHaveBeenCalledWith(sessionId, {
+    expect(onUserAction).toHaveBeenCalledWith(sessionId, 'user-1', {
       type: 'add_dart',
       segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 },
     })
@@ -244,7 +309,7 @@ describe('WS client messages', () => {
     await new Promise(r => setTimeout(r, 200))
 
     expect(onUserAction).toHaveBeenCalledTimes(1)
-    expect(onUserAction).toHaveBeenCalledWith(sessionId, {
+    expect(onUserAction).toHaveBeenCalledWith(sessionId, 'user-1', {
       type: 'add_dart',
       segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 },
       coords: { x: 0.1, y: -0.2 },
@@ -298,5 +363,42 @@ describe('WS client messages', () => {
     expect(logError).toHaveBeenCalledWith(expect.objectContaining({ sessionId }), 'user action not applied')
     expect(engine.getSession(sessionId)!.openDarts).toHaveLength(1)
     ws.close()
+  })
+
+  it('does not count a viewer whose socket closed before sign-in was checked', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    let signIn!: (u: { userId: string }) => void
+    vi.mocked(getAuthUser).mockReturnValueOnce(new Promise(r => { signIn = r }) as any)
+    const { SessionEngine } = await import('../session/engine.js')
+    const { atcModule } = await import('../games/atc.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
+    }
+    const engine = new SessionEngine(store, vi.fn())
+    const { sessionId } = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin, browserConnections } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
+    await new Promise<void>((resolve, reject) => {
+      ws.addEventListener('open', () => resolve(), { once: true })
+      setTimeout(() => reject(new Error('no open')), 2000)
+    })
+    ws.close()
+    await new Promise(r => setTimeout(r, 200))
+    signIn({ userId: 'user-1' })
+    await new Promise(r => setTimeout(r, 100))
+
+    expect(browserConnections.connectedUsers(sessionId)).toEqual(new Set())
   })
 })

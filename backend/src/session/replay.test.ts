@@ -14,7 +14,11 @@ function memoryStore() {
   const store: EngineStore = {
     insertSession: (s) => { sessions.set(s.id, { ...s, status: 'active', created_at: new Date() }); return Promise.resolve() },
     getActiveSessions: () => Promise.resolve([...sessions.values()].filter(s => s.status === 'active')
-      .map(s => ({ id: s.id, owner_user_id: s.owner_user_id, board_db_id: s.board_db_id, game_id: s.game_id, game_version: s.game_version, rng_seed: s.rng_seed, config: s.config, created_at: s.created_at, players: s.players }))),
+      .map(s => ({
+        id: s.id, owner_user_id: s.owner_user_id, board_db_id: s.board_db_id, game_id: s.game_id, game_version: s.game_version,
+        rng_seed: s.rng_seed, config: s.config, created_at: s.created_at,
+        players: s.players.map(p => ({ ...p, board_name: null })),
+      }))),
     getSessionEvents: (id): Promise<StoredSessionEvent[]> => Promise.resolve(events.filter(e => e.session_id === id).sort((a, b) => a.seq - b.seq)
       .map(e => ({ seq: e.seq, source: e.source, kind: e.kind, data: JSON.parse(JSON.stringify(e.data)), created_at: e.created_at }))),
     appendEvent: (e) => { events.push(e); return Promise.resolve() },
@@ -66,7 +70,7 @@ const ENDING: Step[] = [
 async function play(engine: SessionEngine, sessionId: string, steps: Step[]) {
   for (const s of steps) {
     if (s[0] === 'board') await engine.onBridgeEvent('board-1', s[1], s[2])
-    else await engine.onUserAction(sessionId, s[1])
+    else await engine.onUserAction(sessionId, 'user-1', s[1])
   }
 }
 
@@ -84,7 +88,11 @@ describe('the input log', () => {
     expect(mem.finished.get(sessionId)?.map(r => r.throwPosition)).toEqual([1, 0])
 
     const row = mem.sessions.get(sessionId)!
-    const again = newSession({ id: sessionId, ownerUserId: 'user-1', boardId: 'board-1', module: games.x01!, config: CONFIG, players: PLAYERS, seed: row.rng_seed, createdAt: row.created_at })
+    const again = newSession({
+      id: sessionId, ownerUserId: 'user-1', boardId: 'board-1', module: games.x01!, config: CONFIG,
+      seats: PLAYERS.map((p, i) => ({ name: p.name, userId: i === 0 ? 'user-1' : null, controllerUserId: 'user-1', boardId: 'board-1', boardName: null })),
+      seed: row.rng_seed, createdAt: row.created_at,
+    })
     const { visits, won } = replay(again, await mem.store.getSessionEvents(sessionId), vi.fn())
 
     expect(won).toBe(true)
@@ -105,7 +113,7 @@ describe('the input log', () => {
     const { sessionId } = await live.create('user-1', 'board-1', 'x01', CONFIG, PLAYERS)
     await play(live, sessionId, SCRIPT)
     const solo = await live.create('user-2', null, 'atc', { ...games.atc!.defaultConfig, order: 'random' }, [{ name: 'Solo' }])
-    await live.onUserAction(solo.sessionId, { type: 'add_dart', segment: S1 })
+    await live.onUserAction(solo.sessionId, 'user-2', { type: 'add_dart', segment: S1 })
 
     const restarted = new SessionEngine(mem.store, vi.fn())
     await restarted.rebuild()
@@ -113,7 +121,7 @@ describe('the input log', () => {
     expect(restarted.getSnapshot(sessionId)).toEqual(live.getSnapshot(sessionId))
     expect(restarted.getSnapshot(solo.sessionId)).toEqual(live.getSnapshot(solo.sessionId))
     expect(restarted.getSessionByBoard('board-1')?.id).toBe(sessionId)
-    expect(restarted.getSessionByOwner('user-2')?.id).toBe(solo.sessionId)
+    expect(restarted.getSessionByUser('user-2')?.id).toBe(solo.sessionId)
     // carries on numbering the log
     await play(restarted, sessionId, ENDING)
     expect(mem.events.filter(e => e.session_id === sessionId).map(e => e.seq)).toEqual(mem.events.filter(e => e.session_id === sessionId).map((_, i) => i))
@@ -144,7 +152,7 @@ describe('engine persistence', () => {
     await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1', extra: 'kept' })
     expect(mem.events.map(e => [e.seq, e.source, e.kind, e.data])).toEqual([[0, 'board', 'visit.opened', { visit_id: 'v1', extra: 'kept' }]])
     mem.store.appendEvent = () => Promise.reject(new Error('db down'))
-    await expect(engine.onUserAction(sessionId, { type: 'add_dart', segment: S1 })).rejects.toThrow('db down')
+    await expect(engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S1 })).rejects.toThrow('db down')
     expect(engine.getSession(sessionId)!.openDarts).toEqual([])
   })
 
@@ -166,8 +174,8 @@ describe('engine persistence', () => {
     mem.store.appendEvent = async (e) => { if (first) { first = false; await gate } await append(e) }
     const engine = new SessionEngine(mem.store, vi.fn())
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', games.atc!.defaultConfig, [{ name: 'A' }])
-    const a = engine.onUserAction(sessionId, { type: 'add_dart', segment: S1 })
-    const b = engine.onUserAction(sessionId, { type: 'undo_dart' })
+    const a = engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S1 })
+    const b = engine.onUserAction(sessionId, 'user-1', { type: 'undo_dart' })
     release()
     await Promise.all([a, b])
     expect(mem.events.map(e => e.kind)).toEqual(['add_dart', 'undo_dart'])
@@ -179,14 +187,14 @@ describe('engine persistence', () => {
     const engine = new SessionEngine(mem.store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...CONFIG, bullOff: 'off', startScore: 301 }, [{ name: 'A' }])
     for (let i = 0; i < 5; i++) {   // 5 × 60 = 300, then 1
-      for (const s of [S20, S20, S20]) await engine.onUserAction(sessionId, { type: 'add_dart', segment: s })
-      await engine.onUserAction(sessionId, { type: 'takeout' })
+      for (const s of [S20, S20, S20]) await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: s })
+      await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     }
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: S1 })
-    await engine.onUserAction(sessionId, { type: 'takeout' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S1 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     expect(mem.finished.has(sessionId)).toBe(true)
     const logged = mem.events.length
-    await engine.onUserAction(sessionId, { type: 'undo_dart' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'undo_dart' })
     expect(mem.events.length).toBe(logged)
   })
 
@@ -194,7 +202,7 @@ describe('engine persistence', () => {
     const mem = memoryStore()
     const engine = new SessionEngine(mem.store, vi.fn())
     const { sessionId } = await engine.create('user-1', null, 'atc', games.atc!.defaultConfig, [{ name: 'A' }])
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: S1 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S1 })
     await engine.deleteSession(sessionId)
     expect(mem.aborted).toEqual([sessionId])
     expect(mem.events).toHaveLength(1)
@@ -203,7 +211,7 @@ describe('engine persistence', () => {
 
   it('rebuild aborts games it cannot restore', async () => {
     const mem = memoryStore()
-    mem.sessions.set('gone', { id: 'gone', owner_user_id: 'user-1', board_db_id: null, game_id: 'no-such-game', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'A', user_id: 'user-1' }], status: 'active', created_at: new Date() })
+    mem.sessions.set('gone', { id: 'gone', owner_user_id: 'user-1', board_db_id: null, game_id: 'no-such-game', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'A', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null }], status: 'active', created_at: new Date() })
     await new SessionEngine(mem.store, vi.fn()).rebuild()
     expect(mem.aborted).toEqual(['gone'])
   })

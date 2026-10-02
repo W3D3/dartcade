@@ -88,8 +88,12 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       }
     },
 
+    // Whoever throws next: the bull off's thrower, then (once it's decided) the winner, whose
+    // next visit starts the game. A rethrow starts with the last thrower, who is still current.
     getCurrentPlayer(s) {
-      return s.stage === 'bulloff' ? s.bullOff.currentPlayer : game.getCurrentPlayer(s.game)
+      if (s.stage === 'game') return game.getCurrentPlayer(s.game)
+      const { result, currentPlayer } = s.bullOff
+      return result && !result.rethrow ? result.order[0] : currentPlayer
     },
 
     onBoardEvent(s, e: BoardEvent) {

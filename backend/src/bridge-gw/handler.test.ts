@@ -52,6 +52,18 @@ describe('BridgeConnections', () => {
     expect(bc.get('board-ulid-1')).toBeUndefined()
   })
 
+  it('a replaced connection closing late leaves the new one online', () => {
+    const bc = new BridgeConnections()
+    const mk = () => ({ ws: { readyState: 1, close: vi.fn(), send: vi.fn() } as any, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: true })
+    const old = mk(), fresh = mk()
+    bc.add(old); bc.register(old, 'board-ulid-1')
+    bc.add(fresh); bc.register(fresh, 'board-ulid-1')
+    // The old socket's close event arrives after the reconnect registered
+    bc.remove(old)
+    expect(bc.isOnline('board-ulid-1')).toBe(true)
+    expect(bc.get('board-ulid-1')).toBe(fresh)
+  })
+
   it('send transmits JSON to the socket', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any

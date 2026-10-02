@@ -23,7 +23,7 @@ export function toSummary(g: HistoryGame): GameSummary {
     id: g.id, mode: g.game_id, config: g.config,
     createdAt: g.created_at.toISOString(), finishedAt: g.finished_at.toISOString(),
     board: g.board, mySeat: g.mySeat,
-    players: g.seats.map(s => ({ seat: s.seat, name: s.name, userId: g.mySeat === null ? null : s.user_id, placement: s.placement, throwPosition: s.throw_position, stats: s.stats })),
+    players: g.seats.map(s => ({ seat: s.seat, name: s.name, userId: g.mySeat === null ? null : s.user_id, placement: s.placement, throwPosition: s.throw_position, stats: s.stats, forfeited: s.forfeited })),
   }
 }
 

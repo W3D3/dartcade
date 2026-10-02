@@ -1510,7 +1510,8 @@
           "userId",
           "placement",
           "throwPosition",
-          "stats"
+          "stats",
+          "forfeited"
         ],
         "additionalProperties": false,
         "properties": {
@@ -1542,6 +1543,10 @@
               "type": "number"
             },
             "description": "Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit"
+          },
+          "forfeited": {
+            "type": "boolean",
+            "description": "The seat gave up (abandoned) the game; placed last."
           }
         }
       },

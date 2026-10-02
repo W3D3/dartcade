@@ -57,5 +57,31 @@
       0
     ]
   },
-  "bmStatus": null
+  "bmStatus": null,
+  "status": "active",
+  "ownerUserId": "u1",
+  "seats": [
+    {
+      "controllerUserId": "u1",
+      "userId": null,
+      "boardId": "board-1",
+      "boardName": "Board",
+      "boardOnline": true,
+      "controllerConnected": true,
+      "forfeited": false
+    },
+    {
+      "controllerUserId": "u1",
+      "userId": null,
+      "boardId": "board-1",
+      "boardName": "Board",
+      "boardOnline": true,
+      "controllerConnected": true,
+      "forfeited": false
+    }
+  ],
+  "mySeats": [
+    0,
+    1
+  ]
 }

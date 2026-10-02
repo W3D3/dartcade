@@ -6,8 +6,8 @@ const game = (o: Partial<GameSummary> = {}): GameSummary => ({
   id: 'g1', mode: 'x01', config: { startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3 },
   createdAt: '2026-10-01T19:00:00.000Z', finishedAt: '2026-10-01T19:30:00.000Z', board: null, mySeat: 0,
   players: [
-    { seat: 0, name: 'Christoph', userId: 'u1', placement: 1, throwPosition: 0, stats: { average: 83.94, legsWon: 3, dartsThrown: 66 } },
-    { seat: 1, name: 'Guest 1', userId: null, placement: 2, throwPosition: 1, stats: { average: 71.6, legsWon: 1, dartsThrown: 65 } },
+    { seat: 0, name: 'Christoph', userId: 'u1', placement: 1, throwPosition: 0, stats: { average: 83.94, legsWon: 3, dartsThrown: 66 }, forfeited: false },
+    { seat: 1, name: 'Guest 1', userId: null, placement: 2, throwPosition: 1, stats: { average: 71.6, legsWon: 1, dartsThrown: 65 }, forfeited: false },
   ],
   ...o,
 })
@@ -41,7 +41,7 @@ describe('players and result', () => {
     expect(resultLabel(game({ mode: 'atc' }))).toEqual({ text: 'Won', won: true })
   })
   it('three or more: placement of n', () => {
-    const party = game({ players: [...game().players, { seat: 2, name: 'Lena', userId: null, placement: 3, throwPosition: 2, stats: {} }] })
+    const party = game({ players: [...game().players, { seat: 2, name: 'Lena', userId: null, placement: 3, throwPosition: 2, stats: {}, forfeited: false }] })
     expect(playerBadges(party).map(p => p.name)).toEqual(['Christoph', 'Guest 1', 'Lena'])
     expect(resultLabel({ ...party, mySeat: 1 })).toEqual({ text: '2nd of 3', won: false })
     expect(resultLabel(party)).toEqual({ text: '1st of 3', won: true })
@@ -64,8 +64,8 @@ describe('historyStat', () => {
 describe('playerBadges', () => {
   it('numbers players in throw order, not seat order', () => {
     const g = game({ players: [
-      { seat: 0, name: 'Christoph', userId: 'u1', placement: 1, throwPosition: 1, stats: {} },
-      { seat: 1, name: 'Guest 1', userId: null, placement: 2, throwPosition: 0, stats: {} },
+      { seat: 0, name: 'Christoph', userId: 'u1', placement: 1, throwPosition: 1, stats: {}, forfeited: false },
+      { seat: 1, name: 'Guest 1', userId: null, placement: 2, throwPosition: 0, stats: {}, forfeited: false },
     ] })
     expect(playerBadges(g)).toEqual([{ n: 1, name: 'Guest 1', me: false }, { n: 2, name: 'Christoph', me: true }])
   })

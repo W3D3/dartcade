@@ -66,7 +66,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
         game_version: 1,
         rng_seed: 0,
         config: { throwAgainOnAllHit: false },
-        players: [{ name: 'Alice', user_id: 'u-test-1' }, { name: 'Bob', user_id: null }],
+        players: [
+          { name: 'Alice', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null },
+          { name: 'Bob', user_id: null, controller_user_id: 'u-test-1', board_db_id: null },
+        ],
       })
       const rows = await getActiveGameSessions(db)
       expect(rows).toHaveLength(1)
@@ -112,7 +115,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
   describe('game history store', () => {
     const newGame = (id: string, board: string | null = null) => insertGameSession(db, {
       id, owner_user_id: 'u-test-1', board_db_id: board, game_id: 'x01', game_version: 1, rng_seed: 7,
-      config: { startScore: 301 }, players: [{ name: 'Test', user_id: 'u-test-1' }, { name: 'Guest', user_id: null }],
+      config: { startScore: 301 },
+      players: [
+        { name: 'Test', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null },
+        { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null },
+      ],
     })
 
     it('stores seats and reads active games with them', async () => {
@@ -127,8 +134,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
     it('appends and reads the input log in order', async () => {
       await newGame('g-log')
       const at = new Date('2026-10-01T10:00:00.123Z')
-      await appendSessionEvent(db, { session_id: 'g-log', seq: 1, source: 'user', kind: 'takeout', data: { type: 'takeout' }, bridge_event_id: null, created_at: at })
-      await appendSessionEvent(db, { session_id: 'g-log', seq: 0, source: 'board', kind: 'visit.opened', data: { visit_id: 'v1' }, bridge_event_id: null, created_at: at })
+      await appendSessionEvent(db, { session_id: 'g-log', seq: 1, source: 'user', kind: 'takeout', data: { type: 'takeout' }, bridge_event_id: null, board_db_id: null, created_at: at })
+      await appendSessionEvent(db, { session_id: 'g-log', seq: 0, source: 'board', kind: 'visit.opened', data: { visit_id: 'v1' }, bridge_event_id: null, board_db_id: null, created_at: at })
       const events = await getSessionEvents(db, 'g-log')
       expect(events.map(e => [e.seq, e.kind])).toEqual([[0, 'visit.opened'], [1, 'takeout']])
       expect(events[1].data).toEqual({ type: 'takeout' })
@@ -165,7 +172,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       // Created and finished one at a time: game_sessions_one_active_per_owner (migration 005)
       // allows only one active session per owner at a time.
       await newGame('g-fin')
-      await finishGameSession(db, 'g-fin', at, [{ placement: 1, stats: { average: 60 }, throwPosition: 1 }, { placement: 2, stats: { average: 40 }, throwPosition: 0 }])
+      await finishGameSession(db, 'g-fin', at, [{ placement: 1, stats: { average: 60 }, throwPosition: 1, forfeited: false }, { placement: 2, stats: { average: 40 }, throwPosition: 0, forfeited: false }])
       await newGame('g-abort')
       await abortGameSession(db, 'g-abort', at)
       const fin = await db.selectFrom('game_sessions').selectAll().where('id', '=', 'g-fin').executeTakeFirstOrThrow()
@@ -181,7 +188,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       await insertBoard(db, { id: 'board-hist', owner_user_id: 'u-test-1', name: 'B', token_hash: 'th-hist' })
       await newGame('g-on-board', 'board-hist')
       expect(await hasActiveSessionOnBoard(db, 'board-hist')).toBe(true)
-      await finishGameSession(db, 'g-on-board', new Date(), [{ placement: 1, stats: {}, throwPosition: 0 }, { placement: 2, stats: {}, throwPosition: 1 }])
+      await finishGameSession(db, 'g-on-board', new Date(), [{ placement: 1, stats: {}, throwPosition: 0, forfeited: false }, { placement: 2, stats: {}, throwPosition: 1, forfeited: false }])
       expect(await hasActiveSessionOnBoard(db, 'board-hist')).toBe(false)
       await deleteBoard(db, 'board-hist')
       const row = await db.selectFrom('game_sessions').select('board_db_id').where('id', '=', 'g-on-board').executeTakeFirstOrThrow()
@@ -190,7 +197,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
 
     it('deleting the creator keeps the game and nulls their seat', async () => {
       await db.insertInto('user').values({ id: 'u-gone', name: 'Gone', email: 'gone@example.com', emailVerified: false, image: null }).execute()
-      await insertGameSession(db, { id: 'g-gone', owner_user_id: 'u-gone', board_db_id: null, game_id: 'atc', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'Gone', user_id: 'u-gone' }, { name: 'Other', user_id: 'u-test-2' }] })
+      await insertGameSession(db, {
+        id: 'g-gone', owner_user_id: 'u-gone', board_db_id: null, game_id: 'atc', game_version: 1, rng_seed: 0, config: {},
+        players: [
+          { name: 'Gone', user_id: 'u-gone', controller_user_id: 'u-test-1', board_db_id: null },
+          { name: 'Other', user_id: 'u-test-2', controller_user_id: 'u-test-1', board_db_id: null },
+        ],
+      })
       await db.deleteFrom('user').where('id', '=', 'u-gone').execute()
       const row = await db.selectFrom('game_sessions').selectAll().where('id', '=', 'g-gone').executeTakeFirstOrThrow()
       expect(row.owner_user_id).toBeNull()
@@ -240,6 +253,40 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       const row = await getPairingCode(db, code)
       expect(row!.raw_token).toBeNull()
       expect(row!.claimed_at).not.toBeNull()
+    })
+  })
+
+  describe('multiplayer seats', () => {
+    it('stores and reads back each seat\'s controller and board', async () => {
+      await insertBoard(db, { id: 'mb-1', owner_user_id: 'u-test-1', name: 'Living room', token_hash: 'mb-1-hash' })
+      await insertGameSession(db, {
+        id: 'mp-1', owner_user_id: 'u-test-1', board_db_id: null, game_id: 'x01', game_version: 1, rng_seed: 1, config: {},
+        players: [
+          { name: 'Christoph', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: 'mb-1' },
+          { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null },
+        ],
+      })
+      const row = (await getActiveGameSessions(db)).find(s => s.id === 'mp-1')
+      expect(row?.players).toEqual([
+        { name: 'Christoph', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: 'mb-1', board_name: 'Living room' },
+        { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, board_name: null },
+      ])
+      expect(await hasActiveSessionOnBoard(db, 'mb-1')).toBe(true)
+    })
+
+    it('stores forfeited seats with the result', async () => {
+      await finishGameSession(db, 'mp-1', new Date(), [
+        { placement: 1, stats: {}, throwPosition: 0, forfeited: false },
+        { placement: 2, stats: {}, throwPosition: 1, forfeited: true },
+      ])
+      const seats = (await getSeats(db, ['mp-1'])).get('mp-1') ?? []
+      expect(seats.map(s => s.forfeited)).toEqual([false, true])
+    })
+
+    it('records the board of a logged board event', async () => {
+      await appendSessionEvent(db, { session_id: 'mp-1', seq: 0, source: 'board', kind: 'takeout.finished', data: {}, bridge_event_id: null, board_db_id: 'mb-1', created_at: new Date() })
+      const row = await db.selectFrom('game_session_events').select('board_db_id').where('session_id', '=', 'mp-1').executeTakeFirst()
+      expect(row?.board_db_id).toBe('mb-1')
     })
   })
 })

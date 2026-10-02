@@ -747,6 +747,117 @@
         }
       }
     },
+    "SeatInfo": {
+      "title": "SeatInfo",
+      "description": "Who acts for a seat and where its darts come from.",
+      "type": "object",
+      "required": [
+        "controllerUserId",
+        "userId",
+        "boardId",
+        "boardName",
+        "boardOnline",
+        "controllerConnected",
+        "forfeited"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "controllerUserId": {
+          "type": "string"
+        },
+        "userId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The account the seat plays for; null for a guest."
+        },
+        "boardId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "null: darts are entered by hand."
+        },
+        "boardName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "boardOnline": {
+          "type": "boolean",
+          "description": "The board's bridge is connected."
+        },
+        "controllerConnected": {
+          "type": "boolean",
+          "description": "The controller has this game open."
+        },
+        "forfeited": {
+          "type": "boolean"
+        }
+      }
+    },
+    "SessionStatus": {
+      "title": "SessionStatus",
+      "type": "string",
+      "enum": [
+        "active",
+        "finished",
+        "aborted"
+      ]
+    },
+    "NoticeMessage": {
+      "title": "NoticeMessage",
+      "description": "A transient hint for this viewer, e.g. a dart thrown on a board that isn't up.",
+      "type": "object",
+      "required": [
+        "type",
+        "code",
+        "boardId"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "notice"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "not_your_turn"
+          ]
+        },
+        "boardId": {
+          "type": "string"
+        }
+      }
+    },
+    "ErrorMessage": {
+      "title": "ErrorMessage",
+      "description": "An action of this viewer was refused.",
+      "type": "object",
+      "required": [
+        "type",
+        "code",
+        "action"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "error"
+        },
+        "code": {
+          "type": "string",
+          "enum": [
+            "forbidden"
+          ]
+        },
+        "action": {
+          "type": "string",
+          "description": "The refused action's type."
+        }
+      }
+    },
     "X01Snapshot": {
       "title": "X01Snapshot",
       "type": "object",
@@ -757,7 +868,11 @@
         "boardId",
         "players",
         "game",
-        "bmStatus"
+        "bmStatus",
+        "status",
+        "ownerUserId",
+        "seats",
+        "mySeats"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1154,7 +1269,84 @@
             {
               "type": "null"
             }
+          ],
+          "description": "Status of the board of the seat that's up."
+        },
+        "status": {
+          "title": "SessionStatus",
+          "type": "string",
+          "enum": [
+            "active",
+            "finished",
+            "aborted"
           ]
+        },
+        "ownerUserId": {
+          "type": "string",
+          "description": "The host: starts the bull off, aborts the game."
+        },
+        "seats": {
+          "type": "array",
+          "items": {
+            "title": "SeatInfo",
+            "description": "Who acts for a seat and where its darts come from.",
+            "type": "object",
+            "required": [
+              "controllerUserId",
+              "userId",
+              "boardId",
+              "boardName",
+              "boardOnline",
+              "controllerConnected",
+              "forfeited"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "controllerUserId": {
+                "type": "string"
+              },
+              "userId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The account the seat plays for; null for a guest."
+              },
+              "boardId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "null: darts are entered by hand."
+              },
+              "boardName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "boardOnline": {
+                "type": "boolean",
+                "description": "The board's bridge is connected."
+              },
+              "controllerConnected": {
+                "type": "boolean",
+                "description": "The controller has this game open."
+              },
+              "forfeited": {
+                "type": "boolean"
+              }
+            }
+          },
+          "description": "Same order as players."
+        },
+        "mySeats": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Seats the viewer controls."
         }
       }
     },
@@ -1168,7 +1360,11 @@
         "boardId",
         "players",
         "game",
-        "bmStatus"
+        "bmStatus",
+        "status",
+        "ownerUserId",
+        "seats",
+        "mySeats"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1433,7 +1629,84 @@
             {
               "type": "null"
             }
+          ],
+          "description": "Status of the board of the seat that's up."
+        },
+        "status": {
+          "title": "SessionStatus",
+          "type": "string",
+          "enum": [
+            "active",
+            "finished",
+            "aborted"
           ]
+        },
+        "ownerUserId": {
+          "type": "string",
+          "description": "The host: starts the bull off, aborts the game."
+        },
+        "seats": {
+          "type": "array",
+          "items": {
+            "title": "SeatInfo",
+            "description": "Who acts for a seat and where its darts come from.",
+            "type": "object",
+            "required": [
+              "controllerUserId",
+              "userId",
+              "boardId",
+              "boardName",
+              "boardOnline",
+              "controllerConnected",
+              "forfeited"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "controllerUserId": {
+                "type": "string"
+              },
+              "userId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "The account the seat plays for; null for a guest."
+              },
+              "boardId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "null: darts are entered by hand."
+              },
+              "boardName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "boardOnline": {
+                "type": "boolean",
+                "description": "The board's bridge is connected."
+              },
+              "controllerConnected": {
+                "type": "boolean",
+                "description": "The controller has this game open."
+              },
+              "forfeited": {
+                "type": "boolean"
+              }
+            }
+          },
+          "description": "Same order as players."
+        },
+        "mySeats": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Seats the viewer controls."
         }
       }
     },
@@ -1451,7 +1724,11 @@
             "boardId",
             "players",
             "game",
-            "bmStatus"
+            "bmStatus",
+            "status",
+            "ownerUserId",
+            "seats",
+            "mySeats"
           ],
           "additionalProperties": false,
           "properties": {
@@ -1848,7 +2125,84 @@
                 {
                   "type": "null"
                 }
+              ],
+              "description": "Status of the board of the seat that's up."
+            },
+            "status": {
+              "title": "SessionStatus",
+              "type": "string",
+              "enum": [
+                "active",
+                "finished",
+                "aborted"
               ]
+            },
+            "ownerUserId": {
+              "type": "string",
+              "description": "The host: starts the bull off, aborts the game."
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "title": "SeatInfo",
+                "description": "Who acts for a seat and where its darts come from.",
+                "type": "object",
+                "required": [
+                  "controllerUserId",
+                  "userId",
+                  "boardId",
+                  "boardName",
+                  "boardOnline",
+                  "controllerConnected",
+                  "forfeited"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "controllerUserId": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "The account the seat plays for; null for a guest."
+                  },
+                  "boardId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "null: darts are entered by hand."
+                  },
+                  "boardName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boardOnline": {
+                    "type": "boolean",
+                    "description": "The board's bridge is connected."
+                  },
+                  "controllerConnected": {
+                    "type": "boolean",
+                    "description": "The controller has this game open."
+                  },
+                  "forfeited": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "description": "Same order as players."
+            },
+            "mySeats": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Seats the viewer controls."
             }
           }
         },
@@ -1862,7 +2216,11 @@
             "boardId",
             "players",
             "game",
-            "bmStatus"
+            "bmStatus",
+            "status",
+            "ownerUserId",
+            "seats",
+            "mySeats"
           ],
           "additionalProperties": false,
           "properties": {
@@ -2127,7 +2485,84 @@
                 {
                   "type": "null"
                 }
+              ],
+              "description": "Status of the board of the seat that's up."
+            },
+            "status": {
+              "title": "SessionStatus",
+              "type": "string",
+              "enum": [
+                "active",
+                "finished",
+                "aborted"
               ]
+            },
+            "ownerUserId": {
+              "type": "string",
+              "description": "The host: starts the bull off, aborts the game."
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "title": "SeatInfo",
+                "description": "Who acts for a seat and where its darts come from.",
+                "type": "object",
+                "required": [
+                  "controllerUserId",
+                  "userId",
+                  "boardId",
+                  "boardName",
+                  "boardOnline",
+                  "controllerConnected",
+                  "forfeited"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "controllerUserId": {
+                    "type": "string"
+                  },
+                  "userId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "The account the seat plays for; null for a guest."
+                  },
+                  "boardId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "null: darts are entered by hand."
+                  },
+                  "boardName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "boardOnline": {
+                    "type": "boolean",
+                    "description": "The board's bridge is connected."
+                  },
+                  "controllerConnected": {
+                    "type": "boolean",
+                    "description": "The controller has this game open."
+                  },
+                  "forfeited": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "description": "Same order as players."
+            },
+            "mySeats": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "description": "Seats the viewer controls."
             }
           }
         }
@@ -2351,6 +2786,27 @@
           "properties": {
             "type": {
               "const": "bulloff_start"
+            }
+          }
+        },
+        {
+          "title": "ForfeitAction",
+          "description": "Give up every seat the sender controls. The client sends no seats; the server fills them in before logging.",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "forfeit"
+            },
+            "seats": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 0
+              }
             }
           }
         }
@@ -2586,6 +3042,27 @@
               "properties": {
                 "type": {
                   "const": "bulloff_start"
+                }
+              }
+            },
+            {
+              "title": "ForfeitAction",
+              "description": "Give up every seat the sender controls. The client sends no seats; the server fills them in before logging.",
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "forfeit"
+                },
+                "seats": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
                 }
               }
             }

@@ -52,6 +52,11 @@ export interface GamePlayersTable {
   stats: unknown
   /** Where the seat threw in the game (0 = first); set with the result. */
   throw_position: number | null
+  /** Who may act for the seat (the owner in local games). */
+  controller_user_id: string | null
+  /** Where the seat's darts come from; null = entered by hand. */
+  board_db_id: string | null
+  forfeited: ColumnType<boolean, boolean | undefined, boolean>
 }
 
 export interface GameSessionEventsTable {
@@ -63,6 +68,8 @@ export interface GameSessionEventsTable {
   /** BIGINT; node-postgres returns it as a string */
   bridge_event_id: string | null
   created_at: Date
+  /** The board a 'board' event came from. */
+  board_db_id: string | null
 }
 
 export interface GameDartsTable {

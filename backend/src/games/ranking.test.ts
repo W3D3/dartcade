@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rankSeats } from './ranking.js'
+import { rankSeats, forfeitPlacements } from './ranking.js'
 
 const byScoreAsc = (scores: number[]) => (a: number, b: number) => scores[a] - scores[b]
 
@@ -18,5 +18,16 @@ describe('rankSeats', () => {
   })
   it('without a winner ranks everyone from 1st', () => {
     expect(rankSeats(2, null, byScoreAsc([10, 5]))).toEqual([2, 1])
+  })
+})
+
+describe('forfeitPlacements', () => {
+  it('puts forfeited seats last, tied, and closes the gaps above them', () => {
+    // standings 1,2,3,4; seat 0 (leading) and seat 2 forfeit
+    expect(forfeitPlacements([1, 2, 3, 4], new Set([0, 2]))).toEqual([3, 1, 3, 2])
+  })
+  it('keeps ties among the others', () => {
+    expect(forfeitPlacements([1, 1, 3], new Set([2]))).toEqual([1, 1, 3])
+    expect(forfeitPlacements([1, 2, 2], new Set([0]))).toEqual([3, 1, 1])
   })
 })

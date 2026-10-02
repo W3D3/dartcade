@@ -495,6 +495,8 @@ export interface components {
             stats: {
                 [key: string]: number;
             };
+            /** @description The seat gave up (abandoned) the game; placed last. */
+            forfeited: boolean;
         };
         GameSummary: {
             id: string;

@@ -5,6 +5,7 @@ import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
 import { SessionEngine, type EngineStore } from './engine.js'
 import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
+import { SnapshotSchema } from '../schema/zod.js'
 
 // ajv-formats is CommonJS: under NodeNext, TypeScript types its default import as the
 // module object, whose `default` is the plugin (at runtime module.exports.default is the
@@ -66,5 +67,20 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     const snap = e.getSnapshot(sessionId)!
     expect((snap.game as { bullOff: { result: unknown } }).bullOff.result).not.toBeNull()
     expectValid(snap)
+  })
+
+  it('a game with a board per seat, as a seat\'s controller sees it', async () => {
+    const e = engine()
+    const { sessionId } = await e.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      seats: [
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: 'Kitchen' },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null },
+      ],
+    })
+    await e.onBridgeEvent('board-a', 'board.status', { status: 'Throw', running: true, event: 'x' })
+    const snap = e.getSnapshot(sessionId, { viewerUserId: 'lena', connectedUserIds: new Set(['host', 'lena']), isBoardOnline: () => true })
+    expectValid(snap)
+    expect(SnapshotSchema.safeParse(snap).success).toBe(true)
   })
 })

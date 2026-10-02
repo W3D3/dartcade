@@ -3,10 +3,11 @@ import type { SocketStream } from '@fastify/websocket'
 import type { RawData } from 'ws'
 import { z } from 'zod'
 import { BrowserConnections } from './connections.js'
-import type { SessionEngine } from '../session/engine.js'
+import type { Notice, SessionEngine, SnapshotView } from '../session/engine.js'
 import { getAuthUser } from '../auth/session.js'
-import { canAccessSession } from '../api/sessions.js'
-import { WsCloseCode } from '../schema/game-ws.js'
+import { canAccessSession } from '../session/access.js'
+import { bridgeConnections } from '../bridge-gw/connections.js'
+import { WsCloseCode, type ErrorMessage, type NoticeMessage } from '../schema/game-ws.js'
 import { ClientMessageSchema } from '../schema/zod.js'
 import { checkSnapshot } from '../session/snapshotValidation.js'
 
@@ -32,6 +33,8 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     const socket = connection.socket
 
     getAuthUser(req).then(user => {
+      // Closed while sign-in was checked: no close event will come to remove it again
+      if (socket.readyState !== socket.OPEN) return
       if (!user) {
         socket.close(WsCloseCode.Unauthorized, 'unauthorized')
         return
@@ -42,13 +45,16 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { sessionId } = q.data
 
       const session = engine.getSession(sessionId)
-      const snap = engine.getSnapshot(sessionId)
-      if (!session || !snap) { socket.close(WsCloseCode.NotFound, 'session not found'); return }
+      if (!session) { socket.close(WsCloseCode.NotFound, 'session not found'); return }
       if (!canAccessSession(user.userId, session)) { socket.close(WsCloseCode.Forbidden, 'forbidden'); return }
 
-      browserConnections.add(sessionId, socket)
+      browserConnections.add(sessionId, socket, user.userId)
+      const snap = engine.getSnapshot(sessionId, viewFor(sessionId, user.userId))
+      if (!snap) { browserConnections.remove(sessionId, socket); socket.close(WsCloseCode.NotFound, 'session not found'); return }
       checkSnapshot(snap, msg => app.log.error(msg))
       socket.send(JSON.stringify(snap))
+      // The others see this player connect
+      pushSnapshot(sessionId, engine)
 
       const onMessage = async (raw: RawData) => {
         let msg: unknown
@@ -65,23 +71,43 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
         // A failed store write (e.g. the input log) must not crash the server or close the
         // socket: the action is not applied and the player can try again
         try {
-          await engine.onUserAction(sessionId, parsed.data.action)
+          const res = await engine.onUserAction(sessionId, user.userId, parsed.data.action)
+          if (!res.ok) socket.send(JSON.stringify({ type: 'error', code: res.code, action: parsed.data.action.type } satisfies ErrorMessage))
         } catch (err: unknown) {
           app.log.error({ sessionId, action: parsed.data.action.type, err }, 'user action not applied')
         }
       }
       socket.on('message', (raw: RawData) => { void onMessage(raw) })
 
-      socket.on('close', () => browserConnections.remove(sessionId, socket))
-      socket.on('error', () => browserConnections.remove(sessionId, socket))
+      // The others see this player drop
+      // 'error' is followed by 'close': handle whichever comes first, once
+      let gone = false
+      const onGone = () => {
+        if (gone) return
+        gone = true
+        browserConnections.remove(sessionId, socket)
+        pushSnapshot(sessionId, engine)
+      }
+      socket.on('close', onGone)
+      socket.on('error', onGone)
     }).catch(() => { socket.close(WsCloseCode.InternalError, 'internal error') })
   })
   done()
 }
 
+function viewFor(sessionId: string, userId: string): SnapshotView {
+  return { viewerUserId: userId, connectedUserIds: browserConnections.connectedUsers(sessionId), isBoardOnline: b => bridgeConnections.isOnline(b) }
+}
+
+/** Sends every viewer of the game their own snapshot. */
 export function pushSnapshot(sessionId: string, engine: SessionEngine): void {
-  const snap = engine.getSnapshot(sessionId)
-  if (!snap) return
-  checkSnapshot(snap, msg => console.error(msg))
-  browserConnections.push(sessionId, snap)
+  browserConnections.pushEach(sessionId, userId => {
+    const snap = engine.getSnapshot(sessionId, viewFor(sessionId, userId))
+    if (snap) checkSnapshot(snap, msg => console.error(msg))
+    return snap ?? null
+  })
+}
+
+export function pushNotice(sessionId: string, userIds: string[], notice: Notice): void {
+  browserConnections.sendTo(sessionId, userIds, notice satisfies NoticeMessage)
 }

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url'
 import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
-import { pushSnapshot } from './browser-gw/handler.js'
+import { pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
 import { buildApp } from './app.js'
 
@@ -26,6 +26,7 @@ const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
   sessionId => { pushSnapshot(sessionId, engine) },
   (message, details) => { app.log.warn({ details }, message) },
+  (sessionId, userIds, notice) => { pushNotice(sessionId, userIds, notice) },
 )
 await engine.rebuild()
 

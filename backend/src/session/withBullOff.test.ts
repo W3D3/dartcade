@@ -71,6 +71,15 @@ describe('withBullOff', () => {
     expect(game.view(s, players).currentPlayer).toBe(1)
   })
 
+  it('makes the winner current once the bull off is decided, and the last thrower on a rethrow', () => {
+    const decided = play(game.init({ bullOff: 'wdc' }, players), opened, dartAt(5), takeout, opened, dartAt(40), takeout)
+    expect(game.getCurrentPlayer(decided)).toBe(0)
+    // The bull off view still shows who threw last
+    expect(game.view(decided, players).currentPlayer).toBe(1)
+    const tied = play(game.init({ bullOff: 'wdc' }, players), opened, dartAt(20), takeout, opened, dartAt(20), takeout)
+    expect(game.getCurrentPlayer(tied)).toBe(1)
+  })
+
   it('handles skip, rethrow and start actions', () => {
     let s = game.init({ bullOff: 'wdc' }, players)
     s = game.onUserAction(s, { type: 'bulloff_skip' }).state

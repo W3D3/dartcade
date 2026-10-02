@@ -75,6 +75,8 @@ async function genZod() {
   const schemas = {
     SnapshotSchema: ws.$defs.Snapshot,
     ClientMessageSchema: ws.$defs.ClientMessage,
+    NoticeMessageSchema: ws.$defs.NoticeMessage,
+    ErrorMessageSchema: ws.$defs.ErrorMessage,
     DartSchema: ab.$defs.Dart,
     DartDetectedDataSchema: ab.$defs.DartDetectedData,
     DartCorrectedDataSchema: ab.$defs.DartCorrectedData,

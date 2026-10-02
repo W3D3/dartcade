@@ -36,6 +36,7 @@ corrected dart replays the open visit cleanly.
 | Session engine: visits, manual darts, corrections, rebuild on restart | `backend/src/session/engine.ts`, `refold.ts` |
 | Game module interface, events and user actions | `backend/src/session/types.ts` |
 | Bull off (wraps any game via `withBullOff`) | `backend/src/session/bullOff.ts`, `withBullOff.ts` |
+| Who may act for a seat, who may watch a game | `backend/src/session/access.ts` |
 | Game modules (register new ones in `index.ts`) | `backend/src/games/` |
 | REST API | `backend/src/api/` |
 | WebSocket gateways | `backend/src/bridge-gw/` (bridge), `backend/src/browser-gw/` (browser) |
@@ -59,7 +60,8 @@ corrected dart replays the open visit cleanly.
    seat), `detail` (its per-mode detail; add the schema to `schema/api-v1.yaml` and the
    `GameDetail.detail` union) and `getLeg` if it has legs. Keep it a pure reducer: games
    are rebuilt by replaying their input log. Wrap it with `withBullOff` if it needs a
-   throwing order.
+   throwing order. `summarize` must also work on a game that isn't won (no winner): a
+   forfeit ends games early and ranks seats by it.
 2. Register it in `backend/src/games/index.ts`.
 3. Describe its view in `schema/game-ws-v1.json` (a `<Id>Game` def and a branch of
    `Snapshot`) and run `npm run gen:api` at the repo root. The browser parses every

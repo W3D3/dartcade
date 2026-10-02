@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest'
 import { gameState } from '../gameState.js'
 
-const base = { type: 'snapshot' as const, sessionId: 's', boardId: null, players: [{ name: 'A' }], bmStatus: null }
+const base = {
+  type: 'snapshot' as const, sessionId: 's', boardId: null, players: [{ name: 'A' }], bmStatus: null,
+  status: 'active' as const, ownerUserId: 'u1', mySeats: [0],
+  seats: [{ controllerUserId: 'u1', userId: null, boardId: 'b1', boardName: 'Board', boardOnline: true, controllerConnected: true, forfeited: false }],
+}
 
 describe('gameState', () => {
   it('narrows an X01 snapshot', () => {

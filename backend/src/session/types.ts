@@ -21,6 +21,11 @@ export type { DartDetectedData, DartCorrectedData, TakeoutFinishedData, VisitOpe
 
 export type Player = { name: string }
 
+/** A seat: the player, who may act for them, and where their darts come from (null = by hand). */
+export type Seat = { name: string; userId: string | null; controllerUserId: string; boardId: string | null; boardName: string | null }
+
+export type BmStatus = { status: string; running: boolean; event: string }
+
 export type Effect = { type: 'board.reset' }
 
 export type { Snapshot } from '../schema/game-ws.js'
@@ -77,7 +82,7 @@ export interface CommittedVisit<S> {
 export type SeatResult = { placement: number; stats: Record<string, number> }
 
 /** A seat's result as stored: the module's result plus where the seat threw in the game (0 = first). */
-export type FinishedSeat = SeatResult & { throwPosition: number }
+export type FinishedSeat = SeatResult & { throwPosition: number; forfeited: boolean }
 
 /** Counts the engine keeps per seat (bull off excluded). */
 export type SummaryContext = { totalDarts: number[]; totalVisits: number[] }
@@ -121,9 +126,11 @@ export type GameConfig = Record<string, unknown>
 
 export interface Session {
   id: string
-  /** The user who started it; each user has at most one active session. */
+  /** The host: started the game; may start the bull off and abort. */
   ownerUserId: string
+  /** The local game's board (null for lobby games: see seats). */
   boardId: string | null
+  seats: Seat[]
   players: Player[]
   module: AnyGameModule
   committedState: unknown
@@ -131,7 +138,7 @@ export interface Session {
   /** One entry per dart.detected in openVisitEvents, same order. */
   openDarts: DartMeta[]
   currentState: unknown
-  status: 'active' | 'finished'
+  status: 'active' | 'finished' | 'aborted'
   createdAt: Date
   /** Seed of the generator passed to init(); stored so a replay sets the game up the same way. */
   seed: number
@@ -141,5 +148,8 @@ export interface Session {
   nextSeq: number
   totalDarts: number[]
   totalVisits: number[]
-  bmStatus: { status: string; running: boolean; event: string } | null
+  /** Seat indices that have forfeited, ascending. */
+  forfeited: number[]
+  /** Latest board.status per board id. */
+  boardStatus: Map<string, BmStatus>
 }

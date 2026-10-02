@@ -15,3 +15,14 @@ export function rankSeats(n: number, winner: number | null, compare: (a: number,
   })
   return placements
 }
+
+/**
+ * Placements once some seats forfeited: they share last place; the others keep their
+ * order from `placements` (ties too), counted only among themselves.
+ */
+export function forfeitPlacements(placements: number[], forfeited: ReadonlySet<number>): number[] {
+  const live = placements.flatMap((_, i) => forfeited.has(i) ? [] : [i])
+  return placements.map((p, i) => forfeited.has(i)
+    ? live.length + 1
+    : 1 + live.filter(j => placements[j] < p).length)
+}

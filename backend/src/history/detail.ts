@@ -10,7 +10,8 @@ export function buildDetail(game: HistoryGame, events: LoggedInput[], warn: Warn
   if (!mod || !config.success) return null
   const session = newSession({
     id: game.id, ownerUserId: '', boardId: null, module: mod, config: config.data,
-    players: game.seats.map(s => ({ name: s.name })), seed: game.rng_seed, createdAt: game.created_at,
+    seats: game.seats.map(s => ({ name: s.name, userId: null, controllerUserId: '', boardId: null, boardName: null })),
+    seed: game.rng_seed, createdAt: game.created_at,
   })
   const { visits } = replay(session, events, warn)
   return mod.detail(visits, session.committedState)

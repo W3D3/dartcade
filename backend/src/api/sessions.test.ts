@@ -8,7 +8,7 @@ vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
 }))
 vi.mock('../db/queries.js', () => ({
-  getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' }),
+  getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1', name: 'Living room' }),
   getBoardsByOwner: vi.fn().mockResolvedValue([{ id: 'b1' }]),
 }))
 
@@ -141,18 +141,28 @@ describe('DELETE /api/sessions/:id', () => {
 
 describe('session ownership', () => {
   const session = (id: string, ownerUserId: string, boardId: string | null = null) =>
-    ({ id, ownerUserId, boardId, module: { id: 'atc' }, status: 'active', players: [], createdAt: new Date() })
+    ({ id, ownerUserId, boardId, module: { id: 'atc' }, status: 'active', players: [], seats: [], createdAt: new Date() })
 
   it('creates the session for the signed-in user', async () => {
     const { app, engine } = makeApp()
     await app.inject({ method: 'POST', url: '/api/sessions',
       payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
-    expect(engine.create).toHaveBeenCalledWith('user-1', null, 'atc', {}, [{ name: 'Alice' }])
+    expect(engine.create).toHaveBeenCalledWith('user-1', null, 'atc', {}, [{ name: 'Alice' }], null)
+  })
+
+  it('gives a board game the board\'s name, as a rebuild would', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValueOnce({ id: 'b1', owner_user_id: 'user-1', name: 'Living room' } as any)
+    const { app, engine } = makeApp()
+    const res = await app.inject({ method: 'POST', url: '/api/sessions',
+      payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
+    expect(res.statusCode).toBe(201)
+    expect(JSON.parse(res.body)).toEqual({ sessionId: 'sess-1' })
+    expect(engine.create).toHaveBeenCalledWith('user-1', 'b1', 'atc', {}, [{ name: 'Alice' }], 'Living room')
   })
 
   it('returns 409 with the running session when the user already has one', async () => {
     const { app, engine } = makeApp()
-    engine.create.mockRejectedValue(new ActiveSessionError('active session already exists for user', 'sess-running'))
+    engine.create.mockRejectedValue(new ActiveSessionError('active session already exists for user', 'sess-running', 'user-1'))
     const res = await app.inject({ method: 'POST', url: '/api/sessions',
       payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
     expect(res.statusCode).toBe(409)
@@ -171,6 +181,24 @@ describe('session ownership', () => {
     engine.getSession.mockReturnValue(session('theirs', 'user-2'))
     expect((await app.inject({ method: 'GET', url: '/api/sessions/theirs' })).statusCode).toBe(403)
     expect((await app.inject({ method: 'DELETE', url: '/api/sessions/theirs' })).statusCode).toBe(403)
+    expect(engine.deleteSession).not.toHaveBeenCalled()
+  })})
+
+describe('a controller who is not the host', () => {
+  const lobbyGame = { id: 's1', ownerUserId: 'user-2', seats: [{ controllerUserId: 'user-1' }], status: 'active', module: { id: 'x01' }, players: [], boardId: null, createdAt: new Date() }
+
+  it('may read the game', async () => {
+    const { app, engine } = makeApp()
+    engine.getSession.mockReturnValue(lobbyGame)
+    const res = await app.inject({ method: 'GET', url: '/api/sessions/s1' })
+    expect(res.statusCode).toBe(200)
+    expect(JSON.parse(res.body).game).toBeNull()
+  })
+
+  it('may not end it', async () => {
+    const { app, engine } = makeApp()
+    engine.getSession.mockReturnValue(lobbyGame)
+    expect((await app.inject({ method: 'DELETE', url: '/api/sessions/s1' })).statusCode).toBe(403)
     expect(engine.deleteSession).not.toHaveBeenCalled()
   })
 })

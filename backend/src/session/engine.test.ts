@@ -1,10 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { ActiveSessionError, SessionEngine } from './engine.js'
+import { ActiveSessionError, BoardBusyError, SessionEngine } from './engine.js'
 import type { EngineStore } from './engine.js'
 import type { StoredGameSession } from '../db/queries.js'
 import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
+import type { Seat } from './types.js'
+
+const seat = (name: string, controllerUserId: string, boardId: string | null, userId: string | null = controllerUserId): Seat =>
+  ({ name, userId, controllerUserId, boardId, boardName: boardId })
 
 function makeStore() {
   return {
@@ -48,7 +52,7 @@ describe('create', () => {
     expect(err instanceof ActiveSessionError && err.sessionId).toBe(sessionId)
     // other users are unaffected
     await expect(engine.create('user-2', null, 'atc', {}, [{ name: 'Bob' }])).resolves.toBeDefined()
-    expect(engine.getSessionByOwner('user-1')?.id).toBe(sessionId)
+    expect(engine.getSessionByUser('user-1')?.id).toBe(sessionId)
   })
 
   it('frees the slot once the session ends', async () => {
@@ -57,7 +61,7 @@ describe('create', () => {
     const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])
     await engine.deleteSession(sessionId)
     expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date))
-    expect(engine.getSessionByOwner('user-1')).toBeUndefined()
+    expect(engine.getSessionByUser('user-1')).toBeUndefined()
     await expect(engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])).resolves.toBeDefined()
   })
 
@@ -67,6 +71,47 @@ describe('create', () => {
     await expect(engine.create('user-1', 'board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }]))
       .rejects.toThrow(/invalid config: bull off needs at least two players/)
     expect(store.insertSession).not.toHaveBeenCalled()
+  })
+
+  it('lets only one of two concurrent creates by the same user through', async () => {
+    const engine = makeEngine()
+    const results = await Promise.allSettled([
+      engine.create('user-1', null, 'atc', {}, [{ name: 'Alice' }]),
+      engine.create('user-1', null, 'atc', {}, [{ name: 'Alice' }]),
+    ])
+    expect(results.map(r => r.status).sort()).toEqual(['fulfilled', 'rejected'])
+    const rejected = results.find(r => r.status === 'rejected')
+    expect(rejected?.status === 'rejected' && rejected.reason).toBeInstanceOf(ActiveSessionError)
+    expect(engine.getAllSessions()).toHaveLength(1)
+  })
+
+  it('lets only one of two concurrent creates on the same board through', async () => {
+    const engine = makeEngine()
+    const results = await Promise.allSettled([
+      engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }]),
+      engine.create('user-2', 'board-1', 'atc', {}, [{ name: 'Bob' }]),
+    ])
+    expect(results.map(r => r.status).sort()).toEqual(['fulfilled', 'rejected'])
+    const rejected = results.find(r => r.status === 'rejected')
+    expect(rejected?.status === 'rejected' && rejected.reason).toBeInstanceOf(BoardBusyError)
+    expect(engine.getAllSessions()).toHaveLength(1)
+  })
+
+  it('frees the reserved slots when storing the session fails', async () => {
+    const store = makeStore()
+    store.insertSession.mockRejectedValueOnce(new Error('db down'))
+    const engine = new SessionEngine(store, push)
+    await expect(engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])).rejects.toThrow('db down')
+    expect(engine.getSessionByUser('user-1')).toBeUndefined()
+    expect(engine.getSessionByBoard('board-1')).toBeUndefined()
+    expect(engine.getAllSessions()).toHaveLength(0)
+    await expect(engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }])).resolves.toBeDefined()
+  })
+
+  it('gives a local game\'s seats the board\'s name', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', {}, [{ name: 'Alice' }, { name: 'Bob' }], 'Living room')
+    expect(engine.getSession(sessionId)?.seats.map(s => s.boardName)).toEqual(['Living room', 'Living room'])
   })
 
   it('returns a sessionId', async () => {
@@ -155,7 +200,7 @@ describe('onUserAction', () => {
       dart: { segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' }, score: 1 },
       source_seq: 1,
     })
-    await engine.onUserAction(sessionId, { type: 'undo_dart' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'undo_dart' })
     const session = engine.getSession(sessionId)!
     const darts = session.openVisitEvents.filter(e => e.kind === 'dart.detected')
     expect(darts).toHaveLength(0)
@@ -170,7 +215,7 @@ describe('onUserAction', () => {
       dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3 },
       source_seq: 1,
     })
-    await engine.onUserAction(sessionId, {
+    await engine.onUserAction(sessionId, 'user-1', {
       type: 'correct_dart', visitIndex: 0,
       segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' },
     })
@@ -188,7 +233,7 @@ describe('onUserAction', () => {
       dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3,
         coords: { x: 0.1, y: 0.2 }, polar: { r: 0.22, theta_deg: 63 } },
     })
-    await engine.onUserAction(sessionId, {
+    await engine.onUserAction(sessionId, 'user-1', {
       type: 'correct_dart', visitIndex: 0,
       segment: { number: 1, bed: 'Single', multiplier: 1, name: 'S1' },
     })
@@ -206,7 +251,7 @@ describe('onUserAction', () => {
       dart: { segment: { number: 3, bed: 'Single', multiplier: 1, name: 'S3' }, score: 3,
         coords: { x: 0.1, y: -0.3 }, polar: { r: 0.32, theta_deg: -72 } },
     })
-    await engine.onUserAction(sessionId, {
+    await engine.onUserAction(sessionId, 'user-1', {
       type: 'correct_dart', visitIndex: 0,
       segment: { number: 20, bed: 'Triple', multiplier: 3, name: 'T20' },
       coords: { x: 0, y: 0.6 },
@@ -250,7 +295,7 @@ describe('onUserAction', () => {
       await engine.onBridgeEvent('board-1', 'dart.detected', dart(r))
       await engine.onBridgeEvent('board-1', 'takeout.finished', {})
     }
-    await engine.onUserAction(sessionId, { type: 'bulloff_start' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'bulloff_start' })
     const snap = engine.getSnapshot(sessionId)!
     expect((snap.game as any).phase).toBe('game')
     expect((snap.game as any).currentPlayer).toBe(1)
@@ -260,7 +305,7 @@ describe('onUserAction', () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'x01',
       { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'Alice' }, { name: 'Bob' }])
-    await engine.onUserAction(sessionId, {
+    await engine.onUserAction(sessionId, 'user-1', {
       type: 'add_dart',
       segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 },
       coords: { x: 0.03, y: 0.04 },
@@ -275,7 +320,7 @@ describe('onUserAction', () => {
   it('empty takeout records three misses and moves on', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'x01', x01Cfg, [{ name: 'A' }, { name: 'B' }])
-    await engine.onUserAction(sessionId, { type: 'takeout' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     const s = engine.getSession(sessionId)!
     expect(s.totalVisits).toEqual([1, 0])
     expect(s.totalDarts).toEqual([3, 0])
@@ -285,8 +330,8 @@ describe('onUserAction', () => {
   it('takeout after a bust records that visit, not misses', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 41 }, [{ name: 'A' }, { name: 'B' }])
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: T20 })
-    await engine.onUserAction(sessionId, { type: 'takeout' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: T20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     const s = engine.getSession(sessionId)!
     expect(s.totalVisits).toEqual([1, 0])
     expect(s.totalDarts).toEqual([1, 0])
@@ -295,8 +340,8 @@ describe('onUserAction', () => {
   it('a busted visit takes no more darts', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 41 }, [{ name: 'A' }, { name: 'B' }])
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: T20 })
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: S20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: T20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
     expect((engine.getSnapshot(sessionId)!.game.currentVisitDarts as unknown[]).length).toBe(1)
     expect(engine.getSession(sessionId)!.totalDarts).toEqual([1, 0])
   })
@@ -304,9 +349,9 @@ describe('onUserAction', () => {
   it('undo after a bust accepts darts again', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 41 }, [{ name: 'A' }, { name: 'B' }])
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: T20 })
-    await engine.onUserAction(sessionId, { type: 'undo_dart' })
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: S20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: T20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'undo_dart' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
     expect((engine.getSnapshot(sessionId)!.game.currentVisitDarts as unknown[]).length).toBe(1)
     expect((engine.getSnapshot(sessionId)!.game as X01Game).scores).toEqual([21, 41])
   })
@@ -314,7 +359,7 @@ describe('onUserAction', () => {
   it('empty takeout is ignored during the bull off', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
-    await engine.onUserAction(sessionId, { type: 'takeout' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     const s = engine.getSession(sessionId)!
     expect(s.totalVisits).toEqual([0, 0])
     expect((engine.getSnapshot(sessionId)!.game as X01Game).phase).toBe('bulloff')
@@ -324,10 +369,10 @@ describe('onUserAction', () => {
     const store = makeStore()
     const engine = new SessionEngine(store, push)
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Cfg, startScore: 40, firstTo: 1 }, [{ name: 'A' }])
-    await engine.onUserAction(sessionId, { type: 'add_dart', segment: { name: 'D20', number: 20, bed: 'Double', multiplier: 2 } })
-    await engine.onUserAction(sessionId, { type: 'takeout' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: { name: 'D20', number: 20, bed: 'Double', multiplier: 2 } })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [expect.objectContaining({ placement: 1 })])
-    await engine.onUserAction(sessionId, { type: 'takeout' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     expect(engine.getSession(sessionId)!.totalVisits).toEqual([1])
   })
 })
@@ -337,12 +382,12 @@ describe('rebuild', () => {
     const good: StoredGameSession = {
       id: 'good-1', owner_user_id: 'user-1', board_db_id: null, game_id: 'atc',
       game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
-      created_at: new Date(), players: [{ name: 'Alice', user_id: 'user-1' }],
+      created_at: new Date(), players: [{ name: 'Alice', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null, board_name: null }],
     }
     const bad: StoredGameSession = {
       id: 'bad-1', owner_user_id: 'user-2', board_db_id: null, game_id: 'atc',
       game_version: atcModule.version, rng_seed: 1, config: atcModule.defaultConfig,
-      created_at: new Date(), players: [{ name: 'Bob', user_id: 'user-2' }],
+      created_at: new Date(), players: [{ name: 'Bob', user_id: 'user-2', controller_user_id: 'user-2', board_db_id: null, board_name: null }],
     }
     const warn = vi.fn()
     const store = makeStore()
@@ -354,7 +399,7 @@ describe('rebuild', () => {
     await expect(engine.rebuild()).resolves.toBeUndefined()
 
     expect(engine.getSession('good-1')).toBeDefined()
-    expect(engine.getSessionByOwner('user-1')?.id).toBe('good-1')
+    expect(engine.getSessionByUser('user-1')?.id).toBe('good-1')
     expect(engine.getSession('bad-1')).toBeUndefined()
     expect(store.abortSession).toHaveBeenCalledWith('bad-1', expect.any(Date))
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('rebuild'), expect.objectContaining({ sessionId: 'bad-1' }))
@@ -375,5 +420,324 @@ describe('getSnapshot', () => {
     expect(snap.type).toBe('snapshot')
     expect(snap.gameId).toBe('atc')
     expect((snap.game as any).currentVisitDarts).toHaveLength(1)
+  })
+})
+
+describe('createWithSeats', () => {
+  it('indexes every seat board and every controller', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      seats: [seat('Host', 'host', 'board-a'), seat('Lena', 'lena', 'board-b'), seat('Guest', 'host', 'board-a', null)],
+    })
+    expect(engine.getSessionByBoard('board-a')?.id).toBe(sessionId)
+    expect(engine.getSessionByBoard('board-b')?.id).toBe(sessionId)
+    expect(engine.getSessionByUser('lena')?.id).toBe(sessionId)
+    expect(engine.getSession(sessionId)?.players).toEqual([{ name: 'Host' }, { name: 'Lena' }, { name: 'Guest' }])
+  })
+
+  it('stores each seat\'s account, controller and board', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'atc', config: {},
+      seats: [seat('Host', 'host', 'board-a'), seat('Guest', 'host', null, null)],
+    })
+    expect(store.insertSession).toHaveBeenCalledWith(expect.objectContaining({
+      owner_user_id: 'host', board_db_id: null,
+      players: [
+        { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'board-a' },
+        { name: 'Guest', user_id: null, controller_user_id: 'host', board_db_id: null },
+      ],
+    }))
+  })
+
+  it('refuses a board another game uses', async () => {
+    const engine = makeEngine()
+    await engine.create('user-1', 'board-b', 'atc', {}, [{ name: 'Alice' }])
+    const err = await engine.createWithSeats({ ownerUserId: 'host', gameId: 'atc', config: {}, seats: [seat('Host', 'host', 'board-b')] }).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(BoardBusyError)
+  })
+
+  it('refuses a controller who is already in a game', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('lena', null, 'atc', {}, [{ name: 'Lena' }])
+    const err = await engine.createWithSeats({ ownerUserId: 'host', gameId: 'atc', config: {}, seats: [seat('Host', 'host', null), seat('Lena', 'lena', null)] }).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ActiveSessionError)
+    expect(err instanceof ActiveSessionError && [err.sessionId, err.userId]).toEqual([sessionId, 'lena'])
+  })
+
+  it('frees every board and controller once the game ends', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.createWithSeats({ ownerUserId: 'host', gameId: 'atc', config: {}, seats: [seat('Host', 'host', 'board-a'), seat('Lena', 'lena', 'board-b')] })
+    await engine.deleteSession(sessionId)
+    expect(engine.getSessionByBoard('board-b')).toBeUndefined()
+    expect(engine.getSessionByUser('lena')).toBeUndefined()
+  })
+})
+
+const dartData = (index: number, name: string, number: number, multiplier: number, bed = 'SingleOuter') =>
+  ({ visit_id: 'v', index, source_seq: index, dart: { segment: { name, number, bed, multiplier }, score: number * multiplier } })
+
+async function twoBoardGame(store = makeStore(), notify = vi.fn()) {
+  const engine = new SessionEngine(store, push, undefined, notify)
+  const { sessionId } = await engine.createWithSeats({
+    ownerUserId: 'host', gameId: 'x01', config: { ...x01Module.defaultConfig, startScore: 301 },
+    seats: [seat('Host', 'host', 'board-a'), seat('Lena', 'lena', 'board-b')],
+  })
+  return { engine, sessionId, store, notify }
+}
+
+async function visit(engine: SessionEngine, boardId: string, darts: [string, number, number, string][]) {
+  for (const [i, [name, number, multiplier, bed]] of darts.entries()) {
+    await engine.onBridgeEvent(boardId, 'dart.detected', dartData(i, name, number, multiplier, bed))
+  }
+  await engine.onBridgeEvent(boardId, 'takeout.finished', {})
+}
+const T20: [string, number, number, string] = ['T20', 20, 3, 'Triple']
+const S1: [string, number, number, string] = ['S1', 1, 1, 'SingleOuter']
+
+describe('routing board events', () => {
+  it('counts darts from the board of the seat that is up', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    await engine.onBridgeEvent('board-a', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    const game = engine.getSnapshot(sessionId)?.game as X01Game
+    expect(game.scores[0]).toBe(241)
+  })
+
+  it('drops darts from another board, unlogged, and tells that board\'s players', async () => {
+    const { engine, sessionId, store, notify } = await twoBoardGame()
+    await engine.onBridgeEvent('board-b', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    expect(store.appendEvent).not.toHaveBeenCalled()
+    expect((engine.getSnapshot(sessionId)?.game as X01Game).scores).toEqual([301, 301])
+    expect(notify).toHaveBeenCalledWith(sessionId, ['lena'], { type: 'notice', code: 'not_your_turn', boardId: 'board-b' })
+  })
+
+  it('ignores a takeout on a board that is not up', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    await engine.onBridgeEvent('board-a', 'dart.detected', dartData(0, 'S1', 1, 1))
+    await engine.onBridgeEvent('board-b', 'takeout.finished', {})
+    const game = engine.getSnapshot(sessionId)?.game as X01Game
+    expect(game.currentPlayer).toBe(0)
+    expect(game.currentVisitDarts).toHaveLength(1)
+  })
+
+  it('passes the turn to the next board on takeout; its darts count and bust without a visit.opened', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    await engine.onBridgeEvent('board-b', 'visit.opened', { visit_id: 'early' }) // dropped: not Lena's turn yet
+    await visit(engine, 'board-a', [S1])            // host 300
+    await visit(engine, 'board-b', [T20, T20, T20]) // Lena 121
+    expect((engine.getSnapshot(sessionId)?.game as X01Game).scores).toEqual([300, 121])
+    await visit(engine, 'board-a', [S1])            // host 299
+    await visit(engine, 'board-b', [T20, T20])      // Lena would leave 1 on double out: bust, back to 121
+    const game = engine.getSnapshot(sessionId)?.game as X01Game
+    expect(game.scores).toEqual([299, 121])
+    expect(game.currentPlayer).toBe(0)
+  })
+
+  it('logs which board an accepted event came from', async () => {
+    const { engine, store } = await twoBoardGame()
+    await engine.onBridgeEvent('board-a', 'dart.detected', dartData(0, 'S1', 1, 1))
+    expect(store.appendEvent).toHaveBeenCalledWith(expect.objectContaining({ board_db_id: 'board-a', source: 'board' }))
+  })
+
+  it('keeps each board\'s status and re-pushes on bridge presence changes', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    await engine.onBridgeEvent('board-b', 'board.status', { status: 'Throw', running: true, event: 'x' })
+    expect(engine.getSession(sessionId)?.boardStatus.get('board-b')?.status).toBe('Throw')
+    push.mockClear()
+    engine.onBoardPresence('board-b')
+    expect(push).toHaveBeenCalledWith(sessionId)
+  })
+})
+
+describe('rebuild with seats', () => {
+  it('restores each seat\'s controller and board', async () => {
+    const store = makeStore()
+    store.getActiveSessions.mockResolvedValue([{
+      id: 's1', owner_user_id: 'host', board_db_id: null, game_id: 'atc', game_version: 1, rng_seed: 1, config: {}, created_at: new Date(),
+      players: [
+        { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'board-a', board_name: 'Living room' },
+        { name: 'Lena', user_id: 'lena', controller_user_id: null, board_db_id: 'board-b', board_name: "Lena's place" },
+      ],
+    } satisfies StoredGameSession])
+    const engine = new SessionEngine(store, push)
+    await engine.rebuild()
+    const s = engine.getSession('s1')
+    expect(s?.seats).toEqual([
+      { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: 'Living room' },
+      // A deleted controller falls back to the host, so the seat can still be played
+      { name: 'Lena', userId: 'lena', controllerUserId: 'host', boardId: 'board-b', boardName: "Lena's place" },
+    ])
+    expect(engine.getSessionByBoard('board-b')?.id).toBe('s1')
+  })
+})
+
+describe('onUserAction authorization', () => {
+  it('refuses another player\'s action without logging it', async () => {
+    const { engine, sessionId, store } = await twoBoardGame()
+    const res = await engine.onUserAction(sessionId, 'lena', { type: 'add_dart', segment: { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 } })
+    expect(res).toEqual({ ok: false, code: 'forbidden' })
+    expect(store.appendEvent).not.toHaveBeenCalled()
+  })
+
+  it('logs a forfeit with the seats it covers', async () => {
+    const { engine, sessionId, store } = await twoBoardGame()
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+    expect(store.appendEvent).toHaveBeenCalledWith(expect.objectContaining({ kind: 'forfeit', data: { type: 'forfeit', seats: [1] } }))
+  })
+
+  it('still lets a local game\'s owner do everything', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
+    await engine.onBridgeEvent('board-1', 'dart.detected', dartData(0, 'Bull', 25, 2, 'Double'))
+    expect(await engine.onUserAction(sessionId, 'user-1', { type: 'bulloff_skip' })).toEqual({ ok: true })
+  })
+})
+
+describe('forfeit', () => {
+  it('finishes the game with the forfeiting seats last', async () => {
+    const { engine, sessionId, store } = await twoBoardGame()
+    await engine.onBridgeEvent('board-a', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    await engine.onBridgeEvent('board-a', 'takeout.finished', {})
+    await engine.onUserAction(sessionId, 'host', { type: 'forfeit' })
+    expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [
+      expect.objectContaining({ placement: 2, forfeited: true }),
+      expect.objectContaining({ placement: 1, forfeited: false }),
+    ])
+    expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+    expect(engine.getSessionByUser('lena')).toBeUndefined()
+  })
+
+  it('rolls back the open visit\'s darts from whoever is up, not the forfeiting seat', async () => {
+    const { engine, sessionId, store } = await twoBoardGame()
+    // host commits a one-dart visit, handing the turn to lena
+    await visit(engine, 'board-a', [S1])
+    // lena is now up and throws two darts, left open (no takeout yet)
+    await engine.onBridgeEvent('board-b', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    await engine.onBridgeEvent('board-b', 'dart.detected', dartData(1, 'T20', 20, 3, 'Triple'))
+    // host forfeits their own seat; lena's open darts must be discarded, not kept against her
+    await engine.onUserAction(sessionId, 'host', { type: 'forfeit' })
+    expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [
+      expect.objectContaining({ stats: expect.objectContaining({ dartsThrown: 1 }) }),
+      expect.objectContaining({ stats: expect.objectContaining({ dartsThrown: 0 }) }),
+    ])
+  })
+
+  it('a forfeit logged before a crash finishes the game on rebuild', async () => {
+    const store = makeStore()
+    store.getActiveSessions.mockResolvedValue([{
+      id: 's1', owner_user_id: 'host', board_db_id: null, game_id: 'atc', game_version: 1, rng_seed: 1, config: {}, created_at: new Date(),
+      players: [
+        { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'a', board_name: null },
+        { name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: 'b', board_name: null },
+      ],
+    }])
+    store.getSessionEvents.mockResolvedValue([{ seq: 0, source: 'user', kind: 'forfeit', data: { type: 'forfeit', seats: [1] }, created_at: new Date() }])
+    await new SessionEngine(store, push).rebuild()
+    expect(store.finishSession).toHaveBeenCalledWith('s1', expect.any(Date), [
+      expect.objectContaining({ placement: 1, forfeited: false }),
+      expect.objectContaining({ placement: 2, forfeited: true }),
+    ])
+  })
+})
+
+describe('getSnapshot per viewer', () => {
+  it('describes each seat and the viewer\'s own seats', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    const snap = engine.getSnapshot(sessionId, { viewerUserId: 'lena', connectedUserIds: new Set(['host']), isBoardOnline: b => b === 'board-a' })
+    expect(snap).toMatchObject({
+      status: 'active', ownerUserId: 'host', mySeats: [1],
+      seats: [
+        { controllerUserId: 'host', userId: 'host', boardId: 'board-a', boardName: 'board-a', boardOnline: true, controllerConnected: true, forfeited: false },
+        { controllerUserId: 'lena', userId: 'lena', boardId: 'board-b', boardName: 'board-b', boardOnline: false, controllerConnected: false, forfeited: false },
+      ],
+    })
+  })
+
+  it('shows the status of the board whose seat is up', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    await engine.onBridgeEvent('board-b', 'board.status', { status: 'Takeout', running: true, event: 'x' })
+    await engine.onBridgeEvent('board-a', 'board.status', { status: 'Throw', running: true, event: 'y' })
+    expect(engine.getSnapshot(sessionId)?.bmStatus?.status).toBe('Throw')
+  })
+
+  it('pushes an aborted snapshot before dropping the game', async () => {
+    const { engine, sessionId } = await twoBoardGame()
+    const seen: (string | undefined)[] = []
+    push.mockImplementation((id: string) => { seen.push(engine.getSnapshot(id)?.status) })
+    await engine.deleteSession(sessionId)
+    expect(seen).toEqual(['aborted'])
+    push.mockReset()
+  })
+})
+
+describe('bull off across boards', () => {
+  const bull = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
+    dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } } })
+
+  async function bullOffGame(boards: string[], notify = vi.fn()) {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push, undefined, notify)
+    const names = ['Host', 'Lena', 'Max']
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: { ...x01Module.defaultConfig, bullOff: 'wdc' },
+      seats: boards.map((b, i) => seat(names[i], names[i].toLowerCase(), b)),
+    })
+    return { engine, sessionId, store, notify }
+  }
+
+  it('hands the first game visit to the winner\'s board; the loser\'s board is ignored', async () => {
+    const { engine, sessionId, notify } = await bullOffGame(['board-a', 'board-b'])
+    await engine.onBridgeEvent('board-a', 'visit.opened', { visit_id: 'v' })
+    await engine.onBridgeEvent('board-a', 'dart.detected', bull(0.05))
+    await engine.onBridgeEvent('board-a', 'takeout.finished', {})
+    await engine.onBridgeEvent('board-b', 'visit.opened', { visit_id: 'v' })
+    await engine.onBridgeEvent('board-b', 'dart.detected', bull(0.3))
+    await engine.onBridgeEvent('board-b', 'takeout.finished', {})
+    // Host won: Lena's board doesn't start the game
+    notify.mockClear()
+    await engine.onBridgeEvent('board-b', 'visit.opened', { visit_id: 'stray' })
+    await engine.onBridgeEvent('board-b', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    expect((engine.getSnapshot(sessionId)?.game as X01Game).phase).toBe('bulloff')
+    expect(notify).toHaveBeenCalledWith(sessionId, ['lena'], expect.objectContaining({ code: 'not_your_turn' }))
+    // Host's board starts it, and the first dart scores
+    notify.mockClear()
+    await engine.onBridgeEvent('board-a', 'visit.opened', { visit_id: 'g1' })
+    await engine.onBridgeEvent('board-a', 'dart.detected', dartData(0, 'T20', 20, 3, 'Triple'))
+    const game = engine.getSnapshot(sessionId)?.game as X01Game
+    expect(game.phase).toBe('game')
+    expect(game.currentPlayer).toBe(0)
+    expect(game.scores).toEqual([441, 501])
+    expect(notify).not.toHaveBeenCalled()
+  })
+
+  it("rethrows a tie from the last thrower's board, not another board", async () => {
+    const { engine, sessionId } = await bullOffGame(['board-a', 'board-b'])
+    for (const [b, r] of [['board-a', 0.2], ['board-b', 0.2]] as const) {
+      await engine.onBridgeEvent(b, 'visit.opened', { visit_id: 'v' })
+      await engine.onBridgeEvent(b, 'dart.detected', bull(r))
+      await engine.onBridgeEvent(b, 'takeout.finished', {})
+    }
+    // A tie: the rethrow starts with whoever threw last (Lena), on her board
+    await engine.onBridgeEvent('board-a', 'visit.opened', { visit_id: 'x' })
+    expect((engine.getSnapshot(sessionId)?.game as X01Game).bullOff?.result?.rethrow).toBe(true)
+    await engine.onBridgeEvent('board-b', 'visit.opened', { visit_id: 'r' })
+    const view = (engine.getSnapshot(sessionId)?.game as X01Game).bullOff
+    expect(view?.result).toBeNull()
+    expect(view?.currentPlayer).toBe(1)
+  })
+
+  it('a forfeit during the bull off ties the seats still in and puts the forfeited seat last', async () => {
+    const { engine, sessionId, store } = await bullOffGame(['board-a', 'board-b', 'board-c'])
+    await engine.onBridgeEvent('board-a', 'visit.opened', { visit_id: 'v' })
+    await engine.onBridgeEvent('board-a', 'dart.detected', bull(0.05))
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+    expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [
+      expect.objectContaining({ placement: 1, forfeited: false }),
+      expect.objectContaining({ placement: 3, forfeited: true }),
+      expect.objectContaining({ placement: 1, forfeited: false }),
+    ])
+    expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
   })
 })

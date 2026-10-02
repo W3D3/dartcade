@@ -47,7 +47,8 @@ export class BridgeConnections {
 
   remove(conn: BridgeConn): void {
     this.all.delete(conn)
-    if (conn.boardDbId) this.byBoard.delete(conn.boardDbId)
+    // A replaced connection closes after its successor registered: keep the successor
+    if (conn.boardDbId && this.byBoard.get(conn.boardDbId) === conn) this.byBoard.delete(conn.boardDbId)
   }
 
   get(boardDbId: string): BridgeConn | undefined {

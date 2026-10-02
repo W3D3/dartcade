@@ -9,9 +9,11 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
   const s = module.init(config, players)
   return {
     id: 's1', ownerUserId: 'u1', boardId: 'b1', players, module,
+    seats: players.map(p => ({ name: p.name, userId: null, controllerUserId: 'u1', boardId: 'b1', boardName: null })),
     committedState: s, currentState: s, openVisitEvents: [], openDarts: [],
     status: 'active', createdAt: new Date(0), seed: 0, visitCount: 0, nextSeq: 0,
-    totalDarts: Array<number>(n).fill(0), totalVisits: Array<number>(n).fill(0), bmStatus: null,
+    totalDarts: Array<number>(n).fill(0), totalVisits: Array<number>(n).fill(0),
+    boardStatus: new Map(), forfeited: [],
   }
 }
 const S1: Segment = { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }
@@ -77,5 +79,35 @@ describe('applyInput', () => {
     const out = applyInput(s, board('takeout.finished'), t(2))
     expect(out.committed).toMatchObject({ seat: 0, phase: 'bulloff' })
     expect(s.totalVisits).toEqual([0, 0])
+  })
+
+  it('a forfeit drops the open visit and decides the game', () => {
+    const s = session(x01Module, x01Module.defaultConfig, 2)
+    applyInput(s, { source: 'user', action: { type: 'add_dart', segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 } } }, new Date())
+    const out = applyInput(s, { source: 'user', action: { type: 'forfeit', seats: [0] } }, new Date())
+    expect(out).toEqual({ committed: null, won: true })
+    expect(s.forfeited).toEqual([0])
+    expect(s.openVisitEvents).toEqual([])
+    expect(s.totalDarts).toEqual([0, 0])
+  })
+
+  it('a forfeit without seats changes nothing', () => {
+    const s = session(x01Module, x01Module.defaultConfig, 2)
+    expect(applyInput(s, { source: 'user', action: { type: 'forfeit' } }, new Date())).toEqual({ committed: null, won: false })
+  })
+
+  it('a forfeit rolls back the open visit\'s darts from whoever is up, not the forfeiter', () => {
+    const s = session(x01Module, x01Module.defaultConfig, 2)
+    // seat 0 commits a visit of three misses, handing the turn to seat 1
+    applyInput(s, { source: 'user', action: { type: 'takeout' } }, new Date())
+    expect(s.totalDarts).toEqual([3, 0])
+    // seat 1 is now up and throws two darts
+    applyInput(s, { source: 'user', action: { type: 'add_dart', segment: S1 } }, new Date())
+    applyInput(s, { source: 'user', action: { type: 'add_dart', segment: S1 } }, new Date())
+    expect(s.totalDarts).toEqual([3, 2])
+    // seat 0 forfeits; seat 1's open darts (not seat 0's) must be discarded
+    const out = applyInput(s, { source: 'user', action: { type: 'forfeit', seats: [0] } }, new Date())
+    expect(out).toEqual({ committed: null, won: true })
+    expect(s.totalDarts).toEqual([3, 0])
   })
 })

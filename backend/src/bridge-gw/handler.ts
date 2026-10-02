@@ -83,6 +83,7 @@ export function handleBridgeConnection(
     conn.hardwareBoardId = board.hardware_id ?? null
     bridgeConnections.add(conn)
     bridgeConnections.register(conn, board.id)
+    engine.onBoardPresence(board.id)
     return true
   }).catch(() => { socket.close(4500, 'internal error'); return false })
 
@@ -154,8 +155,16 @@ export function handleBridgeConnection(
     }).catch((err: unknown) => { console.error('Bridge event processing error:', { boardDbId: conn.boardDbId }, err) })
   })
 
-  socket.on('close', () => { bridgeConnections.remove(conn) })
-  socket.on('error', () => { bridgeConnections.remove(conn) })
+  socket.on('close', () => {
+    const boardDbId = conn.boardDbId
+    bridgeConnections.remove(conn)
+    if (boardDbId) engine.onBoardPresence(boardDbId)
+  })
+  socket.on('error', () => {
+    const boardDbId = conn.boardDbId
+    bridgeConnections.remove(conn)
+    if (boardDbId) engine.onBoardPresence(boardDbId)
+  })
 }
 
 export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {

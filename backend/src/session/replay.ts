@@ -3,8 +3,9 @@ import { ClientMessageSchema } from '../schema/zod.js'
 import { parseBoardEvent } from './boardEvent.js'
 import { applyInput, type GameInput } from './apply.js'
 import { seededRng } from './rng.js'
+import { forfeitPlacements } from '../games/ranking.js'
 import type { NewGameDart } from '../db/queries.js'
-import type { AnyGameModule, CommittedVisit, GameConfig, Player, FinishedSeat, Session } from './types.js'
+import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, Seat, Session } from './types.js'
 
 /** Reports data the engine had to skip (message, details). */
 export type WarnFn = (message: string, details: unknown) => void
@@ -30,16 +31,17 @@ export function parseLoggedInput(row: LoggedInput): GameInput | null {
 /** A session at its start, set up exactly like create() set it up. */
 export function newSession(a: {
   id: string; ownerUserId: string; boardId: string | null; module: AnyGameModule
-  config: GameConfig; players: Player[]; seed: number; createdAt: Date
+  config: GameConfig; seats: Seat[]; seed: number; createdAt: Date
 }): Session {
-  const initial = a.module.init(a.config, a.players, seededRng(a.seed))
+  const players = a.seats.map(s => ({ name: s.name }))
+  const initial = a.module.init(a.config, players, seededRng(a.seed))
   return {
-    id: a.id, ownerUserId: a.ownerUserId, boardId: a.boardId, players: a.players, module: a.module,
+    id: a.id, ownerUserId: a.ownerUserId, boardId: a.boardId, seats: a.seats, players, module: a.module,
     committedState: initial, currentState: initial, openVisitEvents: [], openDarts: [],
     status: 'active', createdAt: a.createdAt, seed: a.seed, visitCount: 0, nextSeq: 0,
-    totalDarts: Array<number>(a.players.length).fill(0),
-    totalVisits: Array<number>(a.players.length).fill(0),
-    bmStatus: null,
+    totalDarts: Array<number>(players.length).fill(0),
+    totalVisits: Array<number>(players.length).fill(0),
+    boardStatus: new Map(), forfeited: [],
   }
 }
 
@@ -69,12 +71,15 @@ export function dartRows(sessionId: string, v: CommittedVisit<unknown>): NewGame
   }))
 }
 
-/** Each seat's placement and stats for a won game. */
+/** Each seat's placement and stats once the game is decided (won, or ended by a forfeit). */
 export function results(session: Session): FinishedSeat[] {
   const state = session.committedState
   const seats = session.module.summarize(state, { totalDarts: session.totalDarts, totalVisits: session.totalVisits })
+  const forfeited = new Set(session.forfeited)
+  // Without a winner, summarize ranks by standing; a forfeit puts its seats last
+  const placements = forfeited.size > 0 ? forfeitPlacements(seats.map(r => r.placement), forfeited) : seats.map(r => r.placement)
   const order = session.module.throwOrder?.(state) ?? []
   // A throw order that doesn't name every seat once falls back to seat order
   const valid = order.length === seats.length && seats.every((_, seat) => order.includes(seat))
-  return seats.map((r, seat) => ({ ...r, throwPosition: valid ? order.indexOf(seat) : seat }))
+  return seats.map((r, seat) => ({ ...r, placement: placements[seat], throwPosition: valid ? order.indexOf(seat) : seat, forfeited: forfeited.has(seat) }))
 }
