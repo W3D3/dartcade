@@ -306,4 +306,68 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await person('Max')).toMatchObject({ boardId: null, boardMovedBy: null })
     })
   })
+
+  describe('invites', () => {
+    it('a member invites an account; the invitee sees it live and accepts into the lobby', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      const me = sock()
+      hub.addMeSocket('max', me, await lobbies.meMessage('max'))
+      const { id: inviteId } = await lobbies.invite('lena', id, 'max')
+      expect(lastMsg(me).invites).toEqual([
+        { id: inviteId, lobbyId: id, lobbyName: "Christoph's lobby", inviterUserId: 'lena', inviterName: 'Lena', createdAt: expect.any(String) },
+      ])
+      expect((await lobbies.view(id))?.invites).toMatchObject([{ userId: 'max', name: 'Max', invitedByUserId: 'lena' }])
+      expect(await lobbies.listInvites('max')).toHaveLength(1)
+
+      expect(await lobbies.acceptInvite('max', inviteId)).toMatchObject({ id })
+      const lobby = await lobbies.view(id)
+      expect(lobby?.invites).toEqual([])
+      expect(lobby?.people.map(p => p.name)).toEqual(['Christoph', 'Lena', 'Max'])
+      expect(lastMsg(me)).toMatchObject({ invites: [], lobby: { id } })
+    })
+
+    it('refuses inviting yourself, a member, someone invited already, or an unknown account', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.invite('chris', id, 'max')
+      await expect(lobbies.invite('chris', id, 'chris')).rejects.toMatchObject({ statusCode: 400 })
+      await expect(lobbies.invite('chris', id, 'lena')).rejects.toMatchObject({ statusCode: 409, body: { code: 'already_member' } })
+      await expect(lobbies.invite('lena', id, 'max')).rejects.toMatchObject({ statusCode: 409, body: { code: 'already_invited' } })
+      await expect(lobbies.invite('chris', id, 'nobody')).rejects.toMatchObject({ statusCode: 404 })
+      await expect(lobbies.invite('sam', id, 'max')).rejects.toMatchObject({ statusCode: 404 })
+    })
+
+    it('declines; only the invitee answers', async () => {
+      const { id } = await lobbies.create('chris')
+      const { id: inviteId } = await lobbies.invite('chris', id, 'max')
+      await expect(lobbies.declineInvite('lena', inviteId)).rejects.toMatchObject({ statusCode: 404 })
+      await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({ statusCode: 404 })
+      await lobbies.declineInvite('max', inviteId)
+      expect(await lobbies.listInvites('max')).toEqual([])
+      expect((await lobbies.view(id))?.invites).toEqual([])
+      await expect(lobbies.acceptInvite('max', inviteId)).rejects.toMatchObject({ statusCode: 404 })
+    })
+
+    it('accepting while in another lobby asks to leave it first, and the invite stays', async () => {
+      const { id } = await lobbies.create('chris')
+      const { id: inviteId } = await lobbies.invite('chris', id, 'lena')
+      const own = await lobbies.create('lena')
+      await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: own.id } })
+      expect(await lobbies.listInvites('lena')).toHaveLength(1)
+    })
+
+    it('a closed lobby\'s invites expire; joining by code accepts a pending invite', async () => {
+      const a = await lobbies.create('chris')
+      const { id: expiring } = await lobbies.invite('chris', a.id, 'max')
+      await lobbies.close('chris', a.id)
+      expect(await lobbies.listInvites('max')).toEqual([])
+      await expect(lobbies.acceptInvite('max', expiring)).rejects.toMatchObject({ statusCode: 404 })
+
+      const b = await lobbies.create('lena')
+      await lobbies.invite('lena', b.id, 'max')
+      await lobbies.join('max', b.id, b.code)
+      expect(await lobbies.listInvites('max')).toEqual([])
+    })
+  })
 })

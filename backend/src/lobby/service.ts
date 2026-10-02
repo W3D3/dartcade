@@ -6,7 +6,7 @@ import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { pgErrorCode } from '../db/errors.js'
 import type { SessionEngine } from '../session/engine.js'
 import { WsCloseCode } from '../schema/game-ws.js'
-import type { Lobby, LobbyServerMessage, MeMessage } from '../schema/lobby-ws.js'
+import type { Lobby, LobbyServerMessage, MeMessage, PendingInvite } from '../schema/lobby-ws.js'
 import { games } from '../games/index.js'
 import { LobbyError, inLobby } from './errors.js'
 import type { LobbyHub } from './hub.js'
@@ -439,6 +439,61 @@ export class LobbyService {
       })
       await this.reload(lobbyId)
       await this.publish(lobbyId)
+    })
+  }
+
+  // ---- invites ----------------------------------------------------------------------
+
+  /** Any member invites an account; it shows in the invitee's pending invites. */
+  async invite(userId: string, lobbyId: string, inviteeUserId: string): Promise<{ id: string }> {
+    return this.enqueue(lobbyId, async () => {
+      const lobby = await this.openFor(lobbyId, userId)
+      if (inviteeUserId === userId) throw LobbyError.badRequest('you are in the lobby already')
+      const invitee = (await getUsersByIds(this.db, [inviteeUserId])).at(0)
+      if (!invitee) throw LobbyError.notFound('account not found')
+      if (rules.isMember(lobby, inviteeUserId)) throw LobbyError.conflict({ error: `${invitee.name} is in the lobby already`, code: 'already_member' })
+      const invitedAlready = LobbyError.conflict({ error: `${invitee.name} is invited already`, code: 'already_invited' })
+      if (lobby.invites.some(i => i.userId === inviteeUserId)) throw invitedAlready
+      const id = ulid()
+      try {
+        await q.insertInvite(this.db, { id, lobbyId, inviteeUserId, inviterUserId: userId })
+      } catch (err) {
+        if (pgErrorCode(err) === UNIQUE_VIOLATION) throw invitedAlready
+        throw err
+      }
+      await this.reload(lobbyId)
+      await this.publish(lobbyId)
+      return { id }
+    })
+  }
+
+  async listInvites(userId: string): Promise<PendingInvite[]> {
+    return (await q.pendingInvitesFor(this.db, userId)).map(inviteView)
+  }
+
+  // The user's own pending invite to an open lobby, or 404
+  private async pendingInvite(userId: string, inviteId: string): Promise<{ lobbyId: string }> {
+    const invite = await q.getInvite(this.db, inviteId)
+    if (!invite || invite.invitee_user_id !== userId || invite.status !== 'pending') throw LobbyError.notFound('invite not found')
+    return { lobbyId: invite.lobby_id }
+  }
+
+  /** Joins the lobby (which marks the invite accepted). */
+  async acceptInvite(userId: string, inviteId: string): Promise<LobbyRef> {
+    const { lobbyId } = await this.pendingInvite(userId, inviteId)
+    return this.enqueue(lobbyId, async () => {
+      const lobby = await this.reload(lobbyId)
+      if (!lobby || lobby.closedAt !== null) throw LobbyError.notFound('invite not found')
+      return this.addMember(lobby, userId)
+    })
+  }
+
+  async declineInvite(userId: string, inviteId: string): Promise<void> {
+    const { lobbyId } = await this.pendingInvite(userId, inviteId)
+    await this.enqueue(lobbyId, async () => {
+      await q.setInviteStatus(this.db, inviteId, 'declined')
+      await this.reload(lobbyId)
+      await this.publish(lobbyId, [userId])
     })
   }
 }
