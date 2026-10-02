@@ -476,8 +476,8 @@ below decides.
   - invites
   - host handover
   - the one-open-lobby and one-active-session rules
-  - board permissions: owner-assigns while not self-chosen, self-choice locks it,
-    `board_busy`
+  - board permissions: anyone gives a Manual person their own board; only the person (or
+    a guest's adder) or the board's owner changes it after that; `board_busy`
   - start validation
 - **E2E**, building on the e2e plan:
   - two browser contexts as two accounts, each with its own fake bridge
