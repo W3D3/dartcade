@@ -54,6 +54,23 @@ export class BrowserConnections {
       if (userIds.includes(userId) && ws.readyState === 1) ws.send(payload)
     }
   }
+
+  /** Whether any socket is open under this key. */
+  has(key: string): boolean {
+    return (this.sessions.get(key)?.size ?? 0) > 0
+  }
+
+  /** Closes and forgets the key's sockets (only the user's, when given). */
+  closeAll(key: string, code: number, reason: string, userId?: string): void {
+    const m = this.sessions.get(key)
+    if (!m) return
+    for (const [ws, owner] of [...m]) {
+      if (userId !== undefined && owner !== userId) continue
+      m.delete(ws)
+      ws.close(code, reason)
+    }
+    if (m.size === 0) this.sessions.delete(key)
+  }
 }
 
 function hasUser(m: Map<WebSocket, string>, userId: string): boolean {
