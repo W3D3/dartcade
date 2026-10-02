@@ -27,6 +27,7 @@
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Segment, type UserAction } from '$lib/api'
+  import { activeSessionId } from '$lib/activeSession'
   import { isPhone } from '$lib/viewport'
   import { matchLayout } from '$lib/matchLayout'
   import { isMyTurn, upSeat } from '$lib/turn'
@@ -106,6 +107,7 @@
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
   const winner = $derived(game?.winner ?? null)
   const isActive = $derived(winner === null)
+  $effect(() => { if (snapshot && snapshot.status !== 'active') void activeSessionId.refresh() })
   // Online: only the seat's controller enters its darts (a local game's owner controls every seat)
   const myTurn = $derived(isMyTurn(snapshot))
   const canThrow = $derived(isActive && myTurn)
@@ -228,6 +230,7 @@
   async function endSession() {
     if (!sessionId) return
     await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
+    void activeSessionId.refresh()
     void push('/')
   }
 </script>

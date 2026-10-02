@@ -9,6 +9,7 @@
   import Tooltip from '$lib/components/Tooltip.svelte'
   import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'
   import { authClient } from '$lib/auth'
+  import { activeSessionId } from '$lib/activeSession'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
 
   const MODES = [
@@ -150,6 +151,7 @@
         runningSessionId = res.response.status === 409 && 'sessionId' in res.error ? res.error.sessionId ?? null : null
         return
       }
+      void activeSessionId.refresh()
       void push(`/session/${res.data.sessionId}`)
     } finally { loading = false }
   }

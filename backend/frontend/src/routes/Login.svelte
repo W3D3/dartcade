@@ -4,7 +4,8 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
-  import { authClient } from '$lib/auth'
+  import { authClient, currentUser } from '$lib/auth'
+  import { activeSessionId } from '$lib/activeSession'
 
   let email = $state('')
   let password = $state('')
@@ -24,6 +25,7 @@
         error = err.message ?? 'Invalid credentials'
         return
       }
+      await Promise.all([currentUser.refresh(), activeSessionId.refresh()])
       void push('/')
     } finally {
       loading = false

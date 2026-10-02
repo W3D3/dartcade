@@ -2,19 +2,11 @@
   import BrandMark from './BrandMark.svelte'
   import { Clock, Monitor, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
-  import { onMount } from 'svelte'
-  import { authClient, signOut } from '$lib/auth'
+  import { currentUser, signOut } from '$lib/auth'
   import { isActiveRoute } from '$lib/nav'
 
-  let userName = $state('…')
-  let userInitial = $derived(userName.charAt(0).toUpperCase() || '?')
-
-  onMount(async () => {
-    try {
-      const { data } = await authClient.getSession()
-      if (data) userName = data.user.name || data.user.email || 'User'
-    } catch { /* leave as placeholder */ }
-  })
+  const userName = $derived($currentUser?.name ?? '')
+  const userInitial = $derived(userName.charAt(0).toUpperCase())
 
   const links = [
     { href: '/',            label: 'Play',         icon: 'play' },

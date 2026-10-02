@@ -1,11 +1,10 @@
 <script lang="ts">
   // Who's signed in, and signing out: the avatar in the phone header opens it.
   import { LogOut } from '@lucide/svelte'
-  import { onMount } from 'svelte'
-  import { authClient, signOut } from '$lib/auth'
+  import { currentUser, signOut } from '$lib/auth'
 
-  let name = $state('')
-  let email = $state('')
+  const name = $derived($currentUser?.name ?? '')
+  const email = $derived($currentUser?.email ?? '')
   let open = $state(false)
   const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 
@@ -13,12 +12,6 @@
     if (e.key === 'Escape') open = false
   }
 
-  onMount(async () => {
-    try {
-      const { data } = await authClient.getSession()
-      if (data) { name = data.user.name || data.user.email; email = data.user.email }
-    } catch { /* stays "?" */ }
-  })
 </script>
 
 <svelte:window onkeydown={onKeydown} />
