@@ -25,14 +25,17 @@ await runMigrations(db)
 await seedDev()
 
 const hub = new LobbyHub()
-// The callbacks only run after the engine and the lobbies exist
+// The rebuild below can already warn (a log entry that won't parse), before the app and its
+// logger exist: until then warnings go to the console
+let warn = (message: string, details: unknown) => { console.warn(message, details) }
+// The other callbacks only run after the engine and the lobbies exist
 const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
   sessionId => {
     pushSnapshot(sessionId, engine)
     lobbies.onSessionPush(sessionId).catch((err: unknown) => { console.warn('lobby indicator push failed', { sessionId, err }) })
   },
-  (message, details) => { app.log.warn({ details }, message) },
+  (message, details) => { warn(message, details) },
   (sessionId, userIds, notice) => { pushNotice(sessionId, userIds, notice) },
   ended => { lobbies.onGameEnded(ended) },
 )
@@ -40,4 +43,5 @@ const lobbies: LobbyService = new LobbyService({ db, engine, hub, isBoardOnline:
 await engine.rebuild()
 
 const app = await buildApp({ engine, db, lobbies, hub, frontendDist: join(__dirname, '../../frontend/dist') })
+warn = (message, details) => { app.log.warn({ details }, message) }
 await app.listen({ port: PORT, host: '0.0.0.0' })
