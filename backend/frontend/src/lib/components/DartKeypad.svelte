@@ -5,7 +5,7 @@
   import { ChevronRight, Undo2 } from '@lucide/svelte'
   import type { Segment } from '$lib/api/game-ws'
 
-  let { onDart, dartCount, locked, canUndo, onUndo, nextLabel, nextEnabled, nextProminent, onNext, replacing = null }: {
+  let { onDart, dartCount, locked, canUndo, onUndo, nextLabel, nextEnabled, nextProminent, onNext, replacing = null, disabled = false }: {
     onDart: (seg: Segment) => void
     dartCount: number
     /** The visit is over (bust, checkout, win). */
@@ -18,11 +18,13 @@
     onNext: () => void
     /** A thrown dart is selected (0-based): the next key replaces it instead of adding a dart. */
     replacing?: number | null
+    /** Not this viewer's turn (online): every key is off. */
+    disabled?: boolean
   } = $props()
 
   let mult = $state<1 | 2 | 3>(1)
 
-  const full = $derived(replacing === null && (locked || dartCount >= 3))
+  const full = $derived(disabled || (replacing === null && (locked || dartCount >= 3)))
   const nums = Array.from({ length: 20 }, (_, i) => i + 1)
   const MULTS = [{ m: 1, label: 'Single', short: 'S' }, { m: 2, label: 'Double', short: 'D' }, { m: 3, label: 'Treble', short: 'T' }] as const
 

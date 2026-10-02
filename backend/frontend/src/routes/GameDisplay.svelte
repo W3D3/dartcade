@@ -29,6 +29,7 @@
   import { api, type Segment, type UserAction } from '$lib/api'
   import { isPhone } from '$lib/viewport'
   import { matchLayout } from '$lib/matchLayout'
+  import { isMyTurn, upSeat } from '$lib/turn'
   import PhonePlayerRow from '../lib/components/PhonePlayerRow.svelte'
   import PhoneX01Card from '../lib/components/PhoneX01Card.svelte'
   import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
@@ -105,6 +106,10 @@
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
   const winner = $derived(game?.winner ?? null)
   const isActive = $derived(winner === null)
+  // Online: only the seat's controller enters its darts (a local game's owner controls every seat)
+  const myTurn = $derived(isMyTurn(snapshot))
+  const canThrow = $derived(isActive && myTurn)
+  const throwerName = $derived(snapshot ? players[upSeat(snapshot)]?.name ?? '' : '')
   const darts = $derived(game?.currentVisitDarts ?? [])
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
@@ -198,7 +203,7 @@
   const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
   const advance = () => send({ type: 'takeout' })
-  const next = $derived(nextButton({ manual: boardId === null, dartCount: darts.length, locked, active: isActive }))
+  const next = $derived(nextButton({ manual: boardId === null, dartCount: darts.length, locked, active: canThrow }))
   const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
   const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
@@ -209,7 +214,7 @@
     send({ type: 'correct_dart', visitIndex: correcting, segment })
     correcting = null
   }
-  const correct = (dartIndex: number, label: string) =>
+  const correct = (dartIndex: number, label: string) => canThrow &&
     send({ type: 'correct_dart', visitIndex: dartIndex, segment: labelToSegment(label) })
   // Any dart of the open visit can be dragged on the board to correct it
   const moveDart = (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) =>
@@ -227,15 +232,25 @@
   }
 </script>
 
+{#snippet waiting()}
+  {#if isActive && !myTurn}
+    <p role="status" class="shrink-0 m-0 h-9 flex items-center justify-center gap-2 rounded-[10px] bg-surface-panel border border-line-2 text-[14px] text-text-muted">
+      <span class="w-2 h-2 rounded-full bg-accent animate-pulse" aria-hidden="true"></span>
+      <strong class="text-text font-semibold">{throwerName}</strong> is throwing
+    </p>
+  {/if}
+{/snippet}
+
 {#snippet phoneCenter()}
+  {@render waiting()}
   <!-- Phones: everything fits without scrolling; the board or keypad takes what's left -->
   {#if viewMode === 'board'}
     <div class="flex-1 min-h-[160px] w-full [container-type:size] flex items-center justify-center">
       <div class="aspect-square" style="width: min(100cqw, 100cqh)">
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
-          onBoardClick={isActive && !locked ? addBoardDart : undefined}
-          selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
+          onBoardClick={canThrow && !locked ? addBoardDart : undefined}
+          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} />
       </div>
     </div>
   {/if}
@@ -246,21 +261,22 @@
   </div>
   {#if viewMode === 'entry'}
     <div class="flex-1 min-h-[220px]">
-      <DartKeypad onDart={isActive ? keypadDart : () => {}} dartCount={darts.length} {locked} replacing={correcting}
-        canUndo={isActive && darts.length > 0} onUndo={undo}
+      <DartKeypad onDart={canThrow ? keypadDart : () => {}} dartCount={darts.length} {locked} replacing={correcting} disabled={!canThrow}
+        canUndo={canThrow && darts.length > 0} onUndo={undo}
         nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
     </div>
   {:else}
-    <ControlBar compact canUndo={isActive && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+    <ControlBar compact canUndo={canThrow && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
       onUndo={undo} onNext={advance} />
   {/if}
 {/snippet}
 
 {#snippet center(variant: 'solo' | 'duel' | 'party')}
+  {@render waiting()}
   {#if viewMode === 'entry'}
     <div class="flex-1 min-h-0">
-      <DartKeypad onDart={isActive ? addManualDart : () => {}} dartCount={darts.length} {locked}
-        canUndo={isActive && darts.length > 0} onUndo={undo}
+      <DartKeypad onDart={canThrow ? addManualDart : () => {}} dartCount={darts.length} {locked} disabled={!canThrow}
+        canUndo={canThrow && darts.length > 0} onUndo={undo}
         nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
     </div>
   {:else}
@@ -269,8 +285,8 @@
       <div class="aspect-square" style="width: min(100cqw, 100cqh)">
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
-          onBoardClick={isActive && !locked ? addBoardDart : undefined}
-          selectedDart={correcting} onDartMove={isActive ? moveDart : undefined} />
+          onBoardClick={canThrow && !locked ? addBoardDart : undefined}
+          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} />
       </div>
     </div>
     {#if legend.length}<BoardLegend items={legend} />{/if}
@@ -287,7 +303,7 @@
   {/if}
 
   {#if viewMode === 'board'}
-    <ControlBar canUndo={isActive && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+    <ControlBar canUndo={canThrow && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
       onUndo={undo} onNext={advance} />
   {/if}
 {/snippet}

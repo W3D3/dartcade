@@ -58,7 +58,8 @@
   let boardId = $state(initPrefs?.boardId ?? '')
   let atcMeta = $state<Partial<Record<string, ConfigFieldMeta>>>({})
   let youName = $state('')
-  let guests = $state<{ name: string }[]>([])
+  // A guest by name, or another account (picked with @) who plays from their own device
+  let guests = $state<{ name: string; account: { id: string; name: string } | null }[]>([])
   let error = $state('')
   // Set when the server refuses because this user already has a game running
   let runningSessionId = $state<string | null>(null)
@@ -119,7 +120,7 @@
 
   // Bull off decides who throws first, so it needs an opponent (the backend
   // rejects it too). Named guests count as players, same as in start().
-  const playerCount = $derived(1 + guests.filter(g => g.name.trim()).length)
+  const playerCount = $derived(1 + guests.filter(g => g.account || g.name.trim()).length)
   const bullOffBlocked = $derived(
     selectedMode === 'x01' && (config.bullOff ?? 'off') !== 'off' && playerCount < 2
   )
@@ -130,7 +131,7 @@
     runningSessionId = null
     const allPlayers = [
       { name: youName.trim() || 'Player 1' },
-      ...guests.filter(g => g.name.trim()).map(g => ({ name: g.name.trim() })),
+      ...guests.filter(g => g.account || g.name.trim()).map(g => g.account ? { name: g.account.name, userId: g.account.id } : { name: g.name.trim() }),
     ]
     const gameId = games.find(g => g.id === selectedMode)?.id
       ?? games.find(g => g.id.includes('501'))?.id
@@ -334,10 +335,10 @@
           <span class="text-[14px] font-medium text-[#d8d8ce]">Players</span>
           <PlayerRow index={1} name={youName} isYou />
           {#each guests as guest, i (i)}
-            <PlayerRow index={i + 2} bind:name={guest.name}
+            <PlayerRow index={i + 2} bind:name={guest.name} bind:account={guest.account}
               onRemove={() => guests = guests.filter((_, j) => j !== i)} />
           {/each}
-          <button type="button" onclick={() => guests = [...guests, { name: '' }]}
+          <button type="button" onclick={() => guests = [...guests, { name: '', account: null }]}
             class="h-11 flex items-center justify-center gap-2 border border-dashed border-[#3e4239]
                    rounded-[10px] bg-transparent text-[#c9c9bf] text-[14px] cursor-pointer mt-1">
             <Plus size={16} />
