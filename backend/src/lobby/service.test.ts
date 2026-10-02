@@ -561,4 +561,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(ws.send.mock.calls.length).toBe(sent)
     })
   })
+
+  describe('the lobby indicator during a game', () => {
+    it('tells members whose turn it is as the game goes on', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      const me = sock()
+      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'))
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(lastMsg(me).lobby).toMatchObject({ sessionId, gameId: 'x01', youThrowNext: false, leg: 0 })
+      // Christoph throws one dart by hand and takes out: Lena is up
+      await engine.onUserAction(sessionId, 'chris', { type: 'add_dart', segment: { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 } })
+      await engine.onUserAction(sessionId, 'chris', { type: 'takeout' })
+      await lobbies.onSessionPush(sessionId)
+      expect(lastMsg(me).lobby.youThrowNext).toBe(true)
+    })
+  })
 })

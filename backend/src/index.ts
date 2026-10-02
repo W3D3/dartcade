@@ -28,7 +28,10 @@ const hub = new LobbyHub()
 // The callbacks only run after the engine and the lobbies exist
 const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
-  sessionId => { pushSnapshot(sessionId, engine) },
+  sessionId => {
+    pushSnapshot(sessionId, engine)
+    lobbies.onSessionPush(sessionId).catch((err: unknown) => { console.warn('lobby indicator push failed', { sessionId, err }) })
+  },
   (message, details) => { app.log.warn({ details }, message) },
   (sessionId, userIds, notice) => { pushNotice(sessionId, userIds, notice) },
   ended => { lobbies.onGameEnded(ended) },
@@ -36,5 +39,5 @@ const engine: SessionEngine = new SessionEngine(
 const lobbies: LobbyService = new LobbyService({ db, engine, hub, isBoardOnline: boardId => bridgeConnections.isOnline(boardId) })
 await engine.rebuild()
 
-const app = await buildApp({ engine, db, lobbies, frontendDist: join(__dirname, '../../frontend/dist') })
+const app = await buildApp({ engine, db, lobbies, hub, frontendDist: join(__dirname, '../../frontend/dist') })
 await app.listen({ port: PORT, host: '0.0.0.0' })

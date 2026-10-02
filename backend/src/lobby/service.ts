@@ -597,6 +597,19 @@ export class LobbyService {
     }).catch((err: unknown) => { this.warn('lobby reset after a game failed', { lobbyId, sessionId: e.sessionId, error: String(err) }) })
   }
 
+  /**
+   * A lobby game changed (every snapshot push): members' indicators follow whose turn it
+   * is. Only lobbies loaded in this process are pushed; /ws/me loads its user's lobby when
+   * it opens.
+   */
+  async onSessionPush(sessionId: string): Promise<void> {
+    const lobbyId = this.deps.engine.getSession(sessionId)?.lobbyId ?? null
+    if (lobbyId === null) return
+    const lobby = this.cache.get(lobbyId)
+    if (!lobby) return
+    await Promise.all(memberIds(lobby).map(u => this.pushMe(u)))
+  }
+
   // ---- boards -----------------------------------------------------------------------
 
   /** A board is being deleted: everyone on it, in any lobby, goes to Manual. */

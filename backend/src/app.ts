@@ -10,6 +10,7 @@ import type { Database } from './db/schema.js'
 import type { SessionEngine } from './session/engine.js'
 import { bridgeGwPlugin } from './bridge-gw/handler.js'
 import { browserGwPlugin } from './browser-gw/handler.js'
+import { lobbyGwPlugin } from './browser-gw/lobby.js'
 import { sessionsApiPlugin } from './api/sessions.js'
 import { gamesApiPlugin } from './api/games.js'
 import { boardsApiPlugin } from './api/boards.js'
@@ -19,6 +20,7 @@ import { lobbiesApiPlugin } from './api/lobbies.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
+import type { LobbyHub } from './lobby/hub.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
 
@@ -27,6 +29,8 @@ export type AppDeps = {
   db: Kysely<Database>
   /** Lobby rules and pushes (see lobby/service.ts). */
   lobbies: LobbyService
+  /** Open lobby and /ws/me sockets. */
+  hub: LobbyHub
   /** Built frontend to serve; omitted in tests. */
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
@@ -50,7 +54,7 @@ const swaggerUiConfig = {
 }
 
 /** All HTTP/WebSocket routes of the backend, without listening or touching the database. */
-export async function buildApp({ engine, db, lobbies, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ engine, db, lobbies, hub, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
   const app = createFastify()
   if (onRoute) app.addHook('onRoute', onRoute)
 
@@ -88,6 +92,7 @@ export async function buildApp({ engine, db, lobbies, frontendDist, onRoute }: A
 
   await app.register(bridgeGwPlugin, { engine, db, onBoardPresence: boardId => { lobbies.onBoardPresence(boardId) } })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
+  await app.register(lobbyGwPlugin, { lobbies, hub })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
   await app.register(lobbiesApiPlugin, { lobbies })
