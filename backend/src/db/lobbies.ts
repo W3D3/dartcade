@@ -65,6 +65,11 @@ export async function getOpenLobbyIdOfUser(db: Kysely<Database>, userId: string)
   return row?.lobby_id
 }
 
+export async function getOpenLobbyIds(db: Kysely<Database>): Promise<string[]> {
+  const rows = await db.selectFrom('lobbies').select('id').where('closed_at', 'is', null).execute()
+  return rows.map(r => r.id)
+}
+
 export async function getOpenLobbyIdByCode(db: Kysely<Database>, code: string): Promise<string | undefined> {
   const row = await db.selectFrom('lobbies').select('id').where('code', '=', code).where('closed_at', 'is', null).executeTakeFirst()
   return row?.id

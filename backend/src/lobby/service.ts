@@ -4,7 +4,7 @@ import type { Database } from '../db/schema.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { pgErrorCode } from '../db/errors.js'
-import type { SessionEngine } from '../session/engine.js'
+import { ActiveSessionError, BoardBusyError, type GameEnded, type SessionEngine } from '../session/engine.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { Lobby, LobbyServerMessage, MeMessage, PendingInvite } from '../schema/lobby-ws.js'
 import { games } from '../games/index.js'
@@ -14,7 +14,8 @@ import * as rules from './rules.js'
 import { newLobbyCode, normalizeCode } from './code.js'
 import { inviteView, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
-import type { LobbyPerson, LobbyState, NextGame, ThrowOrder } from './types.js'
+import { planGame, type PlanProblem } from './startPlan.js'
+import type { LastGame, LobbyPerson, LobbyState, NextGame, ThrowOrder } from './types.js'
 
 const UNIQUE_VIOLATION = '23505'
 const CODE_ATTEMPTS = 5
@@ -34,6 +35,12 @@ export type LobbyDeps = {
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
 const memberIds = (l: LobbyState): string[] => l.people.flatMap(p => p.userId === null ? [] : [p.userId])
+
+function planError(p: PlanProblem): LobbyError {
+  if (p.status === 400) return LobbyError.badRequest(p.error)
+  const { status: _status, ...body } = p
+  return LobbyError.conflict(body)
+}
 
 /**
  * Lobbies: every rule, and every push. Changes to one lobby run one after another (like
@@ -69,6 +76,16 @@ export class LobbyService {
     return run
   }
 
+  /**
+   * At start-up, after the games are rebuilt: every open lobby without a running game gets
+   * its host settled, and an empty one closes. Catches a game end the lobby never heard of.
+   */
+  async settleAll(): Promise<void> {
+    for (const lobbyId of await q.getOpenLobbyIds(this.db)) {
+      await this.enqueue(lobbyId, () => this.settleHost(lobbyId))
+    }
+  }
+
   /** Resolves once the lobby's queued changes are done. */
   async whenIdle(lobbyId: string): Promise<void> {
     await this.queues.get(lobbyId)
@@ -88,8 +105,9 @@ export class LobbyService {
   // Runs in the lobby's queue. The open lobby, with the user in it; a lobby you're not in reads as 404
   private async openFor(lobbyId: string, userId: string): Promise<LobbyState> {
     let lobby = await this.reload(lobbyId)
-    // A host whose account is gone hands over on the next change
-    if (lobby && lobby.closedAt === null && lobby.hostUserId === null) {
+    // A host who is gone (account deleted, or left during a game whose end was never heard,
+    // as when the server died then) hands over on the next change
+    if (lobby && lobby.closedAt === null && (lobby.hostUserId === null || !rules.isMember(lobby, lobby.hostUserId))) {
       await this.settleHost(lobbyId)
       lobby = this.cache.get(lobbyId)
     }
@@ -495,5 +513,87 @@ export class LobbyService {
       await this.reload(lobbyId)
       await this.publish(lobbyId, [userId])
     })
+  }
+
+  // ---- games ------------------------------------------------------------------------
+
+  /** The host starts the next game with everyone who plays. */
+  async start(userId: string, lobbyId: string, force: boolean): Promise<{ sessionId: string }> {
+    return this.enqueue(lobbyId, async () => {
+      const lobby = await this.openAsHost(lobbyId, userId)
+      if (!lobby.nextGame) throw LobbyError.badRequest('pick a game first')
+      const personIds = lobby.people.filter(p => p.plays).map(p => p.id)
+      return this.launch(lobby, userId, { ...lobby.nextGame, personIds }, force)
+    })
+  }
+
+  /** The host repeats the last game: the same people (minus who left), mode and settings. */
+  async rematch(userId: string, lobbyId: string, force: boolean): Promise<{ sessionId: string }> {
+    return this.enqueue(lobbyId, async () => {
+      const lobby = await this.openAsHost(lobbyId, userId)
+      if (!lobby.lastGame) throw LobbyError.badRequest('no game to repeat yet')
+      const here = new Set(lobby.people.map(p => p.id))
+      return this.launch(lobby, userId, { ...lobby.lastGame, personIds: lobby.lastGame.personIds.filter(id => here.has(id)) }, force)
+    })
+  }
+
+  // Runs in the lobby's queue
+  private async launch(lobby: LobbyState, hostUserId: string, game: LastGame, force: boolean): Promise<{ sessionId: string }> {
+    const running = this.deps.engine.getLobbySession(lobby.id)
+    if (running) throw LobbyError.conflict({ error: 'a game is running already', code: 'game_running', sessionId: running.id })
+    const planned = planGame(lobby, game, { force, isBoardOnline: this.deps.isBoardOnline })
+    if (!planned.ok) throw planError(planned.problem)
+    const { plan } = planned
+    let sessionId: string
+    try {
+      ({ sessionId } = await this.deps.engine.createWithSeats({
+        ownerUserId: hostUserId, gameId: plan.gameId, config: plan.config, seats: plan.seats,
+        shuffleSeats: plan.shuffleSeats, lobbyId: lobby.id, lobbyName: lobby.name,
+      }))
+    } catch (err) {
+      throw this.startError(lobby, hostUserId, err)
+    }
+    // The lobby shows who plays this game; a rematch repeats it
+    await q.updateLobby(this.db, lobby.id, { last_game: { gameId: plan.gameId, config: game.config, personIds: plan.personIds } })
+    await q.setPlaying(this.db, lobby.id, plan.personIds)
+    await this.reload(lobby.id)
+    await this.publish(lobby.id)
+    return { sessionId }
+  }
+
+  private startError(lobby: LobbyState, hostUserId: string, err: unknown): unknown {
+    if (err instanceof ActiveSessionError) {
+      const name = rules.memberOf(lobby, err.userId)?.name ?? 'A player'
+      return LobbyError.conflict({
+        error: `${name} already has a game running`, code: 'active_session',
+        ...(err.userId === hostUserId ? { sessionId: err.sessionId } : {}),
+      })
+    }
+    if (err instanceof BoardBusyError) return LobbyError.conflict({ error: 'a board is in another game', code: 'board_busy' })
+    return err
+  }
+
+  /**
+   * The engine's `ended` hook: the lobby's game finished (or was aborted). Everyone plays
+   * again, members aren't ready, guests are; the feed gets a line; a host who left
+   * during the game hands over now, and a lobby everyone left closes.
+   */
+  onGameEnded(e: GameEnded): void {
+    const lobbyId = e.lobbyId
+    if (lobbyId === null) return
+    this.enqueue(lobbyId, async () => {
+      const lobby = await this.reload(lobbyId)
+      if (!lobby || lobby.closedAt !== null) return
+      await this.db.transaction().execute(async (trx) => {
+        await q.resetAfterGame(trx, lobbyId)
+        if (e.status === 'finished') {
+          const winner = e.results.find(r => r.placement === 1 && !r.forfeited)
+          await q.addActivity(trx, lobbyId, 'game_played', null, { sessionId: e.sessionId, gameId: e.gameId, winnerName: winner?.name ?? null, players: e.results })
+        } else {
+          await q.addActivity(trx, lobbyId, 'game_aborted', e.abortedByUserId, { sessionId: e.sessionId, gameId: e.gameId })
+        }
+      })
+      if (await this.settleHost(lobbyId) === 'open') await this.publish(lobbyId)
+    }).catch((err: unknown) => { this.warn('lobby reset after a game failed', { lobbyId, sessionId: e.sessionId, error: String(err) }) })
   }
 }

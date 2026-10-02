@@ -43,8 +43,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     online.clear()
     for (const b of ['living', 'lenas', 'garage']) online.add(b)
     engineStore = makeStore()
-    engine = new SessionEngine(engineStore, vi.fn())
     hub = new LobbyHub()
+    engine = new SessionEngine(engineStore, vi.fn(), undefined, undefined, e => { lobbies.onGameEnded(e) })
     lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b) })
   })
 
@@ -368,6 +368,171 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.invite('lena', b.id, 'max')
       await lobbies.join('max', b.id, b.code)
       expect(await lobbies.listInvites('max')).toEqual([])
+    })
+  })
+
+  describe('games', () => {
+    let id: string
+    let code: string
+    const person = async (name: string) => {
+      const p = (await lobbies.view(id))?.people.find(x => x.name === name)
+      if (!p) throw new Error(`${name} is not in the lobby`)
+      return p
+    }
+    const setReady = async (userId: string, name: string) => { await lobbies.updatePerson(userId, id, (await person(name)).id, { ready: true }) }
+
+    beforeEach(async () => {
+      ({ id, code } = await lobbies.create('chris'))
+      await lobbies.join('lena', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+    })
+
+    it('asks the host to confirm when people aren\'t ready, then starts with the roster as seats', async () => {
+      await setReady('chris', 'Christoph')
+      await expect(lobbies.start('chris', id, false)).rejects.toMatchObject({
+        statusCode: 409, body: { code: 'not_ready', notReady: [{ name: 'Lena' }] },
+      })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      const session = engine.getSession(sessionId)
+      expect(session).toMatchObject({ ownerUserId: 'chris', lobbyId: id, lobbyName: "Christoph's lobby", boardId: null })
+      expect(session?.seats).toEqual([
+        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room' },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" },
+      ])
+      expect(engineStore.insertSession).toHaveBeenCalledWith(expect.objectContaining({ lobby_id: id, config: expect.objectContaining({ startScore: 101, bullOff: 'off' }) }))
+      expect((await lobbies.view(id))?.currentSessionId).toBe(sessionId)
+    })
+
+    it('seats a guest with their adder as controller, and leaves out who sits out', async () => {
+      await lobbies.join('max', id, code)
+      await lobbies.addGuest('lena', id, { name: 'Guest 1' })
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(engine.getSession(sessionId)?.seats.map(s => [s.name, s.controllerUserId, s.boardId])).toEqual([
+        ['Christoph', 'chris', 'living'], ['Lena', 'lena', 'lenas'], ['Guest 1', 'lena', 'lenas'],
+      ])
+    })
+
+    it('refuses members, no game set, offline boards, a second start, and closing during a game', async () => {
+      await expect(lobbies.start('lena', id, true)).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.update('chris', id, { nextGame: null })
+      await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({ statusCode: 400 })
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      online.delete('lenas')
+      await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({ statusCode: 409, body: { code: 'board_offline', offlineBoards: ["Lena's place"] } })
+      online.add('lenas')
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_running', sessionId } })
+      await expect(lobbies.close('chris', id)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_running' } })
+    })
+
+    it('one game per person: someone already in a game blocks the start, by name', async () => {
+      await engine.create('lena', null, 'atc', {}, [{ name: 'Lena' }])
+      await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({
+        statusCode: 409, body: { code: 'active_session', error: 'Lena already has a game running' },
+      })
+    })
+
+    it('after the game: everyone back in, members not ready, guests ready, a game_played line', async () => {
+      await lobbies.join('max', id, code)
+      await lobbies.addGuest('lena', id, { name: 'Guest 1' })
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
+      await setReady('chris', 'Christoph')
+      await lobbies.updatePerson('lena', id, (await person('Guest 1')).id, { ready: false })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      // Lena gives up her seat and her guest's: Christoph wins
+      await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+      await lobbies.whenIdle(id)
+      const lobby = await lobbies.view(id)
+      expect(lobby?.currentSessionId).toBeNull()
+      expect(lobby?.people.map(p => [p.name, p.plays, p.ready])).toEqual([
+        ['Christoph', true, false], ['Lena', true, false], ['Max', true, false], ['Guest 1', true, true],
+      ])
+      expect(lobby?.activity[0]).toMatchObject({
+        kind: 'game_played', actorUserId: null,
+        data: {
+          sessionId, gameId: 'x01', winnerName: 'Christoph',
+          players: [{ name: 'Christoph', placement: 1, forfeited: false }, { name: 'Lena', forfeited: true }, { name: 'Guest 1', forfeited: true }],
+        },
+      })
+    })
+
+    it('an abort resets the lobby too and names who aborted', async () => {
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await engine.deleteSession(sessionId, 'chris')
+      await lobbies.whenIdle(id)
+      expect((await lobbies.view(id))?.activity[0]).toMatchObject({ kind: 'game_aborted', actorUserId: 'chris', data: { sessionId, gameId: 'x01' } })
+    })
+
+    it('rematch: the same players and settings, the same soft gate, also after an abort', async () => {
+      await expect(lobbies.rematch('chris', id, true)).rejects.toMatchObject({ statusCode: 400 })
+      await lobbies.join('max', id, code)
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
+      const first = await lobbies.start('chris', id, true)
+      await engine.deleteSession(first.sessionId, 'chris')
+      await lobbies.whenIdle(id)
+      // The host changes the next game meanwhile: a rematch still repeats the last one
+      await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })
+      await expect(lobbies.rematch('chris', id, false)).rejects.toMatchObject({ body: { code: 'not_ready' } })
+      const { sessionId } = await lobbies.rematch('chris', id, true)
+      const session = engine.getSession(sessionId)
+      expect(session?.module.id).toBe('x01')
+      expect(session?.seats.map(s => s.name)).toEqual(['Christoph', 'Lena'])
+      expect(engineStore.insertSession).toHaveBeenLastCalledWith(expect.objectContaining({ config: expect.objectContaining({ startScore: 101 }) }))
+      expect((await person('Max')).plays).toBe(false)
+    })
+
+    it('throw order: a bull off turns the game\'s bull off on', async () => {
+      await lobbies.update('chris', id, { throwOrder: 'bulloff' })
+      await lobbies.start('chris', id, true)
+      expect(engineStore.insertSession).toHaveBeenLastCalledWith(expect.objectContaining({ config: expect.objectContaining({ bullOff: 'wdc' }) }))
+    })
+
+    it('a host who leaves mid-game stays host (and can abort) until the game ends; then the role passes on', async () => {
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await lobbies.leave('chris', id)
+      expect((await lobbies.view(id))?.hostUserId).toBe('chris')
+      expect(engine.getSession(sessionId)?.status).toBe('active')
+      await engine.deleteSession(sessionId, 'chris')
+      await lobbies.whenIdle(id)
+      expect((await lobbies.view(id))?.hostUserId).toBe('lena')
+    })
+
+    it('a host who left recovers on the next change even if the game-end hook was lost (server died)', async () => {
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await lobbies.leave('chris', id)
+      // The game ends but the lobby never hears of it, as when the server dies right then
+      const hook = vi.spyOn(lobbies, 'onGameEnded').mockImplementation(() => undefined)
+      await engine.deleteSession(sessionId, 'chris')
+      hook.mockRestore()
+      expect((await lobbies.view(id))?.hostUserId).toBe('chris')
+      // Lena changes something: the role passes on first, so the host-only change works
+      await lobbies.update('lena', id, { name: 'Lena\'s lobby' })
+      expect(await lobbies.view(id)).toMatchObject({ hostUserId: 'lena', name: 'Lena\'s lobby' })
+    })
+
+    it('at start-up, a lobby everyone left during a game closes even if the game-end hook was lost', async () => {
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await lobbies.leave('chris', id)
+      await lobbies.leave('lena', id)
+      const hook = vi.spyOn(lobbies, 'onGameEnded').mockImplementation(() => undefined)
+      await engine.deleteSession(sessionId, 'chris')
+      hook.mockRestore()
+      expect(await lobbies.view(id)).not.toBeNull()
+      await lobbies.settleAll()
+      expect(await lobbies.view(id)).toBeNull()
+    })
+
+    it('a lobby everyone left during a game closes when the game ends', async () => {
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await lobbies.leave('chris', id)
+      await lobbies.leave('lena', id)
+      expect((await lobbies.view(id))?.people).toEqual([])
+      await engine.deleteSession(sessionId, 'chris')
+      await lobbies.whenIdle(id)
+      expect(await lobbies.view(id)).toBeNull()
+      const row = await db.selectFrom('lobbies').select('closed_at').where('id', '=', id).executeTakeFirstOrThrow()
+      expect(row.closed_at).toBeInstanceOf(Date)
     })
   })
 })
