@@ -1,9 +1,10 @@
 <script lang="ts">
-  // Dart entry by hand (phone and desktop, same placement): multiplier tabs with bull and outer
+  // Manual dart entry (phone and desktop, same placement): multiplier tabs with bull and outer
   // bull, 1–20 in a tight 5×4 grid (doubles and trebles show what each key scores), then undo · miss · next,
   // all within the height it's given. Roomier from md up.
   import { ChevronRight, Undo2 } from '@lucide/svelte'
   import type { Segment } from '$lib/api/game-ws'
+  import { keypadPick, type Mult } from '$lib/keypad'
 
   let { onDart, dartCount, locked, canUndo, onUndo, nextLabel, nextEnabled, nextProminent, onNext, replacing = null, disabled = false }: {
     onDart: (seg: Segment) => void
@@ -22,7 +23,7 @@
     disabled?: boolean
   } = $props()
 
-  let mult = $state<1 | 2 | 3>(1)
+  let mult = $state<Mult>(1)
 
   const full = $derived(disabled || (replacing === null && (locked || dartCount >= 3)))
   const nums = Array.from({ length: 20 }, (_, i) => i + 1)
@@ -30,8 +31,9 @@
 
   function pick(number: number) {
     if (full) return
-    const bed: Segment['bed'] = mult === 3 ? 'Triple' : mult === 2 ? 'Double' : 'SingleOuter'
-    onDart({ name: `${MULTS[mult - 1].short}${number}`, number, bed, multiplier: mult })
+    const next = keypadPick(number, mult)
+    onDart(next.dart)
+    mult = next.mult
   }
 
   function special(seg: Segment) {
