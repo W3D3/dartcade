@@ -7,8 +7,19 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import PlayerRow from '$lib/components/PlayerRow.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
+  import Stepper from '$lib/components/Stepper.svelte'
+  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import LobbyPlayersCard from '$lib/components/lobby/LobbyPlayersCard.svelte'
+  import PlayWithFriends from '$lib/components/lobby/PlayWithFriends.svelte'
+  import InvitesBanner from '$lib/components/lobby/InvitesBanner.svelte'
+  import type { Lobby } from '$lib/api/lobby-ws'
   import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'
-  import { authClient } from '$lib/auth'
+  import { authClient, currentUser } from '$lib/auth'
+  import { describeConflict } from '$lib/lobby/input'
+  import { gameName, nextGameSummary } from '$lib/lobby/format'
+  import { counts, isHost } from '$lib/lobby/rules'
+  import { createLobbyStore, me } from '$lib/lobby/sockets'
+  import { initialGameSelection, startGame } from '$lib/lobby/start'
   import { activeSessionId } from '$lib/activeSession'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
 
@@ -119,12 +130,57 @@
     config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) }
   })
 
+  // Inside a lobby, "Game on" starts the lobby's game with its players (spec: New game inside a lobby)
+  let lobby = $state<Lobby | null>(null)
+  $effect(() => {
+    const id = $me?.lobby?.id
+    if (!id) { lobby = null; return }
+    const store = createLobbyStore(id)
+    const unsub = store.lobby.subscribe(l => { lobby = l })
+    return () => { unsub(); store.destroy() }
+  })
+  const lobbyHost = $derived(lobby !== null && isHost(lobby, $currentUser?.id ?? null))
+  const hostName = $derived(lobby?.people.find(p => p.userId !== null && p.userId === lobby?.hostUserId)?.name ?? 'The host')
+  const invites = $derived($me?.invites.length ?? 0)
+  let confirmNames = $state<string[] | null>(null)
+
+  // The host's form starts from the lobby's saved next game — applied once, the first time it's
+  // known (at mount, or once the lobby snapshot arrives after), so the host's later edits here
+  // aren't overwritten by it. A member never edits, so their view reads straight off `lobby`
+  // below instead of going through this.
+  let appliedLobbyGame = $state(false)
+  $effect(() => {
+    if (appliedLobbyGame || !lobbyHost || !lobby?.nextGame) return
+    const picked = initialGameSelection(lobby.nextGame, { mode: selectedMode, config }, (m) => gameDefaults[m])
+    selectedMode = picked.mode
+    config = picked.config
+    appliedLobbyGame = true
+  })
+
+  // What the mode grid and the setup form show: a member can't edit, so it's always the
+  // lobby's own next game, live; the host and the local-only flow edit their own picks.
+  const canEditGame = $derived(!lobby || lobbyHost)
+  const displayMode = $derived(canEditGame ? selectedMode : lobby?.nextGame?.gameId ?? null)
+  const setupName = $derived(canEditGame ? MODES.find(m => m.id === selectedMode)?.name : (displayMode ? gameName(displayMode) : 'No game yet'))
+
   // Bull off decides who throws first, so it needs an opponent (the backend
   // rejects it too). Named guests count as players, same as in start().
-  const playerCount = $derived(1 + guests.filter(g => g.account || g.name.trim()).length)
+  const playerCount = $derived(lobby ? counts(lobby).playing : 1 + guests.filter(g => g.account || g.name.trim()).length)
   const bullOffBlocked = $derived(
     selectedMode === 'x01' && (config.bullOff ?? 'off') !== 'off' && playerCount < 2
   )
+
+  /** The picked mode and settings as the API takes them; null (with the error shown) if the backend has no such game. */
+  function chosenGame(): { gameId: string; config: Record<string, unknown> } | null {
+    const gameId = games.find(g => g.id === selectedMode)?.id
+      ?? games.find(g => g.id.includes('501'))?.id
+      ?? games[0]?.id
+    if (!gameId) { error = 'No game found. Is the backend running?'; return null }
+    const settings = selectedMode === 'atc'
+      ? { finishOn: config.finishOn, order: config.order, multiplierAdvances: config.multiplierAdvances, throwAgainOnAllHit: config.throwAgainOnAllHit }
+      : { startScore: config.startScore, inMode: config.inMode, outMode: config.outMode, bullOff: config.bullOff, bullValue: config.bullValue, maxRounds: config.maxRounds, firstTo: config.firstTo }
+    return { gameId, config: settings }
+  }
 
   async function start() {
     if (bullOffBlocked) return
@@ -134,17 +190,12 @@
       { name: youName.trim() || 'Player 1' },
       ...guests.filter(g => g.account || g.name.trim()).map(g => g.account ? { name: g.account.name, userId: g.account.id } : { name: g.name.trim() }),
     ]
-    const gameId = games.find(g => g.id === selectedMode)?.id
-      ?? games.find(g => g.id.includes('501'))?.id
-      ?? games[0]?.id
-    if (!gameId) { error = 'No game found. Is the backend running?'; return }
-    const resolvedConfig = selectedMode === 'atc'
-      ? { finishOn: config.finishOn, order: config.order, multiplierAdvances: config.multiplierAdvances, throwAgainOnAllHit: config.throwAgainOnAllHit }
-      : { startScore: config.startScore, inMode: config.inMode, outMode: config.outMode, bullOff: config.bullOff, bullValue: config.bullValue, maxRounds: config.maxRounds, firstTo: config.firstTo }
+    const picked = chosenGame()
+    if (!picked) return
     loading = true
     try {
       const res = await api.POST('/api/sessions', {
-        body: { boardId: boardId || null, gameId, config: resolvedConfig, players: allPlayers },
+        body: { boardId: boardId || null, gameId: picked.gameId, config: picked.config, players: allPlayers },
       })
       if (res.error) {
         error = res.error.error
@@ -155,11 +206,34 @@
       void push(`/session/${res.data.sessionId}`)
     } finally { loading = false }
   }
+
+  async function startInLobby(force = false) {
+    if (!lobby) return
+    const id = lobby.id
+    error = ''
+    runningSessionId = null
+    const picked = chosenGame()
+    if (!picked) return
+    loading = true
+    try {
+      // Confirming "start anyway" repeats only the start: the next game is already saved
+      if (!force) {
+        const set = await api.PATCH('/api/lobbies/{id}', { params: { path: { id } }, body: { nextGame: picked } })
+        if (set.error) { error = describeConflict(set.error); return }
+      }
+      const outcome = await startGame(id, { force })
+      if (outcome.kind === 'started') { void activeSessionId.refresh(); void push(`/session/${outcome.sessionId}`) }
+      else if (outcome.kind === 'confirm') confirmNames = outcome.notReady
+      else { error = outcome.message; runningSessionId = outcome.sessionId }
+    } finally { loading = false }
+  }
 </script>
 
 <Layout title="New game">
-  {#snippet headerAction()}<BoardSelector {boards} bind:value={boardId} compact />{/snippet}
+  {#snippet headerAction()}{#if !lobby}<BoardSelector {boards} bind:value={boardId} compact />{/if}{/snippet}
   <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_44px]">
+
+    {#if invites > 0}<InvitesBanner count={invites} />{/if}
 
     <!-- Header (phones: the title and board chip are in the phone header) -->
     <header class="hidden md:flex items-end justify-between">
@@ -169,25 +243,25 @@
         </h1>
         <p class="m-0 text-[15px] text-text-muted">Choose a mode, set it up, throw the first dart.</p>
       </div>
-      <BoardSelector {boards} bind:value={boardId} />
+      {#if !lobby}<BoardSelector {boards} bind:value={boardId} />{/if}
     </header>
 
     <div class="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-grow md:min-h-0">
       <!-- Mode grid -->
       <div class="grid grid-cols-2 gap-[10px] md:flex-grow md:grid-rows-2 md:gap-4">
         {#each MODES as mode (mode.id)}
-          {@const active = mode.id === selectedMode}
+          {@const active = mode.id === displayMode}
           {@const unavailable = !mode.available}
           <button type="button"
-            onclick={() => { if (mode.available) selectMode(mode.id) }}
-            disabled={unavailable}
+            onclick={() => { if (mode.available && canEditGame) selectMode(mode.id) }}
+            disabled={unavailable || !canEditGame}
             class="relative text-left box-border h-[92px] px-[14px] py-3 md:h-auto md:p-6 rounded-[12px] md:rounded-[14px] flex flex-col gap-[10px]
                    overflow-hidden transition-colors font-[inherit]
                    {unavailable
                      ? 'bg-surface-2 border border-line-2 opacity-40 cursor-not-allowed'
                      : active
-                       ? 'bg-surface-active border-2 border-accent cursor-pointer'
-                       : 'bg-surface-2 border border-line-2 cursor-pointer'}">
+                       ? `bg-surface-active border-2 border-accent ${canEditGame ? 'cursor-pointer' : 'cursor-default'}`
+                       : `bg-surface-2 border border-line-2 ${canEditGame ? 'cursor-pointer' : 'cursor-default'}`}">
             {#if active && !unavailable}
               <span class="absolute top-2 right-2 w-6 h-6 md:top-[18px] md:right-[18px] md:w-7 md:h-7 rounded-full bg-accent
                            flex items-center justify-center">
@@ -222,11 +296,20 @@
         <div class="flex flex-col gap-1">
           <span class="text-[12px] tracking-[0.1em] uppercase text-text-dim">Setup</span>
           <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
-            {MODES.find(m => m.id === selectedMode)?.name}
+            {setupName}
           </h2>
         </div>
 
-        {#if selectedMode === 'x01'}
+        {#if !canEditGame}
+          <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
+            {#if lobby?.nextGame}
+              <span class="text-[14px] leading-[1.5] text-text">{nextGameSummary(lobby.nextGame)}</span>
+            {:else}
+              <span class="text-[14px] leading-[1.5] text-text-muted">{hostName} hasn't picked a game yet.</span>
+            {/if}
+          </div>
+
+        {:else if selectedMode === 'x01'}
           <div class="flex flex-col gap-[18px]">
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
               <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Start score</legend>
@@ -268,38 +351,14 @@
 
             <div class="flex justify-between items-center">
               <span class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce]">Max rounds <Tooltip text="Maximum number of rounds before the game ends. The player with the lowest score wins if nobody checks out. Set higher for longer games." /></span>
-              <div class="flex items-center gap-1">
-                <button type="button" aria-label="Fewer rounds"
-                  onclick={() => config = { ...config, maxRounds: Math.max(1, num(config.maxRounds, 50) - 1) }}
-                  class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
-                         cursor-pointer">−</button>
-                <span class="w-12 md:w-[72px] text-center text-[15px]">
-                  <strong class="font-display text-[24px]
-                                 {isNonDefault('maxRounds') ? 'text-accent' : ''}">{config.maxRounds}</strong>
-                </span>
-                <button type="button" aria-label="More rounds"
-                  onclick={() => config = { ...config, maxRounds: num(config.maxRounds, 50) + 1 }}
-                  class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
-                         cursor-pointer">+</button>
-              </div>
+              <Stepper value={num(config.maxRounds, 50)} label="rounds" highlight={isNonDefault('maxRounds')}
+                onchange={(n) => config = { ...config, maxRounds: n }} />
             </div>
 
             <div class="flex justify-between items-center">
               <span class="text-[14px] font-medium text-[#d8d8ce]">First to</span>
-              <div class="flex items-center gap-1">
-                <button type="button" aria-label="Fewer legs"
-                  onclick={() => config = { ...config, firstTo: Math.max(1, num(config.firstTo, 3) - 1) }}
-                  class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
-                         cursor-pointer">−</button>
-                <span class="w-12 md:w-[72px] text-center text-[15px]">
-                  <strong class="font-display text-[24px]
-                                 {isNonDefault('firstTo') ? 'text-accent' : ''}">{config.firstTo}</strong> legs
-                </span>
-                <button type="button" aria-label="More legs"
-                  onclick={() => config = { ...config, firstTo: num(config.firstTo, 3) + 1 }}
-                  class="w-11 h-11 border border-line-3 rounded-[8px] bg-transparent text-text text-[20px]
-                         cursor-pointer">+</button>
-              </div>
+              <Stepper value={num(config.firstTo, 3)} label="legs" unit={(n) => (n === 1 ? 'leg' : 'legs')} highlight={isNonDefault('firstTo')}
+                onchange={(n) => config = { ...config, firstTo: n }} />
             </div>
           </div>
 
@@ -332,21 +391,26 @@
           </div>
         {/if}
 
-        <!-- Players -->
-        <div class="flex flex-col gap-2 pt-[18px] border-t border-line">
-          <span class="text-[14px] font-medium text-[#d8d8ce]">Players</span>
-          <PlayerRow index={1} name={youName} isYou />
-          {#each guests as guest, i (i)}
-            <PlayerRow index={i + 2} bind:name={guest.name} bind:account={guest.account}
-              onRemove={() => guests = guests.filter((_, j) => j !== i)} />
-          {/each}
-          <button type="button" onclick={() => guests = [...guests, { name: '', account: null }]}
-            class="h-11 flex items-center justify-center gap-2 border border-dashed border-[#3e4239]
-                   rounded-[10px] bg-transparent text-[#c9c9bf] text-[14px] cursor-pointer mt-1">
-            <Plus size={16} />
-            Add player
-          </button>
-        </div>
+        {#if lobby}
+          <LobbyPlayersCard {lobby} />
+        {:else}
+          <!-- Players -->
+          <div class="flex flex-col gap-2 pt-[18px] border-t border-line">
+            <span class="text-[14px] font-medium text-[#d8d8ce]">Players</span>
+            <PlayerRow index={1} name={youName} isYou />
+            {#each guests as guest, i (i)}
+              <PlayerRow index={i + 2} bind:name={guest.name} bind:account={guest.account}
+                onRemove={() => guests = guests.filter((_, j) => j !== i)} />
+            {/each}
+            <button type="button" onclick={() => guests = [...guests, { name: '', account: null }]}
+              class="h-11 flex items-center justify-center gap-2 border border-dashed border-[#3e4239]
+                     rounded-[10px] bg-transparent text-[#c9c9bf] text-[14px] cursor-pointer mt-1">
+              <Plus size={16} />
+              Add player
+            </button>
+          </div>
+          <PlayWithFriends />
+        {/if}
 
         </div><!-- end scrollable body -->
 
@@ -364,18 +428,26 @@
               {/if}
             </p>
           {/if}
-          <button type="button" onclick={start} disabled={loading || bullOffBlocked}
-            title={bullOffBlocked ? 'Bull off needs at least two players' : undefined}
-            class="h-12 md:h-14 flex items-center justify-center gap-[10px] bg-accent text-accent-fg
-                   rounded-[10px] font-display font-bold text-[20px] md:text-[22px] tracking-[0.08em] uppercase
-                   border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
-            {loading ? 'Starting…' : 'Game on'}
-            {#if !loading}
-              <ArrowRight size={20} strokeWidth={2.2} />
-            {/if}
-          </button>
+          {#if lobby && !lobbyHost}
+            <p class="m-0 h-12 md:h-14 flex items-center justify-center text-[15px] text-text-muted">{hostName} starts the game</p>
+          {:else}
+            <button type="button" onclick={() => { if (lobby) void startInLobby(); else void start() }} disabled={loading || bullOffBlocked}
+              title={bullOffBlocked ? 'Bull off needs at least two players' : undefined}
+              class="h-12 md:h-14 flex items-center justify-center gap-[10px] bg-accent text-accent-fg
+                     rounded-[10px] font-display font-bold text-[20px] md:text-[22px] tracking-[0.08em] uppercase
+                     border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+              {loading ? 'Starting…' : 'Game on'}
+              {#if !loading}<ArrowRight size={20} strokeWidth={2.2} />{/if}
+            </button>
+          {/if}
         </div>
       </aside>
     </div>
   </main>
 </Layout>
+
+{#if confirmNames}
+  {@const names = confirmNames}
+  <ConfirmModal title="Start anyway?" body={`Not ready yet: ${names.join(', ')}.`} confirmLabel="Start anyway" cancelLabel="Wait"
+    onconfirm={() => { confirmNames = null; void startInLobby(true) }} oncancel={() => confirmNames = null} />
+{/if}
