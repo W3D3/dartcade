@@ -54,6 +54,12 @@ func toDart(t bm.BMThrow) schema.Dart {
 		d.Coords = &schema.Coords{X: t.Coords.X, Y: t.Coords.Y}
 		r := math.Sqrt(t.Coords.X*t.Coords.X + t.Coords.Y*t.Coords.Y)
 		theta := math.Atan2(t.Coords.Y, t.Coords.X) * 180.0 / math.Pi
+		// atan2 returns (-180, 180]; the schema's theta_deg is [-180, 180), so
+		// fold the single value that can hit the closed boundary (a dart on
+		// the negative x axis, y == +0) back onto it.
+		if theta >= 180 {
+			theta -= 360
+		}
 		d.Polar = &schema.Polar{R: r, ThetaDeg: theta}
 	}
 	return d
