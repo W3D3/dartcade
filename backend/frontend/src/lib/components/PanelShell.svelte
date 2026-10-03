@@ -6,7 +6,7 @@
   import type { PillKind } from './pills.js'
   import type { SeatLine } from '$lib/remote'
 
-  let { name, active, solo = false, pill, pillInRow = false, seat = null, aside, children }: {
+  let { name, active, solo = false, pill, pillInRow = false, seat = null, aside, children, waiting }: {
     name: string
     active: boolean
     solo?: boolean
@@ -17,6 +17,9 @@
     seat?: SeatLine | null
     aside?: Snippet
     children: Snippet
+    /** Disconnected seat: shown instead of the game content, below the name row and pill,
+     * inside the panel's own padding so the border and pill stay visible. */
+    waiting?: Snippet
   } = $props()
 
   const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
@@ -42,5 +45,5 @@
     </span>
   </div>
   {#if pill && !pillInRow}<PlayerPill kind={pill} />{/if}
-  {@render children()}
+  {#if waiting}{@render waiting()}{:else}{@render children()}{/if}
 </section>

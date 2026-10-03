@@ -102,6 +102,20 @@ func TestToDart_ThetaDeg_SixWedge(t *testing.T) {
 	}
 }
 
+func TestToDart_ThetaDeg_NegativeXAxis(t *testing.T) {
+	// x<0, y=+0 → atan2(+0, x<0) = +180°, which the schema's theta_deg
+	// range excludes ([-180, 180)); it must be folded to -180.
+	th := bm.BMThrow{
+		Segment: bm.BMSegment{Name: "S16", Number: 16, Bed: "SingleInner", Multiplier: 1},
+		Coords:  &bm.BMCoords{X: -0.5, Y: 0.0},
+	}
+	d := differ.ExportedToDart(th)
+	wantTheta := -180.0
+	if math.Abs(d.Polar.ThetaDeg-wantTheta) > 0.001 {
+		t.Errorf("theta_deg=%v want %v", d.Polar.ThetaDeg, wantTheta)
+	}
+}
+
 // ---- Process tests (Task 4) — stubs only; extraChecks added later ----
 
 func loadFixture(t *testing.T, name string) []bm.BMFrame {
