@@ -6,6 +6,7 @@
   import DevUserSwitch from './DevUserSwitch.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
   import NavBadge from './NavBadge.svelte'
+  import NavLink from './NavLink.svelte'
   import { isActiveRoute } from '$lib/nav'
   import { me } from '$lib/lobby/sockets'
 
@@ -38,10 +39,7 @@
   <div class="flex flex-col gap-1">
     {#each links as link (link.href)}
       {@const active = isActive(link.href)}
-      <a href={`#${link.href}`}
-        aria-current={active ? 'page' : undefined}
-        class="flex items-center gap-3 h-11 px-3 rounded-lg no-underline text-[15px] transition-colors
-               {active ? 'bg-[#22251f] text-text font-semibold' : 'text-[#c9c9bf] font-medium'}">
+      <NavLink href={`#${link.href}`} {active}>
         {#if link.icon === 'play'}
           <Target size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'boards'}
@@ -52,16 +50,14 @@
           <Clock size={20} strokeWidth={1.8} />
         {/if}
         {link.label}
-      </a>
+      </NavLink>
     {/each}
     {#if inviteCount > 0}
       {@const active = isActive('/invites')}
-      <a href="#/invites" aria-current={active ? 'page' : undefined}
-        class="flex items-center gap-3 h-11 px-3 rounded-lg no-underline text-[15px]
-               {active ? 'bg-[#22251f] text-text font-semibold' : 'text-[#c9c9bf] font-medium'}">
+      <NavLink href="#/invites" {active}>
         <Mail size={20} strokeWidth={1.8} />Invites
         <NavBadge count={inviteCount} label="{inviteCount} pending" class="ml-auto" />
-      </a>
+      </NavLink>
     {/if}
   </div>
 

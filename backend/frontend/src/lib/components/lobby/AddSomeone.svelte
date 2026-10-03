@@ -80,7 +80,7 @@
       oninput={() => { hint = ''; open = true }}
       onkeydown={(e) => { if (e.key === 'Escape') open = false }}
       class="flex-grow min-w-0 h-11 box-border px-3 md:px-[14px] bg-bg border border-line-chip rounded-[9px] text-text text-[15px] font-[inherit]" />
-    <Button variant="outline" type="submit" class="h-11 bg-surface-key border-0 font-semibold">
+    <Button variant="outline" size="md" type="submit" class="bg-surface-key border-0 font-semibold">
       <Plus size={16} />{parsed.kind === 'invite' ? 'Invite' : 'Add guest'}
     </Button>
     {#if open && matches.length > 0}

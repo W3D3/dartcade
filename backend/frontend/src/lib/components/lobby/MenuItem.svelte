@@ -14,7 +14,7 @@
 
 <button type="button" role={checked === undefined ? 'menuitem' : 'menuitemradio'} aria-checked={checked} {onclick}
   class="min-h-11 flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer font-[inherit]
-         {checked ? 'bg-[#2b3417]' : 'bg-transparent hover:bg-[#262a22]'} {danger ? 'text-live-text' : 'text-text'}">
+         {checked ? 'bg-accent-tint' : 'bg-transparent hover:bg-surface-hover'} {danger ? 'text-live-text' : 'text-text'}">
   <span class="flex flex-col gap-px flex-grow">
     <span class="text-[14px] md:text-[15px] {detail ? 'font-semibold' : ''}">{label}</span>
     {#if detail}<span class="text-[12px] text-text-muted">{detail}</span>{/if}

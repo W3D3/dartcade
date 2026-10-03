@@ -36,7 +36,7 @@
   </div>
 {:else if $me}
   <div class="flex flex-col gap-[6px] p-[10px] rounded-[12px] border border-line bg-surface-1">
-    <Button variant="outline" onclick={() => void create()} class="h-11 bg-surface-active border-accent-line text-accent font-semibold">
+    <Button variant="outline" size="md" onclick={() => void create()} class="bg-surface-active border-accent-line text-accent font-semibold">
       <Plus size={16} strokeWidth={2.4} />Create lobby
     </Button>
     {#if error}<ErrorText class="text-[12px] text-center">{error}</ErrorText>{/if}

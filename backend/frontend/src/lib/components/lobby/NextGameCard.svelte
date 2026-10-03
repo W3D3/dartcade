@@ -46,10 +46,10 @@
   <NextGameSummary {game} pickedBy="picked by you" />
   <div class="grid grid-cols-2 gap-2">
     {#if x01}
-      <Button variant="outline" class="h-11 font-semibold {settingsOpen ? 'bg-[#2b3417]' : ''}" aria-expanded={settingsOpen}
+      <Button variant="outline" size="md" pressed={settingsOpen} class="font-semibold" aria-expanded={settingsOpen}
         onclick={() => settingsOpen = !settingsOpen}><Settings size={16} />Settings</Button>
     {/if}
-    <Button variant="outline" href="#/" class="h-11 font-semibold {x01 ? '' : 'col-span-2'}">{game ? 'Change game' : 'Pick a game'}</Button>
+    <Button variant="outline" size="md" href="#/" class="font-semibold {x01 ? '' : 'col-span-2'}">{game ? 'Change game' : 'Pick a game'}</Button>
   </div>
   {#if settingsOpen && game && x01}<X01Settings config={game.config} onchange={setConfig} />{/if}
   <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
@@ -58,11 +58,11 @@
   </Field>
   <div class="flex flex-col gap-[6px]">
     <div class="flex gap-2">
-      <Button class="flex-grow h-14" disabled={!game || running || busy || c.playing === 0} onclick={() => onstart(false)}>
+      <Button size="xl" class="flex-grow" disabled={!game || running || busy || c.playing === 0} onclick={() => onstart(false)}>
         Start · {c.playing} {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
       </Button>
       {#if lobby.canRematch}
-        <Button variant="outline" class="h-14 font-semibold" disabled={running || busy} aria-label="Rematch: the last game again, same players"
+        <Button variant="outline" size="xl" class="font-semibold" disabled={running || busy} aria-label="Rematch: the last game again, same players"
           onclick={() => onstart(true)}><RotateCcw size={18} />Rematch</Button>
       {/if}
     </div>

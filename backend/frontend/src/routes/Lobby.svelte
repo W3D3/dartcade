@@ -136,14 +136,14 @@
 
 {#snippet startOrJoin()}
   <Button variant="accent" onclick={() => void create()}>Create lobby</Button>
-  <Button variant="outline" href="#/join" class="h-11">Join with a code</Button>
+  <Button variant="outline" size="md" href="#/join">Join with a code</Button>
 {/snippet}
 
 {#snippet errorBanner()}
   {#if error}
     <span class="flex flex-wrap items-center gap-3">
       <ErrorText>{error}</ErrorText>
-      {#if runningSessionId}<Button variant="outline" href="#/session/{runningSessionId}" class="h-9 px-3 text-[13px]">Return to game</Button>{/if}
+      {#if runningSessionId}<Button variant="outline" size="sm" href="#/session/{runningSessionId}" class="px-3 text-[13px]">Return to game</Button>{/if}
     </span>
   {/if}
 {/snippet}
@@ -156,7 +156,7 @@
     {:else if phase === 'failed'}
       <div class="flex flex-col items-start gap-3">
         <ErrorText>Couldn't load the lobby.</ErrorText>
-        <Button variant="outline" class="h-11" onclick={() => void load()}>Try again</Button>
+        <Button variant="outline" size="md" onclick={() => void load()}>Try again</Button>
       </div>
     {:else if phase === 'none'}
       <EmptyState title="You're not in a lobby"

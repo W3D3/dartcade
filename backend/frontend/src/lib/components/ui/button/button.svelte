@@ -9,6 +9,8 @@
 	let {
 		class: className,
 		variant = "primary",
+		size,
+		pressed = false,
 		ref = $bindable(null),
 		href,
 		type = "button",
@@ -22,7 +24,7 @@
 	<a
 		bind:this={ref}
 		data-slot="button"
-		class={cn(buttonVariants({ variant }), className)}
+		class={cn(buttonVariants({ variant, size, pressed }), className)}
 		href={disabled ? undefined : href}
 		aria-disabled={disabled}
 		role={disabled ? "link" : undefined}
@@ -35,7 +37,7 @@
 	<button
 		bind:this={ref}
 		data-slot="button"
-		class={cn(buttonVariants({ variant }), className)}
+		class={cn(buttonVariants({ variant, size, pressed }), className)}
 		{type}
 		{disabled}
 		{...restProps}

@@ -13,9 +13,9 @@
   <ol class="m-0 p-0 list-none flex flex-col min-h-0 overflow-y-auto">
     {#each activity as a (a.id)}
       {@const game = a.kind === 'game_played'}
-      <li class="grid grid-cols-[46px_28px_minmax(0,1fr)] items-center gap-[10px] min-h-10 border-b border-[#22251f] last:border-b-0">
+      <li class="grid grid-cols-[46px_28px_minmax(0,1fr)] items-center gap-[10px] min-h-10 border-b border-surface-paused last:border-b-0">
         <span class="font-mono text-[12px] text-text-dim">{feedTime(a.at)}</span>
-        <span class="w-7 h-7 rounded-full flex items-center justify-center {game ? 'bg-[#2b3417] text-accent' : 'bg-[#22251f] text-text-muted'}">
+        <span class="w-7 h-7 rounded-full flex items-center justify-center {game ? 'bg-accent-tint text-accent' : 'bg-surface-paused text-text-muted'}">
           {#if game}<Trophy size={14} />
           {:else if a.kind === 'game_aborted'}<X size={14} />
           {:else if a.kind === 'joined' || a.kind === 'guest_added'}<UserPlus size={14} />

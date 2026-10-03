@@ -48,6 +48,12 @@
   --color-accent-line:     #44521f;
   --color-surface-paused:  #22251f;
 
+  /* Lobby: rows, toggles that are on, chips someone moved */
+  --color-surface-row:        #1b1d18;
+  --color-surface-hover:      #262a22;
+  --color-accent-tint:        #2b3417;
+  --color-accent-line-strong: #5c7323;
+
   /* The not-your-turn toast's bar runs out with it (6 s, lib/toast.ts) */
   --animate-drain: drain 6s linear forwards;
   @keyframes drain {
