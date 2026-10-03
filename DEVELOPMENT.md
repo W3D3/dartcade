@@ -63,8 +63,9 @@ Once the bridge connects, open http://localhost:5173, pick your board in the dro
 players: Luke, Phil, Michael and Gerwyn (`<name>@dartcade.local`). The sign-in page has a button
 for each, and the account menu (the avatar on phones, the side nav on desktop) switches between them
 in one tap. To try a game with two people on one machine, sign in as one of them in a private
-window. Start a game with `@Luke` as a player, and Luke throws his own turns from the other window.
-The passwords are in `backend/src/auth/seed.ts`.
+window. Invite `@Luke` to your lobby, switch to the other window and accept the invite, then
+start the game — Luke throws his own turns from the other window. The passwords are in
+`backend/src/auth/seed.ts`.
 
 ## Environment variables
 
