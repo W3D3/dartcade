@@ -8,7 +8,7 @@
   import type { Snapshot } from '$lib/ws.js'
 
   let {
-    title, meta = '', sessionId, boardId, gameId, bmStatus, viewMode, canEnd, showViewToggle = true, compact = false,
+    title, meta = '', sessionId, boardId, gameId, bmStatus, viewMode, canEnd, endMode = 'end', showViewToggle = true, compact = false,
     lobbyName = null, paused = false, myBoard = null,
     settings = $bindable(), onleave, onend, onviewmode,
   }: {
@@ -19,7 +19,10 @@
     gameId: string
     bmStatus: Snapshot['bmStatus']
     viewMode: 'board' | 'entry'
+    /** Whether the end-of-game control shows at all. */
     canEnd: boolean
+    /** The host ends the game for everyone; anyone else with seats leaves (forfeits them). */
+    endMode?: 'end' | 'leave'
     showViewToggle?: boolean
     /** The phone header: back, title with LIVE and meta, keypad toggle, end, settings. */
     compact?: boolean
@@ -76,7 +79,7 @@
       </button>
     {/if}
     {#if canEnd}
-      <button type="button" onclick={onend} aria-label="End game"
+      <button type="button" onclick={onend} aria-label={endMode === 'end' ? 'End game' : 'Leave game'}
         class="w-11 h-11 flex items-center justify-center rounded-[10px] border border-line-chip bg-transparent text-live-text cursor-pointer">
         <X size={18} />
       </button>
@@ -119,7 +122,7 @@
     {#if canEnd}
       <button type="button" onclick={onend} class="{outline} px-[14px] text-live-text">
         <X size={14} />
-        End
+        {endMode === 'end' ? 'End' : 'Leave'}
       </button>
     {/if}
 

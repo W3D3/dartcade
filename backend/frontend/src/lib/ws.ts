@@ -1,6 +1,6 @@
 import { writable, type Readable } from 'svelte/store'
-import { WsCloseCode, type ClientMessage, type NoticeMessage, type Snapshot, type UserAction } from './api/game-ws'
-import { NoticeMessageSchema, SnapshotSchema } from './api/zod'
+import { WsCloseCode, type ClientMessage, type ErrorMessage, type NoticeMessage, type Snapshot, type UserAction } from './api/game-ws'
+import { ErrorMessageSchema, NoticeMessageSchema, SnapshotSchema } from './api/zod'
 
 export type { Snapshot }
 
@@ -24,9 +24,16 @@ export function parseNotice(m: unknown): NoticeMessage | null {
   return r.success ? r.data : null
 }
 
+/** An action of this viewer was refused by the server (e.g. a forfeit it couldn't apply), or null. */
+export function parseError(m: unknown): ErrorMessage | null {
+  const r = ErrorMessageSchema.safeParse(m)
+  return r.success ? r.data : null
+}
+
 export function createSessionStore(sessionId: string) {
   const snapshot = writable<Snapshot | null>(null)
   const notice = writable<NoticeMessage | null>(null)
+  const error = writable<ErrorMessage | null>(null)
   let ws: WebSocket | null = null
   let closed = false
   let backoff = 500
@@ -42,7 +49,9 @@ export function createSessionStore(sessionId: string) {
         if (snap) { snapshot.set(snap); backoff = 500; return }
         // Each notice is a new object, so subscribers hear the same notice twice in a row too
         const n = parseNotice(data)
-        if (n) notice.set(n)
+        if (n) { notice.set(n); return }
+        const err = parseError(data)
+        if (err) error.set(err)
       } catch {}
     }
     ws.onclose = (e) => {
@@ -77,5 +86,6 @@ export function createSessionStore(sessionId: string) {
   }
 
   const noticeStore: Readable<NoticeMessage | null> = { subscribe: notice.subscribe }
-  return { snapshot, notice: noticeStore, send, destroy }
+  const errorStore: Readable<ErrorMessage | null> = { subscribe: error.subscribe }
+  return { snapshot, notice: noticeStore, error: errorStore, send, destroy }
 }
