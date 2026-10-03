@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { activityLine, feedTime, formatCode, gameName, joinLink, nextGameSummary, type Part } from '../lobby/format.js'
-import type { LobbyActivity } from '../api/lobby-ws'
+import { activityLine, feedTime, formatCode, gameName, joinLink, nextGameSummary, personLine, type Part } from '../lobby/format.js'
+import type { LobbyActivity, LobbyPerson } from '../api/lobby-ws'
 
 const text = (parts: Part[]) => parts.map(p => p.text).join('')
 const bold = (parts: Part[]) => parts.filter(p => p.bold).map(p => p.text)
@@ -56,5 +56,30 @@ describe('lobby text', () => {
 
   it('shows the time of day', () => {
     expect(feedTime(new Date(2026, 9, 2, 21, 6).toISOString())).toBe('21:06')
+  })
+})
+
+describe('personLine', () => {
+  const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
+    id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
+    boardOnline: false, boardMovedBy: null, usualBoardName: null, plays: true, ready: false, presence: null, ...over,
+  })
+  const chris = person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph' })
+  const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena', boardId: 'lenas', boardName: "Lena's place", usualBoardName: "Lena's place" })
+
+  it('says whose guest someone is', () => {
+    expect(personLine(person({ name: 'Pia', addedByUserId: 'lena' }), [chris, lena], 'chris')).toBe("Lena's guest")
+    expect(personLine(person({ name: 'Pia', addedByUserId: 'lena' }), [chris, lena], 'lena')).toBe('Your guest')
+  })
+
+  it('says who moved someone and where they usually play', () => {
+    const max = person({ userId: 'max', addedByUserId: 'max', name: 'Max', boardId: 'living', boardName: 'Living room', boardMovedBy: 'chris', usualBoardName: 'Garage' })
+    expect(personLine(max, [chris, lena, max], 'chris')).toBe('Moved by you · usually Garage')
+    expect(personLine(max, [chris, lena, max], 'lena')).toBe('Moved by Christoph · usually Garage')
+    expect(personLine({ ...max, usualBoardName: null }, [chris, lena, max], 'lena')).toBe('Moved by Christoph')
+  })
+
+  it('is empty for someone on their usual board', () => {
+    expect(personLine(lena, [chris, lena], 'chris')).toBe('')
   })
 })

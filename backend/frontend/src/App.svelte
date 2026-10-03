@@ -8,6 +8,7 @@
   import Register from './routes/Register.svelte'
   import Boards from './routes/Boards.svelte'
   import History from './routes/History.svelte'
+  import Lobby from './routes/Lobby.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
 
@@ -18,6 +19,7 @@
     '/register': Register,
     '/boards': Boards,
     '/history': History,
+    '/lobby': Lobby,
   }
 
   let checked = false
