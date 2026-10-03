@@ -149,3 +149,75 @@ The screens read `solo` and `nextHostName` from the server (Task 1); there are n
 ### Task 8: Browser pass and screenshots (controller)
 
 Folded into the lobby-screens plan's Task 16: the controller walks solo play (open Play with no lobby, add a guest, Game on without a ready prompt), inviting a friend from Play, the second account joining (the card and the indicator switch to shared), joining someone else's lobby while solo (no question, the old lobby closes), and the host leaving. Screenshots add `play-solo-phone.png` and `play-solo-desktop.png`.
+
+---
+
+## Added 2026-10-03 13:24 (user): New game picks the game, the lobby holds the people; #67, #68, #69
+
+Run Tasks 9–12 before Task 7 (docs) and Task 8 (browser pass). Same Global Constraints; the
+server decides, the screens read.
+
+### Task 9: New game picks the game; players only in the lobby
+
+**Files:** `backend/frontend/src/routes/CreateSession.svelte`, `routes/Lobby.svelte`, the lobby
+components it uses; delete `components/lobby/SoloPlayers.svelte` (and anything else only it used).
+
+- [ ] **Play page:** game tiles (`GameModeTiles`) and settings (`GameSettings`) only; no players,
+  no throw order, no board, no lobby socket for people. Main button:
+  - not in a lobby → **Create lobby**: `createLobby()`, then PATCH `nextGame` with the chosen game
+    and settings (`lobbyActions(id).updateLobby`), then go to `#/lobby`. An `in_lobby` answer means
+    you have one: PATCH that one instead and go.
+  - host of a lobby → **Continue in lobby**: PATCH `nextGame`, go to `#/lobby`. Start the editor
+    from the lobby's `nextGame` (`initialGameSelection`), as today.
+  - member of someone else's lobby → the planned game read-only (as today) and **Open lobby**.
+  Read the lobby state from `/ws/me` (`$me.lobby`: id, `youHost`, `nextGame` if the summary has it;
+  if the summary lacks what the editor needs, open the lobby store only for that, read-only).
+- [ ] **Remove** the Play page's auto-open (the first-state flag, the 1.5 s "Start playing"
+  fallback) and `SoloPlayers`; the Play page never opens a lobby by itself.
+- [ ] **Lobby page while solo:** show the people list (`PeopleList` with the add field, board chips,
+  remove) together with "Invite friends" (code, link, QR); still hide Close and the history.
+- [ ] **Boards page "Play on this board":** keep it working: it now goes to New game as before;
+  "Create lobby"/"Continue in lobby" puts your row on that board (`updatePerson`) before going to
+  the lobby. Read how it's wired today (Task 4 moved your row once on the Play page).
+- [ ] Tests for any pure helper (e.g. which main button: `playAction(meLobby)` →
+  `'create' | 'continue' | 'open'`), test-first. Checks: frontend tests, typecheck 0/0, lint 0.
+- [ ] **Commit** `feat(frontend): New game picks the game; players join in the lobby`
+
+### Task 10: The QR code in a popover (#67)
+
+**Files:** `components/lobby/JoinCodeCard.svelte`, `QrCode.svelte`, `PopoverMenu` (or a small
+`Popover` primitive if PopoverMenu's menu semantics don't fit).
+
+- [ ] The QR button opens the code in a popover anchored to the button (Escape and an outside click
+  close it, focus returns to the button), sized for scanning across a room (about 240 px), with the
+  join link written under it. The page doesn't move. Works on phone widths (the popover stays on
+  screen).
+- [ ] Checks as usual. **Commit** `feat(frontend): the lobby QR code opens in a popover` (body: `Closes #67`).
+
+### Task 11: Invited people in the list (#68)
+
+**Files:** `components/lobby/PeopleList.svelte`, `PersonRow.svelte` (or a small `InvitedRow.svelte`),
+`schema/lobby-ws-v1.json` only if the snapshot lacks what the row needs.
+
+- [ ] Each pending invite shows as a row after the people: avatar and name, greyed out, with a small
+  pending spinner and "Invited". It turns into a member row when they accept and disappears when
+  they decline or the invite ends (both come from the server's snapshot). Replaces the
+  "Invited · waiting for …" line. No new client-side rules: render the snapshot's invites.
+- [ ] Checks as usual. **Commit** `feat(frontend): invited people show in the lobby list` (body: `Closes #68`).
+
+### Task 12: The server pushes your running game (#69)
+
+**Files:** `schema/lobby-ws-v1.json` (`MeMessage`), `backend/src/lobby/service.ts` (`meMessage`, pushes),
+the engine's start/end hooks as needed, `backend/frontend/src/lib/activeSession.ts`,
+`lib/lobby/sockets.ts`, the banner (`components/SessionBanner.svelte`) and `TabBar`.
+
+- [ ] **Server:** `MeMessage` gains `game: { sessionId, gameId, lobbyName } | null` (the user's
+  active session, from the engine). Push `/ws/me` to every account seated in a session when it
+  starts and when it ends (finished, aborted, forfeit), for lobby and non-lobby sessions. Tests
+  first: a start pushes `game` to each seated account; an end pushes `game: null`.
+- [ ] **Frontend:** `activeSessionId` (and the banner and Live tab) read `$me.game`; drop the
+  one-time `GET /api/sessions` load and the manual `.refresh()` calls, or keep a load only as the
+  initial value until `/ws/me` connects. The banner disappears the moment the game ends, on every
+  device.
+- [ ] Backend suite with the DB, frontend tests, typechecks, lint. **Commit**
+  `feat: push your running game over /ws/me` (body: `Closes #69`).
