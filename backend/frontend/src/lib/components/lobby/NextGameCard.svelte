@@ -1,14 +1,17 @@
 <script lang="ts">
-  // The host's next-game card: the game (with inline X01 settings), who plays, throw order,
-  // Start, and Rematch once a game was played.
+  // The host's next-game card: the game (its settings with the Play page's form, Change game
+  // with its mode tiles), who plays, throw order, Start, and Rematch once a game was played.
   import { ArrowRight, RotateCcw, Settings } from '@lucide/svelte'
+  import { untrack } from 'svelte'
   import type { Lobby, ThrowOrder } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
+  import GameSettings from '$lib/components/GameSettings.svelte'
+  import ChangeGameDialog from './ChangeGameDialog.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
   import ThrowOrderField from './ThrowOrderField.svelte'
   import WhoPlays from './WhoPlays.svelte'
-  import X01Settings from './X01Settings.svelte'
+  import { gameModes, settlePending, withDefaults } from '$lib/gameModes'
   import { counts, type LobbyPatch } from '$lib/lobby/rules'
 
   let { lobby, busy = false, onupdate, onplays, onstart }: {
@@ -22,12 +25,63 @@
 
   const c = $derived(counts(lobby))
   const game = $derived(lobby.nextGame)
-  const x01 = $derived(game?.gameId === 'x01')
   const running = $derived(lobby.currentSessionId !== null)
+  const info = $derived(game ? $gameModes.find(g => g.id === game.gameId) : undefined)
+  const defaults = $derived(info?.defaultConfig ?? {})
+  type Config = Record<string, unknown>
+  // Changes sent but not yet in the lobby's snapshot, for the game they were made on: shown
+  // and sent on top of it, so two quick changes don't undo each other
+  let pending = $state<{ gameId: string; config: Config } | null>(null)
+  // Changes whose save came back (the values sent): the next snapshot settles them. Plain:
+  // only the snapshot effect reads it
+  let settled: Config = {}
+  // What the form shows: the lobby's saved settings and the pending changes over the mode's defaults
+  const config = $derived(game
+    ? withDefaults({ ...game.config, ...(pending?.gameId === game.gameId ? pending.config : {}) }, defaults)
+    : {})
   let settingsOpen = $state(false)
+  let picking = $state(false)
 
-  function setConfig(key: string, value: unknown) {
-    if (game) void onupdate({ nextGame: { gameId: game.gameId, config: { ...game.config, [key]: value } } })
+  // Each snapshot settles the pending changes it shows (or whose save came back). This only
+  // trims what's shown: saving happens in the handlers, so an echo never saves again.
+  $effect(() => {
+    const g = game
+    untrack(() => {
+      if (!pending) return
+      if (!g || g.gameId !== pending.gameId) { pending = null; settled = {}; return }
+      const left = settlePending(pending.config, g.config, settled)
+      settled = {}
+      pending = Object.keys(left).length > 0 ? { gameId: g.gameId, config: left } : null
+    })
+  })
+
+  // Read fresh (a snapshot may have settled it while a save was on its way)
+  function pendingValue(gameId: string, key: string): unknown {
+    return pending?.gameId === gameId ? pending.config[key] : undefined
+  }
+
+  // Each change saves the whole next game, pending changes included
+  async function setConfig(key: string, value: unknown) {
+    if (!game) return
+    const gameId = game.gameId
+    const sent = { ...config, [key]: value }
+    pending = { gameId, config: { ...(pending?.gameId === gameId ? pending.config : {}), [key]: value } }
+    const ok = await onupdate({ nextGame: { gameId, config: sent } })
+    // A newer change to it (or another game) took over: that one settles it
+    if (pendingValue(gameId, key) !== value) return
+    if (ok) settled = { ...settled, [key]: value }
+    else {
+      // Refused (the error shows on the page): back to what the lobby has
+      const left = settlePending(pending.config, {}, { [key]: value })
+      pending = Object.keys(left).length > 0 ? { gameId, config: left } : null
+    }
+  }
+  function pickGame(gameId: string) {
+    picking = false
+    pending = null
+    settled = {}
+    const defaultConfig = $gameModes.find(g => g.id === gameId)?.defaultConfig ?? {}
+    void onupdate({ nextGame: { gameId, config: { ...defaultConfig } } })
   }
 </script>
 
@@ -35,13 +89,18 @@
   class="box-border p-4 md:px-6 md:py-[22px] rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[14px] md:gap-[18px]">
   <NextGameSummary {game} pickedBy="picked by you" />
   <div class="grid grid-cols-2 gap-2">
-    {#if x01}
+    {#if game}
       <Button variant="outline" size="md" pressed={settingsOpen} class="font-semibold" aria-expanded={settingsOpen}
         onclick={() => settingsOpen = !settingsOpen}><Settings size={16} />Settings</Button>
     {/if}
-    <Button variant="outline" size="md" href="#/" class="font-semibold {x01 ? '' : 'col-span-2'}">{game ? 'Change game' : 'Pick a game'}</Button>
+    <Button variant="outline" size="md" class="font-semibold {game ? '' : 'col-span-2'}" aria-haspopup="dialog"
+      onclick={() => picking = true}>{game ? 'Change game' : 'Pick a game'}</Button>
   </div>
-  {#if settingsOpen && game && x01}<X01Settings config={game.config} onchange={setConfig} />{/if}
+  {#if settingsOpen && game}
+    <div class="p-[14px] rounded-[12px] bg-surface-panel border border-line-2">
+      <GameSettings gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} onchange={(key: string, value: unknown) => void setConfig(key, value)} />
+    </div>
+  {/if}
   <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
   <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
   <div class="flex flex-col gap-[6px]">
@@ -57,3 +116,7 @@
     <span class="text-[13px]"><ReadyCount {lobby} suffix="you can start anyway" /></span>
   </div>
 </section>
+
+{#if picking}
+  <ChangeGameDialog current={game?.gameId ?? null} games={$gameModes} onpick={pickGame} oncancel={() => picking = false} />
+{/if}

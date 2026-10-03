@@ -1,13 +1,12 @@
 <script lang="ts">
   // The Play page: pick a game, set it up, Game on. It always plays in your lobby, and opens
   // one when you have none. While the lobby is solo the players are edited right here.
-  import { ArrowRight, Check } from '@lucide/svelte'
-  import { onMount } from 'svelte'
+  import { ArrowRight } from '@lucide/svelte'
+  import { onMount, untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte'
-  import Tooltip from '$lib/components/Tooltip.svelte'
-  import Stepper from '$lib/components/Stepper.svelte'
+  import GameModeTiles from '$lib/components/GameModeTiles.svelte'
+  import GameSettings from '$lib/components/GameSettings.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import LobbyPlayersCard from '$lib/components/lobby/LobbyPlayersCard.svelte'
@@ -15,7 +14,7 @@
   import InvitesBanner from '$lib/components/lobby/InvitesBanner.svelte'
   import StartAnywayConfirm from '$lib/components/lobby/StartAnywayConfirm.svelte'
   import type { Lobby } from '$lib/api/lobby-ws'
-  import { api, type ConfigFieldMeta, type GameInfo } from '$lib/api'
+  import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { describeConflict } from '$lib/lobby/input'
   import { gameName, nextGameSummary } from '$lib/lobby/format'
@@ -25,31 +24,7 @@
   import { initialGameSelection, startGame } from '$lib/lobby/start'
   import { activeSessionId } from '$lib/activeSession'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
-
-  const MODES = [
-    { id: 'atc',        glyph: 'ATC',    name: 'Around the Clock', desc: 'Hit 1 through 20 in order, then finish on your chosen target.', available: true  },
-    { id: 'x01',        glyph: 'X01',    name: 'X01',               desc: 'Count down from your chosen score. Configure check-in, check-out, and bull off.', available: true  },
-    { id: 'soccer',     glyph: 'Soccer', name: 'Dart Soccer',       desc: 'Coming soon.',                                                 available: false },
-    { id: 'tournament', glyph: 'R16',    name: 'Tournament',        desc: 'Coming soon.',                                                 available: false },
-  ]
-
-  const startScoreOptions = [
-    { value: 301, label: '301' },
-    { value: 501, label: '501' },
-    { value: 701, label: '701' },
-  ]
-  const inOutOptions = [
-    { value: 'straight', label: 'Straight' },
-    { value: 'double',   label: 'Double'   },
-    { value: 'master',   label: 'Master'   },
-  ]
-  const bullValueOptions = [
-    { value: '25_50', label: '25 / 50' },
-    { value: '50_50', label: '50 / 50' },
-  ]
-
-  // ATC config fields in display order — populated from backend configMeta
-  const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
+  import { GAME_MODES, gameModes } from '$lib/gameModes'
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const X01_DEFAULTS: Record<string, unknown> = {
@@ -58,21 +33,20 @@
   }
 
   type Config = Record<string, unknown>
-  // A numeric config field, or its default when missing or not a number
-  const num = (v: unknown, d: number) => (typeof v === 'number' ? v : d)
   const initPrefs = loadPrefs(localStorage)
 
-  let games = $state<GameInfo[]>([])
+  // The backend's modes (defaults, settings meta), loaded once for this page and the lobby
+  const games = $derived($gameModes)
   // Your paired boards, for the board menus on your rows; null until loaded
   let ownBoards = $state<OwnBoard[] | null>(null)
   let selectedMode = $state(initPrefs?.mode ?? 'atc')
-  let atcMeta = $state<Partial<Record<string, ConfigFieldMeta>>>({})
   let error = $state('')
   // Set when the server refuses because this user already has a game running
   let runningSessionId = $state<string | null>(null)
   let loading = $state(false)
 
-  let gameDefaults = $state<Partial<Record<string, Config>>>({ x01: X01_DEFAULTS })
+  const atcGame = $derived(games.find(g => g.id === 'atc'))
+  const gameDefaults = $derived<Partial<Record<string, Config>>>(atcGame ? { x01: X01_DEFAULTS, atc: atcGame.defaultConfig } : { x01: X01_DEFAULTS })
   let savedConfigs = $state<Partial<Record<string, Config>>>(initPrefs?.configs ?? {})
   let config = $state<Record<string, unknown>>({
     ...X01_DEFAULTS,
@@ -93,25 +67,20 @@
     config = { ...(gameDefaults[id] ?? {}), ...(savedConfigs[id] ?? {}) }
   }
 
-  function isNonDefault(key: string): boolean {
-    const def = gameDefaults[selectedMode]
-    return !!def && key in def && config[key] !== def[key]
-  }
-
   onMount(async () => {
-    const [gr, br] = await Promise.all([api.GET('/api/gamemodes'), api.GET('/api/boards')])
+    const br = await api.GET('/api/boards')
     if (!br.data) return   // 401 is redirected to login by the client
-    games = gr.data?.modes ?? []
     ownBoards = br.data.boards.map(b => ({ id: b.id, name: b.name }))
+  })
 
-    const atcGame = games.find(g => g.id === 'atc')
-    if (atcGame) {
-      atcMeta = atcGame.configMeta
-      gameDefaults = { ...gameDefaults, atc: atcGame.defaultConfig }
-    }
-
-    // Re-apply with real defaults now that we have them
-    config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) }
+  // Re-apply with real defaults once the modes are known (at mount when already loaded).
+  // Plain: applied once, and only the "loaded" flag is tracked, not the form.
+  const modesLoaded = $derived(games.length > 0)
+  let defaultsApplied = false
+  $effect(() => {
+    if (!modesLoaded || defaultsApplied) return
+    defaultsApplied = true
+    untrack(() => { config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) } })
   })
 
   // "Game on" starts your lobby's game with its players (spec: Every game is a lobby)
@@ -183,7 +152,7 @@
   // lobby's own next game, live; the host and the local-only flow edit their own picks.
   const canEditGame = $derived(!lobby || lobbyHost)
   const displayMode = $derived(canEditGame ? selectedMode : lobby?.nextGame?.gameId ?? null)
-  const setupName = $derived(canEditGame ? MODES.find(m => m.id === selectedMode)?.name : (displayMode ? gameName(displayMode) : 'No game yet'))
+  const setupName = $derived(canEditGame ? GAME_MODES.find(m => m.id === selectedMode)?.name : (displayMode ? gameName(displayMode) : 'No game yet'))
 
   // "Play on this board" on the Boards page (#/?board=): put yourself on that board, once your
   // lobby and boards are known. Plain, not state: the effect clears it once it's handled.
@@ -263,45 +232,7 @@
 
     <div class="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-grow md:min-h-0">
       <!-- Mode grid -->
-      <div class="grid grid-cols-2 gap-[10px] md:flex-grow md:grid-rows-2 md:gap-4">
-        {#each MODES as mode (mode.id)}
-          {@const active = mode.id === displayMode}
-          {@const unavailable = !mode.available}
-          <button type="button"
-            onclick={() => { if (mode.available && canEditGame) selectMode(mode.id) }}
-            disabled={unavailable || !canEditGame}
-            class="relative text-left box-border h-[92px] px-[14px] py-3 md:h-auto md:p-6 rounded-[12px] md:rounded-[14px] flex flex-col gap-[10px]
-                   overflow-hidden transition-colors font-[inherit]
-                   {unavailable
-                     ? 'bg-surface-2 border border-line-2 opacity-40 cursor-not-allowed'
-                     : active
-                       ? `bg-surface-active border-2 border-accent ${canEditGame ? 'cursor-pointer' : 'cursor-default'}`
-                       : `bg-surface-2 border border-line-2 ${canEditGame ? 'cursor-pointer' : 'cursor-default'}`}">
-            {#if active && !unavailable}
-              <span class="absolute top-2 right-2 w-6 h-6 md:top-[18px] md:right-[18px] md:w-7 md:h-7 rounded-full bg-accent
-                           flex items-center justify-center">
-                <Check size={16} strokeWidth={3} />
-              </span>
-            {/if}
-            {#if unavailable}
-              <span class="absolute top-[14px] right-[14px] text-[11px] font-medium tracking-[0.06em]
-                           uppercase text-text-dim border border-line-3 rounded-[5px] px-[7px] py-[3px]">
-                Soon
-              </span>
-            {/if}
-            <span class="font-display font-bold text-[34px] md:text-[88px] leading-[0.9]
-                         {active && !unavailable ? 'text-accent' : 'text-transparent [-webkit-text-stroke:1.5px_#5a5e53]'}">
-              {mode.glyph}
-            </span>
-            <span class="mt-auto font-display font-bold text-[18px] md:text-[30px] uppercase tracking-[0.02em] text-text">
-              {mode.name}
-            </span>
-            <span class="hidden md:block text-[15px] leading-[1.45] {active && !unavailable ? 'text-[#b4b5aa]' : 'text-text-muted'}">
-              {mode.desc}
-            </span>
-          </button>
-        {/each}
-      </div>
+      <GameModeTiles selected={displayMode} disabled={!canEditGame} onselect={selectMode} />
 
       <!-- Setup aside -->
       <aside class="w-full md:w-[400px] md:flex-shrink-0 box-border border border-line-2 rounded-[14px]
@@ -324,72 +255,10 @@
             {/if}
           </div>
 
-        {:else if selectedMode === 'x01'}
-          <div class="flex flex-col gap-[18px]">
-            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Start score</legend>
-              <SegmentedControl options={startScoreOptions} bind:value={config.startScore}
-                defaultValue={X01_DEFAULTS.startScore} />
-            </fieldset>
-
-            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-in</legend>
-              <SegmentedControl options={inOutOptions} bind:value={config.inMode}
-                defaultValue={X01_DEFAULTS.inMode} />
-            </fieldset>
-
-            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-out</legend>
-              <SegmentedControl options={inOutOptions} bind:value={config.outMode}
-                defaultValue={X01_DEFAULTS.outMode} />
-            </fieldset>
-
-            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-              <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Bull value</legend>
-              <SegmentedControl options={bullValueOptions} bind:value={config.bullValue}
-                defaultValue={X01_DEFAULTS.bullValue} />
-            </fieldset>
-
-            <div class="flex justify-between items-center">
-              <span class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce]">Max rounds <Tooltip text="Maximum number of rounds before the game ends. The player with the lowest score wins if nobody checks out. Set higher for longer games." /></span>
-              <Stepper value={num(config.maxRounds, 50)} label="rounds" highlight={isNonDefault('maxRounds')}
-                onchange={(n) => config = { ...config, maxRounds: n }} />
-            </div>
-
-            <div class="flex justify-between items-center">
-              <span class="text-[14px] font-medium text-[#d8d8ce]">First to</span>
-              <Stepper value={num(config.firstTo, 3)} label="legs" unit={(n) => (n === 1 ? 'leg' : 'legs')} highlight={isNonDefault('firstTo')}
-                onchange={(n) => config = { ...config, firstTo: n }} />
-            </div>
-          </div>
-
-        {:else if selectedMode === 'atc'}
-          <div class="flex flex-col gap-[18px]">
-            {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
-              {@const meta = atcMeta[fieldKey]}
-              {#if meta?.options}
-                <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-                  <legend class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce] mb-2">
-                    {meta.label}
-                    {#if meta.tooltip}
-                      <Tooltip text={meta.tooltip} />
-                    {/if}
-                  </legend>
-                  <SegmentedControl
-                    options={meta.options}
-                    value={config[fieldKey]}
-                    defaultValue={gameDefaults['atc']?.[fieldKey]}
-                    onchange={(v: unknown) => config = { ...config, [fieldKey]: v }} />
-                </fieldset>
-              {/if}
-            {/each}
-          </div>
-
         {:else}
-          <div class="p-4 border border-dashed border-[#3e4239] rounded-[10px] text-[14px]
-                      leading-[1.5] text-text-muted">
-            [{MODES.find(m => m.id === selectedMode)?.name} options — rules and settings to be defined]
-          </div>
+          <GameSettings gameId={selectedMode} {config} defaults={gameDefaults[selectedMode] ?? {}}
+            meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}}
+            onchange={(key: string, value: unknown) => config = { ...config, [key]: value }} />
         {/if}
 
         {#if lobby && lobby.solo}

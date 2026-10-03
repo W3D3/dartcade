@@ -35,6 +35,30 @@ describe('loadOnce', () => {
     expect(get(store)).toBe('x')
   })
 
+  it('loads again on the next use after a failed load', async () => {
+    const fetch = vi.fn().mockRejectedValueOnce(new Error('offline')).mockResolvedValue('Mia')
+    const store = loadOnce(fetch, null)
+    store.subscribe(() => undefined)()
+    await tick()
+    expect(get(store)).toBeNull()
+    store.subscribe(() => undefined)
+    await tick()
+    expect(get(store)).toBe('Mia')
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not load twice while a load is in flight', async () => {
+    let resolve: (v: string) => void = () => undefined
+    const fetch = vi.fn(() => new Promise<string>(r => { resolve = r }))
+    const store = loadOnce(fetch, null)
+    store.subscribe(() => undefined)
+    store.subscribe(() => undefined)
+    resolve('Mia')
+    await tick()
+    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(get(store)).toBe('Mia')
+  })
+
   it('does not load again on first use after an explicit refresh', async () => {
     const fetch = vi.fn().mockResolvedValue('Mia')
     const store = loadOnce(fetch, null)

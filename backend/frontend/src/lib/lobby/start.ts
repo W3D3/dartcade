@@ -35,8 +35,8 @@ export type GameSelection = { mode: string; config: Record<string, unknown> }
 
 /**
  * What the Play page's form starts with inside a lobby: the lobby's saved next game, merged
- * over that mode's defaults so every field the form reads exists (the lobby's quick settings,
- * such as X01Settings, only ever set some of them), or the given fallback — the player's own
+ * over that mode's defaults so every field the form reads exists (a saved next game may set
+ * only some of them), or the given fallback — the player's own
  * remembered mode and settings — when the lobby has no next game yet. Meant to be applied once,
  * the first time the lobby's next game becomes known (at mount, or once it arrives after), so
  * the host's later edits on the page are never overwritten by it.
