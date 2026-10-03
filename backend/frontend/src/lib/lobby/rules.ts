@@ -108,6 +108,13 @@ export const alreadyInOrInvited = (lobby: Lobby): string[] =>
 export const isTeamFormat = (teams: boolean | undefined, config: { format?: unknown }): boolean =>
   teams === true && config.format === 'teams'
 
+/** The lobby's next game is played in teams: its saved settings over its mode's defaults pick them. */
+export function nextGameInTeams(lobby: Lobby, modes: { id: string; teams: boolean; defaultConfig: Record<string, unknown> }[]): boolean {
+  const game = lobby.nextGame
+  const mode = game ? modes.find(m => m.id === game.gameId) : undefined
+  return game !== null && mode !== undefined && isTeamFormat(mode.teams, { ...mode.defaultConfig, ...game.config })
+}
+
 /** The people who play, split into Team A and Team B, each in lobby order. Once it's a team
  * game the server gives everyone who plays a team, so this only reads the snapshot. */
 export function teamRosters(lobby: Lobby): { a: LobbyPerson[]; b: LobbyPerson[] } {

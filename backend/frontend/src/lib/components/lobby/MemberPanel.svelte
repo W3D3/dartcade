@@ -33,7 +33,7 @@
 </script>
 
 <section aria-label="Next game" class="p-[14px] md:p-5 rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[10px]">
-  <NextGameSummary game={lobby.nextGame} pickedBy="{hostName}'s pick" size="sm" />
+  <NextGameSummary {lobby} pickedBy="{hostName}'s pick" size="sm" />
   {#if game}
     <SettingsToggleButton open={settingsOpen} ontoggle={() => settingsOpen = !settingsOpen} />
     <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} teams={info?.teams ?? false} readonly>

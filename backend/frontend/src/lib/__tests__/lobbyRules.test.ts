@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, isTeamFormat, myRow, playsInGame, teamRosters, teamsMessage } from '../lobby/rules.js'
+import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, isTeamFormat, myRow, nextGameInTeams, playsInGame, teamRosters, teamsMessage } from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -94,6 +94,16 @@ describe('lobby rules for the screens', () => {
     expect(isTeamFormat(true, { format: 'singles' })).toBe(false)
     expect(isTeamFormat(false, { format: 'teams' })).toBe(false)
     expect(isTeamFormat(undefined, { format: 'teams' })).toBe(false)
+  })
+
+  it('the lobby\'s next game is in teams: its mode does teams and its settings (over the defaults) pick them', () => {
+    const modes = [{ id: 'x01', teams: true, defaultConfig: { format: 'singles' } }, { id: 'atc', teams: false, defaultConfig: {} }]
+    const next = (gameId: string, config: Record<string, unknown>): Lobby => ({ ...lobby, nextGame: { gameId, config } })
+    expect(nextGameInTeams(next('x01', { format: 'teams' }), modes)).toBe(true)
+    expect(nextGameInTeams(next('x01', {}), modes)).toBe(false)
+    expect(nextGameInTeams(next('x01', {}), [{ ...modes[0], defaultConfig: { format: 'teams' } }])).toBe(true)
+    expect(nextGameInTeams(next('atc', { format: 'teams' }), modes)).toBe(false)
+    expect(nextGameInTeams(lobby, modes)).toBe(false)
   })
 
   it('splits the people who play into Team A and Team B, in lobby order', () => {

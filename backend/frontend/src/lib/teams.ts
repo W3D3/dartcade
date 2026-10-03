@@ -8,8 +8,11 @@ export type Team = NonNullable<X01Game['teams']>[number]
 
 const initial = (name: string) => name.trim().charAt(0).toUpperCase() || '?'
 
-/** "Teams 2v2", "Teams 2v1": the team sizes. */
-export const teamsLabel = (teams: Pick<Team, 'seats'>[]): string => `Teams ${teams.map(t => t.seats.length).join('v')}`
+/** "Teams 2v2", "Teams 1v2": the team sizes, Team A's first. */
+export const teamSizesLabel = (sizes: number[]): string => `Teams ${sizes.join('v')}`
+
+/** The match header's label for the game's teams. */
+export const teamsLabel = (teams: Pick<Team, 'seats'>[]): string => teamSizesLabel(teams.map(t => t.seats.length))
 
 /** The seat's team; null in a singles game. */
 export function teamOf(game: { teams?: Team[] }, seat: number): Team | null {
