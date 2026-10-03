@@ -216,9 +216,31 @@ export async function addActivity(db: Kysely<Database>, lobbyId: string, kind: A
   await db.insertInto('lobby_activity').values({ lobby_id: lobbyId, kind, actor_user_id: actorUserId, data: JSON.stringify(data) }).execute()
 }
 
-/** Closes the lobby: its people and feed go, pending invites expire. Returns who had one. Its own transaction. */
-export async function closeLobbyRows(db: Kysely<Database>, lobbyId: string, at: Date): Promise<string[]> {
+/**
+ * Locks the lobby row (FOR SHARE) and reports whether it's still open. Call this inside
+ * the same transaction as a write that must never land after the lobby closes (an insert
+ * into `lobby_people`, say): the row lock makes it wait out a concurrent `closeLobbyRows`
+ * (whose closing UPDATE takes a conflicting lock on the same row — see there), so the two
+ * can never leave a person row pointing at a lobby that's already closed. A backstop for
+ * the app-level checks, not a replacement for them.
+ */
+export async function lobbyIsOpenForShare(db: Kysely<Database>, lobbyId: string): Promise<boolean> {
+  const row = await db.selectFrom('lobbies').select('closed_at').where('id', '=', lobbyId).forShare().executeTakeFirst()
+  return row !== undefined && row.closed_at === null
+}
+
+/**
+ * Closes the lobby: its people and feed go, pending invites expire. Returns who had one,
+ * or null if it was closed already (by a concurrent call — nothing left to do). Its own
+ * transaction. The closing UPDATE runs first, guarded by `closed_at IS NULL`: that's the
+ * statement that conflicts with `lobbyIsOpenForShare`'s row lock (see there).
+ */
+export async function closeLobbyRows(db: Kysely<Database>, lobbyId: string, at: Date): Promise<string[] | null> {
   return db.transaction().execute(async (trx) => {
+    const closed = await trx.updateTable('lobbies').set({ closed_at: at })
+      .where('id', '=', lobbyId).where('closed_at', 'is', null)
+      .returning('id').executeTakeFirst()
+    if (!closed) return null
     await trx.deleteFrom('lobby_people').where('lobby_id', '=', lobbyId).execute()
     await trx.deleteFrom('lobby_activity').where('lobby_id', '=', lobbyId).execute()
     const expired = await trx.updateTable('lobby_invites')
@@ -226,7 +248,6 @@ export async function closeLobbyRows(db: Kysely<Database>, lobbyId: string, at: 
       .where('lobby_id', '=', lobbyId).where('status', '=', 'pending')
       .returning('invitee_user_id')
       .execute()
-    await trx.updateTable('lobbies').set({ closed_at: at }).where('id', '=', lobbyId).execute()
     return expired.map(r => r.invitee_user_id)
   })
 }

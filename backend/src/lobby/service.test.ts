@@ -86,9 +86,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(lobby?.activity.map(a => a.kind)).toEqual(['joined', 'joined', 'opened'])
     })
 
-    it('refuses a wrong code, a joiner who is in another lobby, and a closed lobby', async () => {
+    it('refuses a wrong code, a joiner who is in another (non-solo) lobby, and a closed lobby', async () => {
       const a = await lobbies.create('chris')
       const b = await lobbies.create('lena')
+      await lobbies.join('sam', b.id, b.code) // lena isn't solo in b, so joining a doesn't just close it
       await expect(lobbies.join('max', a.id, a.code === 'ZZZZZZ' ? 'YYYYYY' : 'ZZZZZZ')).rejects.toMatchObject({ statusCode: 404 })
       await expect(lobbies.join('lena', a.id, a.code)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: b.id } })
       await lobbies.close('chris', a.id)
@@ -146,6 +147,110 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.update('lena', id, { name: 'Ours now' })
       expect(await lobbies.view(id)).toMatchObject({ hostUserId: 'lena', name: 'Ours now' })
       await db.insertInto('user').values(user('sam', 'Sam')).execute()
+    })
+  })
+
+  describe('joining another lobby closes your solo one', () => {
+    it('closes your lobby (with your guest) when you join another by code', async () => {
+      const admin = await lobbies.create('chris')
+      const luke = await lobbies.create('lena')
+      await lobbies.addGuest('lena', luke.id, { name: 'Guest 1' })
+      const me = sock()
+      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'))
+
+      await expect(lobbies.join('lena', admin.id, admin.code)).resolves.toMatchObject({ id: admin.id })
+
+      expect(await lobbies.view(admin.id)).toMatchObject({ people: [{ name: 'Christoph' }, { name: 'Lena' }] })
+      const row = await db.selectFrom('lobbies').select('closed_at').where('id', '=', luke.id).executeTakeFirstOrThrow()
+      expect(row.closed_at).toBeInstanceOf(Date)
+      expect(await lobbies.view(luke.id)).toBeNull()
+      expect(await db.selectFrom('lobby_people').selectAll().where('lobby_id', '=', luke.id).execute()).toEqual([])
+      expect(lastMsg(me).lobby).toMatchObject({ id: admin.id })
+    })
+
+    it('closes your lobby when you join another by accepting an invite', async () => {
+      const admin = await lobbies.create('chris')
+      const luke = await lobbies.create('lena')
+      const { id: inviteId } = await lobbies.invite('chris', admin.id, 'lena')
+
+      await expect(lobbies.acceptInvite('lena', inviteId)).resolves.toMatchObject({ id: admin.id })
+
+      expect(await lobbies.view(admin.id)).toMatchObject({ people: [{ name: 'Christoph' }, { name: 'Lena' }] })
+      const row = await db.selectFrom('lobbies').select('closed_at').where('id', '=', luke.id).executeTakeFirstOrThrow()
+      expect(row.closed_at).toBeInstanceOf(Date)
+    })
+
+    it('leaves your lobby open when someone else is still in it', async () => {
+      const admin = await lobbies.create('chris')
+      const luke = await lobbies.create('lena')
+      await lobbies.join('max', luke.id, luke.code)
+
+      await expect(lobbies.join('lena', admin.id, admin.code)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: luke.id } })
+
+      expect(await lobbies.view(luke.id)).toMatchObject({ people: [{ name: 'Lena' }, { name: 'Max' }] })
+      expect(await lobbies.view(admin.id)).toMatchObject({ people: [{ name: 'Christoph' }] })
+    })
+
+    it('leaves your lobby open while its game is running', async () => {
+      const admin = await lobbies.create('chris')
+      const luke = await lobbies.create('lena')
+      await lobbies.update('lena', luke.id, { nextGame: { gameId: 'x01', config: {} } })
+      const { sessionId } = await lobbies.start('lena', luke.id, true)
+
+      await expect(lobbies.join('lena', admin.id, admin.code)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: luke.id } })
+
+      expect(await lobbies.view(luke.id)).not.toBeNull()
+      expect(engine.getLobbySession(luke.id)?.id).toBe(sessionId)
+      expect(await lobbies.view(admin.id)).toMatchObject({ people: [{ name: 'Christoph' }] })
+    })
+
+    it('two solo users joining each other\'s lobby at the same instant never strand a membership in a closed lobby', async () => {
+      const l = await lobbies.create('lena')
+      const t = await lobbies.create('max')
+
+      await Promise.allSettled([
+        lobbies.join('lena', t.id, t.code),
+        lobbies.join('max', l.id, l.code),
+      ])
+
+      // Whatever the race resolved to, nobody's lobby_people row points at a closed lobby
+      // (the bug this guards against: such a row is permanent, since getOpenLobbyIdOfUser
+      // ignores closed_at and nothing else ever cleans it up).
+      const rows = await db.selectFrom('lobby_people as p')
+        .innerJoin('lobbies as lb', 'lb.id', 'p.lobby_id')
+        .select(['p.user_id', 'lb.closed_at'])
+        .where('p.user_id', 'in', ['lena', 'max'])
+        .execute()
+      for (const row of rows) expect(row.closed_at).toBeNull()
+
+      // And either way, both can still get back into a lobby afterwards
+      for (const userId of ['lena', 'max']) {
+        if (await lobbies.current(userId) === null) await expect(lobbies.create(userId)).resolves.toBeDefined()
+      }
+    })
+
+    it('never closes a lobby out from under whoever is actually alone in it now', async () => {
+      // closeOwnSoloLobbyFirst reads the joiner's own lobby, then enqueues the close on
+      // it — a plain read, outside that lobby's queue. If the joiner stops being a member
+      // of it before the enqueued close runs (removed, or left some other way), the lobby
+      // can still be solo by then, just with someone else alone in it: closing must check
+      // for both, not just "solo", or it would close the wrong person's lobby out from
+      // under them. That specific gap can't be reproduced by racing real calls (the
+      // read that discovers the stale "own" lobby id happens before the removal we'd use
+      // to make it stale), so this calls the two private steps directly with the exact
+      // state the gap leaves behind: `other.id` is solo (down to just Christoph) by the
+      // time the close runs, but 'lena' — who it would run for — isn't in it any more.
+      const other = await lobbies.create('chris')
+      await lobbies.join('lena', other.id, other.code)
+      const lenaPerson = (await lobbies.view(other.id))?.people.find(p => p.name === 'Lena')
+      await lobbies.removePerson('chris', other.id, lenaPerson?.id ?? '')
+      expect(await lobbies.view(other.id)).toMatchObject({ people: [{ name: 'Christoph' }] }) // solo now, just not lena's
+
+      await expect(lobbies['closeIfSoloAndIdle'](other.id, 'lena')).resolves.toBe(false)
+
+      expect(await lobbies.view(other.id)).toMatchObject({ people: [{ name: 'Christoph' }] })
+      const row = await db.selectFrom('lobbies').select('closed_at').where('id', '=', other.id).executeTakeFirstOrThrow()
+      expect(row.closed_at).toBeNull()
     })
   })
 
@@ -349,10 +454,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await expect(lobbies.acceptInvite('max', inviteId)).rejects.toMatchObject({ statusCode: 404 })
     })
 
-    it('accepting while in another lobby asks to leave it first, and the invite stays', async () => {
+    it('accepting while in another (non-solo) lobby asks to leave it first, and the invite stays', async () => {
       const { id } = await lobbies.create('chris')
       const { id: inviteId } = await lobbies.invite('chris', id, 'lena')
       const own = await lobbies.create('lena')
+      await lobbies.join('max', own.id, own.code) // lena isn't solo in her own lobby, so accepting doesn't just close it
       await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: own.id } })
       expect(await lobbies.listInvites('lena')).toHaveLength(1)
     })

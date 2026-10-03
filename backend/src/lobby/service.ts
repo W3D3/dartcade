@@ -244,11 +244,38 @@ export class LobbyService {
   }
 
   async join(userId: string, lobbyId: string, code: string): Promise<LobbyRef> {
+    // Checked here, read-only and unqueued, so a wrong code or an already-closed lobby
+    // never closes the joiner's own lobby before failing (see closeOwnSoloLobbyFirst)
+    const target = await q.loadLobby(this.db, lobbyId)
+    if (!target || target.closedAt !== null || target.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
+    await this.closeOwnSoloLobbyFirst(userId, lobbyId)
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.reload(lobbyId)
       if (!lobby || lobby.closedAt !== null || lobby.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
       return this.addMember(lobby, userId)
     })
+  }
+
+  /**
+   * Before joining `targetLobbyId`: if the joiner has a different open lobby of their
+   * own, give it a chance to close quietly (see closeIfSoloAndIdle) before they're added
+   * to the target. This task runs entirely inside the OWN lobby's queue — never the
+   * target's — and `join`/`acceptInvite` only enqueue on the target afterwards, once this
+   * has settled. So no task ever awaits a second lobby's queue from inside a first: two
+   * people each alone in their own lobby, joining each other's at the same instant, each
+   * just close their own lobby (on its own queue) and then join the other (on its queue)
+   * in sequence, never blocked on each other. `addMember` still throws `inLobby` if the
+   * joiner turns out to still have an open lobby (not solo, or its game is running).
+   *
+   * `own` is read here, OUTSIDE `own`'s queue, before the close is even enqueued on it —
+   * so by the time `closeIfSoloAndIdle` actually runs, `userId` might no longer be a
+   * member of `own` at all (someone removed them, or they left some other way in the
+   * meantime). Passing `userId` through lets that re-check catch it: see there.
+   */
+  private async closeOwnSoloLobbyFirst(userId: string, targetLobbyId: string): Promise<void> {
+    const own = await q.getOpenLobbyIdOfUser(this.db, userId)
+    if (own === undefined || own === targetLobbyId) return
+    await this.enqueue(own, () => this.closeIfSoloAndIdle(own, userId))
   }
 
   // Runs in the lobby's queue
@@ -260,12 +287,18 @@ export class LobbyService {
     if (!user) throw LobbyError.notFound('account not found')
     const board = (await q.usualBoards(this.db, [userId])).get(userId) ?? null
     try {
-      await this.db.transaction().execute(async (trx) => {
+      // The lock (not just this app-level check) is the backstop against inserting into a
+      // lobby that a concurrent close just slipped past us — see lobbyIsOpenForShare.
+      const inserted = await this.db.transaction().execute(async (trx) => {
+        if (!(await q.lobbyIsOpenForShare(trx, lobby.id))) return false
         await q.insertPerson(trx, { id: ulid(), lobbyId: lobby.id, userId, addedByUserId: userId, name: user.name, boardId: board?.id ?? null, ready: false })
         await q.acceptInvites(trx, lobby.id, userId)
         await q.addActivity(trx, lobby.id, 'joined', userId, { name: user.name })
+        return true
       })
+      if (!inserted) throw LobbyError.notFound('lobby not found')
     } catch (err) {
+      if (err instanceof LobbyError) throw err
       // They got into another lobby meanwhile
       const other = pgErrorCode(err) === UNIQUE_VIOLATION ? await q.getOpenLobbyIdOfUser(this.db, userId) : undefined
       if (other !== undefined) throw inLobby(other)
@@ -320,13 +353,41 @@ export class LobbyService {
     return 'open'
   }
 
-  // Runs in the lobby's queue. `lobby` is the state just before closing: its members get /ws/me.
+  // Runs in the lobby's queue. `lobby` is the state just before closing: its members get
+  // /ws/me. A null from closeLobbyRows means it was closed already (the DB backstop in
+  // lobbyIsOpenForShare/closeLobbyRows raced it — shouldn't happen for a call that's
+  // properly inside this lobby's own queue): nothing left to do.
   private async closeNow(lobby: LobbyState): Promise<void> {
     const invitees = await q.closeLobbyRows(this.db, lobby.id, new Date())
+    if (invitees === null) return
     this.cache.delete(lobby.id)
     this.deps.hub.sendLobby(lobby.id, { type: 'lobby_closed', lobbyId: lobby.id })
     this.deps.hub.closeLobby(lobby.id, WsCloseCode.NotFound, 'lobby closed')
     await Promise.all([...new Set([...memberIds(lobby), ...invitees])].map(u => this.pushMe(u)))
+  }
+
+  /**
+   * Joining another lobby quietly drops a solo one left behind: when `lobbyId` is still
+   * solo AND `userId` is still its one member — not just solo in general — and no game is
+   * running there, closes it and returns true; otherwise leaves it alone and returns
+   * false. Called only from closeOwnSoloLobbyFirst, which enqueues it on `lobbyId`'s own
+   * queue, so everything from here on is safe: nothing else can add a member to, or start
+   * a game in, this lobby once this task starts, since every such change runs through
+   * that same queue. But `closeOwnSoloLobbyFirst` reads `own` (== `lobbyId` here) BEFORE
+   * enqueueing this task, so `userId` may already be stale by the time it runs — they
+   * might have been removed from `lobbyId`, or left it some other way, leaving someone
+   * else alone there instead. Checking `isSolo` alone isn't enough: it's true for any
+   * lobby down to one member, including a different person's. Only closing when `userId`
+   * is STILL that one member is what keeps this from closing a lobby out from under
+   * whoever is actually alone in it now.
+   */
+  private async closeIfSoloAndIdle(lobbyId: string, userId: string): Promise<boolean> {
+    const lobby = await q.loadLobby(this.db, lobbyId)
+    if (!lobby || lobby.closedAt !== null) return false
+    if (!rules.isSolo(lobby) || !rules.isMember(lobby, userId)) return false
+    if (this.deps.engine.getLobbySession(lobbyId)) return false
+    await this.closeNow(lobby)
+    return true
   }
 
   async close(userId: string, lobbyId: string): Promise<void> {
@@ -498,7 +559,10 @@ export class LobbyService {
 
   /** Joins the lobby (which marks the invite accepted). */
   async acceptInvite(userId: string, inviteId: string): Promise<LobbyRef> {
+    // pendingInvite already checked the invite is theirs and still pending, before this
+    // closes their own solo lobby (see closeOwnSoloLobbyFirst); a dead invite never does.
     const { lobbyId } = await this.pendingInvite(userId, inviteId)
+    await this.closeOwnSoloLobbyFirst(userId, lobbyId)
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.reload(lobbyId)
       if (!lobby || lobby.closedAt !== null) throw LobbyError.notFound('invite not found')
@@ -548,7 +612,7 @@ export class LobbyService {
     try {
       ({ sessionId } = await this.deps.engine.createWithSeats({
         ownerUserId: hostUserId, gameId: plan.gameId, config: plan.config, seats: plan.seats,
-        shuffleSeats: plan.shuffleSeats, lobbyId: lobby.id, lobbyName: memberIds(lobby).length > 1 ? lobby.name : null,
+        shuffleSeats: plan.shuffleSeats, lobbyId: lobby.id, lobbyName: rules.isSolo(lobby) ? null : lobby.name,
       }))
     } catch (err) {
       throw this.startError(lobby, hostUserId, err)
