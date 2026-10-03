@@ -37,9 +37,13 @@
   }
 </script>
 
-<div class="flex items-center gap-[10px] md:gap-3 h-[46px] md:h-12 box-border pl-3 md:pl-4 pr-[6px] md:pr-2 border border-line-chip rounded-[10px] bg-surface-panel">
-  <span class="text-[12px] md:text-[13px] text-text-muted">Code</span>
-  <span class="font-mono text-[17px] md:text-[20px] font-medium tracking-[0.12em]">{formatCode(code)}</span>
+<!-- The code stays on one line; on a narrow card the buttons wrap under it -->
+<div class="flex flex-wrap items-center gap-x-[10px] md:gap-x-3 gap-y-1 min-h-[46px] md:min-h-12 box-border py-[5px] md:py-[6px] pl-3 md:pl-4 pr-[6px] md:pr-2 border border-line-chip rounded-[10px] bg-surface-panel">
+  <span class="flex items-center gap-[10px] md:gap-3 whitespace-nowrap">
+    <span class="text-[12px] md:text-[13px] text-text-muted">Code</span>
+    <span class="font-mono text-[17px] md:text-[20px] font-medium tracking-[0.12em]">{formatCode(code)}</span>
+  </span>
+  <span class="flex items-center gap-[10px] md:gap-3">
   <Button variant="key" onclick={() => void share()} class="px-[10px] md:px-3 gap-[6px] text-[13px] md:text-[14px]">
     {#if copied}
       <Check size={15} />Copied
@@ -63,6 +67,7 @@
   {#if host && onnewcode}
     <IconButton label="Make a new code" title="New code" onclick={() => confirmNewCode = true}><RefreshCw size={16} /></IconButton>
   {/if}
+  </span>
 </div>
 
 {#if confirmNewCode}

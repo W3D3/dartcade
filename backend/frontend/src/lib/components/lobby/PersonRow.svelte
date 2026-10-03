@@ -22,8 +22,9 @@
   <span class="font-mono text-[12px] text-text-dim text-center">{index + 1}</span>
   <Avatar name={person.name} guest={person.userId === null} presence={person.presence} />
   <span class="flex flex-col gap-1 min-w-0">
-    <span class="flex items-center gap-[6px] min-w-0">
-      <span class="text-[15px] font-semibold truncate">{person.name}</span>
+    <!-- The tags wrap under the name on a narrow row, so the name stays readable -->
+    <span class="flex flex-wrap items-center gap-x-[6px] gap-y-1 min-w-0">
+      <span class="max-w-full text-[15px] font-semibold truncate">{person.name}</span>
       {#if person.userId !== null && person.userId === viewerId}<span class="text-[12px] font-medium text-accent shrink-0">· you</span>{/if}
       {#if !lobby.solo && person.userId !== null && person.userId === lobby.hostUserId}<Badge variant="host">Host</Badge>{/if}
       {#if person.userId === null}<Badge variant="guest">Guest</Badge>{/if}

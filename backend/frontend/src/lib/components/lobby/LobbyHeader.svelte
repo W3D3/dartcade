@@ -59,25 +59,30 @@
     {/if}
     <p class="m-0 flex flex-wrap items-center gap-x-[6px] gap-y-1 text-[13px] md:text-[15px] text-text-muted">
       <span class="inline-flex items-center gap-[6px] text-accent font-semibold"><span class="w-2 h-2 rounded-full bg-accent"></span>Lobby open</span>
-      <span>· {host ? "You're the host" : `Hosted by ${hostName ?? 'nobody yet'}`}</span>
+      {#if !lobby.solo}<span>· {host ? "You're the host" : `Hosted by ${hostName ?? 'nobody yet'}`}</span>{/if}
       <span>· {c.people} {c.people === 1 ? 'person' : 'people'}</span>
       {#if boards}<span>· {boards}</span>{/if}
     </p>
   </div>
 
   {#if !lobby.solo}
-    <div class="flex items-center gap-2 md:gap-[10px] flex-wrap">
-      <JoinCodeCard code={lobby.code} name={lobby.name} {host} {onnewcode} />
-      {#if !host}
-        <Button variant="destructive" onclick={() => confirm = 'leave'} class="h-[46px] md:h-12">Leave lobby</Button>
-      {:else}
-        <Button variant="outline" size="md" onclick={() => confirm = 'leave'} class="h-[46px] md:h-12"
-          disabled={gameRunning} title={gameRunning ? 'Abort the game first' : undefined}>Leave lobby</Button>
-        <Button variant="destructive" onclick={() => confirm = 'close'} class="h-[46px] md:h-12"
-          disabled={gameRunning} title={gameRunning ? 'Abort the game first' : undefined}>Close lobby</Button>
-      {/if}
+    <div class="flex flex-col gap-1 md:items-end">
+      <div class="flex items-center gap-2 md:gap-[10px] flex-wrap md:justify-end">
+        <JoinCodeCard code={lobby.code} name={lobby.name} {host} {onnewcode} />
+        <!-- Leave and Close stay together: beside the code card, or both under it -->
+        <div class="flex items-center gap-2 md:gap-[10px] shrink-0">
+          {#if !host}
+            <Button variant="destructive" onclick={() => confirm = 'leave'} class="h-[46px] md:h-12">Leave lobby</Button>
+          {:else}
+            <Button variant="outline" size="md" onclick={() => confirm = 'leave'} class="h-[46px] md:h-12"
+              disabled={gameRunning} title={gameRunning ? 'End the game first' : undefined}>Leave lobby</Button>
+            <Button variant="destructive" onclick={() => confirm = 'close'} class="h-[46px] md:h-12"
+              disabled={gameRunning} title={gameRunning ? 'End the game first' : undefined}>Close lobby</Button>
+          {/if}
+        </div>
+      </div>
+      {#if host && gameRunning}<span class="text-[12px] text-text-dim">End the game first</span>{/if}
     </div>
-    {#if host && gameRunning}<span class="text-[12px] text-text-dim">Abort the game first</span>{/if}
   {/if}
 </header>
 

@@ -15,7 +15,7 @@
   <Avatar name={invitee.name} />
   <span class="text-[15px] font-semibold truncate">{invitee.name}</span>
   <Badge variant="pending">
-    <LoaderCircle size={11} strokeWidth={3} class="animate-spin shrink-0" />
+    <LoaderCircle size={11} strokeWidth={3} class="animate-spin motion-reduce:animate-none shrink-0" />
     Invited
   </Badge>
 </li>
