@@ -20,8 +20,8 @@ const lobby = {
   id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', throwOrder: 'lobby', nextGame: null, canRematch: false,
   currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [], invites: [], activity: [], solo: true, nextHostName: null,
 }
-const meMsg = { type: 'me', invites: [], lobby: {
-  id: 'l1', name: 'Friday darts', peopleCount: 2, nextGame: null, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: true, solo: false,
+const meMsg = { type: 'me', invites: [], game: null, lobby: {
+  id: 'l1', name: 'Friday darts', hostName: 'Christoph', peopleCount: 2, nextGame: null, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: true, solo: false,
 } }
 
 beforeEach(() => { FakeSocket.opened = []; vi.useFakeTimers() })
@@ -98,6 +98,15 @@ describe('createMeStore', () => {
     FakeSocket.opened[0].drop(1006)
     vi.advanceTimersByTime(60_000)
     expect(FakeSocket.opened).toHaveLength(1)
+  })
+
+  it('carries the running game from /ws/me, live (#69)', () => {
+    const m = createMeStore(open)
+    m.start()
+    FakeSocket.opened[0].receive({ ...meMsg, game: { sessionId: 's1', gameId: 'x01', lobbyName: 'Friday darts', players: ['Christoph', 'Lena'] } })
+    expect(get(m)?.game).toEqual({ sessionId: 's1', gameId: 'x01', lobbyName: 'Friday darts', players: ['Christoph', 'Lena'] })
+    FakeSocket.opened[0].receive({ ...meMsg, game: null })
+    expect(get(m)?.game).toBeNull()
   })
 
   it('gives up when signed out (4401), and starts again after signing back in', () => {

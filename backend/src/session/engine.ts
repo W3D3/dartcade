@@ -27,8 +27,14 @@ export type GameEnded = {
   abortedByUserId: string | null
   /** Seat results in seat order; empty when aborted. */
   results: { name: string; placement: number; forfeited: boolean }[]
+  /** Every account seated (owner and every seat's controller): who to push /ws/me to. */
+  userIds: string[]
 }
-export type EndedFn = (e: GameEnded) => void
+export type EndedFn = (e: GameEnded) => void | Promise<void>
+
+/** A game started: who to push /ws/me to (see LobbyService.onGameStarted). */
+export type GameStarted = { sessionId: string; userIds: string[] }
+export type StartedFn = (e: GameStarted) => void | Promise<void>
 
 /**
  * Who is looking: the viewer's own seats, who has the game open (and since when not),
@@ -89,6 +95,11 @@ export type NewSessionSpec = {
 const distinct = <T>(xs: (T | null)[]): T[] => [...new Set(xs.filter((x): x is T => x !== null))]
 const seatBoards = (s: Session): string[] => distinct(s.seats.map(x => x.boardId))
 const controllers = (s: Session): string[] => distinct(s.seats.map(x => x.controllerUserId))
+// Every account seated: the owner and every seat's controller (a member always controls their
+// own seat; only a guest's controller differs from them, and a guest has no account).
+const seatedUserIds = (s: Session): string[] => distinct([s.ownerUserId, ...controllers(s)])
+const storedSeatedUserIds = (row: Pick<StoredGameSession, 'owner_user_id' | 'players'>): string[] =>
+  distinct([row.owner_user_id, ...row.players.map(p => p.controller_user_id)])
 
 export class SessionEngine {
   private byBoard: Map<string, Session> = new Map()
@@ -104,6 +115,7 @@ export class SessionEngine {
     private readonly warn: WarnFn = () => undefined,
     private readonly notify: NotifyFn = () => undefined,
     private readonly ended: EndedFn = () => undefined,
+    private readonly started: StartedFn = () => undefined,
   ) {}
 
   async create(
@@ -160,6 +172,7 @@ export class SessionEngine {
       this.byId.delete(sessionId)
       throw err
     }
+    await this.notifyStarted({ sessionId, userIds: seatedUserIds(session) })
     return { sessionId }
   }
 
@@ -244,16 +257,27 @@ export class SessionEngine {
     session.nextSeq++
     const outcome = applyInput(session, input, at)
     if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
-    if (outcome.won) await this.finish(session, at)
+    // finish() pushes the final snapshot itself (before notifying), so the caller doesn't
+    // push it a second time
+    if (outcome.won) { await this.finish(session, at); return false }
     return true
   }
 
-  /** The game-end listener must not undo the end: whatever it throws is logged, never passed on. */
-  private notifyEnded(e: GameEnded): void {
+  /** The game-end listener must not undo the end: whatever it throws (or rejects with) is logged, never passed on. */
+  private async notifyEnded(e: GameEnded): Promise<void> {
     try {
-      this.ended(e)
+      await this.ended(e)
     } catch (err) {
       this.warn('game-end listener failed', { sessionId: e.sessionId, error: String(err) })
+    }
+  }
+
+  /** Same contract as notifyEnded, for the game-start listener. */
+  private async notifyStarted(e: GameStarted): Promise<void> {
+    try {
+      await this.started(e)
+    } catch (err) {
+      this.warn('game-start listener failed', { sessionId: e.sessionId, error: String(err) })
     }
   }
 
@@ -261,6 +285,7 @@ export class SessionEngine {
     return {
       sessionId: session.id, lobbyId: session.lobbyId, gameId: session.module.id, status, abortedByUserId,
       results: seatResults.map((r, i) => ({ name: session.players[i].name, placement: r.placement, forfeited: r.forfeited })),
+      userIds: seatedUserIds(session),
     }
   }
 
@@ -269,7 +294,10 @@ export class SessionEngine {
     const seatResults = results(session)
     await this.store.finishSession(session.id, at, seatResults)
     this.release(session)
-    this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
+    // Everyone still watching sees the game end before the game-end listeners run (the
+    // lobby reset, the /ws/me pushes) — same as deleteSession, below
+    this.push(session.id)
+    await this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
   }
 
   async rebuild(): Promise<void> {
@@ -284,7 +312,7 @@ export class SessionEngine {
         this.warn('failed to rebuild session, aborting it', { sessionId: row.id, error: String(err) })
         try {
           await this.store.abortSession(row.id, new Date(), null)
-          this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [] })
+          await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], userIds: storedSeatedUserIds(row) })
         } catch (abortErr) {
           this.warn('failed to abort an unrebuildable session', { sessionId: row.id, error: String(abortErr) })
         }
@@ -298,7 +326,7 @@ export class SessionEngine {
     // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
     if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
       await this.store.abortSession(row.id, new Date(), null)
-      this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [] })
+      await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], userIds: storedSeatedUserIds(row) })
       return
     }
     const owner = row.owner_user_id
@@ -323,7 +351,7 @@ export class SessionEngine {
       session.status = 'finished'
       const seatResults = results(session)
       await this.store.finishSession(row.id, events.at(-1)?.created_at ?? new Date(), seatResults)
-      this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
+      await this.notifyEnded(this.endedOf(session, 'finished', null, seatResults))
       return
     }
     this.index(session)
@@ -404,7 +432,7 @@ export class SessionEngine {
       // Everyone still watching sees the game end before it goes away
       this.push(sessionId)
       this.byId.delete(sessionId)
-      if (wasActive) this.notifyEnded(this.endedOf(session, 'aborted', abortedByUserId, []))
+      if (wasActive) await this.notifyEnded(this.endedOf(session, 'aborted', abortedByUserId, []))
     })
     return true
   }

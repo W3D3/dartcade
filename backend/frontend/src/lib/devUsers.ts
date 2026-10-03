@@ -1,7 +1,6 @@
 // Dev-only quick logins: the accounts the backend seeds in development (auth/seed.ts).
 // Only used behind import.meta.env.DEV; production never seeds or shows them.
 import { authClient, currentUser } from './auth.js'
-import { activeSessionId } from './activeSession.js'
 
 export type DevUser = { name: string; email: string; password: string }
 
@@ -22,7 +21,7 @@ export async function signInAs(user: DevUser): Promise<string | null> {
   await authClient.signOut().catch(() => undefined)
   const { error } = await authClient.signIn.email({ email: user.email, password: user.password })
   if (error) return error.message ?? 'Sign-in failed'
-  await Promise.all([currentUser.refresh(), activeSessionId.refresh()])
+  await currentUser.refresh()
   window.location.hash = '#/'
   return null
 }

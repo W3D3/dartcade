@@ -96,7 +96,7 @@ describe('inviteTime', () => {
 })
 
 describe('indicatorView', () => {
-  const s = { id: 'l1', name: 'Friday darts', peopleCount: 6, nextGame: { gameId: 'x01', config: {} }, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: false, solo: false }
+  const s = { id: 'l1', name: 'Friday darts', hostName: 'Christoph', peopleCount: 6, nextGame: { gameId: 'x01', config: {} }, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: false, solo: false }
 
   it('a member waiting, the host', () => {
     expect(indicatorView(s)).toEqual({ tag: 'In lobby', name: 'Friday darts', line: '6 people · Next: X01', next: 'Next: X01', back: null })

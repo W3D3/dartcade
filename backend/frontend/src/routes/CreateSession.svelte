@@ -157,7 +157,7 @@
               defaults={lobbyGameDefaults} meta={lobbyGameInfo?.configMeta ?? {}} readonly />
           {:else}
             <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
-              <span class="text-[14px] leading-[1.5] text-text-muted">The host hasn't picked a game yet.</span>
+              <span class="text-[14px] leading-[1.5] text-text-muted">{$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.</span>
             </div>
           {/if}
         {:else}

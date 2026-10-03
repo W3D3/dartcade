@@ -4,7 +4,7 @@ import type { Database } from '../db/schema.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { pgErrorCode } from '../db/errors.js'
-import { ActiveSessionError, BoardBusyError, type GameEnded, type SessionEngine } from '../session/engine.js'
+import { ActiveSessionError, BoardBusyError, type GameEnded, type GameStarted, type SessionEngine } from '../session/engine.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { Lobby, LobbyServerMessage, MeMessage, PendingInvite } from '../schema/lobby-ws.js'
 import { games } from '../games/index.js'
@@ -161,9 +161,11 @@ export class LobbyService {
     const invites = (await q.pendingInvitesFor(this.db, userId)).map(inviteView)
     const lobbyId = await q.getOpenLobbyIdOfUser(this.db, userId)
     const lobby = lobbyId === undefined ? undefined : await this.state(lobbyId)
+    const session = this.deps.engine.getSessionByUser(userId)
     const msg: MeMessage = {
       type: 'me', invites,
       lobby: lobby ? lobbySummary(lobby, userId, this.deps.engine.getLobbySession(lobby.id)) : null,
+      game: session ? { sessionId: session.id, gameId: session.module.id, lobbyName: session.lobbyName, players: session.players.map(p => p.name) } : null,
     }
     checkLobbyMessage(msg, m => { this.warn(m) })
     return msg
@@ -657,11 +659,30 @@ export class LobbyService {
   }
 
   /**
-   * The engine's `ended` hook: the lobby's game finished (or was aborted). Everyone plays
-   * again, members aren't ready, guests are; the feed gets a line; a host who left
-   * during the game hands over now, and a lobby everyone left closes.
+   * The engine's `started` hook: push /ws/me (with `game` set) to every account seated,
+   * lobby or not. A lobby game's own members already get this through `launch`'s
+   * `publish`; this also covers a game started outside a lobby (POST /api/sessions).
    */
-  onGameEnded(e: GameEnded): void {
+  async onGameStarted(e: GameStarted): Promise<void> {
+    await Promise.all(e.userIds.map(userId =>
+      this.pushMe(userId).catch((err: unknown) => { this.warn('game-start push failed', { userId, sessionId: e.sessionId, error: String(err) }) })))
+  }
+
+  /**
+   * The engine's `ended` hook: push /ws/me (`game: null`) to every account that was
+   * seated, lobby or not, right away — the engine awaits this hook (see notifyEnded), so
+   * the push has already gone out by the time the session's own queue (finish,
+   * deleteSession) resolves. For a lobby game, also runs the lobby's own reset: everyone
+   * plays again, members aren't ready, guests are; the feed gets a line; a host who left
+   * during the game hands over now, and a lobby everyone left closes. That reset is
+   * enqueued but NOT awaited here: it runs on the lobby's own queue, which could in turn
+   * wait on this same session's queue (e.g. a lobby task started from inside it) —
+   * awaiting it from inside the engine's own ended-hook would risk a deadlock between the
+   * two queues. Tests wait for it with `whenIdle`.
+   */
+  async onGameEnded(e: GameEnded): Promise<void> {
+    await Promise.all(e.userIds.map(userId =>
+      this.pushMe(userId).catch((err: unknown) => { this.warn('game-end push failed', { userId, sessionId: e.sessionId, error: String(err) }) })))
     const lobbyId = e.lobbyId
     if (lobbyId === null) return
     this.enqueue(lobbyId, async () => {

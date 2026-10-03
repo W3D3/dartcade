@@ -1,10 +1,6 @@
-import { api } from '$lib/api'
-import { loadOnce } from './loadOnce.js'
+import { derived } from 'svelte/store'
+import { me } from './lobby/sockets.js'
 
-/** The id of the user's running game, if any. */
-export function pickActive(sessions: { id: string; status: string }[] | undefined): string | null {
-  return sessions?.find(s => s.status === 'active')?.id ?? null
-}
-
-/** The running game (the tab bar's Live tab): loaded once, refreshed when a game starts or ends. */
-export const activeSessionId = loadOnce(async () => pickActive((await api.GET('/api/sessions')).data?.sessions), null)
+/** The id of the user's running game, if any (the tab bar's Live tab, the banner): what
+ * /ws/me says, live. Null until it connects (no fetch of its own: the server decides). */
+export const activeSessionId = derived(me, $me => $me?.game?.sessionId ?? null)

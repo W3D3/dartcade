@@ -4,7 +4,7 @@
 import { writable, type Readable } from 'svelte/store'
 import { WsCloseCode } from '../api/game-ws'
 import { LobbyServerMessageSchema, MeMessageSchema } from '../api/zod'
-import type { Lobby, LobbyServerMessage, LobbySummary, MeMessage, PendingInvite } from '../api/lobby-ws'
+import type { ActiveGame, Lobby, LobbyServerMessage, LobbySummary, MeMessage, PendingInvite } from '../api/lobby-ws'
 
 const isTyped = (m: unknown, ...types: string[]): boolean =>
   typeof m === 'object' && m !== null && 'type' in m && typeof m.type === 'string' && types.includes(m.type)
@@ -73,7 +73,7 @@ export function createLobbyStore(lobbyId: string, open: OpenSocket = openWs) {
   }
 }
 
-export type MeState = { invites: PendingInvite[]; lobby: LobbySummary | null }
+export type MeState = { invites: PendingInvite[]; lobby: LobbySummary | null; game: ActiveGame | null }
 
 /** The signed-in user's /ws/me; started once signed in, stopped on sign-out. */
 export function createMeStore(open: OpenSocket = openWs) {
@@ -90,7 +90,7 @@ export function createMeStore(open: OpenSocket = openWs) {
     ws = socket
     socket.onmessage = (e) => {
       const msg = parseMeMessage(readJson(e))
-      if (msg) { state.set({ invites: msg.invites, lobby: msg.lobby }); backoff = 500 }
+      if (msg) { state.set({ invites: msg.invites, lobby: msg.lobby, game: msg.game }); backoff = 500 }
     }
     socket.onclose = (e) => {
       if (ws !== socket || !running) return

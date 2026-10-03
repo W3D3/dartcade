@@ -6,7 +6,6 @@
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
   import { authClient, currentUser } from '$lib/auth'
-  import { activeSessionId } from '$lib/activeSession'
   import { sessionStore, takeReturn } from '$lib/returnTo'
   import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
 
@@ -25,7 +24,7 @@
         error = err.message ?? 'Invalid credentials'
         return
       }
-      await Promise.all([currentUser.refresh(), activeSessionId.refresh()])
+      await currentUser.refresh()
       void push(takeReturn(sessionStore()))
     } finally {
       loading = false
