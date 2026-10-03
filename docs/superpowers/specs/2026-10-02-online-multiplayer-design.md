@@ -43,8 +43,9 @@ person who owns a seat can act for it.
   - The host **aborts**: the game ends with no result.
   - A member **abandons**: their seats forfeit and are placed last. The game ends and
     the others are ranked by their current standing. The result counts.
-- **The local flow stays.** "New game" without a lobby works exactly as today: a single
-  owner who controls everything, named seats, one board.
+- **Every game is a lobby game** (changed 2026-10-03, see "Every game is a lobby" below).
+  There is no separate local "New game" flow: playing alone or with guests at your board is
+  a lobby with only you in it, and other accounts only ever join through an invite or a code.
 
 ## Scope
 
@@ -646,3 +647,44 @@ they differ from the sections above, this decides:
 - **Invites:** show the lobby, who invited you and when (the API has no boards or people for an
   invite). Accepting or joining while in another lobby asks to leave it first.
 - **Not built:** the tablet rail (no tablet layout), friends chips (#54), an in-app QR scanner.
+
+## Every game is a lobby (decided 2026-10-03)
+
+Two ways to set up a game with other accounts (a lobby, or `@username` seats in the local New
+game) confused people, and `@username` seats put someone in a game without asking them. So
+every game now runs in a lobby. Playing alone keeps feeling like the old New game: the lobby
+stays out of the way until a second account joins.
+
+- **Your lobby exists when you need it.** The Play page always works in your lobby. If you
+  aren't in one, the page opens one for you (`POST /api/lobbies`) the first time it loads,
+  without asking. It stays open between games and keeps your guests and settings.
+- **Solo:** a lobby is *solo* while you are its only member (guests don't count). The server
+  decides it and says so: the lobby state and `LobbySummary` carry `solo: boolean`, and the
+  screens only read that flag (no counting players in the browser).
+  - The lobby indicator (desktop side nav card, phone strip) shows only when the lobby isn't
+    solo. While solo, the side nav shows a small "Play with friends" card that opens the
+    lobby page.
+  - The lobby page while solo hides Close and the history, and leads with the code, the link,
+    the QR code and the add field ("Invite friends").
+  - The Play page while solo edits the players right there: your row with its board menu,
+    your guests (add by name, remove), and the add field, where `@username` sends an invite.
+    The throw order (lobby order, random, bull off) sits on the same card. Reordering and
+    everything else stays on the lobby page ("Manage").
+- **Ready:** the person starting counts as ready, and so does every row they control (their
+  guests). The "Start anyway?" check only ever names other members and their guests, so a
+  solo game never asks.
+- **Joining another lobby while yours is solo** (a code, a link, or accepting an invite):
+  the server closes your solo lobby (your guests go with it) and you join, with no question.
+  If your lobby has other members you're asked to leave first, as before. A running game in
+  your lobby still blocks (`active_session`).
+- **The host can leave.** Leave is offered to the host too when the lobby has other members;
+  the confirm names who takes over (the member who has been in the lobby longest, as the
+  server already does). The lobby state carries `nextHostName` for it, so the browser
+  doesn't work it out. Leaving a solo lobby isn't offered (Close is hidden too): there's
+  nothing to leave, the next visit to Play would open a new one.
+- **No more `@username` seats.** `POST /api/sessions` keeps working for named seats on one
+  board (tests and scripts use it) but drops `players[].userId`. The app no longer calls it.
+- **History and the match screen** keep showing the lobby name for games with other
+  accounts. For a solo lobby's games the lobby name isn't shown (it's always "<you>'s lobby").
+- **Not in this change:** the leave and end-of-game dialogs and result screens (the old
+  plan 4) come after it, on top of the same model.
