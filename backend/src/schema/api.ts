@@ -970,13 +970,11 @@ export interface components {
             config: {
                 [key: string]: unknown;
             };
-            /** @description The first player is the signed-in user; the others are guests or, with userId, other accounts */
+            /** @description The first player is the signed-in user; the others are guests at the same board */
             players: components["schemas"]["SeatRequest"][];
         };
         SeatRequest: {
             name: string;
-            /** @description Another account plays this seat from their own device (entering darts by hand); its name comes from the account */
-            userId?: string;
         };
         UserSummary: {
             id: string;
