@@ -1,4 +1,4 @@
-// The changes the lobby screens make to a lobby (the lobby page, the Play page's solo players).
+// The changes the lobby screens make to a lobby (the lobby page, the Play page's next game).
 // Each resolves with the server's refusal, if any; the change itself comes back on the socket.
 import { api } from '$lib/api'
 import type { Refusal } from './input'

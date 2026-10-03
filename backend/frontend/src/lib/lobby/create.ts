@@ -1,4 +1,4 @@
-// Creating a lobby (the Lobby page, the side nav card, and the Play page when you have none).
+// Creating a lobby (the Lobby page, the side nav card, and the Play page's Create lobby).
 import { api } from '$lib/api'
 import { describeConflict, type Refusal } from './input'
 
