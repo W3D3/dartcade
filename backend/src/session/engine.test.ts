@@ -682,6 +682,25 @@ describe('forfeit', () => {
     ])
   })
 
+  it('in a 2v2, a forfeit places the whole team last; only the forfeiting seat is marked forfeited', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'a1', gameId: 'x01', config: { ...x01Module.defaultConfig, format: 'teams', teams: [0, 1, 0, 1] },
+      seats: [seat('A1', 'a1', null), seat('B1', 'b1', null), seat('A2', 'a2', null), seat('B2', 'b2', null)],
+    })
+    await engine.onUserAction(sessionId, 'a2', { type: 'forfeit' })
+    // Places are counted among the two teams (1st and 2nd), not among the four seats:
+    // Team B is placed 1st, Team A (A2's team) 2nd — only A2 itself is flagged forfeited
+    expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [
+      expect.objectContaining({ placement: 2, forfeited: false }),
+      expect.objectContaining({ placement: 1, forfeited: false }),
+      expect.objectContaining({ placement: 2, forfeited: true }),
+      expect.objectContaining({ placement: 1, forfeited: false }),
+    ])
+    expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+  })
+
   it('a forfeit logged before a crash finishes the game on rebuild', async () => {
     const store = makeStore()
     store.getActiveSessions.mockResolvedValue([{

@@ -38,6 +38,23 @@ describe('authorizeAction', () => {
     expect(authorizeAction(game([seat('A', 'host', 'a'), seat('B', 'host', 'a')]), 'host', { type: 'forfeit' })).toBeNull()
     expect(authorizeAction(s, 'stranger', { type: 'forfeit' })).toBeNull()
   })
+
+  it('a forfeit in teams covers whole teams: refused across both, allowed within one', () => {
+    const teamCfg = { ...x01Module.defaultConfig, format: 'teams' as const, teams: [0, 1, 0, 1] }
+    // controls seat 0 (Team A) and seat 3 (Team B): nobody left to lose to
+    const bothTeams = newSession({
+      id: 'both', ownerUserId: 'host', boardId: null, module: x01Module, config: teamCfg, seed: 1, createdAt: new Date(),
+      seats: [seat('A1', 'both', 'a'), seat('B1', 'lena', 'b'), seat('A2', 'max', 'c'), seat('B2', 'both', 'd')],
+    })
+    expect(authorizeAction(bothTeams, 'both', { type: 'forfeit' })).toBeNull()
+
+    // controls seats 0 and 2, both Team A: Team B is still left to lose to
+    const oneTeam = newSession({
+      id: 'one', ownerUserId: 'host', boardId: null, module: x01Module, config: teamCfg, seed: 1, createdAt: new Date(),
+      seats: [seat('A1', 'teamA', 'a'), seat('B1', 'lena', 'b'), seat('A2', 'teamA', 'c'), seat('B2', 'max', 'd')],
+    })
+    expect(authorizeAction(oneTeam, 'teamA', { type: 'forfeit' })).toEqual({ type: 'forfeit', seats: [0, 2] })
+  })
 })
 
 describe('canAccessSession / isHost', () => {
