@@ -1,5 +1,5 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
-import type { LobbyActivity, NextGame } from '../api/lobby-ws'
+import type { LobbyActivity, LobbyPerson, NextGame } from '../api/lobby-ws'
 
 const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock' }
 
@@ -74,4 +74,16 @@ const pad = (n: number) => String(n).padStart(2, '0')
 export function feedTime(at: string): string {
   const d = new Date(at)
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/** Under a person's name: whose guest they are, who put them on their board, where they usually play. */
+export function personLine(p: LobbyPerson, people: LobbyPerson[], viewerId: string | null): string {
+  const nameOf = (userId: string) => (userId === viewerId ? 'you' : people.find(q => q.userId === userId)?.name ?? 'someone')
+  const parts: string[] = []
+  if (p.userId === null) parts.push(p.addedByUserId === viewerId ? 'Your guest' : `${nameOf(p.addedByUserId)}'s guest`)
+  if (p.boardMovedBy !== null) {
+    parts.push(`Moved by ${nameOf(p.boardMovedBy)}`)
+    if (p.usualBoardName && p.usualBoardName !== p.boardName) parts.push(`usually ${p.usualBoardName}`)
+  }
+  return parts.join(' · ')
 }
