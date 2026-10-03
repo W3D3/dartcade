@@ -168,12 +168,18 @@
     },
     "LobbyActivityData": {
       "title": "LobbyActivityData",
-      "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+      "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, userId (the person moved; null for a guest), fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "name": {
           "type": "string"
+        },
+        "userId": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "fromBoardName": {
           "type": [
@@ -274,12 +280,18 @@
         },
         "data": {
           "title": "LobbyActivityData",
-          "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+          "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, userId (the person moved; null for a guest), fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
           "type": "object",
           "additionalProperties": false,
           "properties": {
             "name": {
               "type": "string"
+            },
+            "userId": {
+              "type": [
+                "string",
+                "null"
+              ]
             },
             "fromBoardName": {
               "type": [
@@ -348,7 +360,9 @@
         "createdAt",
         "people",
         "invites",
-        "activity"
+        "activity",
+        "solo",
+        "nextHostName"
       ],
       "additionalProperties": false,
       "properties": {
@@ -609,12 +623,18 @@
               },
               "data": {
                 "title": "LobbyActivityData",
-                "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+                "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, userId (the person moved; null for a guest), fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
                 "type": "object",
                 "additionalProperties": false,
                 "properties": {
                   "name": {
                     "type": "string"
+                  },
+                  "userId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
                   },
                   "fromBoardName": {
                     "type": [
@@ -669,6 +689,17 @@
             }
           },
           "description": "Newest first, at most 50."
+        },
+        "solo": {
+          "type": "boolean",
+          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+        },
+        "nextHostName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Who becomes host if the host leaves now; null when nobody would."
         }
       }
     },
@@ -700,7 +731,9 @@
             "createdAt",
             "people",
             "invites",
-            "activity"
+            "activity",
+            "solo",
+            "nextHostName"
           ],
           "additionalProperties": false,
           "properties": {
@@ -961,12 +994,18 @@
                   },
                   "data": {
                     "title": "LobbyActivityData",
-                    "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+                    "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, userId (the person moved; null for a guest), fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
                     "type": "object",
                     "additionalProperties": false,
                     "properties": {
                       "name": {
                         "type": "string"
+                      },
+                      "userId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
                       },
                       "fromBoardName": {
                         "type": [
@@ -1021,6 +1060,17 @@
                 }
               },
               "description": "Newest first, at most 50."
+            },
+            "solo": {
+              "type": "boolean",
+              "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+            },
+            "nextHostName": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Who becomes host if the host leaves now; null when nobody would."
             }
           }
         }
@@ -1075,7 +1125,9 @@
                 "createdAt",
                 "people",
                 "invites",
-                "activity"
+                "activity",
+                "solo",
+                "nextHostName"
               ],
               "additionalProperties": false,
               "properties": {
@@ -1336,12 +1388,18 @@
                       },
                       "data": {
                         "title": "LobbyActivityData",
-                        "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+                        "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, userId (the person moved; null for a guest), fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
                         "type": "object",
                         "additionalProperties": false,
                         "properties": {
                           "name": {
                             "type": "string"
+                          },
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
                           },
                           "fromBoardName": {
                             "type": [
@@ -1396,6 +1454,17 @@
                     }
                   },
                   "description": "Newest first, at most 50."
+                },
+                "solo": {
+                  "type": "boolean",
+                  "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+                },
+                "nextHostName": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Who becomes host if the host leaves now; null when nobody would."
                 }
               }
             }
@@ -1475,7 +1544,8 @@
         "gameId",
         "youThrowNext",
         "leg",
-        "youHost"
+        "youHost",
+        "solo"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1543,6 +1613,10 @@
         "youHost": {
           "type": "boolean",
           "description": "The viewer is the lobby's host."
+        },
+        "solo": {
+          "type": "boolean",
+          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
         }
       }
     },
@@ -1619,7 +1693,8 @@
                 "gameId",
                 "youThrowNext",
                 "leg",
-                "youHost"
+                "youHost",
+                "solo"
               ],
               "additionalProperties": false,
               "properties": {
@@ -1687,6 +1762,10 @@
                 "youHost": {
                   "type": "boolean",
                   "description": "The viewer is the lobby's host."
+                },
+                "solo": {
+                  "type": "boolean",
+                  "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
                 }
               }
             },

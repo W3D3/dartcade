@@ -419,7 +419,7 @@ export class LobbyService {
         if (Object.keys(set).length > 0) await q.updatePerson(trx, personId, set)
         if (patch.position !== undefined) await q.setPositions(trx, lobbyId, rules.reorder(lobby.people, personId, patch.position))
         if (board) {
-          await q.addActivity(trx, lobbyId, 'board_moved', userId, { name: person.name, fromBoardName: person.boardName, toBoardName: board.boardName })
+          await q.addActivity(trx, lobbyId, 'board_moved', userId, { name: person.name, userId: person.userId, fromBoardName: person.boardName, toBoardName: board.boardName })
         }
       })
       await this.reload(lobbyId)
@@ -541,14 +541,14 @@ export class LobbyService {
   private async launch(lobby: LobbyState, hostUserId: string, game: LastGame, force: boolean): Promise<{ sessionId: string }> {
     const running = this.deps.engine.getLobbySession(lobby.id)
     if (running) throw LobbyError.conflict({ error: 'a game is running already', code: 'game_running', sessionId: running.id })
-    const planned = planGame(lobby, game, { force, isBoardOnline: this.deps.isBoardOnline })
+    const planned = planGame(lobby, game, { force, isBoardOnline: this.deps.isBoardOnline, starterUserId: hostUserId })
     if (!planned.ok) throw planError(planned.problem)
     const { plan } = planned
     let sessionId: string
     try {
       ({ sessionId } = await this.deps.engine.createWithSeats({
         ownerUserId: hostUserId, gameId: plan.gameId, config: plan.config, seats: plan.seats,
-        shuffleSeats: plan.shuffleSeats, lobbyId: lobby.id, lobbyName: lobby.name,
+        shuffleSeats: plan.shuffleSeats, lobbyId: lobby.id, lobbyName: memberIds(lobby).length > 1 ? lobby.name : null,
       }))
     } catch (err) {
       throw this.startError(lobby, hostUserId, err)

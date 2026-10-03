@@ -61,11 +61,12 @@
     },
     "LobbyActivityData": {
       "title": "LobbyActivityData",
-      "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
+      "description": "Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, userId (the person moved; null for a guest), fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "name": { "type": "string" },
+        "userId": { "type": ["string", "null"] },
         "fromBoardName": { "type": ["string", "null"] },
         "toBoardName": { "type": ["string", "null"] },
         "sessionId": { "type": "string" },
@@ -103,7 +104,7 @@
     "Lobby": {
       "title": "Lobby",
       "type": "object",
-      "required": ["id", "name", "code", "hostUserId", "throwOrder", "nextGame", "canRematch", "currentSessionId", "createdAt", "people", "invites", "activity"],
+      "required": ["id", "name", "code", "hostUserId", "throwOrder", "nextGame", "canRematch", "currentSessionId", "createdAt", "people", "invites", "activity", "solo", "nextHostName"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
@@ -117,7 +118,9 @@
         "createdAt": { "type": "string", "format": "date-time" },
         "people": { "type": "array", "items": { "$ref": "#/$defs/LobbyPerson" } },
         "invites": { "type": "array", "items": { "$ref": "#/$defs/LobbyInvitee" } },
-        "activity": { "type": "array", "items": { "$ref": "#/$defs/LobbyActivity" }, "description": "Newest first, at most 50." }
+        "activity": { "type": "array", "items": { "$ref": "#/$defs/LobbyActivity" }, "description": "Newest first, at most 50." },
+        "solo": { "type": "boolean", "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo." },
+        "nextHostName": { "type": ["string", "null"], "description": "Who becomes host if the host leaves now; null when nobody would." }
       }
     },
     "LobbyMessage": {
@@ -165,7 +168,7 @@
       "title": "LobbySummary",
       "description": "The viewer's lobby for the lobby indicator.",
       "type": "object",
-      "required": ["id", "name", "peopleCount", "nextGame", "sessionId", "gameId", "youThrowNext", "leg", "youHost"],
+      "required": ["id", "name", "peopleCount", "nextGame", "sessionId", "gameId", "youThrowNext", "leg", "youHost", "solo"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
@@ -176,7 +179,8 @@
         "gameId": { "type": ["string", "null"], "description": "Its game mode." },
         "youThrowNext": { "type": "boolean", "description": "The viewer controls the seat that's up in the running game." },
         "leg": { "type": ["integer", "null"], "minimum": 0, "description": "The running game's leg, 0-based; null for games without legs or without a game." },
-        "youHost": { "type": "boolean", "description": "The viewer is the lobby's host." }
+        "youHost": { "type": "boolean", "description": "The viewer is the lobby's host." },
+        "solo": { "type": "boolean", "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo." }
       }
     },
     "MeMessage": {

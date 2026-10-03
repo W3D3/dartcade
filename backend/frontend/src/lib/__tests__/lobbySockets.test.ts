@@ -18,10 +18,10 @@ const open = (url: string) => new FakeSocket(url) as unknown as WebSocket
 
 const lobby = {
   id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', throwOrder: 'lobby', nextGame: null, canRematch: false,
-  currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [], invites: [], activity: [],
+  currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [], invites: [], activity: [], solo: true, nextHostName: null,
 }
 const meMsg = { type: 'me', invites: [], lobby: {
-  id: 'l1', name: 'Friday darts', peopleCount: 2, nextGame: null, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: true,
+  id: 'l1', name: 'Friday darts', peopleCount: 2, nextGame: null, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: true, solo: false,
 } }
 
 beforeEach(() => { FakeSocket.opened = []; vi.useFakeTimers() })

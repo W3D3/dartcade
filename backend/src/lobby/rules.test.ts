@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { LobbyPerson, LobbyState } from './types.js'
-import { canMove, canRemove, canSetBoard, canSetPlays, canSetReady, isHost, leavingWith, nextHost, reorder } from './rules.js'
+import { canMove, canRemove, canSetBoard, canSetPlays, canSetReady, isHost, isSolo, leavingWith, nextHost, reorder } from './rules.js'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
@@ -90,6 +90,17 @@ describe('membership changes', () => {
     const tied = person({ id: 't', userId: 'sam', addedByUserId: 'sam', name: 'Sam', joinedAt: new Date(1), position: 0 })
     expect(nextHost(lobbyOf([lena, tied], null))).toEqual({ userId: 'sam', name: 'Sam' })
     expect(nextHost(lobbyOf([guest], null))).toBeNull()
+  })
+
+  it('excludes the current host, even when they joined first', () => {
+    expect(nextHost(lobbyOf([chris, lena, guest], 'chris'))).toEqual({ userId: 'lena', name: 'Lena' })
+    expect(nextHost(lobbyOf([chris, guest], 'chris'))).toBeNull()
+  })
+
+  it('isSolo: true with just one account, whatever guests or invites come with it', () => {
+    expect(isSolo(lobbyOf([chris, guest]))).toBe(true)
+    expect(isSolo(lobbyOf([chris, lena, guest]))).toBe(false)
+    expect(isSolo(lobbyOf([guest]))).toBe(true)
   })
 
   it('a member leaves with their guests', () => {

@@ -15,7 +15,7 @@ const lobby = (over: Partial<LobbyState> = {}): LobbyState => ({
   createdAt: new Date(0), closedAt: null, people: [chris, lena, guest, max], invites: [], activity: [], ...over,
 })
 const all = { gameId: 'x01', config: { startScore: 301 }, personIds: ['c', 'l', 'g', 'm'] }
-const online = { force: false, isBoardOnline: () => true }
+const online = { force: false, isBoardOnline: () => true, starterUserId: 'chris' }
 
 describe('planGame', () => {
   it('seats the players in lobby order: members control themselves, guests their adder', () => {
@@ -52,7 +52,7 @@ describe('planGame', () => {
   })
 
   it('refuses offline boards by name, even when the host confirmed; Manual seats are always fine', () => {
-    const opts = { force: true, isBoardOnline: (b: string) => b !== 'lenas' }
+    const opts = { force: true, isBoardOnline: (b: string) => b !== 'lenas', starterUserId: 'chris' }
     expect(planGame(lobby(), all, opts)).toEqual({
       ok: false, problem: { status: 409, code: 'board_offline', error: "offline: Lena's place", offlineBoards: ["Lena's place"] },
     })
@@ -60,10 +60,20 @@ describe('planGame', () => {
   })
 
   it('names who isn\'t ready, and starts anyway once the host confirms', () => {
+    // lena starts here, so chris and max (not the starter, nor their guest) still show as not ready
     const notReady = lobby({ people: [{ ...chris, ready: false }, lena, { ...max, ready: false }] })
-    expect(planGame(notReady, all, online)).toEqual({
+    const startedByLena = { ...online, starterUserId: 'lena' }
+    expect(planGame(notReady, all, startedByLena)).toEqual({
       ok: false, problem: { status: 409, code: 'not_ready', error: 'not everyone is ready', notReady: [{ personId: 'c', name: 'Christoph' }, { personId: 'm', name: 'Max' }] },
     })
-    expect(planGame(notReady, all, { ...online, force: true }).ok).toBe(true)
+    expect(planGame(notReady, all, { ...startedByLena, force: true }).ok).toBe(true)
+  })
+
+  it('counts the starter and the rows they control as ready', () => {
+    const notReady = lobby({ people: [{ ...chris, ready: false }, { ...guest, addedByUserId: 'chris', ready: false }, { ...lena, ready: false }] })
+    const r = planGame(notReady, { ...all, personIds: ['c', 'g', 'l'] }, { ...online, starterUserId: 'chris' })
+    expect(!r.ok && r.problem).toMatchObject({ code: 'not_ready', notReady: [{ personId: 'l', name: 'Lena' }] })
+    const solo = planGame(lobby({ people: [{ ...chris, ready: false }, { ...guest, addedByUserId: 'chris', ready: false }] }), { ...all, personIds: ['c', 'g'] }, { ...online, starterUserId: 'chris' })
+    expect(solo.ok).toBe(true)
   })
 })

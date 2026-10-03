@@ -30,15 +30,18 @@ describe('lobby text', () => {
   })
 
   it('writes the feed from the viewer\'s side, names in bold', () => {
-    const moved = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Christoph', data: { name: 'Max', fromBoardName: null, toBoardName: 'Living room' } })
+    // A member moving a guest (userId null): never counts as moving themselves, even if named the same
+    const moved = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Christoph', data: { name: 'Max', userId: null, fromBoardName: null, toBoardName: 'Living room' } })
     expect(text(activityLine(moved, 'chris'))).toBe('You moved Max to Living room')
     expect(text(activityLine(moved, 'lena'))).toBe('Christoph moved Max to Living room')
     expect(bold(activityLine(moved, 'lena'))).toEqual(['Christoph', 'Max'])
-    expect(text(activityLine({ ...moved, data: { name: 'Max', toBoardName: null } }, 'lena'))).toBe('Christoph moved Max to manual entry')
-    // Moving yourself: no name twice
-    const self = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Admin', data: { name: 'Admin', fromBoardName: 'Dev Board', toBoardName: null } })
+    expect(text(activityLine({ ...moved, data: { name: 'Max', userId: null, toBoardName: null } }, 'lena'))).toBe('Christoph moved Max to manual entry')
+    const guestNamedChristoph = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Christoph', data: { name: 'Christoph', userId: null, toBoardName: 'Living room' } })
+    expect(text(activityLine(guestNamedChristoph, 'lena'))).toBe('Christoph moved Christoph to Living room')
+    // Moving yourself (same userId as the actor): no name twice
+    const self = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Admin', data: { name: 'Admin', userId: 'chris', fromBoardName: 'Dev Board', toBoardName: null } })
     expect(text(activityLine(self, 'chris'))).toBe('You moved to manual entry')
-    expect(text(activityLine({ ...self, data: { name: 'Admin', toBoardName: 'Dev Board' } }, 'chris'))).toBe('You moved to Dev Board')
+    expect(text(activityLine({ ...self, data: { name: 'Admin', userId: 'chris', toBoardName: 'Dev Board' } }, 'chris'))).toBe('You moved to Dev Board')
     expect(text(activityLine(self, 'lena'))).toBe('Admin moved to manual entry')
     expect(bold(activityLine(self, 'lena'))).toEqual(['Admin'])
     expect(text(activityLine(act({}), 'lena'))).toBe('You joined')
@@ -77,7 +80,7 @@ describe('inviteTime', () => {
 })
 
 describe('indicatorView', () => {
-  const s = { id: 'l1', name: 'Friday darts', peopleCount: 6, nextGame: { gameId: 'x01', config: {} }, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: false }
+  const s = { id: 'l1', name: 'Friday darts', peopleCount: 6, nextGame: { gameId: 'x01', config: {} }, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: false, solo: false }
 
   it('a member waiting, the host', () => {
     expect(indicatorView(s)).toEqual({ tag: 'In lobby', name: 'Friday darts', line: '6 people · Next: X01', next: 'Next: X01', back: null })

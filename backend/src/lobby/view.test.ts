@@ -40,6 +40,35 @@ describe('lobbyView', () => {
     expect(view.invites).toEqual([{ id: 'i1', userId: 'lena', name: 'Lena', invitedByUserId: 'chris', createdAt: at.toISOString() }])
     expect(() => { checkLobbyMessage({ type: 'lobby', lobby: view }, () => undefined) }).not.toThrow()
   })
+
+  it('is not solo with two members, and names who would take over as host', () => {
+    const notSolo: LobbyState = {
+      ...lobby,
+      people: [
+        person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph' }),
+        person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena' }),
+        person({ id: 'g', name: 'Guest 1' }),
+      ],
+      invites: [],
+    }
+    const view = lobbyView(notSolo, { online: new Set(), isBoardOnline: () => false, sessionId: null })
+    expect(view.solo).toBe(false)
+    expect(view.nextHostName).toBe('Lena')
+  })
+
+  it('is solo with just the host, a guest and a pending invite; nobody would take over', () => {
+    const solo: LobbyState = {
+      ...lobby,
+      people: [
+        person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph' }),
+        person({ id: 'g', name: 'Guest 1' }),
+      ],
+      invites: [{ id: 'i1', userId: 'lena', name: 'Lena', invitedByUserId: 'chris', createdAt: at }],
+    }
+    const view = lobbyView(solo, { online: new Set(), isBoardOnline: () => false, sessionId: null })
+    expect(view.solo).toBe(true)
+    expect(view.nextHostName).toBeNull()
+  })
 })
 
 describe('lobbySummary', () => {
@@ -55,7 +84,7 @@ describe('lobbySummary', () => {
     const session = engine.getSession(sessionId)
     expect(lobbySummary(lobby, 'chris', session)).toEqual({
       id: 'l1', name: "Christoph's lobby", peopleCount: 3, nextGame: { gameId: 'x01', config: { startScore: 501 } },
-      sessionId, gameId: 'x01', youThrowNext: true, leg: 0, youHost: true,
+      sessionId, gameId: 'x01', youThrowNext: true, leg: 0, youHost: true, solo: false,
     })
     expect(lobbySummary(lobby, 'max', session).youThrowNext).toBe(false)
     expect(lobbySummary(lobby, 'max', session).youHost).toBe(false)

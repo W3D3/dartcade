@@ -11,6 +11,9 @@ export const memberOf = (lobby: LobbyState, userId: string): LobbyPerson | undef
 
 export const isMember = (lobby: LobbyState, userId: string): boolean => memberOf(lobby, userId) !== undefined
 
+/** Only one account is in the lobby; guests and pending invites don't count. */
+export const isSolo = (lobby: LobbyState): boolean => lobby.people.filter(p => p.userId !== null).length <= 1
+
 /** The host has host rights only while they're in the lobby. */
 export const isHost = (lobby: LobbyState, userId: string): boolean =>
   lobby.hostUserId === userId && isMember(lobby, userId)
@@ -44,11 +47,15 @@ export function canRemove(lobby: LobbyState, actorUserId: string, person: LobbyP
   return person.userId === null && person.addedByUserId === actorUserId
 }
 
-/** Who takes over as host: the member who has been in the lobby longest (ties: lobby order). */
+/**
+ * Who takes over as host if the current host leaves now: the other member who has been
+ * in the lobby longest (ties: lobby order). null when nobody would (the host is alone, or
+ * already gone).
+ */
 export function nextHost(lobby: LobbyState): { userId: string; name: string } | null {
   let best: { userId: string; name: string; at: number; position: number } | null = null
   for (const p of lobby.people) {
-    if (p.userId === null) continue
+    if (p.userId === null || p.userId === lobby.hostUserId) continue
     const at = p.joinedAt.getTime()
     if (best === null || at < best.at || (at === best.at && p.position < best.position)) {
       best = { userId: p.userId, name: p.name, at, position: p.position }

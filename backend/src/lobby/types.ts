@@ -40,12 +40,13 @@ export type ActivityPlayer = { name: string; placement: number; forfeited: boole
 
 /**
  * What an activity line shows, stored with names as they were then. Per kind:
- * opened/joined/left/removed/guest_added/host_changed: name. board_moved: name,
- * fromBoardName, toBoardName. game_played: sessionId, gameId, winnerName, players.
- * game_aborted: sessionId, gameId.
+ * opened/joined/left/removed/guest_added/host_changed: name. board_moved: name, userId
+ * (the person moved; null for a guest), fromBoardName, toBoardName. game_played:
+ * sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.
  */
 export type ActivityData = {
   name?: string
+  userId?: string | null
   fromBoardName?: string | null
   toBoardName?: string | null
   sessionId?: string

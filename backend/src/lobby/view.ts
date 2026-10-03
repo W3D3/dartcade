@@ -1,6 +1,7 @@
 import type { Lobby, LobbySummary, PendingInvite } from '../schema/lobby-ws.js'
 import type { Session } from '../session/types.js'
 import { currentSeat } from '../session/access.js'
+import { isSolo, nextHost } from './rules.js'
 import type { InviteRow, LobbyState } from './types.js'
 
 /** What a view needs besides the lobby: who has it open, which boards are online, its running game. */
@@ -18,6 +19,8 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
     canRematch: lobby.lastGame !== null,
     currentSessionId: ctx.sessionId,
     createdAt: lobby.createdAt.toISOString(),
+    solo: isSolo(lobby),
+    nextHostName: nextHost(lobby)?.name ?? null,
     people: lobby.people.map(p => ({
       id: p.id, userId: p.userId, addedByUserId: p.addedByUserId, name: p.name,
       boardId: p.boardId, boardName: p.boardName, boardOwnerUserId: p.boardOwnerUserId,
@@ -46,6 +49,7 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
     youThrowNext: session !== undefined && session.seats[currentSeat(session)].controllerUserId === userId,
     leg: session?.module.getLeg?.(session.currentState) ?? null,
     youHost: lobby.hostUserId === userId,
+    solo: isSolo(lobby),
   }
 }
 

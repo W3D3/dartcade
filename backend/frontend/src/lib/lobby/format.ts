@@ -57,8 +57,9 @@ export function activityLine(a: LobbyActivity, viewerId: string | null): Part[] 
     case 'guest_added': return [actor, t(' added guest '), name]
     case 'board_moved': {
       const to = t(` to ${a.data.toBoardName ?? 'manual entry'}`)
-      // The activity names only the person moved; the actor moving themselves shows as the same name
-      return a.actorName !== null && a.actorName === a.data.name ? [actor, t(' moved'), to] : [actor, t(' moved '), name, to]
+      // The moved person's own id: null for a guest, so they never match the actor
+      const movedSelf = a.data.userId !== null && a.data.userId !== undefined && a.data.userId === a.actorUserId
+      return movedSelf ? [actor, t(' moved'), to] : [actor, t(' moved '), name, to]
     }
     case 'host_changed': return you ? [t("You're the host now")] : [name, t(' is the host now')]
     case 'game_aborted': return a.actorUserId === null ? [game, t(' was aborted')] : [actor, t(' aborted '), game]
