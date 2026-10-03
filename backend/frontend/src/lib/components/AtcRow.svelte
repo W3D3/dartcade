@@ -1,5 +1,6 @@
 <script lang="ts">
   import AtcProgress from './AtcProgress.svelte'
+  import RollingNumber from './RollingNumber.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
@@ -31,7 +32,7 @@
 
   <span class="flex flex-col gap-1">
     <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
-    <span class="font-display font-bold text-[min(104px,11vh)] leading-[0.85] {active ? 'text-accent' : 'text-ink-3'}">{p.target}</span>
+    <span class="font-display font-bold text-[min(104px,11vh)] leading-[0.85] {active ? 'text-accent' : 'text-ink-3'}"><RollingNumber value={p.target} normal="up" progress={p.done} /></span>
   </span>
 
   <div class="flex flex-col gap-3 min-w-0">

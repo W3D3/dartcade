@@ -19,6 +19,8 @@ export type X01PlayerView = {
   darts: number
   legsWon: number
   firstTo: number
+  /** Legs played so far (everyone's): the score starts over when it changes. */
+  leg: number
   /** Finished visits of this leg. */
   visits: Visit[]
   /** Show the "Can finish" line at all (checkout suggestions on). */
@@ -47,6 +49,7 @@ export function x01Player(
     darts: game.totalDarts.at(i) ?? 0,
     legsWon: game.legs.at(i) ?? 0,
     firstTo: game.firstTo,
+    leg: game.legs.reduce((a, l) => a + l, 0),
     visits: leg,
     showFinish: o.suggest,
     current: running.length ? { scored: running.reduce((a, d) => a + d.score, 0), left: remaining, bust: o.bust === true } : null,

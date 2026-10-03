@@ -1,6 +1,7 @@
 <script lang="ts">
   // The Around the Clock thrower on a phone: name, board, pill, the current target, progress, darts and hit rate.
   import AtcProgress from './AtcProgress.svelte'
+  import RollingNumber from './RollingNumber.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
@@ -25,7 +26,7 @@
   <div class="flex items-end justify-between gap-3">
     <span class="flex flex-col gap-1">
       <span class="text-[10px] uppercase tracking-[0.1em] text-text-muted">Target</span>
-      <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[96px] leading-[0.8] text-accent">{p.target}</span>
+      <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[96px] leading-[0.8] text-accent"><RollingNumber value={p.target} normal="up" progress={p.done} /></span>
     </span>
     <span class="flex flex-col items-end gap-1 text-[13px] text-text-muted">
       <span><strong class="text-text">{p.done}</strong> of {p.total} done</span>

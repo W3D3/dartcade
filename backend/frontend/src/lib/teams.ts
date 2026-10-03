@@ -51,6 +51,8 @@ export type X01TeamView = {
   darts: number
   legsWon: number
   firstTo: number
+  /** Legs played so far (both teams'): the score starts over when it changes. */
+  leg: number
   /** Finished visits of this leg, in the order thrown, and the thrower's initial for each. */
   visits: Visit[]
   marks: string[]
@@ -98,7 +100,7 @@ export function x01Teams(game: X01Game, players: { name: string }[], history: Vi
       teamAvg: fmtAvg(threeDartAvg(legVisits)),
       matchAvg: fmtAvg(threeDartAvg(allVisits)),
       darts: team.seats.reduce((a, s) => a + (game.totalDarts.at(s) ?? 0), 0),
-      legsWon: team.legs, firstTo: game.firstTo,
+      legsWon: team.legs, firstTo: game.firstTo, leg: teams.reduce((a, t) => a + t.legs, 0),
       visits, marks,
       current: p.current, currentMark: p.current ? initial(nameOf(cp)) : null,
       members: team.seats.map(s => ({

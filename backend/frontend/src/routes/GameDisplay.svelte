@@ -212,6 +212,8 @@
         advanced: atcAdvanced(hitCount, visitStart, hits),
         target: atcPlayers[currentPlayer]?.target ?? '',
       }))
+  // Every finished visit: the visit sum starts over at 0 without rolling
+  const visitKey = $derived((game?.totalVisits ?? []).reduce((a, v) => a + v, 0))
   const popIndex = $derived(isX01 ? bigDartIndex(darts, { opened: x01Players[currentPlayer]?.opened ?? true, bust }) : null)
 
   const sequence = $derived(atc?.sequence ?? [])
@@ -333,7 +335,7 @@
   <!-- relative: the board view's correction picker opens above this row, over the board, full width -->
   <div class="relative shrink-0 grid gap-2 items-start {settings.visitSum ? 'grid-cols-[minmax(0,3fr)_minmax(0,1fr)]' : 'grid-cols-1'}">
     <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} showPopover={!keypad} popoverAbove />
-    {#if settings.visitSum}<VisitBand {band} compact />{/if}
+    {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
   </div>
   {#if keypad}
     <div class="flex-1 min-h-[220px]">
@@ -377,10 +379,10 @@
   {#if variant === 'solo'}
     <div class="grid grid-cols-[minmax(0,3fr)_minmax(0,1fr)] gap-[10px] items-start">
       <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
-      {#if settings.visitSum}<VisitBand {band} compact />{/if}
+      {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
     </div>
   {:else}
-    {#if settings.visitSum}<VisitBand {band} />{/if}
+    {#if settings.visitSum}<VisitBand {band} visit={visitKey} />{/if}
     <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
   {/if}
 
@@ -490,11 +492,12 @@
                   sub={rowSub(up ? (x01Players[i]?.canFinish ? `Throwing · can finish ${x01Players[i]?.canFinish}` : 'Throwing')
                     : i === nextPlayer ? (x01Players[i]?.canFinish ? `Up next · can finish ${x01Players[i]?.canFinish}` : 'Up next') : `Avg ${x01Players[i]?.avg ?? '0.0'}`, line)}
                   valueLabel="Left" value={String(x01Players[i]?.remaining ?? '')}
+                  roll={{ reset: x01Players[i]?.leg, bust: x01Players[i]?.current?.bust, checkout: x01Players[i]?.remaining === 0 }}
                   legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }} />
               {:else}
                 <PhonePlayerRow active={up} name={player.name} you={line?.you ?? false} pill={up ? null : pillFor(i, true)}
                   sub={rowSub(up ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done` : i === nextPlayer ? 'Up next' : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`, line)}
-                  valueLabel="Target" value={atcPlayers[i]?.target ?? ''} />
+                  valueLabel="Target" value={atcPlayers[i]?.target ?? ''} roll={{ normal: 'up', progress: atcPlayers[i]?.done }} />
               {/if}
             </div>
           {/each}

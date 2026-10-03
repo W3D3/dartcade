@@ -1,19 +1,33 @@
 <script lang="ts">
   // The visit sum under the board (or a compact tile beside the slots), with the
-  // VisitFX celebrations: ton plus, maximum, and a tick for a big dart.
+  // VisitFX celebrations: ton plus, maximum, and a tick for a big dart. The sum rolls (ScoreCount).
+  import RollingNumber from './RollingNumber.svelte'
   import { shouldReplay, type BandData } from '$lib/visitBand.js'
 
-  let { band, compact = false }: { band: BandData; compact?: boolean } = $props()
+  let { band, compact = false, visit = 0 }: {
+    band: BandData
+    compact?: boolean
+    /** Changes with every new visit: the sum starts over at 0 without rolling. */
+    visit?: string | number
+  } = $props()
 
   const tone = $derived(band.bust ? 'bust' : band.fx)
-  // Re-mount (and so replay the animation) only when a celebrating sum goes up:
-  // not on load, not when a dart is undone
-  let replays = $state(0)
+  // Replay the celebration only when a celebrating sum goes up: not on load, not when a dart
+  // is undone. Each animated element restarts in place (finished animations included), so the
+  // rolling sum stays mounted and keeps turning.
+  let boxEl: HTMLDivElement | undefined = $state()
   let lastSum: number | null = null
   $effect(() => {
-    if (shouldReplay(lastSum, band)) replays++
+    if (shouldReplay(lastSum, band)) replay()
     lastSum = Number(band.sum.replace('+', ''))
   })
+  function replay() {
+    if (!boxEl) return
+    const els = [boxEl, ...boxEl.querySelectorAll<HTMLElement>('.sum, .fx-tick, .confetti')]
+    for (const el of els) el.style.animation = 'none'
+    boxEl.getBoundingClientRect() // a reflow, so the animations start over
+    for (const el of els) el.style.animation = ''
+  }
 
   const CONFETTI = ['#e9dfc4', '#c6f24e', '#d23b36', '#1e7a4f', '#dcff7a', '#efeee6']
   const confetti = Array.from({ length: 45 }, (_, i) => ({
@@ -37,34 +51,35 @@
 
 <span class="sr-only" role="status" aria-live="polite">{band.eyebrow}: {band.sum}. {band.afterLabel} {band.after}</span>
 
-{#key replays}
-  {#if compact}
-    <div class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}">
-      <span class="flex justify-between gap-2 text-[10px] md:text-[13px] leading-none">
-        <span class="{eyebrowColor} truncate">{band.eyebrow}</span><span class="hidden md:inline {quiet}">{band.progressShort}</span>
-      </span>
-      <span class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
-      <span class="flex items-baseline justify-between gap-1 text-[10px] md:text-[13px] leading-none">
-        <span class="{quiet} truncate">{band.afterLabel}</span>
-        <span class="font-display font-bold text-[13px] md:text-[24px] leading-none {afterColor}">{band.after}</span>
-      </span>
-      {#if tone === 'max'}{@render burst()}{/if}
-    </div>
-  {:else}
-    <div class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}">
-      <span class="flex flex-col items-end gap-[2px] text-right">
-        <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
-        <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
-      </span>
-      <span class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
-      <span class="flex flex-col gap-[2px]">
-        <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
-        <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
-      </span>
-      {#if tone === 'max'}{@render burst()}{/if}
-    </div>
-  {/if}
-{/key}
+{#if compact}
+  <div bind:this={boxEl} class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}">
+    <span class="flex justify-between gap-2 text-[10px] md:text-[13px] leading-none">
+      <span class="{eyebrowColor} truncate">{band.eyebrow}</span><span class="hidden md:inline {quiet}">{band.progressShort}</span>
+    </span>
+    <span class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}" class:fx-tick={band.bigDart}>{@render sum()}</span>
+    <span class="flex items-baseline justify-between gap-1 text-[10px] md:text-[13px] leading-none">
+      <span class="{quiet} truncate">{band.afterLabel}</span>
+      <span class="font-display font-bold text-[13px] md:text-[24px] leading-none {afterColor}">{band.after}</span>
+    </span>
+    {#if tone === 'max'}{@render burst()}{/if}
+  </div>
+{:else}
+  <div bind:this={boxEl} class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}">
+    <span class="flex flex-col items-end gap-[2px] text-right">
+      <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
+      <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
+    </span>
+    <span class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}" class:fx-tick={band.bigDart}>{@render sum()}</span>
+    <span class="flex flex-col gap-[2px]">
+      <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
+      <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
+    </span>
+    {#if tone === 'max'}{@render burst()}{/if}
+  </div>
+{/if}
+
+<!-- A bust's sum is struck through, which doesn't reach into the wheels: it stands still -->
+{#snippet sum()}{#if band.bust}{band.sum}{:else}<RollingNumber value={band.sum} normal="up" reset={visit} />{/if}{/snippet}
 
 {#snippet burst()}
   <span class="absolute inset-0 pointer-events-none" aria-hidden="true">
