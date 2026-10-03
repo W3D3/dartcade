@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
+import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, isTeamFormat, myRow, playsInGame, teamRosters, teamsMessage } from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -87,5 +87,27 @@ describe('lobby rules for the screens', () => {
   it('lists the accounts already in the lobby or invited, so the add field skips them', () => {
     const invited = { ...lobby, invites: [{ id: 'i1', userId: 'phil', name: 'Phil', invitedByUserId: 'chris', createdAt: '2026-10-02T19:41:00.000Z' }] }
     expect(alreadyInOrInvited(invited)).toEqual(['chris', 'lena', 'max', 'phil'])
+  })
+
+  it('is a team format only when the mode supports teams and the config picked it', () => {
+    expect(isTeamFormat(true, { format: 'teams' })).toBe(true)
+    expect(isTeamFormat(true, { format: 'singles' })).toBe(false)
+    expect(isTeamFormat(false, { format: 'teams' })).toBe(false)
+    expect(isTeamFormat(undefined, { format: 'teams' })).toBe(false)
+  })
+
+  it('splits the people who play into Team A and Team B, in lobby order', () => {
+    const a = { ...chris, team: 'A' as const }
+    const b1 = { ...lena, team: 'B' as const }
+    const b2 = { ...pia, team: 'B' as const }
+    const sitsOut = { ...max, plays: false, team: 'A' as const }
+    expect(teamRosters({ ...lobby, people: [a, b1, b2, sitsOut] })).toEqual({ a: [a], b: [b1, b2] })
+  })
+
+  it('says when a team needs a player, or the split is uneven; nothing once it\'s even', () => {
+    expect(teamsMessage(0, 2)).toBe('Both teams need a player.')
+    expect(teamsMessage(2, 0)).toBe('Both teams need a player.')
+    expect(teamsMessage(1, 2)).toBe("Teams are uneven. The smaller team's players throw more often.")
+    expect(teamsMessage(2, 2)).toBeNull()
   })
 })

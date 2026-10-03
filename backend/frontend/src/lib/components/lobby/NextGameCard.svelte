@@ -3,24 +3,27 @@
   // with its mode tiles), who plays, throw order and Start.
   import { ArrowRight } from '@lucide/svelte'
   import { untrack } from 'svelte'
-  import type { Lobby, ThrowOrder } from '$lib/api/lobby-ws'
+  import type { Lobby, TeamId, ThrowOrder } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
   import ChangeGameDialog from './ChangeGameDialog.svelte'
   import NextGameSettingsPanel from './NextGameSettingsPanel.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
   import SettingsToggleButton from './SettingsToggleButton.svelte'
+  import TeamsPanel from './TeamsPanel.svelte'
   import ThrowOrderField from './ThrowOrderField.svelte'
   import WhoPlays from './WhoPlays.svelte'
   import { gameModes, settlePending, withDefaults } from '$lib/gameModes'
-  import { counts, type LobbyPatch } from '$lib/lobby/rules'
+  import { counts, isTeamFormat, type LobbyPatch } from '$lib/lobby/rules'
 
-  let { lobby, busy = false, onupdate, onplays, onstart }: {
+  let { lobby, busy = false, onupdate, onplays, onteammove, onteamshuffle, onstart }: {
     lobby: Lobby
     /** A start is in flight: Start waits. */
     busy?: boolean
     onupdate: (patch: LobbyPatch) => Promise<boolean>
     onplays: (personId: string, plays: boolean) => Promise<boolean>
+    onteammove: (personId: string, team: TeamId) => Promise<boolean>
+    onteamshuffle: () => Promise<boolean>
     onstart: () => void
   } = $props()
 
@@ -42,6 +45,7 @@
     : {})
   let picking = $state(false)
   let settingsOpen = $state(false)
+  const teamGame = $derived(isTeamFormat(info?.teams, config))
 
   // Each snapshot settles the pending changes it shows (or whose save came back). This only
   // trims what's shown: saving happens in the handlers, so an echo never saves again.
@@ -97,10 +101,16 @@
       onclick={() => picking = true}>{game ? 'Change game' : 'Pick a game'}</Button>
   </div>
   {#if game}
-    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}}
+    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} teams={info?.teams ?? false}
       onchange={(key: string, value: unknown) => void setConfig(key, value)} />
   {/if}
-  <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
+  {#if teamGame}
+    <TeamsPanel {lobby} editable
+      onmove={(personId: string, team: TeamId) => void onteammove(personId, team)}
+      onshuffle={() => void onteamshuffle()} />
+  {:else}
+    <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
+  {/if}
   <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
   <div class="flex flex-col gap-[6px]">
     <Button size="xl" class="w-full" disabled={!game || running || busy} onclick={() => onstart()}>

@@ -10,9 +10,10 @@
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
   import SettingsToggleButton from './SettingsToggleButton.svelte'
+  import TeamsPanel from './TeamsPanel.svelte'
   import ThrowOrderField from './ThrowOrderField.svelte'
   import { gameModes, withDefaults } from '$lib/gameModes'
-  import type { PersonPatch } from '$lib/lobby/rules'
+  import { isTeamFormat, type PersonPatch } from '$lib/lobby/rules'
 
   let { lobby, me, onupdate }: {
     lobby: Lobby
@@ -27,6 +28,7 @@
   const info = $derived(game ? $gameModes.find(g => g.id === game.gameId) : undefined)
   const defaults = $derived(info?.defaultConfig ?? {})
   const config = $derived(game ? withDefaults(game.config, defaults) : {})
+  const teamGame = $derived(isTeamFormat(info?.teams, config))
   let settingsOpen = $state(false)
 </script>
 
@@ -34,9 +36,12 @@
   <NextGameSummary game={lobby.nextGame} pickedBy="{hostName}'s pick" size="sm" />
   {#if game}
     <SettingsToggleButton open={settingsOpen} ontoggle={() => settingsOpen = !settingsOpen} />
-    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} readonly>
+    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} teams={info?.teams ?? false} readonly>
       <ThrowOrderField {lobby} gameId={game.gameId} readonly />
     </NextGameSettingsPanel>
+  {/if}
+  {#if teamGame}
+    <TeamsPanel {lobby} editable={false} />
   {/if}
   <SegmentedControl options={PLAYS} value={me.plays} onchange={(v) => { if (v !== me.plays) void onupdate(me.id, { plays: v === true }) }} />
   {#if !me.plays}
