@@ -35,7 +35,9 @@ in any lobby game.
   game's scoring is per team.
 - **Results:** every player of a team gets the team's placement. Forfeit: the forfeiter's whole
   team is placed last (the engine already marks every seat the forfeiter controls; the team rule
-  ranks their teammates with them).
+  ranks their teammates with them) — a 2v2 forfeit places the two teams 1st and 2nd, not spread
+  by seat count. Someone who controls seats in both teams can't forfeit: there'd be nobody left
+  to lose to.
 - **Not in this change:** teams for ATC (it can opt in later), more than two teams, members
   choosing their own team, team names other than "Team A"/"Team B".
 
@@ -46,22 +48,33 @@ So the next game can add teams by opting in, the generic parts are shared:
 - **Schema (`schema/common-v1.json`):**
   - `GameFormat`: `'singles' | 'teams'`.
   - `TeamId`: `'A' | 'B'`.
-  - `TeamsConfig`: `{ format: GameFormat, teams?: number[] }`: the format, and once a game
-    starts, the team index of each seat (index = seat; 0 = Team A, 1 = Team B). Games that opt in
-    include these two fields in their config. Inside a game, teams are always indices; `TeamId`
-    (A/B) is only how the lobby and the screens name them.
   - `TeamView`: `{ id: TeamId, name: string, seats: number[] }` plus game-specific fields in the
-    game's own view (X01 adds score, legs, averages). Snapshots of a team game carry `teams:
+    game's own view (X01 adds `score`, `legs`, `next`). Snapshots of a team game carry `teams:
     TeamView[]`.
+  - `TeamsConfig` (TypeScript only, `backend/src/games/teams.ts`, not in the JSON schema):
+    `{ format?: 'singles' | 'teams', teams?: number[], teamStart?: 'first' | 'random' }`: the
+    format, the team index of each seat once a game starts (index = seat; 0 = Team A, 1 = Team
+    B), and which team starts. Games that opt in include these fields in their config. Inside a
+    game, teams are always indices; `TeamId` (A/B) is only how the lobby and the screens name
+    them.
 - **Game module:** `teams?: true` in `GameModule` says a game supports teams. Everything outside
   the game (lobby, start plan, `GameSettings`, the Teams panel) only looks at this flag.
 - **`backend/src/games/teams.ts`** (pure, tested), for the generic rules. Without teams, each
-  seat is its own team (team index = seat), so a game has a single code path:
-  - `seatOrder(teamA, teamB)`: interleave two lists of people into seats, A1 B1 A2 B2.
-  - `teamOf(cfg, seat)`, `teamSeats(cfg, team)`.
-  - `nextLegStarter(...)`: rotate the leg starter by team.
-  - `teamPlacements(...)`: placements for `summarize`, every seat of a team sharing its team's
-    place, a forfeited team last.
+  seat is its own team (team index = seat), so a game has a single code path. Built as:
+  - `teamOfSeats(cfg, seatCount)`: the team index of every seat, from the config; falls back to
+    one-seat-one-team unless `format: 'teams'` and `teams` is a valid, dense team-index list.
+  - `teamCount(teamOf)`, `seatsByTeam(teamOf)`: how many teams, and each team's seats.
+  - `turnOrder(teamOf, startTeam)`: the turn rotation, teams alternating from `startTeam`; a
+    smaller team's seats repeat.
+  - `seatPlacements(teamOf, teamPlacements)`: per-team placements spread back to seats.
+  - `teamForfeitPlacements(teamOf, placements, forfeited)`: placements once some seats forfeited,
+    counted among teams.
+
+  (The interleave that seats a lobby's two teams — A1 B1 A2 B2 — lives in
+  `backend/src/lobby/startPlan.ts`, not here; `teamOf(cfg, seat)`, `teamSeats`, `nextLegStarter`
+  and `teamPlacements` weren't built under those names. X01 keeps the turn order in its state
+  [`order`] rather than rotating a leg starter function; a leg starts at
+  `legsPlayed % order.length`.)
 - **Frontend:** a generic team panel (`TeamPanel`) and the lobby's Teams panel are driven by the
   common `TeamView`; a game supplies only its score line.
 
@@ -87,9 +100,9 @@ So the next game can add teams by opting in, the generic parts are shared:
 
 ## Starting a game
 
-- `startPlan`: for a game with `teams` and `format: 'teams'`, the seats are the people who play in
-  `seatOrder(teamA, teamB)` (each team in lobby order), and the config gets `teams` (the team of
-  each seat). Refused with `400` and "Both teams need a player" if a team is empty.
+- `startPlan`: for a game with `teams` and `format: 'teams'`, the seats interleave the two teams
+  in lobby order (A1 B1 A2 B2…), and the config gets `teams` (the team of each seat). Refused
+  with `400` and "Both teams need a player" if a team is empty.
 - Throw order (`lobby.throwOrder`):
   - `lobby`: seat order as built (Team A starts).
   - `random`: Team B starts in half the cases (swap which team takes the odd seats); within a team,
@@ -105,14 +118,19 @@ So the next game can add teams by opting in, the generic parts are shared:
   index); `pointsScored`, `bestCheckout` and darts stay per seat for personal stats.
   In singles every seat is its own team, so these arrays have one entry per seat, exactly as
   today, and X01 has one code path.
-- **Turns:** `order` is the seat order; the leg starter rotates by team (`nextLegStarter`).
+- **Turns:** `order` is the seat order (`turnOrder(teamOf, startTeam)` for a team game); X01
+  keeps it in state and starts each leg at `legsPlayed % order.length`, so the starting team
+  alternates without a separate leg-starter function.
 - **A visit** counts down the thrower's team's score; bust and the double-in/out rules apply to
   the team's score; a checkout wins the leg for the team; winning the match ends the game with
   the team as winner (`winner` becomes the winning team).
-- **View:** `teams: TeamView[]` with each team's `score`, `legs`, team average and match average;
-  the seat list keeps per-player averages.
-- **History:** `summarize` uses `teamPlacements`; the X01 detail lists the teams with their
-  players.
+- **View:** `teams: TeamView[]` with each team's `score`, `legs` and `next` (that team's next
+  thrower); the seat list keeps per-player averages. Team and match averages aren't in this view:
+  the browser computes them from the seats' stats (`backend/frontend/src/lib/teams.ts`).
+- **History:** `summarize` ranks teams and spreads the placement to their seats with
+  `seatPlacements`; the X01 detail (`GET /api/games/{id}`) lists the teams with their players.
+  The app has no game detail screen yet (the canvas's `X01-Details`); when it's built, it groups
+  players by team.
 
 ## Match screen
 
@@ -121,7 +139,7 @@ So the next game can add teams by opting in, the generic parts are shared:
   team average, match average, darts and the visit list (each visit marked with the player's
   initial).
 - Phone and narrow layouts stack the two team panels.
-- The header says "Teams 2v2" (or "Teams 2v1" for uneven) before the rules line.
+- The header says "Teams 2v2" before the rules line; for uneven teams the sizes in Team A v Team B order (e.g. "Teams 1v2", "Teams 2v1").
 
 ## Testing
 

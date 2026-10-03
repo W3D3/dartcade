@@ -73,6 +73,13 @@ corrected dart replays the open visit cleanly.
 4. Frontend: the header title and meta line go in `backend/frontend/src/lib/gameViews/`
    (`index.ts`, `meta.ts`); panels, rows and slots are picked by game id in
    `GameDisplay.svelte`.
+5. To let the game be played in teams (Team A vs Team B sharing one score; see X01 for the
+   worked example): set `teams: true` on the `GameModule` and add `teamsOf(s)` (the team index
+   of every seat). Read `cfg.format`/`cfg.teams` through `backend/src/games/teams.ts`
+   (`teamOfSeats`, `seatsByTeam`, `turnOrder`, `seatPlacements`, `teamForfeitPlacements`) rather
+   than branching on them directly, so singles and teams stay one code path. Everything outside
+   the game — the lobby, `startPlan`, `GameSettings`, the Teams panel — only reads the `teams`
+   flag; it never decides teams itself.
 
 ## Running and testing
 
