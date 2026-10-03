@@ -28,9 +28,9 @@ describe('lobby rules for the screens', () => {
     expect([chris, lena, max, pia].filter(p => isMine(p, 'lena')).map(p => p.id)).toEqual(['l', 'g'])
   })
 
-  it('ready: only your own rows, not even the host for others', () => {
+  it('ready: only your own rows, not even the host for others; never a guest row', () => {
     expect(canSetReady(lena, 'lena')).toBe(true)
-    expect(canSetReady(pia, 'lena')).toBe(true)
+    expect(canSetReady(pia, 'lena')).toBe(false)
     expect(canSetReady(lena, 'chris')).toBe(false)
   })
 

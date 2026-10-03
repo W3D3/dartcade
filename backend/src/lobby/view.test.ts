@@ -56,6 +56,23 @@ describe('lobbyView', () => {
     expect(view.nextHostName).toBe('Lena')
   })
 
+  it('a guest\'s ready follows their adder\'s, not their own stored flag', () => {
+    const withGuest: LobbyState = {
+      ...lobby,
+      people: [
+        person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', ready: false }),
+        person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena', ready: true }),
+        person({ id: 'g1', name: 'Chris\'s guest', addedByUserId: 'chris', ready: true }),
+        person({ id: 'g2', name: 'Lena\'s guest', addedByUserId: 'lena', ready: false }),
+      ],
+      invites: [],
+    }
+    const view = lobbyView(withGuest, { online: new Set(), isBoardOnline: () => false, sessionId: null })
+    expect(view.people.map(p => [p.name, p.ready])).toEqual([
+      ['Christoph', false], ['Lena', true], ["Chris's guest", false], ["Lena's guest", true],
+    ])
+  })
+
   it('is solo with just the host, a guest and a pending invite; nobody would take over', () => {
     const solo: LobbyState = {
       ...lobby,

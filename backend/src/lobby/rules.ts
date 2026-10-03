@@ -11,6 +11,16 @@ export const memberOf = (lobby: LobbyState, userId: string): LobbyPerson | undef
 
 export const isMember = (lobby: LobbyState, userId: string): boolean => memberOf(lobby, userId) !== undefined
 
+/**
+ * A guest shares the ready state of whoever added them (their own stored flag doesn't
+ * matter); a member's ready is their own. Used by the snapshot and by `startPlan` so both
+ * agree on who's ready.
+ */
+export function effectiveReady(lobby: LobbyState, person: LobbyPerson): boolean {
+  if (person.userId !== null) return person.ready
+  return memberOf(lobby, person.addedByUserId)?.ready ?? person.ready
+}
+
 /** Only one account is in the lobby; guests and pending invites don't count. */
 export const isSolo = (lobby: LobbyState): boolean => lobby.people.filter(p => p.userId !== null).length <= 1
 
@@ -31,8 +41,12 @@ export function canSetBoard(actorUserId: string, person: LobbyPerson, target: Bo
   return controls || person.boardId === null
 }
 
-/** Nobody sets someone else's ready, not even the host. */
-export const canSetReady = (actorUserId: string, person: LobbyPerson): boolean => controllerOf(person) === actorUserId
+/**
+ * Nobody sets someone else's ready, not even the host. A guest has no ready of their own
+ * to set: a guest's ready follows their adder, so the adder sets it on their own row.
+ */
+export const canSetReady = (actorUserId: string, person: LobbyPerson): boolean =>
+  person.userId !== null && controllerOf(person) === actorUserId
 
 /** "I'm in" / "sitting out": the person (a guest's adder), or the host for anyone. */
 export const canSetPlays = (lobby: LobbyState, actorUserId: string, person: LobbyPerson): boolean =>

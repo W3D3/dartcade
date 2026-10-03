@@ -609,6 +609,7 @@ export class LobbyService {
   private async launch(lobby: LobbyState, hostUserId: string, game: LastGame, force: boolean): Promise<{ sessionId: string }> {
     const running = this.deps.engine.getLobbySession(lobby.id)
     if (running) throw LobbyError.conflict({ error: 'a game is running already', code: 'game_running', sessionId: running.id })
+    lobby = await this.markHostReady(lobby, hostUserId)
     const planned = planGame(lobby, game, { force, isBoardOnline: this.deps.isBoardOnline, starterUserId: hostUserId })
     if (!planned.ok) throw planError(planned.problem)
     const { plan } = planned
@@ -627,6 +628,20 @@ export class LobbyService {
     await this.reload(lobby.id)
     await this.publish(lobby.id)
     return { sessionId }
+  }
+
+  /**
+   * Pressing Start (or Rematch) is the host's own ready: set it, persisted and published,
+   * before planning the game runs, so everyone (the host included, while they're answering
+   * "Start anyway?") sees the host ready. Returns the lobby reloaded if it changed.
+   */
+  private async markHostReady(lobby: LobbyState, hostUserId: string): Promise<LobbyState> {
+    const host = rules.memberOf(lobby, hostUserId)
+    if (!host || host.ready) return lobby
+    await q.updatePerson(this.db, host.id, { ready: true })
+    await this.reload(lobby.id)
+    await this.publish(lobby.id)
+    return this.cache.get(lobby.id) ?? lobby
   }
 
   private startError(lobby: LobbyState, hostUserId: string, err: unknown): unknown {

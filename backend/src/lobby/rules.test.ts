@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { LobbyPerson, LobbyState } from './types.js'
-import { canMove, canRemove, canSetBoard, canSetPlays, canSetReady, isHost, isSolo, leavingWith, nextHost, reorder } from './rules.js'
+import { canMove, canRemove, canSetBoard, canSetPlays, canSetReady, effectiveReady, isHost, isSolo, leavingWith, nextHost, reorder } from './rules.js'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
@@ -52,10 +52,23 @@ describe('canSetBoard', () => {
 })
 
 describe('ready, plays, order, removal', () => {
-  it('ready: only the person or a guest\'s adder, not even the host', () => {
+  it('ready: only the person, not even the host, and never a guest row (the adder has no own-ready row for it)', () => {
     expect(canSetReady('lena', lena)).toBe(true)
-    expect(canSetReady('lena', guest)).toBe(true)
+    expect(canSetReady('lena', guest)).toBe(false)
     expect(canSetReady('chris', lena)).toBe(false)
+  })
+
+  it('effectiveReady: a guest follows their adder\'s ready, ignoring their own stored flag', () => {
+    // guest's adder is lena (ready: true); chris is not ready
+    const readyLena = { ...lena, ready: true }
+    const notReadyChris = { ...chris, ready: false }
+    const l = lobbyOf([notReadyChris, readyLena, { ...guest, ready: false }])
+    expect(effectiveReady(l, readyLena)).toBe(true)
+    expect(effectiveReady(l, notReadyChris)).toBe(false)
+    expect(effectiveReady(l, { ...guest, ready: false })).toBe(true) // lena is ready, guest's own flag ignored
+    expect(effectiveReady(l, { ...guest, ready: true })).toBe(true) // same, whatever the stored flag says
+    const guestOfChris = { ...guest, addedByUserId: 'chris', ready: true }
+    expect(effectiveReady(l, guestOfChris)).toBe(false) // chris isn't ready, so neither is his guest
   })
 
   it('plays: the person, a guest\'s adder, or the host', () => {
