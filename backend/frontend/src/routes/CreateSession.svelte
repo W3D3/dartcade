@@ -1,23 +1,26 @@
 <script lang="ts">
-  import { ArrowRight, Check, Plus } from '@lucide/svelte'
+  // The Play page: pick a game, set it up, Game on. It always plays in your lobby, and opens
+  // one when you have none. While the lobby is solo the players are edited right here.
+  import { ArrowRight, Check } from '@lucide/svelte'
   import { onMount } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
-  import BoardSelector from '$lib/components/BoardSelector.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
-  import PlayerRow from '$lib/components/PlayerRow.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
   import Stepper from '$lib/components/Stepper.svelte'
+  import ErrorText from '$lib/components/ErrorText.svelte'
+  import { Button } from '$lib/components/ui/button/index.js'
   import LobbyPlayersCard from '$lib/components/lobby/LobbyPlayersCard.svelte'
-  import PlayWithFriends from '$lib/components/lobby/PlayWithFriends.svelte'
+  import SoloPlayers from '$lib/components/lobby/SoloPlayers.svelte'
   import InvitesBanner from '$lib/components/lobby/InvitesBanner.svelte'
   import StartAnywayConfirm from '$lib/components/lobby/StartAnywayConfirm.svelte'
   import type { Lobby } from '$lib/api/lobby-ws'
-  import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'
-  import { authClient, currentUser } from '$lib/auth'
+  import { api, type ConfigFieldMeta, type GameInfo } from '$lib/api'
+  import { currentUser } from '$lib/auth'
   import { describeConflict } from '$lib/lobby/input'
   import { gameName, nextGameSummary } from '$lib/lobby/format'
-  import { counts, hostName as hostNameOf, isHost } from '$lib/lobby/rules'
+  import { hasBullOff, hostName as hostNameOf, isHost, myRow, type OwnBoard } from '$lib/lobby/rules'
+  import { createLobby } from '$lib/lobby/create'
   import { createLobbyStore, me } from '$lib/lobby/sockets'
   import { initialGameSelection, startGame } from '$lib/lobby/start'
   import { activeSessionId } from '$lib/activeSession'
@@ -40,11 +43,6 @@
     { value: 'double',   label: 'Double'   },
     { value: 'master',   label: 'Master'   },
   ]
-  const bullOffOptions = [
-    { value: 'off', label: 'Off' },
-    { value: 'wdc', label: 'WDC', tooltip: 'Re-throw if both darts land in the same scoring area (both outer bull or both inner bull).' },
-    { value: 'pdc', label: 'PDC', tooltip: 'Inner bull always beats outer bull. Re-throw only if both hit the inner bull.' },
-  ]
   const bullValueOptions = [
     { value: '25_50', label: '25 / 50' },
     { value: '50_50', label: '50 / 50' },
@@ -65,13 +63,10 @@
   const initPrefs = loadPrefs(localStorage)
 
   let games = $state<GameInfo[]>([])
-  let boards = $state<Board[]>([])
+  // Your paired boards, for the board menus on your rows; null until loaded
+  let ownBoards = $state<OwnBoard[] | null>(null)
   let selectedMode = $state(initPrefs?.mode ?? 'atc')
-  let boardId = $state(initPrefs?.boardId ?? '')
   let atcMeta = $state<Partial<Record<string, ConfigFieldMeta>>>({})
-  let youName = $state('')
-  // A guest by name, or another account (picked with @) who plays from their own device
-  let guests = $state<{ name: string; account: { id: string; name: string } | null }[]>([])
   let error = $state('')
   // Set when the server refuses because this user already has a game running
   let runningSessionId = $state<string | null>(null)
@@ -84,12 +79,11 @@
     ...(initPrefs?.configs[initPrefs.mode] ?? {}),
   })
 
-  // Persist whenever mode, config or board changes
+  // Persist whenever mode or config changes
   $effect(() => {
     savePrefs(localStorage, {
       mode: selectedMode,
       configs: { ...savedConfigs, [selectedMode]: config },
-      boardId,
     })
   })
 
@@ -105,20 +99,10 @@
   }
 
   onMount(async () => {
-    const [gr, br, sr] = await Promise.all([
-      api.GET('/api/gamemodes'),
-      api.GET('/api/boards'),
-      authClient.getSession(),
-    ])
+    const [gr, br] = await Promise.all([api.GET('/api/gamemodes'), api.GET('/api/boards')])
     if (!br.data) return   // 401 is redirected to login by the client
     games = gr.data?.modes ?? []
-    boards = br.data.boards
-    // A board handed over from the Boards page ("Play on this board") wins over
-    // the remembered one; a remembered board that was since unpaired is dropped.
-    const preselect = new URLSearchParams($querystring ?? '').get('board')
-    if (preselect && boards.some(b => b.id === preselect)) boardId = preselect
-    else if (boardId && !boards.some(b => b.id === boardId)) boardId = ''
-    youName = sr.data?.user.name ?? sr.data?.user.email ?? 'You'
+    ownBoards = br.data.boards.map(b => ({ id: b.id, name: b.name }))
 
     const atcGame = games.find(g => g.id === 'atc')
     if (atcGame) {
@@ -130,10 +114,46 @@
     config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) }
   })
 
-  // Inside a lobby, "Game on" starts the lobby's game with its players (spec: New game inside a lobby)
+  // "Game on" starts your lobby's game with its players (spec: Every game is a lobby)
   let lobby = $state<Lobby | null>(null)
+  const viewerId = $derived($currentUser?.id ?? null)
   // Only the id: reading it off $me here would reopen the socket on every /ws/me push
   const lobbyId = $derived($me?.lobby?.id ?? null)
+
+  // Your lobby exists when you need it: if the first /ws/me state this page sees has no lobby,
+  // open one. Only that first one: a later "no lobby" may be a join in progress (the server
+  // closes your solo lobby, then adds you to the other), so then Start playing opens one on a
+  // tap. Members of someone else's lobby have theirs. Two tabs may both open one: the server
+  // keeps one, and the other's in_lobby refusal just means /ws/me brings it.
+  const meKnown = $derived($me !== null)
+  const noLobby = $derived($me !== null && $me.lobby === null)
+  // Plain, not state: only guards against a second request and nothing on screen reads it
+  let opening = false
+  // Plain: the first state is handled once, and the effect mustn't re-run for it
+  let firstStateSeen = false
+  let openError = $state('')
+  async function openLobby() {
+    if (opening) return
+    opening = true
+    openError = ''
+    try {
+      const created = await createLobby()
+      if (!created.ok && !created.inLobby) openError = created.message
+    } finally { opening = false }
+  }
+  $effect(() => {
+    if (!meKnown || firstStateSeen) return
+    firstStateSeen = true
+    if (noLobby) void openLobby()
+  })
+  // "No lobby" that lasts (not a join passing through, not the one being opened): offer Start playing
+  let showStart = $state(false)
+  $effect(() => {
+    if (!noLobby) { showStart = false; return }
+    const t = setTimeout(() => { showStart = true }, 1500)
+    return () => clearTimeout(t)
+  })
+
   $effect(() => {
     const id = lobbyId
     if (!id) { lobby = null; return }
@@ -141,7 +161,7 @@
     const unsub = store.lobby.subscribe(l => { lobby = l })
     return () => { unsub(); store.destroy() }
   })
-  const lobbyHost = $derived(lobby !== null && isHost(lobby, $currentUser?.id ?? null))
+  const lobbyHost = $derived(lobby !== null && isHost(lobby, viewerId))
   const hostName = $derived((lobby && hostNameOf(lobby)) ?? 'The host')
   const invites = $derived($me?.invites.length ?? 0)
   let confirmNames = $state<string[] | null>(null)
@@ -165,12 +185,32 @@
   const displayMode = $derived(canEditGame ? selectedMode : lobby?.nextGame?.gameId ?? null)
   const setupName = $derived(canEditGame ? MODES.find(m => m.id === selectedMode)?.name : (displayMode ? gameName(displayMode) : 'No game yet'))
 
-  // Bull off decides who throws first, so it needs an opponent (the backend
-  // rejects it too). Named guests count as players, same as in start(). In a lobby
-  // its throw order decides bull off, and the server ignores the form's setting.
-  const bullOffBlocked = $derived(lobby
-    ? lobby.throwOrder === 'bulloff' && counts(lobby).playing < 2
-    : selectedMode === 'x01' && (config.bullOff ?? 'off') !== 'off' && 1 + guests.filter(g => g.account || g.name.trim()).length < 2)
+  // "Play on this board" on the Boards page (#/?board=): put yourself on that board, once your
+  // lobby and boards are known. Plain, not state: the effect clears it once it's handled.
+  let boardFromLink = new URLSearchParams($querystring ?? '').get('board')
+  const mine = $derived(lobby ? myRow(lobby, viewerId) : null)
+  const myRowId = $derived(mine?.id ?? null)
+  const myBoardId = $derived(mine?.boardId ?? null)
+  const openLobbyId = $derived(lobby?.id ?? null)
+  $effect(() => {
+    const target = boardFromLink
+    const id = openLobbyId, personId = myRowId, current = myBoardId, boards = ownBoards
+    if (!target || !id || !personId || !boards) return
+    boardFromLink = null
+    if (current === target || !boards.some(b => b.id === target)) return
+    void api.PATCH('/api/lobbies/{id}/people/{personId}', { params: { path: { id, personId } }, body: { boardId: target } })
+      .then(({ error: refusal }) => { if (refusal) error = describeConflict(refusal) })
+  })
+
+  // The lobby's throw order decides who throws first (the server ignores the form's bull off
+  // setting), and Bull-off needs a game that has one. Who plays is the server's to check: its
+  // refusal shows like any other.
+  const startGameId = $derived(canEditGame ? selectedMode : lobby?.nextGame?.gameId ?? null)
+  const orderProblem = $derived.by(() => {
+    if (!lobby || lobby.throwOrder !== 'bulloff' || hasBullOff(startGameId)) return null
+    const fix = lobby.solo ? 'Pick another throw order.' : 'Change the throw order in the lobby.'
+    return `${startGameId ? gameName(startGameId) : 'This game'} has no bull off. ${fix}`
+  })
 
   /** The picked mode and settings as the API takes them; null (with the error shown) if the backend has no such game. */
   function chosenGame(): { gameId: string; config: Record<string, unknown> } | null {
@@ -184,33 +224,8 @@
     return { gameId, config: settings }
   }
 
-  async function start() {
-    if (bullOffBlocked) return
-    error = ''
-    runningSessionId = null
-    const allPlayers = [
-      { name: youName.trim() || 'Player 1' },
-      ...guests.filter(g => g.account || g.name.trim()).map(g => g.account ? { name: g.account.name, userId: g.account.id } : { name: g.name.trim() }),
-    ]
-    const picked = chosenGame()
-    if (!picked) return
-    loading = true
-    try {
-      const res = await api.POST('/api/sessions', {
-        body: { boardId: boardId || null, gameId: picked.gameId, config: picked.config, players: allPlayers },
-      })
-      if (res.error) {
-        error = res.error.error
-        runningSessionId = res.response.status === 409 && 'sessionId' in res.error ? res.error.sessionId ?? null : null
-        return
-      }
-      void activeSessionId.refresh()
-      void push(`/session/${res.data.sessionId}`)
-    } finally { loading = false }
-  }
-
   async function startInLobby(force = false) {
-    if (!lobby) return
+    if (!lobby || orderProblem) return
     const id = lobby.id
     error = ''
     runningSessionId = null
@@ -232,12 +247,11 @@
 </script>
 
 <Layout title="New game">
-  {#snippet headerAction()}{#if !lobby}<BoardSelector {boards} bind:value={boardId} compact />{/if}{/snippet}
   <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_44px]">
 
     {#if invites > 0}<InvitesBanner count={invites} />{/if}
 
-    <!-- Header (phones: the title and board chip are in the phone header) -->
+    <!-- Header (phones: the title is in the phone header) -->
     <header class="hidden md:flex items-end justify-between">
       <div class="flex flex-col gap-[6px]">
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">
@@ -245,7 +259,6 @@
         </h1>
         <p class="m-0 text-[15px] text-text-muted">Choose a mode, set it up, throw the first dart.</p>
       </div>
-      {#if !lobby}<BoardSelector {boards} bind:value={boardId} />{/if}
     </header>
 
     <div class="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-grow md:min-h-0">
@@ -331,22 +344,6 @@
                 defaultValue={X01_DEFAULTS.outMode} />
             </fieldset>
 
-            {#if !lobby}
-              <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-                <legend class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce] mb-2">
-                  Bull off
-                  <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
-                </legend>
-                <SegmentedControl options={bullOffOptions} bind:value={config.bullOff}
-                  defaultValue={X01_DEFAULTS.bullOff} />
-                {#if bullOffBlocked}
-                  <p class="m-0 text-[13px] text-live-text">
-                    Bull off needs at least two players. Add a player or turn it off.
-                  </p>
-                {/if}
-              </fieldset>
-            {/if}
-
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
               <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Bull value</legend>
               <SegmentedControl options={bullValueOptions} bind:value={config.bullValue}
@@ -395,25 +392,21 @@
           </div>
         {/if}
 
-        {#if lobby}
+        {#if lobby && lobby.solo}
+          <SoloPlayers {lobby} {viewerId} ownBoards={ownBoards ?? []} gameId={startGameId} />
+        {:else if lobby}
           <LobbyPlayersCard {lobby} />
         {:else}
-          <!-- Players -->
-          <div class="flex flex-col gap-2 pt-[18px] border-t border-line">
-            <span class="text-[14px] font-medium text-[#d8d8ce]">Players</span>
-            <PlayerRow index={1} name={youName} isYou />
-            {#each guests as guest, i (i)}
-              <PlayerRow index={i + 2} bind:name={guest.name} bind:account={guest.account}
-                onRemove={() => guests = guests.filter((_, j) => j !== i)} />
-            {/each}
-            <button type="button" onclick={() => guests = [...guests, { name: '', account: null }]}
-              class="h-11 flex items-center justify-center gap-2 border border-dashed border-[#3e4239]
-                     rounded-[10px] bg-transparent text-[#c9c9bf] text-[14px] cursor-pointer mt-1">
-              <Plus size={16} />
-              Add player
-            </button>
+          <div class="flex flex-col items-start gap-2 pt-[18px] border-t border-line">
+            <span class="text-[14px] font-medium text-ink-soft">Players</span>
+            {#if openError}<ErrorText class="text-[13px]">{openError}</ErrorText>{/if}
+            {#if showStart || openError}
+              <span class="text-[13px] text-text-muted">You're not in a lobby.</span>
+              <Button variant="accent" onclick={() => void openLobby()}>Start playing</Button>
+            {:else}
+              <span class="text-[13px] text-text-muted">Opening your lobby…</span>
+            {/if}
           </div>
-          <PlayWithFriends />
         {/if}
 
         </div><!-- end scrollable body -->
@@ -432,14 +425,14 @@
               {/if}
             </p>
           {/if}
-          {#if lobby && lobbyHost && bullOffBlocked}
-            <p class="m-0 text-[13px] text-live-text">Bull off needs at least two players. Change the throw order in the lobby.</p>
+          {#if lobbyHost && orderProblem}
+            <p class="m-0 text-[13px] text-live-text">{orderProblem}</p>
           {/if}
           {#if lobby && !lobbyHost}
             <p class="m-0 h-12 md:h-14 flex items-center justify-center text-[15px] text-text-muted">{hostName} starts the game</p>
           {:else}
-            <button type="button" onclick={() => { if (lobby) void startInLobby(); else void start() }} disabled={loading || bullOffBlocked}
-              title={bullOffBlocked ? 'Bull off needs at least two players' : undefined}
+            <button type="button" onclick={() => void startInLobby()} disabled={!lobby || loading || orderProblem !== null}
+              title={orderProblem ?? undefined}
               class="h-12 md:h-14 flex items-center justify-center gap-[10px] bg-accent text-accent-fg
                      rounded-[10px] font-display font-bold text-[20px] md:text-[22px] tracking-[0.08em] uppercase
                      border-0 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">

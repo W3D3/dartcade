@@ -1,6 +1,6 @@
 <script lang="ts">
-  // One person in the lobby list: place in the order, avatar, name and tags, where they play,
-  // and on the right whatever the list puts there (status, or controls).
+  // One person in the lobby list: place in the order, avatar, name and tags (no Host tag while
+  // the lobby is solo), where they play, and on the right whatever the list puts there.
   import type { Snippet } from 'svelte'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -25,7 +25,7 @@
     <span class="flex items-center gap-[6px] min-w-0">
       <span class="text-[15px] font-semibold truncate">{person.name}</span>
       {#if person.userId !== null && person.userId === viewerId}<span class="text-[12px] font-medium text-accent shrink-0">· you</span>{/if}
-      {#if person.userId !== null && person.userId === lobby.hostUserId}<Badge variant="host">Host</Badge>{/if}
+      {#if !lobby.solo && person.userId !== null && person.userId === lobby.hostUserId}<Badge variant="host">Host</Badge>{/if}
       {#if person.userId === null}<Badge variant="guest">Guest</Badge>{/if}
     </span>
     <span class="flex items-center gap-[6px] min-w-0 text-[12px] text-text-muted">

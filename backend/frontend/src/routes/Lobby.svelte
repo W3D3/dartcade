@@ -21,9 +21,10 @@
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
-  import { boardChoices, isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
+  import { alreadyInOrInvited, boardChoices, isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
   import { shouldOpenGame, startGame } from '$lib/lobby/start'
   import { createLobby } from '$lib/lobby/create'
+  import { lobbyActions, type LobbyActions } from '$lib/lobby/actions'
   import { createLobbyStore, type LobbyEnd } from '$lib/lobby/sockets'
 
   let lobby = $state<Lobby | null>(null)
@@ -67,9 +68,9 @@
     runningSessionId = null
     return !refusal
   }
-  function withLobby(run: (id: string) => Promise<{ error?: Refusal }>): Promise<boolean> {
+  function withLobby(run: (actions: LobbyActions, id: string) => Promise<{ error?: Refusal }>): Promise<boolean> {
     const id = lobby?.id
-    return id ? act(() => run(id)) : Promise.resolve(false)
+    return id ? act(() => run(lobbyActions(id), id)) : Promise.resolve(false)
   }
 
   async function create() {
@@ -77,22 +78,17 @@
     if (created.ok) { error = ''; open(created.lobbyId) }
     else error = created.message
   }
-  const rename = (name: string) => withLobby(id => api.PATCH('/api/lobbies/{id}', { params: { path: { id } }, body: { name } }))
-  const newCode = () => withLobby(id => api.PATCH('/api/lobbies/{id}', { params: { path: { id } }, body: { regenerateCode: true } }))
-  const close = () => withLobby(id => api.POST('/api/lobbies/{id}/close', { params: { path: { id } } }))
+  const updateLobby = (patch: LobbyPatch) => withLobby(a => a.updateLobby(patch))
+  const rename = (name: string) => updateLobby({ name })
+  const newCode = () => updateLobby({ regenerateCode: true })
+  const close = () => withLobby((_, id) => api.POST('/api/lobbies/{id}/close', { params: { path: { id } } }))
   async function leave() {
-    if (await withLobby(id => api.POST('/api/lobbies/{id}/leave', { params: { path: { id } } }))) void push('/')
+    if (await withLobby((_, id) => api.POST('/api/lobbies/{id}/leave', { params: { path: { id } } }))) void push('/')
   }
-  const updatePerson = (personId: string, patch: PersonPatch) =>
-    withLobby(id => api.PATCH('/api/lobbies/{id}/people/{personId}', { params: { path: { id, personId } }, body: patch }))
-  const removePerson = (personId: string) =>
-    withLobby(id => api.DELETE('/api/lobbies/{id}/people/{personId}', { params: { path: { id, personId } } }))
-  const addGuest = (name: string) =>
-    withLobby(id => api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name } }))
-  const invite = (userId: string) =>
-    withLobby(id => api.POST('/api/lobbies/{id}/invites', { params: { path: { id } }, body: { userId } }))
-  const updateLobby = (patch: LobbyPatch) =>
-    withLobby(id => api.PATCH('/api/lobbies/{id}', { params: { path: { id } }, body: patch }))
+  const updatePerson = (personId: string, patch: PersonPatch) => withLobby(a => a.updatePerson(personId, patch))
+  const removePerson = (personId: string) => withLobby(a => a.removePerson(personId))
+  const addGuest = (name: string) => withLobby(a => a.addGuest(name))
+  const invite = (userId: string) => withLobby(a => a.invite(userId))
 
   // Going to the game: once per game, for whoever has a seat in it (decision 7)
   let seenSession: string | null | undefined = undefined
@@ -176,7 +172,7 @@
             {#snippet controlsOf(p: LobbyPerson, i: number)}
               <PersonControls lobby={l} person={p} index={i} {viewerId} onupdate={updatePerson} onremove={removePerson} />
             {/snippet}
-            {#snippet footer()}<AddSomeone exclude={[...l.people.flatMap(p => (p.userId ? [p.userId] : [])), ...l.invites.map(i => i.userId)]} onguest={addGuest} oninvite={invite} />{/snippet}
+            {#snippet footer()}<AddSomeone exclude={alreadyInOrInvited(l)} onguest={addGuest} oninvite={invite} />{/snippet}
           </PeopleList>
         </div>
         <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">

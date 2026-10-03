@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { boardChoices, boardSummary, bullOffAvailable, hostName, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
+import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, hostName, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -78,12 +78,15 @@ describe('lobby rules for the screens', () => {
     expect(playsInGame({ ...lobby, people: [chris, { ...lena, plays: false }, pia] }, 'lena')).toBe(true)
   })
 
-  it('offers Bull-off only for a game that has one, with two or more playing', () => {
-    const x01 = { gameId: 'x01', config: {} }
-    expect(bullOffAvailable({ ...lobby, nextGame: x01 })).toBe(true)
-    expect(bullOffAvailable({ ...lobby, nextGame: { gameId: 'atc', config: {} } })).toBe(false)
-    expect(bullOffAvailable({ ...lobby, nextGame: null })).toBe(false)
-    expect(bullOffAvailable({ ...lobby, nextGame: x01, people: [chris, { ...lena, plays: false }] })).toBe(false)
+  it('knows which games have a bull off (people are the server\'s to count)', () => {
+    expect(hasBullOff('x01')).toBe(true)
+    expect(hasBullOff('atc')).toBe(false)
+    expect(hasBullOff(null)).toBe(false)
+  })
+
+  it('lists the accounts already in the lobby or invited, so the add field skips them', () => {
+    const invited = { ...lobby, invites: [{ id: 'i1', userId: 'phil', name: 'Phil', invitedByUserId: 'chris', createdAt: '2026-10-02T19:41:00.000Z' }] }
+    expect(alreadyInOrInvited(invited)).toEqual(['chris', 'lena', 'max', 'phil'])
   })
 
   it("names the host while they're in the lobby", () => {

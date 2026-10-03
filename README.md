@@ -43,8 +43,8 @@ or straight from your phone. No board at hand? Tap your darts in and play anyway
 ### Playing together
 
 - **Several players at one board**, taking turns.
-- **Friends on their own devices.** Add an account with `@username` and they join from their phone
-  or laptop, throwing on their own board or using manual entry.
+- **Friends on their own devices.** Invite an account with `@username`, or share your lobby's code,
+  and they join from their phone or laptop, throwing on their own board or using manual entry.
 - **Always know what's going on.** Each player's board on screen, a live view of whoever is
   throwing, a clear "waiting for…" if someone drops out, and a fallback to manual entry when a
   board goes offline.
