@@ -27,6 +27,7 @@ const ThrowOrderSchema = z.enum(['lobby', 'random', 'bulloff'])
 const ActivityKindSchema = z.enum(ACTIVITY_KINDS)
 const ActivityDataSchema = z.object({
   name: z.string().optional(),
+  userId: z.string().nullable().optional(),
   fromBoardName: z.string().nullable().optional(),
   toBoardName: z.string().nullable().optional(),
   sessionId: z.string().optional(),

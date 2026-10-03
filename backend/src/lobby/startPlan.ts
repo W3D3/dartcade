@@ -15,12 +15,14 @@ const BULL_OFF_MODES = new Set(['wdc', 'pdc'])
 
 /**
  * Who plays (in lobby order), in which seats, with what settings. Hard problems come
- * first; `force` (the host confirmed) only gets past people who aren't ready.
+ * first; `force` (the host confirmed) only gets past people who aren't ready. The starter
+ * and the rows they control (their own, and any guest they added) count as ready: they're
+ * about to confirm by starting.
  */
 export function planGame(
   lobby: LobbyState,
   game: LastGame,
-  opts: { force: boolean; isBoardOnline: (boardId: string) => boolean },
+  opts: { force: boolean; isBoardOnline: (boardId: string) => boolean; starterUserId: string },
 ): { ok: true; plan: GamePlan } | { ok: false; problem: PlanProblem } {
   const mod = games[game.gameId]
   if (!mod) return { ok: false, problem: { status: 400, error: `unknown game: ${game.gameId}` } }
@@ -48,7 +50,7 @@ export function planGame(
     return { ok: false, problem: { status: 409, code: 'board_offline', error: `offline: ${offlineBoards.join(', ')}`, offlineBoards } }
   }
 
-  const notReady = players.filter(p => !p.ready).map(p => ({ personId: p.id, name: p.name }))
+  const notReady = players.filter(p => !p.ready && controllerOf(p) !== opts.starterUserId).map(p => ({ personId: p.id, name: p.name }))
   if (notReady.length > 0 && !opts.force) {
     return { ok: false, problem: { status: 409, code: 'not_ready', error: 'not everyone is ready', notReady } }
   }

@@ -13,6 +13,7 @@ const pia = person({ id: 'g', name: 'Pia', addedByUserId: 'lena', boardId: 'lena
 const lobby: Lobby = {
   id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', throwOrder: 'lobby', nextGame: null, canRematch: false,
   currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [chris, lena, max, pia], invites: [], activity: [],
+  solo: false, nextHostName: 'Lena',
 }
 const own = [{ id: 'living', name: 'Living room' }, { id: 'garage', name: 'Garage' }]
 

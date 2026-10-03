@@ -91,13 +91,14 @@ export interface LobbyInvitee {
   createdAt: string
 }
 /**
- * Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.
+ * Names as they were then. Per kind: opened, joined, left, removed, guest_added, host_changed: name. board_moved: name, userId (the person moved; null for a guest), fromBoardName, toBoardName (null = Manual). game_played: sessionId, gameId, winnerName, players. game_aborted: sessionId, gameId.
  *
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "LobbyActivityData".
  */
 export interface LobbyActivityData {
   name?: string
+  userId?: string | null
   fromBoardName?: string | null
   toBoardName?: string | null
   sessionId?: string
@@ -162,6 +163,14 @@ export interface Lobby {
    * Newest first, at most 50.
    */
   activity: LobbyActivity[]
+  /**
+   * Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo.
+   */
+  solo: boolean
+  /**
+   * Who becomes host if the host leaves now; null when nobody would.
+   */
+  nextHostName: string | null
 }
 /**
  * The whole lobby, after every change and when presence changes.
@@ -228,6 +237,10 @@ export interface LobbySummary {
    * The viewer is the lobby's host.
    */
   youHost: boolean
+  /**
+   * Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo.
+   */
+  solo: boolean
 }
 /**
  * Pushed on /ws/me when it opens and whenever it changes.
