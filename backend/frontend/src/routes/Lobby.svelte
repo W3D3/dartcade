@@ -16,7 +16,7 @@
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import StartProblemDialog from '$lib/components/lobby/StartProblemDialog.svelte'
   import { api } from '$lib/api'
-  import type { Lobby } from '$lib/api/lobby-ws'
+  import type { Lobby, TeamId } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
   import { isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
@@ -87,6 +87,8 @@
   const removePerson = (personId: string) => withLobby(a => a.removePerson(personId))
   const addGuest = (name: string) => withLobby(a => a.addGuest(name))
   const invite = (userId: string) => withLobby(a => a.invite(userId))
+  const setTeam = (personId: string, team: TeamId) => withLobby(a => a.setTeam(personId, team))
+  const shuffleTeams = () => withLobby(a => a.shuffleTeams())
 
   // Going to the game: once per game, for whoever has a seat in it (decision 7)
   let seenSession: string | null | undefined = undefined
@@ -181,6 +183,7 @@
           {/if}
           {#if host}
             <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
+              onteammove={setTeam} onteamshuffle={shuffleTeams}
               busy={starting} onstart={() => void start()} />
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />

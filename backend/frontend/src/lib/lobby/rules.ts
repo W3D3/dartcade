@@ -101,3 +101,23 @@ export const hasBullOff = (game: { defaultConfig: Record<string, unknown> } | un
 /** Accounts the add field doesn't suggest: already in the lobby, or invited. */
 export const alreadyInOrInvited = (lobby: Lobby): string[] =>
   [...lobby.people.flatMap(p => (p.userId ? [p.userId] : [])), ...lobby.invites.map(i => i.userId)]
+
+// ---- teams ------------------------------------------------------------------------
+
+/** The next game is played in teams: its mode supports teams and its config picked that format. */
+export const isTeamFormat = (teams: boolean | undefined, config: { format?: unknown }): boolean =>
+  teams === true && config.format === 'teams'
+
+/** The people who play, split into Team A and Team B, each in lobby order. Once it's a team
+ * game the server gives everyone who plays a team, so this only reads the snapshot. */
+export function teamRosters(lobby: Lobby): { a: LobbyPerson[]; b: LobbyPerson[] } {
+  const playing = lobby.people.filter(p => p.plays)
+  return { a: playing.filter(p => p.team === 'A'), b: playing.filter(p => p.team === 'B') }
+}
+
+/** What the teams panel says below the columns: an empty team, or an uneven split. null: nothing to say. */
+export function teamsMessage(a: number, b: number): string | null {
+  if (a === 0 || b === 0) return 'Both teams need a player.'
+  if (a !== b) return "Teams are uneven. The smaller team's players throw more often."
+  return null
+}

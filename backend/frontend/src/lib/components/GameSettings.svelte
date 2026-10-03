@@ -10,7 +10,7 @@
   import type { ConfigFieldMeta } from '$lib/api'
   import { GAME_MODES } from '$lib/gameModes'
 
-  let { gameId, config, defaults, meta, readonly = false, onchange }: {
+  let { gameId, config, defaults, meta, teams = false, readonly = false, onchange }: {
     gameId: string
     /** The settings shown: the saved ones over the mode's defaults. */
     config: Record<string, unknown>
@@ -18,6 +18,8 @@
     defaults: Record<string, unknown>
     /** The backend's labels and options per field (Around the Clock's form is built from them). */
     meta: Partial<Record<string, ConfigFieldMeta>>
+    /** The game can be played in teams: shows the Format field (Singles / Teams). */
+    teams?: boolean
     /** A member sees exactly what's set, but can't change it: every control is disabled, and
      * nothing here calls onchange. */
     readonly?: boolean
@@ -58,6 +60,19 @@
 
 {#if gameId === 'x01'}
   <div class="flex flex-col gap-[18px]">
+    {#if teams && meta.format}
+      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <legend class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce] mb-2">
+          {meta.format.label}
+          {#if meta.format.tooltip}
+            <Tooltip text={meta.format.tooltip} />
+          {/if}
+        </legend>
+        <SegmentedControl options={meta.format.options ?? []} value={config.format} disabled={readonly}
+          defaultValue={defaults.format} onchange={(v) => set('format', v)} />
+      </fieldset>
+    {/if}
+
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
       <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Start score</legend>
       <SegmentedControl options={startScoreOptions} value={config.startScore} disabled={readonly}

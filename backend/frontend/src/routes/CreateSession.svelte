@@ -158,7 +158,7 @@
         {#if !canEditGame}
           {#if lobbyGame}
             <GameSettings gameId={lobbyGame.gameId} config={withDefaults(lobbyGame.config, lobbyGameDefaults)}
-              defaults={lobbyGameDefaults} meta={lobbyGameInfo?.configMeta ?? {}} readonly />
+              defaults={lobbyGameDefaults} meta={lobbyGameInfo?.configMeta ?? {}} teams={lobbyGameInfo?.teams ?? false} readonly />
           {:else}
             <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
               <span class="text-[14px] leading-[1.5] text-text-muted">{$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.</span>
@@ -166,7 +166,7 @@
           {/if}
         {:else}
           <GameSettings gameId={selectedMode} {config} defaults={gameDefaults[selectedMode] ?? {}}
-            meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}}
+            meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}} teams={games.find(g => g.id === selectedMode)?.teams ?? false}
             onchange={(key: string, value: unknown) => config = { ...config, [key]: value }} />
         {/if}
 
