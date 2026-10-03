@@ -43,13 +43,17 @@ or straight from your phone. No board at hand? Tap your darts in and play anyway
 ### Playing together
 
 - **Several players at one board**, taking turns.
-- **Friends on their own devices.** Invite an account with `@username`, or share your lobby's code,
-  and they join from their phone or laptop, throwing on their own board or using manual entry.
+- **Every game runs in a lobby.** Playing alone is a lobby with just you in it, and it stays out
+  of the way until someone else joins. Invite a friend by `@username`, or share the lobby's code,
+  link or QR code; your lobby stays open between games and keeps your settings.
+- **Friends on their own devices.** Once they're in your lobby, they join from their phone or
+  laptop, throwing on their own board or using manual entry.
 - **Always know what's going on.** Each player's board on screen, a live view of whoever is
   throwing, a clear "waiting for…" if someone drops out, and a fallback to manual entry when a
   board goes offline.
 - **Fair play built in.** Only you can throw for your seat, and a dart thrown out of turn on your
-  board doesn't count.
+  board doesn't count. The host can end a game for everyone; anyone else leaves, forfeiting
+  their own seats.
 
 ### Boards and history
 
@@ -64,8 +68,6 @@ or straight from your phone. No board at hand? Tap your darts in and play anyway
 
 ## Coming next
 
-- **Lobbies**: a private room for your crew that stays open between games, with invites, ready
-  checks, rematches and an activity feed.
 - **Friends**, then **matchmaking** with ratings.
 - **More minigames**, such as soccer and challenge modes.
 

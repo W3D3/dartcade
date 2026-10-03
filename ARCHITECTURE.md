@@ -45,19 +45,23 @@ each one against the schema before showing it.
 
 ## Several players, several boards
 
+Every game starts from a **lobby**: a private room that holds the game's settings and who's
+playing, and stays open between games. Playing alone is a lobby with just you in it, and it stays
+out of the way until someone else joins by invite, code, link or QR.
+
 A game has **seats**. Each seat has a name, the account that controls it, and the board it throws
 on, if any. One host can run every seat at one board, or seats can belong to other accounts
 playing from their own devices and boards.
 
 - Board events count only for the seat that's up. A dart on another seat's board is dropped, and
   that board's players get a "not your turn" notice.
-- Only a seat's controller acts for it. The host can also abort the game, and a player can forfeit.
+- Only a seat's controller acts for it. The host ends the game for everyone; anyone else leaves,
+  forfeiting their own seats.
 - The match screen tracks who has the game open and since when someone is gone, so everyone sees
   "waiting for…". A board whose bridge is offline falls back to manual entry for its player.
 
-The design and its decisions are in
+The design and its decisions, including the lobby model, are in
 [`docs/superpowers/specs/2026-10-02-online-multiplayer-design.md`](docs/superpowers/specs/2026-10-02-online-multiplayer-design.md).
-Private lobbies that stay open between games are being built on top of this, as described in the same spec.
 
 ## Contracts
 

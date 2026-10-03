@@ -662,6 +662,14 @@ stays out of the way until a second account joins.
   there); a member of someone else's lobby sees the planned game read-only and **Open lobby**.
   The Play page never opens a lobby by itself. Your lobby stays open between games and keeps
   your guests and settings.
+- **Everyone sees the next game's settings** (changed 2026-10-03, 14:28). The lobby page's next-
+  game card shows the settings panel for every member, not just the host; a member's copy is
+  read-only (`NextGameSettingsPanel`'s `readonly`), same values, no controls.
+- **Bull off is a game setting again, not a separate pick** (changed 2026-10-03, 14:17). Turning
+  a game's `bullOff` setting on sets the lobby's throw order to `bulloff`; setting the throw
+  order to anything else turns `bullOff` back off. The server keeps the two in sync
+  (`coupleBullOff` in `backend/src/lobby/rules.ts`), so the host can change either control and
+  the other follows, and a stray setting can't contradict the throw order on refresh.
 - **Solo:** a lobby is *solo* while you are its only member (guests don't count). The server
   decides it and says so: the lobby state and `LobbySummary` carry `solo: boolean`, and the
   screens only read that flag (no counting players in the browser).
@@ -689,6 +697,11 @@ stays out of the way until a second account joins.
   server already does). The lobby state carries `nextHostName` for it, so the browser
   doesn't work it out. Leaving a solo lobby isn't offered (Close is hidden too): there's
   nothing to leave, the next visit to Play would open a new one.
+- **Ending a lobby game: End game, Leave game.** Built differently from "Forfeit (member,
+  labelled 'Abandon' in lobby games)" above: the match screen's end-of-game control reads
+  **End game** for the host (the existing abort, nothing counted) and **Leave game** for anyone
+  else with a seat (the existing forfeit). There's no separate "Abandon" wording, in lobby
+  games or local ones (`backend/frontend/src/lib/endControl.ts`).
 - **No more `@username` seats.** `POST /api/sessions` keeps working for named seats on one
   board (tests and scripts use it) but drops `players[].userId`. The app no longer calls it.
 - **History and the match screen** keep showing the lobby name for games with other
