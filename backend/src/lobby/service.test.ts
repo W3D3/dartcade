@@ -191,13 +191,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await lobbies.view(admin.id)).toMatchObject({ people: [{ name: 'Christoph' }] })
     })
 
-    it('leaves your lobby open while its game is running', async () => {
+    it('refuses joining while your game is running, before closing anything', async () => {
       const admin = await lobbies.create('chris')
       const luke = await lobbies.create('lena')
       await lobbies.update('lena', luke.id, { nextGame: { gameId: 'x01', config: {} } })
       const { sessionId } = await lobbies.start('lena', luke.id, true)
 
-      await expect(lobbies.join('lena', admin.id, admin.code)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: luke.id } })
+      await expect(lobbies.join('lena', admin.id, admin.code)).rejects.toMatchObject({
+        statusCode: 409, body: { code: 'active_session', error: 'You already have a game running', sessionId },
+      })
 
       expect(await lobbies.view(luke.id)).not.toBeNull()
       expect(engine.getLobbySession(luke.id)?.id).toBe(sessionId)
@@ -527,6 +529,29 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.join('max', own.id, own.code) // lena isn't solo in her own lobby, so accepting doesn't just close it
       await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: own.id } })
       expect(await lobbies.listInvites('lena')).toHaveLength(1)
+    })
+
+    it('accepting while your game is running is refused before anything closes; the invite stays', async () => {
+      const { id } = await lobbies.create('chris')
+      const { id: inviteId } = await lobbies.invite('chris', id, 'lena')
+      const own = await lobbies.create('lena')
+      await lobbies.update('lena', own.id, { nextGame: { gameId: 'x01', config: {} } })
+      const { sessionId } = await lobbies.start('lena', own.id, true)
+
+      await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({
+        statusCode: 409, body: { code: 'active_session', error: 'You already have a game running', sessionId },
+      })
+      expect(await lobbies.view(own.id)).not.toBeNull()
+      expect(engine.getLobbySession(own.id)?.id).toBe(sessionId)
+      expect((await lobbies.view(id))?.people.map(p => p.name)).toEqual(['Christoph'])
+      expect(await lobbies.listInvites('lena')).toHaveLength(1)
+    })
+
+    it('refuses joining while you play a game outside any lobby', async () => {
+      const { id, code } = await lobbies.create('chris')
+      const { sessionId } = await engine.create('lena', null, 'atc', {}, [{ name: 'Lena' }])
+      await expect(lobbies.join('lena', id, code)).rejects.toMatchObject({ statusCode: 409, body: { code: 'active_session', sessionId } })
+      expect((await lobbies.view(id))?.people.map(p => p.name)).toEqual(['Christoph'])
     })
 
     it('a closed lobby\'s invites expire; joining by code accepts a pending invite', async () => {

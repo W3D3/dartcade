@@ -11,3 +11,8 @@ export function endControl(snapshot: Snapshot | null, userId: string | null): 'e
   if (userId !== null && userId === snapshot.ownerUserId) return 'end'
   return snapshot.mySeats.length > 0 ? 'leave' : null
 }
+
+/** Where the match screen goes once you're done with a game: its lobby, or home for a game outside one. */
+export function afterGameRoute(snapshot: Snapshot | null): '/lobby' | '/' {
+  return snapshot !== null && snapshot.lobbyId !== null ? '/lobby' : '/'
+}

@@ -4,7 +4,7 @@
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
   import ErrorText from '../lib/components/ErrorText.svelte'
   import { createSessionStore, type Snapshot } from '../lib/ws.js'
-  import { endControl } from '../lib/endControl.js'
+  import { afterGameRoute, endControl } from '../lib/endControl.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
@@ -140,7 +140,7 @@
   $effect(() => {
     if (!snapshot || snapshot.status === 'active') return
     // A successful Leave: the forfeit ended the session; go to the lobby, or home for a local game
-    if (leavePending) { leavePending = false; void push(snapshot.lobbyId !== null ? '/lobby' : '/') }
+    if (leavePending) { leavePending = false; void push(afterGameRoute(snapshot)) }
   })
   // Online: only the seat's controller enters its darts (a local game's owner controls every seat)
   const myTurn = $derived(isMyTurn(snapshot))
@@ -275,7 +275,7 @@
     endError = null
     const { error } = await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
     if (error) { endError = 'Could not end the game.'; return }
-    void push('/')
+    void push(afterGameRoute(snapshot))
   }
 
   /** Anyone else with seats: forfeits them over the game socket. Confirmed by the next
@@ -288,11 +288,13 @@
   }
 
   /** The winner overlay's own button (unchanged; a designed win state is out of scope): the
-   * session is already finished and released, so a refused DELETE here blocks nothing. */
+   * session is already finished and released, so a refused DELETE here blocks nothing. Only
+   * the host sends it (anyone else's always 403s). */
   async function backToLobbyAfterWin() {
     if (!sessionId) return
-    await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
-    void push('/')
+    const route = afterGameRoute(snapshot)
+    if (control === 'end') await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
+    void push(route)
   }
 </script>
 
