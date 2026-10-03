@@ -44,7 +44,7 @@ test('login then sign out lands on login page', async ({ page }) => {
   await page.click('button[type="submit"]')
   await page.waitForURL('**/#/')
 
-  // Sign out (SideNav link)
-  await page.click('a[href="#/login"]:has-text("Sign out")')
+  // Sign out (SideNav)
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Sign out' }).click()
   await page.waitForURL('**/#/login')
 })
