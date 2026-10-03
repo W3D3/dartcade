@@ -7,8 +7,9 @@
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
+  import type { Snippet } from 'svelte'
 
-  let { name, p, active, solo = false, pill, seat = null, chalkboard }: {
+  let { name, p, active, solo = false, pill, seat = null, chalkboard, waiting }: {
     name: string
     p: X01PlayerView
     active: boolean
@@ -16,10 +17,11 @@
     pill: PillKind | null
     seat?: SeatLine | null
     chalkboard: boolean
+    waiting?: Snippet
   } = $props()
 </script>
 
-<PanelShell {name} {active} {solo} {pill} {seat} pillInRow={solo}>
+<PanelShell {name} {active} {solo} {pill} {seat} {waiting} pillInRow={solo}>
   {#snippet aside()}
     {#if !solo}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

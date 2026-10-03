@@ -438,24 +438,21 @@
   {/if}
 {/snippet}
 
-{#snippet panel(i: number)}
-  {#if isX01}
-    <X01Panel name={players[i]?.name ?? ''} p={x01Players[i]} active={i === currentPlayer && isActive}
-      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null} chalkboard={settings.chalkboard} />
-  {:else}
-    <AtcPanel name={players[i]?.name ?? ''} p={atcPlayers[i]} active={i === currentPlayer && isActive}
-      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null} />
-  {/if}
+{#snippet seatWaiting()}
+  {@render waitingCard(false)}
 {/snippet}
 
-{#snippet duelPanel(i: number)}
-  <!-- A disconnected thrower's panel is covered by the waiting card, below the name row -->
-  <div class="relative flex-1 min-w-0 min-h-0 flex">
-    {@render panel(i)}
-    {#if remote.kind === 'waiting' && remote.seat === i}
-      <div class="absolute left-0 right-0 bottom-0 top-[104px] rounded-b-[18px] bg-surface-panel/90 flex">{@render waitingCard(false)}</div>
-    {/if}
-  </div>
+{#snippet panel(i: number)}
+  {@const isWaiting = remote.kind === 'waiting' && remote.seat === i}
+  {#if isX01}
+    <X01Panel name={players[i]?.name ?? ''} p={x01Players[i]} active={i === currentPlayer && isActive}
+      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null} chalkboard={settings.chalkboard}
+      waiting={isWaiting ? seatWaiting : undefined} />
+  {:else}
+    <AtcPanel name={players[i]?.name ?? ''} p={atcPlayers[i]} active={i === currentPlayer && isActive}
+      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null}
+      waiting={isWaiting ? seatWaiting : undefined} />
+  {/if}
 {/snippet}
 
 {#snippet teamWaiting()}{@render waitingCard(false)}{/snippet}
@@ -566,9 +563,9 @@
 
     {:else if layout === 'duel'}
       <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-        {@render duelPanel(0)}
+        {@render panel(0)}
         <div class="w-[560px] shrink-0 min-h-0 flex flex-col gap-3">{@render center('duel')}</div>
-        {@render duelPanel(1)}
+        {@render panel(1)}
       </main>
 
     {:else}
