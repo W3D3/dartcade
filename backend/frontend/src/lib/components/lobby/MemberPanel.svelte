@@ -6,7 +6,7 @@
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
-  import type { PersonPatch } from '$lib/lobby/rules'
+  import { hostName as hostNameOf, type PersonPatch } from '$lib/lobby/rules'
 
   let { lobby, me, onupdate }: {
     lobby: Lobby
@@ -15,7 +15,7 @@
   } = $props()
 
   const PLAYS = [{ value: true, label: "I'm in" }, { value: false, label: 'Sitting this one out' }]
-  const hostName = $derived(lobby.people.find(p => p.userId !== null && p.userId === lobby.hostUserId)?.name ?? 'The host')
+  const hostName = $derived(hostNameOf(lobby) ?? 'The host')
 </script>
 
 <section aria-label="Next game" class="p-[14px] md:p-5 rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[10px]">

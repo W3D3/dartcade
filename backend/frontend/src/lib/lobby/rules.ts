@@ -19,6 +19,10 @@ export const controllerOf = (p: LobbyPerson): string => p.userId ?? p.addedByUse
 export const isHost = (lobby: Lobby, viewerId: string | null): boolean =>
   viewerId !== null && lobby.hostUserId === viewerId && lobby.people.some(p => p.userId === viewerId)
 
+/** The host's name, or null while the lobby has no host in it. */
+export const hostName = (lobby: Lobby): string | null =>
+  lobby.people.find(p => p.userId !== null && p.userId === lobby.hostUserId)?.name ?? null
+
 export const myRow = (lobby: Lobby, viewerId: string | null): LobbyPerson | null =>
   lobby.people.find(p => p.userId !== null && p.userId === viewerId) ?? null
 

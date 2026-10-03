@@ -15,7 +15,7 @@ describe('startOutcome', () => {
     expect(startOutcome(undefined, { error: 'x', code: 'board_offline', offlineBoards: ['Garage'] }))
       .toEqual({ kind: 'error', message: 'Board offline: Garage', sessionId: null })
     expect(startOutcome(undefined, { error: 'Lena already has a game running', code: 'active_session', sessionId: 's9' }))
-      .toEqual({ kind: 'error', message: 'Lena already has a game running', sessionId: 's9' })
+      .toEqual({ kind: 'error', message: 'You already have a game running', sessionId: 's9' })
     expect(startOutcome(undefined, undefined)).toEqual({ kind: 'error', message: 'Could not start the game', sessionId: null })
   })
 })

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
@@ -69,7 +70,7 @@
       </div>
 
       {#if error}
-        <p class="m-0 text-[14px] text-live-text">{error}</p>
+        <ErrorText>{error}</ErrorText>
       {/if}
 
       <div class="flex flex-col gap-3 mt-auto md:mt-0">

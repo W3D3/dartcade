@@ -7,7 +7,7 @@
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import QrCode from './QrCode.svelte'
   import { formatCode, joinLink } from '$lib/lobby/format'
-  import { boardSummary, counts, isHost } from '$lib/lobby/rules'
+  import { boardSummary, counts, hostName as hostNameOf, isHost } from '$lib/lobby/rules'
 
   let { lobby, viewerId, onrename, onnewcode, onclose, onleave }: {
     lobby: Lobby
@@ -23,7 +23,7 @@
   const host = $derived(isHost(lobby, viewerId))
   // The server won't close a lobby while its game runs
   const gameRunning = $derived(lobby.currentSessionId !== null)
-  const hostName = $derived(lobby.people.find(p => p.userId !== null && p.userId === lobby.hostUserId)?.name ?? null)
+  const hostName = $derived(hostNameOf(lobby))
   const link = $derived(joinLink(window.location.origin, lobby.code))
   const c = $derived(counts(lobby))
   const boards = $derived(boardSummary(lobby))

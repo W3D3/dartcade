@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { boardChoices, boardSummary, bullOffAvailable, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
+import { boardChoices, boardSummary, bullOffAvailable, hostName, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -83,5 +83,11 @@ describe('lobby rules for the screens', () => {
     expect(bullOffAvailable({ ...lobby, nextGame: { gameId: 'atc', config: {} } })).toBe(false)
     expect(bullOffAvailable({ ...lobby, nextGame: null })).toBe(false)
     expect(bullOffAvailable({ ...lobby, nextGame: x01, people: [chris, { ...lena, plays: false }] })).toBe(false)
+  })
+
+  it("names the host while they're in the lobby", () => {
+    expect(hostName(lobby)).toBe('Christoph')
+    expect(hostName({ ...lobby, people: [lena, max, pia] })).toBeNull()
+    expect(hostName({ ...lobby, hostUserId: null })).toBeNull()
   })
 })

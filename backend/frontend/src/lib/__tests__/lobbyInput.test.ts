@@ -35,11 +35,16 @@ describe('what a refusal means', () => {
     expect(describeConflict({ error: 'x', code: 'game_running' })).toBe('A game is running in this lobby')
     expect(describeConflict({ error: 'x', code: 'already_member' })).toBe("They're already in the lobby")
     expect(describeConflict({ error: 'x', code: 'already_invited' })).toBe("They're already invited")
+    expect(describeConflict({ error: 'a board is in another game', code: 'board_busy' })).toBe('A board is in another game')
+  })
+
+  it('a running game: yours (it comes with its id), or a player named by the server', () => {
+    expect(describeConflict({ error: 'Admin already has a game running', code: 'active_session', sessionId: 's9' }))
+      .toBe('You already have a game running')
+    expect(describeConflict({ error: 'Lena already has a game running', code: 'active_session' })).toBe('Lena already has a game running')
   })
 
   it('passes the server\'s own words through otherwise', () => {
-    expect(describeConflict({ error: 'Lena already has a game running', code: 'active_session' })).toBe('Lena already has a game running')
-    expect(describeConflict({ error: 'board busy', code: 'board_busy' })).toBe('board busy')
     expect(describeConflict({ error: 'lobby not found' })).toBe('lobby not found')
   })
 })

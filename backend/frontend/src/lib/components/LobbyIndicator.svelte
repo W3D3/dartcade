@@ -3,17 +3,20 @@
   // lobby, live (people, next game, whose turn), and the way back into a running game.
   import { ChevronRight, Plus } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
-  import { api } from '$lib/api'
   import { Button } from '$lib/components/ui/button/index.js'
+  import ErrorText from '$lib/components/ErrorText.svelte'
+  import { createLobby } from '$lib/lobby/create'
   import { me } from '$lib/lobby/sockets'
   import { indicatorView } from '$lib/lobby/format'
 
   const view = $derived($me?.lobby ? indicatorView($me.lobby) : null)
 
+  let error = $state('')
+
   async function create() {
-    // Already in one (say another tab made it): the lobby page shows that one
-    await api.POST('/api/lobbies')
-    void push('/lobby')
+    const created = await createLobby()
+    if (created.ok) { error = ''; void push('/lobby') }
+    else error = created.message
   }
 </script>
 
@@ -36,6 +39,7 @@
     <Button variant="outline" onclick={() => void create()} class="h-11 bg-surface-active border-accent-line text-accent font-semibold">
       <Plus size={16} strokeWidth={2.4} />Create lobby
     </Button>
+    {#if error}<ErrorText class="text-[12px] text-center">{error}</ErrorText>{/if}
     <span class="text-[12px] text-text-dim text-center">Have a code? <a href="#/join" class="font-semibold no-underline">Join a lobby</a></span>
   </div>
 {/if}
