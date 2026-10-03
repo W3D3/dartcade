@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AIM_EDGE_SPEED, AIM_HOLD_MS, AIM_OFFSET_PX, AIM_ZOOM, edgePush, moveAim, shownAt, viewBoxFor, type Pt } from '$lib/boardAim'
+  import { AIM_EDGE_SPEED, AIM_HOLD_MS, AIM_OFFSET_PX, AIM_ZOOM, aimOffsetFor, edgePush, moveAim, shownAt, viewBoxFor, type Pt } from '$lib/boardAim'
   import { untrack, type Snippet } from 'svelte'
   import { labelPos, markerPositions } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
@@ -221,10 +221,12 @@
     if (!start) return
     // A press on a thrown dart (dragStart ran first) zooms to move that dart
     const dart = drag?.index ?? null
+    // Only a touch needs the aim lifted off the finger; a mouse or pen points right at the spot
+    const offset = aimOffsetFor(e.pointerType, AIM_OFFSET_PX)
     cancelHold()
     hold = { start, timer: setTimeout(() => {
       hold = null
-      aim = { at: start, finger: start, offset: AIM_OFFSET_PX / pxPerUnit(), dart }
+      aim = { at: start, finger: start, offset: offset / pxPerUnit(), dart }
       edgeTimer = setInterval(edgeTick, 16)
     }, AIM_HOLD_MS) }
   }
@@ -414,14 +416,21 @@
   </g>
   </g>
 
-  <!-- Long-press aim: crosshair above the finger and the segment it's on, drawn unzoomed -->
+  <!-- Long-press aim: crosshair above the finger and the segment it's on, drawn unzoomed.
+       Two-tone (dark outline + light inner stroke) so it reads on every board colour: the
+       black/cream segments and the red/green rings. -->
   {#if zoomBox && shown && aimed}
     {@const at = shown}
     {@const tone = aimOff ? '#ff8a80' : '#c6f24e'}
+    {@const outline = 'rgba(8,9,7,0.8)'}
     <svg x={zoomBox.x} y={zoomBox.y} width={zoomBox.w} height={zoomBox.w} viewBox="-1.15 -1.15 2.3 2.3" style="pointer-events:none">
+      <circle cx={at.x} cy={at.y} r="0.045" fill="none" stroke={outline} stroke-width="0.026" />
+      <path d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
+        stroke={outline} stroke-width="0.026" stroke-linecap="round" />
+      <circle cx={at.x} cy={at.y} r="0.012" fill={outline} />
       <circle cx={at.x} cy={at.y} r="0.045" fill="none" stroke={tone} stroke-width="0.012" />
       <path d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
-        stroke={tone} stroke-width="0.012" />
+        stroke={tone} stroke-width="0.012" stroke-linecap="round" />
       <circle cx={at.x} cy={at.y} r="0.008" fill={tone} />
       <rect x="-0.26" y="-1.12" width="0.52" height="0.16" rx="0.08" fill="#0f100e" fill-opacity="0.85" stroke={tone} stroke-width="0.008" />
       <text x="0" y="-1.04" text-anchor="middle" dy="0.35em" fill={tone}
