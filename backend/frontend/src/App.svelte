@@ -9,6 +9,7 @@
   import Boards from './routes/Boards.svelte'
   import History from './routes/History.svelte'
   import Lobby from './routes/Lobby.svelte'
+  import Join from './routes/Join.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
@@ -21,6 +22,8 @@
     '/boards': Boards,
     '/history': History,
     '/lobby': Lobby,
+    '/join': Join,
+    '/join/:code': Join,
   }
 
   let checked = $state(false)
