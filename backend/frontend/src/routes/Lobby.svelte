@@ -2,7 +2,7 @@
   // The lobby: who's in, on which boards, the next game, the history. It all comes from the
   // lobby socket; changes go through the REST API and come back on the socket.
   import { onDestroy, onMount } from 'svelte'
-  import { push, querystring } from 'svelte-spa-router'
+  import { push, querystring, replace } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -126,7 +126,8 @@
   const mine = $derived(lobby ? myRow(lobby, viewerId) : null)
 
   // "Play on this board" (Boards page, then New game): move your row to that board once your
-  // row and boards are known. Plain, not state: the effect clears it once it's handled.
+  // row and boards are known. Plain, not state: the effect clears it once it's handled, and
+  // drops it from the URL so a reload doesn't move you again.
   let boardFromLink = new URLSearchParams($querystring ?? '').get('board')
   const myRowId = $derived(mine?.id ?? null)
   const myBoardId = $derived(mine?.boardId ?? null)
@@ -135,6 +136,7 @@
     if (!boardFromLink || !personId) return
     const target = boardToApply(boardFromLink, current, ownBoards)
     boardFromLink = null
+    void replace('/lobby')
     if (target) void updatePerson(personId, { boardId: target })
   })
 

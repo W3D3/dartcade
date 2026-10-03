@@ -2,13 +2,14 @@
   // A member's next-game card (Lobby-Phone): the host's pick, "I'm in" or sitting this one out,
   // Ready, and the game's settings exactly as the host set them (read-only: a Settings toggle
   // opens the same panel the host's card has, sized from the lobby snapshot, not local state).
-  import { Check, Settings } from '@lucide/svelte'
+  import { Check } from '@lucide/svelte'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import NextGameSettingsPanel from './NextGameSettingsPanel.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
+  import SettingsToggleButton from './SettingsToggleButton.svelte'
   import ThrowOrderField from './ThrowOrderField.svelte'
   import { gameModes, withDefaults } from '$lib/gameModes'
   import { hostName as hostNameOf, type PersonPatch } from '$lib/lobby/rules'
@@ -32,8 +33,7 @@
 <section aria-label="Next game" class="p-[14px] md:p-5 rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[10px]">
   <NextGameSummary game={lobby.nextGame} pickedBy="{hostName}'s pick" size="sm" />
   {#if game}
-    <Button variant="outline" size="md" pressed={settingsOpen} class="font-semibold" aria-expanded={settingsOpen}
-      onclick={() => settingsOpen = !settingsOpen}><Settings size={16} />Settings</Button>
+    <SettingsToggleButton open={settingsOpen} ontoggle={() => settingsOpen = !settingsOpen} />
     <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} readonly>
       <ThrowOrderField {lobby} gameId={game.gameId} readonly />
     </NextGameSettingsPanel>

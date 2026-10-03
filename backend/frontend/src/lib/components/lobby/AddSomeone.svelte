@@ -4,7 +4,7 @@
   import { api } from '$lib/api'
   import { Button } from '$lib/components/ui/button/index.js'
   import MenuItem from './MenuItem.svelte'
-  import MenuPanel from './PopoverPanel.svelte'
+  import PopoverPanel from './PopoverPanel.svelte'
   import { parseAddInput } from '$lib/lobby/input'
 
   type Account = { id: string; name: string }
@@ -84,9 +84,9 @@
       <Plus size={16} />{parsed.kind === 'invite' ? 'Invite' : 'Add guest'}
     </Button>
     {#if open && matches.length > 0}
-      <MenuPanel label="Accounts matching @{query}" align="stretch">
+      <PopoverPanel label="Accounts matching @{query}" align="stretch">
         {#each matches as u (u.id)}<MenuItem label="Invite {u.name}" onclick={() => void invite(u)} />{/each}
-      </MenuPanel>
+      </PopoverPanel>
     {/if}
   </form>
   <span class="text-[12px] {hint ? 'text-live-text' : 'text-text-dim'}">

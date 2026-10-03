@@ -1,7 +1,7 @@
 <script lang="ts">
   // The host's next-game card: the game (its settings with the Play page's form, Change game
   // with its mode tiles), who plays, throw order, Start, and Rematch once a game was played.
-  import { ArrowRight, RotateCcw, Settings } from '@lucide/svelte'
+  import { ArrowRight, RotateCcw } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import type { Lobby, ThrowOrder } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -9,6 +9,7 @@
   import NextGameSettingsPanel from './NextGameSettingsPanel.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
+  import SettingsToggleButton from './SettingsToggleButton.svelte'
   import ThrowOrderField from './ThrowOrderField.svelte'
   import WhoPlays from './WhoPlays.svelte'
   import { gameModes, settlePending, withDefaults } from '$lib/gameModes'
@@ -90,8 +91,7 @@
   <NextGameSummary {game} pickedBy="picked by you" />
   <div class="grid grid-cols-2 gap-2">
     {#if game}
-      <Button variant="outline" size="md" pressed={settingsOpen} class="font-semibold" aria-expanded={settingsOpen}
-        onclick={() => settingsOpen = !settingsOpen}><Settings size={16} />Settings</Button>
+      <SettingsToggleButton open={settingsOpen} ontoggle={() => settingsOpen = !settingsOpen} />
     {/if}
     <Button variant="outline" size="md" class="font-semibold {game ? '' : 'col-span-2'}" aria-haspopup="dialog"
       onclick={() => picking = true}>{game ? 'Change game' : 'Pick a game'}</Button>
@@ -103,8 +103,9 @@
   <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
   <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
   <div class="flex flex-col gap-[6px]">
-    <div class="flex gap-2">
-      <Button size="xl" class="flex-grow" disabled={!game || running || busy} onclick={() => onstart(false)}>
+    <!-- Rematch gets its own line on phones, beside Start from sm -->
+    <div class="flex flex-col sm:flex-row gap-2">
+      <Button size="xl" class="sm:flex-grow" disabled={!game || running || busy} onclick={() => onstart(false)}>
         Start · {c.playing} {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
       </Button>
       {#if lobby.canRematch}
