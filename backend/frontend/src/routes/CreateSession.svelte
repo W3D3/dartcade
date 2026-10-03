@@ -67,7 +67,8 @@
   const action = $derived<PlayAction>(playAction($me?.lobby ?? null))
   const lobbyGame = $derived($me?.lobby?.nextGame ?? null)
   const lobbyGameInfo = $derived(lobbyGame ? games.find(g => g.id === lobbyGame.gameId) : undefined)
-  const lobbyGameDefaults = $derived(lobbyGame ? gameDefaults[lobbyGame.gameId] ?? lobbyGameInfo?.defaultConfig ?? {} : {})
+  // The server's defaults, as the lobby's own cards use them
+  const lobbyGameDefaults = $derived(lobbyGameInfo?.defaultConfig ?? {})
 
   // The host's form starts from the lobby's saved next game: applied once, the first time it's
   // known (after the defaults above), so the host's later edits here aren't overwritten by it.
@@ -92,6 +93,9 @@
   // "Play on this board" on the Boards page (#/?board=): the lobby page moves your row there
   const boardFromLink = new URLSearchParams($querystring ?? '').get('board')
   const LABELS: Record<PlayAction, string> = { create: 'Create lobby', continue: 'Continue in lobby', open: 'Open lobby' }
+  // Until /ws/me arrives the page doesn't know your lobby: no button yet, so nobody creates a
+  // lobby they already have or saves over someone else's next game
+  const loading = $derived($me === null)
 
   /** The picked mode and settings as the API takes them; null (with the error shown) if the backend has no such game. */
   function chosenGame(): { gameId: string; config: Record<string, unknown> } | null {
@@ -106,7 +110,7 @@
   }
 
   async function toLobby() {
-    if (busy) return
+    if (busy || loading) return
     error = ''
     if (action === 'open') { void push(lobbyPath(boardFromLink)); return }
     const picked = chosenGame()
@@ -171,7 +175,7 @@
         <!-- Sticky bottom: error + main button -->
         <div class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[14px] px-4 pb-6 md:px-6 md:pb-6 pt-2 md:pt-3 flex flex-col gap-3 border-t border-line">
           {#if error}<p class="m-0 text-[14px] text-live-text">{error}</p>{/if}
-          <PlayButton label={LABELS[action]} {busy} onclick={() => void toLobby()} />
+          <PlayButton label={loading ? 'Loading…' : LABELS[action]} {busy} disabled={loading} onclick={() => void toLobby()} />
         </div>
       </aside>
     </div>
