@@ -97,6 +97,11 @@ docker run -d --name dartcade-test-pg \
 cd backend && npm install && npm test
 ```
 
+Migrations in `backend/src/db/migrations/` are never edited once they're on `main`: add a new,
+higher-numbered file instead. CI checks both that a PR only adds migrations and that upgrading a
+database from `main` gives the same schema as a fresh one (`scripts/check-migrations.sh`,
+`backend/src/db/checkMigrations.ts`).
+
 Override the connection string if needed:
 ```bash
 TEST_DATABASE_URL=postgres://... npm test

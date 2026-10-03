@@ -7,7 +7,7 @@ import type { Database, GamePlayersTable } from './schema.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-export async function runMigrations(db: Kysely<Database>, opts: { until?: string } = {}): Promise<void> {
+export async function runMigrations(db: Kysely<Database>, opts: { until?: string; dir?: string } = {}): Promise<void> {
   await sql.raw(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       name    TEXT PRIMARY KEY,
@@ -15,7 +15,7 @@ export async function runMigrations(db: Kysely<Database>, opts: { until?: string
     )
   `).execute(db)
 
-  const migrationsDir = join(__dirname, 'migrations')
+  const migrationsDir = opts.dir ?? join(__dirname, 'migrations')
   const files = readdirSync(migrationsDir).filter(f => f.endsWith('.sql')).sort()
 
   for (const file of files) {
