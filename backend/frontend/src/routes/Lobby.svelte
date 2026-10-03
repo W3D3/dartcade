@@ -165,7 +165,7 @@
             {#snippet controlsOf(p: LobbyPerson, i: number)}
               <PersonControls lobby={l} person={p} index={i} {viewerId} onupdate={updatePerson} onremove={removePerson} />
             {/snippet}
-            {#snippet footer()}<AddSomeone onguest={addGuest} oninvite={invite} />{/snippet}
+            {#snippet footer()}<AddSomeone exclude={[...l.people.flatMap(p => (p.userId ? [p.userId] : [])), ...l.invites.map(i => i.userId)]} onguest={addGuest} oninvite={invite} />{/snippet}
           </PeopleList>
         </div>
         <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
