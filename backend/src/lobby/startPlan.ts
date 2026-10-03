@@ -1,9 +1,9 @@
 import { games } from '../games/index.js'
 import type { GameConfig, Seat } from '../session/types.js'
 import { controllerOf, effectiveReady } from './rules.js'
-import type { LastGame, LobbyState } from './types.js'
+import type { LobbyState, StartGame } from './types.js'
 
-/** The game a lobby start (or rematch) creates. */
+/** The game a lobby start creates. */
 export type GamePlan = { gameId: string; config: GameConfig; seats: Seat[]; shuffleSeats: boolean; personIds: string[] }
 
 export type PlanProblem =
@@ -14,14 +14,16 @@ export type PlanProblem =
 const BULL_OFF_MODES = new Set(['wdc', 'pdc'])
 
 /**
- * Who plays (in lobby order), in which seats, with what settings. Hard problems come
- * first; `force` (the host confirmed) only gets past people who aren't ready. The starter
- * and the rows they control (their own, and any guest they added) count as ready: they're
- * about to confirm by starting.
+ * Who plays (in lobby order), in which seats, with what settings. Hard problems (unknown
+ * game, nobody plays, an invalid config) always refuse. `force` (the host confirmed) gets
+ * past the two soft ones: an offline board (its seat keeps the board; the match screen
+ * falls back to manual entry until it's back) and people who aren't ready. Without force,
+ * board_offline is answered before not_ready. The starter and the rows they control (their
+ * own, and any guest they added) count as ready: they're about to confirm by starting.
  */
 export function planGame(
   lobby: LobbyState,
-  game: LastGame,
+  game: StartGame,
   opts: { force: boolean; isBoardOnline: (boardId: string) => boolean; starterUserId: string },
 ): { ok: true; plan: GamePlan } | { ok: false; problem: PlanProblem } {
   const mod = games[game.gameId]
@@ -46,7 +48,7 @@ export function planGame(
 
   const offlineBoards = [...new Set(players.flatMap(p =>
     p.boardId !== null && !opts.isBoardOnline(p.boardId) ? [p.boardName ?? p.boardId] : []))]
-  if (offlineBoards.length > 0) {
+  if (offlineBoards.length > 0 && !opts.force) {
     return { ok: false, problem: { status: 409, code: 'board_offline', error: `offline: ${offlineBoards.join(', ')}`, offlineBoards } }
   }
 

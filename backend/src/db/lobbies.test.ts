@@ -108,7 +108,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
       const lobby = await loadLobby(db, 'q1')
       expect(lobby).toMatchObject({
         id: 'q1', name: "Christoph's lobby", hostUserId: 'chris', code: 'K7Q4MD',
-        throwOrder: 'lobby', nextGame: null, lastGame: null, closedAt: null,
+        throwOrder: 'lobby', nextGame: null, closedAt: null,
       })
       expect(lobby?.people.map(p => [p.id, p.name, p.boardName, p.boardOwnerUserId, p.usualBoardName, p.plays, p.ready])).toEqual([
         ['host', 'Christoph', 'Living room', 'chris', 'Living room', true, false],
@@ -125,12 +125,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
     })
 
     it('keeps the JSON settings', async () => {
-      await updateLobby(db, 'q1', {
-        throw_order: 'random', next_game: { gameId: 'x01', config: { startScore: 301 } },
-        last_game: { gameId: 'x01', config: {}, personIds: ['host'] },
-      })
+      await updateLobby(db, 'q1', { throw_order: 'random', next_game: { gameId: 'x01', config: { startScore: 301 } } })
       expect(await loadLobby(db, 'q1')).toMatchObject({
-        throwOrder: 'random', nextGame: { gameId: 'x01', config: { startScore: 301 } }, lastGame: { personIds: ['host'] },
+        throwOrder: 'random', nextGame: { gameId: 'x01', config: { startScore: 301 } },
       })
     })
 

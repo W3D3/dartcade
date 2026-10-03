@@ -15,7 +15,7 @@ import { newLobbyCode, normalizeCode } from './code.js'
 import { inviteView, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
 import { planGame, type PlanProblem } from './startPlan.js'
-import type { LastGame, LobbyPerson, LobbyState, NextGame, ThrowOrder } from './types.js'
+import type { LobbyPerson, LobbyState, NextGame, StartGame, ThrowOrder } from './types.js'
 
 const UNIQUE_VIOLATION = '23505'
 const CODE_ATTEMPTS = 5
@@ -581,18 +581,8 @@ export class LobbyService {
     })
   }
 
-  /** The host repeats the last game: the same people (minus who left), mode and settings. */
-  async rematch(userId: string, lobbyId: string, force: boolean): Promise<{ sessionId: string }> {
-    return this.enqueue(lobbyId, async () => {
-      const lobby = await this.openAsHost(lobbyId, userId)
-      if (!lobby.lastGame) throw LobbyError.badRequest('no game to repeat yet')
-      const here = new Set(lobby.people.map(p => p.id))
-      return this.launch(lobby, userId, { ...lobby.lastGame, personIds: lobby.lastGame.personIds.filter(id => here.has(id)) }, force)
-    })
-  }
-
   // Runs in the lobby's queue
-  private async launch(lobby: LobbyState, hostUserId: string, game: LastGame, force: boolean): Promise<{ sessionId: string }> {
+  private async launch(lobby: LobbyState, hostUserId: string, game: StartGame, force: boolean): Promise<{ sessionId: string }> {
     const running = this.deps.engine.getLobbySession(lobby.id)
     if (running) throw LobbyError.conflict({ error: 'a game is running already', code: 'game_running', sessionId: running.id })
     lobby = await this.markHostReady(lobby, hostUserId)
@@ -608,8 +598,6 @@ export class LobbyService {
     } catch (err) {
       throw this.startError(lobby, hostUserId, err)
     }
-    // The lobby shows who plays this game; a rematch repeats it
-    await q.updateLobby(this.db, lobby.id, { last_game: { gameId: plan.gameId, config: game.config, personIds: plan.personIds } })
     await q.setPlaying(this.db, lobby.id, plan.personIds)
     await this.reload(lobby.id)
     await this.publish(lobby.id)
@@ -617,9 +605,9 @@ export class LobbyService {
   }
 
   /**
-   * Pressing Start (or Rematch) is the host's own ready: set it, persisted and published,
-   * before planning the game runs, so everyone (the host included, while they're answering
-   * "Start anyway?") sees the host ready. Returns the lobby reloaded if it changed.
+   * Pressing Start is the host's own ready: set it, persisted and published, before
+   * planning the game runs, so everyone (the host included, while they're answering a
+   * start-problem dialog) sees the host ready. Returns the lobby reloaded if it changed.
    */
   private async markHostReady(lobby: LobbyState, hostUserId: string): Promise<LobbyState> {
     const host = rules.memberOf(lobby, hostUserId)

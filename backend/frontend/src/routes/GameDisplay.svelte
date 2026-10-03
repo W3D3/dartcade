@@ -423,7 +423,7 @@
       {canEnd}
       endMode={control ?? 'end'}
       bind:settings
-      onleave={() => push('/')}
+      onleave={() => push(afterGameRoute(snapshot))}
       onend={() => showEndConfirm = true}
       onviewmode={setViewMode}
     />

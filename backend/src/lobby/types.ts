@@ -6,8 +6,8 @@ export type ThrowOrder = 'lobby' | 'random' | 'bulloff'
 /** The game the host set up next. */
 export type NextGame = { gameId: string; config: GameConfig }
 
-/** The last game started in the lobby: what a rematch repeats (lobby person ids). */
-export type LastGame = NextGame & { personIds: string[] }
+/** The game a lobby start creates: the next game, with who plays (lobby person ids). */
+export type StartGame = NextGame & { personIds: string[] }
 
 /** A member (userId set) or a guest at a member's board (userId null). */
 export type LobbyPerson = {
@@ -67,7 +67,6 @@ export type LobbyState = {
   code: string
   throwOrder: ThrowOrder
   nextGame: NextGame | null
-  lastGame: LastGame | null
   createdAt: Date
   closedAt: Date | null
   /** In lobby order. */

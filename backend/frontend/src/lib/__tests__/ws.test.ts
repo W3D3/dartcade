@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { get } from 'svelte/store'
 import { createSessionStore, parseNotice, parseSnapshot } from '../ws.js'
 import fixture from './fixtures/x01-snapshot.json'
@@ -55,18 +55,30 @@ describe('parseNotice', () => {
   })
 })
 
+type MockSocket = {
+  onopen: (() => void) | null
+  onclose: ((e: { code: number }) => void) | null
+  onmessage: ((e: { data: string }) => void) | null
+  close: () => void
+}
+
+function stubWebSocket(): MockSocket[] {
+  const sockets: MockSocket[] = []
+  vi.stubGlobal('WebSocket', class {
+    onopen: (() => void) | null = null
+    onclose: ((e: { code: number }) => void) | null = null
+    onmessage: ((e: { data: string }) => void) | null = null
+    onerror = null
+    constructor() { sockets.push(this) }
+    close() { /* the test closes it */ }
+    send() { /* unused */ }
+  })
+  return sockets
+}
+
 describe('createSessionStore', () => {
   it('says whether the game socket is open', () => {
-    const sockets: { onopen: (() => void) | null; onclose: ((e: { code: number }) => void) | null; close: () => void }[] = []
-    vi.stubGlobal('WebSocket', class {
-      onopen: (() => void) | null = null
-      onclose: ((e: { code: number }) => void) | null = null
-      onmessage = null
-      onerror = null
-      constructor() { sockets.push(this) }
-      close() { /* the test closes it */ }
-      send() { /* unused */ }
-    })
+    const sockets = stubWebSocket()
     vi.useFakeTimers()
     try {
       const store = createSessionStore('s1')
@@ -80,5 +92,37 @@ describe('createSessionStore', () => {
       vi.useRealTimers()
       vi.unstubAllGlobals()
     }
+  })
+
+  describe('a dead session (NotFound/Forbidden close)', () => {
+    beforeEach(() => { vi.stubGlobal('window', { location: { hash: '' } }) })
+    afterEach(() => { vi.unstubAllGlobals() })
+
+    it('goes home when the game carried no lobby', () => {
+      const sockets = stubWebSocket()
+      window.location.hash = '#/session/s1'
+      createSessionStore('s1')
+      sockets[0].onclose?.({ code: 4404 }) // NotFound
+      expect(window.location.hash).toBe('#/')
+    })
+
+    it("goes to the lobby when the last snapshot had one (Forbidden too)", () => {
+      const sockets = stubWebSocket()
+      window.location.hash = '#/session/s1'
+      createSessionStore('s1')
+      sockets[0].onmessage?.({ data: JSON.stringify({ ...fixture, lobbyId: 'l1' }) })
+      sockets[0].onclose?.({ code: 4403 }) // Forbidden
+      expect(window.location.hash).toBe('#/lobby')
+    })
+
+    it('never overrides a successful Leave or End, which already navigated away', () => {
+      const sockets = stubWebSocket()
+      window.location.hash = '#/session/s1'
+      createSessionStore('s1')
+      // The page already left the session route (a successful Leave/End) before this fires
+      window.location.hash = '#/boards'
+      sockets[0].onclose?.({ code: 4404 }) // NotFound
+      expect(window.location.hash).toBe('#/boards')
+    })
   })
 })

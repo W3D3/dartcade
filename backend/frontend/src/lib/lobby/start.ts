@@ -1,24 +1,25 @@
-// Starting a lobby game (Start, Rematch) with the soft ready gate:
-// people who aren't ready get named and the host can start anyway.
+// Starting a lobby game with the soft ready gate: a start problem shows in a dialog, the host
+// can start anyway (an offline board on manual entry, or people who aren't ready) or go back.
 import { api } from '$lib/api'
-import { describeConflict, type Refusal } from './input'
+import type { Refusal } from './input'
 
 export type StartOutcome =
   | { kind: 'started'; sessionId: string }
-  | { kind: 'confirm'; notReady: string[] }
-  | { kind: 'error'; message: string; sessionId: string | null }
+  | { kind: 'problem'; code: 'board_offline'; offlineBoards: string[] }
+  | { kind: 'problem'; code: 'not_ready'; notReady: string[] }
+  | { kind: 'problem'; code: 'other'; refusal: Refusal }
 
+/** Which dialog to show, straight from the server's `code` (no client rules). */
 export function startOutcome(data: { sessionId: string } | undefined, error: Refusal | undefined): StartOutcome {
   if (data) return { kind: 'started', sessionId: data.sessionId }
-  if (error?.code === 'not_ready') return { kind: 'confirm', notReady: (error.notReady ?? []).map(p => p.name) }
-  return { kind: 'error', message: error ? describeConflict(error) : 'Could not start the game', sessionId: error?.sessionId ?? null }
+  if (error?.code === 'board_offline') return { kind: 'problem', code: 'board_offline', offlineBoards: error.offlineBoards ?? [] }
+  if (error?.code === 'not_ready') return { kind: 'problem', code: 'not_ready', notReady: (error.notReady ?? []).map(p => p.name) }
+  return { kind: 'problem', code: 'other', refusal: error ?? { error: 'Could not start the game' } }
 }
 
-export async function startGame(lobbyId: string, opts: { rematch?: boolean; force?: boolean } = {}): Promise<StartOutcome> {
+export async function startGame(lobbyId: string, opts: { force?: boolean } = {}): Promise<StartOutcome> {
   const req = { params: { path: { id: lobbyId } }, body: opts.force ? { force: true } : {} }
-  const res = opts.rematch
-    ? await api.POST('/api/lobbies/{id}/rematch', req)
-    : await api.POST('/api/lobbies/{id}/start', req)
+  const res = await api.POST('/api/lobbies/{id}/start', req)
   return startOutcome(res.data, res.error)
 }
 

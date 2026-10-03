@@ -62,9 +62,6 @@ export function lobbiesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
   app.post<Route<'startLobbyGame'>>('/api/lobbies/:id/start', { ...auth, schema: fromSpec('startLobbyGame') }, async (req, reply) =>
     reply.code(201).send(await lobbies.start(req.userId, req.params.id, req.body.force ?? false)))
 
-  app.post<Route<'rematchLobbyGame'>>('/api/lobbies/:id/rematch', { ...auth, schema: fromSpec('rematchLobbyGame') }, async (req, reply) =>
-    reply.code(201).send(await lobbies.rematch(req.userId, req.params.id, req.body.force ?? false)))
-
   app.post<Route<'inviteToLobby'>>('/api/lobbies/:id/invites', { ...auth, schema: fromSpec('inviteToLobby') }, async (req, reply) =>
     reply.code(201).send(await lobbies.invite(req.userId, req.params.id, req.body.userId)))
 

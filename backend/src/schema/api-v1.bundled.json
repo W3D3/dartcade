@@ -1396,62 +1396,7 @@
       "post": {
         "operationId": "startLobbyGame",
         "summary": "Host: start the next game with everyone who plays",
-        "description": "Answers 409 not_ready (with the names) when someone who plays isn't ready; send it again with force: true to start anyway.",
-        "tags": [
-          "lobbies"
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/StartLobbyRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": "The new game",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CreatedSession"
-                }
-              }
-            }
-          },
-          "400": {
-            "$ref": "#/components/responses/BadRequest"
-          },
-          "401": {
-            "$ref": "#/components/responses/Unauthorized"
-          },
-          "403": {
-            "$ref": "#/components/responses/Forbidden"
-          },
-          "404": {
-            "$ref": "#/components/responses/NotFound"
-          },
-          "409": {
-            "$ref": "#/components/responses/LobbyConflict"
-          },
-          "429": {
-            "$ref": "#/components/responses/TooManyRequests"
-          }
-        }
-      }
-    },
-    "/api/lobbies/{id}/rematch": {
-      "parameters": [
-        {
-          "$ref": "#/components/parameters/LobbyId"
-        }
-      ],
-      "post": {
-        "operationId": "rematchLobbyGame",
-        "summary": "Host: play the last game again with the same players and settings",
-        "description": "The same soft ready gate as start. Works after a finished or an aborted game.",
+        "description": "Answers 409 board_offline (with the boards), then 409 not_ready (with the names), when the host hasn't confirmed; send it again with force: true to start anyway (offline boards keep their seats, on manual entry until they're back).",
         "tags": [
           "lobbies"
         ],

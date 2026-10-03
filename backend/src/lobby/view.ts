@@ -21,7 +21,6 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
     hostName: hostNameOf(lobby),
     throwOrder: lobby.throwOrder,
     nextGame: lobby.nextGame,
-    canRematch: lobby.lastGame !== null,
     currentSessionId: ctx.sessionId,
     createdAt: lobby.createdAt.toISOString(),
     solo: isSolo(lobby),

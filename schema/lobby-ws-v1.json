@@ -104,7 +104,7 @@
     "Lobby": {
       "title": "Lobby",
       "type": "object",
-      "required": ["id", "name", "code", "hostUserId", "hostName", "throwOrder", "nextGame", "canRematch", "currentSessionId", "createdAt", "people", "invites", "activity", "solo", "nextHostName"],
+      "required": ["id", "name", "code", "hostUserId", "hostName", "throwOrder", "nextGame", "currentSessionId", "createdAt", "people", "invites", "activity", "solo", "nextHostName"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
@@ -114,7 +114,6 @@
         "hostName": { "type": ["string", "null"], "description": "The host's name, as LobbySummary has it; null when the host isn't in the lobby (a host who left during a game, until it ends)." },
         "throwOrder": { "$ref": "#/$defs/ThrowOrder" },
         "nextGame": { "anyOf": [{ "$ref": "#/$defs/NextGame" }, { "type": "null" }] },
-        "canRematch": { "type": "boolean", "description": "A game was played here: Rematch repeats it." },
         "currentSessionId": { "type": ["string", "null"], "description": "The lobby's running game." },
         "createdAt": { "type": "string", "format": "date-time" },
         "people": { "type": "array", "items": { "$ref": "#/$defs/LobbyPerson" } },

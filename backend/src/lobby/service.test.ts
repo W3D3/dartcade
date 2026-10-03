@@ -629,17 +629,34 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       ])
     })
 
-    it('refuses members, no game set, offline boards, a second start, and closing during a game', async () => {
+    it('refuses members, no game set, a second start, and closing during a game', async () => {
       await expect(lobbies.start('lena', id, true)).rejects.toMatchObject({ statusCode: 403 })
       await lobbies.update('chris', id, { nextGame: null })
       await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({ statusCode: 400 })
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
-      online.delete('lenas')
-      await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({ statusCode: 409, body: { code: 'board_offline', offlineBoards: ["Lena's place"] } })
-      online.add('lenas')
       const { sessionId } = await lobbies.start('chris', id, true)
       await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_running', sessionId } })
       await expect(lobbies.close('chris', id)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_running' } })
+    })
+
+    it('without force an offline board is answered first, even though nobody is ready either', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      online.delete('lenas')
+      await expect(lobbies.start('chris', id, false)).rejects.toMatchObject({
+        statusCode: 409, body: { code: 'board_offline', offlineBoards: ["Lena's place"] },
+      })
+    })
+
+    it('force gets past an offline board and people not ready at once: the offline seat keeps its board', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      online.delete('lenas')
+      // Neither chris nor lena is ready, and lena's board is offline; force covers both
+      const { sessionId } = await lobbies.start('chris', id, true)
+      const session = engine.getSession(sessionId)
+      expect(session?.seats).toEqual([
+        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room' },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" },
+      ])
     })
 
     it('one game per person: someone already in a game blocks the start, by name', async () => {
@@ -678,26 +695,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await engine.deleteSession(sessionId, 'chris')
       await lobbies.whenIdle(id)
       expect((await lobbies.view(id))?.activity[0]).toMatchObject({ kind: 'game_aborted', actorUserId: 'chris', data: { sessionId, gameId: 'x01' } })
-    })
-
-    it('rematch: the same players and settings, the same soft gate, also after an abort', async () => {
-      await expect(lobbies.rematch('chris', id, true)).rejects.toMatchObject({ statusCode: 400 })
-      await lobbies.join('max', id, code)
-      await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
-      const first = await lobbies.start('chris', id, true)
-      await engine.deleteSession(first.sessionId, 'chris')
-      await lobbies.whenIdle(id)
-      // The host changes the next game meanwhile: a rematch still repeats the last one
-      await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })
-      await expect(lobbies.rematch('chris', id, false)).rejects.toMatchObject({ body: { code: 'not_ready' } })
-      // Pressing Rematch already made the host ready, even though it answered not_ready
-      expect(await person('Christoph')).toMatchObject({ ready: true })
-      const { sessionId } = await lobbies.rematch('chris', id, true)
-      const session = engine.getSession(sessionId)
-      expect(session?.module.id).toBe('x01')
-      expect(session?.seats.map(s => s.name)).toEqual(['Christoph', 'Lena'])
-      expect(engineStore.insertSession).toHaveBeenLastCalledWith(expect.objectContaining({ config: expect.objectContaining({ startScore: 101 }) }))
-      expect((await person('Max')).plays).toBe(false)
     })
 
     it('throw order: a bull off turns the game\'s bull off on', async () => {

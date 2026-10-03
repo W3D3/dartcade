@@ -11,7 +11,7 @@ const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Len
 const guest = person({ id: 'g', userId: null, addedByUserId: 'lena', name: 'Guest 1', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', position: 2 })
 const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', position: 3 })   // Manual
 const lobby = (over: Partial<LobbyState> = {}): LobbyState => ({
-  id: 'l1', name: 'L', hostUserId: 'chris', code: 'AAAAAA', throwOrder: 'lobby', nextGame: null, lastGame: null,
+  id: 'l1', name: 'L', hostUserId: 'chris', code: 'AAAAAA', throwOrder: 'lobby', nextGame: null,
   createdAt: new Date(0), closedAt: null, people: [chris, lena, guest, max], invites: [], activity: [], ...over,
 })
 const all = { gameId: 'x01', config: { startScore: 301 }, personIds: ['c', 'l', 'g', 'm'] }
@@ -51,12 +51,24 @@ describe('planGame', () => {
     expect(planGame(lobby({ throwOrder: 'bulloff' }), { ...all, personIds: ['c'] }, online)).toMatchObject({ ok: false, problem: { status: 400 } })
   })
 
-  it('refuses offline boards by name, even when the host confirmed; Manual seats are always fine', () => {
-    const opts = { force: true, isBoardOnline: (b: string) => b !== 'lenas', starterUserId: 'chris' }
+  it('refuses offline boards by name without force; Manual seats are always fine', () => {
+    const opts = { force: false, isBoardOnline: (b: string) => b !== 'lenas', starterUserId: 'chris' }
     expect(planGame(lobby(), all, opts)).toEqual({
       ok: false, problem: { status: 409, code: 'board_offline', error: "offline: Lena's place", offlineBoards: ["Lena's place"] },
     })
     expect(planGame(lobby(), { ...all, personIds: ['c', 'm'] }, opts).ok).toBe(true)
+  })
+
+  it('force gets past an offline board: the seat keeps it', () => {
+    const opts = { force: true, isBoardOnline: (b: string) => b !== 'lenas', starterUserId: 'chris' }
+    const r = planGame(lobby(), all, opts)
+    expect(r.ok && r.plan.seats.find(s => s.name === 'Lena')).toEqual({ name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" })
+  })
+
+  it('force gets past an offline board and people not ready at the same time', () => {
+    const notReady = lobby({ people: [{ ...chris, ready: false }, { ...lena, ready: false }, guest, max] })
+    const opts = { force: true, isBoardOnline: (b: string) => b !== 'lenas', starterUserId: 'chris' }
+    expect(planGame(notReady, all, opts).ok).toBe(true)
   })
 
   it('names who isn\'t ready, and starts anyway once the host confirms', () => {

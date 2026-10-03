@@ -2,7 +2,7 @@ import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import {
-  ACTIVITY_KINDS, type ActivityData, type ActivityKind, type InviteRow, type LastGame, type LobbyState, type NextGame, type ThrowOrder,
+  ACTIVITY_KINDS, type ActivityData, type ActivityKind, type InviteRow, type LobbyState, type NextGame, type ThrowOrder,
 } from '../lobby/types.js'
 
 /** How many activity lines a lobby shows (newest first). */
@@ -15,14 +15,13 @@ export type NewPerson = {
 }
 export type LobbyUpdate = {
   name?: string; host_user_id?: string | null; code?: string; throw_order?: ThrowOrder
-  next_game?: NextGame | null; last_game?: LastGame | null
+  next_game?: NextGame | null
 }
 export type PersonUpdate = { board_id?: string | null; board_moved_by?: string | null; plays?: boolean; ready?: boolean }
 
 // JSON columns are read defensively: a value that doesn't parse reads as absent
 const ConfigSchema = z.record(z.string(), z.unknown())
 const NextGameSchema = z.object({ gameId: z.string(), config: ConfigSchema })
-const LastGameSchema = NextGameSchema.extend({ personIds: z.array(z.string()) })
 const ThrowOrderSchema = z.enum(['lobby', 'random', 'bulloff'])
 const ActivityKindSchema = z.enum(ACTIVITY_KINDS)
 const ActivityDataSchema = z.object({
@@ -41,7 +40,7 @@ function parsed<T>(schema: z.ZodType<T>, value: unknown): T | null {
   return r.success ? r.data : null
 }
 
-const json = (v: NextGame | LastGame | null): string | null => v === null ? null : JSON.stringify(v)
+const json = (v: NextGame | null): string | null => v === null ? null : JSON.stringify(v)
 
 /** A new lobby with its host as the first person and an "opened" line. Its own transaction. */
 export async function insertLobby(db: Kysely<Database>, lobby: NewLobby, host: Omit<NewPerson, 'lobbyId'>): Promise<void> {
@@ -130,7 +129,6 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
     id: row.id, name: row.name, hostUserId: row.host_user_id, code: row.code,
     throwOrder: parsed(ThrowOrderSchema, row.throw_order) ?? 'lobby',
     nextGame: parsed(NextGameSchema, row.next_game),
-    lastGame: parsed(LastGameSchema, row.last_game),
     createdAt: row.created_at, closedAt: row.closed_at,
     people: people.map(p => ({
       id: p.id, userId: p.user_id, addedByUserId: p.added_by_user_id, name: p.name,
@@ -149,11 +147,10 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
 }
 
 export async function updateLobby(db: Kysely<Database>, id: string, u: LobbyUpdate): Promise<void> {
-  const { next_game, last_game, ...plain } = u
+  const { next_game, ...plain } = u
   await db.updateTable('lobbies').set({
     ...plain,
     ...(next_game === undefined ? {} : { next_game: json(next_game) }),
-    ...(last_game === undefined ? {} : { last_game: json(last_game) }),
   }).where('id', '=', id).execute()
 }
 

@@ -356,7 +356,6 @@
         "hostName",
         "throwOrder",
         "nextGame",
-        "canRematch",
         "currentSessionId",
         "createdAt",
         "people",
@@ -424,10 +423,6 @@
               "type": "null"
             }
           ]
-        },
-        "canRematch": {
-          "type": "boolean",
-          "description": "A game was played here: Rematch repeats it."
         },
         "currentSessionId": {
           "type": [
@@ -735,7 +730,6 @@
             "hostName",
             "throwOrder",
             "nextGame",
-            "canRematch",
             "currentSessionId",
             "createdAt",
             "people",
@@ -803,10 +797,6 @@
                   "type": "null"
                 }
               ]
-            },
-            "canRematch": {
-              "type": "boolean",
-              "description": "A game was played here: Rematch repeats it."
             },
             "currentSessionId": {
               "type": [
@@ -1137,7 +1127,6 @@
                 "hostName",
                 "throwOrder",
                 "nextGame",
-                "canRematch",
                 "currentSessionId",
                 "createdAt",
                 "people",
@@ -1205,10 +1194,6 @@
                       "type": "null"
                     }
                   ]
-                },
-                "canRematch": {
-                  "type": "boolean",
-                  "description": "A game was played here: Rematch repeats it."
                 },
                 "currentSessionId": {
                   "type": [

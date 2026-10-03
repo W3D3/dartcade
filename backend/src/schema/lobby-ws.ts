@@ -153,10 +153,6 @@ export interface Lobby {
   throwOrder: ThrowOrder
   nextGame: NextGame | null
   /**
-   * A game was played here: Rematch repeats it.
-   */
-  canRematch: boolean
-  /**
    * The lobby's running game.
    */
   currentSessionId: string | null

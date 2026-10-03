@@ -1,6 +1,7 @@
-import { writable, type Readable } from 'svelte/store'
+import { get, writable, type Readable } from 'svelte/store'
 import { WsCloseCode, type ClientMessage, type ErrorMessage, type NoticeMessage, type Snapshot, type UserAction } from './api/game-ws'
 import { ErrorMessageSchema, NoticeMessageSchema, SnapshotSchema } from './api/zod'
+import { afterGameRoute } from './endControl'
 
 export type { Snapshot }
 
@@ -65,10 +66,14 @@ export function createSessionStore(sessionId: string) {
         window.location.hash = '#/login'
         return
       }
-      // Not this user's session, or it no longer exists: retrying won't help
+      // Not this user's session, or it no longer exists: retrying won't help. A successful
+      // Leave or End already navigated away by the time this fires (a reconnect racing the
+      // session's deletion): only follow it while this session's page is still showing.
       if (code === 'Forbidden' || code === 'NotFound') {
         closed = true
-        window.location.hash = '#/'
+        if (/^#\/session\/([^/?]+)/.exec(window.location.hash)?.[1] === sessionId) {
+          window.location.hash = `#${afterGameRoute(get(snapshot))}`
+        }
         return
       }
       if (!closed) setTimeout(connect, backoff)
