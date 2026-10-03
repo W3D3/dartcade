@@ -6,6 +6,9 @@ import type { components } from '../api/schema'
 /** A change to one person (PATCH /api/lobbies/:id/people/:pid): board, who plays, ready, place. */
 export type PersonPatch = components['schemas']['UpdatePersonRequest']
 
+/** A change to the lobby (PATCH /api/lobbies/:id, the host): name, throw order, next game, a new code. */
+export type LobbyPatch = components['schemas']['UpdateLobbyRequest']
+
 /** One of the viewer's own paired boards. */
 export type OwnBoard = { id: string; name: string }
 

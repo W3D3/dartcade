@@ -5,6 +5,7 @@
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import LobbyHeader from '$lib/components/lobby/LobbyHeader.svelte'
   import PeopleList from '$lib/components/lobby/PeopleList.svelte'
@@ -12,11 +13,15 @@
   import BoardChip from '$lib/components/lobby/BoardChip.svelte'
   import PersonControls from '$lib/components/lobby/PersonControls.svelte'
   import AddSomeone from '$lib/components/lobby/AddSomeone.svelte'
+  import GameRunningBar from '$lib/components/lobby/GameRunningBar.svelte'
+  import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
+  import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import { api } from '$lib/api'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
-  import { boardChoices, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
+  import { boardChoices, isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
+  import { shouldOpenGame, startGame } from '$lib/lobby/start'
   import { createLobbyStore, type LobbyEnd } from '$lib/lobby/sockets'
 
   let lobby = $state<Lobby | null>(null)
@@ -77,6 +82,36 @@
     withLobby(id => api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name } }))
   const invite = (userId: string) =>
     withLobby(id => api.POST('/api/lobbies/{id}/invites', { params: { path: { id } }, body: { userId } }))
+  const updateLobby = (patch: LobbyPatch) =>
+    withLobby(id => api.PATCH('/api/lobbies/{id}', { params: { path: { id } }, body: patch }))
+
+  // Going to the game: once per game, for whoever has a seat in it (decision 7)
+  let seenSession: string | null | undefined = undefined
+  let opened: string | null = null
+  function openGame(sessionId: string) {
+    if (opened === sessionId) return
+    opened = sessionId
+    void push(`/session/${sessionId}`)
+  }
+  $effect(() => {
+    if (!lobby) return
+    const next = lobby.currentSessionId
+    if (next !== null && shouldOpenGame(seenSession, next, playsInGame(lobby, viewerId))) openGame(next)
+    seenSession = next
+  })
+
+  // Start or Rematch; people who aren't ready get named and the host can start anyway
+  let confirmStart = $state<{ names: string[]; rematch: boolean } | null>(null)
+  async function start(rematch: boolean, force = false) {
+    const id = lobby?.id
+    if (!id) return
+    const outcome = await startGame(id, { rematch, force })
+    if (outcome.kind === 'started') { error = ''; openGame(outcome.sessionId) }
+    else if (outcome.kind === 'confirm') confirmStart = { names: outcome.notReady, rematch }
+    else error = outcome.message
+  }
+  const host = $derived(lobby !== null && isHost(lobby, viewerId))
+  const mine = $derived(lobby ? myRow(lobby, viewerId) : null)
 
   onMount(() => { void load() })
   onDestroy(() => { destroyed = true; socket?.destroy(); unsubs.forEach(u => u()) })
@@ -118,7 +153,15 @@
           </PeopleList>
         </div>
         <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
-          <!-- Task 10: the running-game bar and the next game go here -->
+          {#if l.currentSessionId}
+            <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
+          {/if}
+          {#if host}
+            <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
+              onstart={(rematch: boolean) => void start(rematch)} />
+          {:else if mine}
+            <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
+          {/if}
           <div class="hidden md:flex md:flex-col md:min-h-0"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
         </div>
         <div class="order-3 md:hidden"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
@@ -128,3 +171,10 @@
     {/if}
   </main>
 </Layout>
+
+{#if confirmStart}
+  {@const cs = confirmStart}
+  <ConfirmModal title="Start anyway?" body={`Not ready yet: ${cs.names.join(', ')}.`}
+    confirmLabel="Start anyway" cancelLabel="Wait"
+    onconfirm={() => { const { rematch } = cs; confirmStart = null; void start(rematch, true) }} oncancel={() => confirmStart = null} />
+{/if}
