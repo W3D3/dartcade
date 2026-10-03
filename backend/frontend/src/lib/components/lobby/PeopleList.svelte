@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The people in the lobby, in throwing order. The board and the right-hand side of each row
+  // The people in the lobby, in throwing order (in a team game, the teams take turns). The board and the right-hand side of each row
   // are the caller's (read-only labels by default; the lobby page passes its controls).
   import type { Snippet } from 'svelte'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
@@ -9,7 +9,8 @@
   import BoardLabel from './BoardLabel.svelte'
   import PersonStatus from './PersonStatus.svelte'
   import ReadyCount from './ReadyCount.svelte'
-  import { counts } from '$lib/lobby/rules'
+  import { counts, nextGameInTeams } from '$lib/lobby/rules'
+  import { gameModes } from '$lib/gameModes'
 
   let { lobby, viewerId, boardOf, controlsOf, footer }: {
     lobby: Lobby
@@ -21,10 +22,12 @@
     footer?: Snippet
   } = $props()
   const c = $derived(counts(lobby))
+  // Singles throw in list order; in a team game the teams take turns
+  const order = $derived(nextGameInTeams(lobby, $gameModes) ? 'teams take turns' : 'list order = throw order')
 </script>
 
 <Panel title="People · {c.people}" label="People in this lobby" flat>
-  {#snippet note()}<ReadyCount {lobby} suffix="list order = throw order" />{/snippet}
+  {#snippet note()}<ReadyCount {lobby} suffix={order} />{/snippet}
   <ol class="m-0 p-0 list-none flex flex-col gap-[6px]">
     {#each lobby.people as p, i (p.id)}
       <PersonRow person={p} index={i} {lobby} {viewerId}>

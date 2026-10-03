@@ -92,7 +92,7 @@
 
 <section aria-label="Next game"
   class="box-border p-4 md:px-6 md:py-[22px] rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[14px] md:gap-[18px]">
-  <NextGameSummary {game} pickedBy="picked by you" />
+  <NextGameSummary {lobby} pickedBy="picked by you" />
   <div class="grid grid-cols-2 gap-2">
     {#if game}
       <SettingsToggleButton open={settingsOpen} ontoggle={() => settingsOpen = !settingsOpen} />

@@ -1,6 +1,7 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
 import type { LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
 import { x01Rules, type Mode } from '../gameViews/meta.js'
+import { teamSizesLabel } from '../teams.js'
 
 const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock' }
 
@@ -30,9 +31,15 @@ const mode = (v: unknown, fallback: Mode): Mode => (v === 'straight' || v === 'd
  * One line about the next game's settings: "501 · Double in · Double out · First to 2 legs
  * · Bull off (WDC)" — the same rules line the match screen shows (`x01Rules`), plus bull off
  * when the game's settings turn it on. Settings the saved config leaves out come from the
- * game's defaults (the server's), so they read as what the game will actually play.
+ * game's defaults (the server's), so they read as what the game will actually play. In a
+ * team game `teamSizes` (Team A's, then Team B's) puts the format first: "Teams 2v2 · 501 · …".
  */
-export function nextGameSummary(game: NextGame | null, defaults: Record<string, unknown> = {}): string {
+export function nextGameSummary(game: NextGame | null, defaults: Record<string, unknown> = {}, teamSizes: number[] | null = null): string {
+  const rules = rulesLine(game, defaults)
+  return teamSizes && rules ? `${teamSizesLabel(teamSizes)} · ${rules}` : rules
+}
+
+function rulesLine(game: NextGame | null, defaults: Record<string, unknown>): string {
   if (!game) return ''
   const c = { ...defaults, ...game.config }
   if (game.gameId === 'x01') {

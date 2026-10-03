@@ -52,6 +52,14 @@ describe('lobby text', () => {
       .toBe('501 · Double out · First to 3 legs')
   })
 
+  it('a team game names the format first: the sizes of Team A v Team B', () => {
+    const x01 = { gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 3, format: 'teams' } }
+    expect(nextGameSummary(x01, {}, [2, 2])).toBe('Teams 2v2 · 501 · Double out · First to 3 legs')
+    expect(nextGameSummary(x01, {}, [1, 2])).toBe('Teams 1v2 · 501 · Double out · First to 3 legs')
+    // Singles: no format
+    expect(nextGameSummary(x01, {}, null)).toBe('501 · Double out · First to 3 legs')
+  })
+
   it('writes the feed from the viewer\'s side, names in bold', () => {
     // A member moving a guest (userId null): never counts as moving themselves, even if named the same
     const moved = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Christoph', data: { name: 'Max', userId: null, fromBoardName: null, toBoardName: 'Living room' } })
