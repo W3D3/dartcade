@@ -35,6 +35,12 @@ describe('lobby text', () => {
     expect(text(activityLine(moved, 'lena'))).toBe('Christoph moved Max to Living room')
     expect(bold(activityLine(moved, 'lena'))).toEqual(['Christoph', 'Max'])
     expect(text(activityLine({ ...moved, data: { name: 'Max', toBoardName: null } }, 'lena'))).toBe('Christoph moved Max to manual entry')
+    // Moving yourself: no name twice
+    const self = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Admin', data: { name: 'Admin', fromBoardName: 'Dev Board', toBoardName: null } })
+    expect(text(activityLine(self, 'chris'))).toBe('You moved to manual entry')
+    expect(text(activityLine({ ...self, data: { name: 'Admin', toBoardName: 'Dev Board' } }, 'chris'))).toBe('You moved to Dev Board')
+    expect(text(activityLine(self, 'lena'))).toBe('Admin moved to manual entry')
+    expect(bold(activityLine(self, 'lena'))).toEqual(['Admin'])
     expect(text(activityLine(act({}), 'lena'))).toBe('You joined')
     expect(text(activityLine(act({ kind: 'left' }), 'chris'))).toBe('Lena left')
     expect(text(activityLine(act({ kind: 'guest_added', data: { name: 'Pia' } }), 'chris'))).toBe('Lena added guest Pia')

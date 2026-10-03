@@ -2,7 +2,7 @@
   import { Tooltip } from 'bits-ui'
 
   let { options, value = $bindable(), onchange, defaultValue, class: className = '' }: {
-    options: { value: unknown; label: string; tooltip?: string }[]
+    options: { value: unknown; label: string; tooltip?: string; disabled?: boolean; title?: string }[]
     value?: unknown
     onchange?: (v: unknown) => void
     defaultValue?: unknown
@@ -19,8 +19,8 @@
 
 <div class="flex gap-1 p-1 bg-bg rounded-[10px] {className}">
   {#each options as opt (opt.label)}
-    <button type="button" onclick={() => pick(opt.value)}
-      class="flex-1 h-10 rounded-[7px] text-[15px] transition-colors border-0 cursor-pointer
+    <button type="button" onclick={() => pick(opt.value)} disabled={opt.disabled} title={opt.title}
+      class="flex-1 h-10 rounded-[7px] text-[15px] transition-colors border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed
              {value === opt.value
                ? isNonDefault
                  ? 'bg-accent/15 text-accent font-semibold ring-1 ring-accent/40 ring-inset'

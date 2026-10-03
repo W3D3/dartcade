@@ -9,9 +9,10 @@
 </script>
 
 <div class="flex flex-col gap-2">
-  <span class="flex justify-between gap-2">
+  <!-- Phones: the board summary goes on its own line under the label -->
+  <span class="flex flex-col gap-[2px] md:flex-row md:justify-between md:gap-2">
     <span class="text-[13px] md:text-[14px] font-medium text-ink-soft">Who plays · tap to sit someone out</span>
-    <span class="text-[12px] md:text-[13px] text-text-muted text-right">{boardSummary(lobby)}</span>
+    <span class="text-[12px] md:text-[13px] text-text-muted md:text-right">{boardSummary(lobby)}</span>
   </span>
   <div class="flex flex-wrap gap-2">
     {#each lobby.people as p (p.id)}
