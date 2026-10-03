@@ -1,7 +1,10 @@
 <script lang="ts">
   // A button that opens a small menu below it; picking an item or clicking outside closes it.
+  // Built on Popover, the shared open/close/focus-return behaviour (also used by the lobby QR
+  // code popover).
   import type { Snippet } from 'svelte'
-  import MenuPanel from './MenuPanel.svelte'
+  import Popover from './Popover.svelte'
+  import PopoverPanel from './PopoverPanel.svelte'
 
   let { label, triggerLabel, triggerClass = '', align = 'left', width = 250, trigger, children }: {
     /** The menu's accessible name. */
@@ -16,29 +19,10 @@
     /** The items; given `close` to call after a pick. */
     children: Snippet<[() => void]>
   } = $props()
-
-  let open = $state(false)
-  let triggerButton: HTMLButtonElement | undefined = $state()
-
-  const close = () => { open = false }
-
-  const handleKeydown = (e: KeyboardEvent) => {
-    if (open && e.key === 'Escape') {
-      close()
-      triggerButton?.focus()
-    }
-  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
-
-<span class="relative inline-block min-w-0 max-w-full">
-  <button bind:this={triggerButton} type="button" onclick={() => open = !open} aria-haspopup="menu" aria-expanded={open} aria-label={triggerLabel}
-    class="cursor-pointer font-[inherit] {triggerClass}">
-    {@render trigger(open)}
-  </button>
-  {#if open}
-    <div class="fixed inset-0 z-[5]" onclick={close} aria-hidden="true"></div>
-    <MenuPanel {label} {align} {width}>{@render children(close)}</MenuPanel>
-  {/if}
-</span>
+<Popover {triggerLabel} {triggerClass} {trigger}>
+  {#snippet panel(close: () => void)}
+    <PopoverPanel {label} {align} {width}>{@render children(close)}</PopoverPanel>
+  {/snippet}
+</Popover>

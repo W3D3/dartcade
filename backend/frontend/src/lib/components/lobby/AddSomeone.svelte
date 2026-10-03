@@ -4,7 +4,7 @@
   import { api } from '$lib/api'
   import { Button } from '$lib/components/ui/button/index.js'
   import MenuItem from './MenuItem.svelte'
-  import MenuPanel from './MenuPanel.svelte'
+  import MenuPanel from './PopoverPanel.svelte'
   import { parseAddInput } from '$lib/lobby/input'
 
   type Account = { id: string; name: string }
