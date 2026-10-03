@@ -2924,7 +2924,7 @@
           "players": {
             "type": "array",
             "minItems": 1,
-            "description": "The first player is the signed-in user; the others are guests or, with userId, other accounts",
+            "description": "The first player is the signed-in user; the others are guests at the same board",
             "items": {
               "$ref": "#/components/schemas/SeatRequest"
             }
@@ -2941,11 +2941,6 @@
           "name": {
             "type": "string",
             "minLength": 1
-          },
-          "userId": {
-            "type": "string",
-            "minLength": 1,
-            "description": "Another account plays this seat from their own device (entering darts by hand); its name comes from the account"
           }
         }
       },
