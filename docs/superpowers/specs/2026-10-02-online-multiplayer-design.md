@@ -655,21 +655,28 @@ game) confused people, and `@username` seats put someone in a game without askin
 every game now runs in a lobby. Playing alone keeps feeling like the old New game: the lobby
 stays out of the way until a second account joins.
 
-- **Your lobby exists when you need it.** The Play page always works in your lobby. If you
-  aren't in one, the page opens one for you (`POST /api/lobbies`) the first time it loads,
-  without asking. It stays open between games and keeps your guests and settings.
+- **New game picks the game; the lobby holds the people** (changed 2026-10-03, 13:24). The
+  Play page shows the game tiles and settings only, no players. Its main button is **Create
+  lobby**: it opens your lobby with that game as the next game and takes you to the lobby
+  page. If you host a lobby already it says **Continue in lobby** (sets the next game, goes
+  there); a member of someone else's lobby sees the planned game read-only and **Open lobby**.
+  The Play page never opens a lobby by itself. Your lobby stays open between games and keeps
+  your guests and settings.
 - **Solo:** a lobby is *solo* while you are its only member (guests don't count). The server
   decides it and says so: the lobby state and `LobbySummary` carry `solo: boolean`, and the
   screens only read that flag (no counting players in the browser).
   - The lobby indicator (desktop side nav card, phone strip) shows only when the lobby isn't
     solo. While solo, the side nav shows a small "Play with friends" card that opens the
     lobby page.
-  - The lobby page while solo hides Close and the history, and leads with the code, the link,
-    the QR code and the add field ("Invite friends").
-  - The Play page while solo edits the players right there: your row with its board menu,
-    your guests (add by name, remove), and the add field, where `@username` sends an invite.
-    The throw order (lobby order, random, bull off) sits on the same card. Reordering and
-    everything else stays on the lobby page ("Manage").
+  - Players are added only on the lobby page: guests by name, accounts by `@username` (an
+    invite), or the code, link and QR code. While solo the lobby page shows the people list
+    with the add field and "Invite friends" (code, link, QR); it hides Close and the history.
+  - Invited accounts show in the people list as their own rows, greyed out with a pending
+    indicator, until they accept (a member row) or decline (gone). The QR code opens in a
+    popover from its button, without moving the page (#67, #68).
+- **Your running game is pushed** (#69): `/ws/me` also carries your running game (its id,
+  game and lobby name), sent when a game you play in starts or ends, so the "Game in progress"
+  banner and the Live tab update without a reload.
 - **Ready:** the person starting counts as ready, and so does every row they control (their
   guests). The "Start anyway?" check only ever names other members and their guests, so a
   solo game never asks.
