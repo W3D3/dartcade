@@ -30,12 +30,14 @@
   }
 
   const CONFETTI = ['#e9dfc4', '#c6f24e', '#d23b36', '#1e7a4f', '#dcff7a', '#efeee6']
-  const confetti = Array.from({ length: 45 }, (_, i) => ({
+  // Scattered all round the sum, mostly upwards, each a moment apart (as on the canvas)
+  const confetti = Array.from({ length: 34 }, (_, i) => ({
     c: CONFETTI[i % CONFETTI.length],
     w: 6 + ((i * 7) % 5), h: 10 + ((i * 5) % 7),
-    x: Math.round(Math.cos(i * 2.4) * (170 + ((i * 37) % 220))),
-    y: Math.round(-80 - ((i * 53) % 250)),
-    r: ((i * 97) % 720) - 360,
+    x: Math.round(Math.cos(i * 2.4) * (70 + ((i * 37) % 240))),
+    y: Math.round(Math.sin(i * 2.4) * (60 + ((i * 53) % 150)) - 40),
+    r: ((i * 97) % 960) - 540,
+    d: ((i * 7) % 17) / 100,
   }))
 
   const box = $derived(
@@ -84,7 +86,7 @@
 {#snippet burst()}
   <span class="absolute inset-0 pointer-events-none" aria-hidden="true">
     {#each confetti as p, i (i)}
-      <span class="confetti" style="--c:{p.c};--w:{p.w}px;--h:{p.h}px;--x:{p.x}px;--y:{p.y}px;--r:{p.r}deg"></span>
+      <span class="confetti" style="--c:{p.c};--w:{p.w}px;--h:{p.h}px;--x:{p.x}px;--y:{p.y}px;--r:{p.r}deg;animation-delay:{p.d}s"></span>
     {/each}
   </span>
 {/snippet}
@@ -97,7 +99,7 @@
   .confetti {
     position: absolute; left: 50%; top: 50%;
     width: var(--w); height: var(--h); background: var(--c); border-radius: 2px; opacity: 0;
-    animation: dc-conf 2.6s cubic-bezier(.2, .8, .2, 1) 1 forwards;
+    animation: dc-conf 2.6s cubic-bezier(.15, .7, .3, 1) 1 forwards;
   }
   @keyframes dc-ton {
     0%, 100% { box-shadow: 0 0 0 0 rgba(198, 242, 78, 0); }
@@ -105,16 +107,17 @@
   }
   @keyframes dc-num { 50% { transform: scale(1.05); } }
   @keyframes dc-max {
-    0% { transform: scale(1); }
-    20% { transform: scale(1.07); box-shadow: 0 0 48px rgba(198, 242, 78, .55); }
-    45% { transform: scale(.99); }
-    70% { transform: scale(1.04); }
-    100% { transform: scale(1); box-shadow: none; }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198, 242, 78, .7); }
+    10% { transform: scale(1.07); box-shadow: 0 0 0 14px rgba(198, 242, 78, .45), 0 0 80px rgba(198, 242, 78, .6); }
+    22% { transform: scale(.99); }
+    32% { transform: scale(1.04); box-shadow: 0 0 0 22px rgba(198, 242, 78, .12), 0 0 60px rgba(198, 242, 78, .4); }
+    50%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198, 242, 78, 0); }
   }
   @keyframes dc-tick { 12% { transform: scale(1.12); } 100% { transform: scale(1); } }
   @keyframes dc-conf {
-    0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
-    100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 120px)) rotate(var(--r)); }
+    0% { opacity: 0; transform: translate(-50%, -50%) rotate(0deg); }
+    6%, 70% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--r)); }
   }
   @media (prefers-reduced-motion: reduce) {
     .fx-ton, .fx-ton .sum, .fx-max, .fx-tick { animation: none; }
