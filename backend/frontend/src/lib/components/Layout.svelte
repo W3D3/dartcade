@@ -3,6 +3,7 @@
   import SideNav from './SideNav.svelte'
   import SessionBanner from './SessionBanner.svelte'
   import PhoneHeader from './PhoneHeader.svelte'
+  import LobbyStrip from './LobbyStrip.svelte'
   import TabBar from './TabBar.svelte'
 
   let { title, headerAction, children }: { title?: string; headerAction?: Snippet; children: Snippet } = $props()
@@ -14,6 +15,7 @@
     {#if title}<PhoneHeader {title} action={headerAction} />{/if}
     <SessionBanner />
     {@render children()}
+    <LobbyStrip />
     <TabBar />
   </div>
 </div>

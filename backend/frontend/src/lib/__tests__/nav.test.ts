@@ -10,6 +10,11 @@ describe('navTabs', () => {
     expect(tabs.map(t => t.label)).toEqual(['Play', 'Live', 'Boards', 'History'])
     expect(tabs[1]).toEqual({ href: '/session/s1', label: 'Live', icon: 'live' })
   })
+
+  it('puts the pending invites on the Play tab', () => {
+    expect(navTabs(null, 2)[0]).toEqual({ href: '/', label: 'Play', icon: 'play', badge: 2 })
+    expect(navTabs(null, 0)[0]).toEqual({ href: '/', label: 'Play', icon: 'play' })
+  })
 })
 
 describe('isActiveRoute', () => {

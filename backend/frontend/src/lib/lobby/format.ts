@@ -1,5 +1,5 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
-import type { LobbyActivity, LobbyPerson, NextGame } from '../api/lobby-ws'
+import type { LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
 
 const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock' }
 
@@ -74,6 +74,24 @@ const pad = (n: number) => String(n).padStart(2, '0')
 export function feedTime(at: string): string {
   const d = new Date(at)
   return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+/**
+ * The lobby indicator (side nav card, phone strip). `line` is the card's full status line;
+ * `next` is its last part, for the narrow phone strip.
+ */
+export type IndicatorView = { tag: string; name: string; line: string; next: string; back: { sessionId: string; label: string } | null }
+
+export function indicatorView(s: LobbySummary): IndicatorView {
+  const tag = s.sessionId ? 'In lobby · Playing' : s.youHost ? 'In lobby · Host' : 'In lobby'
+  const next = s.sessionId
+    ? (s.youThrowNext ? 'you throw next' : 'game running')
+    : (s.nextGame ? `Next: ${gameName(s.nextGame.gameId)}` : 'no game picked')
+  const first = s.sessionId ? gameName(s.gameId ?? '') : `${s.peopleCount} ${s.peopleCount === 1 ? 'person' : 'people'}`
+  const back = s.sessionId
+    ? { sessionId: s.sessionId, label: s.leg === null ? 'Back to game' : `Back to game · Leg ${s.leg + 1}` }
+    : null
+  return { tag, name: s.name, line: `${first} · ${next}`, next, back }
 }
 
 /** Under a person's name: whose guest they are, who put them on their board, where they usually play. */

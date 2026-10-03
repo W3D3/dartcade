@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { activityLine, feedTime, formatCode, gameName, joinLink, nextGameSummary, personLine, type Part } from '../lobby/format.js'
+import { activityLine, feedTime, formatCode, gameName, indicatorView, joinLink, nextGameSummary, personLine, type Part } from '../lobby/format.js'
 import type { LobbyActivity, LobbyPerson } from '../api/lobby-ws'
 
 const text = (parts: Part[]) => parts.map(p => p.text).join('')
@@ -56,6 +56,27 @@ describe('lobby text', () => {
 
   it('shows the time of day', () => {
     expect(feedTime(new Date(2026, 9, 2, 21, 6).toISOString())).toBe('21:06')
+  })
+})
+
+describe('indicatorView', () => {
+  const s = { id: 'l1', name: 'Friday darts', peopleCount: 6, nextGame: { gameId: 'x01', config: {} }, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: false }
+
+  it('a member waiting, the host', () => {
+    expect(indicatorView(s)).toEqual({ tag: 'In lobby', name: 'Friday darts', line: '6 people · Next: X01', next: 'Next: X01', back: null })
+    expect(indicatorView({ ...s, youHost: true }).tag).toBe('In lobby · Host')
+    expect(indicatorView({ ...s, peopleCount: 1, nextGame: null })).toMatchObject({ line: '1 person · no game picked', next: 'no game picked' })
+  })
+
+  it('a game running: whose turn, and the way back with the leg', () => {
+    const playing = { ...s, sessionId: 's1', gameId: 'x01', youThrowNext: true, leg: 1 }
+    expect(indicatorView(playing)).toEqual({
+      tag: 'In lobby · Playing', name: 'Friday darts', line: 'X01 · you throw next', next: 'you throw next',
+      back: { sessionId: 's1', label: 'Back to game · Leg 2' },
+    })
+    expect(indicatorView({ ...playing, youThrowNext: false, gameId: 'atc', leg: null })).toMatchObject({
+      line: 'Around the Clock · game running', back: { sessionId: 's1', label: 'Back to game' },
+    })
   })
 })
 
