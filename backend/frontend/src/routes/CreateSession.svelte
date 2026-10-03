@@ -8,16 +8,16 @@
   import PlayerRow from '$lib/components/PlayerRow.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
   import Stepper from '$lib/components/Stepper.svelte'
-  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import LobbyPlayersCard from '$lib/components/lobby/LobbyPlayersCard.svelte'
   import PlayWithFriends from '$lib/components/lobby/PlayWithFriends.svelte'
   import InvitesBanner from '$lib/components/lobby/InvitesBanner.svelte'
+  import StartAnywayConfirm from '$lib/components/lobby/StartAnywayConfirm.svelte'
   import type { Lobby } from '$lib/api/lobby-ws'
   import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'
   import { authClient, currentUser } from '$lib/auth'
   import { describeConflict } from '$lib/lobby/input'
   import { gameName, nextGameSummary } from '$lib/lobby/format'
-  import { counts, isHost } from '$lib/lobby/rules'
+  import { counts, hostName as hostNameOf, isHost } from '$lib/lobby/rules'
   import { createLobbyStore, me } from '$lib/lobby/sockets'
   import { initialGameSelection, startGame } from '$lib/lobby/start'
   import { activeSessionId } from '$lib/activeSession'
@@ -142,7 +142,7 @@
     return () => { unsub(); store.destroy() }
   })
   const lobbyHost = $derived(lobby !== null && isHost(lobby, $currentUser?.id ?? null))
-  const hostName = $derived(lobby?.people.find(p => p.userId !== null && p.userId === lobby?.hostUserId)?.name ?? 'The host')
+  const hostName = $derived((lobby && hostNameOf(lobby)) ?? 'The host')
   const invites = $derived($me?.invites.length ?? 0)
   let confirmNames = $state<string[] | null>(null)
 
@@ -455,6 +455,6 @@
 
 {#if confirmNames}
   {@const names = confirmNames}
-  <ConfirmModal title="Start anyway?" body={`Not ready yet: ${names.join(', ')}.`} confirmLabel="Start anyway" cancelLabel="Wait"
+  <StartAnywayConfirm {names}
     onconfirm={() => { confirmNames = null; void startInLobby(true) }} oncancel={() => confirmNames = null} />
 {/if}

@@ -4,6 +4,7 @@
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import LobbyPreviewCard from '$lib/components/lobby/LobbyPreviewCard.svelte'
   import SwitchLobbyConfirm from '$lib/components/lobby/SwitchLobbyConfirm.svelte'
@@ -74,7 +75,7 @@
     </div>
     {#if preview}<LobbyPreviewCard name={preview.name} hostName={preview.hostName} boardNames={preview.boardNames} peopleCount={preview.peopleCount} />{/if}
     <p class="m-0 text-[13px] text-text-dim">Or point your phone's camera at the QR code on the host's lobby screen.</p>
-    {#if error}<p role="alert" class="m-0 text-[14px] text-live-text">{error}</p>{/if}
+    {#if error}<ErrorText>{error}</ErrorText>{/if}
     <Button class="mt-auto h-14" disabled={!preview || busy} onclick={() => void join()}>{busy ? 'Joining…' : `Join as ${you}`}</Button>
     <p class="m-0 text-[13px] text-center text-text-muted">
       Not {you}? <button type="button" onclick={() => void signOut()} class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Switch account</button>

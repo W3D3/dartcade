@@ -5,7 +5,7 @@
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
-  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import LobbyHeader from '$lib/components/lobby/LobbyHeader.svelte'
   import PeopleList from '$lib/components/lobby/PeopleList.svelte'
@@ -16,12 +16,14 @@
   import GameRunningBar from '$lib/components/lobby/GameRunningBar.svelte'
   import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
+  import StartAnywayConfirm from '$lib/components/lobby/StartAnywayConfirm.svelte'
   import { api } from '$lib/api'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
   import { boardChoices, isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
   import { shouldOpenGame, startGame } from '$lib/lobby/start'
+  import { createLobby } from '$lib/lobby/create'
   import { createLobbyStore, type LobbyEnd } from '$lib/lobby/sockets'
 
   let lobby = $state<Lobby | null>(null)
@@ -56,6 +58,7 @@
   async function act(run: () => Promise<{ error?: Refusal }>): Promise<boolean> {
     const { error: refusal } = await run()
     error = refusal ? describeConflict(refusal) : ''
+    runningSessionId = null
     return !refusal
   }
   function withLobby(run: (id: string) => Promise<{ error?: Refusal }>): Promise<boolean> {
@@ -64,9 +67,9 @@
   }
 
   async function create() {
-    const res = await api.POST('/api/lobbies')
-    if (res.data) { error = ''; open(res.data.id) }
-    else error = describeConflict(res.error)
+    const created = await createLobby()
+    if (created.ok) { error = ''; open(created.lobbyId) }
+    else error = created.message
   }
   const rename = (name: string) => withLobby(id => api.PATCH('/api/lobbies/{id}', { params: { path: { id } }, body: { name } }))
   const newCode = () => withLobby(id => api.PATCH('/api/lobbies/{id}', { params: { path: { id } }, body: { regenerateCode: true } }))
@@ -102,13 +105,21 @@
 
   // Start or Rematch; people who aren't ready get named and the host can start anyway
   let confirmStart = $state<{ names: string[]; rematch: boolean } | null>(null)
+  // A start in flight: Start and Rematch wait for it, so a double click sends one
+  let starting = $state(false)
+  // Your own game that's running elsewhere, when a start was refused for it
+  let runningSessionId = $state<string | null>(null)
   async function start(rematch: boolean, force = false) {
     const id = lobby?.id
-    if (!id) return
-    const outcome = await startGame(id, { rematch, force })
-    if (outcome.kind === 'started') { error = ''; openGame(outcome.sessionId) }
-    else if (outcome.kind === 'confirm') confirmStart = { names: outcome.notReady, rematch }
-    else error = outcome.message
+    if (!id || starting) return
+    starting = true
+    runningSessionId = null
+    try {
+      const outcome = await startGame(id, { rematch, force })
+      if (outcome.kind === 'started') { error = ''; openGame(outcome.sessionId) }
+      else if (outcome.kind === 'confirm') confirmStart = { names: outcome.notReady, rematch }
+      else { error = outcome.message; runningSessionId = outcome.sessionId }
+    } finally { starting = false }
   }
   const host = $derived(lobby !== null && isHost(lobby, viewerId))
   const mine = $derived(lobby ? myRow(lobby, viewerId) : null)
@@ -123,7 +134,12 @@
 {/snippet}
 
 {#snippet errorBanner()}
-  {#if error}<p role="alert" class="m-0 text-[14px] text-live-text">{error}</p>{/if}
+  {#if error}
+    <span class="flex flex-wrap items-center gap-3">
+      <ErrorText>{error}</ErrorText>
+      {#if runningSessionId}<Button variant="outline" href="#/session/{runningSessionId}" class="h-9 px-3 text-[13px]">Return to game</Button>{/if}
+    </span>
+  {/if}
 {/snippet}
 
 <Layout title="Lobby">
@@ -158,7 +174,7 @@
           {/if}
           {#if host}
             <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
-              onstart={(rematch: boolean) => void start(rematch)} />
+              busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
           {/if}
@@ -174,7 +190,6 @@
 
 {#if confirmStart}
   {@const cs = confirmStart}
-  <ConfirmModal title="Start anyway?" body={`Not ready yet: ${cs.names.join(', ')}.`}
-    confirmLabel="Start anyway" cancelLabel="Wait"
+  <StartAnywayConfirm names={cs.names}
     onconfirm={() => { const { rematch } = cs; confirmStart = null; void start(rematch, true) }} oncancel={() => confirmStart = null} />
 {/if}
