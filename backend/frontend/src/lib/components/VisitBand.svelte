@@ -1,27 +1,43 @@
 <script lang="ts">
   // The visit sum under the board (or a compact tile beside the slots), with the
-  // VisitFX celebrations: ton plus, maximum, and a tick for a big dart.
+  // VisitFX celebrations: ton plus, maximum, and a tick for a big dart. The sum rolls (ScoreCount).
+  import RollingNumber from './RollingNumber.svelte'
   import { shouldReplay, type BandData } from '$lib/visitBand.js'
 
-  let { band, compact = false }: { band: BandData; compact?: boolean } = $props()
+  let { band, compact = false, visit = 0 }: {
+    band: BandData
+    compact?: boolean
+    /** Changes with every new visit: the sum starts over at 0 without rolling. */
+    visit?: string | number
+  } = $props()
 
   const tone = $derived(band.bust ? 'bust' : band.fx)
-  // Re-mount (and so replay the animation) only when a celebrating sum goes up:
-  // not on load, not when a dart is undone
-  let replays = $state(0)
+  // Replay the celebration only when a celebrating sum goes up: not on load, not when a dart
+  // is undone. Each animated element restarts in place (finished animations included), so the
+  // rolling sum stays mounted and keeps turning.
+  let boxEl: HTMLDivElement | undefined = $state()
   let lastSum: number | null = null
   $effect(() => {
-    if (shouldReplay(lastSum, band)) replays++
+    if (shouldReplay(lastSum, band)) replay()
     lastSum = Number(band.sum.replace('+', ''))
   })
+  function replay() {
+    if (!boxEl) return
+    const els = [boxEl, ...boxEl.querySelectorAll<HTMLElement>('.sum, .fx-tick, .confetti')]
+    for (const el of els) el.style.animation = 'none'
+    boxEl.getBoundingClientRect() // a reflow, so the animations start over
+    for (const el of els) el.style.animation = ''
+  }
 
   const CONFETTI = ['#e9dfc4', '#c6f24e', '#d23b36', '#1e7a4f', '#dcff7a', '#efeee6']
-  const confetti = Array.from({ length: 45 }, (_, i) => ({
+  // Scattered all round the sum, mostly upwards, each a moment apart (as on the canvas)
+  const confetti = Array.from({ length: 34 }, (_, i) => ({
     c: CONFETTI[i % CONFETTI.length],
     w: 6 + ((i * 7) % 5), h: 10 + ((i * 5) % 7),
-    x: Math.round(Math.cos(i * 2.4) * (170 + ((i * 37) % 220))),
-    y: Math.round(-80 - ((i * 53) % 250)),
-    r: ((i * 97) % 720) - 360,
+    x: Math.round(Math.cos(i * 2.4) * (70 + ((i * 37) % 240))),
+    y: Math.round(Math.sin(i * 2.4) * (60 + ((i * 53) % 150)) - 40),
+    r: ((i * 97) % 960) - 540,
+    d: ((i * 7) % 17) / 100,
   }))
 
   const box = $derived(
@@ -37,39 +53,40 @@
 
 <span class="sr-only" role="status" aria-live="polite">{band.eyebrow}: {band.sum}. {band.afterLabel} {band.after}</span>
 
-{#key replays}
-  {#if compact}
-    <div class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}">
-      <span class="flex justify-between gap-2 text-[10px] md:text-[13px] leading-none">
-        <span class="{eyebrowColor} truncate">{band.eyebrow}</span><span class="hidden md:inline {quiet}">{band.progressShort}</span>
-      </span>
-      <span class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
-      <span class="flex items-baseline justify-between gap-1 text-[10px] md:text-[13px] leading-none">
-        <span class="{quiet} truncate">{band.afterLabel}</span>
-        <span class="font-display font-bold text-[13px] md:text-[24px] leading-none {afterColor}">{band.after}</span>
-      </span>
-      {#if tone === 'max'}{@render burst()}{/if}
-    </div>
-  {:else}
-    <div class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}">
-      <span class="flex flex-col items-end gap-[2px] text-right">
-        <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
-        <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
-      </span>
-      <span class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}" class:fx-tick={band.bigDart}>{band.sum}</span>
-      <span class="flex flex-col gap-[2px]">
-        <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
-        <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
-      </span>
-      {#if tone === 'max'}{@render burst()}{/if}
-    </div>
-  {/if}
-{/key}
+{#if compact}
+  <div bind:this={boxEl} class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}">
+    <span class="flex justify-between gap-2 text-[10px] md:text-[13px] leading-none">
+      <span class="{eyebrowColor} truncate">{band.eyebrow}</span><span class="hidden md:inline {quiet}">{band.progressShort}</span>
+    </span>
+    <span class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}" class:fx-tick={band.bigDart}>{@render sum()}</span>
+    <span class="flex items-baseline justify-between gap-1 text-[10px] md:text-[13px] leading-none">
+      <span class="{quiet} truncate">{band.afterLabel}</span>
+      <span class="font-display font-bold text-[13px] md:text-[24px] leading-none {afterColor}">{band.after}</span>
+    </span>
+    {#if tone === 'max'}{@render burst()}{/if}
+  </div>
+{:else}
+  <div bind:this={boxEl} class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}">
+    <span class="flex flex-col items-end gap-[2px] text-right">
+      <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
+      <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
+    </span>
+    <span class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}" class:fx-tick={band.bigDart}>{@render sum()}</span>
+    <span class="flex flex-col gap-[2px]">
+      <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
+      <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
+    </span>
+    {#if tone === 'max'}{@render burst()}{/if}
+  </div>
+{/if}
+
+<!-- A bust's sum is struck through, which doesn't reach into the wheels: it stands still -->
+{#snippet sum()}{#if band.bust}{band.sum}{:else}<RollingNumber value={band.sum} normal="up" reset={visit} />{/if}{/snippet}
 
 {#snippet burst()}
   <span class="absolute inset-0 pointer-events-none" aria-hidden="true">
     {#each confetti as p, i (i)}
-      <span class="confetti" style="--c:{p.c};--w:{p.w}px;--h:{p.h}px;--x:{p.x}px;--y:{p.y}px;--r:{p.r}deg"></span>
+      <span class="confetti" style="--c:{p.c};--w:{p.w}px;--h:{p.h}px;--x:{p.x}px;--y:{p.y}px;--r:{p.r}deg;animation-delay:{p.d}s"></span>
     {/each}
   </span>
 {/snippet}
@@ -82,7 +99,7 @@
   .confetti {
     position: absolute; left: 50%; top: 50%;
     width: var(--w); height: var(--h); background: var(--c); border-radius: 2px; opacity: 0;
-    animation: dc-conf 2.6s cubic-bezier(.2, .8, .2, 1) 1 forwards;
+    animation: dc-conf 2.6s cubic-bezier(.15, .7, .3, 1) 1 forwards;
   }
   @keyframes dc-ton {
     0%, 100% { box-shadow: 0 0 0 0 rgba(198, 242, 78, 0); }
@@ -90,16 +107,17 @@
   }
   @keyframes dc-num { 50% { transform: scale(1.05); } }
   @keyframes dc-max {
-    0% { transform: scale(1); }
-    20% { transform: scale(1.07); box-shadow: 0 0 48px rgba(198, 242, 78, .55); }
-    45% { transform: scale(.99); }
-    70% { transform: scale(1.04); }
-    100% { transform: scale(1); box-shadow: none; }
+    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198, 242, 78, .7); }
+    10% { transform: scale(1.07); box-shadow: 0 0 0 14px rgba(198, 242, 78, .45), 0 0 80px rgba(198, 242, 78, .6); }
+    22% { transform: scale(.99); }
+    32% { transform: scale(1.04); box-shadow: 0 0 0 22px rgba(198, 242, 78, .12), 0 0 60px rgba(198, 242, 78, .4); }
+    50%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198, 242, 78, 0); }
   }
   @keyframes dc-tick { 12% { transform: scale(1.12); } 100% { transform: scale(1); } }
   @keyframes dc-conf {
-    0% { opacity: 1; transform: translate(-50%, -50%) rotate(0deg); }
-    100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y) + 120px)) rotate(var(--r)); }
+    0% { opacity: 0; transform: translate(-50%, -50%) rotate(0deg); }
+    6%, 70% { opacity: 1; }
+    100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--r)); }
   }
   @media (prefers-reduced-motion: reduce) {
     .fx-ton, .fx-ton .sum, .fx-max, .fx-tick { animation: none; }

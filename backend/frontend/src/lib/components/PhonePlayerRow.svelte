@@ -2,9 +2,11 @@
   // A waiting player on a phone: avatar, name, a short line (up next, can finish), leg pips, the number that matters.
   import LegPips from './LegPips.svelte'
   import PlayerPill from './PlayerPill.svelte'
+  import RollingNumber from './RollingNumber.svelte'
+  import type { RollOptions } from '$lib/rollingNumber'
   import type { PillKind } from './pills.js'
 
-  let { name, pill, sub, value, valueLabel, legs, active = false, you = false }: {
+  let { name, pill, sub, value, valueLabel, legs, active = false, you = false, roll = {} }: {
     name: string
     pill: PillKind | null
     sub: string
@@ -15,6 +17,8 @@
     active?: boolean
     /** The viewer's own seat (remote games). */
     you?: boolean
+    /** How the value rolls when it changes. */
+    roll?: RollOptions
   } = $props()
 
   const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
@@ -31,6 +35,6 @@
   {#if legs && legs.total > 1}<LegPips total={legs.total} won={legs.won} active={false} />{/if}
   <span class="ml-auto flex flex-col items-end shrink-0">
     <span class="text-[10px] tracking-[0.1em] uppercase text-text-dim">{valueLabel}</span>
-    <span class="font-display font-bold text-[32px] leading-[0.9] tabular-nums {active ? 'text-text' : 'text-ink-3'}">{value}</span>
+    <span class="font-display font-bold text-[32px] leading-[0.9] tabular-nums {active ? 'text-text' : 'text-ink-3'}"><RollingNumber {value} {...roll} /></span>
   </span>
 </section>

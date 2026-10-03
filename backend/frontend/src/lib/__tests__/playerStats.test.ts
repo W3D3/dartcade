@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { x01Player, atcPlayer } from '../playerStats.js'
+import { x01Player, atcPlayer, x01Roll } from '../playerStats.js'
 import { emptyHistory, type VisitHistory } from '../visitHistory.js'
 import type { AtcGame, X01Game } from '../api/game-ws'
 
@@ -17,6 +17,24 @@ describe('x01Player', () => {
       remaining: 81, canFinish: 'T19 · D12', avg: '80.0', legAvg: '80.0', last: '60', darts: 16, legsWon: 1, firstTo: 3,
       current: { scored: 60, left: 81, bust: false },
     })
+  })
+
+  it("'visit': the thrower's big score holds at the visit's start; the rest stays per dart", () => {
+    const h = { ...history([[visit(100, 401), visit(60, 341)]]), start: [141, null] }
+    const p = x01Player(game(), 0, h, { active: true, suggest: true, scoreUpdates: 'visit' })
+    expect(p).toMatchObject({ remaining: 81, shown: 141, canFinish: 'T19 · D12', current: { scored: 60, left: 81 } })
+    expect(x01Player(game(), 0, h, { active: true, suggest: true }).shown).toBe(81)
+    expect(x01Player(game({ visitLocked: true, scores: [0, 87] }), 0, h, { active: true, suggest: true, scoreUpdates: 'visit' }).shown).toBe(0)
+  })
+
+  it('x01Roll: how the big score rolls (new leg, bust, checkout), for players and teams alike', () => {
+    expect(x01Roll({ leg: 3, shown: 81, current: null })).toEqual({ value: 81, reset: 3, bust: false, checkout: false })
+    expect(x01Roll({ leg: 3, shown: 32, current: { bust: true } })).toEqual({ value: 32, reset: 3, bust: true, checkout: false })
+    expect(x01Roll({ leg: 3, shown: 0, current: { bust: false } })).toEqual({ value: 0, reset: 3, bust: false, checkout: true })
+  })
+
+  it('counts the legs played: the score starts over when that changes', () => {
+    expect(x01Player(game({ legs: [1, 2] }), 1, emptyHistory(), { active: false, suggest: true }).leg).toBe(3)
   })
 
   it('a waiting player has no running visit and three darts to finish', () => {
