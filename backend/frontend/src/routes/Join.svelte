@@ -36,6 +36,8 @@
   let error = $state('')
   let busy = $state(false)
   let leaveFirst = $state<string | null>(null)
+  // Your game is running: finish or end it before joining
+  let runningSessionId = $state<string | null>(null)
   const you = $derived($currentUser?.name ?? 'you')
 
   /** Looks the code up; again from "Try again" after a failed check. */
@@ -58,12 +60,16 @@
     if (!preview) return
     busy = true
     error = ''
+    runningSessionId = null
     try {
       const res = await api.POST('/api/lobbies/{id}/join', { params: { path: { id: preview.id } }, body: { code } })
       if (res.data) { void push('/lobby'); return }
       const r: Refusal = res.error
       if (r.code === 'in_lobby' && r.lobbyId && r.lobbyId !== preview.id) leaveFirst = r.lobbyId
-      else error = describeConflict(r)
+      else {
+        error = describeConflict(r)
+        if (r.code === 'active_session' && r.sessionId) runningSessionId = r.sessionId
+      }
     } finally { busy = false }
   }
 
@@ -102,7 +108,12 @@
     </div>
     {#if preview}<LobbyPreviewCard name={preview.name} hostName={preview.hostName} boardNames={preview.boardNames} peopleCount={preview.peopleCount} />{/if}
     <p class="m-0 text-[13px] text-text-dim">Or point your phone's camera at the QR code on the host's lobby screen.</p>
-    {#if error}<ErrorText>{error}</ErrorText>{/if}
+    {#if error}
+      <span class="flex flex-wrap items-center gap-3">
+        <ErrorText>{error}</ErrorText>
+        {#if runningSessionId}<Button variant="outline" size="sm" href="#/session/{runningSessionId}" class="px-3 text-[13px]">Return to game</Button>{/if}
+      </span>
+    {/if}
     <Button size="xl" class="mt-auto" disabled={!preview || busy} onclick={() => void join()}>{busy ? 'Joining…' : `Join as ${you}`}</Button>
     <p class="m-0 text-[13px] text-center text-text-muted">
       Not {you}? <button type="button" onclick={switchAccount} class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Switch account</button>

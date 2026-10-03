@@ -250,6 +250,7 @@ export class LobbyService {
     // never closes the joiner's own lobby before failing (see closeOwnSoloLobbyFirst)
     const target = await q.loadLobby(this.db, lobbyId)
     if (!target || target.closedAt !== null || target.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
+    this.refuseIfPlaying(userId)
     await this.closeOwnSoloLobbyFirst(userId, lobbyId)
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.reload(lobbyId)
@@ -280,9 +281,16 @@ export class LobbyService {
     await this.enqueue(own, () => this.closeIfSoloAndIdle(own, userId))
   }
 
+  /** Nobody joins a lobby while their game runs: they finish or end it first. */
+  private refuseIfPlaying(userId: string): void {
+    const session = this.deps.engine.getSessionByUser(userId)
+    if (session) throw LobbyError.conflict({ error: 'You already have a game running', code: 'active_session', sessionId: session.id })
+  }
+
   // Runs in the lobby's queue
   private async addMember(lobby: LobbyState, userId: string): Promise<LobbyRef> {
     if (rules.isMember(lobby, userId)) return refOf(lobby)
+    this.refuseIfPlaying(userId)
     const open = await q.getOpenLobbyIdOfUser(this.db, userId)
     if (open !== undefined) throw inLobby(open)
     const user = (await getUsersByIds(this.db, [userId])).at(0)
@@ -568,6 +576,7 @@ export class LobbyService {
     // pendingInvite already checked the invite is theirs and still pending, before this
     // closes their own solo lobby (see closeOwnSoloLobbyFirst); a dead invite never does.
     const { lobbyId } = await this.pendingInvite(userId, inviteId)
+    this.refuseIfPlaying(userId)
     await this.closeOwnSoloLobbyFirst(userId, lobbyId)
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.reload(lobbyId)

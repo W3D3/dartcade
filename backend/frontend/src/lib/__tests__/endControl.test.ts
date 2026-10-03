@@ -1,11 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import type { Snapshot } from '$lib/api'
-import { endControl } from '../endControl.js'
+import { endControl, afterGameRoute } from '../endControl.js'
 import fixture from './fixtures/x01-snapshot.json'
 
-const snap = (patch: { ownerUserId?: string; mySeats?: number[] } = {}): Snapshot => {
+const snap = (patch: { ownerUserId?: string; mySeats?: number[]; lobbyId?: string | null } = {}): Snapshot => {
   const base = structuredClone(fixture) as unknown as Snapshot
-  return { ...base, ownerUserId: patch.ownerUserId ?? base.ownerUserId, mySeats: patch.mySeats ?? base.mySeats }
+  return {
+    ...base, ownerUserId: patch.ownerUserId ?? base.ownerUserId, mySeats: patch.mySeats ?? base.mySeats,
+    lobbyId: patch.lobbyId === undefined ? base.lobbyId : patch.lobbyId,
+  }
 }
 
 describe('endControl', () => {
@@ -27,5 +30,16 @@ describe('endControl', () => {
 
   it('nobody acts without a snapshot', () => {
     expect(endControl(null, 'host')).toBeNull()
+  })
+})
+
+describe('afterGameRoute', () => {
+  it('goes back to the lobby after a lobby game', () => {
+    expect(afterGameRoute(snap({ lobbyId: 'l1' }))).toBe('/lobby')
+  })
+
+  it('goes home after a game outside a lobby, or without a snapshot', () => {
+    expect(afterGameRoute(snap({ lobbyId: null }))).toBe('/')
+    expect(afterGameRoute(null)).toBe('/')
   })
 })
