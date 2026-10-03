@@ -762,6 +762,8 @@ export interface components {
             configMeta: {
                 [key: string]: components["schemas"]["ConfigFieldMeta"];
             };
+            /** @description The game can be played in teams (its config takes format and teams) */
+            teams: boolean;
         };
         GameModeList: {
             modes: components["schemas"]["GameInfo"][];

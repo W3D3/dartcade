@@ -159,7 +159,8 @@
                         "required": [
                           "id",
                           "defaultConfig",
-                          "configMeta"
+                          "configMeta",
+                          "teams"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -216,6 +217,10 @@
                                 }
                               }
                             }
+                          },
+                          "teams": {
+                            "type": "boolean",
+                            "description": "The game can be played in teams (its config takes format and teams)"
                           }
                         }
                       }
@@ -10503,7 +10508,8 @@
         "required": [
           "id",
           "defaultConfig",
-          "configMeta"
+          "configMeta",
+          "teams"
         ],
         "additionalProperties": false,
         "properties": {
@@ -10560,6 +10566,10 @@
                 }
               }
             }
+          },
+          "teams": {
+            "type": "boolean",
+            "description": "The game can be played in teams (its config takes format and teams)"
           }
         }
       },
@@ -10577,7 +10587,8 @@
               "required": [
                 "id",
                 "defaultConfig",
-                "configMeta"
+                "configMeta",
+                "teams"
               ],
               "additionalProperties": false,
               "properties": {
@@ -10634,6 +10645,10 @@
                       }
                     }
                   }
+                },
+                "teams": {
+                  "type": "boolean",
+                  "description": "The game can be played in teams (its config takes format and teams)"
                 }
               }
             }

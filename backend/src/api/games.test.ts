@@ -39,7 +39,10 @@ describe('GET /api/gamemodes', () => {
   it('lists the game modes', async () => {
     const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
     expect(res.statusCode).toBe(200)
-    expect(res.json().modes.map((m: any) => m.id)).toEqual(['atc', 'x01'])
+    expect(res.json().modes.map((m: any) => ({ id: m.id, teams: m.teams }))).toEqual([
+      { id: 'atc', teams: false },
+      { id: 'x01', teams: false },
+    ])
   })
 })
 
