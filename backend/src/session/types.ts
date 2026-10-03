@@ -100,6 +100,8 @@ export interface GameModule<S, Cfg = Record<string, never>, V extends object = R
   configMeta?: Record<string, ConfigFieldMeta>
   /** Can be played in teams: its config takes `format` and `teams` (see games/teams.ts). */
   teams?: true
+  /** The team index of every seat (a game with `teams`; in singles the seat itself). */
+  teamsOf?(s: S): number[]
   /** Reject a config that can't be played with these players; returns the reason. */
   validate?(cfg: Cfg, players: Player[]): string | null
   /** `rng` drives any random setup; the engine passes one seeded per game. */

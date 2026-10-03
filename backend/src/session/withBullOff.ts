@@ -44,9 +44,12 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
     return { state: { ...s, game: r.state }, effects: r.effects }
   }
 
+  const teamsOf = game.teamsOf?.bind(game)
   return {
     id: game.id,
     version: game.version,
+    teams: game.teams,
+    teamsOf: teamsOf && (s => teamsOf(s.game)),
     getLeg: s => game.getLeg?.(s.game) ?? 0,
     summarize: (s, ctx) => game.summarize(s.game, ctx),
     // Empty when the game has no throw order of its own (results() then uses seat order)

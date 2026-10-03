@@ -48,6 +48,15 @@ describe('turnOrder', () => {
   it('handles single-seat teams', () => {
     expect(turnOrder([0], 0)).toEqual([0])
   })
+  it('starts with a given seat: its team leads, its seats rotated to start at it', () => {
+    // 2v2, seat 3 (B2) leads: B2 A1 B1 A2
+    expect(turnOrder([0, 1, 0, 1], 1, 3)).toEqual([3, 0, 1, 2])
+    expect(turnOrder([0, 1, 0, 1], 0, 2)).toEqual([2, 1, 0, 3])
+    // 2v1, seat 2 (A2) leads: A2 B1 A1 B1
+    expect(turnOrder([0, 1, 0], 0, 2)).toEqual([2, 1, 0, 1])
+    // Singles: the leading seat is the starting team
+    expect(turnOrder([0, 1, 2], 1, 1)).toEqual([1, 2, 0])
+  })
   it('repeats smallest team across multiple rounds', () => {
     expect(turnOrder([0, 1, 0, 0], 0)).toEqual([0, 1, 2, 1, 3, 1])
     expect(turnOrder([0, 1, 0, 1, 0], 0)).toEqual([0, 1, 2, 3, 4, 1])

@@ -841,6 +841,7 @@ components:
     ErrorResponse: { $ref: 'common-v1.json#/$defs/ErrorResponse' }
 
     Segment: { $ref: 'common-v1.json#/$defs/Segment' }
+    TeamView: { $ref: 'common-v1.json#/$defs/TeamView' }
 
     HistoryDart:
       type: object
@@ -867,6 +868,10 @@ components:
       additionalProperties: false
       properties:
         mode: { type: string, enum: [x01] }
+        teams:
+          type: array
+          description: Only in a team game
+          items: { $ref: '#/components/schemas/TeamView' }
         legs:
           type: array
           items:

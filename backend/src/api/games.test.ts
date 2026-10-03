@@ -41,7 +41,7 @@ describe('GET /api/gamemodes', () => {
     expect(res.statusCode).toBe(200)
     expect(res.json().modes.map((m: any) => ({ id: m.id, teams: m.teams }))).toEqual([
       { id: 'atc', teams: false },
-      { id: 'x01', teams: false },
+      { id: 'x01', teams: true },
     ])
   })
 })

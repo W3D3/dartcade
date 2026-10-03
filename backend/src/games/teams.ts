@@ -26,9 +26,19 @@ export function seatsByTeam(teamOf: number[]): number[][] {
   return out
 }
 
-/** The turn rotation: one seat per turn, teams alternating, starting with `startTeam`; a smaller team's seats repeat (A1 B1 A2 B1). Singles: [0, 1, … n-1] rotated to start at startTeam. */
-export function turnOrder(teamOf: number[], startTeam: number): number[] {
+/**
+ * The turn rotation: one seat per turn, teams alternating, starting with `startTeam`; a
+ * smaller team's seats repeat (A1 B1 A2 B1). Singles: [0, 1, … n-1] rotated to start at
+ * startTeam. With `leadSeat` (a seat of `startTeam`, e.g. the bull off winner) that team's
+ * seats are rotated to start at it (A2 B1 A1 B2); the other teams keep seat order.
+ */
+export function turnOrder(teamOf: number[], startTeam: number, leadSeat?: number): number[] {
   const teams = seatsByTeam(teamOf)
+  if (leadSeat !== undefined && teams[startTeam]?.includes(leadSeat)) {
+    const seats = teams[startTeam]
+    const at = seats.indexOf(leadSeat)
+    teams[startTeam] = [...seats.slice(at), ...seats.slice(0, at)]
+  }
   const n = teams.length
   if (n === 0) return []
   const rounds = Math.max(...teams.map(t => t.length))
