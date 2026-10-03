@@ -9,12 +9,12 @@
   import GameSettings from '$lib/components/GameSettings.svelte'
   import PlayButton from '$lib/components/PlayButton.svelte'
   import InvitesBanner from '$lib/components/lobby/InvitesBanner.svelte'
-  import { gameName, nextGameSummary } from '$lib/lobby/format'
+  import { gameName } from '$lib/lobby/format'
   import { me } from '$lib/lobby/sockets'
   import { initialGameSelection } from '$lib/lobby/start'
   import { lobbyPath, playAction, saveNextGame, type PlayAction } from '$lib/lobby/play'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
-  import { GAME_MODES, gameModes } from '$lib/gameModes'
+  import { GAME_MODES, gameModes, withDefaults } from '$lib/gameModes'
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const X01_DEFAULTS: Record<string, unknown> = {
@@ -66,6 +66,8 @@
   // Your lobby, as /ws/me sums it up: the server decides which button you get
   const action = $derived<PlayAction>(playAction($me?.lobby ?? null))
   const lobbyGame = $derived($me?.lobby?.nextGame ?? null)
+  const lobbyGameInfo = $derived(lobbyGame ? games.find(g => g.id === lobbyGame.gameId) : undefined)
+  const lobbyGameDefaults = $derived(lobbyGame ? gameDefaults[lobbyGame.gameId] ?? lobbyGameInfo?.defaultConfig ?? {} : {})
 
   // The host's form starts from the lobby's saved next game: applied once, the first time it's
   // known (after the defaults above), so the host's later edits here aren't overwritten by it.
@@ -150,13 +152,14 @@
         </div>
 
         {#if !canEditGame}
-          <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
-            {#if lobbyGame}
-              <span class="text-[14px] leading-[1.5] text-text">{nextGameSummary(lobbyGame)}</span>
-            {:else}
+          {#if lobbyGame}
+            <GameSettings gameId={lobbyGame.gameId} config={withDefaults(lobbyGame.config, lobbyGameDefaults)}
+              defaults={lobbyGameDefaults} meta={lobbyGameInfo?.configMeta ?? {}} readonly />
+          {:else}
+            <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
               <span class="text-[14px] leading-[1.5] text-text-muted">The host hasn't picked a game yet.</span>
-            {/if}
-          </div>
+            </div>
+          {/if}
         {:else}
           <GameSettings gameId={selectedMode} {config} defaults={gameDefaults[selectedMode] ?? {}}
             meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}}

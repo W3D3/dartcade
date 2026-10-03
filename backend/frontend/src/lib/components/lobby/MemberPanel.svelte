@@ -1,11 +1,16 @@
 <script lang="ts">
-  // A member's next-game card (Lobby-Phone): the host's pick, "I'm in" or sitting this one out, and Ready.
-  import { Check } from '@lucide/svelte'
+  // A member's next-game card (Lobby-Phone): the host's pick, "I'm in" or sitting this one out,
+  // Ready, and the game's settings exactly as the host set them (read-only: a Settings toggle
+  // opens the same panel the host's card has, sized from the lobby snapshot, not local state).
+  import { Check, Settings } from '@lucide/svelte'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
+  import NextGameSettingsPanel from './NextGameSettingsPanel.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
+  import ThrowOrderField from './ThrowOrderField.svelte'
+  import { gameModes, withDefaults } from '$lib/gameModes'
   import { hostName as hostNameOf, type PersonPatch } from '$lib/lobby/rules'
 
   let { lobby, me, onupdate }: {
@@ -16,10 +21,23 @@
 
   const PLAYS = [{ value: true, label: "I'm in" }, { value: false, label: 'Sitting this one out' }]
   const hostName = $derived(hostNameOf(lobby) ?? 'The host')
+
+  const game = $derived(lobby.nextGame)
+  const info = $derived(game ? $gameModes.find(g => g.id === game.gameId) : undefined)
+  const defaults = $derived(info?.defaultConfig ?? {})
+  const config = $derived(game ? withDefaults(game.config, defaults) : {})
+  let settingsOpen = $state(false)
 </script>
 
 <section aria-label="Next game" class="p-[14px] md:p-5 rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[10px]">
   <NextGameSummary game={lobby.nextGame} pickedBy="{hostName}'s pick" size="sm" />
+  {#if game}
+    <Button variant="outline" size="md" pressed={settingsOpen} class="font-semibold" aria-expanded={settingsOpen}
+      onclick={() => settingsOpen = !settingsOpen}><Settings size={16} />Settings</Button>
+    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} readonly>
+      <ThrowOrderField {lobby} gameId={game.gameId} readonly />
+    </NextGameSettingsPanel>
+  {/if}
   <SegmentedControl options={PLAYS} value={me.plays} onchange={(v) => { if (v !== me.plays) void onupdate(me.id, { plays: v === true }) }} />
   {#if !me.plays}
     <Button variant="ghost" size="lg" disabled class="border-dashed">Ready · not needed this game</Button>

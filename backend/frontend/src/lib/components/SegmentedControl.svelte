@@ -1,15 +1,18 @@
 <script lang="ts">
   import { Tooltip } from 'bits-ui'
 
-  let { options, value = $bindable(), onchange, defaultValue, class: className = '' }: {
+  let { options, value = $bindable(), onchange, defaultValue, disabled = false, class: className = '' }: {
     options: { value: unknown; label: string; tooltip?: string; disabled?: boolean; title?: string }[]
     value?: unknown
     onchange?: (v: unknown) => void
     defaultValue?: unknown
+    /** Read-only: no clicks, every option dimmed except the selected one (which stays readable). */
+    disabled?: boolean
     class?: string
   } = $props()
 
   function pick(v: unknown) {
+    if (disabled) return
     value = v
     onchange?.(v)
   }
@@ -19,9 +22,13 @@
 
 <div class="flex gap-1 p-1 bg-bg rounded-[10px] {className}">
   {#each options as opt (opt.label)}
-    <button type="button" onclick={() => pick(opt.value)} disabled={opt.disabled} title={opt.title}
-      class="flex-1 h-10 rounded-[7px] text-[15px] transition-colors border-0 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed
-             {value === opt.value
+    {@const isSelected = value === opt.value}
+    {@const isOff = disabled || opt.disabled}
+    <button type="button" onclick={() => pick(opt.value)} disabled={isOff} aria-disabled={isOff} title={opt.title}
+      class="flex-1 h-10 rounded-[7px] text-[15px] transition-colors border-0
+             {isOff ? 'cursor-not-allowed' : 'cursor-pointer'}
+             {isOff && !isSelected ? 'opacity-40' : ''}
+             {isSelected
                ? isNonDefault
                  ? 'bg-accent/15 text-accent font-semibold ring-1 ring-accent/40 ring-inset'
                  : 'bg-[#2a2d27] text-text font-semibold'

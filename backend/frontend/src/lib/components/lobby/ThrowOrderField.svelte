@@ -8,11 +8,13 @@
   import Field from './Field.svelte'
   import { hasBullOff } from '$lib/lobby/rules'
 
-  let { lobby, gameId, onchange }: {
+  let { lobby, gameId, readonly = false, onchange }: {
     lobby: Lobby
     /** The game it's for: the lobby's next game. */
     gameId: string | null
-    onchange: (order: ThrowOrder) => void
+    /** A member sees exactly what's set, but can't change it. */
+    readonly?: boolean
+    onchange?: (order: ThrowOrder) => void
   } = $props()
 
   const isOrder = (v: unknown): v is ThrowOrder => v === 'lobby' || v === 'random' || v === 'bulloff'
@@ -33,5 +35,6 @@
 </script>
 
 <Field label="Throw order">
-  <SegmentedControl {options} value={lobby.throwOrder} onchange={(v) => { if (isOrder(v)) onchange(v) }} />
+  <SegmentedControl {options} value={lobby.throwOrder} disabled={readonly}
+    onchange={(v) => { if (!readonly && isOrder(v)) onchange?.(v) }} />
 </Field>
