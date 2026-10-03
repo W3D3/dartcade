@@ -1,7 +1,9 @@
 <script lang="ts">
   // A game mode's settings (the Play page's setup, the lobby's next-game card): X01's start
-  // score, check-in, check-out, bull value, max rounds and first to; Around the Clock's fields
-  // as the backend describes them. Bull off isn't here: the lobby's throw order decides it.
+  // score, check-in, check-out, bull off, bull value, max rounds and first to; Around the
+  // Clock's fields as the backend describes them. Bull off also drives the lobby's throw
+  // order (the server keeps them in sync): picking WDC/PDC here turns the throw order to
+  // Bull-off, and picking Off there turns this back off.
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import Stepper from '$lib/components/Stepper.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
@@ -28,6 +30,11 @@
     { value: 'straight', label: 'Straight' },
     { value: 'double',   label: 'Double'   },
     { value: 'master',   label: 'Master'   },
+  ]
+  const bullOffOptions = [
+    { value: 'off', label: 'Off' },
+    { value: 'wdc', label: 'WDC', tooltip: 'Re-throw if both darts land in the same scoring area (both outer bull or both inner bull).' },
+    { value: 'pdc', label: 'PDC', tooltip: 'Inner bull always beats outer bull. Re-throw only if both hit the inner bull.' },
   ]
   const bullValueOptions = [
     { value: '25_50', label: '25 / 50' },
@@ -60,6 +67,15 @@
       <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-out</legend>
       <SegmentedControl options={inOutOptions} value={config.outMode}
         defaultValue={defaults.outMode} onchange={(v) => onchange('outMode', v)} />
+    </fieldset>
+
+    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <legend class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce] mb-2">
+        Bull off
+        <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
+      </legend>
+      <SegmentedControl options={bullOffOptions} value={config.bullOff}
+        defaultValue={defaults.bullOff} onchange={(v) => onchange('bullOff', v)} />
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
