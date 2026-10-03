@@ -1,3 +1,5 @@
+import { forfeitPlacements } from './ranking.js'
+
 /** What a game that supports teams reads from its config (see the teams design). */
 export type TeamsConfig = { format?: 'singles' | 'teams'; teams?: number[]; teamStart?: 'first' | 'random' }
 
@@ -57,8 +59,18 @@ export function seatPlacements(teamOf: number[], teamPlacements: number[]): numb
   return teamOf.map(t => teamPlacements[t])
 }
 
-/** Every seat of a team that has a forfeited seat. */
-export function forfeitedTeamSeats(teamOf: number[], forfeited: ReadonlySet<number>): Set<number> {
-  const teams = new Set([...forfeited].map(seat => teamOf[seat]))
-  return new Set(teamOf.flatMap((t, seat) => teams.has(t) ? [seat] : []))
+/**
+ * Placements once some seats forfeited. In a team game (some team has more than one
+ * seat), places are counted among teams, not seats: a team's placement is the one
+ * `placements` already gives its seats (they share one, from `summarize`), a forfeited
+ * team ranks last among teams, and the result is mapped back to seats — so two teams
+ * forfeiting down to one come out as 1st and 2nd, not spread by seat count. Singles
+ * (every seat its own team) is unchanged: today's seat-level skip-ranking from
+ * `forfeitPlacements`.
+ */
+export function teamForfeitPlacements(teamOf: number[], placements: number[], forfeited: ReadonlySet<number>): number[] {
+  if (teamCount(teamOf) === teamOf.length) return forfeitPlacements(placements, forfeited)
+  const teamPlacements = seatsByTeam(teamOf).map(seats => placements[seats[0]])
+  const forfeitedTeams = new Set([...forfeited].map(seat => teamOf[seat]))
+  return seatPlacements(teamOf, forfeitPlacements(teamPlacements, forfeitedTeams))
 }

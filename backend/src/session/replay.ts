@@ -3,7 +3,7 @@ import { ClientMessageSchema } from '../schema/zod.js'
 import { parseBoardEvent } from './boardEvent.js'
 import { applyInput, type GameInput } from './apply.js'
 import { seededRng } from './rng.js'
-import { forfeitPlacements } from '../games/ranking.js'
+import { teamForfeitPlacements } from '../games/teams.js'
 import type { NewGameDart } from '../db/queries.js'
 import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, Seat, Session } from './types.js'
 
@@ -78,8 +78,9 @@ export function results(session: Session): FinishedSeat[] {
   const state = session.committedState
   const seats = session.module.summarize(state, { totalDarts: session.totalDarts, totalVisits: session.totalVisits })
   const forfeited = new Set(session.forfeited)
-  // Without a winner, summarize ranks by standing; a forfeit puts its seats last
-  const placements = forfeited.size > 0 ? forfeitPlacements(seats.map(r => r.placement), forfeited) : seats.map(r => r.placement)
+  const teamOf = session.module.teamsOf?.(state) ?? seats.map((_, i) => i)
+  // Without a winner, summarize ranks by standing; a forfeit puts its (whole team's) seats last
+  const placements = forfeited.size > 0 ? teamForfeitPlacements(teamOf, seats.map(r => r.placement), forfeited) : seats.map(r => r.placement)
   const order = session.module.throwOrder?.(state) ?? []
   // A throw order that doesn't name every seat once falls back to seat order
   const valid = order.length === seats.length && seats.every((_, seat) => order.includes(seat))

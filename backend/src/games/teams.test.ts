@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { teamOfSeats, teamCount, seatsByTeam, turnOrder, seatPlacements, forfeitedTeamSeats } from './teams.js'
+import { teamOfSeats, teamCount, seatsByTeam, turnOrder, seatPlacements, teamForfeitPlacements } from './teams.js'
 
 describe('teamOfSeats', () => {
   it('gives each seat its own team in singles', () => {
@@ -67,8 +67,18 @@ describe('placements', () => {
   it('gives every seat its team placement', () => {
     expect(seatPlacements([0, 1, 0, 1], [2, 1])).toEqual([2, 1, 2, 1])
   })
-  it('extends a forfeit to the whole team', () => {
-    expect([...forfeitedTeamSeats([0, 1, 0, 1], new Set([2]))].sort()).toEqual([0, 2])
-    expect([...forfeitedTeamSeats([0, 1, 2], new Set([1]))]).toEqual([1])
+})
+
+describe('teamForfeitPlacements', () => {
+  it('singles (every seat its own team): unchanged, seat-level skip-ranking', () => {
+    // 3 seats, seat 1 forfeits, the other two tie at 1st → forfeiter goes to 3rd, not 2nd
+    expect(teamForfeitPlacements([0, 1, 2], [1, 1, 1], new Set([1]))).toEqual([1, 3, 1])
+  })
+  it('2v2: seat 2 (Team A) forfeits; places are counted among the two teams', () => {
+    // Team A (seats 0, 2) is ahead (placement 1) before the forfeit, Team B (seats 1, 3) behind (2)
+    expect(teamForfeitPlacements([0, 1, 0, 1], [1, 2, 1, 2], new Set([2]))).toEqual([2, 1, 2, 1])
+  })
+  it('a team game with no forfeit keeps each team\'s own placement', () => {
+    expect(teamForfeitPlacements([0, 1, 0, 1], [1, 2, 1, 2], new Set())).toEqual([1, 2, 1, 2])
   })
 })

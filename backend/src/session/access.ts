@@ -38,8 +38,11 @@ export function authorizeAction(session: Session, userId: string, action: UserAc
   if (action.type === 'forfeit') {
     const live = session.seats.flatMap((s, i) => session.forfeited.includes(i) ? [] : [{ s, i }])
     const mine = live.filter(x => x.s.controllerUserId === userId).map(x => x.i)
-    // Nothing to give up, or nobody left to lose to
-    if (mine.length === 0 || mine.length === live.length) return null
+    if (mine.length === 0) return null  // Nothing to give up
+    const teamOf = session.module.teamsOf?.(session.committedState) ?? session.seats.map((_, i) => i)
+    // Nobody left to lose to: the sender's teams plus the already-forfeited teams cover every team
+    const covered = new Set([...mine, ...session.forfeited].map(i => teamOf[i]))
+    if (covered.size >= new Set(teamOf).size) return null
     return { type: 'forfeit', seats: mine }
   }
   // The bull off's start/rethrow and any game action decide for everyone: the host
