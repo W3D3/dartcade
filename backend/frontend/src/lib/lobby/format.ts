@@ -94,6 +94,22 @@ export function indicatorView(s: LobbySummary): IndicatorView {
   return { tag, name: s.name, line: `${first} · ${next}`, next, back }
 }
 
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
+
+/** When an invite came: "just now", "2 min ago", "Today, 18:05", "Yesterday, 18:40", "28 Sep, 09:00". */
+export function inviteTime(at: string, now: Date): string {
+  const d = new Date(at)
+  const mins = Math.floor((now.getTime() - d.getTime()) / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const time = feedTime(at)
+  const days = Math.round((dayStart(now) - dayStart(d)) / 86_400_000)
+  if (days === 0) return `Today, ${time}`
+  if (days === 1) return `Yesterday, ${time}`
+  return `${d.getDate()} ${MONTHS[d.getMonth()]}, ${time}`
+}
+
 /** Under a person's name: whose guest they are, who put them on their board, where they usually play. */
 export function personLine(p: LobbyPerson, people: LobbyPerson[], viewerId: string | null): string {
   const nameOf = (userId: string) => (userId === viewerId ? 'you' : people.find(q => q.userId === userId)?.name ?? 'someone')

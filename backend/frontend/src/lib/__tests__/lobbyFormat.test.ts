@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { activityLine, feedTime, formatCode, gameName, indicatorView, joinLink, nextGameSummary, personLine, type Part } from '../lobby/format.js'
+import { activityLine, feedTime, formatCode, gameName, indicatorView, inviteTime, joinLink, nextGameSummary, personLine, type Part } from '../lobby/format.js'
 import type { LobbyActivity, LobbyPerson } from '../api/lobby-ws'
 
 const text = (parts: Part[]) => parts.map(p => p.text).join('')
@@ -56,6 +56,17 @@ describe('lobby text', () => {
 
   it('shows the time of day', () => {
     expect(feedTime(new Date(2026, 9, 2, 21, 6).toISOString())).toBe('21:06')
+  })
+})
+
+describe('inviteTime', () => {
+  const now = new Date(2026, 9, 3, 21, 30)
+  it('says how long ago, then the day and time', () => {
+    expect(inviteTime(new Date(2026, 9, 3, 21, 29, 40).toISOString(), now)).toBe('just now')
+    expect(inviteTime(new Date(2026, 9, 3, 21, 28).toISOString(), now)).toBe('2 min ago')
+    expect(inviteTime(new Date(2026, 9, 3, 18, 5).toISOString(), now)).toBe('Today, 18:05')
+    expect(inviteTime(new Date(2026, 9, 2, 18, 40).toISOString(), now)).toBe('Yesterday, 18:40')
+    expect(inviteTime(new Date(2026, 8, 28, 9, 0).toISOString(), now)).toBe('28 Sep, 09:00')
   })
 })
 

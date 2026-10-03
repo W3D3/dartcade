@@ -1,14 +1,17 @@
 <script lang="ts">
   import BrandMark from './BrandMark.svelte'
-  import { Clock, Monitor, Target, Trophy } from '@lucide/svelte'
+  import { Clock, Mail, Monitor, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import { currentUser, signOut } from '$lib/auth'
   import DevUserSwitch from './DevUserSwitch.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
+  import NavBadge from './NavBadge.svelte'
   import { isActiveRoute } from '$lib/nav'
+  import { me } from '$lib/lobby/sockets'
 
   const userName = $derived($currentUser?.name ?? '')
   const userInitial = $derived(userName.charAt(0).toUpperCase())
+  const inviteCount = $derived($me?.invites.length ?? 0)
 
   const links = [
     { href: '/',            label: 'Play',         icon: 'play' },
@@ -51,6 +54,15 @@
         {link.label}
       </a>
     {/each}
+    {#if inviteCount > 0}
+      {@const active = isActive('/invites')}
+      <a href="#/invites" aria-current={active ? 'page' : undefined}
+        class="flex items-center gap-3 h-11 px-3 rounded-lg no-underline text-[15px]
+               {active ? 'bg-[#22251f] text-text font-semibold' : 'text-[#c9c9bf] font-medium'}">
+        <Mail size={20} strokeWidth={1.8} />Invites
+        <NavBadge count={inviteCount} label="{inviteCount} pending" class="ml-auto" />
+      </a>
+    {/if}
   </div>
 
   <div class="mt-auto flex flex-col gap-4">
