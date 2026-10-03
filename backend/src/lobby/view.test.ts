@@ -18,7 +18,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
 const at = new Date(Date.UTC(2026, 9, 2, 18, 0))
 const lobby: LobbyState = {
   id: 'l1', name: "Christoph's lobby", hostUserId: 'chris', code: 'K7Q4MD', throwOrder: 'lobby',
-  nextGame: { gameId: 'x01', config: { startScore: 501 } }, lastGame: null, createdAt: at, closedAt: null,
+  nextGame: { gameId: 'x01', config: { startScore: 501 } }, createdAt: at, closedAt: null,
   people: [
     person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', boardId: 'living', boardName: 'Living room', boardOwnerUserId: 'chris', usualBoardName: 'Living room' }),
     person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', boardId: 'living', boardName: 'Living room', boardOwnerUserId: 'chris', boardMovedBy: 'chris' }),
@@ -36,7 +36,7 @@ describe('lobbyView', () => {
       ['Max', 'away', true, 'chris'],
       ['Guest 1', null, false, null],
     ])
-    expect(view).toMatchObject({ canRematch: false, currentSessionId: null, createdAt: at.toISOString() })
+    expect(view).toMatchObject({ currentSessionId: null, createdAt: at.toISOString() })
     expect(view.invites).toEqual([{ id: 'i1', userId: 'lena', name: 'Lena', invitedByUserId: 'chris', createdAt: at.toISOString() }])
     expect(() => { checkLobbyMessage({ type: 'lobby', lobby: view }, () => undefined) }).not.toThrow()
   })

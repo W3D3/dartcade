@@ -6,17 +6,20 @@ describe('startOutcome', () => {
     expect(startOutcome({ sessionId: 's1' }, undefined)).toEqual({ kind: 'started', sessionId: 's1' })
   })
 
-  it("people who play aren't ready: ask before starting anyway", () => {
-    expect(startOutcome(undefined, { error: 'x', code: 'not_ready', notReady: [{ personId: 'l', name: 'Lena' }] }))
-      .toEqual({ kind: 'confirm', notReady: ['Lena'] })
+  it('an offline board: the dialog names it, straight from the code', () => {
+    expect(startOutcome(undefined, { error: 'x', code: 'board_offline', offlineBoards: ['Garage'] }))
+      .toEqual({ kind: 'problem', code: 'board_offline', offlineBoards: ['Garage'] })
   })
 
-  it('anything else is an error, with the game to go to if there is one', () => {
-    expect(startOutcome(undefined, { error: 'x', code: 'board_offline', offlineBoards: ['Garage'] }))
-      .toEqual({ kind: 'error', message: 'Board offline: Garage', sessionId: null })
-    expect(startOutcome(undefined, { error: 'Lena already has a game running', code: 'active_session', sessionId: 's9' }))
-      .toEqual({ kind: 'error', message: 'You already have a game running', sessionId: 's9' })
-    expect(startOutcome(undefined, undefined)).toEqual({ kind: 'error', message: 'Could not start the game', sessionId: null })
+  it("people who play aren't ready: ask before starting anyway", () => {
+    expect(startOutcome(undefined, { error: 'x', code: 'not_ready', notReady: [{ personId: 'l', name: 'Lena' }] }))
+      .toEqual({ kind: 'problem', code: 'not_ready', notReady: ['Lena'] })
+  })
+
+  it('any other refusal: the whole refusal, for the dialog to describe', () => {
+    const refusal = { error: 'Lena already has a game running', code: 'active_session' as const, sessionId: 's9' }
+    expect(startOutcome(undefined, refusal)).toEqual({ kind: 'problem', code: 'other', refusal })
+    expect(startOutcome(undefined, undefined)).toEqual({ kind: 'problem', code: 'other', refusal: { error: 'Could not start the game' } })
   })
 })
 

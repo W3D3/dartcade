@@ -1,7 +1,7 @@
 <script lang="ts">
   // The host's next-game card: the game (its settings with the Play page's form, Change game
-  // with its mode tiles), who plays, throw order, Start, and Rematch once a game was played.
-  import { ArrowRight, RotateCcw } from '@lucide/svelte'
+  // with its mode tiles), who plays, throw order and Start.
+  import { ArrowRight } from '@lucide/svelte'
   import { untrack } from 'svelte'
   import type { Lobby, ThrowOrder } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -17,11 +17,11 @@
 
   let { lobby, busy = false, onupdate, onplays, onstart }: {
     lobby: Lobby
-    /** A start is in flight: Start and Rematch wait. */
+    /** A start is in flight: Start waits. */
     busy?: boolean
     onupdate: (patch: LobbyPatch) => Promise<boolean>
     onplays: (personId: string, plays: boolean) => Promise<boolean>
-    onstart: (rematch: boolean) => void
+    onstart: () => void
   } = $props()
 
   const c = $derived(counts(lobby))
@@ -103,16 +103,9 @@
   <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
   <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
   <div class="flex flex-col gap-[6px]">
-    <!-- Rematch gets its own line on phones, beside Start from sm -->
-    <div class="flex flex-col sm:flex-row gap-2">
-      <Button size="xl" class="sm:flex-grow" disabled={!game || running || busy} onclick={() => onstart(false)}>
-        Start · {c.playing} {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
-      </Button>
-      {#if lobby.canRematch}
-        <Button variant="outline" size="xl" class="font-semibold" disabled={running || busy} aria-label="Rematch: the last game again, same players"
-          onclick={() => onstart(true)}><RotateCcw size={18} />Rematch</Button>
-      {/if}
-    </div>
+    <Button size="xl" class="w-full" disabled={!game || running || busy} onclick={() => onstart()}>
+      Start · {c.playing} {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
+    </Button>
     <span class="text-[13px]"><ReadyCount {lobby} suffix="you can start anyway" /></span>
   </div>
 </section>

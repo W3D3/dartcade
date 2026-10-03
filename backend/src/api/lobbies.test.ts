@@ -15,7 +15,7 @@ function makeApp() {
     join: vi.fn().mockResolvedValue(ref), leave: vi.fn().mockResolvedValue(undefined), update: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined), addGuest: vi.fn().mockResolvedValue({ id: 'p9' }),
     updatePerson: vi.fn().mockResolvedValue(undefined), removePerson: vi.fn().mockResolvedValue(undefined),
-    start: vi.fn().mockResolvedValue({ sessionId: 's1' }), rematch: vi.fn().mockResolvedValue({ sessionId: 's2' }),
+    start: vi.fn().mockResolvedValue({ sessionId: 's1' }),
     invite: vi.fn().mockResolvedValue({ id: 'i1' }), listInvites: vi.fn().mockResolvedValue([]),
     acceptInvite: vi.fn().mockResolvedValue(ref), declineInvite: vi.fn().mockResolvedValue(undefined),
   }
@@ -100,8 +100,6 @@ describe('lobbies API', () => {
     expect(second.statusCode).toBe(201)
     expect(JSON.parse(second.body)).toEqual({ sessionId: 's1' })
     expect(lobbies.start).toHaveBeenLastCalledWith('chris', 'l1', true)
-    expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/rematch', payload: { force: true } })).statusCode).toBe(201)
-    expect(lobbies.rematch).toHaveBeenCalledWith('chris', 'l1', true)
   })
 
   it('invites, lists, accepts and declines', async () => {

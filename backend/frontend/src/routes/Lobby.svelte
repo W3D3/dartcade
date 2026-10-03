@@ -14,13 +14,13 @@
   import InviteFriendsPanel from '$lib/components/lobby/InviteFriendsPanel.svelte'
   import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
-  import StartAnywayConfirm from '$lib/components/lobby/StartAnywayConfirm.svelte'
+  import StartProblemDialog from '$lib/components/lobby/StartProblemDialog.svelte'
   import { api } from '$lib/api'
   import type { Lobby } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
   import { isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
-  import { shouldOpenGame, startGame } from '$lib/lobby/start'
+  import { shouldOpenGame, startGame, type StartOutcome } from '$lib/lobby/start'
   import { createLobby } from '$lib/lobby/create'
   import { lobbyActions, type LobbyActions } from '$lib/lobby/actions'
   import { boardToApply } from '$lib/lobby/play'
@@ -64,7 +64,6 @@
   async function act(run: () => Promise<{ error?: Refusal }>): Promise<boolean> {
     const { error: refusal } = await run()
     error = refusal ? describeConflict(refusal) : ''
-    runningSessionId = null
     return !refusal
   }
   function withLobby(run: (actions: LobbyActions, id: string) => Promise<{ error?: Refusal }>): Promise<boolean> {
@@ -104,22 +103,18 @@
     seenSession = next
   })
 
-  // Start or Rematch; people who aren't ready get named and the host can start anyway
-  let confirmStart = $state<{ names: string[]; rematch: boolean } | null>(null)
-  // A start in flight: Start and Rematch wait for it, so a double click sends one
+  // A start problem shows in a dialog instead of the error line (see StartProblemDialog)
+  let startProblem = $state<Extract<StartOutcome, { kind: 'problem' }> | null>(null)
+  // A start in flight: Start waits for it, so a double click sends one
   let starting = $state(false)
-  // Your own game that's running elsewhere, when a start was refused for it
-  let runningSessionId = $state<string | null>(null)
-  async function start(rematch: boolean, force = false) {
+  async function start(force = false) {
     const id = lobby?.id
     if (!id || starting) return
     starting = true
-    runningSessionId = null
     try {
-      const outcome = await startGame(id, { rematch, force })
-      if (outcome.kind === 'started') { error = ''; openGame(outcome.sessionId) }
-      else if (outcome.kind === 'confirm') confirmStart = { names: outcome.notReady, rematch }
-      else { error = outcome.message; runningSessionId = outcome.sessionId }
+      const outcome = await startGame(id, { force })
+      if (outcome.kind === 'started') { error = ''; startProblem = null; openGame(outcome.sessionId) }
+      else startProblem = outcome
     } finally { starting = false }
   }
   const host = $derived(lobby !== null && isHost(lobby, viewerId))
@@ -151,10 +146,7 @@
 
 {#snippet errorBanner()}
   {#if error}
-    <span class="flex flex-wrap items-center gap-3">
-      <ErrorText>{error}</ErrorText>
-      {#if runningSessionId}<Button variant="outline" size="sm" href="#/session/{runningSessionId}" class="px-3 text-[13px]">Return to game</Button>{/if}
-    </span>
+    <ErrorText>{error}</ErrorText>
   {/if}
 {/snippet}
 
@@ -189,7 +181,7 @@
           {/if}
           {#if host}
             <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
-              busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
+              busy={starting} onstart={() => void start()} />
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
           {/if}
@@ -207,8 +199,7 @@
   </main>
 </Layout>
 
-{#if confirmStart}
-  {@const cs = confirmStart}
-  <StartAnywayConfirm names={cs.names}
-    onconfirm={() => { const { rematch } = cs; confirmStart = null; void start(rematch, true) }} oncancel={() => confirmStart = null} />
+{#if startProblem}
+  <StartProblemDialog problem={startProblem}
+    onstartanyway={() => { startProblem = null; void start(true) }} onback={() => startProblem = null} />
 {/if}

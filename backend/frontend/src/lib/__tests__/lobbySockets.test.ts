@@ -17,7 +17,7 @@ class FakeSocket {
 const open = (url: string) => new FakeSocket(url) as unknown as WebSocket
 
 const lobby = {
-  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', hostName: null, throwOrder: 'lobby', nextGame: null, canRematch: false,
+  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', hostName: null, throwOrder: 'lobby', nextGame: null,
   currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [], invites: [], activity: [], solo: true, nextHostName: null,
 }
 const meMsg = { type: 'me', invites: [], game: null, lobby: {

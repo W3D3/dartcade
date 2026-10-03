@@ -7,7 +7,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   position: 0, plays: true, ready: false, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, ...over,
 })
 const lobbyOf = (people: LobbyPerson[], hostUserId: string | null = 'chris'): LobbyState => ({
-  id: 'l', name: 'L', hostUserId, code: 'AAAAAA', throwOrder: 'lobby', nextGame: null, lastGame: null,
+  id: 'l', name: 'L', hostUserId, code: 'AAAAAA', throwOrder: 'lobby', nextGame: null,
   createdAt: new Date(0), closedAt: null, people, invites: [], activity: [],
 })
 

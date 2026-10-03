@@ -46,8 +46,8 @@ or straight from your phone. No board at hand? Tap your darts in and play anyway
 - **Every game runs in a lobby.** Playing alone is a lobby with just you in it, and it stays out
   of the way until someone else joins. Invite a friend by `@username`, or share the lobby's code,
   link or QR code; your lobby stays open between games and keeps your settings. Everyone marks
-  themselves ready before the host starts, a rematch is one tap, and the lobby's feed shows
-  who joined, who won and what changed.
+  themselves ready before the host starts, and the lobby's feed shows who joined, who won and
+  what changed.
 - **Friends on their own devices.** Once they're in your lobby, they join from their phone or
   laptop, throwing on their own board or using manual entry.
 - **Always know what's going on.** Each player's board on screen, a live view of whoever is

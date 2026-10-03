@@ -112,8 +112,6 @@ export interface LobbiesTable {
   throw_order: ColumnType<string, string | undefined, string>
   /** { gameId, config } as the host last set it. */
   next_game: unknown
-  /** { gameId, config, personIds } of the last game started here: what a rematch repeats. */
-  last_game: unknown
   created_at: ColumnType<Date, never, never>
   closed_at: ColumnType<Date | null, Date | null | undefined, Date | null>
 }

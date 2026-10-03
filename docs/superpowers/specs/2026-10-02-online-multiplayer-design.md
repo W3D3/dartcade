@@ -707,5 +707,12 @@ stays out of the way until a second account joins.
   board (tests and scripts use it) but drops `players[].userId`. The app no longer calls it.
 - **History and the match screen** keep showing the lobby name for games with other
   accounts. For a solo lobby's games the lobby name isn't shown (it's always "<you>'s lobby").
+- **One Start, no Rematch** (decided 15:46). After a game the next game keeps its mode, settings
+  and players, so Start already repeats it; `/rematch`, `canRematch` and `last_game` are gone
+  (migration 010). Earlier sections that mention Rematch describe the design before this.
+- **Start problems in a dialog.** "Board offline" and "Not ready yet" offer **Start anyway** /
+  **Back to lobby**; Start anyway (`force`) gets past both, and offline seats enter darts by manual
+  entry until their board is back. Other refusals show the message with **Back to lobby** (and
+  **Return to game** when it's your own running game).
 - **Not in this change:** the leave and end-of-game dialogs and result screens (the old
   plan 4) come after it, on top of the same model.

@@ -562,31 +562,9 @@ export interface paths {
         put?: never;
         /**
          * Host: start the next game with everyone who plays
-         * @description Answers 409 not_ready (with the names) when someone who plays isn't ready; send it again with force: true to start anyway.
+         * @description Answers 409 board_offline (with the boards), then 409 not_ready (with the names), when the host hasn't confirmed; send it again with force: true to start anyway (offline boards keep their seats, on manual entry until they're back).
          */
         post: operations["startLobbyGame"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/api/lobbies/{id}/rematch": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: components["parameters"]["LobbyId"];
-            };
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /**
-         * Host: play the last game again with the same players and settings
-         * @description The same soft ready gate as start. Works after a finished or an aborted game.
-         */
-        post: operations["rematchLobbyGame"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2077,38 +2055,6 @@ export interface operations {
         };
     };
     startLobbyGame: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                id: components["parameters"]["LobbyId"];
-            };
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["StartLobbyRequest"];
-            };
-        };
-        responses: {
-            /** @description The new game */
-            201: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["CreatedSession"];
-                };
-            };
-            400: components["responses"]["BadRequest"];
-            401: components["responses"]["Unauthorized"];
-            403: components["responses"]["Forbidden"];
-            404: components["responses"]["NotFound"];
-            409: components["responses"]["LobbyConflict"];
-            429: components["responses"]["TooManyRequests"];
-        };
-    };
-    rematchLobbyGame: {
         parameters: {
             query?: never;
             header?: never;
