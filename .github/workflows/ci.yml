@@ -68,3 +68,38 @@ jobs:
         run: |
           npm run gen:api
           [ -z "$(git status --porcelain)" ] || { echo "::error::Run 'npm run gen:api' at the repo root and commit the result"; exit 1; }
+
+  check-migrations:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: dartcade_migrations
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: jdx/mise-action@v2
+      - name: Shipped migrations are unchanged; new ones are numbered after them
+        run: scripts/check-migrations.sh origin/${{ github.base_ref }}
+      - run: npm ci
+        working-directory: backend
+      - name: Upgrading an existing database gives the same schema as a fresh one
+        run: |
+          mkdir -p "$RUNNER_TEMP/base-migrations"
+          git -C .. archive "origin/${{ github.base_ref }}" backend/src/db/migrations | tar -x -C "$RUNNER_TEMP/base-migrations" --strip-components=4
+          npx tsx src/db/checkMigrations.ts
+        working-directory: backend
+        env:
+          CHECK_DATABASE_URL: postgres://postgres:postgres@localhost:5432/dartcade_migrations
+          BASE_MIGRATIONS_DIR: ${{ runner.temp }}/base-migrations
