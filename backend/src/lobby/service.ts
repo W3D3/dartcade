@@ -15,7 +15,7 @@ import { newLobbyCode, normalizeCode } from './code.js'
 import { inviteView, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
 import { planGame, type PlanProblem } from './startPlan.js'
-import type { LobbyPerson, LobbyState, NextGame, StartGame, ThrowOrder } from './types.js'
+import type { LobbyPerson, LobbyState, NextGame, StartGame, TeamId, ThrowOrder } from './types.js'
 
 const UNIQUE_VIOLATION = '23505'
 const CODE_ATTEMPTS = 5
@@ -23,7 +23,7 @@ const CODE_ATTEMPTS = 5
 export type LobbyRef = { id: string; name: string; code: string }
 export type LobbyPreview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
 export type LobbyPatch = { name?: string; throwOrder?: ThrowOrder; nextGame?: NextGame | null; regenerateCode?: boolean }
-export type PersonPatch = { boardId?: string | null; plays?: boolean; ready?: boolean; position?: number }
+export type PersonPatch = { boardId?: string | null; plays?: boolean; ready?: boolean; position?: number; team?: TeamId }
 
 export type LobbyDeps = {
   db: Kysely<Database>
@@ -119,6 +119,17 @@ export class LobbyService {
     const lobby = await this.openFor(lobbyId, userId)
     if (!rules.isHost(lobby, userId)) throw LobbyError.forbidden('only the host can do this')
     return lobby
+  }
+
+  /**
+   * Inside a change's transaction, after its writes: while the next game is played in
+   * teams, everyone who plays and has no team gets one (rules.assignTeams), so the push
+   * that follows already shows them.
+   */
+  private async fillTeams(trx: Kysely<Database>, lobbyId: string, nextGame: NextGame | null): Promise<void> {
+    if (!rules.isTeamGame({ nextGame })) return
+    const teams = rules.assignTeams({ people: await q.teamRoster(trx, lobbyId) })
+    await q.setTeams(trx, teams)
   }
 
   // ---- views and pushes -------------------------------------------------------------
@@ -291,6 +302,7 @@ export class LobbyService {
         await q.insertPerson(trx, { id: ulid(), lobbyId: lobby.id, userId, addedByUserId: userId, name: user.name, boardId: board?.id ?? null, ready: false })
         await q.acceptInvites(trx, lobby.id, userId)
         await q.addActivity(trx, lobby.id, 'joined', userId, { name: user.name })
+        await this.fillTeams(trx, lobby.id, lobby.nextGame)
         return true
       })
       if (!inserted) throw LobbyError.notFound('lobby not found')
@@ -402,7 +414,12 @@ export class LobbyService {
         if (coupled.throwOrderChanged) set.throw_order = coupled.throwOrder
         if (coupled.nextGameChanged) set.next_game = coupled.nextGame
       }
-      if (Object.keys(set).length > 0) await q.updateLobby(this.db, lobbyId, set)
+      if (Object.keys(set).length > 0) {
+        await this.db.transaction().execute(async (trx) => {
+          await q.updateLobby(trx, lobbyId, set)
+          if (set.next_game !== undefined) await this.fillTeams(trx, lobbyId, set.next_game)
+        })
+      }
       if (patch.regenerateCode === true) await this.withFreshCode(null, code => q.updateLobby(this.db, lobbyId, { code }))
       await this.reload(lobbyId)
       await this.publish(lobbyId)
@@ -425,6 +442,7 @@ export class LobbyService {
       await this.db.transaction().execute(async (trx) => {
         await q.insertPerson(trx, { id, lobbyId, userId: null, addedByUserId: userId, name, boardId, ready: true })
         await q.addActivity(trx, lobbyId, 'guest_added', userId, { name })
+        await this.fillTeams(trx, lobbyId, lobby.nextGame)
       })
       await this.reload(lobbyId)
       await this.publish(lobbyId)
@@ -456,11 +474,13 @@ export class LobbyService {
       if (patch.ready !== undefined && !rules.canSetReady(userId, person)) throw LobbyError.forbidden('only they set their own ready')
       if (patch.plays !== undefined && !rules.canSetPlays(lobby, userId, person)) throw LobbyError.forbidden('only they or the host decide whether they play')
       if (patch.position !== undefined && !rules.canMove(lobby, userId)) throw LobbyError.forbidden('only the host reorders people')
+      if (patch.team !== undefined && !rules.canSetTeam(lobby, userId)) throw LobbyError.forbidden('only the host changes teams')
       const board = patch.boardId === undefined ? undefined : await this.boardChange(lobby, userId, person, patch.boardId)
 
       const set: q.PersonUpdate = {}
       if (patch.ready !== undefined) set.ready = patch.ready
       if (patch.plays !== undefined) set.plays = patch.plays
+      if (patch.team !== undefined) set.team = patch.team
       if (board) {
         set.board_id = board.boardId
         set.board_moved_by = board.movedBy
@@ -471,7 +491,22 @@ export class LobbyService {
         if (board) {
           await q.addActivity(trx, lobbyId, 'board_moved', userId, { name: person.name, userId: person.userId, fromBoardName: person.boardName, toBoardName: board.boardName })
         }
+        // Back in from sitting out: a team if they have none
+        if (patch.plays === true) await this.fillTeams(trx, lobbyId, lobby.nextGame)
       })
+      await this.reload(lobbyId)
+      await this.publish(lobbyId)
+    })
+  }
+
+  /** The host splits the people who play 50/50 at random; people sitting out keep their team. */
+  async shuffleTeams(userId: string, lobbyId: string): Promise<void> {
+    await this.enqueue(lobbyId, async () => {
+      const lobby = await this.openFor(lobbyId, userId)
+      if (!rules.canSetTeam(lobby, userId)) throw LobbyError.forbidden('only the host changes teams')
+      if (!rules.isTeamGame(lobby)) throw LobbyError.badRequest('the next game isn\'t played in teams')
+      const teams = rules.shuffleTeams(lobby)
+      await this.db.transaction().execute(trx => q.setTeams(trx, teams))
       await this.reload(lobbyId)
       await this.publish(lobbyId)
     })
@@ -663,9 +698,13 @@ export class LobbyService {
       if (!lobby || lobby.closedAt !== null) return
       await this.db.transaction().execute(async (trx) => {
         await q.resetAfterGame(trx, lobbyId)
+        // Everyone is back in: whoever sat out without a team gets one
+        await this.fillTeams(trx, lobbyId, lobby.nextGame)
         if (e.status === 'finished') {
-          const winner = e.results.find(r => r.placement === 1 && !r.forfeited)
-          await q.addActivity(trx, lobbyId, 'game_played', null, { sessionId: e.sessionId, gameId: e.gameId, winnerName: winner?.name ?? null, players: e.results })
+          // A team win names the whole team ("Phil & Michael")
+          const winners = e.results.filter(r => r.placement === 1 && !r.forfeited).map(r => r.name)
+          const winnerName = (e.teamGame ? winners.join(' & ') : winners.at(0)) || null
+          await q.addActivity(trx, lobbyId, 'game_played', null, { sessionId: e.sessionId, gameId: e.gameId, winnerName, players: e.results })
         } else {
           await q.addActivity(trx, lobbyId, 'game_aborted', e.abortedByUserId, { sessionId: e.sessionId, gameId: e.gameId })
         }

@@ -7,6 +7,7 @@
  * via the `definition` "ThrowOrder".
  */
 export type ThrowOrder = 'lobby' | 'random' | 'bulloff'
+export type TeamId = 'A' | 'B'
 /**
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "LobbyServerMessage".
@@ -72,6 +73,10 @@ export interface LobbyPerson {
    * Soft ready. After every game: false for members, true for guests.
    */
   ready: boolean
+  /**
+   * Their team (the host sets it). Kept from game to game and while the next game is singles; when the next game is played in teams, everyone who plays has one. null: none yet.
+   */
+  team: TeamId | null
   /**
    * Members: online while they have the lobby open. null for guests.
    */

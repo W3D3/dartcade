@@ -126,7 +126,7 @@ describe('indicatorView', () => {
 describe('personLine', () => {
   const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
     id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
-    boardOnline: false, boardMovedBy: null, usualBoardName: null, plays: true, ready: false, presence: null, ...over,
+    boardOnline: false, boardMovedBy: null, usualBoardName: null, plays: true, ready: false, team: null, presence: null, ...over,
   })
   const chris = person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph' })
   const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena', boardId: 'lenas', boardName: "Lena's place", usualBoardName: "Lena's place" })

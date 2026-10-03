@@ -15,7 +15,7 @@ function makeApp() {
     join: vi.fn().mockResolvedValue(ref), leave: vi.fn().mockResolvedValue(undefined), update: vi.fn().mockResolvedValue(undefined),
     close: vi.fn().mockResolvedValue(undefined), addGuest: vi.fn().mockResolvedValue({ id: 'p9' }),
     updatePerson: vi.fn().mockResolvedValue(undefined), removePerson: vi.fn().mockResolvedValue(undefined),
-    start: vi.fn().mockResolvedValue({ sessionId: 's1' }),
+    start: vi.fn().mockResolvedValue({ sessionId: 's1' }), shuffleTeams: vi.fn().mockResolvedValue(undefined),
     invite: vi.fn().mockResolvedValue({ id: 'i1' }), listInvites: vi.fn().mockResolvedValue([]),
     acceptInvite: vi.fn().mockResolvedValue(ref), declineInvite: vi.fn().mockResolvedValue(undefined),
   }
@@ -87,6 +87,17 @@ describe('lobbies API', () => {
     expect(lobbies.updatePerson).toHaveBeenCalledWith('chris', 'l1', 'p2', { boardId: null })
     expect((await app.inject({ method: 'DELETE', url: '/api/lobbies/l1/people/p2' })).statusCode).toBe(204)
     expect(lobbies.removePerson).toHaveBeenCalledWith('chris', 'l1', 'p2')
+  })
+
+  it('moves a person to a team and shuffles the teams; an unknown team is a 400', async () => {
+    const { app, lobbies } = makeApp()
+    expect((await app.inject({ method: 'PATCH', url: '/api/lobbies/l1/people/p2', payload: { team: 'B' } })).statusCode).toBe(204)
+    expect(lobbies.updatePerson).toHaveBeenCalledWith('chris', 'l1', 'p2', { team: 'B' })
+    expect((await app.inject({ method: 'PATCH', url: '/api/lobbies/l1/people/p2', payload: { team: 'C' } })).statusCode).toBe(400)
+    expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/teams/shuffle' })).statusCode).toBe(204)
+    expect(lobbies.shuffleTeams).toHaveBeenCalledWith('chris', 'l1')
+    lobbies.shuffleTeams.mockRejectedValueOnce(LobbyError.forbidden('only the host changes teams'))
+    expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/teams/shuffle' })).statusCode).toBe(403)
   })
 
   it('starts with the soft ready gate: 409 not_ready, then force', async () => {

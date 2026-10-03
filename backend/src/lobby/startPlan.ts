@@ -1,7 +1,7 @@
 import { games } from '../games/index.js'
 import type { GameConfig, Seat } from '../session/types.js'
-import { controllerOf, effectiveReady } from './rules.js'
-import type { LobbyState, StartGame } from './types.js'
+import { assignTeams, controllerOf, effectiveReady, isTeamFormat } from './rules.js'
+import type { LobbyPerson, LobbyState, StartGame } from './types.js'
 
 /** The game a lobby start creates. */
 export type GamePlan = { gameId: string; config: GameConfig; seats: Seat[]; shuffleSeats: boolean; personIds: string[] }
@@ -12,6 +12,32 @@ export type PlanProblem =
   | { status: 409; code: 'not_ready'; error: string; notReady: { personId: string; name: string }[] }
 
 const BULL_OFF_MODES = new Set(['wdc', 'pdc'])
+
+/** Two lists merged alternately, A1 B1 A2 B2 …; the longer one's leftovers last. */
+function interleave<T>(a: readonly T[], b: readonly T[]): T[] {
+  const out: T[] = []
+  for (let i = 0; i < Math.max(a.length, b.length); i++) {
+    if (i < a.length) out.push(a[i])
+    if (i < b.length) out.push(b[i])
+  }
+  return out
+}
+
+/**
+ * A team game's seats: the people who play, Team A and Team B each in lobby order,
+ * alternating (A1 B1 A2 B2 …), with each seat's team index (A 0, B 1). Someone who plays
+ * without a team (the lobby assigns one as they come in, so only as a fallback) gets one
+ * as the lobby would. null when a team is empty.
+ */
+function teamSeating(players: LobbyPerson[]): { players: LobbyPerson[]; teams: number[] } | null {
+  const filled = assignTeams({ people: players })
+  const teamOf = (p: LobbyPerson) => p.team ?? filled.get(p.id)
+  const a = players.filter(p => teamOf(p) === 'A')
+  const b = players.filter(p => teamOf(p) === 'B')
+  if (a.length === 0 || b.length === 0) return null
+  const seated = interleave(a, b)
+  return { players: seated, teams: seated.map(p => teamOf(p) === 'A' ? 0 : 1) }
+}
 
 /**
  * Who plays (in lobby order), in which seats, with what settings. Hard problems (unknown
@@ -29,7 +55,7 @@ export function planGame(
   const mod = games[game.gameId]
   if (!mod) return { ok: false, problem: { status: 400, error: `unknown game: ${game.gameId}` } }
   const playing = new Set(game.personIds)
-  const players = lobby.people.filter(p => playing.has(p.id))
+  let players = lobby.people.filter(p => playing.has(p.id))
   if (players.length === 0) return { ok: false, problem: { status: 400, error: 'nobody plays' } }
 
   // The lobby's throw order decides the game's own bull off setting
@@ -42,6 +68,18 @@ export function planGame(
     const chosen = config.bullOff
     const keep = typeof chosen === 'string' && BULL_OFF_MODES.has(chosen)
     config.bullOff = lobby.throwOrder !== 'bulloff' ? 'off' : keep ? chosen : 'wdc'
+  }
+  // Teams: seats alternate between them; a random throw order picks the starting team
+  // instead of shuffling seats (so the teams keep alternating)
+  let shuffleSeats = lobby.throwOrder === 'random'
+  if (isTeamFormat(game.gameId, config)) {
+    const seating = teamSeating(players)
+    if (seating === null) return { ok: false, problem: { status: 400, error: 'Both teams need a player' } }
+    players = seating.players
+    config.format = 'teams'
+    config.teams = seating.teams
+    config.teamStart = shuffleSeats ? 'random' : 'first'
+    shuffleSeats = false
   }
   const invalid = mod.validate?.(config, players.map(p => ({ name: p.name })))
   if (invalid) return { ok: false, problem: { status: 400, error: `invalid config: ${invalid}` } }
@@ -62,7 +100,7 @@ export function planGame(
     plan: {
       gameId: game.gameId,
       config,
-      shuffleSeats: lobby.throwOrder === 'random',
+      shuffleSeats,
       personIds: players.map(p => p.id),
       seats: players.map(p => ({ name: p.name, userId: p.userId, controllerUserId: controllerOf(p), boardId: p.boardId, boardName: p.boardName })),
     },

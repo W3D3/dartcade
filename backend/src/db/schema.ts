@@ -132,6 +132,8 @@ export interface LobbyPeopleTable {
   /** Who put them on their board when it wasn't their own (or their adder's) pick. */
   board_moved_by: string | null
   joined_at: ColumnType<Date, Date | undefined, never>
+  /** Team A, Team B or none (migration 011); used when the next game is played in teams. */
+  team: ColumnType<'A' | 'B' | null, 'A' | 'B' | null | undefined, 'A' | 'B' | null>
 }
 
 export interface LobbyInvitesTable {

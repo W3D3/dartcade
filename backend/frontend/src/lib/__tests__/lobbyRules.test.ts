@@ -4,7 +4,7 @@ import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
-  boardOnline: false, boardMovedBy: null, usualBoardName: null, plays: true, ready: false, presence: null, ...over,
+  boardOnline: false, boardMovedBy: null, usualBoardName: null, plays: true, ready: false, team: null, presence: null, ...over,
 })
 const chris = person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', boardId: 'living', boardName: 'Living room', boardOwnerUserId: 'chris', ready: true, presence: 'online' })
 const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', presence: 'away' })

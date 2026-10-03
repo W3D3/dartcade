@@ -9,6 +9,9 @@ export type NextGame = { gameId: string; config: GameConfig }
 /** The game a lobby start creates: the next game, with who plays (lobby person ids). */
 export type StartGame = NextGame & { personIds: string[] }
 
+/** A lobby's two teams; inside a game they're team indices 0 and 1. */
+export type TeamId = 'A' | 'B'
+
 /** A member (userId set) or a guest at a member's board (userId null). */
 export type LobbyPerson = {
   id: string
@@ -26,6 +29,8 @@ export type LobbyPerson = {
   joinedAt: Date
   /** A member's usual board (latest game's own board, else first paired); null for guests. */
   usualBoardName: string | null
+  /** Their team, kept from game to game (and while the next game is singles); null: none yet. */
+  team: TeamId | null
 }
 
 /** Someone invited into the lobby who hasn't answered yet. */

@@ -27,6 +27,8 @@ export type GameEnded = {
   abortedByUserId: string | null
   /** Seat results in seat order; empty when aborted. */
   results: { name: string; placement: number; forfeited: boolean }[]
+  /** Played in teams (some team has more than one seat): every seat placed 1st won. */
+  teamGame: boolean
   /** Every account seated (owner and every seat's controller): who to push /ws/me to. */
   userIds: string[]
 }
@@ -98,6 +100,11 @@ const controllers = (s: Session): string[] => distinct(s.seats.map(x => x.contro
 // Every account seated: the owner and every seat's controller (a member always controls their
 // own seat; only a guest's controller differs from them, and a guest has no account).
 const seatedUserIds = (s: Session): string[] => distinct([s.ownerUserId, ...controllers(s)])
+// Some team has more than one seat (without teams every seat is its own team)
+const isTeamGame = (s: Session): boolean => {
+  const teamOf = s.module.teamsOf?.(s.committedState) ?? []
+  return new Set(teamOf).size < teamOf.length
+}
 const storedSeatedUserIds = (row: Pick<StoredGameSession, 'owner_user_id' | 'players'>): string[] =>
   distinct([row.owner_user_id, ...row.players.map(p => p.controller_user_id)])
 
@@ -285,6 +292,7 @@ export class SessionEngine {
     return {
       sessionId: session.id, lobbyId: session.lobbyId, gameId: session.module.id, status, abortedByUserId,
       results: seatResults.map((r, i) => ({ name: session.players[i].name, placement: r.placement, forfeited: r.forfeited })),
+      teamGame: isTeamGame(session),
       userIds: seatedUserIds(session),
     }
   }
@@ -312,7 +320,7 @@ export class SessionEngine {
         this.warn('failed to rebuild session, aborting it', { sessionId: row.id, error: String(err) })
         try {
           await this.store.abortSession(row.id, new Date(), null)
-          await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], userIds: storedSeatedUserIds(row) })
+          await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], teamGame: false, userIds: storedSeatedUserIds(row) })
         } catch (abortErr) {
           this.warn('failed to abort an unrebuildable session', { sessionId: row.id, error: String(abortErr) })
         }
@@ -326,7 +334,7 @@ export class SessionEngine {
     // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
     if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
       await this.store.abortSession(row.id, new Date(), null)
-      await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], userIds: storedSeatedUserIds(row) })
+      await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], teamGame: false, userIds: storedSeatedUserIds(row) })
       return
     }
     const owner = row.owner_user_id

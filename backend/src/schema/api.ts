@@ -545,8 +545,30 @@ export interface paths {
         delete: operations["removeLobbyPerson"];
         options?: never;
         head?: never;
-        /** A person's board, ready, whether they play, or their place in the order (as the lobby's rules allow) */
+        /** A person's board, ready, whether they play, their place in the order, or their team (as the lobby's rules allow) */
         patch: operations["updateLobbyPerson"];
+        trace?: never;
+    };
+    "/api/lobbies/{id}/teams/shuffle": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Host: a random 50/50 split of the people who play into Team A and Team B
+         * @description Only while the next game is played in teams (400 otherwise). People sitting out keep their team.
+         */
+        post: operations["shuffleLobbyTeams"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/lobbies/{id}/start": {
@@ -1021,6 +1043,11 @@ export interface components {
             ready?: boolean;
             /** @description Host: move to this place in the lobby order */
             position?: number;
+            /**
+             * @description Host: move them to this team
+             * @enum {string}
+             */
+            team?: "A" | "B";
         };
         StartLobbyRequest: {
             /** @description Start even though people who play aren't ready */
@@ -2067,6 +2094,31 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    shuffleLobbyTeams: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Shuffled */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

@@ -2,7 +2,7 @@ import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import {
-  ACTIVITY_KINDS, type ActivityData, type ActivityKind, type InviteRow, type LobbyState, type NextGame, type ThrowOrder,
+  ACTIVITY_KINDS, type ActivityData, type ActivityKind, type InviteRow, type LobbyPerson, type LobbyState, type NextGame, type TeamId, type ThrowOrder,
 } from '../lobby/types.js'
 
 /** How many activity lines a lobby shows (newest first). */
@@ -17,7 +17,7 @@ export type LobbyUpdate = {
   name?: string; host_user_id?: string | null; code?: string; throw_order?: ThrowOrder
   next_game?: NextGame | null
 }
-export type PersonUpdate = { board_id?: string | null; board_moved_by?: string | null; plays?: boolean; ready?: boolean }
+export type PersonUpdate = { board_id?: string | null; board_moved_by?: string | null; plays?: boolean; ready?: boolean; team?: TeamId | null }
 
 // JSON columns are read defensively: a value that doesn't parse reads as absent
 const ConfigSchema = z.record(z.string(), z.unknown())
@@ -106,7 +106,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
     .leftJoin('boards as b', 'b.id', 'p.board_id')
     .select([
       'p.id', 'p.user_id', 'p.added_by_user_id', 'p.name', 'p.board_id', 'b.name as board_name', 'b.owner_user_id as board_owner_user_id',
-      'p.position', 'p.plays', 'p.ready', 'p.board_moved_by', 'p.joined_at',
+      'p.position', 'p.plays', 'p.ready', 'p.board_moved_by', 'p.joined_at', 'p.team',
     ])
     .where('p.lobby_id', '=', id)
     .orderBy('p.position').orderBy('p.joined_at')
@@ -134,7 +134,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       id: p.id, userId: p.user_id, addedByUserId: p.added_by_user_id, name: p.name,
       boardId: p.board_id, boardName: p.board_name, boardOwnerUserId: p.board_owner_user_id,
       position: p.position, plays: p.plays, ready: p.ready, boardMovedBy: p.board_moved_by, joinedAt: p.joined_at,
-      usualBoardName: p.user_id === null ? null : usual.get(p.user_id)?.name ?? null,
+      usualBoardName: p.user_id === null ? null : usual.get(p.user_id)?.name ?? null, team: p.team,
     })),
     invites: invites.map(i => ({ id: i.id, userId: i.invitee_user_id, name: i.name, invitedByUserId: i.inviter_user_id, createdAt: i.created_at })),
     activity: activity.flatMap(a => {
@@ -156,6 +156,23 @@ export async function updateLobby(db: Kysely<Database>, id: string, u: LobbyUpda
 
 export async function updatePerson(db: Kysely<Database>, id: string, u: PersonUpdate): Promise<void> {
   await db.updateTable('lobby_people').set(u).where('id', '=', id).execute()
+}
+
+/** Who's on which team, in lobby order: what assigning teams needs. */
+export async function teamRoster(db: Kysely<Database>, lobbyId: string): Promise<Pick<LobbyPerson, 'id' | 'plays' | 'team'>[]> {
+  return db.selectFrom('lobby_people').select(['id', 'plays', 'team'])
+    .where('lobby_id', '=', lobbyId)
+    .orderBy('position').orderBy('joined_at')
+    .execute()
+}
+
+/** Puts people on teams (person id → team). */
+export async function setTeams(db: Kysely<Database>, teams: ReadonlyMap<string, TeamId>): Promise<void> {
+  const both: TeamId[] = ['A', 'B']
+  for (const team of both) {
+    const ids = [...teams].flatMap(([id, t]) => t === team ? [id] : [])
+    if (ids.length > 0) await db.updateTable('lobby_people').set({ team }).where('id', 'in', ids).execute()
+  }
 }
 
 /** Rewrites the lobby order: `ids` first to last. */
