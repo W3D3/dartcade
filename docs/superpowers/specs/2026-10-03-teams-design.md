@@ -101,8 +101,8 @@ So the next game can add teams by opting in, the generic parts are shared:
 
 - **Config:** `X01Config` gains `format` and `teams` (from `TeamsConfig`); `format` defaults to
   `'singles'`. `configMeta` lists `format` (Singles / Teams) for the setup form.
-- **State:** per-team `scores`, `legs`, `opened`, `visitOpenedScores` and `bestCheckout`
-  (indexed by team index); per-seat `pointsScored` and darts stay per seat for personal stats.
+- **State:** per-team `scores`, `legs`, `opened` and `visitOpenedScores` (indexed by team
+  index); `pointsScored`, `bestCheckout` and darts stay per seat for personal stats.
   In singles every seat is its own team, so these arrays have one entry per seat, exactly as
   today, and X01 has one code path.
 - **Turns:** `order` is the seat order; the leg starter rotates by team (`nextLegStarter`).
