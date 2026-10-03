@@ -1,5 +1,6 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
 import type { LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
+import { x01Rules, type Mode } from '../gameViews/meta.js'
 
 const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock' }
 
@@ -18,22 +19,28 @@ export function joinLink(origin: string, code: string): string {
   return `${origin}/#/join/${code}`
 }
 
-const OUT: Record<string, string> = { straight: 'Straight out', double: 'Double out', master: 'Master out' }
 const ATC_ORDER: Record<string, string> = { asc: '1–20', desc: '20–1', random: 'Random order' }
 const ATC_FINISH: Record<string, string> = { twenty: 'finish on 20', single_bull: 'finish on 25', bull: 'finish on bull' }
+const BULL_OFF: Record<string, string> = { wdc: 'Bull off (WDC)', pdc: 'Bull off (PDC)' }
 const str = (v: unknown) => (typeof v === 'string' ? v : '')
 const int = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) ? v : null)
+const mode = (v: unknown, fallback: Mode): Mode => (v === 'straight' || v === 'double' || v === 'master' ? v : fallback)
 
-/** One line about the next game's settings: "501 · Double out · First to 2 legs". */
+/**
+ * One line about the next game's settings: "501 · Double in · Double out · First to 2 legs
+ * · Bull off (WDC)" — the same rules line the match screen shows (`x01Rules`), plus bull off
+ * when the game's settings turn it on.
+ */
 export function nextGameSummary(game: NextGame | null): string {
   if (!game) return ''
   const c = game.config
   if (game.gameId === 'x01') {
     const start = int(c.startScore)
-    const legs = int(c.firstTo)
     if (start === null) return ''
-    return [String(start), OUT[str(c.outMode)], legs === null ? undefined : `First to ${legs} ${legs === 1 ? 'leg' : 'legs'}`]
-      .filter(Boolean).join(' · ')
+    const legs = int(c.firstTo) ?? 3
+    const rules = x01Rules({ startScore: start, inMode: mode(c.inMode, 'straight'), outMode: mode(c.outMode, 'straight'), firstTo: legs }, 2)
+    const bullOff = BULL_OFF[str(c.bullOff)]
+    return bullOff ? `${rules} · ${bullOff}` : rules
   }
   if (game.gameId === 'atc') return [ATC_ORDER[str(c.order)], ATC_FINISH[str(c.finishOn)]].filter(Boolean).join(' · ')
   return ''

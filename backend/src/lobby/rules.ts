@@ -1,4 +1,4 @@
-import type { LobbyPerson, LobbyState } from './types.js'
+import type { LobbyPerson, LobbyState, NextGame, ThrowOrder } from './types.js'
 
 /** A board someone picks for a person: its id and owner. */
 export type BoardTarget = { boardId: string; ownerUserId: string }
@@ -73,4 +73,59 @@ export function reorder(people: LobbyPerson[], personId: string, index: number):
   const ids = people.map(p => p.id).filter(id => id !== personId)
   ids.splice(Math.max(0, Math.min(index, ids.length)), 0, personId)
   return ids
+}
+
+const bullOffModeOf = (g: NextGame | null): 'off' | 'wdc' | 'pdc' => {
+  const v = g?.config.bullOff
+  return v === 'wdc' || v === 'pdc' ? v : 'off'
+}
+
+export type BullOffCoupling =
+  | { throwOrder: ThrowOrder; nextGame: NextGame | null; throwOrderChanged: boolean; nextGameChanged: boolean }
+  | { error: string }
+
+/**
+ * Keeps the lobby's throw order and the next game's bull off setting in sync (the user's
+ * rule: the server decides, the screens read). A `nextGame` patch with bull off on turns
+ * the throw order to `bulloff`; off (or missing) turns a `bulloff` order back to `lobby`. A
+ * `throwOrder` patch to `bulloff` turns the game's bull off on (`wdc` if it wasn't already
+ * on); to `lobby`/`random` turns it off. A game without a bull off of its own can't use
+ * `bulloff`, same as a start refuses it.
+ */
+export function coupleBullOff(
+  lobby: { throwOrder: ThrowOrder; nextGame: NextGame | null },
+  patch: { throwOrder?: ThrowOrder; nextGame?: NextGame | null },
+  hasBullOff: (gameId: string) => boolean,
+): BullOffCoupling {
+  let throwOrder = patch.throwOrder ?? lobby.throwOrder
+  let throwOrderChanged = patch.throwOrder !== undefined
+  let nextGame = patch.nextGame !== undefined ? patch.nextGame : lobby.nextGame
+  let nextGameChanged = patch.nextGame !== undefined
+
+  if (patch.nextGame !== undefined && patch.throwOrder === undefined) {
+    if (bullOffModeOf(nextGame) !== 'off') {
+      if (throwOrder !== 'bulloff') { throwOrder = 'bulloff'; throwOrderChanged = true }
+    } else if (throwOrder === 'bulloff') {
+      throwOrder = 'lobby'
+      throwOrderChanged = true
+    }
+  }
+
+  if (patch.throwOrder !== undefined) {
+    if (throwOrder === 'bulloff') {
+      if (nextGame && bullOffModeOf(nextGame) === 'off') {
+        nextGame = { ...nextGame, config: { ...nextGame.config, bullOff: 'wdc' } }
+        nextGameChanged = true
+      }
+    } else if (nextGame && bullOffModeOf(nextGame) !== 'off') {
+      nextGame = { ...nextGame, config: { ...nextGame.config, bullOff: 'off' } }
+      nextGameChanged = true
+    }
+  }
+
+  if (throwOrder === 'bulloff' && nextGame && !hasBullOff(nextGame.gameId)) {
+    return { error: `${nextGame.gameId} has no bull off: pick another throw order` }
+  }
+
+  return { throwOrder, nextGame, throwOrderChanged, nextGameChanged }
 }

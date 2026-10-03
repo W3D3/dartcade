@@ -272,6 +272,59 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await expect(lobbies.update('chris', id, { name: '  ' })).rejects.toMatchObject({ statusCode: 400 })
       await expect(lobbies.update('chris', id, { nextGame: { gameId: 'nope', config: {} } })).rejects.toMatchObject({ statusCode: 400 })
     })
+
+    it('bull off: turning it on in the game settings turns the throw order to bulloff', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 501, bullOff: 'pdc' } } })
+      expect(await lobbies.view(id)).toMatchObject({ throwOrder: 'bulloff', nextGame: { config: { bullOff: 'pdc' } } })
+    })
+
+    it('bull off: turning it off in the game settings while the throw order is bulloff reverts to the lobby order', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { bullOff: 'wdc' } } })
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { bullOff: 'off' } } })
+      expect(await lobbies.view(id)).toMatchObject({ throwOrder: 'lobby', nextGame: { config: { bullOff: 'off' } } })
+    })
+
+    it('bull off: picking the lobby or random throw order turns it off in the game settings', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { bullOff: 'pdc' } } })
+      await lobbies.update('chris', id, { throwOrder: 'random' })
+      expect(await lobbies.view(id)).toMatchObject({ throwOrder: 'random', nextGame: { config: { bullOff: 'off' } } })
+    })
+
+    it('bull off: picking the bulloff throw order turns it on (wdc) when the game settings have it off', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      await lobbies.update('chris', id, { throwOrder: 'bulloff' })
+      expect(await lobbies.view(id)).toMatchObject({ throwOrder: 'bulloff', nextGame: { config: { bullOff: 'wdc' } } })
+    })
+
+    it('bull off: a game without one refuses the bulloff throw order', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })
+      await expect(lobbies.update('chris', id, { throwOrder: 'bulloff' })).rejects.toMatchObject({ statusCode: 400 })
+    })
+
+    it('bull off: an explicit throw order in the same patch wins over a conflicting bull off setting (turning it on)', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { throwOrder: 'bulloff', nextGame: { gameId: 'x01', config: { bullOff: 'off' } } })
+      expect(await lobbies.view(id)).toMatchObject({ throwOrder: 'bulloff', nextGame: { config: { bullOff: 'wdc' } } })
+    })
+
+    it('bull off: an explicit throw order in the same patch wins over a conflicting bull off setting (turning it off)', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { throwOrder: 'lobby', nextGame: { gameId: 'x01', config: { bullOff: 'pdc' } } })
+      expect(await lobbies.view(id)).toMatchObject({ throwOrder: 'lobby', nextGame: { config: { bullOff: 'off' } } })
+    })
+
+    it('bull off: switching the next game to one without a bull off reverts the throw order to lobby', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { bullOff: 'wdc' } } })
+      expect((await lobbies.view(id))?.throwOrder).toBe('bulloff')
+      await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })
+      expect(await lobbies.view(id)).toMatchObject({ throwOrder: 'lobby', nextGame: { gameId: 'atc' } })
+    })
   })
 
   describe('pushes', () => {

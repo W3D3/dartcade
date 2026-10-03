@@ -401,17 +401,21 @@ export class LobbyService {
 
   async update(userId: string, lobbyId: string, patch: LobbyPatch): Promise<void> {
     await this.enqueue(lobbyId, async () => {
-      await this.openAsHost(lobbyId, userId)
+      const lobby = await this.openAsHost(lobbyId, userId)
       const set: q.LobbyUpdate = {}
       if (patch.name !== undefined) {
         const name = patch.name.trim()
         if (name === '') throw LobbyError.badRequest('the name is empty')
         set.name = name
       }
-      if (patch.throwOrder !== undefined) set.throw_order = patch.throwOrder
-      if (patch.nextGame !== undefined) {
-        if (patch.nextGame !== null && !games[patch.nextGame.gameId]) throw LobbyError.badRequest(`unknown game: ${patch.nextGame.gameId}`)
-        set.next_game = patch.nextGame
+      if (patch.nextGame !== undefined && patch.nextGame !== null && !games[patch.nextGame.gameId]) {
+        throw LobbyError.badRequest(`unknown game: ${patch.nextGame.gameId}`)
+      }
+      if (patch.throwOrder !== undefined || patch.nextGame !== undefined) {
+        const coupled = rules.coupleBullOff(lobby, patch, gameId => 'bullOff' in (games[gameId]?.defaultConfig ?? {}))
+        if ('error' in coupled) throw LobbyError.badRequest(coupled.error)
+        if (coupled.throwOrderChanged) set.throw_order = coupled.throwOrder
+        if (coupled.nextGameChanged) set.next_game = coupled.nextGame
       }
       if (Object.keys(set).length > 0) await q.updateLobby(this.db, lobbyId, set)
       if (patch.regenerateCode === true) await this.withFreshCode(null, code => q.updateLobby(this.db, lobbyId, { code }))

@@ -29,6 +29,22 @@ describe('lobby text', () => {
     expect(nextGameSummary(null)).toBe('')
   })
 
+  it('shows a non-straight check-in, not a straight one (one rules line with the match screen)', () => {
+    expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, inMode: 'double', outMode: 'double', firstTo: 3 } }))
+      .toBe('501 · Double in · Double out · First to 3 legs')
+    expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3 } }))
+      .toBe('501 · Double out · First to 3 legs')
+  })
+
+  it('names the bull off mode when it is on', () => {
+    expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 3, bullOff: 'wdc' } }))
+      .toBe('501 · Double out · First to 3 legs · Bull off (WDC)')
+    expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 3, bullOff: 'pdc' } }))
+      .toBe('501 · Double out · First to 3 legs · Bull off (PDC)')
+    expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 3, bullOff: 'off' } }))
+      .toBe('501 · Double out · First to 3 legs')
+  })
+
   it('writes the feed from the viewer\'s side, names in bold', () => {
     // A member moving a guest (userId null): never counts as moving themselves, even if named the same
     const moved = act({ kind: 'board_moved', actorUserId: 'chris', actorName: 'Christoph', data: { name: 'Max', userId: null, fromBoardName: null, toBoardName: 'Living room' } })
