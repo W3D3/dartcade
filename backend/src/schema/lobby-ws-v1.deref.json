@@ -49,6 +49,7 @@
         "usualBoardName",
         "plays",
         "ready",
+        "team",
         "presence"
       ],
       "additionalProperties": false,
@@ -114,6 +115,22 @@
         "ready": {
           "type": "boolean",
           "description": "Soft ready. After every game: false for members, true for guests."
+        },
+        "team": {
+          "anyOf": [
+            {
+              "title": "TeamId",
+              "type": "string",
+              "enum": [
+                "A",
+                "B"
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Their team (the host sets it). Kept from game to game and while the next game is singles; when the next game is played in teams, everyone who plays has one. null: none yet."
         },
         "presence": {
           "anyOf": [
@@ -454,6 +471,7 @@
               "usualBoardName",
               "plays",
               "ready",
+              "team",
               "presence"
             ],
             "additionalProperties": false,
@@ -519,6 +537,22 @@
               "ready": {
                 "type": "boolean",
                 "description": "Soft ready. After every game: false for members, true for guests."
+              },
+              "team": {
+                "anyOf": [
+                  {
+                    "title": "TeamId",
+                    "type": "string",
+                    "enum": [
+                      "A",
+                      "B"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "Their team (the host sets it). Kept from game to game and while the next game is singles; when the next game is played in teams, everyone who plays has one. null: none yet."
               },
               "presence": {
                 "anyOf": [
@@ -828,6 +862,7 @@
                   "usualBoardName",
                   "plays",
                   "ready",
+                  "team",
                   "presence"
                 ],
                 "additionalProperties": false,
@@ -893,6 +928,22 @@
                   "ready": {
                     "type": "boolean",
                     "description": "Soft ready. After every game: false for members, true for guests."
+                  },
+                  "team": {
+                    "anyOf": [
+                      {
+                        "title": "TeamId",
+                        "type": "string",
+                        "enum": [
+                          "A",
+                          "B"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "Their team (the host sets it). Kept from game to game and while the next game is singles; when the next game is played in teams, everyone who plays has one. null: none yet."
                   },
                   "presence": {
                     "anyOf": [
@@ -1225,6 +1276,7 @@
                       "usualBoardName",
                       "plays",
                       "ready",
+                      "team",
                       "presence"
                     ],
                     "additionalProperties": false,
@@ -1290,6 +1342,22 @@
                       "ready": {
                         "type": "boolean",
                         "description": "Soft ready. After every game: false for members, true for guests."
+                      },
+                      "team": {
+                        "anyOf": [
+                          {
+                            "title": "TeamId",
+                            "type": "string",
+                            "enum": [
+                              "A",
+                              "B"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "Their team (the host sets it). Kept from game to game and while the next game is singles; when the next game is played in teams, everyone who plays has one. null: none yet."
                       },
                       "presence": {
                         "anyOf": [

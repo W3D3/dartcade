@@ -24,7 +24,7 @@
       "title": "LobbyPerson",
       "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
       "type": "object",
-      "required": ["id", "userId", "addedByUserId", "name", "boardId", "boardName", "boardOwnerUserId", "boardOnline", "boardMovedBy", "usualBoardName", "plays", "ready", "presence"],
+      "required": ["id", "userId", "addedByUserId", "name", "boardId", "boardName", "boardOwnerUserId", "boardOnline", "boardMovedBy", "usualBoardName", "plays", "ready", "team", "presence"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
@@ -39,6 +39,10 @@
         "usualBoardName": { "type": ["string", "null"], "description": "A member's usual board (\"usually X\"); null for guests." },
         "plays": { "type": "boolean", "description": "false: sits out the next game. Back to true after every game." },
         "ready": { "type": "boolean", "description": "Soft ready. After every game: false for members, true for guests." },
+        "team": {
+          "anyOf": [{ "$ref": "common-v1.json#/$defs/TeamId" }, { "type": "null" }],
+          "description": "Their team (the host sets it). Kept from game to game and while the next game is singles; when the next game is played in teams, everyone who plays has one. null: none yet."
+        },
         "presence": {
           "anyOf": [{ "type": "string", "enum": ["online", "away"] }, { "type": "null" }],
           "description": "Members: online while they have the lobby open. null for guests."

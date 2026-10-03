@@ -1,10 +1,12 @@
 import { describe, it, expect } from 'vitest'
 import type { LobbyPerson, LobbyState } from './types.js'
-import { canMove, canRemove, canSetBoard, canSetPlays, canSetReady, effectiveReady, isHost, isSolo, leavingWith, nextHost, reorder } from './rules.js'
+import {
+  assignTeams, canMove, canRemove, canSetBoard, canSetPlays, canSetReady, canSetTeam, effectiveReady, isHost, isSolo, isTeamGame, leavingWith, nextHost, reorder, shuffleTeams,
+} from './rules.js'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
-  position: 0, plays: true, ready: false, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, ...over,
+  position: 0, plays: true, ready: false, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, team: null, ...over,
 })
 const lobbyOf = (people: LobbyPerson[], hostUserId: string | null = 'chris'): LobbyState => ({
   id: 'l', name: 'L', hostUserId, code: 'AAAAAA', throwOrder: 'lobby', nextGame: null,
@@ -123,5 +125,52 @@ describe('membership changes', () => {
   it('reorders by moving one person to an index (clamped)', () => {
     expect(reorder(lobby.people, 'm', 0)).toEqual(['m', 'c', 'l', 'g'])
     expect(reorder(lobby.people, 'c', 99)).toEqual(['l', 'm', 'g', 'c'])
+  })
+})
+
+describe('teams', () => {
+  const teamsX01 = { gameId: 'x01', config: { format: 'teams' } }
+
+  it('a team game: a game that does teams, with format teams', () => {
+    expect(isTeamGame({ nextGame: teamsX01 })).toBe(true)
+    expect(isTeamGame({ nextGame: { gameId: 'x01', config: { format: 'singles' } } })).toBe(false)
+    expect(isTeamGame({ nextGame: { gameId: 'x01', config: {} } })).toBe(false)
+    expect(isTeamGame({ nextGame: { gameId: 'atc', config: { format: 'teams' } } })).toBe(false)
+    expect(isTeamGame({ nextGame: null })).toBe(false)
+  })
+
+  it('nobody has a team yet: the people who play alternate A, B in lobby order', () => {
+    const sitsOut = { ...max, plays: false }
+    const sam = person({ id: 's', userId: 'sam', addedByUserId: 'sam', name: 'Sam', position: 4 })
+    expect(Object.fromEntries(assignTeams(lobbyOf([chris, lena, sitsOut, guest, sam])))).toEqual({ c: 'A', l: 'B', g: 'A', s: 'B' })
+  })
+
+  it('newcomers go to the smaller team, Team A on a tie; sitting out doesn\'t count', () => {
+    const teams = [{ ...chris, team: 'A' as const }, { ...lena, team: 'A' as const }, { ...max, team: 'B' as const }]
+    expect(Object.fromEntries(assignTeams(lobbyOf([...teams, guest])))).toEqual({ g: 'B' })
+    const sam = person({ id: 's', userId: 'sam', addedByUserId: 'sam', name: 'Sam', position: 4 })
+    // A 2, B 1: the guest evens it out, then Sam breaks the tie to A
+    expect(Object.fromEntries(assignTeams(lobbyOf([...teams, guest, sam])))).toEqual({ g: 'B', s: 'A' })
+    // Lena sits out: A 1, B 1, so the guest goes to A
+    const lenaOut = [teams[0], { ...teams[1], plays: false }, teams[2]]
+    expect(Object.fromEntries(assignTeams(lobbyOf([...lenaOut, guest])))).toEqual({ g: 'A' })
+  })
+
+  it('nothing to assign when everyone who plays has a team', () => {
+    expect(assignTeams(lobbyOf([{ ...chris, team: 'B' }, { ...lena, team: 'B' }])).size).toBe(0)
+  })
+
+  it('a shuffle splits the people who play 50/50; sitting out keeps their team', () => {
+    const sam = person({ id: 's', userId: 'sam', addedByUserId: 'sam', name: 'Sam', position: 4 })
+    const people = [{ ...chris, team: 'A' as const }, lena, { ...max, plays: false, team: 'B' as const }, guest, sam]
+    const shuffled = shuffleTeams(lobbyOf(people), () => 0.99)
+    expect([...shuffled.keys()].sort()).toEqual(['c', 'g', 'l', 's'])
+    const counts = [...shuffled.values()].reduce((n, t) => ({ ...n, [t]: n[t] + 1 }), { A: 0, B: 0 })
+    expect(counts).toEqual({ A: 2, B: 2 })
+  })
+
+  it('only the host sets teams', () => {
+    expect(canSetTeam(lobby, 'chris')).toBe(true)
+    expect(canSetTeam(lobby, 'lena')).toBe(false)
   })
 })

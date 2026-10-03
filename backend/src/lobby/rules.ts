@@ -1,4 +1,6 @@
-import type { LobbyPerson, LobbyState, NextGame, ThrowOrder } from './types.js'
+import { games } from '../games/index.js'
+import type { GameConfig } from '../session/types.js'
+import type { LobbyPerson, LobbyState, NextGame, TeamId, ThrowOrder } from './types.js'
 
 /** A board someone picks for a person: its id and owner. */
 export type BoardTarget = { boardId: string; ownerUserId: string }
@@ -142,4 +144,55 @@ export function coupleBullOff(
   }
 
   return { throwOrder, nextGame, throwOrderChanged, nextGameChanged }
+}
+
+// ---- teams ------------------------------------------------------------------------
+
+/** A game played in teams: its game does teams and its format is `teams`. */
+export const isTeamFormat = (gameId: string, config: GameConfig): boolean =>
+  games[gameId]?.teams === true && config.format === 'teams'
+
+/** The lobby's next game is played in teams. */
+export const isTeamGame = (lobby: { nextGame: NextGame | null }): boolean =>
+  lobby.nextGame !== null && isTeamFormat(lobby.nextGame.gameId, lobby.nextGame.config)
+
+/** The host moves people between teams and shuffles them; members only see the teams. */
+export const canSetTeam = (lobby: LobbyState, actorUserId: string): boolean => isHost(lobby, actorUserId)
+
+type TeamPerson = Pick<LobbyPerson, 'id' | 'plays' | 'team'>
+
+/**
+ * The teams to write for people who play and have none (person id → team). With nobody
+ * who plays on a team yet, they alternate A, B in lobby order (a 50/50 split, and the lobby
+ * order stays the throw order); otherwise each goes to the smaller team, A on a tie,
+ * counting only people who play. Sitting out keeps a team but doesn't count.
+ */
+export function assignTeams(lobby: { people: readonly TeamPerson[] }): Map<string, TeamId> {
+  const playing = lobby.people.filter(p => p.plays)
+  const out = new Map<string, TeamId>()
+  const count = { A: 0, B: 0 }
+  for (const p of playing) if (p.team !== null) count[p.team]++
+  const fresh = count.A + count.B === 0
+  playing.forEach((p, i) => {
+    if (p.team !== null) return
+    const team: TeamId = fresh ? (i % 2 === 0 ? 'A' : 'B') : count.B < count.A ? 'B' : 'A'
+    count[team]++
+    out.set(p.id, team)
+  })
+  return out
+}
+
+/**
+ * A random 50/50 split of the people who play (person id → team): shuffled, then A, B
+ * alternating. Sitting out keeps their team. `random` in [0, 1), as Math.random.
+ */
+export function shuffleTeams(lobby: { people: readonly TeamPerson[] }, random: () => number = Math.random): Map<string, TeamId> {
+  const ids = lobby.people.filter(p => p.plays).map(p => p.id)
+  for (let i = ids.length - 1; i > 0; i--) {
+    const j = Math.floor(random() * (i + 1))
+    const swap = ids[i]
+    ids[i] = ids[j]
+    ids[j] = swap
+  }
+  return new Map(ids.map((id, i) => [id, i % 2 === 0 ? 'A' : 'B']))
 }

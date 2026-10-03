@@ -1324,7 +1324,7 @@
       ],
       "patch": {
         "operationId": "updateLobbyPerson",
-        "summary": "A person's board, ready, whether they play, or their place in the order (as the lobby's rules allow)",
+        "summary": "A person's board, ready, whether they play, their place in the order, or their team (as the lobby's rules allow)",
         "tags": [
           "lobbies"
         ],
@@ -1371,6 +1371,41 @@
         "responses": {
           "204": {
             "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/lobbies/{id}/teams/shuffle": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "shuffleLobbyTeams",
+        "summary": "Host: a random 50/50 split of the people who play into Team A and Team B",
+        "description": "Only while the next game is played in teams (400 otherwise). People sitting out keep their team.",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "204": {
+            "description": "Shuffled"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3138,6 +3173,14 @@
             "type": "integer",
             "minimum": 0,
             "description": "Host: move to this place in the lobby order"
+          },
+          "team": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ],
+            "description": "Host: move them to this team"
           }
         }
       },

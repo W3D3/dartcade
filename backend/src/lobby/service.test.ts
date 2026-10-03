@@ -329,6 +329,126 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     })
   })
 
+  describe('teams', () => {
+    let id: string
+    let code: string
+    const teamsX01 = { gameId: 'x01', config: { format: 'teams' } }
+    const teamsOf = async () => Object.fromEntries((await lobbies.view(id))?.people.map(p => [p.name, p.team]) ?? [])
+    const personId = async (name: string) => {
+      const p = (await lobbies.view(id))?.people.find(x => x.name === name)
+      if (!p) throw new Error(`${name} is not in the lobby`)
+      return p.id
+    }
+
+    beforeEach(async () => {
+      ({ id, code } = await lobbies.create('chris'))
+      await lobbies.join('lena', id, code)
+      await lobbies.join('max', id, code)
+    })
+
+    it('a team game splits the people who play 50/50 in lobby order; singles assigns nobody', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { format: 'singles' } } })
+      expect(await teamsOf()).toEqual({ Christoph: null, Lena: null, Max: null })
+      const ws = sock()
+      hub.addLobbySocket(id, ws, 'lena')
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'A' })
+      // The push already carries them
+      expect(lastMsg(ws).lobby.people.map((p: { team: string }) => p.team)).toEqual(['A', 'B', 'A'])
+    })
+
+    it('newcomers go to the smaller team; someone sitting out keeps their team and isn\'t counted', async () => {
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      await lobbies.addGuest('chris', id, { name: 'Pia' })
+      expect((await teamsOf()).Pia).toBe('B')
+      await lobbies.updatePerson('chris', id, await personId('Max'), { plays: false })
+      // A: Christoph; B: Lena, Pia (Max sits out, still A)
+      await lobbies.join('sam', id, code)
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'A', Pia: 'B', Sam: 'A' })
+      // Max back in: A 2, B 2 counts a tie, but he keeps his team
+      await lobbies.updatePerson('max', id, await personId('Max'), { plays: true })
+      expect((await teamsOf()).Max).toBe('A')
+    })
+
+    it('someone back in from sitting out without a team gets the smaller one', async () => {
+      await lobbies.updatePerson('chris', id, await personId('Max'), { plays: false })
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: null })
+      await lobbies.addGuest('lena', id, { name: 'Pia' })
+      await lobbies.updatePerson('max', id, await personId('Max'), { plays: true })
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'B', Pia: 'A' })
+    })
+
+    it('the host moves people between teams and shuffles; members can\'t', async () => {
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      await lobbies.updatePerson('chris', id, await personId('Max'), { team: 'B' })
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'B' })
+      await expect(lobbies.updatePerson('lena', id, await personId('Lena'), { team: 'A' })).rejects.toMatchObject({ statusCode: 403 })
+      await expect(lobbies.shuffleTeams('lena', id)).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.addGuest('chris', id, { name: 'Pia' })
+      await lobbies.addGuest('chris', id, { name: 'Quinn' })
+      await lobbies.updatePerson('chris', id, await personId('Max'), { plays: false })
+      for (let i = 0; i < 5; i++) {
+        await lobbies.shuffleTeams('chris', id)
+        const people = (await lobbies.view(id))?.people ?? []
+        const playing = people.filter(p => p.plays)
+        expect(playing.filter(p => p.team === 'A')).toHaveLength(2)
+        expect(playing.filter(p => p.team === 'B')).toHaveLength(2)
+        expect(people.find(p => p.name === 'Max')?.team).toBe('B')
+      }
+    })
+
+    it('a shuffle needs a team game', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      await expect(lobbies.shuffleTeams('chris', id)).rejects.toMatchObject({ statusCode: 400 })
+    })
+
+    it('switching to singles or to a game without teams keeps the teams (ignored)', async () => {
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { format: 'singles' } } })
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'A' })
+      await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: { format: 'teams' } } })
+      await lobbies.addGuest('chris', id, { name: 'Pia' })
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'A', Pia: null })
+    })
+
+    it('starts a team game: seats alternate between the teams, the config carries them', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { format: 'teams', startScore: 101 } } })
+      await lobbies.updatePerson('chris', id, await personId('Lena'), { team: 'A' })
+      await lobbies.updatePerson('chris', id, await personId('Christoph'), { team: 'B' })
+      // A: Lena, Max; B: Christoph
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(engine.getSession(sessionId)?.seats.map(s => s.name)).toEqual(['Lena', 'Christoph', 'Max'])
+      expect(engineStore.insertSession).toHaveBeenCalledWith(expect.objectContaining({ config: expect.objectContaining({ format: 'teams', teams: [0, 1, 0] }) }))
+    })
+
+    it('refuses to start with an empty team', async () => {
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      await lobbies.updatePerson('chris', id, await personId('Lena'), { team: 'A' })
+      await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({ statusCode: 400, body: { error: 'Both teams need a player' } })
+    })
+
+    it('a team win names every winner in the lobby history', async () => {
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      // A: Christoph, Max; B: Lena
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+      await lobbies.whenIdle(id)
+      expect((await lobbies.view(id))?.activity[0]).toMatchObject({
+        kind: 'game_played', data: { sessionId, gameId: 'x01', winnerName: 'Christoph & Max' },
+      })
+    })
+
+    it('after a game everyone is back in: whoever sat out without a team gets one', async () => {
+      await lobbies.updatePerson('chris', id, await personId('Max'), { plays: false })
+      await lobbies.update('chris', id, { nextGame: teamsX01 })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await engine.deleteSession(sessionId, 'chris')
+      await lobbies.whenIdle(id)
+      expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'A' })
+    })
+  })
+
   describe('pushes', () => {
     it('pushes every change to the lobby sockets, with presence', async () => {
       const { id, code } = await lobbies.create('chris')

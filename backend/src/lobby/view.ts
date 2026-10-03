@@ -29,7 +29,7 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
       id: p.id, userId: p.userId, addedByUserId: p.addedByUserId, name: p.name,
       boardId: p.boardId, boardName: p.boardName, boardOwnerUserId: p.boardOwnerUserId,
       boardOnline: p.boardId !== null && ctx.isBoardOnline(p.boardId),
-      boardMovedBy: p.boardMovedBy, usualBoardName: p.usualBoardName, plays: p.plays, ready: effectiveReady(lobby, p),
+      boardMovedBy: p.boardMovedBy, usualBoardName: p.usualBoardName, plays: p.plays, ready: effectiveReady(lobby, p), team: p.team,
       presence: p.userId === null ? null : ctx.online.has(p.userId) ? 'online' : 'away',
     })),
     invites: lobby.invites.map(i => ({

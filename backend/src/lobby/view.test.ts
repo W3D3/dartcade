@@ -13,7 +13,7 @@ const store = (): EngineStore => ({
 })
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
-  position: 0, plays: true, ready: false, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, ...over,
+  position: 0, plays: true, ready: false, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, team: null, ...over,
 })
 const at = new Date(Date.UTC(2026, 9, 2, 18, 0))
 const lobby: LobbyState = {
@@ -38,6 +38,13 @@ describe('lobbyView', () => {
     ])
     expect(view).toMatchObject({ currentSessionId: null, createdAt: at.toISOString() })
     expect(view.invites).toEqual([{ id: 'i1', userId: 'lena', name: 'Lena', invitedByUserId: 'chris', createdAt: at.toISOString() }])
+    expect(() => { checkLobbyMessage({ type: 'lobby', lobby: view }, () => undefined) }).not.toThrow()
+  })
+
+  it('carries each person\'s team', () => {
+    const teams: LobbyState = { ...lobby, people: lobby.people.map((p, i) => i === 1 ? { ...p, team: 'B' } : p) }
+    const view = lobbyView(teams, { online: new Set(), isBoardOnline: () => false, sessionId: null })
+    expect(view.people.map(p => p.team)).toEqual([null, 'B', null])
     expect(() => { checkLobbyMessage({ type: 'lobby', lobby: view }, () => undefined) }).not.toThrow()
   })
 

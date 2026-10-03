@@ -911,7 +911,7 @@ describe('lobby games', () => {
     expect(ended).toHaveBeenCalledWith({
       sessionId, lobbyId: 'l1', gameId: 'x01', status: 'finished', abortedByUserId: null,
       results: [{ name: 'Christoph', placement: 1, forfeited: false }, { name: 'Lena', placement: 2, forfeited: true }],
-      userIds: ['chris', 'lena'],
+      teamGame: false, userIds: ['chris', 'lena'],
     })
     expect(engine.getLobbySession('l1')).toBeUndefined()
   })
@@ -940,7 +940,7 @@ describe('lobby games', () => {
     const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
     await engine.deleteSession(sessionId, 'chris')
     expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date), 'chris')
-    expect(ended).toHaveBeenCalledWith({ sessionId, lobbyId: 'l1', gameId: 'x01', status: 'aborted', abortedByUserId: 'chris', results: [], userIds: ['chris', 'lena'] })
+    expect(ended).toHaveBeenCalledWith({ sessionId, lobbyId: 'l1', gameId: 'x01', status: 'aborted', abortedByUserId: 'chris', results: [], teamGame: false, userIds: ['chris', 'lena'] })
   })
 
   it('restores a lobby game after a restart, and tells the lobby about one it can\'t restore', async () => {
@@ -959,7 +959,7 @@ describe('lobby games', () => {
     const engine = new SessionEngine(store, push, undefined, undefined, ended)
     await engine.rebuild()
     expect(engine.getLobbySession('l1')).toMatchObject({ id: 'ok', lobbyId: 'l1', lobbyName: 'Friday darts' })
-    expect(ended).toHaveBeenCalledWith({ sessionId: 'gone', lobbyId: 'l2', gameId: 'x01', status: 'aborted', abortedByUserId: null, results: [], userIds: ['chris', 'lena'] })
+    expect(ended).toHaveBeenCalledWith({ sessionId: 'gone', lobbyId: 'l2', gameId: 'x01', status: 'aborted', abortedByUserId: null, results: [], teamGame: false, userIds: ['chris', 'lena'] })
     expect(ended).toHaveBeenCalledTimes(1)
   })
   it('keeps going when the lobby listener throws: no double abort, no error to the caller', async () => {
