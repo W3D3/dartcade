@@ -665,11 +665,12 @@ stays out of the way until a second account joins.
 - **Everyone sees the next game's settings** (changed 2026-10-03, 14:28). The lobby page's next-
   game card shows the settings panel for every member, not just the host; a member's copy is
   read-only (`NextGameSettingsPanel`'s `readonly`), same values, no controls.
-- **Bull off is a game setting again, not a separate pick** (changed 2026-10-03, 14:17). Turning
-  a game's `bullOff` setting on sets the lobby's throw order to `bulloff`; setting the throw
-  order to anything else turns `bullOff` back off. The server keeps the two in sync
-  (`coupleBullOff` in `backend/src/lobby/rules.ts`), so the host can change either control and
-  the other follows, and a stray setting can't contradict the throw order on refresh.
+- **Bull off is a game setting again, not a separate pick** (changed 2026-10-03, 14:17). While
+  Bull off is on in the game's settings, the throw order shows Bull-off and the other orders
+  are locked (Bull off is turned off in the settings). Choosing Bull-off in the throw order
+  turns the setting on (WDC). The server keeps the two in sync (`coupleBullOff` in
+  `backend/src/lobby/rules.ts`; it also turns the setting off for any other order), so a stray
+  setting can't contradict the throw order on refresh.
 - **Solo:** a lobby is *solo* while you are its only member (guests don't count). The server
   decides it and says so: the lobby state and `LobbySummary` carry `solo: boolean`, and the
   screens only read that flag (no counting players in the browser).

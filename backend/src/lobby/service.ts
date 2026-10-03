@@ -246,7 +246,7 @@ export class LobbyService {
   }
 
   async join(userId: string, lobbyId: string, code: string): Promise<LobbyRef> {
-    // Checked here, read-only and unqueued, so a wrong code or an already-closed lobby
+    // Checked here, read-only and unqueued, so a wrong code, a closed lobby or a running game
     // never closes the joiner's own lobby before failing (see closeOwnSoloLobbyFirst)
     const target = await q.loadLobby(this.db, lobbyId)
     if (!target || target.closedAt !== null || target.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
@@ -259,22 +259,9 @@ export class LobbyService {
     })
   }
 
-  /**
-   * Before joining `targetLobbyId`: if the joiner has a different open lobby of their
-   * own, give it a chance to close quietly (see closeIfSoloAndIdle) before they're added
-   * to the target. This task runs entirely inside the OWN lobby's queue — never the
-   * target's — and `join`/`acceptInvite` only enqueue on the target afterwards, once this
-   * has settled. So no task ever awaits a second lobby's queue from inside a first: two
-   * people each alone in their own lobby, joining each other's at the same instant, each
-   * just close their own lobby (on its own queue) and then join the other (on its queue)
-   * in sequence, never blocked on each other. `addMember` still throws `inLobby` if the
-   * joiner turns out to still have an open lobby (not solo, or its game is running).
-   *
-   * `own` is read here, OUTSIDE `own`'s queue, before the close is even enqueued on it —
-   * so by the time `closeIfSoloAndIdle` actually runs, `userId` might no longer be a
-   * member of `own` at all (someone removed them, or they left some other way in the
-   * meantime). Passing `userId` through lets that re-check catch it: see there.
-   */
+  // Before a join: closes the joiner's own solo lobby on its own queue, never inside the target's
+  // (two solo players joining each other can't deadlock). Narrow window: if the join then fails
+  // (the target closed meanwhile), their solo lobby is gone anyway; they open a new one.
   private async closeOwnSoloLobbyFirst(userId: string, targetLobbyId: string): Promise<void> {
     const own = await q.getOpenLobbyIdOfUser(this.db, userId)
     if (own === undefined || own === targetLobbyId) return
@@ -376,21 +363,9 @@ export class LobbyService {
     await Promise.all([...new Set([...memberIds(lobby), ...invitees])].map(u => this.pushMe(u)))
   }
 
-  /**
-   * Joining another lobby quietly drops a solo one left behind: when `lobbyId` is still
-   * solo AND `userId` is still its one member — not just solo in general — and no game is
-   * running there, closes it and returns true; otherwise leaves it alone and returns
-   * false. Called only from closeOwnSoloLobbyFirst, which enqueues it on `lobbyId`'s own
-   * queue, so everything from here on is safe: nothing else can add a member to, or start
-   * a game in, this lobby once this task starts, since every such change runs through
-   * that same queue. But `closeOwnSoloLobbyFirst` reads `own` (== `lobbyId` here) BEFORE
-   * enqueueing this task, so `userId` may already be stale by the time it runs — they
-   * might have been removed from `lobbyId`, or left it some other way, leaving someone
-   * else alone there instead. Checking `isSolo` alone isn't enough: it's true for any
-   * lobby down to one member, including a different person's. Only closing when `userId`
-   * is STILL that one member is what keeps this from closing a lobby out from under
-   * whoever is actually alone in it now.
-   */
+  // Runs in the lobby's queue. Closes it only while `userId` is still its one member and no
+  // game runs: the caller read the lobby before queueing this, so they may have left it since,
+  // and someone else may be the one alone in it now.
   private async closeIfSoloAndIdle(lobbyId: string, userId: string): Promise<boolean> {
     const lobby = await q.loadLobby(this.db, lobbyId)
     if (!lobby || lobby.closedAt !== null) return false
@@ -682,8 +657,9 @@ export class LobbyService {
    * seated, lobby or not, right away — the engine awaits this hook (see notifyEnded), so
    * the push has already gone out by the time the session's own queue (finish,
    * deleteSession) resolves. For a lobby game, also runs the lobby's own reset: everyone
-   * plays again, members aren't ready, guests are; the feed gets a line; a host who left
-   * during the game hands over now, and a lobby everyone left closes. That reset is
+   * plays again and no member is ready (guests follow their adder's ready); the feed gets
+   * a line; a host who left during the game hands over now, and a lobby everyone left
+   * closes. That reset is
    * enqueued but NOT awaited here: it runs on the lobby's own queue, which could in turn
    * wait on this same session's queue (e.g. a lobby task started from inside it) —
    * awaiting it from inside the engine's own ended-hook would risk a deadlock between the

@@ -204,7 +204,7 @@ export async function releaseBoard(db: Kysely<Database>, boardId: string): Promi
   return [...new Set(rows.map(r => r.lobby_id))]
 }
 
-/** After every game: everyone is back in; members are not ready again, guests are. */
+/** After every game: everyone is back in and no member is ready (a guest's ready follows its adder's: effectiveReady). */
 export async function resetAfterGame(db: Kysely<Database>, lobbyId: string): Promise<void> {
   await db.updateTable('lobby_people')
     .set({ plays: true, ready: sql<boolean>`user_id IS NULL` })
