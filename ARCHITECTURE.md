@@ -39,6 +39,11 @@ form), how it reacts to board events and player actions, the view it sends to br
 the history shows (placements, stats, per-mode detail). `withBullOff` wraps any game in a bull off
 that decides the throwing order. [`AGENTS.md`](AGENTS.md) has the step-by-step for adding a game.
 
+A game can opt into **teams** (`teams: true`, `teamsOf`) so two teams share one score instead of
+every seat playing for itself; each seat still keeps its own controller, board and stats. The
+shared rules — turn order across teams, team placements, forfeits — live in
+`backend/src/games/teams.ts`, so any game adds teams without writing its own.
+
 After every change the backend pushes a snapshot of the game to each browser that has it open.
 Snapshots are built per viewer (which seats are yours, who is connected), and the browser checks
 each one against the schema before showing it.

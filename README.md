@@ -24,7 +24,7 @@ or straight from your phone. No board at hand? Tap your darts in and play anyway
 ### Games
 
 - **X01**: 301, 501, 701 or any start score. Straight, double or master in and out, 25/50 or 50/50
-  bull, first to N legs, a round limit.
+  bull, first to N legs, a round limit. Play singles, or Team A against Team B sharing one score.
 - **Around the Clock**: 1–20 ascending, descending or in random order, finish on 20, the single
   bull or the bull, with optional multiplier skips and "throw again" when all three darts hit.
 - **Bull off** to decide who throws first, the WDC or PDC way.
