@@ -183,7 +183,7 @@
           {/if}
           {#if host}
             <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
-              onteammove={setTeam} onteamshuffle={shuffleTeams}
+              onteammove={setTeam} onteamplace={updatePerson} onteamshuffle={shuffleTeams}
               busy={starting} onstart={() => void start()} />
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
