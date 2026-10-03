@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { boardChoices, boardSummary, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
+import { boardChoices, boardSummary, bullOffAvailable, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -75,5 +75,13 @@ describe('lobby rules for the screens', () => {
     expect(playsInGame(lobby, 'lena')).toBe(true)
     expect(playsInGame(lobby, 'max')).toBe(false)
     expect(playsInGame({ ...lobby, people: [chris, { ...lena, plays: false }, pia] }, 'lena')).toBe(true)
+  })
+
+  it('offers Bull-off only for a game that has one, with two or more playing', () => {
+    const x01 = { gameId: 'x01', config: {} }
+    expect(bullOffAvailable({ ...lobby, nextGame: x01 })).toBe(true)
+    expect(bullOffAvailable({ ...lobby, nextGame: { gameId: 'atc', config: {} } })).toBe(false)
+    expect(bullOffAvailable({ ...lobby, nextGame: null })).toBe(false)
+    expect(bullOffAvailable({ ...lobby, nextGame: x01, people: [chris, { ...lena, plays: false }] })).toBe(false)
   })
 })

@@ -21,6 +21,8 @@
   } = $props()
 
   const host = $derived(isHost(lobby, viewerId))
+  // The server won't close a lobby while its game runs
+  const gameRunning = $derived(lobby.currentSessionId !== null)
   const hostName = $derived(lobby.people.find(p => p.userId !== null && p.userId === lobby.hostUserId)?.name ?? null)
   const link = $derived(joinLink(window.location.origin, lobby.code))
   const c = $derived(counts(lobby))
@@ -101,9 +103,11 @@
           class="{iconButton} border-0 bg-surface-key text-text"><RefreshCw size={16} /></button>
       {/if}
     </div>
-    <Button variant="destructive" onclick={() => confirm = host ? 'close' : 'leave'} class="h-[46px] md:h-12">
+    <Button variant="destructive" onclick={() => confirm = host ? 'close' : 'leave'} class="h-[46px] md:h-12"
+      disabled={host && gameRunning} title={host && gameRunning ? 'Abort the game first' : undefined}>
       {host ? 'Close lobby' : 'Leave lobby'}
     </Button>
+    {#if host && gameRunning}<span class="text-[12px] text-text-dim">Abort the game first</span>{/if}
   </div>
 </header>
 

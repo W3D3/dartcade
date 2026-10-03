@@ -86,3 +86,13 @@ export function boardSummary(lobby: Lobby): string {
 /** You play the next game, yourself or through a guest of yours. */
 export const playsInGame = (lobby: Lobby, viewerId: string | null): boolean =>
   lobby.people.some(p => p.plays && isMine(p, viewerId))
+
+/** The games with a bull off of their own (a `bullOff` setting): the lobby's Bull-off throw order drives it. */
+const BULL_OFF_GAMES = new Set(['x01'])
+
+/**
+ * Whether the Bull-off throw order works for the next game (backend src/lobby/startPlan.ts
+ * refuses it for a game without bull off), with the two players a bull off needs.
+ */
+export const bullOffAvailable = (lobby: Lobby): boolean =>
+  lobby.nextGame !== null && BULL_OFF_GAMES.has(lobby.nextGame.gameId) && counts(lobby).playing >= 2
