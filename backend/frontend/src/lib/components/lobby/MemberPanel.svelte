@@ -12,7 +12,7 @@
   import SettingsToggleButton from './SettingsToggleButton.svelte'
   import ThrowOrderField from './ThrowOrderField.svelte'
   import { gameModes, withDefaults } from '$lib/gameModes'
-  import { hostName as hostNameOf, type PersonPatch } from '$lib/lobby/rules'
+  import type { PersonPatch } from '$lib/lobby/rules'
 
   let { lobby, me, onupdate }: {
     lobby: Lobby
@@ -21,7 +21,7 @@
   } = $props()
 
   const PLAYS = [{ value: true, label: "I'm in" }, { value: false, label: 'Sitting this one out' }]
-  const hostName = $derived(hostNameOf(lobby) ?? 'The host')
+  const hostName = $derived(lobby.hostName ?? 'The host')
 
   const game = $derived(lobby.nextGame)
   const info = $derived(game ? $gameModes.find(g => g.id === game.gameId) : undefined)

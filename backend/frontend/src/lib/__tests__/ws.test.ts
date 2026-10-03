@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { parseNotice, parseSnapshot } from '../ws.js'
+import { get } from 'svelte/store'
+import { createSessionStore, parseNotice, parseSnapshot } from '../ws.js'
 import fixture from './fixtures/x01-snapshot.json'
 
 describe('parseSnapshot', () => {
@@ -51,5 +52,33 @@ describe('parseNotice', () => {
     }
     expect(warn).not.toHaveBeenCalled()
     warn.mockRestore()
+  })
+})
+
+describe('createSessionStore', () => {
+  it('says whether the game socket is open', () => {
+    const sockets: { onopen: (() => void) | null; onclose: ((e: { code: number }) => void) | null; close: () => void }[] = []
+    vi.stubGlobal('WebSocket', class {
+      onopen: (() => void) | null = null
+      onclose: ((e: { code: number }) => void) | null = null
+      onmessage = null
+      onerror = null
+      constructor() { sockets.push(this) }
+      close() { /* the test closes it */ }
+      send() { /* unused */ }
+    })
+    vi.useFakeTimers()
+    try {
+      const store = createSessionStore('s1')
+      expect(get(store.connected)).toBe(false)
+      sockets[0].onopen?.()
+      expect(get(store.connected)).toBe(true)
+      sockets[0].onclose?.({ code: 1006 })
+      expect(get(store.connected)).toBe(false)
+      store.destroy()
+    } finally {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    }
   })
 })

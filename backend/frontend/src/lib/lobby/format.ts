@@ -29,11 +29,12 @@ const mode = (v: unknown, fallback: Mode): Mode => (v === 'straight' || v === 'd
 /**
  * One line about the next game's settings: "501 · Double in · Double out · First to 2 legs
  * · Bull off (WDC)" — the same rules line the match screen shows (`x01Rules`), plus bull off
- * when the game's settings turn it on.
+ * when the game's settings turn it on. Settings the saved config leaves out come from the
+ * game's defaults (the server's), so they read as what the game will actually play.
  */
-export function nextGameSummary(game: NextGame | null): string {
+export function nextGameSummary(game: NextGame | null, defaults: Record<string, unknown> = {}): string {
   if (!game) return ''
-  const c = game.config
+  const c = { ...defaults, ...game.config }
   if (game.gameId === 'x01') {
     const start = int(c.startScore)
     if (start === null) return ''

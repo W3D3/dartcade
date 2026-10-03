@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Snapshot } from '$lib/api'
-import { endControl, afterGameRoute } from '../endControl.js'
+import { endControl, afterGameRoute, leaveRefused } from '../endControl.js'
 import fixture from './fixtures/x01-snapshot.json'
 
 const snap = (patch: { ownerUserId?: string; mySeats?: number[]; lobbyId?: string | null } = {}): Snapshot => {
@@ -41,5 +41,21 @@ describe('afterGameRoute', () => {
   it('goes home after a game outside a lobby, or without a snapshot', () => {
     expect(afterGameRoute(snap({ lobbyId: null }))).toBe('/')
     expect(afterGameRoute(null)).toBe('/')
+  })
+})
+
+describe('leaveRefused', () => {
+  const withHostSeat = (hostSeat: number | null): Snapshot => {
+    const base = snap({ ownerUserId: 'host' })
+    return { ...base, seats: base.seats.map((s, i) => ({ ...s, userId: i === hostSeat ? 'host' : null })) }
+  }
+
+  it('names the host who can end the game, from their seat', () => {
+    expect(leaveRefused(withHostSeat(1))).toBe('Only Bob can end this game.')
+  })
+
+  it('says "the host" when the host has no seat', () => {
+    expect(leaveRefused(withHostSeat(null))).toBe('Only the host can end this game.')
+    expect(leaveRefused(null)).toBe('Only the host can end this game.')
   })
 })

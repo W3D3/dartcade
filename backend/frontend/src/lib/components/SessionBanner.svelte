@@ -1,5 +1,6 @@
 <script lang="ts">
-  // "Game in progress": the server's own word on your running game (/ws/me), live.
+  // "Game in progress": the server's own word on your running game (/ws/me), live: its lobby
+  // (none for a solo lobby or a game outside one), the mode and who plays.
   import { ArrowRight } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { me } from '$lib/lobby/sockets'
@@ -13,6 +14,7 @@
               bg-[#161d10]">
     <span class="w-[7px] h-[7px] rounded-full bg-accent shrink-0 animate-pulse"></span>
     <span class="text-[13px] text-text-muted shrink-0">Game in progress</span>
+    {#if game.lobbyName}<span class="hidden sm:inline text-[13px] font-semibold text-text max-w-[220px] truncate">{game.lobbyName}</span>{/if}
     <span class="text-[13px] font-semibold text-text uppercase shrink-0">
       {game.gameId}
     </span>

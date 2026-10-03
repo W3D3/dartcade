@@ -146,6 +146,10 @@ export interface Lobby {
    */
   code: string
   hostUserId: string | null
+  /**
+   * The host's name, as LobbySummary has it; null when the host isn't in the lobby (a host who left during a game, until it ends).
+   */
+  hostName: string | null
   throwOrder: ThrowOrder
   nextGame: NextGame | null
   /**

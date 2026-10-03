@@ -36,6 +36,13 @@ describe('lobby text', () => {
       .toBe('501 · Double out · First to 3 legs')
   })
 
+  it('fills settings the saved config leaves out from the game\'s defaults', () => {
+    const defaults = { startScore: 501, inMode: 'straight', outMode: 'double', bullOff: 'off', firstTo: 3 }
+    expect(nextGameSummary({ gameId: 'x01', config: { startScore: 301 } }, defaults)).toBe('301 · Double out · First to 3 legs')
+    expect(nextGameSummary({ gameId: 'x01', config: {} }, defaults)).toBe('501 · Double out · First to 3 legs')
+    expect(nextGameSummary({ gameId: 'atc', config: { order: 'desc' } }, { order: 'asc', finishOn: 'bull' })).toBe('20–1 · finish on bull')
+  })
+
   it('names the bull off mode when it is on', () => {
     expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 3, bullOff: 'wdc' } }))
       .toBe('501 · Double out · First to 3 legs · Bull off (WDC)')

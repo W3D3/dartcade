@@ -8,7 +8,7 @@
   import IconButton from '$lib/components/IconButton.svelte'
   import JoinCodeCard from './JoinCodeCard.svelte'
   import LeaveLobbyConfirm from './LeaveLobbyConfirm.svelte'
-  import { boardSummary, counts, hostName as hostNameOf, isHost } from '$lib/lobby/rules'
+  import { boardSummary, counts, isHost } from '$lib/lobby/rules'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
 
   let { lobby, viewerId, onrename, onnewcode, onclose, onleave }: {
@@ -25,7 +25,6 @@
   const host = $derived(isHost(lobby, viewerId))
   // The server won't close a lobby while its game runs
   const gameRunning = $derived(lobby.currentSessionId !== null)
-  const hostName = $derived(hostNameOf(lobby))
   const c = $derived(counts(lobby))
   const boards = $derived(boardSummary(lobby))
   const myGuests = $derived(lobby.people.filter(p => p.userId === null && p.addedByUserId === viewerId).map(p => p.name))
@@ -59,7 +58,7 @@
     {/if}
     <p class="m-0 flex flex-wrap items-center gap-x-[6px] gap-y-1 text-[13px] md:text-[15px] text-text-muted">
       <span class="inline-flex items-center gap-[6px] text-accent font-semibold"><span class="w-2 h-2 rounded-full bg-accent"></span>Lobby open</span>
-      {#if !lobby.solo}<span>· {host ? "You're the host" : `Hosted by ${hostName ?? 'nobody yet'}`}</span>{/if}
+      {#if !lobby.solo}<span>· {host ? "You're the host" : `Hosted by ${lobby.hostName ?? 'nobody yet'}`}</span>{/if}
       <span>· {c.people} {c.people === 1 ? 'person' : 'people'}</span>
       {#if boards}<span>· {boards}</span>{/if}
     </p>

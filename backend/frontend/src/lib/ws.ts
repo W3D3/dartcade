@@ -34,6 +34,8 @@ export function createSessionStore(sessionId: string) {
   const snapshot = writable<Snapshot | null>(null)
   const notice = writable<NoticeMessage | null>(null)
   const error = writable<ErrorMessage | null>(null)
+  // The game socket is open (false while it reconnects)
+  const connected = writable(false)
   let ws: WebSocket | null = null
   let closed = false
   let backoff = 500
@@ -41,6 +43,7 @@ export function createSessionStore(sessionId: string) {
   function connect() {
     if (closed) return
     ws = new WebSocket(`/ws?sessionId=${encodeURIComponent(sessionId)}`)
+    ws.onopen = () => { connected.set(true) }
     ws.onmessage = (e) => {
       try {
         if (typeof e.data !== 'string') return
@@ -55,6 +58,7 @@ export function createSessionStore(sessionId: string) {
       } catch {}
     }
     ws.onclose = (e) => {
+      connected.set(false)
       // The close code's name, when it is one of ours
       const code: string | undefined = WsCloseCode[e.code]
       if (code === 'Unauthorized') {
@@ -87,5 +91,6 @@ export function createSessionStore(sessionId: string) {
 
   const noticeStore: Readable<NoticeMessage | null> = { subscribe: notice.subscribe }
   const errorStore: Readable<ErrorMessage | null> = { subscribe: error.subscribe }
-  return { snapshot, notice: noticeStore, error: errorStore, send, destroy }
+  const connectedStore: Readable<boolean> = { subscribe: connected.subscribe }
+  return { snapshot, notice: noticeStore, error: errorStore, connected: connectedStore, send, destroy }
 }

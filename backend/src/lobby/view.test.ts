@@ -56,6 +56,22 @@ describe('lobbyView', () => {
     expect(view.nextHostName).toBe('Lena')
   })
 
+  it('names the host, like the /ws/me summary; null with no host in it', () => {
+    const two: LobbyState = {
+      ...lobby,
+      hostUserId: 'lena',
+      people: [
+        person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph' }),
+        person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena' }),
+      ],
+      invites: [],
+    }
+    const ctx = { online: new Set<string>(), isBoardOnline: () => false, sessionId: null }
+    expect(lobbyView(two, ctx).hostName).toBe('Lena')
+    expect(lobbyView({ ...two, hostUserId: null }, ctx).hostName).toBeNull()
+    expect(lobbyView({ ...two, hostUserId: 'gone' }, ctx).hostName).toBeNull()
+  })
+
   it('a guest\'s ready follows their adder\'s, not their own stored flag', () => {
     const withGuest: LobbyState = {
       ...lobby,
