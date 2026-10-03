@@ -1,7 +1,21 @@
 import { describe, it, expect } from 'vitest'
-import { edgePush, moveAim, shownAt, viewBoxFor } from '../boardAim.js'
+import { aimOffsetFor, edgePush, moveAim, shownAt, viewBoxFor } from '../boardAim.js'
 
 const box = { half: 1.15, margin: 0.1 }
+
+describe('aim offset by pointer type', () => {
+  it('offsets a touch pointer away from the finger', () => {
+    expect(aimOffsetFor('touch', 70)).toBe(70)
+  })
+
+  it('places the aim right under a mouse pointer', () => {
+    expect(aimOffsetFor('mouse', 70)).toBe(0)
+  })
+
+  it('places the aim right under a pen pointer', () => {
+    expect(aimOffsetFor('pen', 70)).toBe(0)
+  })
+})
 
 describe('long-press aim', () => {
   it('moves the aim at a third of the finger', () => {

@@ -15,6 +15,12 @@ export const AIM_OFFSET_PX = 70
 /** Edge scrolling: view units per second, per view unit the finger is past the edge. */
 export const AIM_EDGE_SPEED = 4
 
+/** The aim offset for this pointer type: a touch needs lifting above the finger (which covers
+ * the spot); a mouse or pen points right where the cursor is, so the aim sits under it. */
+export function aimOffsetFor(pointerType: string, offsetPx: number): number {
+  return pointerType === 'touch' ? offsetPx : 0
+}
+
 /** The aim after the finger moved from `last` to `finger`: 1/scale of the finger's movement. */
 export function moveAim(aim: Pt, last: Pt, finger: Pt, scale = AIM_ZOOM): Pt {
   return { x: aim.x + (finger.x - last.x) / scale, y: aim.y + (finger.y - last.y) / scale }
