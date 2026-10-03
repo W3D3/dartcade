@@ -624,3 +624,25 @@ they differ from the sections above, this decides:
 17. **Lobby name in the match header.** It's taken at start, so a rename shows from the next game. After a server restart, a running game shows the lobby's current name.
 18. **User search** reuses the existing `GET /api/users?q=` (the spec's `/api/users/search` isn't added).
 19. **Snapshot `lobbyId`.** It's added now (the spec lists it under "comes with lobbies").
+
+## Lobby screens, as built (plan 3, 2026-10-03)
+
+- **Routes:** `#/lobby` (your lobby, or Create/Join), `#/join` and `#/join/:code` (the join
+  link and the QR code open the latter), `#/invites`.
+- **Live state:** the lobby page listens on `/ws/lobby`. The whole app keeps one `/ws/me` while
+  you're signed in, for the indicator (desktop side nav card, phone strip above the tab bar) and
+  the invite badge (phone Play tab; desktop "Invites" link). The summary says whether you're the
+  host (`youHost`).
+- **Controls:** the screens show only what the server would accept (`lib/lobby/rules.ts`
+  mirrors `backend/src/lobby/rules.ts`). The board menu lists Manual and your own boards.
+- **Who plays:** the host sits people out with the chips on the next-game card; everyone switches
+  "In" / "Sits out" and Ready on their own rows (you and your guests).
+- **Inline settings:** X01 only (start score 301/501/701, check-out, first to); "Change game"
+  opens the Play page, where the host's "Game on" saves the next game and starts it. Members
+  see "<host> starts the game" there.
+- **Starting:** whoever has a seat goes to the game when it starts; a "Game running" bar leads
+  back. A start with people not ready asks "Start anyway?".
+- **Lobby closed or left:** the lobby page says so (no toast); the indicator just disappears.
+- **Invites:** show the lobby, who invited you and when (the API has no boards or people for an
+  invite). Accepting or joining while in another lobby asks to leave it first.
+- **Not built:** the tablet rail (no tablet layout), friends chips (#54), an in-app QR scanner.
