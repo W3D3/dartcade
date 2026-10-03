@@ -14,6 +14,7 @@
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
+  import { rememberReturn, sessionStore } from '$lib/returnTo'
 
   const routes = {
     '/': CreateSession,
@@ -34,17 +35,22 @@
     const currentHash = window.location.hash
     if (currentHash.startsWith('#/login')) { checked = true; return }
     await currentUser.refresh()
-    if (!get(currentUser)) void push('/login')
+    if (!get(currentUser)) {
+      // A join link or QR code opened while signed out comes back here after signing in
+      rememberReturn(sessionStore(), currentHash)
+      void push('/login')
+    }
     checked = true
   })
 
   // The per-user socket (invites, the lobby indicator) runs while someone is signed in, and
   // restarts when the signed-in user changes (dev user switch, signing in as someone else) so
-  // the new user doesn't see the previous one's invites and lobby.
+  // the new user doesn't see the previous one's invites and lobby. The same user signing back
+  // in after the server closed it (4401) starts it again.
   let meUserId: string | null = null
   $effect(() => {
     const id = $currentUser?.id ?? null
-    if (id === meUserId) return
+    if (id === meUserId && (id === null || me.running())) return
     me.stop()
     meUserId = id
     if (id) me.start()

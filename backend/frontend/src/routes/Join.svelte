@@ -13,6 +13,7 @@
   import { formatCode } from '$lib/lobby/format'
   import { describeConflict, normalizeCode, type Refusal } from '$lib/lobby/input'
   import { me } from '$lib/lobby/sockets'
+  import { rememberReturn, sessionStore } from '$lib/returnTo'
 
   type Preview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
   let { params = {} }: { params?: { code?: string } } = $props()
@@ -50,6 +51,12 @@
     } finally { busy = false }
   }
 
+  /** Signs out; signing in as someone else comes back here with the code. */
+  function switchAccount() {
+    rememberReturn(sessionStore(), code.length === 6 ? `#/join/${code}` : '#/join')
+    void signOut()
+  }
+
   async function leaveAndJoin() {
     const current = leaveFirst
     leaveFirst = null
@@ -78,7 +85,7 @@
     {#if error}<ErrorText>{error}</ErrorText>{/if}
     <Button class="mt-auto h-14" disabled={!preview || busy} onclick={() => void join()}>{busy ? 'Joining…' : `Join as ${you}`}</Button>
     <p class="m-0 text-[13px] text-center text-text-muted">
-      Not {you}? <button type="button" onclick={() => void signOut()} class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Switch account</button>
+      Not {you}? <button type="button" onclick={switchAccount} class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Switch account</button>
     </p>
   </main>
 </Layout>

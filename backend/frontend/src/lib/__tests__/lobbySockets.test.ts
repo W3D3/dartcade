@@ -100,11 +100,27 @@ describe('createMeStore', () => {
     expect(FakeSocket.opened).toHaveLength(1)
   })
 
-  it('gives up when signed out (4401)', () => {
+  it('gives up when signed out (4401), and starts again after signing back in', () => {
     const m = createMeStore(open)
     m.start()
+    expect(m.running()).toBe(true)
     FakeSocket.opened[0].drop(4401)
     vi.advanceTimersByTime(60_000)
     expect(FakeSocket.opened).toHaveLength(1)
+    expect(m.running()).toBe(false)
+    m.start()
+    expect(FakeSocket.opened).toHaveLength(2)
+    expect(m.running()).toBe(true)
+  })
+
+  it('stop() cancels a pending reconnect, so a restart leaves one socket', () => {
+    const m = createMeStore(open)
+    m.start()
+    FakeSocket.opened[0].drop(1006)
+    m.stop()
+    m.start()
+    expect(FakeSocket.opened).toHaveLength(2)
+    vi.advanceTimersByTime(60_000)
+    expect(FakeSocket.opened).toHaveLength(2)
   })
 })

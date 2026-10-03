@@ -81,8 +81,10 @@ export function createMeStore(open: OpenSocket = openWs) {
   let ws: WebSocket | null = null
   let running = false
   let backoff = 500
+  let retry: ReturnType<typeof setTimeout> | null = null
 
   function connect() {
+    retry = null
     if (!running) return
     const socket = open('/ws/me')
     ws = socket
@@ -93,7 +95,7 @@ export function createMeStore(open: OpenSocket = openWs) {
     socket.onclose = (e) => {
       if (ws !== socket || !running) return
       if (WsCloseCode[e.code] === 'Unauthorized') { running = false; return }
-      setTimeout(connect, backoff)
+      retry = setTimeout(connect, backoff)
       backoff = Math.min(backoff * 2, 30_000)
     }
     socket.onerror = () => socket.close()
@@ -101,6 +103,8 @@ export function createMeStore(open: OpenSocket = openWs) {
 
   return {
     subscribe: state.subscribe,
+    /** False before start(), after stop(), and once the server signed you out (4401). */
+    running: () => running,
     start() {
       if (running) return
       running = true
@@ -109,6 +113,7 @@ export function createMeStore(open: OpenSocket = openWs) {
     },
     stop() {
       running = false
+      if (retry !== null) { clearTimeout(retry); retry = null }
       ws?.close()
       ws = null
       state.set(null)
