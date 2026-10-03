@@ -16,6 +16,7 @@ export const badgeVariants = tv({
 			ready:       "h-8 px-[10px] rounded-full bg-accent-tint text-accent text-[12px] font-bold",
 			"not-ready": "h-8 px-[10px] rounded-full bg-surface-paused text-warn text-[12px]",
 			"sits-out":  "h-8 px-[10px] rounded-full border border-dashed border-line-strong text-text-muted text-[12px] font-medium",
+			pending:     "h-8 px-[10px] rounded-full bg-surface-2 text-text-dim text-[12px] font-medium",
 		},
 	},
 	defaultVariants: { variant: "throwing" },
