@@ -5,8 +5,8 @@
   import { untrack } from 'svelte'
   import type { Lobby, ThrowOrder } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
-  import GameSettings from '$lib/components/GameSettings.svelte'
   import ChangeGameDialog from './ChangeGameDialog.svelte'
+  import NextGameSettingsPanel from './NextGameSettingsPanel.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
   import ThrowOrderField from './ThrowOrderField.svelte'
@@ -39,8 +39,8 @@
   const config = $derived(game
     ? withDefaults({ ...game.config, ...(pending?.gameId === game.gameId ? pending.config : {}) }, defaults)
     : {})
-  let settingsOpen = $state(false)
   let picking = $state(false)
+  let settingsOpen = $state(false)
 
   // Each snapshot settles the pending changes it shows (or whose save came back). This only
   // trims what's shown: saving happens in the handlers, so an echo never saves again.
@@ -96,10 +96,9 @@
     <Button variant="outline" size="md" class="font-semibold {game ? '' : 'col-span-2'}" aria-haspopup="dialog"
       onclick={() => picking = true}>{game ? 'Change game' : 'Pick a game'}</Button>
   </div>
-  {#if settingsOpen && game}
-    <div class="p-[14px] rounded-[12px] bg-surface-panel border border-line-2">
-      <GameSettings gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} onchange={(key: string, value: unknown) => void setConfig(key, value)} />
-    </div>
+  {#if game}
+    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}}
+      onchange={(key: string, value: unknown) => void setConfig(key, value)} />
   {/if}
   <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
   <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
