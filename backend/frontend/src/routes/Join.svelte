@@ -18,25 +18,41 @@
   type Preview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
   let { params = {} }: { params?: { code?: string } } = $props()
 
-  // Filled from the link once; typing changes it from there
-  let text = $state(untrack(() => formatCode(normalizeCode(params.code ?? ''))))
+  // Filled from the link; typing changes it from there, and another link fills that one in
+  const fromLink = (c: string | undefined) => formatCode(normalizeCode(c ?? ''))
+  let text = $state(untrack(() => fromLink(params.code)))
+  let linkCode = untrack(() => params.code)
+  $effect(() => {
+    const c = params.code
+    if (c === linkCode) return
+    linkCode = c
+    if (c) text = fromLink(c)
+  })
   const code = $derived(normalizeCode(text))
   let preview = $state<Preview | null>(null)
+  // No open lobby has the code (a 404), or the check itself failed
   let missing = $state(false)
+  let failed = $state(false)
   let error = $state('')
   let busy = $state(false)
   let leaveFirst = $state<string | null>(null)
   const you = $derived($currentUser?.name ?? 'you')
 
-  $effect(() => {
-    const c = code
+  /** Looks the code up; again from "Try again" after a failed check. */
+  function check(c: string) {
     preview = null
     missing = false
+    failed = false
     if (c.length !== 6) return
     api.GET('/api/lobby-codes/{code}', { params: { path: { code: c } } })
-      .then(({ data }) => { if (code === c) { preview = data ?? null; missing = !data } })
-      .catch(() => { if (code === c) missing = true })
-  })
+      .then(({ data, response }) => {
+        if (code !== c) return
+        preview = data ?? null
+        if (!data) { if (response.status === 404 || response.ok) missing = true; else failed = true }
+      })
+      .catch(() => { if (code === c) failed = true })
+  }
+  $effect(() => { check(code) })
 
   async function join() {
     if (!preview) return
@@ -77,8 +93,12 @@
       <input id="lobby-code" bind:value={text} autocomplete="one-time-code" autocapitalize="characters" spellcheck="false"
         placeholder="K7Q4-MD" maxlength="12"
         class="h-[60px] box-border px-4 bg-surface-2 border-2 rounded-[12px] text-text font-mono text-[26px] tracking-[0.16em] text-center uppercase
-               {missing ? 'border-live' : 'border-accent'}" />
+               {missing || failed ? 'border-live' : 'border-accent'}" />
       {#if missing}<span class="text-[13px] text-live-text">No open lobby with that code. Check it with the host.</span>{/if}
+      {#if failed}
+        <span class="text-[13px] text-live-text">Couldn't check the code.
+          <button type="button" onclick={() => check(code)} class="p-0 border-0 bg-transparent text-live-text underline cursor-pointer font-[inherit]">Try again.</button></span>
+      {/if}
     </div>
     {#if preview}<LobbyPreviewCard name={preview.name} hostName={preview.hostName} boardNames={preview.boardNames} peopleCount={preview.peopleCount} />{/if}
     <p class="m-0 text-[13px] text-text-dim">Or point your phone's camera at the QR code on the host's lobby screen.</p>

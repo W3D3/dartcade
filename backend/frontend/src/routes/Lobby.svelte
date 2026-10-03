@@ -28,7 +28,8 @@
 
   let lobby = $state<Lobby | null>(null)
   let ended = $state<LobbyEnd | null>(null)
-  let phase = $state<'loading' | 'none' | 'open'>('loading')
+  // failed: the lobby couldn't be loaded (not a 404, which is "not in a lobby")
+  let phase = $state<'loading' | 'none' | 'open' | 'failed'>('loading')
   let ownBoards = $state<OwnBoard[]>([])
   let error = $state('')
   let socket: ReturnType<typeof createLobbyStore> | null = null
@@ -48,10 +49,15 @@
   }
 
   async function load() {
-    const [cur, boards] = await Promise.all([api.GET('/api/lobbies/current'), api.GET('/api/boards')])
-    ownBoards = (boards.data?.boards ?? []).map(b => ({ id: b.id, name: b.name }))
-    if (cur.data) open(cur.data.id)
-    else phase = 'none'
+    phase = 'loading'
+    try {
+      const [cur, boards] = await Promise.all([api.GET('/api/lobbies/current'), api.GET('/api/boards')])
+      ownBoards = (boards.data?.boards ?? []).map(b => ({ id: b.id, name: b.name }))
+      if (cur.data) open(cur.data.id)
+      else phase = cur.response.status === 404 ? 'none' : 'failed'
+    } catch {
+      phase = 'failed'
+    }
   }
 
   /** Runs a change; a refusal shows above the lists. Resolves true when it went through. */
@@ -147,6 +153,11 @@
     {#if ended}
       <EmptyState title={ended === 'closed' ? 'The lobby was closed' : "You're no longer in the lobby"}
         text="Start a new lobby, join one with a code, or play a game of your own." actions={startOrJoin} />
+    {:else if phase === 'failed'}
+      <div class="flex flex-col items-start gap-3">
+        <ErrorText>Couldn't load the lobby.</ErrorText>
+        <Button variant="outline" class="h-11" onclick={() => void load()}>Try again</Button>
+      </div>
     {:else if phase === 'none'}
       <EmptyState title="You're not in a lobby"
         text="A lobby keeps your crew together between games: everyone joins once, on their own board or phone."
