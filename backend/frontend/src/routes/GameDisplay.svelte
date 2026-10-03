@@ -4,7 +4,7 @@
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
   import ErrorText from '../lib/components/ErrorText.svelte'
   import { createSessionStore, type Snapshot } from '../lib/ws.js'
-  import { afterGameRoute, endControl } from '../lib/endControl.js'
+  import { afterGameRoute, endControl, leaveRefused } from '../lib/endControl.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
@@ -61,6 +61,7 @@
   let viewerId = $state<string | null>(null)
   let unsubNotice: (() => void) | null = null
   let unsubError: (() => void) | null = null
+  let unsubConnected: (() => void) | null = null
   // "Not your turn": a dart on your board while someone else is up (6 s, the newest wins)
   const toast = createToast<NoticeMessage>(6000)
 
@@ -70,7 +71,8 @@
   let viewModeSetByUser = savedView !== null
   let showEndConfirm = $state(false)
   // A non-host's Leave game: sent over the socket, confirmed by the next snapshot (seats
-  // forfeited, status no longer active); the server's forbidden notice means it failed.
+  // forfeited, status no longer active); the server's error means it failed (you control every
+  // seat left, so only the host can end it), and a dropped socket forgets it.
   let leavePending = $state(false)
   let endError = $state<string | null>(null)
   /** Dart open in the correction popover; also highlighted on the board. */
@@ -96,11 +98,12 @@
     })
     unsubNotice = sessionStore.notice.subscribe(n => { if (n) toast.show(n) })
     unsubError = sessionStore.error.subscribe(e => {
-      if (e?.action === 'forfeit' && leavePending) { leavePending = false; endError = 'Could not leave the game.' }
+      if (e?.action === 'forfeit' && leavePending) { leavePending = false; endError = leaveRefused(snapshot) }
     })
+    unsubConnected = sessionStore.connected.subscribe(up => { if (!up) leavePending = false })
     authClient.getSession().then(r => { viewerId = r.data?.user.id ?? null }).catch(() => undefined)
   })
-  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); toast.dismiss(); sessionStore?.destroy() })
+  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); unsubConnected?.(); toast.dismiss(); sessionStore?.destroy() })
 
   function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
     const oldCount = before.currentVisitDarts.length

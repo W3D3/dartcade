@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, hostName, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
+import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, myRow, playsInGame } from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -11,7 +11,7 @@ const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Len
 const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', plays: false })
 const pia = person({ id: 'g', name: 'Pia', addedByUserId: 'lena', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', ready: true })
 const lobby: Lobby = {
-  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', throwOrder: 'lobby', nextGame: null, canRematch: false,
+  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', hostName: 'Christoph', throwOrder: 'lobby', nextGame: null, canRematch: false,
   currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [chris, lena, max, pia], invites: [], activity: [],
   solo: false, nextHostName: 'Lena',
 }
@@ -78,20 +78,14 @@ describe('lobby rules for the screens', () => {
     expect(playsInGame({ ...lobby, people: [chris, { ...lena, plays: false }, pia] }, 'lena')).toBe(true)
   })
 
-  it('knows which games have a bull off (people are the server\'s to count)', () => {
-    expect(hasBullOff('x01')).toBe(true)
-    expect(hasBullOff('atc')).toBe(false)
-    expect(hasBullOff(null)).toBe(false)
+  it('knows which games have a bull off from their defaults (people are the server\'s to count)', () => {
+    expect(hasBullOff({ defaultConfig: { startScore: 501, bullOff: 'off' } })).toBe(true)
+    expect(hasBullOff({ defaultConfig: { order: 'asc', finishOn: 'bull' } })).toBe(false)
+    expect(hasBullOff(undefined)).toBe(false)
   })
 
   it('lists the accounts already in the lobby or invited, so the add field skips them', () => {
     const invited = { ...lobby, invites: [{ id: 'i1', userId: 'phil', name: 'Phil', invitedByUserId: 'chris', createdAt: '2026-10-02T19:41:00.000Z' }] }
     expect(alreadyInOrInvited(invited)).toEqual(['chris', 'lena', 'max', 'phil'])
-  })
-
-  it("names the host while they're in the lobby", () => {
-    expect(hostName(lobby)).toBe('Christoph')
-    expect(hostName({ ...lobby, people: [lena, max, pia] })).toBeNull()
-    expect(hostName({ ...lobby, hostUserId: null })).toBeNull()
   })
 })

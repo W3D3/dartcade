@@ -6,6 +6,7 @@
   import type { Lobby, ThrowOrder } from '$lib/api/lobby-ws'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import Field from './Field.svelte'
+  import { gameModes } from '$lib/gameModes'
   import { hasBullOff } from '$lib/lobby/rules'
 
   let { lobby, gameId, readonly = false, onchange }: {
@@ -18,7 +19,7 @@
   } = $props()
 
   const isOrder = (v: unknown): v is ThrowOrder => v === 'lobby' || v === 'random' || v === 'bulloff'
-  const has = $derived(hasBullOff(gameId))
+  const has = $derived(hasBullOff(gameId === null ? undefined : $gameModes.find(g => g.id === gameId)))
   // The game's settings turned bull off on (the server keeps throwOrder and the game's bull
   // off field in sync): lobby order and random are locked while it is, with a hint pointing
   // at where to turn it off.

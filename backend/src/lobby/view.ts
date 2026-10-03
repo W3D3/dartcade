@@ -4,6 +4,10 @@ import { currentSeat } from '../session/access.js'
 import { effectiveReady, isSolo, memberOf, nextHost } from './rules.js'
 import type { InviteRow, LobbyState } from './types.js'
 
+/** The host's name; null with no host, or one who isn't in the lobby (yet). */
+const hostNameOf = (lobby: LobbyState): string | null =>
+  lobby.hostUserId === null ? null : memberOf(lobby, lobby.hostUserId)?.name ?? null
+
 /** What a view needs besides the lobby: who has it open, which boards are online, its running game. */
 export type ViewContext = { online: ReadonlySet<string>; isBoardOnline: (boardId: string) => boolean; sessionId: string | null }
 
@@ -14,6 +18,7 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
     name: lobby.name,
     code: lobby.code,
     hostUserId: lobby.hostUserId,
+    hostName: hostNameOf(lobby),
     throwOrder: lobby.throwOrder,
     nextGame: lobby.nextGame,
     canRematch: lobby.lastGame !== null,
@@ -42,7 +47,7 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
   return {
     id: lobby.id,
     name: lobby.name,
-    hostName: lobby.hostUserId === null ? null : memberOf(lobby, lobby.hostUserId)?.name ?? null,
+    hostName: hostNameOf(lobby),
     peopleCount: lobby.people.length,
     nextGame: lobby.nextGame,
     sessionId: session?.id ?? null,

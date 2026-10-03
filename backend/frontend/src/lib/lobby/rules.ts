@@ -19,10 +19,6 @@ export const controllerOf = (p: LobbyPerson): string => p.userId ?? p.addedByUse
 export const isHost = (lobby: Lobby, viewerId: string | null): boolean =>
   viewerId !== null && lobby.hostUserId === viewerId && lobby.people.some(p => p.userId === viewerId)
 
-/** The host's name, or null while the lobby has no host in it. */
-export const hostName = (lobby: Lobby): string | null =>
-  lobby.people.find(p => p.userId !== null && p.userId === lobby.hostUserId)?.name ?? null
-
 export const myRow = (lobby: Lobby, viewerId: string | null): LobbyPerson | null =>
   lobby.people.find(p => p.userId !== null && p.userId === viewerId) ?? null
 
@@ -94,11 +90,13 @@ export function boardSummary(lobby: Lobby): string {
 export const playsInGame = (lobby: Lobby, viewerId: string | null): boolean =>
   lobby.people.some(p => p.plays && isMine(p, viewerId))
 
-/** The games with a bull off of their own (a `bullOff` setting): the lobby's Bull-off throw order drives it. */
-const BULL_OFF_GAMES = new Set(['x01'])
-
-/** The game has a bull off, so the Bull-off throw order can apply to it. Whether enough people play is the server's call. */
-export const hasBullOff = (gameId: string | null): boolean => gameId !== null && BULL_OFF_GAMES.has(gameId)
+/**
+ * The game has a bull off of its own (a `bullOff` setting in the server's defaults, as the
+ * server checks it), so the Bull-off throw order can apply to it. Whether enough people play
+ * is the server's call.
+ */
+export const hasBullOff = (game: { defaultConfig: Record<string, unknown> } | undefined): boolean =>
+  game !== undefined && 'bullOff' in game.defaultConfig
 
 /** Accounts the add field doesn't suggest: already in the lobby, or invited. */
 export const alreadyInOrInvited = (lobby: Lobby): string[] =>
