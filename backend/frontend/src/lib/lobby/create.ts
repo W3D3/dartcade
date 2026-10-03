@@ -1,12 +1,13 @@
-// Creating a lobby (the Lobby page, the side nav card, the Play page's "Play with friends").
+// Creating a lobby (the Lobby page, the side nav card, and the Play page when you have none).
 import { api } from '$lib/api'
 import { describeConflict, type Refusal } from './input'
 
-export type CreateOutcome = { ok: true; lobbyId: string } | { ok: false; message: string }
+/** inLobby: refused because you already have a lobby (another tab may have just opened it). */
+export type CreateOutcome = { ok: true; lobbyId: string } | { ok: false; message: string; inLobby: boolean }
 
 export function createOutcome(data: { id: string } | undefined, error: Refusal | undefined): CreateOutcome {
   if (data) return { ok: true, lobbyId: data.id }
-  return { ok: false, message: error ? describeConflict(error) : 'Could not create the lobby' }
+  return { ok: false, message: error ? describeConflict(error) : 'Could not create the lobby', inLobby: error?.code === 'in_lobby' }
 }
 
 export async function createLobby(): Promise<CreateOutcome> {

@@ -4,13 +4,12 @@
   import { ArrowRight, RotateCcw, Settings } from '@lucide/svelte'
   import type { Lobby, ThrowOrder } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
-  import SegmentedControl from '$lib/components/SegmentedControl.svelte'
-  import Field from './Field.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
+  import ThrowOrderField from './ThrowOrderField.svelte'
   import WhoPlays from './WhoPlays.svelte'
   import X01Settings from './X01Settings.svelte'
-  import { bullOffAvailable, counts, type LobbyPatch } from '$lib/lobby/rules'
+  import { counts, type LobbyPatch } from '$lib/lobby/rules'
 
   let { lobby, busy = false, onupdate, onplays, onstart }: {
     lobby: Lobby
@@ -21,17 +20,8 @@
     onstart: (rematch: boolean) => void
   } = $props()
 
-  const isOrder = (v: unknown): v is ThrowOrder => v === 'lobby' || v === 'random' || v === 'bulloff'
-
   const c = $derived(counts(lobby))
   const game = $derived(lobby.nextGame)
-  const bullOff = $derived(bullOffAvailable(lobby))
-  const orders = $derived([
-    { value: 'lobby', label: 'Lobby order' },
-    { value: 'random', label: 'Random' },
-    { value: 'bulloff', label: 'Bull-off', disabled: !bullOff,
-      title: bullOff ? undefined : game?.gameId === 'x01' ? 'Bull-off needs at least two players' : 'This game has no bull off' },
-  ])
   const x01 = $derived(game?.gameId === 'x01')
   const running = $derived(lobby.currentSessionId !== null)
   let settingsOpen = $state(false)
@@ -53,9 +43,7 @@
   </div>
   {#if settingsOpen && game && x01}<X01Settings config={game.config} onchange={setConfig} />{/if}
   <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
-  <Field label="Throw order">
-    <SegmentedControl options={orders} value={lobby.throwOrder} onchange={(v) => { if (isOrder(v)) void onupdate({ throwOrder: v }) }} />
-  </Field>
+  <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
   <div class="flex flex-col gap-[6px]">
     <div class="flex gap-2">
       <Button size="xl" class="flex-grow" disabled={!game || running || busy || c.playing === 0} onclick={() => onstart(false)}>

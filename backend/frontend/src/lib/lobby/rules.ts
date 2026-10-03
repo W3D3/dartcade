@@ -94,9 +94,9 @@ export const playsInGame = (lobby: Lobby, viewerId: string | null): boolean =>
 /** The games with a bull off of their own (a `bullOff` setting): the lobby's Bull-off throw order drives it. */
 const BULL_OFF_GAMES = new Set(['x01'])
 
-/**
- * Whether the Bull-off throw order works for the next game (backend src/lobby/startPlan.ts
- * refuses it for a game without bull off), with the two players a bull off needs.
- */
-export const bullOffAvailable = (lobby: Lobby): boolean =>
-  lobby.nextGame !== null && BULL_OFF_GAMES.has(lobby.nextGame.gameId) && counts(lobby).playing >= 2
+/** The game has a bull off, so the Bull-off throw order can apply to it. Whether enough people play is the server's call. */
+export const hasBullOff = (gameId: string | null): boolean => gameId !== null && BULL_OFF_GAMES.has(gameId)
+
+/** Accounts the add field doesn't suggest: already in the lobby, or invited. */
+export const alreadyInOrInvited = (lobby: Lobby): string[] =>
+  [...lobby.people.flatMap(p => (p.userId ? [p.userId] : [])), ...lobby.invites.map(i => i.userId)]
