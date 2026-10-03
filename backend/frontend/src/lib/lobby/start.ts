@@ -1,0 +1,32 @@
+// Starting a lobby game (Start, Rematch, the Play page's "Game on") with the soft ready gate:
+// people who aren't ready get named and the host can start anyway.
+import { api } from '$lib/api'
+import { describeConflict, type Refusal } from './input'
+
+export type StartOutcome =
+  | { kind: 'started'; sessionId: string }
+  | { kind: 'confirm'; notReady: string[] }
+  | { kind: 'error'; message: string; sessionId: string | null }
+
+export function startOutcome(data: { sessionId: string } | undefined, error: Refusal | undefined): StartOutcome {
+  if (data) return { kind: 'started', sessionId: data.sessionId }
+  if (error?.code === 'not_ready') return { kind: 'confirm', notReady: (error.notReady ?? []).map(p => p.name) }
+  return { kind: 'error', message: error ? describeConflict(error) : 'Could not start the game', sessionId: error?.sessionId ?? null }
+}
+
+export async function startGame(lobbyId: string, opts: { rematch?: boolean; force?: boolean } = {}): Promise<StartOutcome> {
+  const req = { params: { path: { id: lobbyId } }, body: opts.force ? { force: true } : {} }
+  const res = opts.rematch
+    ? await api.POST('/api/lobbies/{id}/rematch', req)
+    : await api.POST('/api/lobbies/{id}/start', req)
+  return startOutcome(res.data, res.error)
+}
+
+/**
+ * Go to the lobby's game: only when it just started (the previous snapshot had none) and
+ * you play in it. `prev` is undefined before the first snapshot, so opening the lobby page
+ * (or coming back from the game) never bounces you into it.
+ */
+export function shouldOpenGame(prev: string | null | undefined, next: string | null, playing: boolean): boolean {
+  return prev === null && next !== null && playing
+}
