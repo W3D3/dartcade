@@ -87,7 +87,23 @@
         "bullOff": { "anyOf": [{ "$ref": "#/$defs/BullOffView" }, { "type": "null" }] },
         "currentVisitDarts": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Dart" } },
         "totalDarts": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
-        "totalVisits": { "type": "array", "items": { "type": "integer", "minimum": 0 } }
+        "totalVisits": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "teams": {
+          "type": "array",
+          "description": "Only in a team game: each team with its shared score and legs.",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "seats", "score", "legs"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "common-v1.json#/$defs/TeamId" },
+              "name": { "type": "string" },
+              "seats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "The team's seats in its own throwing order." },
+              "score": { "type": "integer" },
+              "legs": { "type": "integer", "minimum": 0 }
+            }
+          }
+        }
       }
     },
     "AtcGame": {

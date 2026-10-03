@@ -684,6 +684,13 @@ export interface components {
             /** @enum {integer} */
             multiplier: 0 | 1 | 2 | 3;
         };
+        /** TeamView */
+        TeamView: {
+            id: components["schemas"]["TeamId"];
+            name: string;
+            /** @description The team's seats in its own throwing order. */
+            seats: number[];
+        };
         HistoryDart: {
             /** @description Position in the visit */
             index: number;
@@ -706,6 +713,8 @@ export interface components {
              * @enum {string}
              */
             mode: "x01";
+            /** @description Only in a team game */
+            teams?: components["schemas"]["TeamView"][];
             legs: {
                 leg: number;
                 /** @description Seat that threw first in this leg */
@@ -1052,6 +1061,11 @@ export interface components {
         InviteList: {
             invites: components["schemas"]["Invite"][];
         };
+        /**
+         * TeamId
+         * @enum {string}
+         */
+        TeamId: "A" | "B";
         /**
          * Coords
          * @description Bull-centred, r = 1 at the outer double wire, x right, y up.

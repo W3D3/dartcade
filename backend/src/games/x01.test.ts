@@ -14,6 +14,8 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
   return {
     cfg: defaultCfg, scores: [501, 501], legs: [0, 0],
     opened: [true, true], phase: 'game', order: [0, 1],
+    // Singles: every seat its own team
+    teamOf: Array.from({ length: overrides.playerCount ?? 2 }, (_, i) => i), turn: 0,
     currentPlayer: 0, round: 1,
     bustThisVisit: false, visitOpenedScores: [501, 501],
     winner: null, playerCount: 2, pointsScored: [0, 0], bestCheckout: [0, 0], ...overrides,
@@ -491,5 +493,176 @@ describe('bull as a double, leaving 1', () => {
     const { state } = x01Game.onBoardEvent(s, dartEvent(20, 'Double', 2))
     expect(state.scores[0]).toBe(41)
     expect(state.bustThisVisit).toBe(true)
+  })
+})
+
+// ─── teams ───────────────────────────────────────────────────────────────────
+
+describe('teams', () => {
+  const four: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }, { name: 'B2' }]
+  const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } }
+  const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
+  const team2v2: X01Config = { ...defaultCfg, format: 'teams', teams: [0, 1, 0, 1], startScore: 101 }
+
+  function play(s: X01State, ...events: BoardEvent[]): X01State {
+    return events.reduce((acc, e) => x01Game.onBoardEvent(acc, e).state, s)
+  }
+  const visit = (s: X01State, ...darts: BoardEvent[]) => play(s, opened, ...darts, takeout)
+  const t20 = () => dartEvent(20, 'Triple', 3)
+  const s20 = () => dartEvent(20, 'SingleOuter', 1)
+  const miss = () => dartEvent(0, 'Outside', 0)
+
+  it('2v2: a visit by A2 counts down Team A\'s score', () => {
+    let s = x01Game.init(team2v2, four)
+    s = visit(s, s20())
+    s = visit(s, miss())
+    s = visit(s, t20())
+    const v = x01Game.view(s, four)
+    expect(v.scores).toEqual([21, 101, 21, 101])
+    expect(v.teams).toEqual([
+      { id: 'A', name: 'Team A', seats: [0, 2], score: 21, legs: 0 },
+      { id: 'B', name: 'Team B', seats: [1, 3], score: 101, legs: 0 },
+    ])
+    expect(s.pointsScored).toEqual([20, 0, 60, 0])
+  })
+
+  it('2v2: a bust by the second player reverts the team score to the start of their visit', () => {
+    let s = x01Game.init(team2v2, four)
+    s = visit(s, t20())          // A1: 41
+    s = visit(s, miss())         // B1
+    s = play(s, opened, t20())   // A2 overshoots 41 → bust
+    expect(s.bustThisVisit).toBe(true)
+    expect(x01Game.view(s, four).scores).toEqual([41, 101, 41, 101])
+    s = play(s, takeout)
+    expect(s.pointsScored).toEqual([60, 0, 0, 0])
+    expect(s.currentPlayer).toBe(3)
+  })
+
+  it('2v2: a checkout by either player wins the leg for the team', () => {
+    let s = x01Game.init({ ...team2v2, startScore: 61, firstTo: 2 }, four)
+    s = visit(s, s20())                                  // A1: 41
+    s = visit(s, miss())                                 // B1
+    s = visit(s, dartEvent(1, 'SingleInner', 1), dartEvent(20, 'Double', 2)) // A2 checks out 41
+    const v = x01Game.view(s, four)
+    expect(v.legs).toEqual([1, 0, 1, 0])
+    expect(v.teams?.map(t => [t.score, t.legs])).toEqual([[61, 1], [61, 0]])
+    expect(s.bestCheckout).toEqual([0, 0, 41, 0])
+    // The next leg starts with Team B's first seat
+    expect([s.currentPlayer, s.round]).toEqual([1, 1])
+    s = visit(s, miss()); expect(s.currentPlayer).toBe(2)
+    s = visit(s, miss()); expect(s.currentPlayer).toBe(3)
+    s = visit(s, miss()); expect([s.currentPlayer, s.round]).toEqual([0, 1])
+    s = visit(s, miss()); expect([s.currentPlayer, s.round]).toEqual([1, 2])
+  })
+
+  it('2v1: the single player throws every other turn', () => {
+    const three: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }]
+    let s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0] }, three)
+    const seen = [s.currentPlayer]
+    for (let i = 0; i < 3; i++) { s = visit(s, miss()); seen.push(s.currentPlayer) }
+    expect(seen).toEqual([0, 1, 2, 1])
+    expect(s.round).toBe(1)
+    s = visit(s, miss())
+    expect([s.currentPlayer, s.round]).toEqual([0, 2])
+  })
+
+  it('teams: the winner is the team; summarize places both team members first', () => {
+    let s = x01Game.init({ ...team2v2, startScore: 40, firstTo: 1 }, four)
+    s = visit(s, s20())                        // A1: 20 left
+    s = visit(s, dartEvent(20, 'Double', 2))   // B1 checks out 40
+    expect(s.phase).toBe('finished')
+    expect(s.winner).toBe(1)
+    expect(x01Game.view(s, four).winner).toBe(1)
+    const r = x01Game.summarize(s, { totalDarts: [1, 1, 0, 0], totalVisits: [1, 1, 0, 0] })
+    expect(r.map(x => x.placement)).toEqual([2, 1, 2, 1])
+    expect(r.map(x => [x.stats.pointsScored, x.stats.dartsThrown, x.stats.legsWon])).toEqual([[20, 1, 0], [40, 1, 1], [0, 0, 0], [0, 0, 1]])
+  })
+
+  it('teamStart random picks the starting team with the rng', () => {
+    const s = x01Game.init({ ...team2v2, teamStart: 'random' }, four, () => 0.7)
+    expect(s.currentPlayer).toBe(1)
+    expect(s.order).toEqual([1, 0, 3, 2])
+    expect(x01Game.init({ ...team2v2, teamStart: 'random' }, four, () => 0.2).currentPlayer).toBe(0)
+  })
+
+  it('singles view has no teams', () => {
+    const v = x01Game.view(x01Game.init(defaultCfg, players), players)
+    expect(v).not.toHaveProperty('teams')
+  })
+
+  it('validate: teams need one entry per player, and both teams a player', () => {
+    expect(x01Module.validate!(team2v2, four)).toBeNull()
+    expect(x01Module.validate!({ ...team2v2, teams: [0, 1, 0] }, four)).toMatch(/teams/)
+    expect(x01Module.validate!({ ...team2v2, teams: [0, 0, 0, 0] }, four)).toMatch(/teams/)
+    expect(x01Module.validate!({ ...team2v2, teams: [0, 1, 2, 1] }, four)).toMatch(/teams/)
+    expect(x01Module.validate!({ ...team2v2, teams: undefined }, four)).toMatch(/teams/)
+  })
+
+  it('bull off: the winner\'s team starts, and the teams take turns', () => {
+    let s = x01Module.init({ ...team2v2, bullOff: 'wdc' }, four)
+    s = x01Module.onUserAction(s, { type: 'bulloff_start' }).state // no result yet: ignored
+    expect(s.stage).toBe('bulloff')
+    const started = { ...s, bullOff: { ...s.bullOff, result: { order: [2, 1, 3, 0], rethrow: false } } }
+    const after = x01Module.onUserAction(started, { type: 'bulloff_start' }).state
+    // A2 won: A2 throws first, Team A's seats rotated to start at A2
+    expect(after.game.order).toEqual([2, 1, 0, 3])
+    expect(after.game.currentPlayer).toBe(2)
+    const bStarts = x01Module.onUserAction({ ...s, bullOff: { ...s.bullOff, result: { order: [1, 0, 3, 2], rethrow: false } } }, { type: 'bulloff_start' }).state
+    expect(bStarts.game.order).toEqual([1, 0, 3, 2])
+    expect(x01Module.teamsOf!(bStarts)).toEqual([0, 1, 0, 1])
+    expect(x01Module.teams).toBe(true)
+  })
+
+  it('bull off won by B2 (seat 3): B2 throws first', () => {
+    const s = x01Module.init({ ...team2v2, bullOff: 'wdc' }, four)
+    const won = { ...s, bullOff: { ...s.bullOff, result: { order: [3, 0, 1, 2], rethrow: false } } }
+    const after = x01Module.onUserAction(won, { type: 'bulloff_start' }).state
+    expect(after.game.currentPlayer).toBe(3)
+    expect(after.game.order).toEqual([3, 0, 1, 2])
+    expect(x01Module.getCurrentPlayer(after)).toBe(3)
+  })
+
+  it('2v1 round limit: the lowest team score wins, both seats of that team placed 1st', () => {
+    const three: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }]
+    let s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0], startScore: 101, maxRounds: 1 }, three)
+    s = visit(s, s20())    // A1: Team A 81
+    s = visit(s, miss())   // B1
+    s = visit(s, miss())   // A2
+    expect(s.phase).toBe('game')
+    s = visit(s, miss())   // B1 again: the round is over
+    expect(s.phase).toBe('finished')
+    expect(s.winner).toBe(0)
+    const r = x01Game.summarize(s, { totalDarts: [1, 2, 1], totalVisits: [1, 2, 1] })
+    expect(r.map(x => x.placement)).toEqual([1, 2, 1])
+  })
+
+  it('2v1 leg starters rotate through the turn order: A1, B1, A2, B1', () => {
+    const three: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }]
+    let s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0], startScore: 40, firstTo: 5 }, three)
+    const starters = [s.currentPlayer]
+    for (let leg = 0; leg < 3; leg++) {
+      s = visit(s, dartEvent(20, 'Double', 2))   // the leg's starter checks out
+      starters.push(s.currentPlayer)
+      expect(s.round).toBe(1)
+    }
+    expect(starters).toEqual([0, 1, 2, 1])
+    expect(s.legs).toEqual([2, 1])
+  })
+
+  it('throwOrder names every seat once, in first-appearance order', () => {
+    const three: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }]
+    expect(x01Game.throwOrder!(x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0] }, three))).toEqual([0, 1, 2])
+  })
+})
+
+describe('teams detail', () => {
+  it('lists the teams with their seats; singles has none', () => {
+    const four: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }, { name: 'B2' }]
+    const s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0, 1] }, four)
+    expect(x01Game.detail([], s).teams).toEqual([
+      { id: 'A', name: 'Team A', seats: [0, 2] },
+      { id: 'B', name: 'Team B', seats: [1, 3] },
+    ])
+    expect(x01Game.detail([], x01Game.init(defaultCfg, players))).not.toHaveProperty('teams')
   })
 })

@@ -1882,6 +1882,32 @@
           }
         }
       },
+      "TeamView": {
+        "title": "TeamView",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "seats"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/TeamId"
+          },
+          "name": {
+            "type": "string"
+          },
+          "seats": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "The team's seats in its own throwing order."
+          }
+        }
+      },
       "HistoryDart": {
         "type": "object",
         "required": [
@@ -1951,6 +1977,13 @@
             "enum": [
               "x01"
             ]
+          },
+          "teams": {
+            "type": "array",
+            "description": "Only in a team game",
+            "items": {
+              "$ref": "#/components/schemas/TeamView"
+            }
           },
           "legs": {
             "type": "array",
@@ -3253,6 +3286,14 @@
             }
           }
         }
+      },
+      "TeamId": {
+        "title": "TeamId",
+        "type": "string",
+        "enum": [
+          "A",
+          "B"
+        ]
       },
       "Coords": {
         "title": "Coords",

@@ -537,6 +537,49 @@
             "type": "integer",
             "minimum": 0
           }
+        },
+        "teams": {
+          "type": "array",
+          "description": "Only in a team game: each team with its shared score and legs.",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "seats",
+              "score",
+              "legs"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "title": "TeamId",
+                "type": "string",
+                "enum": [
+                  "A",
+                  "B"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "seats": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "The team's seats in its own throwing order."
+              },
+              "score": {
+                "type": "integer"
+              },
+              "legs": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
         }
       }
     },
@@ -1273,6 +1316,49 @@
               "items": {
                 "type": "integer",
                 "minimum": 0
+              }
+            },
+            "teams": {
+              "type": "array",
+              "description": "Only in a team game: each team with its shared score and legs.",
+              "items": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "seats",
+                  "score",
+                  "legs"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "title": "TeamId",
+                    "type": "string",
+                    "enum": [
+                      "A",
+                      "B"
+                    ]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "seats": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "description": "The team's seats in its own throwing order."
+                  },
+                  "score": {
+                    "type": "integer"
+                  },
+                  "legs": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
               }
             }
           }
@@ -2183,6 +2269,49 @@
                   "items": {
                     "type": "integer",
                     "minimum": 0
+                  }
+                },
+                "teams": {
+                  "type": "array",
+                  "description": "Only in a team game: each team with its shared score and legs.",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name",
+                      "seats",
+                      "score",
+                      "legs"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "title": "TeamId",
+                        "type": "string",
+                        "enum": [
+                          "A",
+                          "B"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "seats": {
+                        "type": "array",
+                        "items": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "description": "The team's seats in its own throwing order."
+                      },
+                      "score": {
+                        "type": "integer"
+                      },
+                      "legs": {
+                        "type": "integer",
+                        "minimum": 0
+                      }
+                    }
                   }
                 }
               }
