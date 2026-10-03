@@ -377,10 +377,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.join('max', id, lobby.code)
     })
 
-    it('adds a guest at the adder\'s board, ready to play', async () => {
+    it('adds a guest at the adder\'s board; the guest\'s ready follows the adder\'s', async () => {
       const { id: guestId } = await lobbies.addGuest('lena', id, { name: '  Guest 1 ' })
-      expect(await person('Guest 1')).toMatchObject({ id: guestId, userId: null, addedByUserId: 'lena', boardId: 'lenas', ready: true, plays: true })
+      // Lena isn't ready yet, so neither is her new guest
+      expect(await person('Guest 1')).toMatchObject({ id: guestId, userId: null, addedByUserId: 'lena', boardId: 'lenas', ready: false, plays: true })
       expect((await lobbies.view(id))?.activity[0]).toMatchObject({ kind: 'guest_added', actorUserId: 'lena', data: { name: 'Guest 1' } })
+      await lobbies.updatePerson('lena', id, (await person('Lena')).id, { ready: true })
+      expect(await person('Guest 1')).toMatchObject({ ready: true })
     })
 
     it('puts a guest on Manual or on one of the adder\'s own boards only', async () => {
@@ -431,6 +434,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.updatePerson('chris', id, lena.id, { plays: false })
       await expect(lobbies.updatePerson('max', id, lena.id, { plays: true })).rejects.toMatchObject({ statusCode: 403 })
       expect(await person('Lena')).toMatchObject({ ready: true, plays: false })
+    })
+
+    it('ready on a guest row is refused: even the adder sets it on their own row instead', async () => {
+      await lobbies.addGuest('lena', id, { name: 'Guest 1' })
+      const guestId = (await person('Guest 1')).id
+      await expect(lobbies.updatePerson('lena', id, guestId, { ready: true })).rejects.toMatchObject({ statusCode: 403 })
+      await expect(lobbies.updatePerson('chris', id, guestId, { ready: true })).rejects.toMatchObject({ statusCode: 403 })
+      expect(await person('Guest 1')).toMatchObject({ ready: false })
+      await lobbies.updatePerson('lena', id, (await person('Lena')).id, { ready: true })
+      expect(await person('Guest 1')).toMatchObject({ ready: true })
     })
 
     it('writes nothing when one field of a change is refused', async () => {
@@ -562,6 +575,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect((await lobbies.view(id))?.currentSessionId).toBe(sessionId)
     })
 
+    it('pressing Start makes the host ready, persisted even while they still need to confirm', async () => {
+      // Neither chris nor lena is ready; chris is the starter, so only Lena blocks it
+      await expect(lobbies.start('chris', id, false)).rejects.toMatchObject({
+        statusCode: 409, body: { code: 'not_ready', notReady: [{ name: 'Lena' }] },
+      })
+      expect(await person('Christoph')).toMatchObject({ ready: true })
+      expect(await person('Lena')).toMatchObject({ ready: false })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(engine.getSession(sessionId)).toBeDefined()
+    })
+
     it('a solo lobby starts without being ready, and the game carries no lobby name', async () => {
       const solo = await lobbies.create('max')
       await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
@@ -600,20 +624,20 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       })
     })
 
-    it('after the game: everyone back in, members not ready, guests ready, a game_played line', async () => {
+    it('after the game: everyone back in, members not ready, guests follow their (now not-ready) adder, a game_played line', async () => {
       await lobbies.join('max', id, code)
       await lobbies.addGuest('lena', id, { name: 'Guest 1' })
       await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
       await setReady('chris', 'Christoph')
-      await lobbies.updatePerson('lena', id, (await person('Guest 1')).id, { ready: false })
       const { sessionId } = await lobbies.start('chris', id, true)
       // Lena gives up her seat and her guest's: Christoph wins
       await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
       await lobbies.whenIdle(id)
       const lobby = await lobbies.view(id)
       expect(lobby?.currentSessionId).toBeNull()
+      // Guest 1 follows Lena: not ready, same as every reset member
       expect(lobby?.people.map(p => [p.name, p.plays, p.ready])).toEqual([
-        ['Christoph', true, false], ['Lena', true, false], ['Max', true, false], ['Guest 1', true, true],
+        ['Christoph', true, false], ['Lena', true, false], ['Max', true, false], ['Guest 1', true, false],
       ])
       expect(lobby?.activity[0]).toMatchObject({
         kind: 'game_played', actorUserId: null,
@@ -641,6 +665,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       // The host changes the next game meanwhile: a rematch still repeats the last one
       await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })
       await expect(lobbies.rematch('chris', id, false)).rejects.toMatchObject({ body: { code: 'not_ready' } })
+      // Pressing Rematch already made the host ready, even though it answered not_ready
+      expect(await person('Christoph')).toMatchObject({ ready: true })
       const { sessionId } = await lobbies.rematch('chris', id, true)
       const session = engine.getSession(sessionId)
       expect(session?.module.id).toBe('x01')

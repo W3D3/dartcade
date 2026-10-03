@@ -1,6 +1,6 @@
 import { games } from '../games/index.js'
 import type { GameConfig, Seat } from '../session/types.js'
-import { controllerOf } from './rules.js'
+import { controllerOf, effectiveReady } from './rules.js'
 import type { LastGame, LobbyState } from './types.js'
 
 /** The game a lobby start (or rematch) creates. */
@@ -50,7 +50,7 @@ export function planGame(
     return { ok: false, problem: { status: 409, code: 'board_offline', error: `offline: ${offlineBoards.join(', ')}`, offlineBoards } }
   }
 
-  const notReady = players.filter(p => !p.ready && controllerOf(p) !== opts.starterUserId).map(p => ({ personId: p.id, name: p.name }))
+  const notReady = players.filter(p => !effectiveReady(lobby, p) && controllerOf(p) !== opts.starterUserId).map(p => ({ personId: p.id, name: p.name }))
   if (notReady.length > 0 && !opts.force) {
     return { ok: false, problem: { status: 409, code: 'not_ready', error: 'not everyone is ready', notReady } }
   }

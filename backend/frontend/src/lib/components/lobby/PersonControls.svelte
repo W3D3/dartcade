@@ -6,7 +6,7 @@
   import PersonStatus from './PersonStatus.svelte'
   import RowMenu from './RowMenu.svelte'
   import ToggleChip from './ToggleChip.svelte'
-  import { canMove, canRemove, canSetReady, type PersonPatch } from '$lib/lobby/rules'
+  import { canMove, canRemove, canSetReady, isMine, type PersonPatch } from '$lib/lobby/rules'
 
   let { lobby, person, index, viewerId, onupdate, onremove }: {
     lobby: Lobby
@@ -18,7 +18,10 @@
   } = $props()
 
   // Your own rows only: the host sits others out with the who-plays chips on the next-game card
-  const mine = $derived(canSetReady(person, viewerId))
+  const mine = $derived(isMine(person, viewerId))
+  // A guest has no ready of their own: their row shows the badge, never the toggle (the
+  // adder sets it on their own row instead)
+  const readyControl = $derived(canSetReady(person, viewerId))
   const mover = $derived(canMove(lobby, viewerId))
   const last = $derived(lobby.people.length - 1)
   let removing = $state(false)
@@ -30,10 +33,14 @@
     {person.plays ? 'In' : 'Sits out'}
   </ToggleChip>
   {#if person.plays}
-    <ToggleChip tone="solid" on={person.ready} onclick={() => void onupdate(person.id, { ready: !person.ready })}
-      label={person.ready ? `${person.name} is ready. Mark as not ready` : `${person.name} is not ready. Mark as ready`}>
-      {person.ready ? 'Ready' : 'Ready?'}
-    </ToggleChip>
+    {#if readyControl}
+      <ToggleChip tone="solid" on={person.ready} onclick={() => void onupdate(person.id, { ready: !person.ready })}
+        label={person.ready ? `${person.name} is ready. Mark as not ready` : `${person.name} is not ready. Mark as ready`}>
+        {person.ready ? 'Ready' : 'Ready?'}
+      </ToggleChip>
+    {:else}
+      <PersonStatus {person} />
+    {/if}
   {/if}
 {:else}
   <PersonStatus {person} />

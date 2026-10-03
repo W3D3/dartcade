@@ -30,8 +30,11 @@ export const myRow = (lobby: Lobby, viewerId: string | null): LobbyPerson | null
 export const isMine = (p: LobbyPerson, viewerId: string | null): boolean =>
   viewerId !== null && controllerOf(p) === viewerId
 
-/** Nobody sets someone else's ready, not even the host. */
-export const canSetReady = (p: LobbyPerson, viewerId: string | null): boolean => isMine(p, viewerId)
+/**
+ * Nobody sets someone else's ready, not even the host. A guest has no ready of their own
+ * to set: a guest's ready follows their adder, so the adder sets it on their own row.
+ */
+export const canSetReady = (p: LobbyPerson, viewerId: string | null): boolean => p.userId !== null && isMine(p, viewerId)
 
 /** "In" / "sits out": your own rows, or anyone's for the host. */
 export const canSetPlays = (lobby: Lobby, p: LobbyPerson, viewerId: string | null): boolean =>

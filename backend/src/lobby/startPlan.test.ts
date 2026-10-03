@@ -69,6 +69,18 @@ describe('planGame', () => {
     expect(planGame(notReady, all, { ...startedByLena, force: true }).ok).toBe(true)
   })
 
+  it('names a not-ready member\'s guests together with them; a ready member\'s guests never show', () => {
+    const sam = person({ id: 's', userId: 'sam', addedByUserId: 'sam', name: 'Sam', position: 4, ready: false })
+    // Sam's guest own flag says ready, but follows Sam (not ready) instead
+    const samsGuest = person({ id: 'sg', userId: null, addedByUserId: 'sam', name: "Sam's guest", position: 5, ready: true })
+    const l = lobby({ people: [chris, lena, guest, max, sam, samsGuest] })
+    const r = planGame(l, { ...all, personIds: ['c', 'l', 'g', 'm', 's', 'sg'] }, online)
+    expect(!r.ok && r.problem).toMatchObject({
+      code: 'not_ready',
+      notReady: [{ personId: 's', name: 'Sam' }, { personId: 'sg', name: "Sam's guest" }],
+    })
+  })
+
   it('counts the starter and the rows they control as ready', () => {
     const notReady = lobby({ people: [{ ...chris, ready: false }, { ...guest, addedByUserId: 'chris', ready: false }, { ...lena, ready: false }] })
     const r = planGame(notReady, { ...all, personIds: ['c', 'g', 'l'] }, { ...online, starterUserId: 'chris' })
