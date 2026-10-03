@@ -2,30 +2,28 @@
   // The lobby: who's in, on which boards, the next game, the history. It all comes from the
   // lobby socket; changes go through the REST API and come back on the socket.
   import { onDestroy, onMount } from 'svelte'
-  import { push } from 'svelte-spa-router'
+  import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import LobbyHeader from '$lib/components/lobby/LobbyHeader.svelte'
-  import PeopleList from '$lib/components/lobby/PeopleList.svelte'
+  import LobbyPeople from '$lib/components/lobby/LobbyPeople.svelte'
   import ActivityFeed from '$lib/components/lobby/ActivityFeed.svelte'
-  import BoardChip from '$lib/components/lobby/BoardChip.svelte'
-  import PersonControls from '$lib/components/lobby/PersonControls.svelte'
-  import AddSomeone from '$lib/components/lobby/AddSomeone.svelte'
   import GameRunningBar from '$lib/components/lobby/GameRunningBar.svelte'
   import InviteFriendsPanel from '$lib/components/lobby/InviteFriendsPanel.svelte'
   import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import StartAnywayConfirm from '$lib/components/lobby/StartAnywayConfirm.svelte'
   import { api } from '$lib/api'
-  import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
+  import type { Lobby } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
-  import { alreadyInOrInvited, boardChoices, isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
+  import { isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
   import { shouldOpenGame, startGame } from '$lib/lobby/start'
   import { createLobby } from '$lib/lobby/create'
   import { lobbyActions, type LobbyActions } from '$lib/lobby/actions'
+  import { boardToApply } from '$lib/lobby/play'
   import { createLobbyStore, type LobbyEnd } from '$lib/lobby/sockets'
 
   let lobby = $state<Lobby | null>(null)
@@ -127,6 +125,19 @@
   const host = $derived(lobby !== null && isHost(lobby, viewerId))
   const mine = $derived(lobby ? myRow(lobby, viewerId) : null)
 
+  // "Play on this board" (Boards page, then New game): move your row to that board once your
+  // row and boards are known. Plain, not state: the effect clears it once it's handled.
+  let boardFromLink = new URLSearchParams($querystring ?? '').get('board')
+  const myRowId = $derived(mine?.id ?? null)
+  const myBoardId = $derived(mine?.boardId ?? null)
+  $effect(() => {
+    const personId = myRowId, current = myBoardId
+    if (!boardFromLink || !personId) return
+    const target = boardToApply(boardFromLink, current, ownBoards)
+    boardFromLink = null
+    if (target) void updatePerson(personId, { boardId: target })
+  })
+
   onMount(() => { void load() })
   onDestroy(() => { destroyed = true; socket?.destroy(); unsubs.forEach(u => u()) })
 </script>
@@ -164,43 +175,30 @@
       {@const l = lobby}
       <LobbyHeader {lobby} {viewerId} onrename={rename} onnewcode={() => void newCode()} onclose={() => void close()} onleave={() => void leave()} />
       {@render errorBanner()}
-      {#if l.solo}
-        <div class="flex flex-col gap-4 md:gap-5">
-          <InviteFriendsPanel lobby={l} exclude={alreadyInOrInvited(l)} onnewcode={() => void newCode()} onguest={addGuest} oninvite={invite} />
+      <!-- Solo: no history, and Invite friends leads; the people list (add field included) shows either way -->
+      <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,580px)_minmax(0,1fr)] md:gap-5 md:flex-grow md:min-h-0">
+        <div class="order-2 md:order-none flex flex-col min-w-0 md:min-h-0">
+          <LobbyPeople lobby={l} {viewerId} {ownBoards} onupdate={updatePerson} onremove={removePerson} onguest={addGuest} oninvite={invite} />
+        </div>
+        <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
+          {#if l.solo}<InviteFriendsPanel lobby={l} onnewcode={() => void newCode()} />{/if}
           {#if l.currentSessionId}
             <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
           {/if}
-          <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
-            busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
+          {#if host}
+            <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
+              busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
+          {:else if mine}
+            <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
+          {/if}
+          {#if !l.solo}
+            <div class="hidden md:flex md:flex-col md:min-h-0"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
+          {/if}
         </div>
-      {:else}
-        <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,580px)_minmax(0,1fr)] md:gap-5 md:flex-grow md:min-h-0">
-          <div class="order-2 md:order-none flex flex-col min-w-0 md:min-h-0">
-            <PeopleList {lobby} {viewerId}>
-              {#snippet boardOf(p: LobbyPerson)}
-                <BoardChip person={p} choices={boardChoices(p, viewerId, ownBoards)} onpick={(boardId: string | null) => void updatePerson(p.id, { boardId })} />
-              {/snippet}
-              {#snippet controlsOf(p: LobbyPerson, i: number)}
-                <PersonControls lobby={l} person={p} index={i} {viewerId} onupdate={updatePerson} onremove={removePerson} />
-              {/snippet}
-              {#snippet footer()}<AddSomeone exclude={alreadyInOrInvited(l)} onguest={addGuest} oninvite={invite} />{/snippet}
-            </PeopleList>
-          </div>
-          <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
-            {#if l.currentSessionId}
-              <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
-            {/if}
-            {#if host}
-              <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
-                busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
-            {:else if mine}
-              <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
-            {/if}
-            <div class="hidden md:flex md:flex-col md:min-h-0"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
-          </div>
-          <div class="order-3 md:hidden"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
-        </div>
-      {/if}
+        {#if !l.solo}
+          <div class="order-3 md:hidden"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
+        {/if}
+      </div>
     {:else}
       <p class="m-0 text-[15px] text-text-muted">Loading the lobby…</p>
     {/if}

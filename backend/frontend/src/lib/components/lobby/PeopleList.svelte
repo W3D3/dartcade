@@ -10,15 +10,9 @@
   import ReadyCount from './ReadyCount.svelte'
   import { counts } from '$lib/lobby/rules'
 
-  let { lobby, viewerId, title, note: headerNote, bare = false, boardOf, controlsOf, footer }: {
+  let { lobby, viewerId, boardOf, controlsOf, footer }: {
     lobby: Lobby
     viewerId: string | null
-    /** The heading (default: "People · <how many>"). */
-    title?: string
-    /** Right of the heading (default: who's ready, and that the list is the throw order). */
-    note?: Snippet
-    /** No card of its own (inside another card). */
-    bare?: boolean
     /** What a row shows as the board (default: a read-only label). */
     boardOf?: Snippet<[LobbyPerson]>
     /** A row's right-hand side (default: a read-only status). */
@@ -28,8 +22,8 @@
   const c = $derived(counts(lobby))
 </script>
 
-<Panel title={title ?? `People · ${c.people}`} label="People in this lobby" flat {bare}>
-  {#snippet note()}{#if headerNote}{@render headerNote()}{:else}<ReadyCount {lobby} suffix="list order = throw order" />{/if}{/snippet}
+<Panel title="People · {c.people}" label="People in this lobby" flat>
+  {#snippet note()}<ReadyCount {lobby} suffix="list order = throw order" />{/snippet}
   <ol class="m-0 p-0 list-none flex flex-col gap-[6px]">
     {#each lobby.people as p, i (p.id)}
       <PersonRow person={p} index={i} {lobby} {viewerId}>

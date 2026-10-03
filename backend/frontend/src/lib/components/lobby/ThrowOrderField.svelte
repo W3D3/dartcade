@@ -8,7 +8,7 @@
 
   let { lobby, gameId, onchange }: {
     lobby: Lobby
-    /** The game it's for: the lobby's next game, or the one picked on the Play page. */
+    /** The game it's for: the lobby's next game. */
     gameId: string | null
     onchange: (order: ThrowOrder) => void
   } = $props()

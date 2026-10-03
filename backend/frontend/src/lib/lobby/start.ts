@@ -1,4 +1,4 @@
-// Starting a lobby game (Start, Rematch, the Play page's "Game on") with the soft ready gate:
+// Starting a lobby game (Start, Rematch) with the soft ready gate:
 // people who aren't ready get named and the host can start anyway.
 import { api } from '$lib/api'
 import { describeConflict, type Refusal } from './input'
@@ -34,7 +34,7 @@ export function shouldOpenGame(prev: string | null | undefined, next: string | n
 export type GameSelection = { mode: string; config: Record<string, unknown> }
 
 /**
- * What the Play page's form starts with inside a lobby: the lobby's saved next game, merged
+ * What the Play page's form starts with for the host of a lobby: the lobby's saved next game, merged
  * over that mode's defaults so every field the form reads exists (a saved next game may set
  * only some of them), or the given fallback — the player's own
  * remembered mode and settings — when the lobby has no next game yet. Meant to be applied once,
