@@ -17,8 +17,8 @@
 <div class="flex flex-wrap items-center justify-between gap-3 p-3 rounded-[10px] border border-dashed border-line-dashed">
   <span class="text-[13px] text-text-muted">Friends on their own boards or phones?</span>
   <span class="flex gap-2">
-    <Button variant="outline" class="h-9 font-semibold" onclick={() => void create()}>Create lobby</Button>
-    <Button variant="ghost" href="#/join" class="h-9">Join</Button>
+    <Button variant="outline" size="sm" class="font-semibold" onclick={() => void create()}>Create lobby</Button>
+    <Button variant="ghost" size="sm" href="#/join">Join</Button>
   </span>
   {#if error}<ErrorText class="basis-full text-[13px]">{error}</ErrorText>{/if}
 </div>

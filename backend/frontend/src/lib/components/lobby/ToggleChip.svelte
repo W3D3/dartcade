@@ -16,7 +16,7 @@
 
   const look = $derived(tone === 'solid'
     ? on ? 'border-0 bg-accent text-accent-fg font-bold' : 'border-[1.5px] border-solid border-accent bg-transparent text-accent font-bold'
-    : on ? 'border border-solid border-[#5c7323] bg-[#2b3417] text-text font-semibold' : 'border border-dashed border-line-strong bg-transparent text-text-muted')
+    : on ? 'border border-solid border-accent-line-strong bg-accent-tint text-text font-semibold' : 'border border-dashed border-line-strong bg-transparent text-text-muted')
 </script>
 
 <button type="button" aria-pressed={on} aria-label={label} {onclick}

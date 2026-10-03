@@ -22,13 +22,13 @@
   <NextGameSummary game={lobby.nextGame} pickedBy="{hostName}'s pick" size="sm" />
   <SegmentedControl options={PLAYS} value={me.plays} onchange={(v) => { if (v !== me.plays) void onupdate(me.id, { plays: v === true }) }} />
   {#if !me.plays}
-    <Button variant="ghost" disabled class="h-12 border-dashed">Ready · not needed this game</Button>
+    <Button variant="ghost" size="lg" disabled class="border-dashed">Ready · not needed this game</Button>
   {:else if me.ready}
-    <Button variant="accent" class="h-12" aria-pressed="true" onclick={() => void onupdate(me.id, { ready: false })}>
+    <Button variant="accent" size="lg" aria-pressed="true" onclick={() => void onupdate(me.id, { ready: false })}>
       <Check size={18} strokeWidth={3} />Ready
     </Button>
   {:else}
-    <Button variant="outline" class="h-12 border-2 border-accent text-accent text-[15px] font-bold" aria-pressed="false"
+    <Button variant="accent-outline" size="lg" aria-pressed="false"
       onclick={() => void onupdate(me.id, { ready: true })}>I'm ready</Button>
   {/if}
   <div class="flex justify-between gap-[10px] text-[13px]">

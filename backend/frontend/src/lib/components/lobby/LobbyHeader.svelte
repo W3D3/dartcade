@@ -5,6 +5,7 @@
   import type { Lobby } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import IconButton from '$lib/components/IconButton.svelte'
   import QrCode from './QrCode.svelte'
   import { formatCode, joinLink } from '$lib/lobby/format'
   import { boardSummary, counts, hostName as hostNameOf, isHost } from '$lib/lobby/rules'
@@ -37,7 +38,6 @@
   let copied = $state(false)
   let showQr = $state(false)
   let confirm = $state<'close' | 'leave' | 'code' | null>(null)
-  const iconButton = 'w-9 h-9 shrink-0 flex items-center justify-center rounded-[8px] cursor-pointer'
 
   async function saveName() {
     const name = draft.trim()
@@ -64,14 +64,13 @@
       <form class="flex items-center gap-2" onsubmit={(e) => { e.preventDefault(); void saveName() }}>
         <input bind:value={draft} maxlength="48" aria-label="Lobby name"
           class="h-11 min-w-0 flex-grow box-border px-3 rounded-[9px] bg-bg border border-line-chip text-text text-[18px] font-[inherit]" />
-        <Button variant="accent" type="submit" aria-label="Save the name" class="w-11 px-0"><Check size={18} strokeWidth={2.5} /></Button>
+        <Button variant="accent" size="icon" type="submit" aria-label="Save the name"><Check size={18} strokeWidth={2.5} /></Button>
       </form>
     {:else}
       <div class="flex items-center gap-3 min-w-0">
         <h2 class="m-0 font-display font-bold text-[34px] md:text-[48px] leading-none uppercase tracking-[0.02em] truncate">{lobby.name}</h2>
         {#if host}
-          <button type="button" aria-label="Rename the lobby" onclick={() => { draft = lobby.name; renaming = true }}
-            class="{iconButton} bg-transparent border border-line-chip text-ink-2"><Pencil size={16} /></button>
+          <IconButton tone="outline" label="Rename the lobby" onclick={() => { draft = lobby.name; renaming = true }}><Pencil size={16} /></IconButton>
         {/if}
       </div>
     {/if}
@@ -87,20 +86,17 @@
     <div class="flex items-center gap-[10px] md:gap-3 h-[46px] md:h-12 box-border pl-3 md:pl-4 pr-[6px] md:pr-2 border border-line-chip rounded-[10px] bg-surface-panel">
       <span class="text-[12px] md:text-[13px] text-text-muted">Code</span>
       <span class="font-mono text-[17px] md:text-[20px] font-medium tracking-[0.12em]">{formatCode(lobby.code)}</span>
-      <button type="button" onclick={() => void share()}
-        class="h-9 px-[10px] md:px-3 flex items-center gap-[6px] border-0 rounded-[8px] bg-surface-key text-text text-[13px] md:text-[14px] font-semibold cursor-pointer font-[inherit]">
+      <Button variant="key" onclick={() => void share()} class="px-[10px] md:px-3 gap-[6px] text-[13px] md:text-[14px]">
         {#if copied}
           <Check size={15} />Copied
         {:else}
           <span class="md:hidden flex items-center gap-[6px]"><Share2 size={15} />Share link</span>
           <span class="hidden md:flex items-center gap-[6px]"><Copy size={15} />Copy link</span>
         {/if}
-      </button>
-      <button type="button" aria-label="Show the QR code" aria-expanded={showQr} onclick={() => showQr = !showQr}
-        class="{iconButton} border-0 bg-surface-key text-text"><QrIcon size={17} /></button>
+      </Button>
+      <IconButton label="Show the QR code" expanded={showQr} onclick={() => showQr = !showQr}><QrIcon size={17} /></IconButton>
       {#if host}
-        <button type="button" aria-label="Make a new code" title="New code" onclick={() => confirm = 'code'}
-          class="{iconButton} border-0 bg-surface-key text-text"><RefreshCw size={16} /></button>
+        <IconButton label="Make a new code" title="New code" onclick={() => confirm = 'code'}><RefreshCw size={16} /></IconButton>
       {/if}
     </div>
     <Button variant="destructive" onclick={() => confirm = host ? 'close' : 'leave'} class="h-[46px] md:h-12"

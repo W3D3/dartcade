@@ -18,7 +18,7 @@
   const line = $derived(personLine(person, lobby.people, viewerId))
 </script>
 
-<li class="relative grid grid-cols-[14px_36px_minmax(0,1fr)_auto] items-center gap-[10px] min-h-[56px] box-border py-[6px] pl-[10px] pr-1 md:pr-2 rounded-[10px] bg-[#1b1d18]">
+<li class="relative grid grid-cols-[14px_36px_minmax(0,1fr)_auto] items-center gap-[10px] min-h-[56px] box-border py-[6px] pl-[10px] pr-1 md:pr-2 rounded-[10px] bg-surface-row">
   <span class="font-mono text-[12px] text-text-dim text-center">{index + 1}</span>
   <Avatar name={person.name} guest={person.userId === null} presence={person.presence} />
   <span class="flex flex-col gap-1 min-w-0">
