@@ -14,6 +14,7 @@
   import PersonControls from '$lib/components/lobby/PersonControls.svelte'
   import AddSomeone from '$lib/components/lobby/AddSomeone.svelte'
   import GameRunningBar from '$lib/components/lobby/GameRunningBar.svelte'
+  import InviteFriendsPanel from '$lib/components/lobby/InviteFriendsPanel.svelte'
   import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import StartAnywayConfirm from '$lib/components/lobby/StartAnywayConfirm.svelte'
@@ -163,32 +164,43 @@
       {@const l = lobby}
       <LobbyHeader {lobby} {viewerId} onrename={rename} onnewcode={() => void newCode()} onclose={() => void close()} onleave={() => void leave()} />
       {@render errorBanner()}
-      <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,580px)_minmax(0,1fr)] md:gap-5 md:flex-grow md:min-h-0">
-        <div class="order-2 md:order-none flex flex-col min-w-0 md:min-h-0">
-          <PeopleList {lobby} {viewerId}>
-            {#snippet boardOf(p: LobbyPerson)}
-              <BoardChip person={p} choices={boardChoices(p, viewerId, ownBoards)} onpick={(boardId: string | null) => void updatePerson(p.id, { boardId })} />
-            {/snippet}
-            {#snippet controlsOf(p: LobbyPerson, i: number)}
-              <PersonControls lobby={l} person={p} index={i} {viewerId} onupdate={updatePerson} onremove={removePerson} />
-            {/snippet}
-            {#snippet footer()}<AddSomeone exclude={alreadyInOrInvited(l)} onguest={addGuest} oninvite={invite} />{/snippet}
-          </PeopleList>
-        </div>
-        <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
+      {#if l.solo}
+        <div class="flex flex-col gap-4 md:gap-5">
+          <InviteFriendsPanel lobby={l} exclude={alreadyInOrInvited(l)} onnewcode={() => void newCode()} onguest={addGuest} oninvite={invite} />
           {#if l.currentSessionId}
             <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
           {/if}
-          {#if host}
-            <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
-              busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
-          {:else if mine}
-            <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
-          {/if}
-          <div class="hidden md:flex md:flex-col md:min-h-0"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
+          <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
+            busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
         </div>
-        <div class="order-3 md:hidden"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
-      </div>
+      {:else}
+        <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,580px)_minmax(0,1fr)] md:gap-5 md:flex-grow md:min-h-0">
+          <div class="order-2 md:order-none flex flex-col min-w-0 md:min-h-0">
+            <PeopleList {lobby} {viewerId}>
+              {#snippet boardOf(p: LobbyPerson)}
+                <BoardChip person={p} choices={boardChoices(p, viewerId, ownBoards)} onpick={(boardId: string | null) => void updatePerson(p.id, { boardId })} />
+              {/snippet}
+              {#snippet controlsOf(p: LobbyPerson, i: number)}
+                <PersonControls lobby={l} person={p} index={i} {viewerId} onupdate={updatePerson} onremove={removePerson} />
+              {/snippet}
+              {#snippet footer()}<AddSomeone exclude={alreadyInOrInvited(l)} onguest={addGuest} oninvite={invite} />{/snippet}
+            </PeopleList>
+          </div>
+          <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
+            {#if l.currentSessionId}
+              <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
+            {/if}
+            {#if host}
+              <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
+                busy={starting} onstart={(rematch: boolean) => void start(rematch)} />
+            {:else if mine}
+              <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
+            {/if}
+            <div class="hidden md:flex md:flex-col md:min-h-0"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
+          </div>
+          <div class="order-3 md:hidden"><ActivityFeed activity={lobby.activity} {viewerId} since={lobby.createdAt} /></div>
+        </div>
+      {/if}
     {:else}
       <p class="m-0 text-[15px] text-text-muted">Loading the lobby…</p>
     {/if}

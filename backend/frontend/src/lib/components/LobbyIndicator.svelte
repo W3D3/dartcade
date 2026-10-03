@@ -1,7 +1,9 @@
 <script lang="ts">
-  // The desktop side nav's lobby card. Create or Join while you're in no lobby; otherwise your
-  // lobby, live (people, next game, whose turn), and the way back into a running game.
-  import { ChevronRight, Plus } from '@lucide/svelte'
+  // The desktop side nav's lobby card. Create or Join while you're in no lobby; your lobby,
+  // live (people, next game, whose turn), and the way back into a running game once it has
+  // other members; while it's solo, just a quiet link to invite someone (the server decides
+  // solo, so this only ever reads the flag, never counts people itself).
+  import { ChevronRight, Plus, Users } from '@lucide/svelte'
   import { push } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -9,7 +11,8 @@
   import { me } from '$lib/lobby/sockets'
   import { indicatorView } from '$lib/lobby/format'
 
-  const view = $derived($me?.lobby ? indicatorView($me.lobby) : null)
+  const summary = $derived($me?.lobby ?? null)
+  const view = $derived(summary && !summary.solo ? indicatorView(summary) : null)
 
   let error = $state('')
 
@@ -34,6 +37,11 @@
     </a>
     {#if view.back}<Button variant="accent" href="#/session/{view.back.sessionId}" class="h-[34px] text-[13px]">{view.back.label}</Button>{/if}
   </div>
+{:else if summary?.solo}
+  <a href="#/lobby" aria-label="Play with friends: open the lobby"
+    class="flex items-center gap-2 p-3 rounded-[12px] border border-line bg-surface-1 text-text no-underline text-[13px] font-semibold">
+    <Users size={16} class="text-text-muted" />Play with friends
+  </a>
 {:else if $me}
   <div class="flex flex-col gap-[6px] p-[10px] rounded-[12px] border border-line bg-surface-1">
     <Button variant="outline" size="md" onclick={() => void create()} class="bg-surface-active border-accent-line text-accent font-semibold">

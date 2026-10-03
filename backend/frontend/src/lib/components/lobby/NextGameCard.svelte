@@ -46,7 +46,7 @@
   <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
   <div class="flex flex-col gap-[6px]">
     <div class="flex gap-2">
-      <Button size="xl" class="flex-grow" disabled={!game || running || busy || c.playing === 0} onclick={() => onstart(false)}>
+      <Button size="xl" class="flex-grow" disabled={!game || running || busy} onclick={() => onstart(false)}>
         Start · {c.playing} {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
       </Button>
       {#if lobby.canRematch}
