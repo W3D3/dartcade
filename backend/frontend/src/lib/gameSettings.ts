@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { ScoreUpdates } from './heldScore.js'
 
 /** In-game display and sound settings, kept per device in localStorage. */
 export interface GameSettings {
@@ -8,6 +9,8 @@ export interface GameSettings {
   checkoutSuggestions: boolean
   visitSum: boolean
   chalkboard: boolean
+  /** When the big score left counts down: after every dart, or once the visit is over. */
+  scoreUpdates: ScoreUpdates
   /** 0–1 */
   volume: number
   soundHit: boolean
@@ -23,6 +26,7 @@ export const defaultSettings: GameSettings = {
   checkoutSuggestions: true,
   visitSum: true,
   chalkboard: true,
+  scoreUpdates: 'dart',
   volume: 0.7,
   soundHit: false,
   soundMiss: false,
@@ -44,6 +48,7 @@ const SettingsSchema = z.object({
   checkoutSuggestions: flag(d.checkoutSuggestions),
   visitSum: flag(d.visitSum),
   chalkboard: flag(d.chalkboard),
+  scoreUpdates: z.enum(['dart', 'visit']).catch(d.scoreUpdates).default(d.scoreUpdates),
   volume: z.number().refine(Number.isFinite).transform(v => Math.min(1, Math.max(0, v))).catch(d.volume).default(d.volume),
   soundHit: flag(d.soundHit),
   soundMiss: flag(d.soundMiss),
