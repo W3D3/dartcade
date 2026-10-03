@@ -941,7 +941,7 @@ components:
               label: { type: string }
     GameInfo:
       type: object
-      required: [id, defaultConfig, configMeta]
+      required: [id, defaultConfig, configMeta, teams]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -949,6 +949,7 @@ components:
         configMeta:
           type: object
           additionalProperties: { $ref: '#/components/schemas/ConfigFieldMeta' }
+        teams: { type: boolean, description: 'The game can be played in teams (its config takes format and teams)' }
     GameModeList:
       type: object
       required: [modes]

@@ -2157,7 +2157,8 @@
         "required": [
           "id",
           "defaultConfig",
-          "configMeta"
+          "configMeta",
+          "teams"
         ],
         "additionalProperties": false,
         "properties": {
@@ -2173,6 +2174,10 @@
             "additionalProperties": {
               "$ref": "#/components/schemas/ConfigFieldMeta"
             }
+          },
+          "teams": {
+            "type": "boolean",
+            "description": "The game can be played in teams (its config takes format and teams)"
           }
         }
       },
