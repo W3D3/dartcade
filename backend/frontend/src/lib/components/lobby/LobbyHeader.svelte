@@ -1,14 +1,15 @@
 <script lang="ts">
-  // The lobby's name (the host renames it), who hosts, the code and a link to join, the QR code,
-  // and Close (the host) or Leave (everyone else).
-  import { Check, Copy, Pencil, QrCode as QrIcon, RefreshCw, Share2 } from '@lucide/svelte'
+  // The lobby's name (the host renames it), who hosts, and - while the lobby isn't solo - the
+  // code and a link to join, the QR code, and Close (the host) or Leave (everyone). While solo
+  // none of that applies: there's nobody to invite with, and nothing to close or leave.
+  import { Check, Pencil } from '@lucide/svelte'
   import type { Lobby } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
-  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import IconButton from '$lib/components/IconButton.svelte'
-  import QrCode from './QrCode.svelte'
-  import { formatCode, joinLink } from '$lib/lobby/format'
+  import JoinCodeCard from './JoinCodeCard.svelte'
+  import LeaveLobbyConfirm from './LeaveLobbyConfirm.svelte'
   import { boardSummary, counts, hostName as hostNameOf, isHost } from '$lib/lobby/rules'
+  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
 
   let { lobby, viewerId, onrename, onnewcode, onclose, onleave }: {
     lobby: Lobby
@@ -25,36 +26,18 @@
   // The server won't close a lobby while its game runs
   const gameRunning = $derived(lobby.currentSessionId !== null)
   const hostName = $derived(hostNameOf(lobby))
-  const link = $derived(joinLink(window.location.origin, lobby.code))
   const c = $derived(counts(lobby))
   const boards = $derived(boardSummary(lobby))
   const myGuests = $derived(lobby.people.filter(p => p.userId === null && p.addedByUserId === viewerId).map(p => p.name))
-  const leaveBody = $derived(myGuests.length === 0
-    ? 'You can join again with the code.'
-    : `${myGuests.join(', ')} ${myGuests.length === 1 ? 'leaves' : 'leave'} with you.`)
 
   let renaming = $state(false)
   let draft = $state('')
-  let copied = $state(false)
-  let showQr = $state(false)
-  let confirm = $state<'close' | 'leave' | 'code' | null>(null)
+  let confirm = $state<'close' | 'leave' | null>(null)
 
   async function saveName() {
     const name = draft.trim()
     if (!name || name === lobby.name) { renaming = false; return }
     if (await onrename(name)) renaming = false
-  }
-
-  async function share() {
-    // Phones hand the link to messages or mail; elsewhere (or when that's cancelled) it's copied
-    if ('share' in navigator) {
-      try { await navigator.share({ title: lobby.name, url: link }); return } catch { /* copy instead */ }
-    }
-    try {
-      await navigator.clipboard.writeText(link)
-      copied = true
-      setTimeout(() => { copied = false }, 2000)
-    } catch { /* no clipboard: the code is on screen */ }
   }
 </script>
 
@@ -82,49 +65,27 @@
     </p>
   </div>
 
-  <div class="flex items-center gap-2 md:gap-[10px] flex-wrap">
-    <div class="flex items-center gap-[10px] md:gap-3 h-[46px] md:h-12 box-border pl-3 md:pl-4 pr-[6px] md:pr-2 border border-line-chip rounded-[10px] bg-surface-panel">
-      <span class="text-[12px] md:text-[13px] text-text-muted">Code</span>
-      <span class="font-mono text-[17px] md:text-[20px] font-medium tracking-[0.12em]">{formatCode(lobby.code)}</span>
-      <Button variant="key" onclick={() => void share()} class="px-[10px] md:px-3 gap-[6px] text-[13px] md:text-[14px]">
-        {#if copied}
-          <Check size={15} />Copied
-        {:else}
-          <span class="md:hidden flex items-center gap-[6px]"><Share2 size={15} />Share link</span>
-          <span class="hidden md:flex items-center gap-[6px]"><Copy size={15} />Copy link</span>
-        {/if}
-      </Button>
-      <IconButton label="Show the QR code" expanded={showQr} onclick={() => showQr = !showQr}><QrIcon size={17} /></IconButton>
-      {#if host}
-        <IconButton label="Make a new code" title="New code" onclick={() => confirm = 'code'}><RefreshCw size={16} /></IconButton>
+  {#if !lobby.solo}
+    <div class="flex items-center gap-2 md:gap-[10px] flex-wrap">
+      <JoinCodeCard code={lobby.code} name={lobby.name} {host} {onnewcode} />
+      {#if !host}
+        <Button variant="destructive" onclick={() => confirm = 'leave'} class="h-[46px] md:h-12">Leave lobby</Button>
+      {:else}
+        <Button variant="outline" size="md" onclick={() => confirm = 'leave'} class="h-[46px] md:h-12"
+          disabled={gameRunning} title={gameRunning ? 'Abort the game first' : undefined}>Leave lobby</Button>
+        <Button variant="destructive" onclick={() => confirm = 'close'} class="h-[46px] md:h-12"
+          disabled={gameRunning} title={gameRunning ? 'Abort the game first' : undefined}>Close lobby</Button>
       {/if}
     </div>
-    <Button variant="destructive" onclick={() => confirm = host ? 'close' : 'leave'} class="h-[46px] md:h-12"
-      disabled={host && gameRunning} title={host && gameRunning ? 'Abort the game first' : undefined}>
-      {host ? 'Close lobby' : 'Leave lobby'}
-    </Button>
     {#if host && gameRunning}<span class="text-[12px] text-text-dim">Abort the game first</span>{/if}
-  </div>
+  {/if}
 </header>
-
-{#if showQr}
-  <div class="self-start md:self-end flex items-center gap-4 p-4 rounded-[14px] bg-surface-panel border border-line-2">
-    <QrCode text={link} />
-    <p class="m-0 max-w-[200px] text-[14px] leading-[1.45] text-text-muted">
-      Point a phone's camera here to join <strong class="text-text">{lobby.name}</strong>.
-    </p>
-  </div>
-{/if}
 
 {#if confirm === 'close'}
   <ConfirmModal title="Close {lobby.name}?" body="Everyone leaves the lobby and pending invites expire."
     confirmLabel="Close lobby" cancelLabel="Keep it open" danger
     onconfirm={() => { confirm = null; onclose() }} oncancel={() => confirm = null} />
 {:else if confirm === 'leave'}
-  <ConfirmModal title="Leave {lobby.name}?" body={leaveBody} confirmLabel="Leave lobby" cancelLabel="Stay" danger
+  <LeaveLobbyConfirm name={lobby.name} guestNames={myGuests} nextHostName={host ? lobby.nextHostName : null}
     onconfirm={() => { confirm = null; onleave() }} oncancel={() => confirm = null} />
-{:else if confirm === 'code'}
-  <ConfirmModal title="Make a new code?" body="The old code, link and QR code stop working. People already in the lobby stay."
-    confirmLabel="New code" cancelLabel="Keep this one"
-    onconfirm={() => { confirm = null; onnewcode() }} oncancel={() => confirm = null} />
 {/if}
