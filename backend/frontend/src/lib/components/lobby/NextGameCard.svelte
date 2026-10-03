@@ -14,15 +14,17 @@
   import ThrowOrderField from './ThrowOrderField.svelte'
   import WhoPlays from './WhoPlays.svelte'
   import { gameModes, settlePending, withDefaults } from '$lib/gameModes'
-  import { counts, isTeamFormat, type LobbyPatch } from '$lib/lobby/rules'
+  import { counts, isTeamFormat, type LobbyPatch, type PersonPatch } from '$lib/lobby/rules'
 
-  let { lobby, busy = false, onupdate, onplays, onteammove, onteamshuffle, onstart }: {
+  let { lobby, busy = false, onupdate, onplays, onteammove, onteamplace, onteamshuffle, onstart }: {
     lobby: Lobby
     /** A start is in flight: Start waits. */
     busy?: boolean
     onupdate: (patch: LobbyPatch) => Promise<boolean>
     onplays: (personId: string, plays: boolean) => Promise<boolean>
     onteammove: (personId: string, team: TeamId) => Promise<boolean>
+    /** A dragged player's new team and place. */
+    onteamplace: (personId: string, patch: PersonPatch) => Promise<boolean>
     onteamshuffle: () => Promise<boolean>
     onstart: () => void
   } = $props()
@@ -107,6 +109,7 @@
   {#if teamGame}
     <TeamsPanel {lobby} editable
       onmove={(personId: string, team: TeamId) => void onteammove(personId, team)}
+      onplace={onteamplace}
       onshuffle={() => void onteamshuffle()} />
   {:else}
     <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
