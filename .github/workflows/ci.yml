@@ -71,6 +71,9 @@ jobs:
 
   check-migrations:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
     services:
       postgres:
         image: postgres:16-alpine
@@ -103,3 +106,21 @@ jobs:
         env:
           CHECK_DATABASE_URL: postgres://postgres:postgres@localhost:5432/dartcade_migrations
           BASE_MIGRATIONS_DIR: ${{ runner.temp }}/base-migrations
+          SCHEMA_DIFF_OUT: ${{ runner.temp }}/schema-diff.md
+      - name: Comment the schema changes on the PR
+        # One comment per PR, edited on each run. A PR without schema changes gets no comment,
+        # unless an earlier run left one (then it says so). Forks get a read-only token: skipped.
+        if: ${{ !cancelled() && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          FILE: ${{ runner.temp }}/schema-diff.md
+        run: |
+          [ -f "$FILE" ] || exit 0
+          id=$(gh api "repos/${{ github.repository }}/issues/$PR/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- schema-diff -->"))][0].id // empty')
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@"$FILE" >/dev/null
+          elif ! grep -q 'no changes in this PR' "$FILE"; then
+            gh pr comment "$PR" --body-file "$FILE"
+          fi
