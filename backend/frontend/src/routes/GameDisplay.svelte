@@ -2,7 +2,9 @@
   import { onMount, onDestroy, untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
+  import ErrorText from '../lib/components/ErrorText.svelte'
   import { createSessionStore, type Snapshot } from '../lib/ws.js'
+  import { endControl } from '../lib/endControl.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
@@ -59,6 +61,7 @@
   // The signed-in user: the host gets Abort while the game waits for someone
   let viewerId = $state<string | null>(null)
   let unsubNotice: (() => void) | null = null
+  let unsubError: (() => void) | null = null
   // "Not your turn": a dart on your board while someone else is up (6 s, the newest wins)
   const toast = createToast<NoticeMessage>(6000)
 
@@ -67,6 +70,10 @@
   let viewMode = $state<'board' | 'entry'>(savedView ?? 'board')
   let viewModeSetByUser = savedView !== null
   let showEndConfirm = $state(false)
+  // A non-host's Leave game: sent over the socket, confirmed by the next snapshot (seats
+  // forfeited, status no longer active); the server's forbidden notice means it failed.
+  let leavePending = $state(false)
+  let endError = $state<string | null>(null)
   /** Dart open in the correction popover; also highlighted on the board. */
   let correcting = $state<number | null>(null)
 
@@ -89,9 +96,12 @@
       snapshot = snap
     })
     unsubNotice = sessionStore.notice.subscribe(n => { if (n) toast.show(n) })
+    unsubError = sessionStore.error.subscribe(e => {
+      if (e?.action === 'forfeit' && leavePending) { leavePending = false; endError = 'Could not leave the game.' }
+    })
     authClient.getSession().then(r => { viewerId = r.data?.user.id ?? null }).catch(() => undefined)
   })
-  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); toast.dismiss(); sessionStore?.destroy() })
+  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); toast.dismiss(); sessionStore?.destroy() })
 
   function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
     const oldCount = before.currentVisitDarts.length
@@ -124,7 +134,16 @@
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
   const winner = $derived(game?.winner ?? null)
   const isActive = $derived(winner === null)
-  $effect(() => { if (snapshot && snapshot.status !== 'active') void activeSessionId.refresh() })
+  // The host ends the game for everyone; a player with seats leaves it (forfeits them);
+  // a watcher with no seats gets neither. Only shown while the game isn't won.
+  const control = $derived(endControl(snapshot, viewerId))
+  const canEnd = $derived(isActive && control !== null)
+  $effect(() => {
+    if (!snapshot || snapshot.status === 'active') return
+    void activeSessionId.refresh()
+    // A successful Leave: the forfeit ended the session; go to the lobby, or home for a local game
+    if (leavePending) { leavePending = false; void push(snapshot.lobbyId !== null ? '/lobby' : '/') }
+  })
   // Online: only the seat's controller enters its darts (a local game's owner controls every seat)
   const myTurn = $derived(isMyTurn(snapshot))
   const canThrow = $derived(isActive && myTurn)
@@ -252,7 +271,28 @@
     settings.inputView = m
   }
 
+  /** The host: ends the game for everyone. Stays on the page, with an error, on refusal. */
   async function endSession() {
+    if (!sessionId) return
+    endError = null
+    const { error } = await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
+    if (error) { endError = 'Could not end the game.'; return }
+    void activeSessionId.refresh()
+    void push('/')
+  }
+
+  /** Anyone else with seats: forfeits them over the game socket. Confirmed by the next
+   * snapshot (see the effect above); the server's forbidden notice is handled the same way. */
+  function leaveGame() {
+    if (!snapshot) return
+    endError = null
+    leavePending = true
+    send({ type: 'forfeit', seats: snapshot.mySeats })
+  }
+
+  /** The winner overlay's own button (unchanged; a designed win state is out of scope): the
+   * session is already finished and released, so a refused DELETE here blocks nothing. */
+  async function backToLobbyAfterWin() {
     if (!sessionId) return
     await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
     void activeSessionId.refresh()
@@ -379,12 +419,19 @@
       showViewToggle={!bullOff && remote.kind === 'play'}
       {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode} compact={$isPhone}
       lobbyName={snapshot.lobbyName} paused={remote.kind === 'waiting'} myBoard={myBoard(snapshot)}
-      canEnd={winner === null}
+      {canEnd}
+      endMode={control ?? 'end'}
       bind:settings
       onleave={() => push('/')}
       onend={() => showEndConfirm = true}
       onviewmode={setViewMode}
     />
+
+    {#if endError}
+      <div class="shrink-0 box-border px-7 py-2 border-b border-line bg-surface-1">
+        <ErrorText>{endError}</ErrorText>
+      </div>
+    {/if}
 
     {#if bullOff}
       <BullOffPanel {players} {bullOff} manual={boardId === null} {send} />
@@ -463,7 +510,7 @@
           <p class="m-0 font-display font-bold text-[32px] md:text-[48px] text-accent uppercase mb-1">
             {players[winner]?.name} wins!
           </p>
-          <button onclick={endSession}
+          <button onclick={backToLobbyAfterWin}
             class="mt-6 h-[54px] px-6 md:px-8 rounded-[10px] bg-accent text-accent-fg font-display
                    font-bold text-xl uppercase tracking-widest border-0 cursor-pointer">
             Back to lobby
@@ -476,11 +523,13 @@
 
 {#if showEndConfirm}
   <ConfirmModal
-    title="End this game?"
-    body="The current game will be cancelled and all progress will be lost."
-    confirmLabel="End game"
+    title={control === 'leave' ? 'Leave the game?' : 'End this game?'}
+    body={control === 'leave'
+      ? 'Your seats forfeit and are placed last; the others are ranked by their score so far.'
+      : 'The current game will be cancelled and all progress will be lost.'}
+    confirmLabel={control === 'leave' ? 'Leave game' : 'End game'}
     danger
-    onconfirm={endSession}
+    onconfirm={() => { showEndConfirm = false; if (control === 'leave') leaveGame(); else void endSession() }}
     oncancel={() => showEndConfirm = false} />
 {/if}
 
