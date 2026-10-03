@@ -16,6 +16,7 @@
   import X01Panel from '../lib/components/X01Panel.svelte'
   import AtcPanel from '../lib/components/AtcPanel.svelte'
   import X01Row from '../lib/components/X01Row.svelte'
+  import TeamPanel from '../lib/components/TeamPanel.svelte'
   import AtcRow from '../lib/components/AtcRow.svelte'
   import type { PillKind } from '../lib/components/pills.js'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
@@ -29,7 +30,8 @@
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Segment, type UserAction } from '$lib/api'
-  import { isPhone } from '$lib/viewport'
+  import { isPhone, isWide } from '$lib/viewport'
+  import { winnerName, x01Teams } from '$lib/teams'
   import { matchLayout } from '$lib/matchLayout'
   import { isMyTurn } from '$lib/turn'
   import PhonePlayerRow from '../lib/components/PhonePlayerRow.svelte'
@@ -162,8 +164,12 @@
   // The visit is over (bust, checkout, win): no more darts until the next player
   const locked = $derived(x01?.visitLocked === true || winner !== null)
   const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
-  const layout = $derived(matchLayout(players.length, $isPhone))
-  const nextPlayer = $derived((currentPlayer + 1) % Math.max(players.length, 1))
+  // A team game (X01): one panel per team, sharing a score
+  const teams = $derived(x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions }) : [])
+  const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0))
+  // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
+  const atcNext = $derived((currentPlayer + 1) % Math.max(players.length, 1))
+  const nextPlayer = $derived(x01 ? x01.nextPlayer : atcNext)
   // On a phone the players stay in seat order; when the turn passes, keep the thrower in view
   let phonePlayers = $state<HTMLDivElement | undefined>()
   // Changes when the turn passes or the view switches; the thrower's entry carries it
@@ -212,7 +218,7 @@
   const targets = $derived(atc?.targets ?? [])
   const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next' || s.kind === 'suggested-later').map(s => s.label))
   const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets.at(currentPlayer)) : null)
-  const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(nextPlayer)) : null)
+  const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(atcNext)) : null)
   const markers = $derived(!isX01 && isActive && players.length > 2 && settings.showMarkers
     ? players.map((p, i) => ({
         initial: p.name.trim().charAt(0).toUpperCase() || '?',
@@ -227,7 +233,7 @@
       : [{ label: 'Current target', kind: 'current' }]
     return [
       { label: `${players[currentPlayer]?.name} · ${atcPlayers[currentPlayer]?.target}`, kind: 'current' },
-      { label: `${players[nextPlayer]?.name} · ${atcPlayers[nextPlayer]?.target}`, kind: 'next' },
+      { label: `${players[atcNext]?.name} · ${atcPlayers[atcNext]?.target}`, kind: 'next' },
     ]
   })
 
@@ -408,6 +414,19 @@
   </div>
 {/snippet}
 
+{#snippet teamWaiting()}{@render waitingCard(false)}{/snippet}
+
+{#snippet teamPanel(t: number, compact: boolean)}
+  {@const team = teams[t]}
+  {#if team}
+    <!-- A disconnected thrower's team: the waiting card covers the score, below the players
+         (compact panels have no room: the board's place shows it instead) -->
+    {@const awaySeat = remote.kind === 'waiting' ? remote.seat : null}
+    {@const away = team.members.some(m => m.seat === awaySeat)}
+    <TeamPanel {team} seats={lines} chalkboard={settings.chalkboard && !compact} {compact} overlay={away && !compact ? teamWaiting : undefined} />
+  {/if}
+{/snippet}
+
 <div class="flex flex-col h-dvh bg-bg text-text overflow-hidden">
   {#if !snapshot}
     <div class="flex-1 flex items-center justify-center">
@@ -447,6 +466,14 @@
         <!-- Everyone in seat order; the thrower's entry is the active one (card on the board, a row with the keypad).
              Many players scroll, and the thrower is kept in view. -->
         <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
+          {#if teams.length}
+            <!-- Teams: both panels stacked; with the keypad on a short screen only the throwing team's -->
+            {#each teams as team, t (team.id)}
+              <div data-up={team.active ? upKey : undefined} class="flex {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}">
+                {@render teamPanel(t, true)}
+              </div>
+            {/each}
+          {:else}
           {#each players as player, i (i)}
             {@const up = i === currentPlayer}
             {@const line = lines[i] ?? null}
@@ -471,6 +498,7 @@
               {/if}
             </div>
           {/each}
+          {/if}
         </div>
         <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
       </main>
@@ -479,6 +507,16 @@
       <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
         {@render panel(0)}
         <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
+      </main>
+
+    {:else if layout === 'teams'}
+      <!-- A panel per team either side of the board; narrower screens stack them left of it, compact,
+           and a waiting card takes the board's place (as in the party layout) -->
+      <main class="flex-grow min-h-0 box-border px-7 py-6 grid gap-6
+                   {$isWide ? 'grid-cols-[minmax(0,1fr)_560px_minmax(0,1fr)] grid-rows-1' : 'grid-cols-[minmax(0,1fr)_480px] grid-rows-2'}">
+        <div class="col-start-1 row-start-1 min-w-0 min-h-0 flex">{@render teamPanel(0, !$isWide)}</div>
+        <div class="col-start-2 row-start-1 min-h-0 flex flex-col gap-3 {$isWide ? '' : 'row-span-2'}">{@render center($isWide ? 'duel' : 'party')}</div>
+        <div class="min-w-0 min-h-0 flex {$isWide ? 'col-start-3 row-start-1' : 'col-start-1 row-start-2'}">{@render teamPanel(1, !$isWide)}</div>
       </main>
 
     {:else if layout === 'duel'}
@@ -509,7 +547,7 @@
         <div class="rounded-[18px] mx-4 px-6 py-6 md:mx-0 md:px-10 md:py-8 text-center pointer-events-auto
                     border border-line bg-[rgba(15,16,14,0.92)] [box-shadow:0_24px_60px_rgba(0,0,0,0.7)]">
           <p class="m-0 font-display font-bold text-[32px] md:text-[48px] text-accent uppercase mb-1">
-            {players[winner]?.name} wins!
+            {game ? winnerName(game, players) : ''} wins!
           </p>
           <button onclick={backToLobbyAfterWin}
             class="mt-6 h-[54px] px-6 md:px-8 rounded-[10px] bg-accent text-accent-fg font-display

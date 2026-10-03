@@ -218,6 +218,7 @@
         "legs",
         "firstTo",
         "currentPlayer",
+        "nextPlayer",
         "round",
         "phase",
         "winner",
@@ -252,6 +253,14 @@
         "currentPlayer": {
           "type": "integer",
           "minimum": 0
+        },
+        "nextPlayer": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 0,
+          "description": "The seat that throws after the open visit: after a checkout the next leg's starter; null when the visit ends the game, once it is over, and during the bull off."
         },
         "round": {
           "type": "integer",
@@ -998,6 +1007,7 @@
             "legs",
             "firstTo",
             "currentPlayer",
+            "nextPlayer",
             "round",
             "phase",
             "winner",
@@ -1032,6 +1042,14 @@
             "currentPlayer": {
               "type": "integer",
               "minimum": 0
+            },
+            "nextPlayer": {
+              "type": [
+                "integer",
+                "null"
+              ],
+              "minimum": 0,
+              "description": "The seat that throws after the open visit: after a checkout the next leg's starter; null when the visit ends the game, once it is over, and during the bull off."
             },
             "round": {
               "type": "integer",
@@ -1951,6 +1969,7 @@
                 "legs",
                 "firstTo",
                 "currentPlayer",
+                "nextPlayer",
                 "round",
                 "phase",
                 "winner",
@@ -1985,6 +2004,14 @@
                 "currentPlayer": {
                   "type": "integer",
                   "minimum": 0
+                },
+                "nextPlayer": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "description": "The seat that throws after the open visit: after a checkout the next leg's starter; null when the visit ends the game, once it is over, and during the bull off."
                 },
                 "round": {
                   "type": "integer",

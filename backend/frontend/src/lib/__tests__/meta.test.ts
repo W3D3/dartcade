@@ -28,6 +28,18 @@ describe('x01Meta', () => {
   })
 })
 
+describe('x01Meta with teams', () => {
+  const team = (id: 'A' | 'B', seats: number[], legs = 0) => ({ id, name: `Team ${id}`, seats, score: 501, legs, next: seats[0] })
+  it('starts with the team sizes instead of the player count', () => {
+    const g = x01({ legs: [1, 1, 1, 1], firstTo: 2, teams: [team('A', [0, 2], 1), team('B', [1, 3])] })
+    expect(x01Meta(g, 4)).toBe('Teams 2v2 · 501 · Double out · First to 2 legs · Leg 2')
+  })
+  it('uneven teams', () => {
+    const g = x01({ legs: [0, 0, 0], teams: [team('A', [0, 2]), team('B', [1])] })
+    expect(x01Meta(g, 3)).toBe('Teams 2v1 · 501 · Double out · First to 3 legs · Leg 1')
+  })
+})
+
 describe('atcMeta', () => {
   const atc = (o: Record<string, unknown> = {}): AtcGame => ({
     cfg: { order: 'asc', multiplierAdvances: false, finishOn: 'bull' }, sequence: [1, 2, 22], totalVisits: [11, 11], ...o,

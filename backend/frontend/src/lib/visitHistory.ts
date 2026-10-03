@@ -11,12 +11,14 @@ export type VisitHistory = {
   leg: Visit[][]
   /** Per player: every visit of the match, for averages. */
   all: Visit[][]
+  /** The seat of every finished visit of the current leg, in the order thrown (teams interleave their players). */
+  legSeats: number[]
   /** Per player: score (X01) or progress (ATC) when their current visit began; null when unknown. */
   start: (number | null)[]
   prev: { totalVisits: number[]; totalDarts: number[]; legs: number[]; darts: number; bust: boolean; cp: number } | null
 }
 
-export const emptyHistory = (): VisitHistory => ({ leg: [], all: [], start: [], prev: null })
+export const emptyHistory = (): VisitHistory => ({ leg: [], all: [], legSeats: [], start: [], prev: null })
 
 /** Fold one snapshot's game state into the history. A visit is finished when totalVisits goes up. */
 export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHistory {
@@ -32,6 +34,7 @@ export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHist
   let leg = Array.from({ length: n }, (_, i) => h.leg[i] ?? [])
   const all = Array.from({ length: n }, (_, i) => h.all[i] ?? [])
   const start = Array.from({ length: n }, (_, i) => h.start[i] ?? null)
+  let legSeats = h.legSeats
 
   const p = h.prev
   if (p) {
@@ -52,6 +55,7 @@ export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHist
         if (visit.scored >= 0) {
           leg[i] = [...leg[i], visit]
           all[i] = [...all[i], visit]
+          legSeats = [...legSeats, i]
         }
       }
       start[i] = null
@@ -59,14 +63,14 @@ export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHist
       // Snapshots were missed (reconnect, restart): what happened in between is unknown
       start.fill(null)
     }
-    if (legOver) leg = leg.map(() => [])
+    if (legOver) { leg = leg.map(() => []); legSeats = [] }
   }
 
   // A visit (re)starts whenever the thrower has no darts on the board
   if (darts === 0 && cp < n) start[cp] = progress.at(cp) ?? null
 
   return {
-    leg, all, start,
+    leg, all, legSeats, start,
     prev: { totalVisits: [...totalVisits], totalDarts: [...totalDarts], legs: [...legs], darts, bust, cp },
   }
 }

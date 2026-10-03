@@ -37,3 +37,8 @@ const browserMatchMedia: MatchMediaFn | null =
 
 /** The viewport is phone-sized: layouts CSS alone can't switch read this. */
 export const isPhone: Readable<boolean> = mediaStore(PHONE_QUERY, browserMatchMedia)
+
+/** Wide enough for a team panel on each side of the board (Tailwind's `xl`); narrower stacks them. */
+export const WIDE_QUERY = '(min-width: 1280px)'
+
+export const isWide: Readable<boolean> = mediaStore(WIDE_QUERY, browserMatchMedia)

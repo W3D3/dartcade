@@ -5,7 +5,8 @@ import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
 
 import type { AtcGame, X01Game } from './api/game-ws'
 
-const fmtAvg = (v: number | null) => (v === null ? '—' : v.toFixed(1))
+/** A 3-dart average to one decimal; a dash without darts. */
+export const fmtAvg = (v: number | null) => (v === null ? '—' : v.toFixed(1))
 
 export type X01PlayerView = {
   remaining: number
