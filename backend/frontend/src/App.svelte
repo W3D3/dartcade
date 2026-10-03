@@ -11,6 +11,7 @@
   import Lobby from './routes/Lobby.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
+  import { me } from '$lib/lobby/sockets'
 
   const routes = {
     '/': CreateSession,
@@ -22,7 +23,7 @@
     '/lobby': Lobby,
   }
 
-  let checked = false
+  let checked = $state(false)
 
   onMount(async () => {
     const currentHash = window.location.hash
@@ -30,6 +31,18 @@
     await currentUser.refresh()
     if (!get(currentUser)) void push('/login')
     checked = true
+  })
+
+  // The per-user socket (invites, the lobby indicator) runs while someone is signed in, and
+  // restarts when the signed-in user changes (dev user switch, signing in as someone else) so
+  // the new user doesn't see the previous one's invites and lobby.
+  let meUserId: string | null = null
+  $effect(() => {
+    const id = $currentUser?.id ?? null
+    if (id === meUserId) return
+    me.stop()
+    meUserId = id
+    if (id) me.start()
   })
 </script>
 

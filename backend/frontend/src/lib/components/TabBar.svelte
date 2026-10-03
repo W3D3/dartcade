@@ -4,8 +4,10 @@
   import { location } from 'svelte-spa-router'
   import { navTabs, isActiveRoute } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'
+  import { me } from '$lib/lobby/sockets'
+  import NavBadge from './NavBadge.svelte'
 
-  const tabs = $derived(navTabs($activeSessionId))
+  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0))
 </script>
 
 <nav aria-label="Main"
@@ -18,6 +20,10 @@
              {active ? 'bg-[#22251f] text-text font-semibold' : 'text-text-muted font-medium'}">
       {#if tab.icon === 'live'}
         <span class="absolute top-[10px] left-1/2 ml-[9px] w-[7px] h-[7px] rounded-full bg-live" aria-hidden="true"></span>
+      {/if}
+      {#if tab.badge}
+        <NavBadge count={tab.badge} label="{tab.badge} pending {tab.badge === 1 ? 'invite' : 'invites'}"
+          class="absolute top-[6px] left-1/2 ml-[4px] border-2 border-surface-1" />
       {/if}
       {#if tab.icon === 'play'}<Target size={22} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
       {:else if tab.icon === 'live'}<Radio size={22} strokeWidth={1.8} class={active ? 'text-accent' : ''} />

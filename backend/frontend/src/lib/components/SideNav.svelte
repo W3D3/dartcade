@@ -4,6 +4,7 @@
   import { location } from 'svelte-spa-router'
   import { currentUser, signOut } from '$lib/auth'
   import DevUserSwitch from './DevUserSwitch.svelte'
+  import LobbyIndicator from './LobbyIndicator.svelte'
   import { isActiveRoute } from '$lib/nav'
 
   const userName = $derived($currentUser?.name ?? '')
@@ -53,6 +54,7 @@
   </div>
 
   <div class="mt-auto flex flex-col gap-4">
+  <LobbyIndicator />
   {#if import.meta.env.DEV}
     <DevUserSwitch label="Dev: switch to" />
   {/if}
