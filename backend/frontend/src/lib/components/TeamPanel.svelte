@@ -4,6 +4,7 @@
   import type { Snippet } from 'svelte'
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
+  import RollingNumber from './RollingNumber.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import TeamMemberRow from './TeamMemberRow.svelte'
   import type { X01TeamView } from '$lib/teams'
@@ -50,7 +51,8 @@
 
   <div class="relative flex-1 min-h-0 flex flex-col {compact ? 'gap-2' : 'gap-[14px]'}">
     <span class="font-display font-bold leading-[0.8] tracking-[-0.02em] tabular-nums
-                 {compact ? 'text-[min(104px,9vh)]' : 'text-[min(220px,24vh)]'} {team.active ? 'text-text' : 'text-ink-3'}">{team.remaining}</span>
+                 {compact ? 'text-[min(104px,9vh)]' : 'text-[min(220px,24vh)]'} {team.active ? 'text-text' : 'text-ink-3'}"><RollingNumber value={team.remaining} reset={team.leg}
+                 bust={team.current?.bust ?? false} checkout={team.remaining === 0} /></span>
 
     {#if !team.opened}
       <span class="text-[13px] uppercase tracking-[0.1em] text-text-muted">Needs to open</span>

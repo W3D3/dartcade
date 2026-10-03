@@ -2,6 +2,7 @@
   import PanelShell from './PanelShell.svelte'
   import LegPips from './LegPips.svelte'
   import Chalkboard from './Chalkboard.svelte'
+  import RollingNumber from './RollingNumber.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
@@ -25,7 +26,8 @@
   <div class="flex flex-col gap-[6px]">
     {#if solo}<span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Left</span>{/if}
     <span class="font-display font-bold text-[min(220px,24vh)] leading-[0.8] tracking-[-0.02em] tabular-nums
-                 {active ? 'text-text' : 'text-ink-3'}">{p.remaining}</span>
+                 {active ? 'text-text' : 'text-ink-3'}"><RollingNumber value={p.remaining} reset={p.leg}
+                 bust={p.current?.bust ?? false} checkout={p.remaining === 0} /></span>
   </div>
 
   {#if !p.opened}

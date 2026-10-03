@@ -1,6 +1,7 @@
 <script lang="ts">
   import PanelShell from './PanelShell.svelte'
   import AtcProgress from './AtcProgress.svelte'
+  import RollingNumber from './RollingNumber.svelte'
   import type { PillKind } from './pills.js'
   import type { AtcPlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
@@ -19,7 +20,7 @@
   <div class="flex flex-col gap-[6px]">
     <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
     <span class="font-display font-bold text-[min(220px,24vh)] leading-[0.8] tracking-[-0.02em]
-                 {active ? 'text-accent' : 'text-ink-3'}">{p.target}</span>
+                 {active ? 'text-accent' : 'text-ink-3'}"><RollingNumber value={p.target} normal="up" progress={p.done} /></span>
   </div>
 
   <div class="flex flex-col gap-[10px]">

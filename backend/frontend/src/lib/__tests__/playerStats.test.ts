@@ -19,6 +19,10 @@ describe('x01Player', () => {
     })
   })
 
+  it('counts the legs played: the score starts over when that changes', () => {
+    expect(x01Player(game({ legs: [1, 2] }), 1, emptyHistory(), { active: false, suggest: true }).leg).toBe(3)
+  })
+
   it('a waiting player has no running visit and three darts to finish', () => {
     const p = x01Player(game(), 1, history([[], [visit(45, 87)]]), { active: false, suggest: true })
     expect(p.current).toBeNull()

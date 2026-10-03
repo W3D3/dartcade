@@ -57,6 +57,11 @@ describe('x01Teams', () => {
     expect(a.canFinish).toBe('T19 · D12')
   })
 
+  it('counts the legs both teams have played', () => {
+    const [a, b] = x01Teams(game(), players, history(), opts)
+    expect([a.leg, b.leg]).toEqual([2, 2])
+  })
+
   it('the visit list interleaves the team\'s players in throwing order, each marked by initial', () => {
     const [a, b] = x01Teams(game(), players, history(), opts)
     expect(a.visits.map(x => x.scored)).toEqual([100, 85, 45, 130])
