@@ -9,18 +9,20 @@
   import LobbyHeader from '$lib/components/lobby/LobbyHeader.svelte'
   import PeopleList from '$lib/components/lobby/PeopleList.svelte'
   import ActivityFeed from '$lib/components/lobby/ActivityFeed.svelte'
+  import BoardChip from '$lib/components/lobby/BoardChip.svelte'
+  import PersonControls from '$lib/components/lobby/PersonControls.svelte'
+  import AddSomeone from '$lib/components/lobby/AddSomeone.svelte'
   import { api } from '$lib/api'
-  import type { Lobby } from '$lib/api/lobby-ws'
+  import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
-  import type { OwnBoard } from '$lib/lobby/rules'
+  import { boardChoices, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
   import { createLobbyStore, type LobbyEnd } from '$lib/lobby/sockets'
 
   let lobby = $state<Lobby | null>(null)
   let ended = $state<LobbyEnd | null>(null)
   let phase = $state<'loading' | 'none' | 'open'>('loading')
-  // Unused until Task 9 wires board switching into the people list (leading underscore: deliberately unused).
-  let _ownBoards = $state<OwnBoard[]>([])
+  let ownBoards = $state<OwnBoard[]>([])
   let error = $state('')
   let socket: ReturnType<typeof createLobbyStore> | null = null
   let unsubs: (() => void)[] = []
@@ -40,7 +42,7 @@
 
   async function load() {
     const [cur, boards] = await Promise.all([api.GET('/api/lobbies/current'), api.GET('/api/boards')])
-    _ownBoards = (boards.data?.boards ?? []).map(b => ({ id: b.id, name: b.name }))
+    ownBoards = (boards.data?.boards ?? []).map(b => ({ id: b.id, name: b.name }))
     if (cur.data) open(cur.data.id)
     else phase = 'none'
   }
@@ -67,6 +69,14 @@
   async function leave() {
     if (await withLobby(id => api.POST('/api/lobbies/{id}/leave', { params: { path: { id } } }))) void push('/')
   }
+  const updatePerson = (personId: string, patch: PersonPatch) =>
+    withLobby(id => api.PATCH('/api/lobbies/{id}/people/{personId}', { params: { path: { id, personId } }, body: patch }))
+  const removePerson = (personId: string) =>
+    withLobby(id => api.DELETE('/api/lobbies/{id}/people/{personId}', { params: { path: { id, personId } } }))
+  const addGuest = (name: string) =>
+    withLobby(id => api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name } }))
+  const invite = (userId: string) =>
+    withLobby(id => api.POST('/api/lobbies/{id}/invites', { params: { path: { id } }, body: { userId } }))
 
   onMount(() => { void load() })
   onDestroy(() => { destroyed = true; socket?.destroy(); unsubs.forEach(u => u()) })
@@ -92,11 +102,20 @@
         actions={startOrJoin} />
       {@render errorBanner()}
     {:else if lobby}
+      {@const l = lobby}
       <LobbyHeader {lobby} {viewerId} onrename={rename} onnewcode={() => void newCode()} onclose={() => void close()} onleave={() => void leave()} />
       {@render errorBanner()}
       <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,580px)_minmax(0,1fr)] md:gap-5 md:flex-grow md:min-h-0">
         <div class="order-2 md:order-none flex flex-col min-w-0 md:min-h-0">
-          <PeopleList {lobby} {viewerId} />
+          <PeopleList {lobby} {viewerId}>
+            {#snippet boardOf(p: LobbyPerson)}
+              <BoardChip person={p} choices={boardChoices(p, viewerId, ownBoards)} onpick={(boardId: string | null) => void updatePerson(p.id, { boardId })} />
+            {/snippet}
+            {#snippet controlsOf(p: LobbyPerson, i: number)}
+              <PersonControls lobby={l} person={p} index={i} {viewerId} onupdate={updatePerson} onremove={removePerson} />
+            {/snippet}
+            {#snippet footer()}<AddSomeone onguest={addGuest} oninvite={invite} />{/snippet}
+          </PeopleList>
         </div>
         <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
           <!-- Task 10: the running-game bar and the next game go here -->

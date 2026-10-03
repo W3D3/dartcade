@@ -1,6 +1,10 @@
 // Which lobby controls the viewer gets. The server decides (backend src/lobby/rules.ts);
 // this mirrors it so the screens only offer what it would accept.
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
+import type { components } from '../api/schema'
+
+/** A change to one person (PATCH /api/lobbies/:id/people/:pid): board, who plays, ready, place. */
+export type PersonPatch = components['schemas']['UpdatePersonRequest']
 
 /** One of the viewer's own paired boards. */
 export type OwnBoard = { id: string; name: string }
