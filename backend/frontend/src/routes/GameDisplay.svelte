@@ -29,7 +29,6 @@
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Segment, type UserAction } from '$lib/api'
-  import { activeSessionId } from '$lib/activeSession'
   import { isPhone } from '$lib/viewport'
   import { matchLayout } from '$lib/matchLayout'
   import { isMyTurn } from '$lib/turn'
@@ -140,7 +139,6 @@
   const canEnd = $derived(isActive && control !== null)
   $effect(() => {
     if (!snapshot || snapshot.status === 'active') return
-    void activeSessionId.refresh()
     // A successful Leave: the forfeit ended the session; go to the lobby, or home for a local game
     if (leavePending) { leavePending = false; void push(snapshot.lobbyId !== null ? '/lobby' : '/') }
   })
@@ -277,7 +275,6 @@
     endError = null
     const { error } = await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
     if (error) { endError = 'Could not end the game.'; return }
-    void activeSessionId.refresh()
     void push('/')
   }
 
@@ -295,7 +292,6 @@
   async function backToLobbyAfterWin() {
     if (!sessionId) return
     await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
-    void activeSessionId.refresh()
     void push('/')
   }
 </script>

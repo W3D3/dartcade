@@ -8,9 +8,6 @@ vi.mock('../auth.js', () => ({
   },
   currentUser: { refresh: vi.fn(() => { calls.push('refresh user'); return Promise.resolve() }) },
 }))
-vi.mock('../activeSession.js', () => ({
-  activeSessionId: { refresh: vi.fn(() => { calls.push('refresh game'); return Promise.resolve() }) },
-}))
 
 const { DEV_USERS, signInAs } = await import('../devUsers.js')
 
@@ -26,7 +23,7 @@ describe('dev users', () => {
   it('switches user: signs out, signs in as them, reloads who is signed in, goes home', async () => {
     const luke = DEV_USERS[1]
     expect(await signInAs(luke)).toBeNull()
-    expect(calls).toEqual(['signOut', 'signIn luke@dartcade.local', 'refresh user', 'refresh game'])
+    expect(calls).toEqual(['signOut', 'signIn luke@dartcade.local', 'refresh user'])
     expect(win.location.hash).toBe('#/')
   })
 })

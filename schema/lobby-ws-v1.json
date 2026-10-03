@@ -168,11 +168,12 @@
       "title": "LobbySummary",
       "description": "The viewer's lobby for the lobby indicator.",
       "type": "object",
-      "required": ["id", "name", "peopleCount", "nextGame", "sessionId", "gameId", "youThrowNext", "leg", "youHost", "solo"],
+      "required": ["id", "name", "hostName", "peopleCount", "nextGame", "sessionId", "gameId", "youThrowNext", "leg", "youHost", "solo"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
+        "hostName": { "type": ["string", "null"], "description": "Null only if the host's account is gone, or a host who left during a game hasn't been replaced yet (both settle on the next change)." },
         "peopleCount": { "type": "integer", "minimum": 0 },
         "nextGame": { "anyOf": [{ "$ref": "#/$defs/NextGame" }, { "type": "null" }] },
         "sessionId": { "type": ["string", "null"], "description": "The lobby's running game." },
@@ -183,16 +184,30 @@
         "solo": { "type": "boolean", "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo." }
       }
     },
+    "ActiveGame": {
+      "title": "ActiveGame",
+      "description": "The viewer's running game, wherever it started (a lobby or not); LobbySummary carries that game's lobby-specific state.",
+      "type": "object",
+      "required": ["sessionId", "gameId", "lobbyName", "players"],
+      "additionalProperties": false,
+      "properties": {
+        "sessionId": { "type": "string" },
+        "gameId": { "type": "string" },
+        "lobbyName": { "type": ["string", "null"], "description": "The lobby it's playing in; null for a solo lobby or a game started outside a lobby." },
+        "players": { "type": "array", "items": { "type": "string" }, "description": "The seat names, in seat order." }
+      }
+    },
     "MeMessage": {
       "title": "MeMessage",
       "description": "Pushed on /ws/me when it opens and whenever it changes.",
       "type": "object",
-      "required": ["type", "invites", "lobby"],
+      "required": ["type", "invites", "lobby", "game"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "me" },
         "invites": { "type": "array", "items": { "$ref": "#/$defs/PendingInvite" } },
-        "lobby": { "anyOf": [{ "$ref": "#/$defs/LobbySummary" }, { "type": "null" }] }
+        "lobby": { "anyOf": [{ "$ref": "#/$defs/LobbySummary" }, { "type": "null" }] },
+        "game": { "anyOf": [{ "$ref": "#/$defs/ActiveGame" }, { "type": "null" }] }
       }
     }
   }

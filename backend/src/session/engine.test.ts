@@ -477,6 +477,16 @@ describe('createWithSeats', () => {
     expect(engine.getSessionByBoard('board-b')).toBeUndefined()
     expect(engine.getSessionByUser('lena')).toBeUndefined()
   })
+
+  it('tells the started listener every seated account, owner and guest\'s controller alike', async () => {
+    const started = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, undefined, started)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'atc', config: {},
+      seats: [seat('Host', 'host', 'board-a'), seat('Lena', 'lena', 'board-b'), seat('Guest', 'host', 'board-a', null)],
+    })
+    expect(started).toHaveBeenCalledWith({ sessionId, userIds: ['host', 'lena'] })
+  })
 })
 
 const dartData = (index: number, name: string, number: number, multiplier: number, bed = 'SingleOuter') =>
@@ -867,6 +877,13 @@ describe('lobby games', () => {
     expect([...names].sort()).toEqual(['A', 'B', 'C', 'D', 'E', 'F'])
   })
 
+  it('tells the started listener who is seated when a lobby game starts', async () => {
+    const started = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, undefined, started)
+    const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
+    expect(started).toHaveBeenCalledWith({ sessionId, userIds: ['chris', 'lena'] })
+  })
+
   it('tells the lobby when its game is won, with the results', async () => {
     const ended = vi.fn()
     const engine = new SessionEngine(makeStore(), push, undefined, undefined, ended)
@@ -875,8 +892,26 @@ describe('lobby games', () => {
     expect(ended).toHaveBeenCalledWith({
       sessionId, lobbyId: 'l1', gameId: 'x01', status: 'finished', abortedByUserId: null,
       results: [{ name: 'Christoph', placement: 1, forfeited: false }, { name: 'Lena', placement: 2, forfeited: true }],
+      userIds: ['chris', 'lena'],
     })
     expect(engine.getLobbySession('l1')).toBeUndefined()
+  })
+
+  it('pushes the final (finished) snapshot before the game-ended listener runs', async () => {
+    const ended = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, ended)
+    const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+    expect(push).toHaveBeenCalledWith(sessionId)
+    expect(ended).toHaveBeenCalledTimes(1)
+    // The push callback fires with the finished snapshot already in place, strictly
+    // before the game-ended listener (the lobby reset, the /ws/me pushes) runs
+    expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+    const pushedAt = push.mock.invocationCallOrder.at(-1)
+    const endedAt = ended.mock.invocationCallOrder.at(-1)
+    expect(pushedAt).toBeDefined()
+    expect(endedAt).toBeDefined()
+    expect(pushedAt!).toBeLessThan(endedAt!)
   })
 
   it('records who aborted, and tells the lobby', async () => {
@@ -886,7 +921,7 @@ describe('lobby games', () => {
     const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
     await engine.deleteSession(sessionId, 'chris')
     expect(store.abortSession).toHaveBeenCalledWith(sessionId, expect.any(Date), 'chris')
-    expect(ended).toHaveBeenCalledWith({ sessionId, lobbyId: 'l1', gameId: 'x01', status: 'aborted', abortedByUserId: 'chris', results: [] })
+    expect(ended).toHaveBeenCalledWith({ sessionId, lobbyId: 'l1', gameId: 'x01', status: 'aborted', abortedByUserId: 'chris', results: [], userIds: ['chris', 'lena'] })
   })
 
   it('restores a lobby game after a restart, and tells the lobby about one it can\'t restore', async () => {
@@ -905,7 +940,7 @@ describe('lobby games', () => {
     const engine = new SessionEngine(store, push, undefined, undefined, ended)
     await engine.rebuild()
     expect(engine.getLobbySession('l1')).toMatchObject({ id: 'ok', lobbyId: 'l1', lobbyName: 'Friday darts' })
-    expect(ended).toHaveBeenCalledWith({ sessionId: 'gone', lobbyId: 'l2', gameId: 'x01', status: 'aborted', abortedByUserId: null, results: [] })
+    expect(ended).toHaveBeenCalledWith({ sessionId: 'gone', lobbyId: 'l2', gameId: 'x01', status: 'aborted', abortedByUserId: null, results: [], userIds: ['chris', 'lena'] })
     expect(ended).toHaveBeenCalledTimes(1)
   })
   it('keeps going when the lobby listener throws: no double abort, no error to the caller', async () => {
@@ -926,5 +961,15 @@ describe('lobby games', () => {
 
     const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
     await expect(engine.deleteSession(sessionId, 'chris')).resolves.not.toThrow()
+  })
+
+  it('a listener that rejects (not just throws) is logged too, never passed on', async () => {
+    const warn = vi.fn()
+    const ended = vi.fn(() => Promise.reject(new Error('push failed')))
+    const engine = new SessionEngine(makeStore(), push, warn, undefined, ended)
+    const { sessionId } = await engine.createWithSeats({ ...lobbyGame, seats: lobbySeats() })
+    await expect(engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })).resolves.toEqual({ ok: true })
+    expect(ended).toHaveBeenCalledTimes(1)
+    expect(warn).toHaveBeenCalledWith('game-end listener failed', expect.objectContaining({ sessionId, error: expect.stringContaining('push failed') }))
   })
 })

@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { LobbyHub } from './hub.js'
 
 const sock = () => ({ readyState: 1, send: vi.fn(), close: vi.fn() }) as any
-const me = (n: number) => ({ type: 'me' as const, invites: [], lobby: n === 0 ? null : { id: 'l1', name: 'L', peopleCount: n, nextGame: null, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: false, solo: n <= 1 } })
+const me = (n: number) => ({ type: 'me' as const, invites: [], game: null, lobby: n === 0 ? null : { id: 'l1', name: 'L', hostName: 'Host', peopleCount: n, nextGame: null, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: false, solo: n <= 1 } })
 
 describe('LobbyHub', () => {
   it('knows who has a lobby open, and closes one user\'s sockets or everyone\'s', () => {

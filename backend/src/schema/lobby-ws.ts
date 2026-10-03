@@ -215,6 +215,10 @@ export interface PendingInvite {
 export interface LobbySummary {
   id: string
   name: string
+  /**
+   * Null only if the host's account is gone, or a host who left during a game hasn't been replaced yet (both settle on the next change).
+   */
+  hostName: string | null
   peopleCount: number
   nextGame: NextGame | null
   /**
@@ -243,6 +247,24 @@ export interface LobbySummary {
   solo: boolean
 }
 /**
+ * The viewer's running game, wherever it started (a lobby or not); LobbySummary carries that game's lobby-specific state.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "ActiveGame".
+ */
+export interface ActiveGame {
+  sessionId: string
+  gameId: string
+  /**
+   * The lobby it's playing in; null for a solo lobby or a game started outside a lobby.
+   */
+  lobbyName: string | null
+  /**
+   * The seat names, in seat order.
+   */
+  players: string[]
+}
+/**
  * Pushed on /ws/me when it opens and whenever it changes.
  *
  * This interface was referenced by `LobbyWs`'s JSON-Schema
@@ -252,4 +274,5 @@ export interface MeMessage {
   type: 'me'
   invites: PendingInvite[]
   lobby: LobbySummary | null
+  game: ActiveGame | null
 }

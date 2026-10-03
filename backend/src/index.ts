@@ -37,7 +37,8 @@ const engine: SessionEngine = new SessionEngine(
   },
   (message, details) => { warn(message, details) },
   (sessionId, userIds, notice) => { pushNotice(sessionId, userIds, notice) },
-  ended => { lobbies.onGameEnded(ended) },
+  ended => lobbies.onGameEnded(ended),
+  started => lobbies.onGameStarted(started),
 )
 const lobbies: LobbyService = new LobbyService({
   db, engine, hub, isBoardOnline: boardId => bridgeConnections.isOnline(boardId), warn: (message, details) => { warn(message, details) },

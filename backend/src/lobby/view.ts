@@ -1,7 +1,7 @@
 import type { Lobby, LobbySummary, PendingInvite } from '../schema/lobby-ws.js'
 import type { Session } from '../session/types.js'
 import { currentSeat } from '../session/access.js'
-import { effectiveReady, isSolo, nextHost } from './rules.js'
+import { effectiveReady, isSolo, memberOf, nextHost } from './rules.js'
 import type { InviteRow, LobbyState } from './types.js'
 
 /** What a view needs besides the lobby: who has it open, which boards are online, its running game. */
@@ -42,6 +42,7 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
   return {
     id: lobby.id,
     name: lobby.name,
+    hostName: lobby.hostUserId === null ? null : memberOf(lobby, lobby.hostUserId)?.name ?? null,
     peopleCount: lobby.people.length,
     nextGame: lobby.nextGame,
     sessionId: session?.id ?? null,

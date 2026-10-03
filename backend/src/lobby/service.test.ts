@@ -44,7 +44,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     for (const b of ['living', 'lenas', 'garage']) online.add(b)
     engineStore = makeStore()
     hub = new LobbyHub()
-    engine = new SessionEngine(engineStore, vi.fn(), undefined, undefined, e => { lobbies.onGameEnded(e) })
+    engine = new SessionEngine(engineStore, vi.fn(), undefined, undefined, e => lobbies.onGameEnded(e), e => lobbies.onGameStarted(e))
     lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b) })
   })
 
@@ -341,7 +341,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     it('pushes /ws/me to members, only when it changed', async () => {
       const me = sock()
       hub.addMeSocket('lena', me, await lobbies.meMessage('lena'))
-      expect(lastMsg(me)).toEqual({ type: 'me', invites: [], lobby: null })
+      expect(lastMsg(me)).toEqual({ type: 'me', invites: [], lobby: null, game: null })
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
       expect(lastMsg(me).lobby).toMatchObject({ id, name: "Christoph's lobby", peopleCount: 2, sessionId: null, youThrowNext: false })
@@ -695,7 +695,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { sessionId } = await lobbies.start('chris', id, true)
       await lobbies.leave('chris', id)
       // The game ends but the lobby never hears of it, as when the server dies right then
-      const hook = vi.spyOn(lobbies, 'onGameEnded').mockImplementation(() => undefined)
+      const hook = vi.spyOn(lobbies, 'onGameEnded').mockImplementation(() => Promise.resolve())
       await engine.deleteSession(sessionId, 'chris')
       hook.mockRestore()
       expect((await lobbies.view(id))?.hostUserId).toBe('chris')
@@ -708,7 +708,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { sessionId } = await lobbies.start('chris', id, true)
       await lobbies.leave('chris', id)
       await lobbies.leave('lena', id)
-      const hook = vi.spyOn(lobbies, 'onGameEnded').mockImplementation(() => undefined)
+      const hook = vi.spyOn(lobbies, 'onGameEnded').mockImplementation(() => Promise.resolve())
       await engine.deleteSession(sessionId, 'chris')
       hook.mockRestore()
       expect(await lobbies.view(id)).not.toBeNull()
@@ -769,6 +769,73 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await engine.onUserAction(sessionId, 'chris', { type: 'takeout' })
       await lobbies.onSessionPush(sessionId)
       expect(lastMsg(me).lobby.youThrowNext).toBe(true)
+    })
+  })
+
+  describe('the lobby summary names its host', () => {
+    it('carries the host\'s name on /ws/me, null only once their account is gone', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      expect((await lobbies.meMessage('lena')).lobby).toMatchObject({ hostName: 'Christoph' })
+    })
+  })
+
+  describe('the server pushes your running game on /ws/me (#69)', () => {
+    it('on start, every seated account gets `game` (with the players); on end, every one gets `game: null`', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      const chrisWs = sock()
+      const lenaWs = sock()
+      hub.addMeSocket('chris', chrisWs, await lobbies.meMessage('chris'))
+      hub.addMeSocket('lena', lenaWs, await lobbies.meMessage('lena'))
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(lastMsg(chrisWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
+      expect(lastMsg(lenaWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
+
+      await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+      expect(lastMsg(chrisWs).game).toBeNull()
+      expect(lastMsg(lenaWs).game).toBeNull()
+      // The lobby's own reset (game_played activity, etc.) is enqueued, not awaited by
+      // onGameEnded (see its comment) — wait for it so it doesn't outlive this test
+      await lobbies.whenIdle(id)
+    })
+
+    it('pushes `game` for a game started outside any lobby too, and null once it is aborted', async () => {
+      const me = sock()
+      hub.addMeSocket('sam', me, await lobbies.meMessage('sam'))
+      const { sessionId } = await engine.create('sam', null, 'atc', {}, [{ name: 'Sam' }])
+      expect(lastMsg(me).game).toEqual({ sessionId, gameId: 'atc', lobbyName: null, players: ['Sam'] })
+
+      await engine.deleteSession(sessionId, 'sam')
+      expect(lastMsg(me).game).toBeNull()
+    })
+
+    it('pushes both of a user\'s open /ws/me sockets', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      const phoneWs = sock()
+      const laptopWs = sock()
+      hub.addMeSocket('lena', phoneWs, await lobbies.meMessage('lena'))
+      hub.addMeSocket('lena', laptopWs, await lobbies.meMessage('lena'))
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(lastMsg(phoneWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
+      expect(lastMsg(laptopWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
+    })
+
+    it('a lobby member who isn\'t seated in the game gets no `game`', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.join('max', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      const lobby = await lobbies.view(id)
+      const maxId = lobby?.people.find(p => p.name === 'Max')?.id
+      if (maxId) await lobbies.updatePerson('chris', id, maxId, { plays: false })
+      const maxWs = sock()
+      hub.addMeSocket('max', maxWs, await lobbies.meMessage('max'))
+      await lobbies.start('chris', id, true)
+      expect(lastMsg(maxWs).game).toBeNull()
     })
   })
 })
