@@ -5,6 +5,7 @@
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import Panel from './Panel.svelte'
   import PersonRow from './PersonRow.svelte'
+  import InvitedRow from './InvitedRow.svelte'
   import BoardLabel from './BoardLabel.svelte'
   import PersonStatus from './PersonStatus.svelte'
   import ReadyCount from './ReadyCount.svelte'
@@ -31,9 +32,9 @@
         {#snippet controls()}{#if controlsOf}{@render controlsOf(p, i)}{:else}<PersonStatus person={p} />{/if}{/snippet}
       </PersonRow>
     {/each}
+    {#each lobby.invites as inv (inv.id)}
+      <InvitedRow invitee={inv} />
+    {/each}
   </ol>
-  {#if lobby.invites.length > 0}
-    <p class="m-0 text-[13px] text-text-muted">Invited · waiting for {lobby.invites.map(i => i.name).join(', ')}</p>
-  {/if}
   {#if footer}<div class="md:mt-auto">{@render footer()}</div>{/if}
 </Panel>
