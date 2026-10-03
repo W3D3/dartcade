@@ -132,8 +132,10 @@
 
   // Inside a lobby, "Game on" starts the lobby's game with its players (spec: New game inside a lobby)
   let lobby = $state<Lobby | null>(null)
+  // Only the id: reading it off $me here would reopen the socket on every /ws/me push
+  const lobbyId = $derived($me?.lobby?.id ?? null)
   $effect(() => {
-    const id = $me?.lobby?.id
+    const id = lobbyId
     if (!id) { lobby = null; return }
     const store = createLobbyStore(id)
     const unsub = store.lobby.subscribe(l => { lobby = l })
@@ -164,11 +166,11 @@
   const setupName = $derived(canEditGame ? MODES.find(m => m.id === selectedMode)?.name : (displayMode ? gameName(displayMode) : 'No game yet'))
 
   // Bull off decides who throws first, so it needs an opponent (the backend
-  // rejects it too). Named guests count as players, same as in start().
-  const playerCount = $derived(lobby ? counts(lobby).playing : 1 + guests.filter(g => g.account || g.name.trim()).length)
-  const bullOffBlocked = $derived(
-    selectedMode === 'x01' && (config.bullOff ?? 'off') !== 'off' && playerCount < 2
-  )
+  // rejects it too). Named guests count as players, same as in start(). In a lobby
+  // its throw order decides bull off, and the server ignores the form's setting.
+  const bullOffBlocked = $derived(lobby
+    ? lobby.throwOrder === 'bulloff' && counts(lobby).playing < 2
+    : selectedMode === 'x01' && (config.bullOff ?? 'off') !== 'off' && 1 + guests.filter(g => g.account || g.name.trim()).length < 2)
 
   /** The picked mode and settings as the API takes them; null (with the error shown) if the backend has no such game. */
   function chosenGame(): { gameId: string; config: Record<string, unknown> } | null {
@@ -329,19 +331,21 @@
                 defaultValue={X01_DEFAULTS.outMode} />
             </fieldset>
 
-            <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-              <legend class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce] mb-2">
-                Bull off
-                <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
-              </legend>
-              <SegmentedControl options={bullOffOptions} bind:value={config.bullOff}
-                defaultValue={X01_DEFAULTS.bullOff} />
-              {#if bullOffBlocked}
-                <p class="m-0 text-[13px] text-live-text">
-                  Bull off needs at least two players. Add a player or turn it off.
-                </p>
-              {/if}
-            </fieldset>
+            {#if !lobby}
+              <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+                <legend class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce] mb-2">
+                  Bull off
+                  <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
+                </legend>
+                <SegmentedControl options={bullOffOptions} bind:value={config.bullOff}
+                  defaultValue={X01_DEFAULTS.bullOff} />
+                {#if bullOffBlocked}
+                  <p class="m-0 text-[13px] text-live-text">
+                    Bull off needs at least two players. Add a player or turn it off.
+                  </p>
+                {/if}
+              </fieldset>
+            {/if}
 
             <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
               <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Bull value</legend>
@@ -427,6 +431,9 @@
                 </button>
               {/if}
             </p>
+          {/if}
+          {#if lobby && lobbyHost && bullOffBlocked}
+            <p class="m-0 text-[13px] text-live-text">Bull off needs at least two players. Change the throw order in the lobby.</p>
           {/if}
           {#if lobby && !lobbyHost}
             <p class="m-0 h-12 md:h-14 flex items-center justify-center text-[15px] text-text-muted">{hostName} starts the game</p>
