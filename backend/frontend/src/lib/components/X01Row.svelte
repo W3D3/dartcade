@@ -1,6 +1,7 @@
 <script lang="ts">
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
+  import { x01Roll } from '$lib/playerStats'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
@@ -31,8 +32,7 @@
   </div>
 
   <span class="font-display font-bold leading-[0.85] tabular-nums
-               {active ? 'text-[min(120px,13vh)] text-text' : 'text-[min(88px,9vh)] text-ink-3'}"><RollingNumber value={p.remaining} reset={p.leg}
-                 bust={p.current?.bust ?? false} checkout={p.remaining === 0} /></span>
+               {active ? 'text-[min(120px,13vh)] text-text' : 'text-[min(88px,9vh)] text-ink-3'}"><RollingNumber {...x01Roll(p)} /></span>
 
   <div class="grid grid-cols-[minmax(0,1fr)_90px_90px_auto] items-center gap-5 min-w-0">
     {#if p.showFinish}

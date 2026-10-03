@@ -3,6 +3,7 @@
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
+  import { x01Roll } from '$lib/playerStats'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
@@ -39,8 +40,7 @@
   <!-- Short screens (≤ 740 px tall) drop the chalkboard and shrink the score so the board keeps its room -->
   <div class="grid gap-3 items-end grid-cols-1 {chalkboard ? '[@media(min-height:741px)]:grid-cols-[minmax(0,1fr)_150px]' : ''}">
     <div class="flex flex-col gap-[10px] min-w-0">
-      <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[104px] leading-[0.8] tracking-[-0.02em] tabular-nums"><RollingNumber value={p.remaining} reset={p.leg}
-        bust={p.current?.bust ?? false} checkout={p.remaining === 0} /></span>
+      <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[104px] leading-[0.8] tracking-[-0.02em] tabular-nums"><RollingNumber {...x01Roll(p)} /></span>
       {#if !p.opened}<span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Needs to open</span>{/if}
       <div class="hidden [@media(min-height:600px)]:flex gap-[14px]">
         {#each stats as s (s.label)}

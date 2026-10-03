@@ -2,6 +2,8 @@
 import { checkoutHint } from './dartUtils.js'
 import { atcCells, atcDone, atcTargetLabel, type AtcCell } from './atc.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
+import { shownScore, type ScoreUpdates } from './heldScore.js'
+import type { RollOptions } from './rollingNumber.js'
 
 import type { AtcGame, X01Game } from './api/game-ws'
 
@@ -10,6 +12,8 @@ export const fmtAvg = (v: number | null) => (v === null ? '—' : v.toFixed(1))
 
 export type X01PlayerView = {
   remaining: number
+  /** The big score: `remaining`, or held at the visit's start while it's open ("Score left: After the visit"). */
+  shown: number
   opened: boolean
   /** "T19 · D12", or null when no finish is possible (or suggestions are off). */
   canFinish: string | null
@@ -19,7 +23,8 @@ export type X01PlayerView = {
   darts: number
   legsWon: number
   firstTo: number
-  /** Legs played so far (everyone's): the score starts over when it changes. */
+  /** The sum of every seat's legs won (in a team game each seat carries its team's, so a leg
+   *  counts once per seat): it goes up exactly when a new leg starts, so the score starts over. */
   leg: number
   /** Finished visits of this leg. */
   visits: Visit[]
@@ -30,7 +35,7 @@ export type X01PlayerView = {
 }
 
 export function x01Player(
-  game: X01Game, i: number, history: VisitHistory, o: { active: boolean; suggest: boolean; bust?: boolean },
+  game: X01Game, i: number, history: VisitHistory, o: { active: boolean; suggest: boolean; bust?: boolean; scoreUpdates?: ScoreUpdates },
 ): X01PlayerView {
   const remaining = game.scores.at(i) ?? 0
   const opened = game.opened.at(i) ?? true
@@ -42,6 +47,10 @@ export function x01Player(
   const last = all.at(-1)
   return {
     remaining, opened,
+    shown: shownScore({
+      mode: o.scoreUpdates ?? 'dart', score: remaining, thrower: o.active, locked: game.visitLocked,
+      darts: running, start: history.start.at(i) ?? null,
+    }),
     canFinish: hint ? hint.join(' · ') : null,
     avg: fmtAvg(threeDartAvg(all)),
     legAvg: fmtAvg(threeDartAvg(leg)),
@@ -54,6 +63,12 @@ export function x01Player(
     showFinish: o.suggest,
     current: running.length ? { scored: running.reduce((a, d) => a + d.score, 0), left: remaining, bust: o.bust === true } : null,
   }
+}
+
+/** How the big X01 score (a player's or a team's) rolls: the shown score, a new leg starts it
+ *  over, a bust flashes red, a checkout turns lime. */
+export function x01Roll(v: { leg: number; shown: number; current: { bust: boolean } | null }): { value: number } & RollOptions {
+  return { value: v.shown, reset: v.leg, bust: v.current?.bust ?? false, checkout: v.shown === 0 }
 }
 
 export type AtcPlayerView = { target: string; done: number; total: number; cells: AtcCell[]; darts: number; hitRate: string }

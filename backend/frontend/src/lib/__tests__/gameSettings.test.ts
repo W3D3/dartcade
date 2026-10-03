@@ -32,6 +32,7 @@ describe('loadSettings', () => {
 
   it('remembers board or keypad; nothing chosen yet by default', () => {
     expect(defaultSettings.inputView).toBeNull()
+    expect(defaultSettings.scoreUpdates).toBe('dart')
     expect(loadSettings(store(JSON.stringify({ inputView: 'entry' }))).inputView).toBe('entry')
     expect(loadSettings(store(JSON.stringify({ inputView: 'board' }))).inputView).toBe('board')
     expect(loadSettings(store(JSON.stringify({ inputView: 'sideways' }))).inputView).toBeNull()

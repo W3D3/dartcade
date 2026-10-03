@@ -2,6 +2,7 @@
   import { X } from '@lucide/svelte'
   // Game settings as a drawer on the right, below the header (Settings-InGame board).
   import type { GameSettings } from '$lib/gameSettings.js'
+  import type { ScoreUpdates } from '$lib/heldScore.js'
 
   let { settings = $bindable(), gameId, onclose }: { settings: GameSettings; gameId: string; onclose: () => void } = $props()
 
@@ -13,6 +14,10 @@
   ] as const
   // Other players' targets only exist in Around the Clock
   const rows = $derived(display.filter(r => r.key !== 'showMarkers' || gameId === 'atc'))
+  const scoreUpdates: { value: ScoreUpdates; label: string }[] = [
+    { value: 'dart', label: 'Every dart' },
+    { value: 'visit', label: 'After the visit' },
+  ]
   const sounds = [
     { key: 'soundHit', label: 'Hit' },
     { key: 'soundMiss', label: 'Miss' },
@@ -69,6 +74,22 @@
         </button>
       </div>
     {/each}
+    {#if gameId === 'x01'}
+      <div class="flex flex-col gap-2">
+        <span class="flex flex-col gap-[2px]">
+          <span id="setting-scoreUpdates" class="text-[15px] text-text">Score left</span>
+          <span class="text-[13px] text-text-dim">When the big score counts down</span>
+        </span>
+        <div role="radiogroup" aria-labelledby="setting-scoreUpdates" class="flex gap-1 p-1 bg-bg rounded-[10px]">
+          {#each scoreUpdates as opt (opt.value)}
+            {@const on = settings.scoreUpdates === opt.value}
+            <button type="button" role="radio" aria-checked={on} onclick={() => settings.scoreUpdates = opt.value}
+              class="flex-1 h-10 rounded-[7px] text-[15px] border-0 cursor-pointer transition-colors
+                     {on ? 'bg-line text-text font-semibold' : 'bg-transparent text-ink-2 font-medium'}">{opt.label}</button>
+          {/each}
+        </div>
+      </div>
+    {/if}
   </section>
 
   <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">

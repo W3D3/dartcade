@@ -2,6 +2,7 @@
 // computed from the snapshot and the visit history. The teams themselves come from the server.
 import { fmtAvg, x01Player } from './playerStats.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
+import type { ScoreUpdates } from './heldScore.js'
 import type { X01Game } from './api/game-ws'
 
 export type Team = NonNullable<X01Game['teams']>[number]
@@ -41,6 +42,8 @@ export type X01TeamView = {
   active: boolean
   won: boolean
   remaining: number
+  /** The big score: `remaining`, or held at the visit's start while the team's visit is open. */
+  shown: number
   opened: boolean
   /** "T19 · D12", or null when no finish is possible (or suggestions are off). */
   canFinish: string | null
@@ -63,7 +66,7 @@ export type X01TeamView = {
 }
 
 /** One view per team; none in a singles game. */
-export function x01Teams(game: X01Game, players: { name: string }[], history: VisitHistory, o: { suggest: boolean }): X01TeamView[] {
+export function x01Teams(game: X01Game, players: { name: string }[], history: VisitHistory, o: { suggest: boolean; scoreUpdates?: ScoreUpdates }): X01TeamView[] {
   const teams = game.teams
   if (!teams) return []
   const playing = game.winner === null
@@ -77,7 +80,7 @@ export function x01Teams(game: X01Game, players: { name: string }[], history: Vi
     const active = playing && upTeam === team
     // The thrower carries the running visit; any seat of the team has its score
     const seat = active ? cp : team.seats.at(0) ?? 0
-    const p = x01Player(game, seat, history, { active, suggest: o.suggest, bust: active && game.bustThisVisit })
+    const p = x01Player(game, seat, history, { active, suggest: o.suggest, bust: active && game.bustThisVisit, scoreUpdates: o.scoreUpdates })
 
     // Interleave the players' leg visits in the order they were thrown
     const taken = new Map<number, number>()
@@ -96,7 +99,7 @@ export function x01Teams(game: X01Game, players: { name: string }[], history: Vi
     return {
       id: team.id, name: team.name, active,
       won: game.winner !== null && team.seats.includes(game.winner),
-      remaining: team.score, opened: p.opened, canFinish: p.canFinish,
+      remaining: team.score, shown: active ? p.shown : team.score, opened: p.opened, canFinish: p.canFinish,
       teamAvg: fmtAvg(threeDartAvg(legVisits)),
       matchAvg: fmtAvg(threeDartAvg(allVisits)),
       darts: team.seats.reduce((a, s) => a + (game.totalDarts.at(s) ?? 0), 0),

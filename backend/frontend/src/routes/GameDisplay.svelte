@@ -26,7 +26,7 @@
   import { gameState } from '../lib/gameState.js'
   import { x01Band, atcBand, atcAdvanced, bigDartIndex } from '../lib/visitBand.js'
   import { nextButton } from '../lib/controls.js'
-  import { x01Player, atcPlayer } from '../lib/playerStats.js'
+  import { x01Player, atcPlayer, x01Roll } from '../lib/playerStats.js'
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Segment, type UserAction } from '$lib/api'
@@ -165,7 +165,7 @@
   const locked = $derived(x01?.visitLocked === true || winner !== null)
   const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
   // A team game (X01): one panel per team, sharing a score
-  const teams = $derived(x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions }) : [])
+  const teams = $derived(x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions, scoreUpdates: settings.scoreUpdates }) : [])
   const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0))
   // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
   const atcNext = $derived((currentPlayer + 1) % Math.max(players.length, 1))
@@ -179,7 +179,7 @@
   })
 
   const x01Players = $derived(x01
-    ? players.map((_, i) => x01Player(x01, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions, bust: i === currentPlayer && bust }))
+    ? players.map((_, i) => x01Player(x01, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions, bust: i === currentPlayer && bust, scoreUpdates: settings.scoreUpdates }))
     : [])
   const atcPlayers = $derived(atc ? players.map((_, i) => atcPlayer(atc, i)) : [])
   const leaders = $derived(atcLeaders(atc?.hitCounts ?? []))
@@ -491,8 +491,8 @@
                 <PhonePlayerRow active={up} name={player.name} you={line?.you ?? false} pill={up ? null : pillFor(i, true)}
                   sub={rowSub(up ? (x01Players[i]?.canFinish ? `Throwing · can finish ${x01Players[i]?.canFinish}` : 'Throwing')
                     : i === nextPlayer ? (x01Players[i]?.canFinish ? `Up next · can finish ${x01Players[i]?.canFinish}` : 'Up next') : `Avg ${x01Players[i]?.avg ?? '0.0'}`, line)}
-                  valueLabel="Left" value={String(x01Players[i]?.remaining ?? '')}
-                  roll={{ reset: x01Players[i]?.leg, bust: x01Players[i]?.current?.bust, checkout: x01Players[i]?.remaining === 0 }}
+                  valueLabel="Left" value={String(x01Players[i]?.shown ?? '')}
+                  roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
                   legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }} />
               {:else}
                 <PhonePlayerRow active={up} name={player.name} you={line?.you ?? false} pill={up ? null : pillFor(i, true)}
