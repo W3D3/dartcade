@@ -30,3 +30,22 @@ export async function startGame(lobbyId: string, opts: { rematch?: boolean; forc
 export function shouldOpenGame(prev: string | null | undefined, next: string | null, playing: boolean): boolean {
   return prev === null && next !== null && playing
 }
+
+export type GameSelection = { mode: string; config: Record<string, unknown> }
+
+/**
+ * What the Play page's form starts with inside a lobby: the lobby's saved next game, merged
+ * over that mode's defaults so every field the form reads exists (the lobby's quick settings,
+ * such as X01Settings, only ever set some of them), or the given fallback — the player's own
+ * remembered mode and settings — when the lobby has no next game yet. Meant to be applied once,
+ * the first time the lobby's next game becomes known (at mount, or once it arrives after), so
+ * the host's later edits on the page are never overwritten by it.
+ */
+export function initialGameSelection(
+  nextGame: { gameId: string; config: Record<string, unknown> } | null,
+  fallback: GameSelection,
+  defaultsFor: (mode: string) => Record<string, unknown> | undefined,
+): GameSelection {
+  if (!nextGame) return fallback
+  return { mode: nextGame.gameId, config: { ...(defaultsFor(nextGame.gameId) ?? {}), ...nextGame.config } }
+}
