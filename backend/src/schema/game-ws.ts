@@ -88,6 +88,10 @@ export interface X01Game {
   legs: number[]
   firstTo: number
   currentPlayer: number
+  /**
+   * The seat that throws after the open visit: after a checkout the next leg's starter; null when the visit ends the game, once it is over, and during the bull off.
+   */
+  nextPlayer: number | null
   round: number
   phase: 'bulloff' | 'game' | 'finished'
   winner: number | null

@@ -46,6 +46,27 @@ describe('trackVisits (X01)', () => {
     expect(h.all[1]).toEqual([{ scored: 60, left: 441, darts: 1, bust: false }])
   })
 
+  it('keeps the seat of every finished visit of the leg, in the order thrown (teams interleave)', () => {
+    // 2v2: seats 0 and 2 share a score, as do 1 and 3; seat 2 bust once
+    const h = run([
+      x01({ scores: [101, 101, 101, 101], totalVisits: [0, 0, 0, 0], cp: 0 }),
+      x01({ scores: [41, 101, 41, 101], totalVisits: [1, 0, 0, 0], cp: 1 }),
+      x01({ scores: [41, 81, 41, 81], totalVisits: [1, 1, 0, 0], cp: 2 }),
+      x01({ scores: [41, 81, 41, 81], totalVisits: [1, 1, 1, 0], cp: 3 }),
+    ])
+    expect(h.legSeats).toEqual([0, 1, 2])
+    expect(h.leg[2]).toEqual([{ scored: 0, left: 41, darts: 0, bust: false }])
+  })
+
+  it('forgets the leg order when a leg ends', () => {
+    const h = run([
+      x01({ scores: [40, 501], totalVisits: [5, 5], cp: 0 }),
+      x01({ scores: [0, 501], totalVisits: [5, 5], cp: 0, darts: [40] }),
+      x01({ scores: [501, 501], totalVisits: [6, 5], legs: [1, 0], cp: 1 }),
+    ])
+    expect(h.legSeats).toEqual([])
+  })
+
   it('skips a visit that was already under way when the page loaded', () => {
     const h = run([
       x01({ scores: [441, 501], totalVisits: [0, 0], cp: 0, darts: [60] }),

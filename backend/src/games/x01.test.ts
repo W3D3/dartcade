@@ -559,9 +559,14 @@ describe('teams', () => {
     const three: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }]
     let s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0] }, three)
     const seen = [s.currentPlayer]
-    for (let i = 0; i < 3; i++) { s = visit(s, miss()); seen.push(s.currentPlayer) }
+    s = visit(s, miss())
+    expect(x01Game.view(s, three).nextPlayer).toBe(2)
+    seen.push(s.currentPlayer)
+    for (let i = 0; i < 2; i++) { s = visit(s, miss()); seen.push(s.currentPlayer) }
     expect(seen).toEqual([0, 1, 2, 1])
     expect(s.round).toBe(1)
+    // B1 throws twice a round: who's next depends on the turn, not just the thrower
+    expect(x01Game.view(s, three).nextPlayer).toBe(0)
     s = visit(s, miss())
     expect([s.currentPlayer, s.round]).toEqual([0, 2])
   })
@@ -620,6 +625,67 @@ describe('teams', () => {
     expect(after.game.currentPlayer).toBe(3)
     expect(after.game.order).toEqual([3, 0, 1, 2])
     expect(x01Module.getCurrentPlayer(after)).toBe(3)
+  })
+
+  describe('nextPlayer: who throws after the open visit', () => {
+    const three: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }]
+    const team2v1: X01Config = { ...defaultCfg, format: 'teams', teams: [0, 1, 0], startScore: 101, firstTo: 2 }
+
+    it('mid-leg in 2v1 follows the turn order (A1 B1 A2 B1)', () => {
+      let s = x01Game.init(team2v1, three)
+      expect(x01Game.view(s, three).nextPlayer).toBe(1)
+      s = visit(s, miss())                       // A1 → B1 up
+      expect(x01Game.view(s, three).nextPlayer).toBe(2)
+      s = visit(s, miss())                       // B1 → A2 up
+      expect(x01Game.view(s, three).nextPlayer).toBe(1)
+      s = visit(s, miss())                       // A2 → B1 up
+      expect(x01Game.view(s, three).nextPlayer).toBe(0)
+    })
+
+    it('after a bust, the next turn as usual', () => {
+      let s = x01Game.init(team2v1, three)
+      s = visit(s, t20())                        // A1: 41
+      s = visit(s, miss())                       // B1
+      s = play(s, opened, t20())                 // A2 busts
+      expect(s.bustThisVisit).toBe(true)
+      expect(x01Game.view(s, three).nextPlayer).toBe(1)
+    })
+
+    it('at a locked checkout, the next leg\'s starter', () => {
+      let s = x01Game.init({ ...team2v1, startScore: 40 }, three)
+      s = play(s, opened, dartEvent(20, 'Double', 2))   // A1 checks out leg 1, visit locked
+      expect(x01Game.view(s, three).visitLocked).toBe(true)
+      // Leg 2 starts at the second position in the order: B1
+      expect(x01Game.view(s, three).nextPlayer).toBe(1)
+      s = play(s, takeout)
+      expect(s.currentPlayer).toBe(1)
+    })
+
+    it('null once the checkout wins the game, and after it', () => {
+      let s = x01Game.init({ ...team2v1, startScore: 40, firstTo: 1 }, three)
+      s = play(s, opened, dartEvent(20, 'Double', 2))
+      expect(x01Game.view(s, three).nextPlayer).toBeNull()
+      s = play(s, takeout)
+      expect(s.phase).toBe('finished')
+      expect(x01Game.view(s, three).nextPlayer).toBeNull()
+    })
+
+    it('null on the last visit before the round limit ends the game', () => {
+      let s = x01Game.init({ ...team2v1, maxRounds: 1 }, three)
+      s = visit(s, miss()); s = visit(s, miss()); s = visit(s, miss())   // A1 B1 A2; B1 throws the last turn
+      expect(s.currentPlayer).toBe(1)
+      expect(x01Game.view(s, three).nextPlayer).toBeNull()
+    })
+
+    it('singles: the next seat in throw order', () => {
+      const s = makeState({ order: [1, 0], currentPlayer: 1 })
+      expect(x01Game.view(s, players).nextPlayer).toBe(0)
+    })
+
+    it('null during the bull off', () => {
+      const s = x01Module.init({ ...team2v2, bullOff: 'wdc' }, four)
+      expect(x01Module.view(s, four).nextPlayer).toBeNull()
+    })
   })
 
   it('2v1 round limit: the lowest team score wins, both seats of that team placed 1st', () => {

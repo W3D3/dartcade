@@ -9,3 +9,11 @@ describe('matchLayout', () => {
     expect([1, 2, 3, 6].map(n => matchLayout(n, false))).toEqual(['solo', 'duel', 'party', 'party'])
   })
 })
+
+describe('matchLayout with teams', () => {
+  it('a team game has its own desktop layout; phones keep the phone layout', () => {
+    expect(matchLayout(4, false, true)).toBe('teams')
+    expect(matchLayout(3, false, true)).toBe('teams')
+    expect(matchLayout(4, true, true)).toBe('phone')
+  })
+})

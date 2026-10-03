@@ -100,6 +100,19 @@ function nextTurn(s: X01State): { nextPlayer: number; turn: number; round: numbe
   return { nextPlayer: s.order[turn], turn, round: turn === legStart(s.order, s.legs) ? s.round + 1 : s.round }
 }
 
+// Who throws after the open visit: the next turn, or after a checkout the next leg's
+// starter; null when the visit ends the game (the last leg, the round limit) or it is over.
+function upNext(s: X01State): number | null {
+  if (s.phase === 'finished') return null
+  const t = s.teamOf[s.currentPlayer]
+  if (s.scores[t] === 0) {
+    const legs = s.legs.map((l, i) => i === t ? l + 1 : l)
+    return legs[t] >= s.cfg.firstTo ? null : s.order[legStart(s.order, legs)]
+  }
+  const { nextPlayer, round } = nextTurn(s)
+  return round > s.cfg.maxRounds ? null : nextPlayer
+}
+
 // The start moves on every leg, whoever won the last one: leg 1 starts at the first
 // position in throw order, leg 2 at the second, and so on, wrapping around. With teams
 // taking turns in `order`, the starting team alternates.
@@ -331,7 +344,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       scores: s.teamOf.map(t => s.scores[t]),
       legs: s.teamOf.map(t => s.legs[t]),
       firstTo: s.cfg.firstTo,
-      currentPlayer: s.currentPlayer, round: s.round, phase: s.phase,
+      currentPlayer: s.currentPlayer, nextPlayer: upNext(s), round: s.round, phase: s.phase,
       winner: s.winner === null ? null : s.teamOf.indexOf(s.winner),
       opened: s.teamOf.map(t => s.opened[t]),
       bustThisVisit: s.bustThisVisit,
@@ -403,10 +416,19 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
 
 /** X01 with an optional bull off deciding the throwing order. */
 // In a team game the bull off winner throws first and the teams take turns
-export const x01Module = withBullOff(x01Game, {
+const withBullOffX01 = withBullOff(x01Game, {
   applyStartOrder: (s, bullOffOrder) => {
     const winner = bullOffOrder[0]
     const order = s.cfg.format === 'teams' ? turnOrder(s.teamOf, s.teamOf[winner], winner) : bullOffOrder
     return { ...s, order, turn: 0, currentPlayer: order[0] }
   },
 })
+
+// During the bull off nobody is up next in the game yet
+export const x01Module: typeof withBullOffX01 = {
+  ...withBullOffX01,
+  view(s, players) {
+    const v = withBullOffX01.view(s, players)
+    return s.stage === 'bulloff' ? { ...v, nextPlayer: null } : v
+  },
+}
