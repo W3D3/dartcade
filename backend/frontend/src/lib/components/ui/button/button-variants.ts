@@ -7,6 +7,7 @@ export const buttonVariants = tv({
 	variants: {
 		variant: {
 			primary:     "h-[54px] px-6 rounded-[10px] bg-accent text-accent-fg font-display font-bold text-xl tracking-widest uppercase",
+			accent:      "h-11 px-4 rounded-[10px] bg-accent text-accent-fg text-[15px] font-bold",
 			secondary:   "h-[56px] px-6 rounded-[12px] bg-text text-accent-fg font-display font-bold text-xl uppercase tracking-widest",
 			ghost:       "h-10 px-[14px] rounded-[10px] border border-line-3 text-[#c9c9bf] text-sm",
 			outline:     "h-10 px-4 rounded-[10px] border border-line-3 text-text text-sm",
