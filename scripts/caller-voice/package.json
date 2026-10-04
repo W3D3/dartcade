@@ -1,0 +1,12 @@
+{
+  "name": "caller-voice-gen",
+  "private": true,
+  "type": "module",
+  "description": "One-off generator for the built-in caller voice; not part of the app's dependency graph.",
+  "scripts": {
+    "generate": "node generate.mjs"
+  },
+  "dependencies": {
+    "kokoro-js": "^1.2.1"
+  }
+}
