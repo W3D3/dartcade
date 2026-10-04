@@ -64,6 +64,7 @@ type Transport struct {
 	// Camera stills to send on the live connection (never queued for a later one)
 	stills    chan any
 	connected atomic.Bool
+	onConnect func()
 }
 
 type outboxEntry struct {
@@ -80,6 +81,10 @@ func New(cfg Config, execute ExecuteFunc) *Transport {
 		stills:   make(chan any, 2*camera.MaxCameras),
 	}
 }
+
+// OnConnect sets a hook run each time the backend connection comes up (after bridge.hello).
+// It runs on the send loop, so it must not block. Set it before Start.
+func (t *Transport) OnConnect(f func()) { t.onConnect = f }
 
 // Connected reports whether the backend connection is up.
 func (t *Transport) Connected() bool { return t.connected.Load() }
@@ -190,6 +195,9 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 	}
 	t.connected.Store(true)
 	defer t.connected.Store(false)
+	if t.onConnect != nil {
+		t.onConnect()
+	}
 
 	// Replay unacknowledged outbox entries. Advance sentUpTo so the first ingest
 	// signal after replay doesn't re-deliver the whole outbox.

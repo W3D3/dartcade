@@ -164,15 +164,18 @@ func main() {
 		BridgeVersion: buildVersion(),
 	}, exec)
 
+	// After a dart, a correction, a takeout or a resync: a new still from each camera,
+	// sent on the backend connection (only while it is up)
+	stills := camera.New(cfg.BoardURL, client.CameraCount, tr.SendStill)
+	// And on every (re)connect, so viewers see the board after a restart without waiting for a dart
+	tr.OnConnect(func() { stills.Trigger(ctx) })
+
 	go func() {
 		if err := tr.Start(ctx); err != nil && ctx.Err() == nil {
 			log.Error("transport stopped", "err", err)
 		}
 	}()
 
-	// After a dart, a correction, a takeout or a resync: a new still from each camera,
-	// sent on the backend connection (only while it is up)
-	stills := camera.New(cfg.BoardURL, client.CameraCount, tr.SendStill)
 	eventCh := make(chan []differ.Event, 256)
 	go func() {
 		for evs := range eventCh {
