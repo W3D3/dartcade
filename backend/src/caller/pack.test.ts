@@ -1,7 +1,7 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { isCallerKey, parseTemplate, packName, readPack, keyFromName } from './pack.js'
 import { ZipError } from './zip.js'
-import { makeZip } from './zipFixture.js'
+import { makeZip, deflatedZeros } from './zipFixture.js'
 
 describe('caller keys', () => {
   it('keeps scores, busts, shots, legs, sets, game on and bull off', () => {
@@ -114,5 +114,26 @@ describe('readPack', () => {
   it('says what is wrong with something that is not a pack', async () => {
     await expect(readPack(new TextEncoder().encode('nope'), 'x.zip')).rejects.toThrow('Not a zip file')
     await expect(readPack(makeZip([{ name: 'a.txt', data: 'a' }]), 'x.zip')).rejects.toThrow('No sound files found')
+  })
+
+  describe('size limits', () => {
+    const MiB = 1024 * 1024
+    let mib15: Uint8Array
+    let mib17: Uint8Array
+    beforeAll(async () => { [mib15, mib17] = await Promise.all([deflatedZeros(15), deflatedZeros(17)]) }, 30_000)
+    const bomb = (name: string, data: Uint8Array, mib: number) => ({ name, data, deflatedSize: mib * MiB })
+
+    it('refuses a clip over 16 MiB and a template over 16 MiB', async () => {
+      await expect(readPack(makeZip([bomb('v/180.mp3', mib17, 17)]), 'v.zip')).rejects.toThrow(new ZipError('That pack unpacks too big'))
+      const csv = makeZip([{ name: 'v/AM-0.mp3', data: 'a' }, bomb('v/t.csv', mib17, 17)])
+      await expect(readPack(csv, 'v.zip')).rejects.toThrow(new ZipError('That pack unpacks too big'))
+    })
+
+    it('keeps all of a pack\'s clips together under 64 MiB', async () => {
+      const four = ['0', '1', '2', '3'].map(k => bomb(`v/${k}.mp3`, mib15, 15))
+      expect(Object.keys((await readPack(makeZip(four), 'v.zip')).clips)).toHaveLength(4)
+      const five = makeZip([...four, bomb('v/4.mp3', mib15, 15)])
+      await expect(readPack(five, 'v.zip')).rejects.toThrow(new ZipError('That pack unpacks too big'))
+    }, 30_000)
   })
 })

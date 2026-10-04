@@ -1,8 +1,9 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeAll } from 'vitest'
 import { listEntries, readEntry, ZipError } from './zip.js'
-import { makeZip } from './zipFixture.js'
+import { makeZip, deflatedZeros } from './zipFixture.js'
 
 const text = (b: Uint8Array) => new TextDecoder().decode(b)
+const MiB = 1024 * 1024
 
 describe('zip reader', () => {
   it('lists entries and reads deflated and stored ones', async () => {
@@ -63,5 +64,36 @@ describe('zip reader', () => {
     const view = new Uint8Array(large.buffer, large.byteOffset + 10, zip.length)
     const entries = listEntries(view)
     expect(text(await readEntry(view, entries[0]))).toBe('content')
+  })
+
+  describe('zip bombs', () => {
+    let bomb: Uint8Array
+    beforeAll(async () => {
+      bomb = await deflatedZeros(200)
+      expect(bomb.length).toBeLessThan(MiB)
+    }, 30_000)
+
+    it('refuses an entry that unpacks past the limit, even when its header lies', async () => {
+      for (const deflatedSize of [200 * MiB, 10]) {
+        const zip = makeZip([{ name: 'bomb.mp3', data: bomb, deflatedSize }])
+        const before = process.memoryUsage().arrayBuffers
+        await expect(readEntry(zip, listEntries(zip)[0])).rejects.toThrow(new ZipError('That pack unpacks too big'))
+        // It stopped near the 128 MiB default instead of unpacking all 200 MiB
+        expect(process.memoryUsage().arrayBuffers - before).toBeLessThan(160 * MiB)
+      }
+    }, 30_000)
+
+    it('takes a smaller limit', async () => {
+      const zip = makeZip([{ name: 'a.txt', data: 'x'.repeat(2000) }, { name: 'b.txt', data: 'y'.repeat(2000), method: 0 }])
+      const [a, b] = listEntries(zip)
+      expect(text(await readEntry(zip, a, 2000))).toBe('x'.repeat(2000))
+      await expect(readEntry(zip, a, 1999)).rejects.toThrow(new ZipError('That pack unpacks too big'))
+      await expect(readEntry(zip, b, 1999)).rejects.toThrow(new ZipError('That pack unpacks too big'))
+    })
+  })
+
+  it('reads corrupt deflate data as not a zip', async () => {
+    const zip = makeZip([{ name: 'a.mp3', data: new Uint8Array([0xff, 0xff, 0xff, 0xff, 0xff]), deflatedSize: 5 }])
+    await expect(readEntry(zip, listEntries(zip)[0])).rejects.toThrow(new ZipError('Not a zip file'))
   })
 })

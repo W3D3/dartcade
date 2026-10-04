@@ -791,11 +791,47 @@ paths:
           description: The imported pack
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/VoicePackSummary' }
+              schema: { $ref: '#/components/schemas/VoicePackImport' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '413': { $ref: '#/components/responses/VoiceLimit' }
         '415': { $ref: '#/components/responses/UnsupportedMediaType' }
+        '429': { $ref: '#/components/responses/ImportRunning' }
+
+  /api/voice-packs/import:
+    post:
+      operationId: importVoicePack
+      summary: Import a voice pack from a link
+      description: >
+        A darts-caller zip link or a Tools for Autodarts style folder link (the server tries the
+        known clip names, as a folder has no listing). HTTPS links on darts-downloads.peschi.org,
+        autodarts.x10.mx and adt-socket.tobias-thiele.de only; at most 128 MB; redirects only on
+        the same host. One import at a time per user.
+      tags: [voices]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              additionalProperties: false
+              properties:
+                url: { type: string, minLength: 1, maxLength: 2048, description: 'e.g. https://autodarts.x10.mx/1_male_eng/' }
+      responses:
+        '201':
+          description: The imported pack
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VoicePackImport' }
+        '400':
+          description: The link can't be imported (site not allowed, nothing there, too big, no answer, not a pack)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+              example: { error: "Links from this site aren't supported" }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '413': { $ref: '#/components/responses/VoiceLimit' }
         '429': { $ref: '#/components/responses/ImportRunning' }
 
   /api/voice-packs/{id}:
@@ -1517,6 +1553,19 @@ components:
         clips: { type: integer, minimum: 0, description: Distinct audio files kept }
         bytes: { type: integer, minimum: 0, description: Their total size; counts against the user's limit }
         createdAt: { type: string, format: date-time }
+    VoicePackImport:
+      type: object
+      description: A pack just imported, with how many sound files its source had
+      required: [id, name, lang, clips, bytes, createdAt, total]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string, description: 'From the file name or link, e.g. "en-GB Arthur (Male)"' }
+        lang: { type: string, nullable: true, description: 'Language tag from the name, e.g. en-GB' }
+        clips: { type: integer, minimum: 0, description: Distinct audio files kept }
+        bytes: { type: integer, minimum: 0, description: Their total size; counts against the user's limit }
+        createdAt: { type: string, format: date-time }
+        total: { type: integer, minimum: 0, description: 'Sound files in the source, kept or not ("Kept 385 of 12,422 clips")' }
     VoicePackList:
       type: object
       required: [packs, usage]

@@ -688,6 +688,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/voice-packs/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import a voice pack from a link
+         * @description A darts-caller zip link or a Tools for Autodarts style folder link (the server tries the known clip names, as a folder has no listing). HTTPS links on darts-downloads.peschi.org, autodarts.x10.mx and adt-socket.tobias-thiele.de only; at most 128 MB; redirects only on the same host. One import at a time per user.
+         */
+        post: operations["importVoicePack"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/voice-packs/{id}": {
         parameters: {
             query?: never;
@@ -1164,6 +1184,22 @@ export interface components {
             bytes: number;
             /** Format: date-time */
             createdAt: string;
+        };
+        /** @description A pack just imported, with how many sound files its source had */
+        VoicePackImport: {
+            id: string;
+            /** @description From the file name or link, e.g. "en-GB Arthur (Male)" */
+            name: string;
+            /** @description Language tag from the name, e.g. en-GB */
+            lang: string | null;
+            /** @description Distinct audio files kept */
+            clips: number;
+            /** @description Their total size; counts against the user's limit */
+            bytes: number;
+            /** Format: date-time */
+            createdAt: string;
+            /** @description Sound files in the source, kept or not ("Kept 385 of 12,422 clips") */
+            total: number;
         };
         VoicePackList: {
             packs: components["schemas"]["VoicePackSummary"][];
@@ -2427,13 +2463,57 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VoicePackSummary"];
+                    "application/json": components["schemas"]["VoicePackImport"];
                 };
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             413: components["responses"]["VoiceLimit"];
             415: components["responses"]["UnsupportedMediaType"];
+            429: components["responses"]["ImportRunning"];
+        };
+    };
+    importVoicePack: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    /** @description e.g. https://autodarts.x10.mx/1_male_eng/ */
+                    url: string;
+                };
+            };
+        };
+        responses: {
+            /** @description The imported pack */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VoicePackImport"];
+                };
+            };
+            /** @description The link can't be imported (site not allowed, nothing there, too big, no answer, not a pack) */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    /**
+                     * @example {
+                     *       "error": "Links from this site aren't supported"
+                     *     }
+                     */
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            413: components["responses"]["VoiceLimit"];
             429: components["responses"]["ImportRunning"];
         };
     };

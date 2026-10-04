@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
 import { createHash } from 'crypto'
+import rateLimit from '@fastify/rate-limit'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
@@ -37,11 +38,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
   afterAll(async () => { await close() })
   afterEach(async () => { await db.deleteFrom('voice_packs').execute(); await db.deleteFrom('voice_clips').execute() })
 
+  // Link imports answer from this instead of the internet: the zip above for any URL
+  const fetchImpl = vi.fn((_url: string | URL | Request, _init?: RequestInit) => Promise.resolve(new Response(zip)))
+  afterEach(() => { fetchImpl.mockClear() })
+
   function makeApp(limitBytes = 1024 * 1024) {
     const app = createFastify()
-    app.register(voicesApiPlugin, { db, limitBytes })
+    app.register(voicesApiPlugin, { db, limitBytes, fetchImpl })
     return app
   }
+  const importLink = (app: ReturnType<typeof makeApp>, url: string, user = 'a') => app.inject({
+    method: 'POST', url: '/api/voice-packs/import', headers: { 'x-user': user }, payload: { url },
+  })
   const upload = (app: ReturnType<typeof makeApp>, body: Buffer = zip, user = 'a') => app.inject({
     method: 'POST', url: '/api/voice-packs?name=en-GB-Arthur-Male-v4.zip',
     headers: { 'content-type': 'application/zip', 'x-user': user }, payload: body,
@@ -53,9 +61,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     const res = await upload(app)
     expect(res.statusCode).toBe(201)
     const pack = res.json()
-    expect(pack).toMatchObject({ name: 'en-GB Arthur (Male)', lang: 'en-GB', clips: 3, bytes: KEPT })
+    const { total, ...summary } = res.json()
+    expect(pack).toMatchObject({ name: 'en-GB Arthur (Male)', lang: 'en-GB', clips: 3, bytes: KEPT, total: 4 })
+    expect(total).toBe(4)
 
-    expect((await get(app, '/api/voice-packs')).json()).toEqual({ packs: [pack], usage: { bytes: KEPT, limitBytes: 1024 * 1024 } })
+    expect((await get(app, '/api/voice-packs')).json()).toEqual({ packs: [summary], usage: { bytes: KEPT, limitBytes: 1024 * 1024 } })
 
     const manifest = await get(app, `/api/voice-packs/${pack.id}`)
     expect(manifest.json()).toEqual({
@@ -117,5 +127,56 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     expect((await del()).statusCode).toBe(204)
     expect((await del()).statusCode).toBe(404)
     expect((await get(app, `/api/voice-clips/${sha(ONE80)}`)).statusCode).toBe(404)
+  })
+
+  it('imports a pack from a link on an allowed host', async () => {
+    const app = makeApp()
+    const res = await importLink(app, 'https://darts-downloads.peschi.org/soundfiles/en-GB-Arthur-Male-v4.zip')
+    expect(res.statusCode).toBe(201)
+    expect(res.json()).toMatchObject({ name: 'en-GB Arthur (Male)', lang: 'en-GB', clips: 3, bytes: KEPT, total: 4 })
+    expect(fetchImpl).toHaveBeenCalledTimes(1)
+    expect(fetchImpl.mock.calls[0][0]).toBe('https://darts-downloads.peschi.org/soundfiles/en-GB-Arthur-Male-v4.zip')
+    expect((await get(app, '/api/voice-packs')).json().packs).toHaveLength(1)
+  })
+
+  it('refuses a link off the list without fetching it', async () => {
+    const res = await importLink(makeApp(), 'http://169.254.169.254/latest/meta-data/')
+    expect(res.statusCode).toBe(400)
+    expect(res.json()).toEqual({ error: "Links from this site aren't supported" })
+    expect(fetchImpl).not.toHaveBeenCalled()
+  })
+
+  it('refuses a link that is not a pack, or a body without a url', async () => {
+    fetchImpl.mockResolvedValueOnce(new Response('hello'))
+    const notZip = await importLink(makeApp(), 'https://darts-downloads.peschi.org/x.zip')
+    expect(notZip.statusCode).toBe(400)
+    expect(notZip.json()).toEqual({ error: 'Not a zip file' })
+
+    const noUrl = await makeApp().inject({ method: 'POST', url: '/api/voice-packs/import', headers: { 'x-user': 'a' }, payload: {} })
+    expect(noUrl.statusCode).toBe(400)
+  })
+
+  it('applies the limit and the one-import lock to links too', async () => {
+    const off = await importLink(makeApp(0), 'https://darts-downloads.peschi.org/x.zip')
+    expect(off.statusCode).toBe(413)
+    expect(fetchImpl).not.toHaveBeenCalled()
+
+    const tight = makeApp(4000)
+    expect((await upload(tight)).statusCode).toBe(201)
+    expect((await importLink(tight, 'https://darts-downloads.peschi.org/x.zip')).statusCode).toBe(413)
+
+    const app = makeApp()
+    const [a, b] = await Promise.all([upload(app), importLink(app, 'https://darts-downloads.peschi.org/x.zip')])
+    expect([a.statusCode, b.statusCode].sort()).toEqual([201, 429])
+  })
+
+  it('leaves clips out of the rate limit', async () => {
+    const app = createFastify()
+    await app.register(rateLimit, { max: 2, timeWindow: '1 minute' })
+    app.register(voicesApiPlugin, { db, limitBytes: 1024 * 1024, fetchImpl })
+    expect((await upload(app)).statusCode).toBe(201)
+    for (let i = 0; i < 5; i++) expect((await get(app, `/api/voice-clips/${sha(ONE80)}`)).statusCode).toBe(200)
+    expect((await get(app, '/api/voice-packs')).statusCode).toBe(200)
+    expect((await get(app, '/api/voice-packs')).statusCode).toBe(429)
   })
 })
