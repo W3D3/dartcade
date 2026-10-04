@@ -2,12 +2,15 @@ package transport
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"math/rand"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
+	"dartcade/bridge/internal/camera"
 	"dartcade/bridge/internal/differ"
 	"dartcade/bridge/internal/schema"
 	"github.com/charmbracelet/log"
@@ -58,6 +61,9 @@ type Transport struct {
 	outbox   []outboxEntry
 	seq      uint64
 	incoming chan []differ.Event
+	// Camera stills to send on the live connection (never queued for a later one)
+	stills    chan any
+	connected atomic.Bool
 }
 
 type outboxEntry struct {
@@ -71,6 +77,37 @@ func New(cfg Config, execute ExecuteFunc) *Transport {
 		cfg:      cfg,
 		execute:  execute,
 		incoming: make(chan []differ.Event, 256),
+		stills:   make(chan any, 2*camera.MaxCameras),
+	}
+}
+
+// Connected reports whether the backend connection is up.
+func (t *Transport) Connected() bool { return t.connected.Load() }
+
+// StillMessage is the camera.still message for a still (schema/adbridge-v1.json
+// CameraStillMessage): not an event, so no envelope and no seq.
+func StillMessage(st camera.Still) any {
+	return map[string]any{
+		"kind": "camera.still",
+		"data": schema.CameraStillData{
+			Cam:         st.Cam,
+			CapturedAt:  st.CapturedAt.UTC(),
+			ContentType: "image/jpeg",
+			Data:        base64.StdEncoding.EncodeToString(st.JPEG),
+		},
+	}
+}
+
+// SendStill sends a camera still on the live connection. Stills are never stored or
+// replayed: while the backend is unreachable (or the queue is full) they are dropped.
+func (t *Transport) SendStill(st camera.Still) {
+	if !t.connected.Load() {
+		return
+	}
+	select {
+	case t.stills <- StillMessage(st):
+	default:
+		log.Debug("camera still queue full, dropping", "cam", st.Cam)
 	}
 }
 
@@ -143,6 +180,16 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 	if err := wsjson.Write(ctx, conn, hello); err != nil {
 		return
 	}
+	// Stills queued for the previous connection are stale now
+	for drained := false; !drained; {
+		select {
+		case <-t.stills:
+		default:
+			drained = true
+		}
+	}
+	t.connected.Store(true)
+	defer t.connected.Store(false)
 
 	// Replay unacknowledged outbox entries. Advance sentUpTo so the first ingest
 	// signal after replay doesn't re-deliver the whole outbox.
@@ -183,6 +230,27 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		}
 	}()
 
+	// flush sends the outbox entries not sent on this connection yet; false when the write failed
+	flush := func() bool {
+		t.mu.Lock()
+		var toSend []Envelope
+		for _, e := range t.outbox {
+			if e.env.Seq > sentUpTo {
+				toSend = append(toSend, e.env)
+			}
+		}
+		if len(t.outbox) > 0 {
+			sentUpTo = t.outbox[len(t.outbox)-1].env.Seq
+		}
+		t.mu.Unlock()
+		for _, e := range toSend {
+			if err := wsjson.Write(ctx, conn, e); err != nil {
+				return false
+			}
+		}
+		return true
+	}
+
 	for {
 		select {
 		case <-ctx.Done():
@@ -199,22 +267,17 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 			}
 		case msg := <-readMsg:
 			t.handleMessage(ctx, msg)
+		case st := <-t.stills:
+			// Events first: a dart waiting in the outbox never queues behind a picture
+			if !flush() {
+				return
+			}
+			if err := wsjson.Write(ctx, conn, st); err != nil {
+				return
+			}
 		case <-ingest:
-			t.mu.Lock()
-			var toSend []Envelope
-			for _, e := range t.outbox {
-				if e.env.Seq > sentUpTo {
-					toSend = append(toSend, e.env)
-				}
-			}
-			if len(t.outbox) > 0 {
-				sentUpTo = t.outbox[len(t.outbox)-1].env.Seq
-			}
-			t.mu.Unlock()
-			for _, e := range toSend {
-				if err := wsjson.Write(ctx, conn, e); err != nil {
-					return
-				}
+			if !flush() {
+				return
 			}
 		}
 	}

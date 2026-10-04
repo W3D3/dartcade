@@ -11,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"dartcade/bridge/internal/camera"
 	"dartcade/bridge/internal/differ"
 	"dartcade/bridge/internal/schema"
 	"dartcade/bridge/internal/transport"
@@ -490,5 +491,108 @@ func TestBridgeHelloOnReconnect(t *testing.T) {
 
 	if got := helloCount.Load(); got < 2 {
 		t.Errorf("bridge.hello sent %d times, want ≥2 (once per connect)", got)
+	}
+}
+
+// readUntilKind reads raw messages until one of the given kind arrives.
+func readUntilKind(ctx context.Context, conn *websocket.Conn, kind string) (map[string]json.RawMessage, error) {
+	for {
+		var m map[string]json.RawMessage
+		if err := wsjson.Read(ctx, conn, &m); err != nil {
+			return nil, err
+		}
+		var k string
+		json.Unmarshal(m["kind"], &k)
+		if k == kind {
+			return m, nil
+		}
+	}
+}
+
+func TestCameraStillIsSentOnTheLiveConnection(t *testing.T) {
+	got := make(chan map[string]json.RawMessage, 1)
+	s := newTestServer(t, func(conn *websocket.Conn) {
+		m, err := readUntilKind(context.Background(), conn, "camera.still")
+		if err != nil {
+			return
+		}
+		got <- m
+	})
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	go tr.Start(ctx) //nolint
+	deadline := time.Now().Add(time.Second)
+	for !tr.Connected() && time.Now().Before(deadline) {
+		time.Sleep(10 * time.Millisecond)
+	}
+	if !tr.Connected() {
+		t.Fatal("never connected")
+	}
+
+	at := time.Date(2026, 10, 4, 12, 0, 0, 0, time.UTC)
+	tr.SendStill(camera.Still{Cam: 1, CapturedAt: at, JPEG: []byte{0xFF, 0xD8, 0xFF, 0xD9}})
+
+	select {
+	case m := <-got:
+		if _, ok := m["seq"]; ok {
+			t.Error("a camera still has no seq (it is not an event)")
+		}
+		var d schema.CameraStillData
+		if err := json.Unmarshal(m["data"], &d); err != nil {
+			t.Fatalf("data: %v", err)
+		}
+		if d.Cam != 1 || d.ContentType != "image/jpeg" || !d.CapturedAt.Equal(at) || d.Data != "/9j/2Q==" {
+			t.Errorf("data: %+v", d)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("no camera.still")
+	}
+}
+
+func TestCameraStillsAreDroppedWhileOffline(t *testing.T) {
+	got := make(chan string, 4)
+	s := newTestServer(t, func(conn *websocket.Conn) {
+		for {
+			var m struct {
+				Kind string `json:"kind"`
+			}
+			if err := wsjson.Read(context.Background(), conn, &m); err != nil {
+				return
+			}
+			if m.Kind != "bridge.hello" {
+				got <- m.Kind
+			}
+		}
+	})
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	// Not connected yet: this still is stale by the time the connection is up
+	tr.SendStill(camera.Still{Cam: 0, CapturedAt: time.Now(), JPEG: []byte{1}})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	go tr.Start(ctx) //nolint
+	time.Sleep(150 * time.Millisecond)
+	tr.Send([]differ.Event{{Kind: "board.status", Data: &schema.BoardStatusData{Status: "Idle", Running: true}}})
+
+	select {
+	case k := <-got:
+		if k != "board.status" {
+			t.Fatalf("first message after hello: %q, want board.status", k)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("nothing received")
+	}
+}
+
+func TestStillMessageMatchesTheSchemaShape(t *testing.T) {
+	b, err := json.Marshal(transport.StillMessage(camera.Still{Cam: 2, CapturedAt: time.Now(), JPEG: []byte("x")}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var m map[string]any
+	json.Unmarshal(b, &m)
+	if m["kind"] != "camera.still" || len(m) != 2 {
+		t.Errorf("message: %s", b)
 	}
 }
