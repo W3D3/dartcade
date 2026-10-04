@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url'
 import { sql } from 'kysely'
 import type { Kysely, Selectable } from 'kysely'
 import type { Database, GamePlayersTable } from './schema.js'
+import { normalizeName } from '../users/names.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -330,17 +331,14 @@ export async function consumePairingToken(db: Kysely<Database>, code: string): P
 
 export type UserSummary = { id: string; name: string }
 
-// % and _ are wildcards in LIKE; a search treats them as plain characters
-const likePrefix = (q: string) => `${q.replace(/[\\%_]/g, c => `\\${c}`)}%`
-
-/** Other accounts whose name or email starts with `q` (case-insensitive), at most 8. */
+/** The other account with exactly this name (case-insensitive, a leading @ ignored); names are unique, so at most one. */
 export async function searchUsers(db: Kysely<Database>, q: string, excludeUserId: string): Promise<UserSummary[]> {
-  const pattern = likePrefix(q.trim())
+  const name = normalizeName(q).replace(/^@/, '')
   return db.selectFrom('user').select(['id', 'name'])
     .where('id', '!=', excludeUserId)
-    .where(eb => eb.or([eb('name', 'ilike', pattern), eb('email', 'ilike', pattern)]))
-    .orderBy('name')
-    .limit(8)
+    .where('name_needs_change', '=', false)
+    .where(sql<boolean>`lower(name) = lower(${name})`)
+    .limit(1)
     .execute()
 }
 
