@@ -7,6 +7,11 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
+  import BoardCard from '$lib/components/boards/BoardCard.svelte'
+  import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
+  import SelectedBoardBar from '$lib/components/boards/SelectedBoardBar.svelte'
+  import { bmHost, fmtDate, fmtVersion } from '$lib/boards'
+  import { isTablet } from '$lib/viewport'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
 
@@ -90,22 +95,6 @@
   function fmtTime(iso: string) {
     const d = new Date(iso)
     return isNaN(d.getTime()) ? '--:--:--' : d.toLocaleTimeString('en-GB', { hour12: false })
-  }
-  // "0.4.2" / "v0.4.2" → "v0.4.2"; non-semver builds (e.g. "dev") as-is
-  function fmtVersion(v?: string | null) {
-    if (!v) return null
-    return /^v?\d/.test(v) ? `v${v.replace(/^v/, '')}` : v
-  }
-
-  // host:port of the Board Manager, falling back to the bare IP
-  function bmHost(b: Board) {
-    try { if (b.bmUrl) return new URL(b.bmUrl).host } catch { /* fall through */ }
-    return b.ip ?? ''
-  }
-  function fmtDate(iso?: string | null) {
-    if (!iso) return '—'
-    const d = new Date(iso)
-    return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
   }
 
   // Camera tiles: dot turns accent once a frame has loaded
@@ -249,6 +238,167 @@
   <Sun size={12} />
 {/snippet}
 
+<!-- The selected board's name, renamable in place (large in the desktop panel, smaller in the tablet bar) -->
+{#snippet nameField()}
+  {#if selected}
+    {#if editing}
+      <!-- svelte-ignore a11y_autofocus -->
+      <input
+        bind:value={draftName}
+        autofocus
+        aria-label="Board name"
+        onblur={saveName}
+        onkeydown={(e) => {
+          if (e.key === 'Enter') void saveName()
+          else if (e.key === 'Escape') editing = false
+        }}
+        class="w-full box-border bg-transparent border-0 border-b border-line-3 p-0 outline-none
+               font-display font-bold {$isTablet ? 'text-[22px]' : 'text-[32px]'} leading-tight uppercase text-text"
+      />
+    {:else}
+      <h3 class="m-0 font-display font-bold {$isTablet ? 'text-[22px]' : 'text-[32px]'} leading-tight uppercase truncate">{selected.name}</h3>
+    {/if}
+  {/if}
+{/snippet}
+
+{#snippet renameButton()}
+  <button type="button" onclick={startEdit} aria-label="Rename board"
+    class="shrink-0 {$isTablet ? 'w-9 h-9' : 'w-10 h-10'} flex items-center justify-center rounded-[10px] border border-line-3
+           bg-transparent text-text cursor-pointer transition-colors hover:bg-surface-active">
+    <Pencil size={14} />
+  </button>
+{/snippet}
+
+{#snippet barName()}
+  <div class="flex items-center gap-2 min-w-0">{@render nameField()}{@render renameButton()}</div>
+{/snippet}
+
+{#snippet boardDetails()}
+  {#if selected}
+  <!-- Camera tiles -->
+  <div class="grid grid-cols-3 gap-2">
+    {#each [0, 1, 2] as camIndex (camIndex)}
+      <div class="relative rounded-[10px] overflow-hidden border border-line-2 bg-surface-active aspect-[4/3]">
+        {#if selected.online}
+          {#if camOk[camIndex] === undefined}
+            <!-- Skeleton until the first frame loads (or fails) -->
+            <div class="absolute inset-0 animate-pulse bg-line-2" aria-hidden="true"></div>
+          {/if}
+          <img
+            src="/api/boards/{selected.id}/camera/{camIndex}/live?t={cameraTs}"
+            alt="Camera {camIndex + 1}"
+            class="absolute inset-0 w-full h-full object-cover {camOk[camIndex] ? '' : 'invisible'}"
+            onload={() => { camOk[camIndex] = true }}
+            onerror={() => { camOk[camIndex] = false }}
+          />
+        {/if}
+        <span class="absolute left-1.5 bottom-1.5 flex items-center gap-[6px] px-1.5 py-[2px] rounded-[4px]
+                     font-mono text-[11px] text-text-muted {camOk[camIndex] ? 'bg-bg/75' : ''}">
+          CAM {camIndex + 1}
+          <span class="w-[6px] h-[6px] rounded-full {camOk[camIndex] ? 'bg-accent' : 'bg-text-dim'}"></span>
+        </span>
+      </div>
+    {/each}
+  </div>
+
+  <!-- Board controls -->
+  {#if selected.online}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      {@render control('start', 'Start', isRunning, startIcon)}
+      {@render control('stop', 'Stop', !isRunning, stopIcon)}
+      {@render control('reset', 'Reset', false, resetIcon)}
+      {@render control('calibrate', 'Calibrate', false, calibrateIcon)}
+    </div>
+  {/if}
+
+  <!-- Board info -->
+  <dl class="m-0 flex flex-col text-[14px]">
+    <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
+      <dt class="text-text-muted">Board Manager</dt>
+      <dd class="m-0 font-mono">
+        {#if selected.ip}
+          <a href={selected.bmUrl ?? `http://${selected.ip}`} target="_blank" rel="noopener noreferrer"
+            class="inline-flex items-center gap-[6px] cursor-pointer !text-text underline decoration-line-3
+                   underline-offset-4 transition-colors hover:!text-accent hover:decoration-accent">
+            {bmHost(selected)}
+            <ExternalLink size={12} />
+          </a>
+        {:else}—{/if}
+      </dd>
+    </div>
+    <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
+      <dt class="text-text-muted">Bridge</dt>
+      <dd class="m-0">
+        {selected.bridgeVersion ? `${fmtVersion(selected.bridgeVersion)} · ` : ''}{selected.online ? 'connected' : 'offline'}
+      </dd>
+    </div>
+    <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
+      <dt class="text-text-muted">Latency</dt>
+      <dd class="m-0">
+        <Badge variant="soon">Soon</Badge>
+      </dd>
+    </div>
+    <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
+      <dt class="text-text-muted">Paired</dt>
+      <dd class="m-0">{fmtDate(selected.createdAt)}</dd>
+    </div>
+  </dl>
+
+  <!-- Live events -->
+  <div class="flex flex-col gap-3 flex-grow min-h-0">
+    <div class="flex items-center justify-between">
+      <span class="text-[11px] font-medium uppercase tracking-[0.12em] text-text-dim">Live events</span>
+      {#if listening}
+        <span class="flex items-center gap-[6px] text-[12px] font-medium text-accent">
+          <span class="w-[6px] h-[6px] rounded-full bg-accent"></span>
+          Listening
+        </span>
+      {:else}
+        <span class="flex items-center gap-[6px] text-[12px] font-medium {dotText}">
+          {#if isSpinning}
+            <LoaderCircle size={9} strokeWidth={3} class="shrink-0 animate-spin" />
+          {:else}
+            <span class="w-[6px] h-[6px] rounded-full {dotBg}"></span>
+          {/if}
+          {bmLabel}
+        </span>
+      {/if}
+    </div>
+    <div bind:this={eventsEl}
+      class="{$isTablet ? 'h-[240px]' : 'flex-grow min-h-[200px]'} overflow-y-auto scrollbar-themed box-border p-4 rounded-[10px]
+             border border-line-2 bg-bg font-mono text-[13px] leading-[1.8]">
+      {#each events as ev, i (i)}
+        {@const seg = ev.data.dart?.segment}
+        <div class="whitespace-nowrap">
+          <span class="text-text-dim">{fmtTime(ev.at)}</span>
+          <span>{EVENT_VERB[ev.kind] ?? ev.kind}</span>
+          {#if seg}
+            <span class={seg.multiplier > 1 ? 'text-accent' : ''}>{seg.name}</span>
+            <span>{ev.data.dart?.score ?? ''}</span>
+          {/if}
+        </div>
+      {:else}
+        <span class="text-text-dim">{selected.online ? 'Waiting for throws…' : 'Board offline'}</span>
+      {/each}
+    </div>
+  </div>
+
+  {/if}
+{/snippet}
+
+{#snippet boardActions()}
+  <button type="button" onclick={() => push(`/?board=${selectedId}`)}
+    class="flex-grow h-12 px-[18px] whitespace-nowrap rounded-[10px] border-0 bg-text text-accent-fg text-[15px] font-semibold
+           cursor-pointer font-[inherit] transition-opacity hover:opacity-90">
+    Play on this board
+  </button>
+  <button type="button" onclick={() => { confirmUnpair = true }}
+    class="h-12 px-5 rounded-[10px] border border-line-3 bg-transparent text-live-text text-[15px]
+           font-semibold cursor-pointer font-[inherit] transition-colors hover:bg-surface-active">
+    Unpair
+  </button>
+{/snippet}
+
 <Layout title="Boards">
 
   <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_32px] xl:p-[40px_44px]">
@@ -270,225 +420,41 @@
       </Button>
     </header>
 
-    <div class="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-grow md:min-h-0">
-      <!-- Board grid -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:flex-grow md:grid-rows-2 md:gap-4 content-start">
+    <div class="flex flex-col xl:flex-row gap-4 md:gap-6 xl:flex-grow xl:min-h-0">
+      <!-- Board grid; tablets add the pairing card to it -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 xl:flex-grow xl:grid-rows-2 content-start">
         {#each boards as board (board.id)}
-          {@const active = board.id === selectedId}
-          {@const justPaired = board.id === justPairedId}
-          <button type="button" onclick={() => selectedId = board.id}
-            class="text-left box-border p-[22px] rounded-[14px] flex flex-col gap-[18px] transition-colors
-                   {justPaired
-                     ? 'bg-surface-2 border-2 border-accent'
-                     : active
-                       ? 'bg-surface-2 border-2 border-accent'
-                       : 'bg-surface-2 border border-line-2 hover:border-line'}">
-
-            <div class="flex justify-between items-center">
-              {#if justPaired && !board.online}
-                <span class="flex items-center gap-2 text-[13px] font-semibold text-text-muted">
-                  <span class="w-2 h-2 rounded-full border border-accent border-t-transparent animate-spin"></span>
-                  Connecting cameras…
-                </span>
-                <Badge variant="paired">Just paired</Badge>
-              {:else}
-                <span class="flex items-center gap-2 text-[13px] font-semibold
-                             {board.online ? 'text-accent' : 'text-text-dim'}">
-                  <span class="w-2 h-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>
-                  {board.online ? 'Online' : 'Offline'}
-                </span>
-                {#if justPaired}
-                  <Badge variant="paired">Just paired</Badge>
-                {/if}
-              {/if}
-              {#if !justPaired}
-                <Badge variant="soon">Latency · soon</Badge>
-              {/if}
-            </div>
-
-            <div class="flex flex-col gap-1">
-              <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">{board.name}</h2>
-              {#if board.ip}
-                <span class="font-mono text-[13px] text-text-muted">{bmHost(board)}</span>
-              {/if}
-            </div>
-
-            <dl class="m-0 mt-auto grid grid-cols-2 gap-3 pt-4 border-t border-line-2">
-              <div>
-                <dt class="text-[12px] text-text-dim">Bridge</dt>
-                <dd class="mt-1 m-0 text-[15px] font-semibold">{fmtVersion(board.bridgeVersion) ?? '—'}</dd>
-              </div>
-              <div>
-                <dt class="text-[12px] text-text-dim">Games</dt>
-                <dd class="mt-1 m-0 text-[15px] font-semibold">—</dd>
-              </div>
-            </dl>
-          </button>
+          <BoardCard {board} active={board.id === selectedId} justPaired={board.id === justPairedId} onselect={() => selectedId = board.id} />
         {:else}
           <div class="col-span-2 flex items-center justify-center h-40 rounded-[14px]
                       border border-dashed border-line-2 text-text-muted text-[15px]">
             No boards yet — pair one to get started
           </div>
         {/each}
+        {#if $isTablet}<PairBoardCard onpair={() => { pairOpen = true }} />{/if}
       </div>
 
-      <!-- Detail panel (shown when board selected) -->
-      {#if selected}
-        <aside class="w-full md:w-[clamp(420px,50%,720px)] md:flex-shrink-0 box-border p-4 md:p-6 border border-line-2 rounded-[14px]
+      {#if selected && $isTablet}
+        <!-- Tablets: a Selected bar under the grid; cameras and live events open under it -->
+        <div class="flex flex-col gap-2">
+          <SelectedBoardBar board={selected} name={barName} actions={boardActions} details={boardDetails} />
+          {#if unpairError}<p class="m-0 text-[13px] text-live-text">{unpairError}</p>{/if}
+        </div>
+      {:else if selected}
+        <aside class="w-full xl:w-[clamp(420px,50%,720px)] xl:flex-shrink-0 box-border p-4 md:p-6 border border-line-2 rounded-[14px]
                        bg-surface-2 flex flex-col gap-5">
-
-          <!-- Header: eyebrow + name + edit -->
           <div class="flex items-start justify-between gap-3">
             <div class="flex flex-col gap-1 min-w-0">
               <span class="text-[11px] font-medium uppercase tracking-[0.12em] text-text-dim">Selected board</span>
-              {#if editing}
-                <!-- svelte-ignore a11y_autofocus -->
-                <input
-                  bind:value={draftName}
-                  autofocus
-                  onblur={saveName}
-                  onkeydown={(e) => {
-                    if (e.key === 'Enter') void saveName()
-                    else if (e.key === 'Escape') editing = false
-                  }}
-                  class="w-full box-border bg-transparent border-0 border-b border-line-3 p-0 outline-none
-                         font-display font-bold text-[32px] leading-tight uppercase text-text"
-                />
-              {:else}
-                <h3 class="m-0 font-display font-bold text-[32px] leading-tight uppercase truncate">{selected.name}</h3>
-              {/if}
+              {@render nameField()}
             </div>
-            <button type="button" onclick={startEdit} aria-label="Rename board"
-              class="shrink-0 w-10 h-10 flex items-center justify-center rounded-[10px] border border-line-3
-                     bg-transparent text-text cursor-pointer transition-colors hover:bg-surface-active">
-              <Pencil size={14} />
-            </button>
+            {@render renameButton()}
           </div>
-
-          <!-- Camera tiles -->
-          <div class="grid grid-cols-3 gap-2">
-            {#each [0, 1, 2] as camIndex (camIndex)}
-              <div class="relative rounded-[10px] overflow-hidden border border-line-2 bg-surface-active aspect-[4/3]">
-                {#if selected.online}
-                  {#if camOk[camIndex] === undefined}
-                    <!-- Skeleton until the first frame loads (or fails) -->
-                    <div class="absolute inset-0 animate-pulse bg-line-2" aria-hidden="true"></div>
-                  {/if}
-                  <img
-                    src="/api/boards/{selected.id}/camera/{camIndex}/live?t={cameraTs}"
-                    alt="Camera {camIndex + 1}"
-                    class="absolute inset-0 w-full h-full object-cover {camOk[camIndex] ? '' : 'invisible'}"
-                    onload={() => { camOk[camIndex] = true }}
-                    onerror={() => { camOk[camIndex] = false }}
-                  />
-                {/if}
-                <span class="absolute left-1.5 bottom-1.5 flex items-center gap-[6px] px-1.5 py-[2px] rounded-[4px]
-                             font-mono text-[11px] text-text-muted {camOk[camIndex] ? 'bg-bg/75' : ''}">
-                  CAM {camIndex + 1}
-                  <span class="w-[6px] h-[6px] rounded-full {camOk[camIndex] ? 'bg-accent' : 'bg-text-dim'}"></span>
-                </span>
-              </div>
-            {/each}
-          </div>
-
-          <!-- Board controls -->
-          {#if selected.online}
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-              {@render control('start', 'Start', isRunning, startIcon)}
-              {@render control('stop', 'Stop', !isRunning, stopIcon)}
-              {@render control('reset', 'Reset', false, resetIcon)}
-              {@render control('calibrate', 'Calibrate', false, calibrateIcon)}
-            </div>
-          {/if}
-
-          <!-- Board info -->
-          <dl class="m-0 flex flex-col text-[14px]">
-            <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-              <dt class="text-text-muted">Board Manager</dt>
-              <dd class="m-0 font-mono">
-                {#if selected.ip}
-                  <a href={selected.bmUrl ?? `http://${selected.ip}`} target="_blank" rel="noopener noreferrer"
-                    class="inline-flex items-center gap-[6px] cursor-pointer !text-text underline decoration-line-3
-                           underline-offset-4 transition-colors hover:!text-accent hover:decoration-accent">
-                    {bmHost(selected)}
-                    <ExternalLink size={12} />
-                  </a>
-                {:else}—{/if}
-              </dd>
-            </div>
-            <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-              <dt class="text-text-muted">Bridge</dt>
-              <dd class="m-0">
-                {selected.bridgeVersion ? `${fmtVersion(selected.bridgeVersion)} · ` : ''}{selected.online ? 'connected' : 'offline'}
-              </dd>
-            </div>
-            <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-              <dt class="text-text-muted">Latency</dt>
-              <dd class="m-0">
-                <Badge variant="soon">Soon</Badge>
-              </dd>
-            </div>
-            <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
-              <dt class="text-text-muted">Paired</dt>
-              <dd class="m-0">{fmtDate(selected.createdAt)}</dd>
-            </div>
-          </dl>
-
-          <!-- Live events -->
-          <div class="flex flex-col gap-3 flex-grow min-h-0">
-            <div class="flex items-center justify-between">
-              <span class="text-[11px] font-medium uppercase tracking-[0.12em] text-text-dim">Live events</span>
-              {#if listening}
-                <span class="flex items-center gap-[6px] text-[12px] font-medium text-accent">
-                  <span class="w-[6px] h-[6px] rounded-full bg-accent"></span>
-                  Listening
-                </span>
-              {:else}
-                <span class="flex items-center gap-[6px] text-[12px] font-medium {dotText}">
-                  {#if isSpinning}
-                    <LoaderCircle size={9} strokeWidth={3} class="shrink-0 animate-spin" />
-                  {:else}
-                    <span class="w-[6px] h-[6px] rounded-full {dotBg}"></span>
-                  {/if}
-                  {bmLabel}
-                </span>
-              {/if}
-            </div>
-            <div bind:this={eventsEl}
-              class="flex-grow min-h-[200px] overflow-y-auto scrollbar-themed box-border p-4 rounded-[10px]
-                     border border-line-2 bg-bg font-mono text-[13px] leading-[1.8]">
-              {#each events as ev, i (i)}
-                {@const seg = ev.data.dart?.segment}
-                <div class="whitespace-nowrap">
-                  <span class="text-text-dim">{fmtTime(ev.at)}</span>
-                  <span>{EVENT_VERB[ev.kind] ?? ev.kind}</span>
-                  {#if seg}
-                    <span class={seg.multiplier > 1 ? 'text-accent' : ''}>{seg.name}</span>
-                    <span>{ev.data.dart?.score ?? ''}</span>
-                  {/if}
-                </div>
-              {:else}
-                <span class="text-text-dim">{selected.online ? 'Waiting for throws…' : 'Board offline'}</span>
-              {/each}
-            </div>
-          </div>
-
-          <!-- Actions -->
+          {@render boardDetails()}
           {#if unpairError}
             <p class="m-0 -mb-2 text-[13px] text-live-text">{unpairError}</p>
           {/if}
-          <div class="flex gap-3">
-            <button type="button" onclick={() => push(`/?board=${selectedId}`)}
-              class="flex-grow h-12 rounded-[10px] border-0 bg-text text-accent-fg text-[15px] font-semibold
-                     cursor-pointer font-[inherit] transition-opacity hover:opacity-90">
-              Play on this board
-            </button>
-            <button type="button" onclick={() => { confirmUnpair = true }}
-              class="h-12 px-5 rounded-[10px] border border-line-3 bg-transparent text-live-text text-[15px]
-                     font-semibold cursor-pointer font-[inherit] transition-colors hover:bg-surface-active">
-              Unpair
-            </button>
-          </div>
+          <div class="flex gap-3">{@render boardActions()}</div>
         </aside>
       {/if}
     </div>
