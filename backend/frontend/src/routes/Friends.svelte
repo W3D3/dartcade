@@ -13,13 +13,18 @@
   import AddFriendCard from '$lib/components/friends/AddFriendCard.svelte'
   import FriendsSection from '$lib/components/friends/FriendsSection.svelte'
   import FriendsTabs from '$lib/components/friends/FriendsTabs.svelte'
+  import InvisibleBanner from '$lib/components/friends/InvisibleBanner.svelte'
   import RequestsPanel from '$lib/components/friends/RequestsPanel.svelte'
+  import StatusCard from '$lib/components/friends/StatusCard.svelte'
   import type { Friend } from '$lib/api/lobby-ws'
   import { api } from '$lib/api'
+  import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { answerRequest, cancelRequest, inviteFriend, joinFriend, removeFriend } from '$lib/friends/actions'
+  import { setInvisible } from '$lib/presence'
   import { friendsTabId, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
 
+  const invisible = $derived($currentUser?.invisible ?? false)
   const list = $derived($me?.friends ?? { friends: [], incoming: [], outgoing: [] })
   const loaded = $derived($me?.friends != null)
   const groups = $derived(splitOnline(list.friends))
@@ -38,10 +43,14 @@
     return () => { clearInterval(tick) }
   })
 
-  async function once(run: () => Promise<string | null>) {
-    if (busy) return
+  async function once(run: () => Promise<string | null>): Promise<string | null> {
+    if (busy) return null
     busy = true
-    try { error = (await run()) ?? '' } finally { busy = false }
+    try {
+      const err = await run()
+      error = err ?? ''
+      return err
+    } finally { busy = false }
   }
 
   const invite = (f: Friend) => once(() => myLobbyId ? inviteFriend(myLobbyId, f.id) : Promise.resolve(null))
@@ -85,6 +94,7 @@
       </div>
       <FriendsTabs bind:tab {counts} panelId="friends-panel" />
     </header>
+    {#if invisible}<InvisibleBanner ongoonline={() => void once(() => setInvisible(false))} />{/if}
     {#if error}<ErrorText>{error}</ErrorText>{/if}
 
     <div class="flex flex-col gap-[14px] md:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px] lg:items-start">
@@ -112,6 +122,11 @@
       </div>
 
       <aside class="order-1 lg:order-none flex flex-col gap-[14px] md:gap-4 min-w-0">
+        <!-- Phones (Friends-Phone.dc.html): Your status first. Tablets/desktops (Friends.dc.html,
+             Tablet-Friends.dc.html): Add a friend, then Friend requests, then Your status last. -->
+        <div class="order-first md:order-last">
+          <StatusCard {invisible} onchange={(v: boolean) => once(() => setInvisible(v))} />
+        </div>
         <AddFriendCard />
         <section aria-label="Friend requests"
           class="flex flex-col gap-[6px] md:gap-[10px] md:box-border md:p-[18px] md:rounded-[14px] md:bg-surface-panel md:border md:border-line-2 {noRequests ? 'max-md:hidden' : ''}">
