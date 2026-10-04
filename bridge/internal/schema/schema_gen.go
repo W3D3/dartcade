@@ -325,6 +325,95 @@ func (j *BridgeHelloData) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
+// A still from one of the board's cameras, straightened by the Board Manager (GET
+// /api/img/cams/{cam}?warp=true): a square top-down JPEG with the bull at the
+// centre, the outer double wire (r = 1) at a third of the width, the image edge at
+// r = 1.5 and 20 at the top.
+type CameraStillData struct {
+	// Camera number, 0-based.
+	Cam int `json:"cam" yaml:"cam" mapstructure:"cam"`
+
+	// UTC wall-clock time the bridge fetched it.
+	CapturedAt time.Time `json:"captured_at" yaml:"captured_at" mapstructure:"captured_at"`
+
+	// ContentType corresponds to the JSON schema field "content_type".
+	ContentType string `json:"content_type" yaml:"content_type" mapstructure:"content_type"`
+
+	// The image, base64-encoded.
+	Data string `json:"data" yaml:"data" mapstructure:"data"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *CameraStillData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["cam"]; raw != nil && !ok {
+		return fmt.Errorf("field cam in CameraStillData: required")
+	}
+	if _, ok := raw["captured_at"]; raw != nil && !ok {
+		return fmt.Errorf("field captured_at in CameraStillData: required")
+	}
+	if _, ok := raw["content_type"]; raw != nil && !ok {
+		return fmt.Errorf("field content_type in CameraStillData: required")
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in CameraStillData: required")
+	}
+	type Plain CameraStillData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if 2 < plain.Cam {
+		return fmt.Errorf("field %s: must be <= %v", "cam", 2)
+	}
+	if 0 > plain.Cam {
+		return fmt.Errorf("field %s: must be >= %v", "cam", 0)
+	}
+	if plain.ContentType != "image/jpeg" {
+		return fmt.Errorf("field %s: must be equal to %s", "content_type", "image/jpeg")
+	}
+	*j = CameraStillData(plain)
+	return nil
+}
+
+// Sent after dart.detected, dart.corrected, takeout.finished and board.resync,
+// once per camera. Like bridge.hello it is not an event: no envelope, no seq,
+// never acked or stored, and dropped while the backend is unreachable.
+type CameraStillMessage struct {
+	// Data corresponds to the JSON schema field "data".
+	Data CameraStillData `json:"data" yaml:"data" mapstructure:"data"`
+
+	// Kind corresponds to the JSON schema field "kind".
+	Kind string `json:"kind" yaml:"kind" mapstructure:"kind"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *CameraStillMessage) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in CameraStillMessage: required")
+	}
+	if _, ok := raw["kind"]; raw != nil && !ok {
+		return fmt.Errorf("field kind in CameraStillMessage: required")
+	}
+	type Plain CameraStillMessage
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Kind != "camera.still" {
+		return fmt.Errorf("field %s: must be equal to %s", "kind", "camera.still")
+	}
+	*j = CameraStillMessage(plain)
+	return nil
+}
+
 // Result of a downstream command (reset, start, stop) sent by the backend.
 type CommandResultData struct {
 	// CommandId corresponds to the JSON schema field "command_id".

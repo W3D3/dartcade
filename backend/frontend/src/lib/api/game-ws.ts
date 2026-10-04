@@ -28,7 +28,7 @@ export type UserAction =
   | ForfeitAction
 
 /**
- * Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.
+ * Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.
  */
 export interface GameWs {
   [k: string]: unknown
@@ -237,6 +237,24 @@ export interface ErrorMessage {
    * The refused action's type.
    */
   action: string
+}
+/**
+ * A board in this game has a new camera still: fetch it from GET /api/boards/{boardId}/camera/{cam}?v={version}. Also sent for every stored still right after the first snapshot.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "CameraMessage".
+ */
+export interface CameraMessage {
+  type: 'camera'
+  boardId: string
+  /**
+   * Camera number, 0-based.
+   */
+  cam: number
+  /**
+   * Goes up with every still of this board and camera.
+   */
+  version: number
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

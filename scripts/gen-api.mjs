@@ -84,12 +84,14 @@ async function genZod() {
     ClientMessageSchema: ws.$defs.ClientMessage,
     NoticeMessageSchema: ws.$defs.NoticeMessage,
     ErrorMessageSchema: ws.$defs.ErrorMessage,
+    CameraMessageSchema: ws.$defs.CameraMessage,
     LobbyServerMessageSchema: lobby.$defs.LobbyServerMessage,
     MeMessageSchema: lobby.$defs.MeMessage,
     DartSchema: ab.$defs.Dart,
     DartDetectedDataSchema: ab.$defs.DartDetectedData,
     DartCorrectedDataSchema: ab.$defs.DartCorrectedData,
     BaseEnvelopeSchema: ab.$defs.BaseEnvelope,
+    CameraStillMessageSchema: ab.$defs.CameraStillMessage,
     FeedEventDataSchema: api.components.schemas.BoardEvent.properties.data,
   }
   const body = "import { z } from 'zod'\n\n" + Object.entries(schemas)
