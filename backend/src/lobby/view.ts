@@ -20,6 +20,7 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
     hostUserId: lobby.hostUserId,
     hostName: hostNameOf(lobby),
     throwOrder: lobby.throwOrder,
+    access: lobby.access,
     nextGame: lobby.nextGame,
     currentSessionId: ctx.sessionId,
     createdAt: lobby.createdAt.toISOString(),

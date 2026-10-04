@@ -1310,7 +1310,7 @@
       ],
       "patch": {
         "operationId": "updateLobby",
-        "summary": "Host: rename, set the throw order or the next game, regenerate the code",
+        "summary": "Host: rename, set the throw order, the next game or who can join, regenerate the code",
         "tags": [
           "lobbies"
         ],
@@ -1354,7 +1354,7 @@
       ],
       "post": {
         "operationId": "joinLobby",
-        "summary": "Join an open lobby by its code",
+        "summary": "Join an open lobby by its code, or as a friend of the host",
         "tags": [
           "lobbies"
         ],
@@ -1384,6 +1384,9 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
@@ -3990,6 +3993,14 @@
               }
             }
           },
+          "access": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "invite"
+            ],
+            "description": "Host: who can join without the code"
+          },
           "regenerateCode": {
             "type": "boolean"
           }
@@ -3997,10 +4008,8 @@
       },
       "JoinLobbyRequest": {
         "type": "object",
-        "required": [
-          "code"
-        ],
         "additionalProperties": false,
+        "description": "Without a code: only a friend of the host, while the lobby is open to friends.",
         "properties": {
           "code": {
             "type": "string",

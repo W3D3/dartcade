@@ -11,7 +11,7 @@ const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Len
 const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', plays: false })
 const pia = person({ id: 'g', name: 'Pia', addedByUserId: 'lena', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', ready: true })
 const lobby: Lobby = {
-  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', hostName: 'Christoph', throwOrder: 'lobby', nextGame: null,
+  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', hostName: 'Christoph', throwOrder: 'lobby', access: 'friends', nextGame: null,
   currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [chris, lena, max, pia], invites: [], activity: [],
   solo: false, nextHostName: 'Lena',
 }

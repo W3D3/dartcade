@@ -621,7 +621,7 @@ paths:
       - $ref: '#/components/parameters/LobbyId'
     patch:
       operationId: updateLobby
-      summary: 'Host: rename, set the throw order or the next game, regenerate the code'
+      summary: 'Host: rename, set the throw order, the next game or who can join, regenerate the code'
       tags: [lobbies]
       requestBody:
         required: true
@@ -641,7 +641,7 @@ paths:
       - $ref: '#/components/parameters/LobbyId'
     post:
       operationId: joinLobby
-      summary: Join an open lobby by its code
+      summary: Join an open lobby by its code, or as a friend of the host
       tags: [lobbies]
       requestBody:
         required: true
@@ -656,6 +656,7 @@ paths:
               schema: { $ref: '#/components/schemas/LobbyRef' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/LobbyConflict' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
@@ -1699,11 +1700,12 @@ components:
           properties:
             gameId: { type: string, minLength: 1 }
             config: { type: object, additionalProperties: true }
+        access: { type: string, enum: [friends, invite], description: 'Host: who can join without the code' }
         regenerateCode: { type: boolean }
     JoinLobbyRequest:
       type: object
-      required: [code]
       additionalProperties: false
+      description: 'Without a code: only a friend of the host, while the lobby is open to friends.'
       properties:
         code: { type: string, minLength: 1, maxLength: 16 }
     AddGuestRequest:

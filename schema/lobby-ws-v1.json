@@ -10,6 +10,12 @@
       "type": "string",
       "enum": ["lobby", "random", "bulloff"]
     },
+    "LobbyAccess": {
+      "title": "LobbyAccess",
+      "description": "friends: the host's friends see the lobby in Friends and join without the code. invite: only with the code, the link or an invite. The code, link and invites work under both.",
+      "type": "string",
+      "enum": ["friends", "invite"]
+    },
     "NextGame": {
       "title": "NextGame",
       "type": "object",
@@ -108,7 +114,7 @@
     "Lobby": {
       "title": "Lobby",
       "type": "object",
-      "required": ["id", "name", "code", "hostUserId", "hostName", "throwOrder", "nextGame", "currentSessionId", "createdAt", "people", "invites", "activity", "solo", "nextHostName"],
+      "required": ["id", "name", "code", "hostUserId", "hostName", "throwOrder", "access", "nextGame", "currentSessionId", "createdAt", "people", "invites", "activity", "solo", "nextHostName"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
@@ -117,6 +123,7 @@
         "hostUserId": { "type": ["string", "null"] },
         "hostName": { "type": ["string", "null"], "description": "The host's name, as LobbySummary has it; null when the host isn't in the lobby (a host who left during a game, until it ends)." },
         "throwOrder": { "$ref": "#/$defs/ThrowOrder" },
+        "access": { "$ref": "#/$defs/LobbyAccess" },
         "nextGame": { "anyOf": [{ "$ref": "#/$defs/NextGame" }, { "type": "null" }] },
         "currentSessionId": { "type": ["string", "null"], "description": "The lobby's running game." },
         "createdAt": { "type": "string", "format": "date-time" },

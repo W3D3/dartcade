@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { activityLine, feedTime, formatCode, gameName, indicatorView, inviteTime, joinLink, nextGameSummary, personLine, type Part } from '../lobby/format.js'
+import { accessHint, activityLine, feedTime, formatCode, gameName, indicatorView, inviteTime, joinLink, nextGameSummary, personLine, type Part } from '../lobby/format.js'
 import type { LobbyActivity, LobbyPerson } from '../api/lobby-ws'
 
 const text = (parts: Part[]) => parts.map(p => p.text).join('')
@@ -153,5 +153,12 @@ describe('personLine', () => {
 
   it('is empty for someone on their usual board', () => {
     expect(personLine(lena, [chris, lena], 'chris')).toBe('')
+  })
+})
+
+describe('accessHint', () => {
+  it('says who can join', () => {
+    expect(accessHint('friends')).toBe('Your friends see this lobby in Friends and join without the code. The code and link work too.')
+    expect(accessHint('invite')).toBe('Only people with the code, the link or an invite can join.')
   })
 })

@@ -507,7 +507,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Host: rename, set the throw order or the next game, regenerate the code */
+        /** Host: rename, set the throw order, the next game or who can join, regenerate the code */
         patch: operations["updateLobby"];
         trace?: never;
     };
@@ -522,7 +522,7 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Join an open lobby by its code */
+        /** Join an open lobby by its code, or as a friend of the host */
         post: operations["joinLobby"];
         delete?: never;
         options?: never;
@@ -1322,10 +1322,16 @@ export interface components {
                     [key: string]: unknown;
                 };
             } | null;
+            /**
+             * @description Host: who can join without the code
+             * @enum {string}
+             */
+            access?: "friends" | "invite";
             regenerateCode?: boolean;
         };
+        /** @description Without a code: only a friend of the host, while the lobby is open to friends. */
         JoinLobbyRequest: {
-            code: string;
+            code?: string;
         };
         AddGuestRequest: {
             name: string;
@@ -2483,6 +2489,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["LobbyConflict"];
             429: components["responses"]["TooManyRequests"];

@@ -77,6 +77,12 @@ describe('lobbies API', () => {
     expect(JSON.parse(res.body)).toEqual({ error: 'only the host can do this' })
   })
 
+  it('joins without a code as a friend of the host', async () => {
+    const { app, lobbies } = makeApp()
+    expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/join', payload: {} })).statusCode).toBe(200)
+    expect(lobbies.join).toHaveBeenCalledWith('chris', 'l1', undefined)
+  })
+
   it('adds, changes and removes people', async () => {
     const { app, lobbies } = makeApp()
     const added = await app.inject({ method: 'POST', url: '/api/lobbies/l1/people', payload: { name: 'Guest 1' } })

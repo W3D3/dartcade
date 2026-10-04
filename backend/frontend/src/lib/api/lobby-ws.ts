@@ -7,6 +7,13 @@
  * via the `definition` "ThrowOrder".
  */
 export type ThrowOrder = 'lobby' | 'random' | 'bulloff'
+/**
+ * friends: the host's friends see the lobby in Friends and join without the code. invite: only with the code, the link or an invite. The code, link and invites work under both.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "LobbyAccess".
+ */
+export type LobbyAccess = 'friends' | 'invite'
 export type TeamId = 'A' | 'B'
 /**
  * This interface was referenced by `LobbyWs`'s JSON-Schema
@@ -156,6 +163,7 @@ export interface Lobby {
    */
   hostName: string | null
   throwOrder: ThrowOrder
+  access: LobbyAccess
   nextGame: NextGame | null
   /**
    * The lobby's running game.

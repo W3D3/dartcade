@@ -14,6 +14,15 @@
         "bulloff"
       ]
     },
+    "LobbyAccess": {
+      "title": "LobbyAccess",
+      "description": "friends: the host's friends see the lobby in Friends and join without the code. invite: only with the code, the link or an invite. The code, link and invites work under both.",
+      "type": "string",
+      "enum": [
+        "friends",
+        "invite"
+      ]
+    },
     "NextGame": {
       "title": "NextGame",
       "type": "object",
@@ -372,6 +381,7 @@
         "hostUserId",
         "hostName",
         "throwOrder",
+        "access",
         "nextGame",
         "currentSessionId",
         "createdAt",
@@ -414,6 +424,15 @@
             "lobby",
             "random",
             "bulloff"
+          ]
+        },
+        "access": {
+          "title": "LobbyAccess",
+          "description": "friends: the host's friends see the lobby in Friends and join without the code. invite: only with the code, the link or an invite. The code, link and invites work under both.",
+          "type": "string",
+          "enum": [
+            "friends",
+            "invite"
           ]
         },
         "nextGame": {
@@ -763,6 +782,7 @@
             "hostUserId",
             "hostName",
             "throwOrder",
+            "access",
             "nextGame",
             "currentSessionId",
             "createdAt",
@@ -805,6 +825,15 @@
                 "lobby",
                 "random",
                 "bulloff"
+              ]
+            },
+            "access": {
+              "title": "LobbyAccess",
+              "description": "friends: the host's friends see the lobby in Friends and join without the code. invite: only with the code, the link or an invite. The code, link and invites work under both.",
+              "type": "string",
+              "enum": [
+                "friends",
+                "invite"
               ]
             },
             "nextGame": {
@@ -1177,6 +1206,7 @@
                 "hostUserId",
                 "hostName",
                 "throwOrder",
+                "access",
                 "nextGame",
                 "currentSessionId",
                 "createdAt",
@@ -1219,6 +1249,15 @@
                     "lobby",
                     "random",
                     "bulloff"
+                  ]
+                },
+                "access": {
+                  "title": "LobbyAccess",
+                  "description": "friends: the host's friends see the lobby in Friends and join without the code. invite: only with the code, the link or an invite. The code, link and invites work under both.",
+                  "type": "string",
+                  "enum": [
+                    "friends",
+                    "invite"
                   ]
                 },
                 "nextGame": {

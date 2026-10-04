@@ -112,6 +112,8 @@ export interface LobbiesTable {
   /** 6 characters, unique among open lobbies. */
   code: string
   throw_order: ColumnType<string, string | undefined, string>
+  /** friends: the host's friends join without the code (migration 015). */
+  access: ColumnType<string, string | undefined, string>
   /** { gameId, config } as the host last set it. */
   next_game: unknown
   created_at: ColumnType<Date, never, never>
