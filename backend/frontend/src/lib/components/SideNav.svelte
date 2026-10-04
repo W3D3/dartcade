@@ -4,6 +4,7 @@
   import { location } from 'svelte-spa-router'
   import { currentUser, signOut } from '$lib/auth'
   import DevUserSwitch from './DevUserSwitch.svelte'
+  import FriendsButton from './friends/FriendsButton.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
   import NavBadge from './NavBadge.svelte'
   import NavLink from './NavLink.svelte'
@@ -80,6 +81,7 @@
       <span class="text-[14px] font-semibold truncate">{userName}</span>
       <button type="button" onclick={() => void signOut()} class="self-start p-0 bg-transparent border-0 text-[13px] text-text-muted cursor-pointer font-[inherit]">Sign out</button>
     </div>
+    <FriendsButton />
   </div>
   </div>
 </nav>

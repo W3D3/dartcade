@@ -1,6 +1,6 @@
 <script lang="ts">
   // The tablet's main navigation (md up to xl): an 88 px icon rail with the phone's tabs, the
-  // Lobby item and the avatar that opens the account menu. Desktops get SideNav instead.
+  // Lobby item, Friends and the avatar that opens the account menu. Desktops get SideNav instead.
   import { location, push } from 'svelte-spa-router'
   import { Plus, Users, House } from '@lucide/svelte'
   import { navTabs, isActiveRoute, railLobby } from '$lib/nav'
@@ -9,6 +9,7 @@
   import { createLobby } from '$lib/lobby/create'
   import AccountMenu from './AccountMenu.svelte'
   import BrandMark from './BrandMark.svelte'
+  import FriendsNavItem from './friends/FriendsNavItem.svelte'
   import NavTabItem from './NavTabItem.svelte'
 
   const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0))
@@ -64,6 +65,7 @@
         <span class="max-w-full truncate">{lobbyLink.label}</span>
       </a>
     {/if}
+    <FriendsNavItem />
     <AccountMenu placement="rail" />
   </div>
 </nav>
