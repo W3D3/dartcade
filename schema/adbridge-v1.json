@@ -261,6 +261,30 @@
       }
     },
 
+    "CameraStillData": {
+      "description": "A still from one of the board's cameras, straightened by the Board Manager (GET /api/img/cams/{cam}?warp=true): a square top-down JPEG with the bull at the centre, the outer double wire (r = 1) at a third of the width, the image edge at r = 1.5 and 20 at the top.",
+      "type": "object",
+      "required": ["cam", "captured_at", "content_type", "data"],
+      "additionalProperties": false,
+      "properties": {
+        "cam":          { "type": "integer", "minimum": 0, "maximum": 2, "description": "Camera number, 0-based." },
+        "captured_at":  { "type": "string", "format": "date-time", "description": "UTC wall-clock time the bridge fetched it." },
+        "content_type": { "type": "string", "const": "image/jpeg" },
+        "data":         { "type": "string", "contentEncoding": "base64", "description": "The image, base64-encoded." }
+      }
+    },
+
+    "CameraStillMessage": {
+      "description": "Sent after dart.detected, dart.corrected, takeout.finished and board.resync, once per camera. Like bridge.hello it is not an event: no envelope, no seq, never acked or stored, and dropped while the backend is unreachable.",
+      "type": "object",
+      "required": ["kind", "data"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "const": "camera.still" },
+        "data": { "$ref": "#/$defs/CameraStillData" }
+      }
+    },
+
     "CommandResultData": {
       "description": "Result of a downstream command (reset, start, stop) sent by the backend.",
       "type": "object",

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "game-ws/v1",
   "title": "GameWs",
-  "description": "Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.",
+  "description": "Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.",
   "$defs": {
     "WsCloseCode": {
       "title": "WsCloseCode",
@@ -181,6 +181,19 @@
         "type": { "const": "error" },
         "code": { "type": "string", "enum": ["forbidden"] },
         "action": { "type": "string", "description": "The refused action's type." }
+      }
+    },
+    "CameraMessage": {
+      "title": "CameraMessage",
+      "description": "A board in this game has a new camera still: fetch it from GET /api/boards/{boardId}/camera/{cam}?v={version}. Also sent for every stored still right after the first snapshot.",
+      "type": "object",
+      "required": ["type", "boardId", "cam", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "camera" },
+        "boardId": { "type": "string" },
+        "cam": { "type": "integer", "minimum": 0, "maximum": 2, "description": "Camera number, 0-based." },
+        "version": { "type": "integer", "minimum": 1, "description": "Goes up with every still of this board and camera." }
       }
     },
     "X01Snapshot": {
