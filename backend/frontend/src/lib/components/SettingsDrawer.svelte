@@ -9,7 +9,7 @@
   import SettingSwitch from './SettingSwitch.svelte'
   import VoiceSelect from './settings/VoiceSelect.svelte'
   import OptionSelect from './settings/OptionSelect.svelte'
-  import { BOARD_VIEWS } from '$lib/gameSettings.js'
+  import { BOARD_VIEWS, BOARD_VIEW_LABELS } from '$lib/gameSettings.js'
 
   let { settings = $bindable(), gameId, onclose }: { settings: GameSettings; gameId: string; onclose: () => void } = $props()
 
@@ -25,13 +25,7 @@
     { value: 'dart', label: 'Every dart' },
     { value: 'visit', label: 'After the visit' },
   ]
-  const boardViews: { value: BoardView; label: string }[] = [
-    { value: 'svg', label: 'Drawn' },
-    { value: 'cam1', label: 'Cam 1' },
-    { value: 'cam2', label: 'Cam 2' },
-    { value: 'cam3', label: 'Cam 3' },
-    { value: 'combined', label: 'Combined' },
-  ]
+  const boardViews: { value: BoardView; label: string }[] = BOARD_VIEWS.map(v => ({ value: v, label: BOARD_VIEW_LABELS[v] }))
   const sounds = [
     { key: 'soundHit', label: 'Hit' },
     { key: 'soundMiss', label: 'Miss' },

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { SeatInfo, Snapshot } from '$lib/api/game-ws'
-import { cameraIndex, cameraStillUrl } from '../camera.js'
+import { cameraIndex, cameraSideView, cameraStillUrl, pickBoardView } from '../camera.js'
 import fixture from './fixtures/x01-snapshot.json'
 
 // Christoph on board-a, Lena on board-b; `currentPlayer` is up
@@ -52,5 +52,40 @@ describe('cameraStillUrl', () => {
   it('is null when the player up enters darts by hand or their board is offline', () => {
     expect(cameraStillUrl(snap({ seats: [{ boardId: null }] }), 'cam1', versions)).toBeNull()
     expect(cameraStillUrl(snap({ seats: [{ boardOnline: false }] }), 'cam1', versions)).toBeNull()
+  })
+})
+
+describe('cameraSideView', () => {
+  it('is the current camera view when one is picked', () => {
+    expect(cameraSideView('cam2', 'combined')).toBe('cam2')
+    expect(cameraSideView('combined', 'cam1')).toBe('combined')
+  })
+
+  it('is the remembered camera view while drawn', () => {
+    expect(cameraSideView('svg', 'combined')).toBe('combined')
+    expect(cameraSideView('svg', 'cam3')).toBe('cam3')
+  })
+})
+
+describe('pickBoardView', () => {
+  it('picking the camera side restores the remembered camera from drawn', () => {
+    expect(pickBoardView('svg', 'cam2', 'camera')).toEqual({ boardView: 'cam2', lastCameraView: 'cam2' })
+    expect(pickBoardView('svg', 'combined', 'camera')).toEqual({ boardView: 'combined', lastCameraView: 'combined' })
+  })
+
+  it('picking the camera side while already on one keeps it', () => {
+    expect(pickBoardView('cam1', 'combined', 'camera')).toEqual({ boardView: 'cam1', lastCameraView: 'combined' })
+  })
+
+  it('picking drawn from a camera remembers it; picking drawn while already drawn is a no-op', () => {
+    expect(pickBoardView('cam2', 'combined', 'drawn')).toEqual({ boardView: 'svg', lastCameraView: 'cam2' })
+    expect(pickBoardView('svg', 'combined', 'drawn')).toEqual({ boardView: 'svg', lastCameraView: 'combined' })
+  })
+
+  it('round-trips: drawn → camera → drawn restores the same camera', () => {
+    const toCamera = pickBoardView('svg', 'combined', 'camera')
+    const backToDrawn = pickBoardView(toCamera.boardView, toCamera.lastCameraView, 'drawn')
+    const backToCamera = pickBoardView(backToDrawn.boardView, backToDrawn.lastCameraView, 'camera')
+    expect(backToCamera.boardView).toBe('combined')
   })
 })
