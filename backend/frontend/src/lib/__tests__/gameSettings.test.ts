@@ -57,6 +57,14 @@ describe('loadSettings', () => {
     expect(loadSettings(store(JSON.stringify({ boardView: 1 }))).boardView).toBe('svg')
   })
 
+  it('remembers the last camera view for the board toggle; combined by default, wrong types fall back', () => {
+    expect(defaultSettings.lastCameraView).toBe('combined')
+    expect(loadSettings(store(JSON.stringify({ lastCameraView: 'cam2' }))).lastCameraView).toBe('cam2')
+    expect(loadSettings(store(JSON.stringify({ lastCameraView: 'svg' }))).lastCameraView).toBe('combined')
+    expect(loadSettings(store(JSON.stringify({ lastCameraView: 'cam4' }))).lastCameraView).toBe('combined')
+    expect(loadSettings(store(JSON.stringify({ lastCameraView: 1 }))).lastCameraView).toBe('combined')
+  })
+
   it('falls back to the defaults on broken JSON', () => {
     expect(loadSettings(store('{nope'))).toEqual(defaultSettings)
   })

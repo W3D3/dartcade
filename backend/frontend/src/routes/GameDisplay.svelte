@@ -51,6 +51,7 @@
   import NotTurnToast from '../lib/components/NotTurnToast.svelte'
   import { createToast } from '$lib/toast'
   import { cameraStillUrl, type CameraVersions } from '$lib/camera'
+  import BoardViewToggle from '../lib/components/BoardViewToggle.svelte'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -363,11 +364,12 @@
   {:else if !keypad}
     {#if caption}<BoardCaption {caption} compact />{/if}
     <div class="flex-1 min-h-[160px] w-full [container-type:size] flex items-center justify-center">
-      <div class="aspect-square" style="width: min(100cqw, 100cqh)">
+      <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
           onBoardClick={canThrow && !locked ? addBoardDart : undefined}
           selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} {cameraSrc} />
+        <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
       </div>
     </div>
   {/if}
@@ -405,11 +407,12 @@
     {#if caption}<BoardCaption {caption} />{/if}
     <!-- The board takes the height the column has left (capped by its width) -->
     <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
-      <div class="aspect-square" style="width: min(100cqw, 100cqh)">
+      <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
           onBoardClick={canThrow && !locked ? addBoardDart : undefined}
           selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} {cameraSrc} />
+        <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
       </div>
     </div>
     {#if legend.length}<BoardLegend items={legend} />{/if}

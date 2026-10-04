@@ -2,7 +2,7 @@
 // Board Manager straightens it to the board's coordinates) under the usual marks.
 // Design: docs/superpowers/specs/2026-10-04-camera-view-design.md
 import type { Snapshot } from './api/game-ws'
-import type { BoardView } from './gameSettings'
+import type { BoardView, CameraView } from './gameSettings'
 import { upSeat } from './turn'
 
 /** The newest still version per board and camera (keys from cameraKey), from the game socket. */
@@ -36,4 +36,20 @@ export function cameraStillUrl(snap: Snapshot | null, view: BoardView, versions:
   const version = versions[cameraKey(seat.boardId, cam)]
   if (version === undefined) return null
   return `/api/boards/${encodeURIComponent(seat.boardId)}/camera/${cam}?v=${version}`
+}
+
+/**
+ * The board-on-board toggle's camera-side option: the current camera view, or (while drawn)
+ * the one last used, so Drawn → camera → Drawn round-trips to the same camera.
+ */
+export function cameraSideView(boardView: BoardView, lastCameraView: CameraView): CameraView {
+  return boardView === 'svg' ? lastCameraView : boardView
+}
+
+/** The settings change for picking a side of the board-on-board toggle. */
+export function pickBoardView(boardView: BoardView, lastCameraView: CameraView, pick: 'drawn' | 'camera'):
+  { boardView: BoardView; lastCameraView: CameraView } {
+  if (pick === 'camera') return { boardView: cameraSideView(boardView, lastCameraView), lastCameraView }
+  // Picking Drawn from a camera remembers which one, so the camera side can restore it
+  return boardView === 'svg' ? { boardView, lastCameraView } : { boardView: 'svg', lastCameraView: boardView }
 }

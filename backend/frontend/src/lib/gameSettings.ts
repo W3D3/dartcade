@@ -26,10 +26,26 @@ export interface GameSettings {
   /** The match screen's board: drawn, or a camera's still of the real board under the marks
    *  (combined: the three cameras blended, each region from the sharpest). */
   boardView: BoardView
+  /** The camera view the board-on-board toggle restores when switching back from Drawn. */
+  lastCameraView: CameraView
 }
 
 export const BOARD_VIEWS = ['svg', 'cam1', 'cam2', 'cam3', 'combined'] as const
 export type BoardView = (typeof BOARD_VIEWS)[number]
+
+/** A camera view, i.e. every board view but the drawn one. */
+export const CAMERA_VIEWS = BOARD_VIEWS.filter((v): v is CameraView => v !== 'svg')
+export type CameraView = Exclude<BoardView, 'svg'>
+
+/** Labels shown in the settings drawer and the board's own toggle; kept in one place so they
+ *  can't drift apart. */
+export const BOARD_VIEW_LABELS: Record<BoardView, string> = {
+  svg: 'Drawn',
+  cam1: 'Cam 1',
+  cam2: 'Cam 2',
+  cam3: 'Cam 3',
+  combined: 'Combined',
+}
 
 export const defaultSettings: GameSettings = {
   showMarkers: false,
@@ -46,6 +62,7 @@ export const defaultSettings: GameSettings = {
   callerOn: false,
   callerVoice: null,
   boardView: 'svg',
+  lastCameraView: 'combined',
 }
 
 export const SETTINGS_KEY = 'dartcade_game_settings'
@@ -71,6 +88,7 @@ const SettingsSchema = z.object({
   callerOn: flag(d.callerOn),
   callerVoice: z.string().min(1).nullable().catch(null).default(null),
   boardView: z.enum(BOARD_VIEWS).catch(d.boardView).default(d.boardView),
+  lastCameraView: z.enum(CAMERA_VIEWS).catch(d.lastCameraView).default(d.lastCameraView),
 }).catch({ ...d })
 
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */
