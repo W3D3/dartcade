@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "common/v1",
   "title": "Common",
-  "description": "Definitions shared by api-v1.yaml (HTTP) and game-ws-v1.json (game WebSocket). Must stay valid in both OpenAPI 3.0 and JSON Schema draft-07: no `const`, no type arrays, no `nullable`.",
+  "description": "Definitions shared by api-v1.yaml (HTTP), game-ws-v1.json and lobby-ws-v1.json (WebSockets). Must stay valid in both OpenAPI 3.0 and JSON Schema draft-07: no `const`, no type arrays, no `nullable`.",
   "$defs": {
     "Player": {
       "title": "Player",
@@ -102,6 +102,59 @@
             }
           }
         }
+      }
+    },
+    "UserRef": {
+      "title": "UserRef",
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": { "id": { "type": "string" }, "name": { "type": "string", "description": "Their handle, shown as @name" } }
+    },
+    "Friend": {
+      "title": "Friend",
+      "type": "object",
+      "required": ["id", "name", "friendsSince"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "friendsSince": { "type": "string", "format": "date-time" }
+      }
+    },
+    "IncomingFriendRequest": {
+      "title": "IncomingFriendRequest",
+      "type": "object",
+      "required": ["id", "from", "mutualFriends", "createdAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "from": { "$ref": "#/$defs/UserRef" },
+        "mutualFriends": { "type": "integer", "minimum": 0, "description": "Friends you both have (\"3 friends in common\")" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "OutgoingFriendRequest": {
+      "title": "OutgoingFriendRequest",
+      "type": "object",
+      "required": ["id", "to", "createdAt"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "to": { "$ref": "#/$defs/UserRef" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      }
+    },
+    "FriendList": {
+      "title": "FriendList",
+      "description": "Your friends (by name), requests for you and requests you sent (newest first).",
+      "type": "object",
+      "required": ["friends", "incoming", "outgoing"],
+      "additionalProperties": false,
+      "properties": {
+        "friends": { "type": "array", "items": { "$ref": "#/$defs/Friend" } },
+        "incoming": { "type": "array", "items": { "$ref": "#/$defs/IncomingFriendRequest" } },
+        "outgoing": { "type": "array", "items": { "$ref": "#/$defs/OutgoingFriendRequest" } }
       }
     }
   }

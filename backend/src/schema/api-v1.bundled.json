@@ -65,6 +65,10 @@
       "description": "Caller voice packs each user imports (only their own; files stored once by content)"
     },
     {
+      "name": "friends",
+      "description": "Friends and friend requests (live on /ws/me as the friends message)"
+    },
+    {
       "name": "bridge",
       "description": "Operations the Go bridge depends on"
     }
@@ -2080,6 +2084,201 @@
           }
         }
       }
+    },
+    "/api/friends": {
+      "get": {
+        "operationId": "listFriends",
+        "summary": "Your friends and friend requests",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "200": {
+            "description": "The list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/friends/requests": {
+      "post": {
+        "operationId": "sendFriendRequest",
+        "summary": "Ask someone by name; if they already asked you, this accepts theirs",
+        "tags": [
+          "friends"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FriendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "They had asked you first; you are friends now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendRequestResult"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Request sent",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FriendRequestResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/FriendConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/friends/requests/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/FriendRequestId"
+        }
+      ],
+      "delete": {
+        "operationId": "cancelFriendRequest",
+        "summary": "Take back a request you sent",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "204": {
+            "description": "Cancelled"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/friends/requests/{id}/accept": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/FriendRequestId"
+        }
+      ],
+      "post": {
+        "operationId": "acceptFriendRequest",
+        "summary": "Accept a request for you",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "204": {
+            "description": "Friends now"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/friends/requests/{id}/decline": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/FriendRequestId"
+        }
+      ],
+      "post": {
+        "operationId": "declineFriendRequest",
+        "summary": "Decline a request for you (the sender isn't told; they may ask again)",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "204": {
+            "description": "Declined"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/friends/{userId}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/FriendUserId"
+        }
+      ],
+      "delete": {
+        "operationId": "removeFriend",
+        "summary": "Remove a friend (either side)",
+        "tags": [
+          "friends"
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -2164,6 +2363,24 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 16
+        }
+      },
+      "FriendRequestId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "FriendUserId": {
+        "name": "userId",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
         }
       }
     },
@@ -2297,6 +2514,16 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "FriendConflict": {
+        "description": "Already friends, or a request is already pending",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/FriendConflict"
             }
           }
         }
@@ -2442,6 +2669,92 @@
               "minimum": 0
             },
             "description": "The team's seats in its own throwing order."
+          }
+        }
+      },
+      "FriendList": {
+        "title": "FriendList",
+        "description": "Your friends (by name), requests for you and requests you sent (newest first).",
+        "type": "object",
+        "required": [
+          "friends",
+          "incoming",
+          "outgoing"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "friends": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Friend"
+            }
+          },
+          "incoming": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncomingFriendRequest"
+            }
+          },
+          "outgoing": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OutgoingFriendRequest"
+            }
+          }
+        }
+      },
+      "FriendRequest": {
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Their exact name, any case; a leading @ is fine"
+          }
+        }
+      },
+      "FriendRequestResult": {
+        "type": "object",
+        "required": [
+          "id",
+          "status"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "accepted"
+            ],
+            "description": "accepted: they had asked you first, so you are friends now"
+          }
+        }
+      },
+      "FriendConflict": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "error": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "already_friends",
+              "already_requested"
+            ]
           }
         }
       },
@@ -4088,6 +4401,96 @@
           },
           "theta_deg": {
             "type": "number"
+          }
+        }
+      },
+      "Friend": {
+        "title": "Friend",
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "friendsSince"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "friendsSince": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UserRef": {
+        "title": "UserRef",
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Their handle, shown as @name"
+          }
+        }
+      },
+      "IncomingFriendRequest": {
+        "title": "IncomingFriendRequest",
+        "type": "object",
+        "required": [
+          "id",
+          "from",
+          "mutualFriends",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "from": {
+            "$ref": "#/components/schemas/UserRef"
+          },
+          "mutualFriends": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Friends you both have (\"3 friends in common\")"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "OutgoingFriendRequest": {
+        "title": "OutgoingFriendRequest",
+        "type": "object",
+        "required": [
+          "id",
+          "to",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "to": {
+            "$ref": "#/components/schemas/UserRef"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
           }
         }
       }

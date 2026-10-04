@@ -4,7 +4,7 @@ import { auth } from '../auth/index.js'
 
 describe('API docs', () => {
   it('serves our spec for Swagger UI', async () => {
-    const app = await buildApp({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any })
+    const app = await buildApp({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any })
     const res = await app.inject('/api/docs/json')
     expect(res.statusCode).toBe(200)
     const doc = JSON.parse(res.body)
@@ -16,7 +16,7 @@ describe('API docs', () => {
   })
 
   it('serves working asset links from /api/docs (no trailing slash)', async () => {
-    const app = await buildApp({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any })
+    const app = await buildApp({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any })
 
     let page = await app.inject('/api/docs')
     let pageUrl = '/api/docs'

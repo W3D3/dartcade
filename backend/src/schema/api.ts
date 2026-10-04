@@ -810,6 +810,116 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/friends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your friends and friend requests */
+        get: operations["listFriends"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/requests": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask someone by name; if they already asked you, this accepts theirs */
+        post: operations["sendFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/requests/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Take back a request you sent */
+        delete: operations["cancelFriendRequest"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/requests/{id}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a request for you */
+        post: operations["acceptFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/requests/{id}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline a request for you (the sender isn't told; they may ask again) */
+        post: operations["declineFriendRequest"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/friends/{userId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["FriendUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove a friend (either side) */
+        delete: operations["removeFriend"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -855,6 +965,32 @@ export interface components {
             name: string;
             /** @description The team's seats in its own throwing order. */
             seats: number[];
+        };
+        /**
+         * FriendList
+         * @description Your friends (by name), requests for you and requests you sent (newest first).
+         */
+        FriendList: {
+            friends: components["schemas"]["Friend"][];
+            incoming: components["schemas"]["IncomingFriendRequest"][];
+            outgoing: components["schemas"]["OutgoingFriendRequest"][];
+        };
+        FriendRequest: {
+            /** @description Their exact name, any case; a leading @ is fine */
+            name: string;
+        };
+        FriendRequestResult: {
+            id: string;
+            /**
+             * @description accepted: they had asked you first, so you are friends now
+             * @enum {string}
+             */
+            status: "pending" | "accepted";
+        };
+        FriendConflict: {
+            error: string;
+            /** @enum {string} */
+            code?: "already_friends" | "already_requested";
         };
         HistoryDart: {
             /** @description Position in the visit */
@@ -1313,6 +1449,35 @@ export interface components {
             r: number;
             theta_deg: number;
         };
+        /** Friend */
+        Friend: {
+            id: string;
+            name: string;
+            /** Format: date-time */
+            friendsSince: string;
+        };
+        /** UserRef */
+        UserRef: {
+            id: string;
+            /** @description Their handle, shown as @name */
+            name: string;
+        };
+        /** IncomingFriendRequest */
+        IncomingFriendRequest: {
+            id: string;
+            from: components["schemas"]["UserRef"];
+            /** @description Friends you both have ("3 friends in common") */
+            mutualFriends: number;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** OutgoingFriendRequest */
+        OutgoingFriendRequest: {
+            id: string;
+            to: components["schemas"]["UserRef"];
+            /** Format: date-time */
+            createdAt: string;
+        };
     };
     responses: {
         /** @description The request doesn't match the spec */
@@ -1437,6 +1602,15 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
+        /** @description Already friends, or a request is already pending */
+        FriendConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["FriendConflict"];
+            };
+        };
     };
     parameters: {
         BoardId: string;
@@ -1448,6 +1622,8 @@ export interface components {
         VoicePackId: string;
         /** @description Lobby code; case, dashes and spaces are ignored */
         LobbyCode: string;
+        FriendRequestId: string;
+        FriendUserId: string;
     };
     requestBodies: never;
     headers: never;
@@ -2776,6 +2952,158 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listFriends: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    sendFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FriendRequest"];
+            };
+        };
+        responses: {
+            /** @description They had asked you first; you are friends now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequestResult"];
+                };
+            };
+            /** @description Request sent */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FriendRequestResult"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["FriendConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cancelled */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Friends now */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    declineFriendRequest: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["FriendRequestId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    removeFriend: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                userId: components["parameters"]["FriendUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];

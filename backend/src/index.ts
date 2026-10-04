@@ -9,6 +9,7 @@ import { buildApp } from './app.js'
 import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
+import { FriendsService } from './friends/service.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -47,6 +48,8 @@ await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
 
-const app = await buildApp({ engine, db, lobbies, hub, frontendDist: join(__dirname, '../../frontend/dist') })
+const friends = new FriendsService({ db })
+
+const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../../frontend/dist') })
 warn = (message, details) => { app.log.warn({ details }, message) }
 await app.listen({ port: PORT, host: '0.0.0.0' })
