@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth'
 import { openAPI } from 'better-auth/plugins'
 import { db } from '../db/index.js'
+import { nameHooks } from './nameHooks.js'
 
 const trustedOrigins = process.env.BETTER_AUTH_TRUSTED_ORIGINS?.split(',').map(s => s.trim()).filter(Boolean) ?? []
 
@@ -10,6 +11,7 @@ export const auth = betterAuth({
     type: 'pg' as const,
   },
   emailAndPassword: { enabled: true },
+  databaseHooks: nameHooks(db),
   trustedOrigins,
   // We manage schema via runMigrations; suppress better-auth's startup check
   advanced: { database: { validateSchema: false } },

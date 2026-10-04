@@ -365,6 +365,41 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/name-available": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether a name can be yours (works signed out, for sign-up; your own name counts as free) */
+        get: operations["checkNameAvailable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in account */
+        get: operations["getMe"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Change your name (checked like name-available) */
+        patch: operations["updateMe"];
+        trace?: never;
+    };
     "/api/sessions": {
         parameters: {
             query?: never;
@@ -1101,6 +1136,24 @@ export interface components {
         };
         UserList: {
             users: components["schemas"]["UserSummary"][];
+        };
+        Me: {
+            id: string;
+            /** @description Your handle, shown as @name */
+            name: string;
+            email: string;
+            /** @description Your name broke the rules or duplicated an older one when names became unique: pick a new one first */
+            nameNeedsChange: boolean;
+            /** @description A free name close to yours, while nameNeedsChange */
+            suggestedName: string | null;
+        };
+        UpdateMeRequest: {
+            name?: string;
+        };
+        NameAvailability: {
+            available: boolean;
+            /** @enum {string} */
+            reason?: "taken" | "invalid";
         };
         CreatedSession: {
             sessionId: string;
@@ -1936,6 +1989,83 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    checkNameAvailable: {
+        parameters: {
+            query: {
+                /** @description The name as typed */
+                name: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether it's free, and why not */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NameAvailability"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateMe: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMeRequest"];
+            };
+        };
+        responses: {
+            /** @description The account as it is now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };

@@ -8,7 +8,7 @@ export const test = base.extend<{ authedPage: Page }>({
     const ts = Date.now()
     const email = `e2e-${testInfo.workerIndex}-${ts}@test.local`
     const password = 'TestPass1!'
-    const name = `E2E-${testInfo.workerIndex}`
+    const name = `e2e${testInfo.workerIndex}-${ts.toString(36)}`
 
     // Register via API (Origin header satisfies better-auth CSRF check)
     const signUp = await page.request.post('http://localhost:5174/api/auth/sign-up/email', {

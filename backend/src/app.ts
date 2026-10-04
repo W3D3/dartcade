@@ -16,6 +16,7 @@ import { gamesApiPlugin } from './api/games.js'
 import { boardsApiPlugin } from './api/boards.js'
 import { pairingApiPlugin } from './api/pairing.js'
 import { usersApiPlugin } from './api/users.js'
+import { meApiPlugin } from './api/me.js'
 import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { createFastify } from './api/fastify.js'
@@ -100,6 +101,7 @@ export async function buildApp({ engine, db, lobbies, hub, frontendDist, onRoute
   await app.register(lobbyGwPlugin, { lobbies, hub })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
+  await app.register(meApiPlugin, { db })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
   await app.register(boardsApiPlugin, {
