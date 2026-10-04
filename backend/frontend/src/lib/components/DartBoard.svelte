@@ -1,11 +1,11 @@
 <script lang="ts">
   import { AIM_EDGE_SPEED, AIM_HOLD_MS, AIM_OFFSET_PX, AIM_ZOOM, edgePush, moveAim, shownAt, viewBoxFor, type Pt } from '$lib/boardAim'
-  import type { Snippet } from 'svelte'
+  import { untrack, type Snippet } from 'svelte'
   import { labelPos, markerPositions } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
 
   let { darts = [], target = null, nextTarget = null, dim = false, playerMarkers = [], checkoutTargets = [],
-        onBoardClick, selectedDart = null, onDartMove, zoom = 1, overlay }: {
+        onBoardClick, selectedDart = null, onDartMove, zoom = 1, overlay, cameraSrc = null }: {
     darts?: Array<{
       segment: Segment
       score: number
@@ -31,7 +31,28 @@
     /** Extra marks drawn in board units (r = 1 at the outer double wire), zoomed with the board.
      *  Receives the zoom factor so marks can keep a constant on-screen size. */
     overlay?: Snippet<[number]>
+    /** A camera still of the real board, straightened by the Board Manager: square, the bull at
+     *  the centre, r = 1 at a third of its width, 20 at the top. Drawn under the marks in place
+     *  of the segment fills; null for the drawn board. */
+    cameraSrc?: string | null
   } = $props()
+
+  // The still before the current one always stays underneath it: an SVG image paints nothing
+  // until it has loaded, so the old picture shows through meanwhile (no empty flash after each
+  // dart) and is then covered by the new, opaque one
+  let prevSrc = $state<string | null>(null)
+  let lastSrc: string | null = untrack(() => cameraSrc)
+  $effect.pre(() => {
+    if (cameraSrc === lastSrc) return
+    prevSrc = cameraSrc === null ? null : lastSrc
+    lastSrc = cameraSrc
+  })
+  const stills = $derived(cameraSrc === null ? [] : [prevSrc, cameraSrc].filter((s, i, all): s is string => s !== null && all.indexOf(s) === i))
+  // A still that didn't load (e.g. forgotten after its board reconnected): the drawn board shows
+  let failedSrc = $state<string | null>(null)
+  const photo = $derived(cameraSrc !== null && cameraSrc !== failedSrc)
+  // On the photo the wires are only a hint, so they don't hide the real board
+  const wireOpacity = $derived(photo ? 0.35 : 1)
 
   const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.000 }
   const SEGS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5]
@@ -243,6 +264,8 @@
   // Zoomed content is clipped to the board's round background
   const uid = $props.id()
   const clipId = `board-clip-${uid}`
+  // The picture is clipped to the board in board units, so its square edge never shows, zoomed or not
+  const photoClipId = `photo-clip-${uid}`
 
   const precise = $derived(!!onBoardClick)
   // Light up the segment under the cursor
@@ -256,34 +279,47 @@
   onpointerdown={precise || onDartMove ? pressStart : undefined} onpointermove={pressMove}
   onpointerup={pressEnd} onpointercancel={pressCancel} oncontextmenu={e => { if (precise) e.preventDefault() }}>
   <!-- Round normally; zoomed in, the whole square shows the board -->
-  <defs><clipPath id={clipId}>{#if zoomBox}<rect x="-5" y="-5" width="10" height="10" />{:else}<circle cx="0" cy="0" r="1.12" />{/if}</clipPath></defs>
+  <defs>
+    <clipPath id={clipId}>{#if zoomBox}<rect x="-5" y="-5" width="10" height="10" />{:else}<circle cx="0" cy="0" r="1.12" />{/if}</clipPath>
+    <clipPath id={photoClipId}><circle cx="0" cy="0" r="1.12" /></clipPath>
+  </defs>
   {#if zoomBox}<rect x="-5" y="-5" width="10" height="10" fill="#0a0b09" />{:else}<circle cx="0" cy="0" r="1.12" fill="#0a0b09" />{/if}
 
   <g clip-path="url(#{clipId})">
   <g style="transform: {zoom === 1 ? 'none' : `scale(${zoom})`}; transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
-  <!-- Sector fills and wire dividers -->
+  <!-- Camera still: the image's edge is at r = 1.5 -->
+  {#if stills.length}
+    <g clip-path="url(#{photoClipId})">
+      {#each stills as src (src)}
+        <image href={src} x="-1.5" y="-1.5" width="3" height="3" preserveAspectRatio="none" aria-hidden="true"
+          style="pointer-events:none" onerror={() => { if (src === cameraSrc) failedSrc = src }} />
+      {/each}
+    </g>
+  {/if}
+
+  <!-- Sector fills and wire dividers (on a camera still: wires only) -->
   {#each sectors as { num, i, paths, wa } (num)}
     {#each paths as { ring, d } (ring)}
-      <path {d} fill={ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" vector-effect="non-scaling-stroke"
-        class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
+      <path {d} fill={photo ? 'transparent' : ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
+        class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
     {/each}
     <line
       x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
       x2={R.db * Math.cos(wa)} y2={-R.db * Math.sin(wa)}
-      stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
+      stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
     />
   {/each}
 
   <!-- Ring wire circles -->
   {#each [R.bull25, R.si, R.tr, R.so, R.db] as r (r)}
-    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke" />
+    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke" />
   {/each}
 
   <!-- Bull fills -->
-  <circle cx="0" cy="0" r={R.bull25} fill="#1e7a4f" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
-    class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
-  <circle cx="0" cy="0" r={R.bull50} fill="#d23b36" stroke="#8d8e84" stroke-width="1.2" vector-effect="non-scaling-stroke"
-    class={hoverable ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
+  <circle cx="0" cy="0" r={R.bull25} fill={photo ? 'transparent' : '#1e7a4f'} stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
+    class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
+  <circle cx="0" cy="0" r={R.bull50} fill={photo ? 'transparent' : '#d23b36'} stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
+    class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
 
   {#if dim}
     <circle cx="0" cy="0" r="1.12" fill="#0a0b09" fill-opacity="0.45" style="pointer-events:none" />

@@ -1,6 +1,7 @@
 import { get, writable, type Readable } from 'svelte/store'
-import { WsCloseCode, type ClientMessage, type ErrorMessage, type NoticeMessage, type Snapshot, type UserAction } from './api/game-ws'
-import { ErrorMessageSchema, NoticeMessageSchema, SnapshotSchema } from './api/zod'
+import { WsCloseCode, type CameraMessage, type ClientMessage, type ErrorMessage, type NoticeMessage, type Snapshot, type UserAction } from './api/game-ws'
+import { CameraMessageSchema, ErrorMessageSchema, NoticeMessageSchema, SnapshotSchema } from './api/zod'
+import { cameraKey, type CameraVersions } from './camera'
 import { afterGameRoute } from './endControl'
 
 export type { Snapshot }
@@ -31,10 +32,18 @@ export function parseError(m: unknown): ErrorMessage | null {
   return r.success ? r.data : null
 }
 
+/** A board of the game has a new camera still, or null. Never warns. */
+export function parseCamera(m: unknown): CameraMessage | null {
+  const r = CameraMessageSchema.safeParse(m)
+  return r.success ? r.data : null
+}
+
 export function createSessionStore(sessionId: string) {
   const snapshot = writable<Snapshot | null>(null)
   const notice = writable<NoticeMessage | null>(null)
   const error = writable<ErrorMessage | null>(null)
+  // The newest camera still version per board and camera
+  const cameras = writable<CameraVersions>({})
   // The game socket is open (false while it reconnects)
   const connected = writable(false)
   let ws: WebSocket | null = null
@@ -55,7 +64,12 @@ export function createSessionStore(sessionId: string) {
         const n = parseNotice(data)
         if (n) { notice.set(n); return }
         const err = parseError(data)
-        if (err) error.set(err)
+        if (err) { error.set(err); return }
+        const cam = parseCamera(data)
+        if (cam) {
+          const key = cameraKey(cam.boardId, cam.cam)
+          cameras.update(v => (v[key] ?? 0) >= cam.version ? v : { ...v, [key]: cam.version })
+        }
       } catch {}
     }
     ws.onclose = (e) => {
@@ -97,5 +111,6 @@ export function createSessionStore(sessionId: string) {
   const noticeStore: Readable<NoticeMessage | null> = { subscribe: notice.subscribe }
   const errorStore: Readable<ErrorMessage | null> = { subscribe: error.subscribe }
   const connectedStore: Readable<boolean> = { subscribe: connected.subscribe }
-  return { snapshot, notice: noticeStore, error: errorStore, connected: connectedStore, send, destroy }
+  const camerasStore: Readable<CameraVersions> = { subscribe: cameras.subscribe }
+  return { snapshot, notice: noticeStore, error: errorStore, connected: connectedStore, cameras: camerasStore, send, destroy }
 }

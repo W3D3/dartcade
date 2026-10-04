@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { get } from 'svelte/store'
-import { createSessionStore, parseNotice, parseSnapshot } from '../ws.js'
+import { createSessionStore, parseCamera, parseNotice, parseSnapshot } from '../ws.js'
 import fixture from './fixtures/x01-snapshot.json'
 
 describe('parseSnapshot', () => {
@@ -55,6 +55,21 @@ describe('parseNotice', () => {
   })
 })
 
+describe('parseCamera', () => {
+  it('parses a new camera still of a board', () => {
+    expect(parseCamera({ type: 'camera', boardId: 'b', cam: 1, version: 7 })).toEqual({ type: 'camera', boardId: 'b', cam: 1, version: 7 })
+  })
+
+  it('ignores anything else, silently', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    for (const m of [null, { type: 'camera' }, { type: 'camera', boardId: 'b', cam: 3, version: 1 }, fixture]) {
+      expect(parseCamera(m)).toBeNull()
+    }
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+})
+
 type MockSocket = {
   onopen: (() => void) | null
   onclose: ((e: { code: number }) => void) | null
@@ -87,6 +102,29 @@ describe('createSessionStore', () => {
       expect(get(store.connected)).toBe(true)
       sockets[0].onclose?.({ code: 1006 })
       expect(get(store.connected)).toBe(false)
+      store.destroy()
+    } finally {
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    }
+  })
+
+  it('keeps the newest still version per board and camera', () => {
+    const sockets = stubWebSocket()
+    vi.useFakeTimers()
+    try {
+      const store = createSessionStore('s1')
+      expect(get(store.cameras)).toEqual({})
+      const send = (m: unknown) => sockets[0].onmessage?.({ data: JSON.stringify(m) })
+      send({ type: 'camera', boardId: 'b1', cam: 0, version: 5 })
+      send({ type: 'camera', boardId: 'b1', cam: 2, version: 6 })
+      send({ type: 'camera', boardId: 'b2', cam: 0, version: 7 })
+      // A late, older one doesn't win
+      send({ type: 'camera', boardId: 'b1', cam: 0, version: 4 })
+      expect(get(store.cameras)).toEqual({ 'b1:0': 5, 'b1:2': 6, 'b2:0': 7 })
+      // A snapshot leaves them alone
+      send(fixture)
+      expect(get(store.cameras)).toEqual({ 'b1:0': 5, 'b1:2': 6, 'b2:0': 7 })
       store.destroy()
     } finally {
       vi.useRealTimers()
