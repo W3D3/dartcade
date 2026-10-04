@@ -54,7 +54,7 @@
 
       <div class="flex flex-col gap-2">
         <p class="m-0 font-mono text-[13px] tracking-[0.08em] text-accent">Step 1 of 2</p>
-        <h1 class="m-0 font-display font-bold text-[34px] md:text-[48px] uppercase tracking-[0.02em] leading-none">
+        <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
           Create account
         </h1>
         <p class="hidden md:block m-0 text-[16px] text-text-muted">Your player name will show in game.</p>
