@@ -19,10 +19,6 @@ const BmStateSchema = z.object({
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database>; releaseBoard?: (boardId: string) => Promise<void> }
 
-// The camera route answers with a JPEG, which the spec'd (JSON) Reply type leaves out.
-// TODO(api): declare image/jpeg for getBoardCamera in schema/api-v1 so this widening can go.
-type CameraRoute = Omit<Route<'getBoardCamera'>, 'Reply'> & { Reply: Route<'getBoardCamera'>['Reply'] | Buffer }
-
 // Board Manager commands: [operationId, route suffix, BM path, fallback path for older BMs, method]
 const ACTIONS = [
   ['startBoard',     'start',     '/api/start',                                   '/api/detection/start', 'PUT' ],
@@ -64,7 +60,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     }
   })
 
-  app.get<CameraRoute>('/api/boards/:id/camera/:index', { preValidation: requireAuth, schema: fromSpec('getBoardCamera') }, async (req, reply) => {
+  app.get<Route<'getBoardCamera'>>('/api/boards/:id/camera/:index', { preValidation: requireAuth, schema: fromSpec('getBoardCamera') }, async (req, reply) => {
     const { id, index } = req.params
     if (!await ownBoard(id, req.userId, reply)) return reply
     const conn = bridgeConnections.get(id)

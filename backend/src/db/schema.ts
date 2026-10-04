@@ -155,6 +155,33 @@ export interface LobbyActivityTable {
   data: unknown
 }
 
+/** One audio file, stored once per content hash (migration 012). */
+export interface VoiceClipsTable {
+  sha256: string
+  mime: string
+  size: number
+  bytes: Buffer
+}
+
+/** A voice pack a user imported; nobody else sees it. */
+export interface VoicePacksTable {
+  id: string
+  owner_id: string
+  name: string
+  lang: string | null
+  source: 'upload' | 'url'
+  source_url: string | null
+  created_at: ColumnType<Date, never, never>
+}
+
+/** A pack's key → clip mapping, one row per variant. */
+export interface VoicePackClipsTable {
+  pack_id: string
+  key: string
+  variant: number
+  clip_sha256: string
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -168,4 +195,7 @@ export interface Database {
   lobby_people: LobbyPeopleTable
   lobby_invites: LobbyInvitesTable
   lobby_activity: LobbyActivityTable
+  voice_clips: VoiceClipsTable
+  voice_packs: VoicePacksTable
+  voice_pack_clips: VoicePackClipsTable
 }

@@ -17,6 +17,7 @@ import { boardsApiPlugin } from './api/boards.js'
 import { pairingApiPlugin } from './api/pairing.js'
 import { usersApiPlugin } from './api/users.js'
 import { lobbiesApiPlugin } from './api/lobbies.js'
+import { voicesApiPlugin } from './api/voices.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
@@ -99,6 +100,7 @@ export async function buildApp({ engine, db, lobbies, hub, frontendDist, onRoute
   await app.register(gamesApiPlugin, { db })
   await app.register(boardsApiPlugin, { db, releaseBoard: boardId => lobbies.releaseBoard(boardId) })
   await app.register(pairingApiPlugin, { db })
+  await app.register(voicesApiPlugin, { db })
 
   // Any unmatched method+path under our reserved prefixes gets our ErrorResponse 404
   // (not Fastify's default `{ message, error: 'Not Found', statusCode }`); an unmatched
