@@ -28,7 +28,7 @@
 </script>
 
 <nav aria-label="Main"
-  class="hidden md:flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]">
+  class="hidden xl:flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]">
 
   <!-- Logo -->
   <div class="flex items-center gap-[10px] px-2">

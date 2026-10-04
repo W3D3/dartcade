@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte'
   import SideNav from './SideNav.svelte'
+  import NavRail from './NavRail.svelte'
   import SessionBanner from './SessionBanner.svelte'
   import PhoneHeader from './PhoneHeader.svelte'
   import LobbyStrip from './LobbyStrip.svelte'
@@ -11,6 +12,7 @@
 
 <div class="flex h-dvh bg-bg text-text overflow-hidden">
   <SideNav />
+  <NavRail />
   <div class="flex flex-col flex-grow min-w-0 overflow-hidden">
     {#if title}<PhoneHeader {title} action={headerAction} />{/if}
     <SessionBanner />

@@ -89,7 +89,7 @@
 </script>
 
 <Layout title="Join lobby">
-  <main class="flex flex-grow flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-11 md:py-10">
+  <main class="flex flex-grow flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10">
     <div class="flex flex-col gap-2">
       <h2 class="m-0 font-display font-bold text-[34px] leading-none uppercase">Enter the lobby code</h2>
       <p class="m-0 text-[15px] leading-[1.45] text-text-muted">The host sees it at the top of their lobby screen.</p>

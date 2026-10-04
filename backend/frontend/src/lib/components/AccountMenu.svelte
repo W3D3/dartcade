@@ -1,8 +1,11 @@
 <script lang="ts">
-  // Who's signed in, Settings and signing out: the avatar in the phone header opens it.
+  // Who's signed in, Settings and signing out: the avatar in the phone header (below it) or at the
+  // foot of the tablet rail (beside it) opens it.
   import { LogOut, Settings } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import DevUserSwitch from './DevUserSwitch.svelte'
+
+  let { placement = 'header' }: { placement?: 'header' | 'rail' } = $props()
 
   const name = $derived($currentUser?.name ?? '')
   const email = $derived($currentUser?.email ?? '')
@@ -19,12 +22,12 @@
 
 <div class="relative shrink-0">
   <button type="button" onclick={() => open = !open} aria-label="Account{name ? `: ${name}` : ''}" aria-haspopup="menu" aria-expanded={open}
-    class="w-11 h-11 flex items-center justify-center bg-transparent border-0 cursor-pointer">
-    <span class="w-9 h-9 rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold text-[15px]">{initial}</span>
+    class="{placement === 'rail' ? 'w-14 h-14 rounded-[12px]' : 'w-11 h-11'} flex items-center justify-center bg-transparent border-0 cursor-pointer">
+    <span class="{placement === 'rail' ? 'w-10 h-10 text-[17px]' : 'w-9 h-9 text-[15px]'} rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold">{initial}</span>
   </button>
   {#if open}
     <div class="fixed inset-0 z-40" onclick={() => open = false} aria-hidden="true"></div>
-    <div role="menu" class="absolute right-0 top-full mt-2 z-50 w-[min(280px,calc(100vw-32px))] box-border p-3 rounded-[14px]
+    <div role="menu" class="{placement === 'rail' ? 'fixed left-24 bottom-4 w-[296px]' : 'absolute right-0 top-full mt-2 w-[min(280px,calc(100vw-32px))]'} z-50 box-border p-3 rounded-[14px]
                 bg-surface-2 border border-line-3 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)] flex flex-col gap-3">
       <div class="flex items-center gap-3 min-w-0">
         <span class="w-10 h-10 shrink-0 rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold text-[16px]">{initial}</span>

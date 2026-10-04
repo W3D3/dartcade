@@ -125,7 +125,7 @@
 </script>
 
 <Layout title="New game">
-  <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_44px]">
+  <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_32px] xl:p-[40px_44px]">
 
     {#if invites > 0}<InvitesBanner count={invites} />{/if}
 

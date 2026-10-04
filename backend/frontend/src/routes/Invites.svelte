@@ -68,7 +68,7 @@
 </script>
 
 <Layout title="Invites">
-  <main class="flex flex-grow flex-col gap-3 box-border w-full max-w-[560px] min-w-0 overflow-y-auto p-4 md:px-11 md:py-10">
+  <main class="flex flex-grow flex-col gap-3 box-border w-full max-w-[560px] min-w-0 overflow-y-auto p-4 md:px-8 xl:px-11 md:py-10">
     <h2 class="hidden md:block m-0 font-display font-bold text-[48px] leading-none uppercase">Invites</h2>
     {#if error}
       <span class="flex flex-wrap items-center gap-3">

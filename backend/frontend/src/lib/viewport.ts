@@ -42,3 +42,8 @@ export const isPhone: Readable<boolean> = mediaStore(PHONE_QUERY, browserMatchMe
 export const WIDE_QUERY = '(min-width: 1280px)'
 
 export const isWide: Readable<boolean> = mediaStore(WIDE_QUERY, browserMatchMedia)
+
+/** The tablet band, Tailwind's `md` up to `xl` (768 to 1279.98 px): the icon rail and the tablet sizes. */
+export const TABLET_QUERY = '(min-width: 768px) and (max-width: 1279.98px)'
+
+export const isTablet: Readable<boolean> = mediaStore(TABLET_QUERY, browserMatchMedia)
