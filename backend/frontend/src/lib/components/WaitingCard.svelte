@@ -25,7 +25,7 @@
   <span class="shrink-0 rounded-full bg-surface-paused text-ink-2 flex items-center justify-center {compact ? 'w-12 h-12' : 'w-[72px] h-[72px]'}" aria-hidden="true">
     <Unplug size={compact ? 22 : 32} strokeWidth={1.8} />
   </span>
-  <span role="status" class="font-display font-bold uppercase leading-[0.95] tracking-[0.01em] {compact ? 'text-[28px]' : 'text-[46px]'}">Waiting for {name}</span>
+  <span role="status" class="max-w-full [overflow-wrap:anywhere] font-display font-bold uppercase leading-[0.95] tracking-[0.01em] {compact ? 'text-[28px]' : 'text-[46px]'}">Waiting for {name}</span>
   <!-- Outside the status region, so screen readers aren't told every second -->
   <span class="inline-flex items-baseline gap-[10px] text-ink-2 {compact ? 'text-[14px]' : 'text-[18px]'}">
     {#if elapsed !== null}

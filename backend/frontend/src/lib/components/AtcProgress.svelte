@@ -2,17 +2,19 @@
   // ATC targets 1–20 and bull: a 7-column grid (panels) or a single strip (rows).
   import type { AtcCell } from '$lib/atc.js'
 
-  let { cells, active, layout = 'grid', cellHeight = 36 }: {
+  let { cells, active, layout = 'grid', cellHeight = 36, class: className = '' }: {
     cells: AtcCell[]
     active: boolean
     layout?: 'grid' | 'strip'
     cellHeight?: number
+    /** On the grid, e.g. to wrap a strip into two rows where it's narrow (needs `!` over the strip's columns). */
+    class?: string
   } = $props()
 
   const text = $derived(layout === 'strip' ? 'text-[14px] rounded-[5px]' : cellHeight >= 44 ? 'text-[18px] rounded-[7px]' : 'text-[16px] rounded-[7px]')
 </script>
 
-<div class="grid {layout === 'grid' ? 'grid-cols-7 gap-[5px]' : 'gap-[3px]'}"
+<div class="grid {layout === 'grid' ? 'grid-cols-7 gap-[5px]' : 'gap-[3px]'} {className}"
   style:grid-template-columns={layout === 'strip' ? `repeat(${cells.length}, minmax(0, 1fr))` : undefined}>
   {#each cells as c, i (i)}
     <span style:height="{cellHeight}px"
