@@ -38,9 +38,12 @@ or straight from your phone. No board at hand? Tap your darts in and play anyway
 - **Fix a misdetected dart**: tap it and pick the right one, or drag it to where it really landed.
 - **A match screen that reads from the oche**: big scores, averages, a chalkboard of every
   visit, checkout suggestions, leg dots and optional sounds.
-- **A caller for X01** that calls every visit, the bust and the game shot. Import your own
-  voice packs (a darts-caller zip, or a link to one) in Settings; they live on your account, ready
-  on every board and device.
+- **A caller for X01** that calls every visit, the bust and the game shot. It comes with a
+  built-in English voice, "English (Adam)", generated with
+  [Kokoro-82M](https://huggingface.co/hexgrad/Kokoro-82M) (Apache-2.0; see
+  [its license](backend/frontend/public/voices/en-adam/LICENSE.md)). Import your own voice packs
+  (a darts-caller zip, or a link to one) in Settings; they live on your account, ready on every
+  board and device.
 - **Made for phones too.** A match fits an iPhone screen, keypad included, without scrolling.
 
 ### Playing together

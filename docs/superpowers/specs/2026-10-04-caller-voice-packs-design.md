@@ -2,14 +2,17 @@
 
 A caller that announces each visit ("One hundred and eighty!", "Busted", "Game shot!") using voice
 packs in the format of [darts-caller](https://github.com/lbormann/darts-caller) and the folders that
-[Tools for Autodarts](https://github.com/creazy231/tools-for-autodarts) imports. dartcade ships no
-voices: each player imports their own, from a zip file or a link.
+[Tools for Autodarts](https://github.com/creazy231/tools-for-autodarts) imports. dartcade ships one
+built-in voice it's allowed to ship; every other voice a player imports themselves, from a zip file
+or a link.
 
 ## Decisions
 
-- **We support the format; we don't ship packs.** No voice files go in the repo or the image. A pack
-  is imported by a player (upload or link). Tests build tiny packs in the test itself; real packs used
-  for manual testing stay out of git.
+- **We support the format; we don't ship packs.** No imported pack goes in the repo or the image:
+  packs stay bring-your-own, imported by a player (upload or link). Tests build tiny packs in the test
+  itself; real packs used for manual testing stay out of git. The one voice we ship is the built-in
+  "English (Adam)" (`backend/frontend/public/voices/en-adam/`), which we're allowed to: we generated
+  it with Kokoro-82M (Apache-2.0; `scripts/caller-voice/`).
 - **Stored on the server, per user.** An imported pack belongs to the user who imported it and is
   available on all their devices. Nobody else can see or play it.
 - **Identical files are stored once.** Clips are stored by content (SHA-256). When two users import
@@ -24,7 +27,8 @@ voices: each player imports their own, from a zip file or a link.
   itself is not stored.
 - **Imports from links only from known hosts**: `darts-downloads.peschi.org` (darts-caller's packs),
   `autodarts.x10.mx` and `adt-socket.tobias-thiele.de` (Tools for Autodarts folders). HTTPS only, no
-  redirects to other hosts, size and time limits, one import at a time per user.
+  redirects to other hosts, size and time limits, one import at a time per user and two at once
+  across all users.
 - **X01 only** in this change. **No player names** (dropped on import); a later step.
 
 ## The formats
@@ -39,7 +43,8 @@ Found by reading darts-caller's code, Tools for Autodarts' code, one darts-calle
    has 29 variants); one is picked at random. UTF-8 with a BOM, `;`-separated.
 2. **Clips named by key** (an installed darts-caller pack, or a zipped Tools for Autodarts folder):
    the file name is the key, lowercased, hyphens as underscores, `+N` marking variants
-   (`gameshot+1.mp3`); `game on` counts as `gameon`.
+   (`gameshot+1.mp3`); spelled-out shots count as their keys (`game on`, `game-on` → `gameon`;
+   `game shot`, `game_shot` → `gameshot`; `match shot` → `matchshot`).
 3. **A folder link** (Tools for Autodarts style, e.g. `https://autodarts.x10.mx/1_male_eng/`): no
    listing (403), so the server tries the known names: `0`–`180`, `gameshot`, `game on`, `gameon`,
    `busted`, `matchshot` as `.mp3` or `.wav`.
