@@ -7,7 +7,8 @@ import type { Notice, SessionEngine, SnapshotView } from '../session/engine.js'
 import { getAuthUser } from '../auth/session.js'
 import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
-import { WsCloseCode, type ErrorMessage, type NoticeMessage } from '../schema/game-ws.js'
+import { WsCloseCode, type CameraMessage, type ErrorMessage, type NoticeMessage } from '../schema/game-ws.js'
+import { cameraStills, type CameraStills } from '../camera/store.js'
 import { ClientMessageSchema } from '../schema/zod.js'
 import { checkSnapshot } from '../session/snapshotValidation.js'
 
@@ -24,10 +25,14 @@ function rawText(raw: RawData): string {
   return Buffer.isBuffer(raw) ? raw.toString() : Buffer.from(raw).toString()
 }
 
-type Opts = FastifyPluginOptions & { engine: SessionEngine; isLobbyMember?: IsLobbyMember }
+type Opts = FastifyPluginOptions & {
+  engine: SessionEngine; isLobbyMember?: IsLobbyMember
+  /** Camera stills of the boards (tests pass their own). */
+  stills?: CameraStills
+}
 
 export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { engine, isLobbyMember = noLobbies } = opts
+  const { engine, isLobbyMember = noLobbies, stills = cameraStills } = opts
 
   app.get('/ws', { websocket: true }, (connection: SocketStream, req) => {
     const socket = connection.socket
@@ -56,6 +61,12 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!snap) { browserConnections.remove(sessionId, socket); socket.close(WsCloseCode.NotFound, 'session not found'); return }
       checkSnapshot(snap, msg => app.log.error(msg))
       socket.send(JSON.stringify(snap))
+      // The game's boards' camera stills so far; new ones follow as they come (pushCamera)
+      for (const boardId of new Set(session.seats.flatMap(s => s.boardId ?? []))) {
+        for (const { cam, version } of stills.versions(boardId)) {
+          socket.send(JSON.stringify({ type: 'camera', boardId, cam, version } satisfies CameraMessage))
+        }
+      }
       // The others see this player connect
       pushSnapshot(sessionId, engine)
 
@@ -119,6 +130,14 @@ export function pushSnapshot(sessionId: string, engine: SessionEngine): void {
     }
     return snap ?? null
   })
+}
+
+/** Tells every viewer of the board's game that it has a new camera still. */
+export function pushCamera(engine: SessionEngine, boardId: string, cam: number, version: number): void {
+  const session = engine.getSessionByBoard(boardId)
+  if (!session) return
+  const msg: CameraMessage = { type: 'camera', boardId, cam, version }
+  browserConnections.pushEach(session.id, () => msg)
 }
 
 export function pushNotice(sessionId: string, userIds: string[], notice: Notice): void {

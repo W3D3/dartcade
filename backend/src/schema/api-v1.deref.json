@@ -2894,20 +2894,40 @@
           "schema": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 9
+            "maximum": 2
           }
         }
       ],
       "get": {
         "operationId": "getBoardCamera",
-        "summary": "Latest camera frame",
-        "description": "Clients may append a cache-busting query (e.g. `?t=<timestamp>`); it is ignored.",
+        "summary": "Latest camera still",
+        "description": "The board's latest still from this camera, straightened by the Board Manager: a square top-down JPEG with the bull at the centre, the outer double wire at a third of the width and 20 at the top. The bridge sends one after each dart, correction, takeout and resync; the backend keeps only the latest, in memory. For the board's owner and anyone who may watch the game on the board. With `v` (the version from the game socket's camera message) the browser may cache it for good; other queries (e.g. `?t=<timestamp>`) are ignored.",
         "tags": [
           "boards"
         ],
+        "parameters": [
+          {
+            "name": "v",
+            "in": "query",
+            "required": false,
+            "description": "The still's version (CameraMessage.version); when it is the latest, the answer is cacheable for good",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
         "responses": {
           "200": {
-            "description": "JPEG frame",
+            "description": "JPEG still",
+            "headers": {
+              "Cache-Control": {
+                "description": "`private, max-age=31536000, immutable` for the latest version asked for with `v`, otherwise `no-store`",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "image/jpeg": {
                 "schema": {
@@ -3075,84 +3095,6 @@
           },
           "429": {
             "description": "Rate limit exceeded",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "ErrorResponse",
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "path",
-                          "message"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "path": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "502": {
-            "description": "Board Manager rejected the request or failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "title": "ErrorResponse",
-                  "type": "object",
-                  "required": [
-                    "error"
-                  ],
-                  "additionalProperties": false,
-                  "properties": {
-                    "error": {
-                      "type": "string"
-                    },
-                    "details": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "required": [
-                          "path",
-                          "message"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "path": {
-                            "type": "string"
-                          },
-                          "message": {
-                            "type": "string"
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "The board is offline or unreachable",
             "content": {
               "application/json": {
                 "schema": {

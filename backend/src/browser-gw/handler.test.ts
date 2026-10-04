@@ -493,3 +493,58 @@ describe('WS client messages', () => {
     expect(browserConnections.connectedUsers(sessionId)).toEqual(new Set())
   })
 })
+
+describe('WS camera stills', () => {
+  let testApp: FastifyInstance | null = null
+  afterEach(async () => { await testApp?.close(); testApp = null })
+
+  it('sends the stored stills of the game\'s boards after the snapshot, and each new one', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
+    const { SessionEngine } = await import('../session/engine.js')
+    const { x01Module } = await import('../games/x01.js')
+    const { CameraStills } = await import('../camera/store.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
+    }
+    const engine = new SessionEngine(store, vi.fn())
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      seats: [
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'cam-board-a', boardName: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'cam-board-b', boardName: null },
+      ],
+    })
+    const stills = new CameraStills()
+    const still = { bytes: Buffer.from([0xff]), contentType: 'image/jpeg', capturedAt: '2026-10-04T12:00:00Z' }
+    const v = stills.put('cam-board-b', 1, still)
+    stills.put('another-board', 0, still)
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    const { browserGwPlugin, pushCamera } = await import('./handler.js')
+    await testApp.register(browserGwPlugin, { engine, stills })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+
+    const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
+    const messages: any[] = []
+    ws.addEventListener('message', e => { messages.push(JSON.parse(String(e.data))) })
+    await new Promise<void>((resolve, reject) => {
+      ws.addEventListener('message', () => resolve(), { once: true })
+      setTimeout(() => reject(new Error('no snapshot')), 2000)
+    })
+    await new Promise(r => setTimeout(r, 100))
+    expect(messages[0]).toMatchObject({ type: 'snapshot' })
+    expect(messages.filter(m => m.type === 'camera')).toEqual([{ type: 'camera', boardId: 'cam-board-b', cam: 1, version: v }])
+
+    pushCamera(engine, 'cam-board-a', 0, 42)
+    pushCamera(engine, 'another-board', 0, 43)
+    await new Promise(r => setTimeout(r, 100))
+    expect(messages.filter(m => m.type === 'camera').at(-1)).toEqual({ type: 'camera', boardId: 'cam-board-a', cam: 0, version: 42 })
+    expect(messages.filter(m => m.type === 'camera')).toHaveLength(2)
+    ws.close()
+  })
+})

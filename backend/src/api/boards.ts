@@ -7,6 +7,9 @@ import { requireAuth } from '../auth/middleware.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
 import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard, hasActiveSessionOnBoard } from '../db/queries.js'
 import { fromSpec } from './spec.js'
+import { cameraStills, type CameraStills } from '../camera/store.js'
+import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
+import type { Session } from '../session/types.js'
 import type { Route } from './route.js'
 import { z } from 'zod'
 
@@ -17,7 +20,18 @@ const BmStateSchema = z.object({
   event: z.string().nullable().catch(null).default(null),
 }).catch({ status: null, running: false, event: null })
 
-type Opts = FastifyPluginOptions & { db: Kysely<Database>; releaseBoard?: (boardId: string) => Promise<void> }
+type Opts = FastifyPluginOptions & {
+  db: Kysely<Database>
+  releaseBoard?: (boardId: string) => Promise<void>
+  /** The active game on a board (SessionEngine.getSessionByBoard): its watchers see the board's camera stills. */
+  getSessionByBoard?: (boardId: string) => Session | undefined
+  isLobbyMember?: IsLobbyMember
+  /** Camera stills of the boards (tests pass their own). */
+  stills?: CameraStills
+}
+
+// A still asked for by its current version never changes
+const CACHE_FOR_GOOD = 'private, max-age=31536000, immutable'
 
 // Board Manager commands: [operationId, route suffix, BM path, fallback path for older BMs, method]
 const ACTIONS = [
@@ -28,7 +42,7 @@ const ACTIONS = [
 ] as const
 
 export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db, releaseBoard = () => Promise.resolve() } = opts
+  const { db, releaseBoard = () => Promise.resolve(), getSessionByBoard = () => undefined, isLobbyMember = noLobbies, stills = cameraStills } = opts
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
   async function ownBoard(id: string, userId: string, reply: { code(n: number): { send(b: { error: string }): unknown } }) {
@@ -60,19 +74,19 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     }
   })
 
+  // The latest camera still the bridge sent: for the owner and anyone who may watch the board's game
   app.get<Route<'getBoardCamera'>>('/api/boards/:id/camera/:index', { preValidation: requireAuth, schema: fromSpec('getBoardCamera') }, async (req, reply) => {
     const { id, index } = req.params
-    if (!await ownBoard(id, req.userId, reply)) return reply
-    const conn = bridgeConnections.get(id)
-    if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
-
-    const upstream = await fetch(`${conn.bmUrl}/api/img/cams/${index}`)
-    if (!upstream.ok) return reply.code(502).send({ error: 'camera unavailable' })
-
-    const buf = await upstream.arrayBuffer()
-    reply.header('content-type', upstream.headers.get('content-type') ?? 'image/jpeg')
-    reply.header('cache-control', 'no-store')
-    return reply.send(Buffer.from(buf))
+    const board = await getBoardById(db, id)
+    if (!board) return reply.code(404).send({ error: 'not found' })
+    const session = getSessionByBoard(id)
+    const allowed = board.owner_user_id === req.userId || (session !== undefined && await canWatchSession(req.userId, session, isLobbyMember))
+    if (!allowed) return reply.code(403).send({ error: 'forbidden' })
+    const still = stills.get(id, index)
+    if (!still) return reply.code(404).send({ error: 'no camera still yet' })
+    reply.header('content-type', still.contentType)
+    reply.header('cache-control', req.query.v === still.version ? CACHE_FOR_GOOD : 'no-store')
+    return reply.send(still.bytes)
   })
 
   app.post<Route<'createBoard'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('createBoard') }, async (req, reply) => {
@@ -145,6 +159,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     // Lobbies first: people on the board go to Manual, and their lobbies see it
     await releaseBoard(id)
     await deleteBoard(db, id)
+    stills.clear(id)
     return reply.code(204).send()
   })
 

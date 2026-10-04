@@ -9,7 +9,7 @@ import { toNodeHandler } from 'better-auth/node'
 import type { Database } from './db/schema.js'
 import type { SessionEngine } from './session/engine.js'
 import { bridgeGwPlugin } from './bridge-gw/handler.js'
-import { browserGwPlugin } from './browser-gw/handler.js'
+import { browserGwPlugin, pushCamera } from './browser-gw/handler.js'
 import { lobbyGwPlugin } from './browser-gw/lobby.js'
 import { sessionsApiPlugin } from './api/sessions.js'
 import { gamesApiPlugin } from './api/games.js'
@@ -91,14 +91,22 @@ export async function buildApp({ engine, db, lobbies, hub, frontendDist, onRoute
     } catch { /* not built yet */ }
   }
 
-  await app.register(bridgeGwPlugin, { engine, db, onBoardPresence: boardId => { lobbies.onBoardPresence(boardId) } })
+  await app.register(bridgeGwPlugin, {
+    engine, db,
+    onBoardPresence: boardId => { lobbies.onBoardPresence(boardId) },
+    onCameraStill: (boardId, cam, version) => { pushCamera(engine, boardId, cam, version) },
+  })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(lobbyGwPlugin, { lobbies, hub })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
-  await app.register(boardsApiPlugin, { db, releaseBoard: boardId => lobbies.releaseBoard(boardId) })
+  await app.register(boardsApiPlugin, {
+    db, releaseBoard: boardId => lobbies.releaseBoard(boardId),
+    getSessionByBoard: boardId => engine.getSessionByBoard(boardId),
+    isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
+  })
   await app.register(pairingApiPlugin, { db })
   await app.register(voicesApiPlugin, { db })
 

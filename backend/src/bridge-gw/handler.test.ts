@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { createHash } from 'crypto'
 import { EventEmitter } from 'events'
 import { BridgeConnections } from './connections.js'
+import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
 
 vi.mock('../db/queries.js', () => ({
   getBoardByTokenHash: vi.fn(),
@@ -198,6 +199,78 @@ describe('handleBridgeConnection', () => {
     expect(onBoardPresence).toHaveBeenCalledWith('board-9')
     socket.emit('close')
     expect(onBoardPresence).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('camera stills from the bridge', () => {
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9])
+  const stillMsg = (cam: number, bytes: Buffer = jpeg) => Buffer.from(JSON.stringify({
+    kind: 'camera.still', data: { cam, captured_at: '2026-10-04T12:00:00Z', content_type: 'image/jpeg', data: bytes.toString('base64') },
+  }))
+  async function connect(boardId: string) {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: boardId, hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear()
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const stills = new CameraStills()
+    const onCameraStill = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, stills, onCameraStill })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    await flush()
+    return { engine, stills, onCameraStill, socket }
+  }
+
+  it('keeps the still for its board and camera and tells the games, without storing or acking an event', async () => {
+    const { engine, stills, onCameraStill, socket } = await connect('board-c1')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    socket.emit('message', stillMsg(2))
+    await flush(); await flush()
+
+    const still = stills.get('board-c1', 2)
+    expect(still?.bytes).toEqual(jpeg)
+    expect(still?.contentType).toBe('image/jpeg')
+    expect(still?.capturedAt).toBe('2026-10-04T12:00:00Z')
+    expect(onCameraStill).toHaveBeenCalledWith('board-c1', 2, still?.version)
+    expect(queries.insertBridgeEvent).not.toHaveBeenCalled()
+    expect(engine.onBridgeEvent).not.toHaveBeenCalled()
+    expect(socket.send).not.toHaveBeenCalled()
+    expect(warn).not.toHaveBeenCalled()
+    warn.mockRestore()
+  })
+
+  it('forgets the board\'s stills when its bridge drops', async () => {
+    const { stills, socket } = await connect('board-c3')
+    socket.emit('message', stillMsg(0))
+    await flush(); await flush()
+    expect(stills.versions('board-c3')).toHaveLength(1)
+    socket.emit('close')
+    expect(stills.versions('board-c3')).toEqual([])
+  })
+
+  it('keeps the stills when an old connection of a board closes after its successor came', async () => {
+    const first = await connect('board-c4')
+    const stills = first.stills
+    // The bridge reconnects: a new socket registers before the old one's close arrives
+    const fresh = new FakeSocket()
+    handleBridgeConnection(fresh as any, { token: 'tok' }, { db: {} as any, engine: first.engine, stills })
+    await flush()
+    fresh.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    fresh.emit('message', stillMsg(1))
+    await flush(); await flush()
+    first.socket.emit('close')
+    expect(stills.versions('board-c4').map(v => v.cam)).toEqual([1])
+  })
+
+  it('drops a still over 1 MiB, and a malformed one', async () => {
+    const { stills, onCameraStill, socket } = await connect('board-c2')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    socket.emit('message', stillMsg(0, Buffer.alloc(MAX_STILL_BYTES + 1, 0xff)))
+    socket.emit('message', stillMsg(3))
+    await flush(); await flush()
+    expect(stills.get('board-c2', 0)).toBeUndefined()
+    expect(stills.versions('board-c2')).toEqual([])
+    expect(onCameraStill).not.toHaveBeenCalled()
+    warn.mockRestore()
   })
 })
 

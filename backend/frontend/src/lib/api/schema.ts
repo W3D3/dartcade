@@ -179,8 +179,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Latest camera frame
-         * @description Clients may append a cache-busting query (e.g. `?t=<timestamp>`); it is ignored.
+         * Latest camera still
+         * @description The board's latest still from this camera, straightened by the Board Manager: a square top-down JPEG with the bull at the centre, the outer double wire at a third of the width and 20 at the top. The bridge sends one after each dart, correction, takeout and resync; the backend keeps only the latest, in memory. For the board's owner and anyone who may watch the game on the board. With `v` (the version from the game socket's camera message) the browser may cache it for good; other queries (e.g. `?t=<timestamp>`) are ignored.
          */
         get: operations["getBoardCamera"];
         put?: never;
@@ -1660,7 +1660,10 @@ export interface operations {
     };
     getBoardCamera: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description The still's version (CameraMessage.version); when it is the latest, the answer is cacheable for good */
+                v?: number;
+            };
             header?: never;
             path: {
                 id: components["parameters"]["BoardId"];
@@ -1671,9 +1674,11 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description JPEG frame */
+            /** @description JPEG still */
             200: {
                 headers: {
+                    /** @description `private, max-age=31536000, immutable` for the latest version asked for with `v`, otherwise `no-store` */
+                    "Cache-Control"?: string;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1685,8 +1690,6 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
-            502: components["responses"]["BoardError"];
-            503: components["responses"]["BoardUnavailable"];
         };
     };
     startBoard: {
