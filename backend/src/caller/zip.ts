@@ -52,17 +52,41 @@ export function listEntries(buf: Uint8Array): ZipEntry[] {
   return entries
 }
 
-/** One entry's bytes, inflated. */
-export async function readEntry(buf: Uint8Array, e: ZipEntry): Promise<Uint8Array> {
+const TOO_BIG = 'That pack unpacks too big'
+
+/** One entry's bytes, inflated; a ZipError once they pass maxBytes (a zip bomb), whatever the header claims. */
+export async function readEntry(buf: Uint8Array, e: ZipEntry, maxBytes = 128 * 1024 * 1024): Promise<Uint8Array> {
+  if (e.size > maxBytes) throw new ZipError(TOO_BIG)
   if (e.flags & 1) throw new ZipError("Encrypted zips aren't supported")
   const v = view(buf)
   if (e.offset + 30 > buf.length) throw new ZipError('Not a zip file')
   if (v.getUint32(e.offset, true) !== LOCAL) throw new ZipError('Not a zip file')
   const start = e.offset + 30 + v.getUint16(e.offset + 26, true) + v.getUint16(e.offset + 28, true)
   if (start + e.compressedSize > buf.length) throw new ZipError('Not a zip file')
-  const data = buf.slice(start, start + e.compressedSize)
-  if (e.method === 0) return data
+  if (e.method === 0) {
+    if (e.compressedSize > maxBytes) throw new ZipError(TOO_BIG)
+    return buf.slice(start, start + e.compressedSize)
+  }
   if (e.method !== 8) throw new ZipError(`Compression method ${e.method} isn't supported`)
-  const stream = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw'))
-  return new Uint8Array(await new Response(stream).arrayBuffer())
+  const data = buf.slice(start, start + e.compressedSize)
+  const reader = new Blob([data]).stream().pipeThrough(new DecompressionStream('deflate-raw')).getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.length
+      if (size > maxBytes) throw new ZipError(TOO_BIG)
+      chunks.push(value)
+    }
+  } catch (err) {
+    await reader.cancel().catch(() => {})
+    // Anything else the inflater throws means corrupt data
+    throw err instanceof ZipError ? err : new ZipError('Not a zip file')
+  }
+  const out = new Uint8Array(size)
+  let at = 0
+  for (const c of chunks) { out.set(c, at); at += c.length }
+  return out
 }

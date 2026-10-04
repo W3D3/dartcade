@@ -11,6 +11,13 @@ const SHOTS = new Set(['busted', 'gameshot', 'matchshot', 'gameon', 'bulling_sta
 const SOUND = /\.(mp3|wav|ogg)$/i
 const MIME: Record<string, string> = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg' }
 
+// What a pack may unpack to, against zip bombs: the clips zip inside a download, one clip or the
+// template, and all the clips kept together
+const MiB = 1024 * 1024
+const INNER_ZIP_MAX = 128 * MiB
+const ENTRY_MAX = 16 * MiB
+const CLIPS_MAX = 64 * MiB
+
 /** The keys the caller plays; everything else in a pack is dropped on import. */
 export function isCallerKey(key: string): boolean {
   if (/^(0|[1-9]\d?|1[0-7]\d|180)$/.test(key)) return true
@@ -55,7 +62,7 @@ export async function readPack(bytes: Uint8Array, fileName: string): Promise<Par
   if (sounds.length === 0) {
     const inner = entries.find(e => /\.zip$/i.test(e.name))
     if (!inner) throw new ZipError('No sound files found')
-    zip = await readEntry(zip, inner)
+    zip = await readEntry(zip, inner, INNER_ZIP_MAX)
     entries = listEntries(zip).filter(e => !isJunk(e.name))
     csv ??= await template(zip, entries)
     sounds = entries.filter(e => SOUND.test(e.name))
@@ -80,9 +87,11 @@ export async function readPack(bytes: Uint8Array, fileName: string): Promise<Par
   if (plan.length === 0) throw new ZipError('No caller clips in this pack')
 
   const clips: Record<string, Clip[]> = {}
+  let left = CLIPS_MAX
   for (const [e, keys] of plan) {
     const ext = SOUND.exec(e.name)?.[1].toLowerCase() ?? 'mp3'
-    const clip: Clip = { bytes: await readEntry(zip, e), mime: MIME[ext] }
+    const clip: Clip = { bytes: await readEntry(zip, e, Math.min(ENTRY_MAX, left)), mime: MIME[ext] }
+    left -= clip.bytes.length
     for (const k of keys) (clips[k] ??= []).push(clip)
   }
   return { ...packName(fileName), total: sounds.length, clips }
@@ -90,5 +99,5 @@ export async function readPack(bytes: Uint8Array, fileName: string): Promise<Par
 
 async function template(zip: Uint8Array, entries: ZipEntry[]): Promise<string | null> {
   const csv = entries.find(e => /\.csv$/i.test(e.name))
-  return csv ? new TextDecoder().decode(await readEntry(zip, csv)) : null
+  return csv ? new TextDecoder().decode(await readEntry(zip, csv, ENTRY_MAX)) : null
 }
