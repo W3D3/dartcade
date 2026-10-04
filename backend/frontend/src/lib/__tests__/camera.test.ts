@@ -15,13 +15,14 @@ const snap = (o: { currentPlayer?: number; seats?: Partial<SeatInfo>[] } = {}): 
     game: { ...base.game, currentPlayer: o.currentPlayer ?? 0 },
   } as Snapshot
 }
-const versions = { 'board-a:0': 11, 'board-a:2': 12, 'board-b:0': 21 }
+const versions = { 'board-a:0': 11, 'board-a:2': 12, 'board-b:0': 21, 'board-a:3': 13 }
 
 describe('cameraIndex', () => {
   it('is null for the drawn board, else the camera (0-based)', () => {
     expect(cameraIndex('svg')).toBeNull()
     expect(cameraIndex('cam1')).toBe(0)
     expect(cameraIndex('cam3')).toBe(2)
+    expect(cameraIndex('combined')).toBe(3)
   })
 })
 
@@ -30,6 +31,12 @@ describe('cameraStillUrl', () => {
     expect(cameraStillUrl(snap(), 'cam1', versions)).toBe('/api/boards/board-a/camera/0?v=11')
     expect(cameraStillUrl(snap(), 'cam3', versions)).toBe('/api/boards/board-a/camera/2?v=12')
     expect(cameraStillUrl(snap({ currentPlayer: 1 }), 'cam1', versions)).toBe('/api/boards/board-b/camera/0?v=21')
+  })
+
+  it('is the combined still as camera 3, with the same fallbacks', () => {
+    expect(cameraStillUrl(snap(), 'combined', versions)).toBe('/api/boards/board-a/camera/3?v=13')
+    expect(cameraStillUrl(snap({ currentPlayer: 1 }), 'combined', versions)).toBeNull()
+    expect(cameraStillUrl(snap({ seats: [{ boardOnline: false }] }), 'combined', versions)).toBeNull()
   })
 
   it('is null with the drawn board picked, or without a snapshot', () => {

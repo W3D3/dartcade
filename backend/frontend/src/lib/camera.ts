@@ -16,6 +16,8 @@ export function cameraIndex(view: BoardView): number | null {
     case 'cam1': return 0
     case 'cam2': return 1
     case 'cam3': return 2
+    // Made by the bridge from the three: each region from the camera that sees it sharpest
+    case 'combined': return 3
     default: return null
   }
 }

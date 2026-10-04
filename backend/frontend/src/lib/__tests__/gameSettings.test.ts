@@ -52,6 +52,7 @@ describe('loadSettings', () => {
   it('shows the drawn board by default; a camera when picked', () => {
     expect(defaultSettings.boardView).toBe('svg')
     expect(loadSettings(store(JSON.stringify({ boardView: 'cam2' }))).boardView).toBe('cam2')
+    expect(loadSettings(store(JSON.stringify({ boardView: 'combined' }))).boardView).toBe('combined')
     expect(loadSettings(store(JSON.stringify({ boardView: 'cam4' }))).boardView).toBe('svg')
     expect(loadSettings(store(JSON.stringify({ boardView: 1 }))).boardView).toBe('svg')
   })

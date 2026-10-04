@@ -23,11 +23,12 @@ export interface GameSettings {
   callerOn: boolean
   /** The caller's voice: one of the user's packs (its id) or `builtin:<id>`; null for the default built-in voice. */
   callerVoice: string | null
-  /** The match screen's board: drawn, or a camera's still of the real board under the marks. */
+  /** The match screen's board: drawn, or a camera's still of the real board under the marks
+   *  (combined: the three cameras blended, each region from the sharpest). */
   boardView: BoardView
 }
 
-export const BOARD_VIEWS = ['svg', 'cam1', 'cam2', 'cam3'] as const
+export const BOARD_VIEWS = ['svg', 'cam1', 'cam2', 'cam3', 'combined'] as const
 export type BoardView = (typeof BOARD_VIEWS)[number]
 
 export const defaultSettings: GameSettings = {
