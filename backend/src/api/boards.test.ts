@@ -1,6 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { boardsApiPlugin } from './boards.js'
+import { CameraStills } from '../camera/store.js'
+import type { Session } from '../session/types.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
@@ -28,9 +30,9 @@ import * as middleware from '../auth/middleware.js'
 beforeEach(() => vi.clearAllMocks())
 afterEach(() => vi.unstubAllGlobals())
 
-function makeApp() {
+function makeApp(opts: { stills?: CameraStills; getSessionByBoard?: (boardId: string) => Session | undefined; isLobbyMember?: (lobbyId: string, userId: string) => Promise<boolean> } = {}) {
   const app = createFastify()
-  app.register(boardsApiPlugin, { db: {} as any })
+  app.register(boardsApiPlugin, { db: {} as any, ...opts })
   return app
 }
 
@@ -105,6 +107,17 @@ describe('DELETE /api/boards/:id', () => {
     expect(queries.deleteBoard).toHaveBeenCalledWith(expect.anything(), 'board-1')
   })
 
+  it('forgets the deleted board\'s camera stills', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'board-1', owner_user_id: 'user-1' } as any)
+    const stills = new CameraStills()
+    stills.put('board-1', 0, { bytes: Buffer.from([0xff]), contentType: 'image/jpeg', capturedAt: '2026-10-04T12:00:00Z' })
+    stills.put('board-2', 0, { bytes: Buffer.from([0xff]), contentType: 'image/jpeg', capturedAt: '2026-10-04T12:00:00Z' })
+    const res = await makeApp({ stills }).inject({ method: 'DELETE', url: '/api/boards/board-1' })
+    expect(res.statusCode).toBe(204)
+    expect(stills.versions('board-1')).toEqual([])
+    expect(stills.versions('board-2')).toHaveLength(1)
+  })
+
   it('refuses to delete a board with a game running', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({
       id: 'board-1', owner_user_id: 'user-1',
@@ -166,50 +179,74 @@ describe('GET /api/boards - bridgeVersion', () => {
 })
 
 describe('GET /api/boards/:id/camera/:index', () => {
+  const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9])
+  const put = (stills: CameraStills, cam = 0) => stills.put('b1', cam, { bytes: jpeg, contentType: 'image/jpeg', capturedAt: '2026-10-04T12:00:00Z' })
+  // A game on b1 that user-1 watches as a seat's controller, or as a member of its lobby
+  const seated = { ownerUserId: 'host', seats: [{ controllerUserId: 'user-1' }], lobbyId: null } as unknown as Session
+  const inLobby = { ownerUserId: 'host', seats: [{ controllerUserId: 'host' }], lobbyId: 'l1' } as unknown as Session
+
   it('returns 404 when board not found', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(undefined)
-    const app = makeApp()
-    const res = await app.inject({ method: 'GET', url: '/api/boards/nope/camera/0' })
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/nope/camera/0' })
     expect(res.statusCode).toBe(404)
   })
 
-  it('returns 403 when board owned by another user', async () => {
+  it('returns 403 to someone who neither owns the board nor watches its game', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'other' } as any)
-    const app = makeApp()
-    const res = await app.inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
+    const stills = new CameraStills()
+    put(stills)
+    const notMine = { ownerUserId: 'host', seats: [{ controllerUserId: 'host' }], lobbyId: 'l1' } as unknown as Session
+    const res = await makeApp({ stills, getSessionByBoard: () => notMine, isLobbyMember: () => Promise.resolve(false) })
+      .inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
     expect(res.statusCode).toBe(403)
   })
 
-  it('returns 503 when board is offline', async () => {
+  it('returns 404 when the board has no still from that camera yet', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
-    vi.mocked(connections.bridgeConnections).get.mockReturnValue(undefined)
-    const app = makeApp()
-    const res = await app.inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
-    expect(res.statusCode).toBe(503)
+    const stills = new CameraStills()
+    put(stills, 1)
+    const res = await makeApp({ stills }).inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
+    expect(res.statusCode).toBe(404)
   })
 
-  it('returns 503 when board has no bmUrl', async () => {
+  it('serves the owner the latest still without caching it', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
-    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: null } as any)
-    const app = makeApp()
-    const res = await app.inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
-    expect(res.statusCode).toBe(503)
-  })
-
-  it('proxies JPEG from board manager at correct URL', async () => {
-    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
-    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://192.168.0.109:3180' } as any)
-    const fakeJpeg = Buffer.from([0xff, 0xd8, 0xff, 0xe0])
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      headers: { get: () => 'image/jpeg' },
-      arrayBuffer: () => Promise.resolve(fakeJpeg.buffer),
-    }))
-    const app = makeApp()
-    const res = await app.inject({ method: 'GET', url: '/api/boards/b1/camera/1' })
+    const stills = new CameraStills()
+    put(stills, 2)
+    const res = await makeApp({ stills }).inject({ method: 'GET', url: '/api/boards/b1/camera/2?t=1790700000000' })
     expect(res.statusCode).toBe(200)
-    expect(res.headers['content-type']).toContain('image/jpeg')
-    expect(vi.mocked(global.fetch as any)).toHaveBeenCalledWith('http://192.168.0.109:3180/api/img/cams/1')
+    expect(res.headers['content-type']).toBe('image/jpeg')
+    expect(res.headers['cache-control']).toBe('no-store')
+    expect(res.rawPayload).toEqual(jpeg)
+  })
+
+  it('serves anyone who may watch the game on the board', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'other' } as any)
+    const stills = new CameraStills()
+    put(stills)
+    for (const [session, isLobbyMember] of [[seated, () => Promise.resolve(false)], [inLobby, (l: string, u: string) => Promise.resolve(l === 'l1' && u === 'user-1')]] as const) {
+      const getSessionByBoard = vi.fn().mockReturnValue(session)
+      const res = await makeApp({ stills, getSessionByBoard, isLobbyMember }).inject({ method: 'GET', url: '/api/boards/b1/camera/0' })
+      expect(res.statusCode).toBe(200)
+      expect(getSessionByBoard).toHaveBeenCalledWith('b1')
+    }
+  })
+
+  it('lets the browser keep a versioned still for good, and not one of an older version', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    const stills = new CameraStills()
+    const old = put(stills)
+    const v = put(stills)
+    const res = await makeApp({ stills }).inject({ method: 'GET', url: `/api/boards/b1/camera/0?v=${v}` })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['cache-control']).toBe('private, max-age=31536000, immutable')
+    const stale = await makeApp({ stills }).inject({ method: 'GET', url: `/api/boards/b1/camera/0?v=${old}` })
+    expect(stale.headers['cache-control']).toBe('no-store')
+  })
+
+  it('rejects a fourth camera with 400', async () => {
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/3' })
+    expect(res.statusCode).toBe(400)
   })
 })
 
@@ -274,16 +311,6 @@ describe('boards: spec enforcement', () => {
   it('rejects a whitespace-only name on rename with 400', async () => {
     const res = await makeApp().inject({ method: 'PATCH', url: '/api/boards/board-1', payload: { name: '  ' } })
     expect(res.statusCode).toBe(400)
-  })
-
-  it('serves camera frames with a cache-busting query', async () => {
-    vi.mocked(queries.getBoardById).mockResolvedValue(board)
-    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
-      new Response(new Uint8Array([0xff, 0xd8]), { status: 200, headers: { 'content-type': 'image/jpeg' } })))
-    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/board-1/camera/0?t=1790700000000' })
-    expect(res.statusCode).toBe(200)
-    expect(res.headers['content-type']).toBe('image/jpeg')
   })
 
   it('rejects a non-numeric camera index with 400', async () => {

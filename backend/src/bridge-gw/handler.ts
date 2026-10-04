@@ -8,7 +8,8 @@ import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '.
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { z } from 'zod'
-import { BaseEnvelopeSchema } from '../schema/zod.js'
+import { BaseEnvelopeSchema, CameraStillMessageSchema } from '../schema/zod.js'
+import { cameraStills, type CameraStills } from '../camera/store.js'
 
 export { bridgeConnections }
 
@@ -17,7 +18,11 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
   /** A board's bridge connected or dropped (the lobbies that use it). */
   onBoardPresence?: (boardId: string) => void
+  /** A board has a new camera still (its games' pages fetch it). */
+  onCameraStill?: OnCameraStill
 }
+
+export type OnCameraStill = (boardId: string, cam: number, version: number) => void
 
 
 // The envelope fields an event is stored and acked by (schema/adbridge-v1.json). The rest
@@ -56,6 +61,16 @@ export function parseHello(data: unknown): { bridgeVersion: string | null; bmVer
 const PingSchema = z.object({ ping: z.string() })
 
 const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
+
+/** A camera.still message: like bridge.hello, not an event (no seq, never acked or stored). */
+function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCameraStill?: OnCameraStill): void {
+  const r = CameraStillMessageSchema.safeParse(msg)
+  if (!r.success) { console.warn('Ignoring a camera still that does not match the schema', { boardId, issues: r.error.issues.slice(0, 3) }); return }
+  const { cam, captured_at: capturedAt, content_type: contentType, data } = r.data.data
+  const version = stills.put(boardId, cam, { bytes: Buffer.from(data, 'base64'), contentType, capturedAt })
+  if (version === null) { console.warn('Ignoring a camera still over 1 MiB', { boardId, cam }); return }
+  onCameraStill?.(boardId, cam, version)
+}
 const TokenQuerySchema = z.object({ token: z.string() })
 
 // handleBridgeConnection wires up a single bridge WebSocket. The message
@@ -65,9 +80,14 @@ const TokenQuerySchema = z.object({ token: z.string() })
 export function handleBridgeConnection(
   socket: WebSocket,
   query: { token?: string },
-  opts: { db: Kysely<Database>; engine: SessionEngine; onBoardPresence?: (boardId: string) => void },
+  opts: {
+    db: Kysely<Database>; engine: SessionEngine; onBoardPresence?: (boardId: string) => void
+    onCameraStill?: OnCameraStill
+    /** Where camera stills are kept (tests pass their own). */
+    stills?: CameraStills
+  },
 ): void {
-  const { db, engine } = opts
+  const { db, engine, stills = cameraStills } = opts
   // A board came online or dropped: its game and the lobbies using it show it
   const presence = (boardId: string) => {
     engine.onBoardPresence(boardId)
@@ -121,6 +141,11 @@ export function handleBridgeConnection(
       const ping = PingSchema.safeParse(parsed)
       if (ping.success) { socket.send(JSON.stringify({ pong: ping.data.ping })); return }
 
+      if (MessageKindSchema.safeParse(parsed).data?.kind === 'camera.still') {
+        takeStill(boardDbId, parsed, stills, opts.onCameraStill)
+        return
+      }
+
       const env = parseEnvelope(parsed)
       if (!env) return
       const { seq, kind, bridge_id: bridgeId, boot_id: bootId, recv_wall: recvWall } = env
@@ -162,16 +187,16 @@ export function handleBridgeConnection(
     }).catch((err: unknown) => { console.error('Bridge event processing error:', { boardDbId: conn.boardDbId }, err) })
   })
 
-  socket.on('close', () => {
+  const gone = () => {
     const boardDbId = conn.boardDbId
     bridgeConnections.remove(conn)
-    if (boardDbId) presence(boardDbId)
-  })
-  socket.on('error', () => {
-    const boardDbId = conn.boardDbId
-    bridgeConnections.remove(conn)
-    if (boardDbId) presence(boardDbId)
-  })
+    if (!boardDbId) return
+    // Its stills would be old by the time it's back (a replaced connection leaves its successor's)
+    if (!bridgeConnections.isOnline(boardDbId)) stills.clear(boardDbId)
+    presence(boardDbId)
+  }
+  socket.on('close', gone)
+  socket.on('error', gone)
 }
 
 export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
@@ -179,7 +204,7 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
 
   app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
     const q = TokenQuerySchema.safeParse(req.query)
-    handleBridgeConnection(connection.socket, { token: q.success ? q.data.token : undefined }, { db, engine, onBoardPresence: opts.onBoardPresence })
+    handleBridgeConnection(connection.socket, { token: q.success ? q.data.token : undefined }, { db, engine, onBoardPresence: opts.onBoardPresence, onCameraStill: opts.onCameraStill })
   })
   done()
 }
