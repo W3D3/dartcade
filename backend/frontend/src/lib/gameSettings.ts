@@ -23,7 +23,12 @@ export interface GameSettings {
   callerOn: boolean
   /** The caller's voice: one of the user's packs (its id) or `builtin:<id>`; null for the default built-in voice. */
   callerVoice: string | null
+  /** The match screen's board: drawn, or a camera's still of the real board under the marks. */
+  boardView: BoardView
 }
+
+export const BOARD_VIEWS = ['svg', 'cam1', 'cam2', 'cam3'] as const
+export type BoardView = (typeof BOARD_VIEWS)[number]
 
 export const defaultSettings: GameSettings = {
   showMarkers: false,
@@ -39,6 +44,7 @@ export const defaultSettings: GameSettings = {
   inputView: null,
   callerOn: false,
   callerVoice: null,
+  boardView: 'svg',
 }
 
 export const SETTINGS_KEY = 'dartcade_game_settings'
@@ -63,6 +69,7 @@ const SettingsSchema = z.object({
   inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
   callerOn: flag(d.callerOn),
   callerVoice: z.string().min(1).nullable().catch(null).default(null),
+  boardView: z.enum(BOARD_VIEWS).catch(d.boardView).default(d.boardView),
 }).catch({ ...d })
 
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */

@@ -50,6 +50,7 @@
   import WaitingCard from '../lib/components/WaitingCard.svelte'
   import NotTurnToast from '../lib/components/NotTurnToast.svelte'
   import { createToast } from '$lib/toast'
+  import { cameraStillUrl, type CameraVersions } from '$lib/camera'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -88,6 +89,9 @@
   let unsubNotice: (() => void) | null = null
   let unsubError: (() => void) | null = null
   let unsubConnected: (() => void) | null = null
+  let unsubCameras: (() => void) | null = null
+  // The newest camera still of each board and camera in this game
+  let cameraVersions = $state.raw<CameraVersions>({})
   // "Not your turn": a dart on your board while someone else is up (6 s, the newest wins)
   const toast = createToast<NoticeMessage>(6000)
 
@@ -135,9 +139,10 @@
       if (e?.action === 'forfeit' && leavePending) { leavePending = false; endError = leaveRefused(snapshot) }
     })
     unsubConnected = sessionStore.connected.subscribe(up => { if (!up) leavePending = false })
+    unsubCameras = sessionStore.cameras.subscribe(v => { cameraVersions = v })
     authClient.getSession().then(r => { viewerId = r.data?.user.id ?? null }).catch(() => undefined)
   })
-  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); unsubConnected?.(); toast.dismiss(); sessionStore?.destroy(); caller.stop(); stopWaking() })
+  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); unsubConnected?.(); unsubCameras?.(); toast.dismiss(); sessionStore?.destroy(); caller.stop(); stopWaking() })
 
   function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
     const oldCount = before.currentVisitDarts.length
@@ -191,6 +196,8 @@
   // Someone else's turn always shows the board, live.
   const keypad = $derived(remote.kind === 'play-offline' || (remote.kind === 'play' && viewMode === 'entry'))
   const darts = $derived(game?.currentVisitDarts ?? [])
+  // Camera view: the still of the chosen camera of the board the player up throws on (or null)
+  const cameraSrc = $derived(cameraStillUrl(snapshot, settings.boardView, cameraVersions))
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
   // The visit is over (bust, checkout, win): no more darts until the next player
@@ -360,7 +367,7 @@
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
           onBoardClick={canThrow && !locked ? addBoardDart : undefined}
-          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} />
+          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} {cameraSrc} />
       </div>
     </div>
   {/if}
@@ -402,7 +409,7 @@
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
           onBoardClick={canThrow && !locked ? addBoardDart : undefined}
-          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} />
+          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} {cameraSrc} />
       </div>
     </div>
     {#if legend.length}<BoardLegend items={legend} />{/if}
