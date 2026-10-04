@@ -7,9 +7,12 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"dartcade/bridge/internal/bm"
+	"dartcade/bridge/internal/camera"
 	"dartcade/bridge/internal/differ"
+	"dartcade/bridge/internal/transport"
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v5"
 	_ "github.com/santhosh-tekuri/jsonschema/v5/httploader"
 )
@@ -99,5 +102,23 @@ func TestSchemaValidation(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// The transport's camera.still message matches CameraStillMessage.
+func TestCameraStillMessageValidates(t *testing.T) {
+	schemaPath, err := filepath.Abs("../../../schema/adbridge-v1.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sch, err := jsonschema.NewCompiler().Compile("file://" + schemaPath + "#/$defs/CameraStillMessage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(transport.StillMessage(camera.Still{Cam: 2, CapturedAt: time.Now(), JPEG: []byte{0xFF, 0xD8, 0xFF, 0xD9}}))
+	var v any
+	json.Unmarshal(b, &v)
+	if err := sch.Validate(v); err != nil {
+		t.Errorf("camera.still does not match the schema: %v\n%s", err, b)
 	}
 }

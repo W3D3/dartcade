@@ -6,10 +6,12 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"slices"
 	"syscall"
 	"time"
 
 	"dartcade/bridge/internal/bm"
+	"dartcade/bridge/internal/camera"
 	"dartcade/bridge/internal/differ"
 	"dartcade/bridge/internal/transport"
 	"github.com/charmbracelet/log"
@@ -168,10 +170,16 @@ func main() {
 		}
 	}()
 
+	// After a dart, a correction, a takeout or a resync: a new still from each camera,
+	// sent on the backend connection (only while it is up)
+	stills := camera.New(cfg.BoardURL, client.CameraCount, tr.SendStill)
 	eventCh := make(chan []differ.Event, 256)
 	go func() {
 		for evs := range eventCh {
 			tr.Send(evs)
+			if tr.Connected() && triggersStills(evs) {
+				stills.Trigger(ctx)
+			}
 		}
 	}()
 
@@ -204,6 +212,11 @@ func main() {
 			}
 		}
 	}
+}
+
+// triggersStills reports whether a batch of events changes what the cameras see.
+func triggersStills(evs []differ.Event) bool {
+	return slices.ContainsFunc(evs, func(e differ.Event) bool { return camera.Triggers(e.Kind) })
 }
 
 func setLogLevel(level string) {
