@@ -13,6 +13,7 @@ import (
 	"dartcade/bridge/internal/bm"
 	"dartcade/bridge/internal/camera"
 	"dartcade/bridge/internal/differ"
+	"dartcade/bridge/internal/schema"
 	"dartcade/bridge/internal/transport"
 	"github.com/charmbracelet/log"
 	"github.com/oklog/ulid/v2"
@@ -166,7 +167,12 @@ func main() {
 
 	// After a dart, a correction, a takeout or a resync: a new still from each camera,
 	// sent on the backend connection (only while it is up)
-	stills := camera.New(cfg.BoardURL, client.CameraCount, tr.SendStill)
+	// Each round of stills also makes the combined still (camera 3), off the event path
+	combined := camera.NewCompositor(cfg.BoardURL, tr.SendStill)
+	stills := camera.New(cfg.BoardURL, client.CameraCount, func(st camera.Still) {
+		tr.SendStill(st)
+		combined.Add(ctx, st)
+	})
 	// And on every (re)connect, so viewers see the board after a restart without waiting for a dart
 	tr.OnConnect(func() { stills.Trigger(ctx) })
 
@@ -180,6 +186,9 @@ func main() {
 	go func() {
 		for evs := range eventCh {
 			tr.Send(evs)
+			if calibrationChanged(evs) {
+				combined.CalibrationChanged()
+			}
 			if tr.Connected() && triggersStills(evs) {
 				stills.Trigger(ctx)
 			}
@@ -220,6 +229,15 @@ func main() {
 // triggersStills reports whether a batch of events changes what the cameras see.
 func triggersStills(evs []differ.Event) bool {
 	return slices.ContainsFunc(evs, func(e differ.Event) bool { return camera.Triggers(e.Kind) })
+}
+
+// calibrationChanged reports whether Board Manager calibrated (or started to): the combined
+// still's weights come from its calibration.
+func calibrationChanged(evs []differ.Event) bool {
+	return slices.ContainsFunc(evs, func(e differ.Event) bool {
+		st, ok := e.Data.(*schema.BoardStatusData)
+		return ok && e.Kind == "board.status" && (camera.IsCalibration(st.Status) || camera.IsCalibration(st.Event))
+	})
 }
 
 func setLogLevel(level string) {

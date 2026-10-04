@@ -32,7 +32,9 @@ const (
 
 // Still is one camera's JPEG.
 type Still struct {
-	Cam        int
+	Cam int
+	// Round is the Trigger the still was fetched for: stills of one round show the same darts
+	Round      uint64
 	CapturedAt time.Time
 	JPEG       []byte
 }
@@ -57,8 +59,9 @@ type Fetcher struct {
 	sink    func(Still)
 	client  *http.Client
 
-	mu   sync.Mutex
-	cams [MaxCameras]state
+	mu    sync.Mutex
+	cams  [MaxCameras]state
+	round uint64
 }
 
 type state struct{ running, pending bool }
@@ -77,6 +80,9 @@ func New(baseURL string, count func() int, sink func(Still)) *Fetcher {
 
 // Trigger fetches a new still from every camera, in the background.
 func (f *Fetcher) Trigger(ctx context.Context) {
+	f.mu.Lock()
+	f.round++
+	f.mu.Unlock()
 	n := min(f.count(), MaxCameras)
 	for i := 0; i < n; i++ {
 		f.kick(ctx, i)
@@ -96,7 +102,11 @@ func (f *Fetcher) kick(ctx context.Context, cam int) {
 
 func (f *Fetcher) run(ctx context.Context, cam int) {
 	for {
-		if st, err := f.fetch(ctx, cam); err != nil {
+		// A fetch that starts now shows the newest trigger's board
+		f.mu.Lock()
+		round := f.round
+		f.mu.Unlock()
+		if st, err := f.fetch(ctx, cam, round); err != nil {
 			log.Debug("camera still not fetched", "cam", cam, "err", err)
 		} else {
 			f.sink(st)
@@ -112,7 +122,7 @@ func (f *Fetcher) run(ctx context.Context, cam int) {
 	}
 }
 
-func (f *Fetcher) fetch(ctx context.Context, cam int) (Still, error) {
+func (f *Fetcher) fetch(ctx context.Context, cam int, round uint64) (Still, error) {
 	ctx, cancel := context.WithTimeout(ctx, f.Timeout)
 	defer cancel()
 	url := fmt.Sprintf("%s/api/img/cams/%d?warp=true&width=%d&height=%d", f.baseURL, cam, Size, Size)
@@ -138,5 +148,5 @@ func (f *Fetcher) fetch(ctx context.Context, cam int) (Still, error) {
 	if len(body) > MaxBytes {
 		return Still{}, fmt.Errorf("still over %d bytes", MaxBytes)
 	}
-	return Still{Cam: cam, CapturedAt: time.Now().UTC(), JPEG: body}, nil
+	return Still{Cam: cam, Round: round, CapturedAt: time.Now().UTC(), JPEG: body}, nil
 }
