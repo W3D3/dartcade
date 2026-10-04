@@ -77,9 +77,13 @@ bull at the centre, the double wire at a third of the width, 20 at the top, whic
 own coordinate system), and sends it up its connection as a `camera.still` message: not an event,
 never stored or replayed. The backend keeps the latest still per board and camera in memory,
 tells the game's pages on the game socket (`camera`, with a version), and serves it at
-`GET /api/boards/{id}/camera/{i}` to anyone who may watch the board's game. Pictures only ever
-travel through the bridge, so this works whether or not the backend can reach the board's
-network. Design: [`docs/superpowers/specs/2026-10-04-camera-view-design.md`](docs/superpowers/specs/2026-10-04-camera-view-design.md).
+`GET /api/boards/{id}/camera/{i}` to anyone who may watch the board's game. It forgets a board's
+stills when its bridge drops or the board is deleted; the bridge sends fresh ones on every
+connect. These pictures only ever travel through the bridge, so this works whether or not the
+backend can reach the board's network. The one exception is the owner's live preview on the
+Boards page, `GET /api/boards/{id}/camera/{i}/live`: the backend fetches the raw frame from the
+Board Manager itself (only from the http(s) origin the bridge reported), so it only works on the
+board's network and is turned off with `BOARD_LIVE_CAMERA=off`. Design: [`docs/superpowers/specs/2026-10-04-camera-view-design.md`](docs/superpowers/specs/2026-10-04-camera-view-design.md).
 
 ## Contracts
 

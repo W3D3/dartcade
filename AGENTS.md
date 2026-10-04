@@ -31,7 +31,7 @@ corrected dart replays the open visit cleanly.
 | Generated TS types for the schema | `backend/src/schema/types.ts` (regenerate with `npm run gen:types`; don't edit by hand); Go types in `bridge/internal/schema/schema_gen.go` (`go generate ./internal/schema` in `bridge/`) |
 | Generated zod schemas for incoming data (bridge events, browser messages, snapshots) | `backend/src/schema/zod.ts` (and `lobby-ws.ts` for the lobby sockets), copied to `backend/frontend/src/lib/api/` (regenerate with `npm run gen:api` at the repo root; don't edit by hand) |
 | Bridge: Board Manager client, snapshot differ, transport | `bridge/internal/{bm,differ,transport}`, CLI in `bridge/cmd/bridge` |
-| Camera view: stills from the bridge, kept in memory, shown under the board | `bridge/internal/camera` (fetch), `backend/src/camera/store.ts`, `GET /api/boards/{id}/camera/{i}` in `backend/src/api/boards.ts`, `backend/frontend/src/lib/camera.ts` (which still the match screen shows); `DartBoard.svelte`'s `cameraSrc` |
+| Camera view: stills from the bridge, kept in memory, shown under the board | `bridge/internal/camera` (fetch), `backend/src/camera/store.ts`, `GET /api/boards/{id}/camera/{i}` in `backend/src/api/boards.ts` (plus the owner-only live preview `/camera/{i}/live`, fetched from the Board Manager, off with `BOARD_LIVE_CAMERA=off`), `backend/frontend/src/lib/camera.ts` (which still the match screen shows); `DartBoard.svelte`'s `cameraSrc` |
 | Recorded Board Manager sessions for differ tests | `bridge/internal/differ/testdata`, `fixtures/` |
 | Backend entry point, plugin wiring | `backend/src/index.ts` |
 | Session engine: visits, manual darts, corrections, rebuild on restart | `backend/src/session/engine.ts`, `refold.ts` |
