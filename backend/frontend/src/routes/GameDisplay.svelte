@@ -33,7 +33,7 @@
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Segment, type UserAction } from '$lib/api'
-  import { isPhone, isWide } from '$lib/viewport'
+  import { isNarrowMatch, isPhone, isWide } from '$lib/viewport'
   import { winnerName, x01Teams } from '$lib/teams'
   import { matchLayout } from '$lib/matchLayout'
   import { isMyTurn } from '$lib/turn'
@@ -206,7 +206,7 @@
   const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
   // A team game (X01): one panel per team, sharing a score
   const teams = $derived(x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions, scoreUpdates: settings.scoreUpdates }) : [])
-  const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0))
+  const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch))
   // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
   const atcNext = $derived((currentPlayer + 1) % Math.max(players.length, 1))
   const nextPlayer = $derived(x01 ? x01.nextPlayer : atcNext)
@@ -255,6 +255,9 @@
   // Every finished visit: the visit sum starts over at 0 without rolling
   const visitKey = $derived((game?.totalVisits ?? []).reduce((a, v) => a + v, 0))
   const popIndex = $derived(isX01 ? bigDartIndex(darts, { opened: x01Players[currentPlayer]?.opened ?? true, bust }) : null)
+
+  // Around the players and the board: tighter in the tablet band (md up to xl)
+  const mainPad = 'px-5 py-[18px] gap-[18px] xl:px-7 xl:py-6 xl:gap-6'
 
   const sequence = $derived(atc?.sequence ?? [])
   const targets = $derived(atc?.targets ?? [])
@@ -407,7 +410,7 @@
     {#if caption}<BoardCaption {caption} />{/if}
     <!-- The board takes the height the column has left (capped by its width) -->
     <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
-      <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
+      <div class="relative aspect-square {variant === 'duel' ? 'max-w-[400px] xl:max-w-none' : ''}" style="width: min(100cqw, 100cqh)">
         <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
           onBoardClick={canThrow && !locked ? addBoardDart : undefined}
@@ -439,7 +442,8 @@
 {/snippet}
 
 {#snippet seatWaiting()}
-  {@render waitingCard(false)}
+  <!-- Below xl the two-player panels are 300 px: the compact card -->
+  {@render waitingCard(!$isWide)}
 {/snippet}
 
 {#snippet panel(i: number)}
@@ -453,6 +457,13 @@
       solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null}
       waiting={isWaiting ? seatWaiting : undefined} />
   {/if}
+{/snippet}
+
+{#snippet duelPanel(i: number)}
+  <!-- Tablets: a fixed 300 px panel; desktops lay the panel out as if the wrapper weren't there -->
+  <div class="w-[300px] shrink-0 min-w-0 min-h-0 flex xl:contents">
+    {@render panel(i)}
+  </div>
 {/snippet}
 
 {#snippet teamWaiting()}{@render waitingCard(false)}{/snippet}
@@ -562,14 +573,14 @@
       </main>
 
     {:else if layout === 'duel'}
-      <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-        {@render panel(0)}
-        <div class="w-[560px] shrink-0 min-h-0 flex flex-col gap-3">{@render center('duel')}</div>
-        {@render panel(1)}
+      <main class="flex-grow min-h-0 box-border {mainPad} flex">
+        {@render duelPanel(0)}
+        <div class="flex-1 min-w-0 xl:w-[560px] xl:flex-none min-h-0 flex flex-col gap-[10px] xl:gap-3">{@render center('duel')}</div>
+        {@render duelPanel(1)}
       </main>
 
     {:else}
-      <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
+      <main class="flex-grow min-h-0 box-border {mainPad} flex">
         <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
           {#each players as player, i (i)}
             {#if isX01}
@@ -579,7 +590,7 @@
             {/if}
           {/each}
         </div>
-        <aside class="w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
+        <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
       </main>
     {/if}
 

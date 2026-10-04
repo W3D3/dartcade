@@ -1,4 +1,5 @@
 import { readable, type Readable } from 'svelte/store'
+import { NARROW_MATCH_QUERY } from './matchLayout.js'
 
 /** Below Tailwind's `md`: the phone layouts. */
 export const PHONE_QUERY = '(max-width: 767.98px)'
@@ -47,3 +48,6 @@ export const isWide: Readable<boolean> = mediaStore(WIDE_QUERY, browserMatchMedi
 export const TABLET_QUERY = '(min-width: 768px) and (max-width: 1279.98px)'
 
 export const isTablet: Readable<boolean> = mediaStore(TABLET_QUERY, browserMatchMedia)
+
+/** Too narrow for a player panel either side of the board (`NARROW_MATCH_QUERY`): two players stack as rows. */
+export const isNarrowMatch: Readable<boolean> = mediaStore(NARROW_MATCH_QUERY, browserMatchMedia)

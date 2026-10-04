@@ -94,21 +94,21 @@
   </span>
 </header>
 {:else}
-<header class="h-16 shrink-0 box-border px-7 flex items-center gap-6 border-b border-line bg-surface-1">
+<header class="h-[60px] px-5 gap-[14px] xl:h-16 xl:px-7 xl:gap-6 shrink-0 box-border flex items-center border-b border-line bg-surface-1">
   <button type="button" onclick={onleave} class="{outline} pl-[10px] pr-[14px] text-ink-2">
     <ChevronLeft size={18} />
     Leave
   </button>
 
-  <div class="flex items-baseline gap-3 min-w-0">
-    <h1 class="m-0 font-display font-bold text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
-    {#if meta}<span class="text-[14px] text-text-muted truncate">{meta}</span>{/if}
+  <div class="flex items-baseline gap-[10px] xl:gap-3 min-w-0">
+    <h1 class="m-0 font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
+    {#if meta}<span class="text-[13px] xl:text-[14px] text-text-muted truncate">{meta}</span>{/if}
     {#if lobbyName}
-      <span title="Lobby game" class="self-center shrink-0 max-w-[240px] h-7 px-[10px] inline-flex items-center rounded-full bg-surface-active border border-accent-line text-accent text-[13px] font-semibold"><span class="truncate">{lobbyName}</span></span>
+      <span title="Lobby game" class="self-center min-w-0 xl:shrink-0 max-w-[240px] h-7 px-[10px] inline-flex items-center rounded-full bg-surface-active border border-accent-line text-accent text-[13px] font-semibold"><span class="truncate">{lobbyName}</span></span>
     {/if}
   </div>
 
-  <div class="ml-auto flex items-center gap-4 shrink-0">
+  <div class="ml-auto flex items-center gap-[10px] xl:gap-4 shrink-0">
     {#if showViewToggle}
       <div class="flex items-center p-[3px] bg-bg rounded-[10px] border border-line-2" role="group" aria-label="Dart entry">
         {#each ([{ m: 'board', label: 'Board' }, { m: 'entry', label: 'Enter' }] as const) as o (o.m)}
@@ -127,11 +127,11 @@
     {/if}
 
     {#if paused}
-      <span class="h-[30px] px-3 inline-flex items-center gap-2 rounded-full bg-surface-paused text-ink-2 text-[13px] font-bold tracking-[0.1em]">
+      <span class="h-7 px-[10px] text-[12px] xl:h-[30px] xl:px-3 xl:text-[13px] inline-flex items-center gap-2 rounded-full bg-surface-paused text-ink-2 font-bold tracking-[0.1em]">
         <span class="w-2 h-2 rounded-[2px] bg-text-muted"></span>PAUSED
       </span>
     {:else}
-      <span class="h-[30px] px-3 inline-flex items-center gap-2 rounded-full bg-live-soft text-live-text text-[13px] font-bold tracking-[0.1em]">
+      <span class="h-7 px-[10px] text-[12px] xl:h-[30px] xl:px-3 xl:text-[13px] inline-flex items-center gap-2 rounded-full bg-live-soft text-live-text font-bold tracking-[0.1em]">
         <span class="w-2 h-2 rounded-full bg-live"></span>LIVE
       </span>
     {/if}
@@ -139,7 +139,7 @@
     {#if myBoard}
       {#if myBoard.online}
         <span title="Board connected" class="h-[30px] px-3 inline-flex items-center gap-[7px] rounded-full border border-line-chip text-ink-2 text-[13px] font-medium whitespace-nowrap">
-          <span class="w-2 h-2 rounded-full bg-accent"></span>{myBoard.name}
+          <span class="w-2 h-2 shrink-0 rounded-full bg-accent"></span><span class="max-w-[160px] xl:max-w-none truncate">{myBoard.name}</span>
         </span>
       {:else}
         <span role="status" class="h-[30px] px-3 inline-flex items-center gap-[7px] rounded-full border border-warn-line bg-warn-soft text-warn text-[13px] font-semibold whitespace-nowrap">
