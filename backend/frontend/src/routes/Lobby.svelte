@@ -153,7 +153,7 @@
 {/snippet}
 
 <Layout title="Lobby">
-  <main class="flex flex-grow flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:px-11 md:py-8">
+  <main class="flex flex-grow flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:px-8 xl:px-11 md:py-8">
     {#if ended}
       <EmptyState title={ended === 'closed' ? 'The lobby was closed' : "You're no longer in the lobby"}
         text="Start a new lobby, join one with a code, or play a game of your own." actions={startOrJoin} />

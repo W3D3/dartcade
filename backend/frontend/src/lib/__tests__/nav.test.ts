@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { navTabs, isActiveRoute } from '../nav.js'
+import { navTabs, isActiveRoute, railLobby } from '../nav.js'
 
 describe('navTabs', () => {
   it('has no Live tab without a running game', () => {
@@ -23,5 +23,27 @@ describe('isActiveRoute', () => {
     expect(isActiveRoute('', '/')).toBe(true)
     expect(isActiveRoute('/boards', '/')).toBe(false)
     expect(isActiveRoute('/session/s1', '/session/s1')).toBe(true)
+  })
+})
+
+describe('railLobby', () => {
+  const s = { id: 'l1', name: 'Friday darts', hostName: 'Christoph', peopleCount: 6, nextGame: { gameId: 'x01', config: {} }, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: true, solo: false }
+
+  it('nothing before we know who you are', () => {
+    expect(railLobby(null, false)).toBeNull()
+  })
+  it('creates a lobby while you are in none', () => {
+    expect(railLobby(null, true)).toEqual({ kind: 'create', label: 'Lobby', aria: 'Create lobby' })
+  })
+  it('your lobby by name, with what is next', () => {
+    expect(railLobby(s, true)).toEqual({
+      kind: 'in', href: '/lobby', label: 'Friday darts',
+      aria: "You're in the lobby Friday darts. 6 people · Next: X01. Open the lobby",
+    })
+  })
+  it('a solo lobby is a quiet way to invite friends', () => {
+    expect(railLobby({ ...s, solo: true }, true)).toEqual({
+      kind: 'solo', href: '/lobby', label: 'Lobby', aria: 'Play with friends: open the lobby',
+    })
   })
 })

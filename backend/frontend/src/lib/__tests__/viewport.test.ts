@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { get } from 'svelte/store'
-import { mediaStore, PHONE_QUERY, type MatchMediaFn } from '../viewport.js'
+import { mediaStore, PHONE_QUERY, TABLET_QUERY, WIDE_QUERY, type MatchMediaFn } from '../viewport.js'
+import { matchesAt } from './fixtures/widthQuery.js'
 
 function fakeMatchMedia(initial: boolean) {
   let matches = initial
@@ -42,5 +43,14 @@ describe('mediaStore', () => {
 
   it('is false without matchMedia (tests, server)', () => {
     expect(get(mediaStore(PHONE_QUERY, null))).toBe(false)
+  })
+})
+
+describe('the layout bands', () => {
+  const widths = [390, 767, 768, 820, 1180, 1279, 1280, 1440]
+  it('phones below 768, the tablet band from 768 to 1279, desktops from 1280', () => {
+    expect(widths.map(w => matchesAt(PHONE_QUERY, w))).toEqual([true, true, false, false, false, false, false, false])
+    expect(widths.map(w => matchesAt(TABLET_QUERY, w))).toEqual([false, false, true, true, true, true, false, false])
+    expect(widths.map(w => matchesAt(WIDE_QUERY, w))).toEqual([false, false, false, false, false, false, true, true])
   })
 })
