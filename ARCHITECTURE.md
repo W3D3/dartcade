@@ -71,7 +71,7 @@ The design and its decisions, including the lobby model, are in
 ## Camera view
 
 The match screen can show a camera's picture of the real board instead of the drawn one (a
-per-device setting: SVG, Cam 1–3). After each dart, correction, takeout and resync the bridge
+per-device setting: SVG, Cam 1–3, Combined). After each dart, correction, takeout and resync the bridge
 fetches a still from each camera, straightened by Board Manager (`/api/img/cams/{i}?warp=true`:
 bull at the centre, the double wire at a third of the width, 20 at the top, which is the board's
 own coordinate system), and sends it up its connection as a `camera.still` message: not an event,
@@ -84,6 +84,19 @@ backend can reach the board's network. The one exception is the owner's live pre
 Boards page, `GET /api/boards/{id}/camera/{i}/live`: the backend fetches the raw frame from the
 Board Manager itself (only from the http(s) origin the bridge reported), so it only works on the
 board's network and is turned off with `BOARD_LIVE_CAMERA=off`. Design: [`docs/superpowers/specs/2026-10-04-camera-view-design.md`](docs/superpowers/specs/2026-10-04-camera-view-design.md).
+
+**Combined** (camera 3) blends the three stills, each region taken from the camera that sees it
+sharpest. The bridge solves, per camera, the homography G from four board points (r = 1 at 81°,
+−9°, −99°, 171°) to that camera's calibration points in its raw image (Board Manager's
+`/api/config` → `calibration` and `cam.width/height`; nothing else of the config is read or
+kept). At each pixel of the still, |det J_G| (camera pixels per board unit², 0 outside the
+camera's image) says how sharply a camera sees that spot; the weights are (d / the sharpest
+camera's d there)^4, normalised over the cameras with a still. Only stills of one round (one
+dart, correction, takeout or connect) are blended, never stills of different darts. The maps are computed once per calibration (re-read
+after a calibration event and at least every 10 minutes); after each round of stills the bridge
+blends them on its own goroutine and sends the result like any other still (`bridge/internal/camera`,
+`combined.go`, `compositor.go`). Without the calibration, or with fewer than two stills, there is
+no combined still and the match screen shows the drawn board.
 
 ## Contracts
 
