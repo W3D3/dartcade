@@ -184,6 +184,16 @@ export interface VoicePackClipsTable {
   clip_sha256: string
 }
 
+/** A friend request (pending) or a friendship (accepted); one row per pair (migration 014). */
+export interface FriendshipsTable {
+  id: string
+  requester_id: string
+  addressee_id: string
+  status: ColumnType<string, string | undefined, string>
+  created_at: ColumnType<Date, never, never>
+  responded_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -200,4 +210,5 @@ export interface Database {
   voice_clips: VoiceClipsTable
   voice_packs: VoicePacksTable
   voice_pack_clips: VoicePackClipsTable
+  friendships: FriendshipsTable
 }

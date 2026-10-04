@@ -19,10 +19,12 @@ import { usersApiPlugin } from './api/users.js'
 import { meApiPlugin } from './api/me.js'
 import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
+import { friendsApiPlugin } from './api/friends.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
+import type { FriendsService } from './friends/service.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
 
@@ -33,6 +35,8 @@ export type AppDeps = {
   lobbies: LobbyService
   /** Open lobby and /ws/me sockets. */
   hub: LobbyHub
+  /** Friend requests and friends' status (see friends/service.ts). */
+  friends: FriendsService
   /** Built frontend to serve; omitted in tests. */
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
@@ -56,7 +60,7 @@ const swaggerUiConfig = {
 }
 
 /** All HTTP/WebSocket routes of the backend, without listening or touching the database. */
-export async function buildApp({ engine, db, lobbies, hub, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
   const app = createFastify()
   if (onRoute) app.addHook('onRoute', onRoute)
 
@@ -111,6 +115,7 @@ export async function buildApp({ engine, db, lobbies, hub, frontendDist, onRoute
   })
   await app.register(pairingApiPlugin, { db })
   await app.register(voicesApiPlugin, { db })
+  await app.register(friendsApiPlugin, { friends })
 
   // Any unmatched method+path under our reserved prefixes gets our ErrorResponse 404
   // (not Fastify's default `{ message, error: 'Not Found', statusCode }`); an unmatched

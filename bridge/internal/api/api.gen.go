@@ -52,6 +52,12 @@ type PairingTokenStatusStatus string
 // BoardId defines model for BoardId.
 type BoardId = string
 
+// FriendRequestId defines model for FriendRequestId.
+type FriendRequestId = string
+
+// FriendUserId defines model for FriendUserId.
+type FriendUserId = string
+
 // GameId defines model for GameId.
 type GameId = string
 
