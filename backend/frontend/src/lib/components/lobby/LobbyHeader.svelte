@@ -40,7 +40,8 @@
   }
 </script>
 
-<header class="flex flex-col md:flex-row md:items-end md:justify-between gap-3 md:gap-6">
+<!-- Name and code side by side from lg; stacked below, so a portrait tablet keeps the whole name -->
+<header class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-3 md:gap-5 lg:gap-6">
   <div class="flex flex-col gap-1 md:gap-2 min-w-0">
     {#if renaming}
       <form class="flex items-center gap-2" onsubmit={(e) => { e.preventDefault(); void saveName() }}>
@@ -65,8 +66,9 @@
   </div>
 
   {#if !lobby.solo}
-    <div class="flex flex-col gap-1 md:items-end">
-      <div class="flex items-center gap-2 md:gap-[10px] flex-wrap md:justify-end">
+    <!-- Wide tablets in landscape: the code, Leave and Close in one row, as the name has room to give -->
+    <div class="flex flex-col gap-1 lg:items-end min-[1100px]:max-xl:shrink-0">
+      <div class="flex items-center gap-2 md:gap-[10px] flex-wrap min-[1100px]:max-xl:flex-nowrap lg:justify-end">
         <JoinCodeCard code={lobby.code} name={lobby.name} {host} {onnewcode} />
         <!-- Leave and Close stay together: beside the code card, or both under it -->
         <div class="flex items-center gap-2 md:gap-[10px] shrink-0">
