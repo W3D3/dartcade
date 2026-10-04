@@ -20,16 +20,13 @@ This downloads `kokoro-js` and the ONNX model (`onnx-community/Kokoro-82M-v1.0-O
 q8 quantised, a few hundred MB) into `node_modules/@huggingface/transformers/.cache`.
 It only needs to happen once; re-running `generate.mjs` reuses the cached model.
 
-You also need `ffmpeg` for trimming and encoding. The script shells out to it via Nix,
-so no system install is required:
+You also need Nix: the script trims and encodes with ffmpeg, which it always runs as
+`nix shell nixpkgs#ffmpeg -c ffmpeg ...` (an `ffmpeg` on your `PATH` isn't used). To fetch
+it into the Nix store once, ahead of the first run:
 
 ```sh
-nix shell nixpkgs#ffmpeg -c ffmpeg -version   # pulls ffmpeg into the Nix store once
+nix shell nixpkgs#ffmpeg -c ffmpeg -version
 ```
-
-If `ffmpeg` is already on your `PATH`, that's used too — the script just calls
-`nix shell nixpkgs#ffmpeg -c ffmpeg ...`, and `nix shell` reuses the store path once
-it's fetched.
 
 ## Running
 
