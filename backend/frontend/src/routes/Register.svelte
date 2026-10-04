@@ -5,10 +5,13 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
+  import NameField from '$lib/components/NameField.svelte'
   import { authClient, currentUser } from '$lib/auth'
+  import { nameSendable, type NameStatus } from '$lib/names'
   import { sessionStore, takeReturn } from '$lib/returnTo'
 
   let name = $state('')
+  let nameStatus = $state<NameStatus>({ kind: 'empty' })
   let email = $state('')
   let password = $state('')
   let acceptTerms = $state(false)
@@ -57,14 +60,11 @@
         <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
           Create account
         </h1>
-        <p class="hidden md:block m-0 text-[16px] text-text-muted">Your player name will show in game.</p>
+        <p class="hidden md:block m-0 text-[16px] text-text-muted">Your name is your handle: friends find you as @name.</p>
       </div>
 
       <div class="flex flex-col gap-[18px]">
-        <div class="flex flex-col gap-2">
-          <label for="reg-name" class="text-[14px] font-medium text-[#d8d8ce]">Player name</label>
-          <Input id="reg-name" bind:value={name} placeholder="e.g. Phil Taylor" required />
-        </div>
+        <NameField id="reg-name" label="Name" bind:value={name} bind:status={nameStatus} />
         <div class="flex flex-col gap-2">
           <label for="reg-email" class="text-[14px] font-medium text-[#d8d8ce]">Email</label>
           <Input id="reg-email" type="email" bind:value={email} autocomplete="email"
@@ -98,7 +98,7 @@
         <ErrorText>{error}</ErrorText>
       {/if}
 
-      <Button type="submit" variant="primary" disabled={loading || !acceptTerms} class="w-full mt-auto md:mt-0">
+      <Button type="submit" variant="primary" disabled={loading || !acceptTerms || !nameSendable(nameStatus)} class="w-full mt-auto md:mt-0">
         {loading ? '…' : 'Create account'}
       </Button>
 

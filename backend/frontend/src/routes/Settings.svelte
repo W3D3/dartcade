@@ -3,6 +3,7 @@
   import { onMount } from 'svelte'
   import Layout from '$lib/components/Layout.svelte'
   import CallerVoices from '$lib/components/settings/CallerVoices.svelte'
+  import NameCard from '$lib/components/settings/NameCard.svelte'
   import { loadVoiceLibrary } from '$lib/caller/voices.js'
   import { loadSettings } from '$lib/gameSettings.js'
 
@@ -18,7 +19,8 @@
       <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Settings</h1>
       <p class="m-0 text-[15px] text-text-muted">Account settings follow you to every board and device.</p>
     </header>
-    <div class="w-full max-w-[760px]">
+    <div class="w-full max-w-[760px] flex flex-col gap-[14px] md:gap-6">
+      <NameCard />
       <CallerVoices current={settings.callerVoice} volume={settings.volume} />
     </div>
   </main>
