@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { X } from '@lucide/svelte'
+  import { ChevronRight, X } from '@lucide/svelte'
   // Game settings as a drawer on the right, below the header (Settings-InGame board).
+  import { onMount } from 'svelte'
   import type { GameSettings } from '$lib/gameSettings.js'
   import type { ScoreUpdates } from '$lib/heldScore.js'
+  import { loadVoiceLibrary, voiceLibrary } from '$lib/caller/voices.js'
+  import { audioContext } from '$lib/sounds.js'
+  import SettingSwitch from './SettingSwitch.svelte'
+  import VoiceSelect from './settings/VoiceSelect.svelte'
 
   let { settings = $bindable(), gameId, onclose }: { settings: GameSettings; gameId: string; onclose: () => void } = $props()
 
@@ -25,6 +30,9 @@
     { key: 'soundBust', label: 'Bust' },
   ] as const
 
+  // The caller (X01 only) picks from the user's voices, loaded fresh when the drawer opens
+  onMount(() => { if (gameId === 'x01') void loadVoiceLibrary() })
+
   let panel: HTMLDivElement | undefined = $state()
   // Focus the drawer while open, and give focus back to the cog when it closes
   $effect(() => {
@@ -35,14 +43,15 @@
   // Keep Tab inside the drawer
   function trap(e: KeyboardEvent) {
     if (e.key !== 'Tab' || !panel) return
-    const items = [...panel.querySelectorAll<HTMLElement>('button, input')]
+    const items = [...panel.querySelectorAll<HTMLElement>('a[href], button:not(:disabled), input')]
     const first = items[0], last = items[items.length - 1]
     if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus() }
     else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus() }
   }
 </script>
 
-<svelte:window onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') onclose() }} />
+<!-- An open voice menu takes Escape for itself (and marks it handled) -->
+<svelte:window onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape' && !e.defaultPrevented) onclose() }} />
 
 <div role="presentation" class="fixed inset-x-0 top-14 md:top-16 bottom-0 z-40 bg-[rgba(8,9,7,0.62)]" onclick={onclose}></div>
 
@@ -60,19 +69,7 @@
   <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
     <h3 class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Display</h3>
     {#each rows as row (row.key)}
-      <div class="flex items-center justify-between gap-4">
-        <span class="flex flex-col gap-[2px]">
-          <span id="setting-{row.key}" class="text-[15px] text-text">{row.label}</span>
-          <span class="text-[13px] text-text-dim">{row.sub}</span>
-        </span>
-        <button type="button" role="switch" aria-checked={settings[row.key]} aria-labelledby="setting-{row.key}"
-          onclick={() => settings[row.key] = !settings[row.key]}
-          class="relative w-12 h-7 shrink-0 rounded-full border-0 p-0 cursor-pointer transition-colors
-                 {settings[row.key] ? 'bg-accent' : 'bg-line-chip'}">
-          <span class="absolute top-[3px] left-[3px] w-[22px] h-[22px] rounded-full transition-transform
-                       {settings[row.key] ? 'translate-x-5 bg-accent-fg' : 'bg-text'}"></span>
-        </button>
-      </div>
+      <SettingSwitch id="setting-{row.key}" label={row.label} sub={row.sub} bind:checked={settings[row.key]} />
     {/each}
     {#if gameId === 'x01'}
       <div class="flex flex-col gap-2">
@@ -110,6 +107,24 @@
       {/each}
     </div>
   </section>
+
+  {#if gameId === 'x01'}
+    <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
+      <h3 class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Caller</h3>
+      <SettingSwitch id="setting-callerOn" label="Caller" sub="Calls each visit" bind:checked={settings.callerOn}
+        onchange={() => { audioContext() }} />
+      <div class="flex items-center justify-between gap-4">
+        <span id="setting-callerVoice" class="text-[15px] text-text">Voice</span>
+        <VoiceSelect bind:value={settings.callerVoice} packs={$voiceLibrary.packs} builtins={$voiceLibrary.builtins} labelledby="setting-callerVoice" />
+      </div>
+      <div class="flex flex-col gap-1">
+        <a href="#/settings" class="self-start min-h-10 inline-flex items-center gap-[6px] text-[14px] font-semibold no-underline">
+          Manage voices<ChevronRight size={14} strokeWidth={2.2} />
+        </a>
+        <span class="text-[12px] text-text-dim">Import packs and delete them in Settings.</span>
+      </div>
+    </section>
+  {/if}
 
   <p class="mt-auto mb-0 text-[13px] text-text-dim">Saved on this device. Changes apply right away.</p>
 </div>

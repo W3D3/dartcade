@@ -38,6 +38,17 @@ describe('loadSettings', () => {
     expect(loadSettings(store(JSON.stringify({ inputView: 'sideways' }))).inputView).toBeNull()
   })
 
+  it('keeps the caller off with no voice picked by default; wrong types fall back', () => {
+    expect(defaultSettings.callerOn).toBe(false)
+    expect(defaultSettings.callerVoice).toBeNull()
+    const s = loadSettings(store(JSON.stringify({ callerOn: true, callerVoice: 'builtin:en-adam' })))
+    expect(s.callerOn).toBe(true)
+    expect(s.callerVoice).toBe('builtin:en-adam')
+    const bad = loadSettings(store(JSON.stringify({ callerOn: 'yes', callerVoice: 42 })))
+    expect(bad.callerOn).toBe(false)
+    expect(bad.callerVoice).toBeNull()
+  })
+
   it('falls back to the defaults on broken JSON', () => {
     expect(loadSettings(store('{nope'))).toEqual(defaultSettings)
   })

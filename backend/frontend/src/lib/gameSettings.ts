@@ -19,6 +19,10 @@ export interface GameSettings {
   soundBust: boolean
   /** The match screen's input: the board or the keypad, as last picked; null until picked. */
   inputView: 'board' | 'entry' | null
+  /** X01: the caller says each visit. */
+  callerOn: boolean
+  /** The caller's voice: one of the user's packs (its id) or `builtin:<id>`; null for the default built-in voice. */
+  callerVoice: string | null
 }
 
 export const defaultSettings: GameSettings = {
@@ -33,6 +37,8 @@ export const defaultSettings: GameSettings = {
   soundSwitch: false,
   soundBust: false,
   inputView: null,
+  callerOn: false,
+  callerVoice: null,
 }
 
 export const SETTINGS_KEY = 'dartcade_game_settings'
@@ -55,6 +61,8 @@ const SettingsSchema = z.object({
   soundSwitch: flag(d.soundSwitch),
   soundBust: flag(d.soundBust),
   inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
+  callerOn: flag(d.callerOn),
+  callerVoice: z.string().min(1).nullable().catch(null).default(null),
 }).catch({ ...d })
 
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */

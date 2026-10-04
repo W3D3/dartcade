@@ -33,6 +33,14 @@ describe('keyFromName', () => {
     expect(keyFromName('bulling-start.wav')).toBe('bulling_start')
     expect(keyFromName('game on.mp3')).toBe('gameon')
   })
+
+  it('folds spelled-out shots to their keys', () => {
+    expect(keyFromName('game-shot.mp3')).toBe('gameshot')
+    expect(keyFromName('Game_Shot+1.mp3')).toBe('gameshot')
+    expect(keyFromName('game-on.wav')).toBe('gameon')
+    expect(keyFromName('match shot.mp3')).toBe('matchshot')
+    expect(keyFromName('bulling_start.mp3')).toBe('bulling_start')
+  })
 })
 
 const clip = (s: string) => new TextEncoder().encode(s)
@@ -102,6 +110,12 @@ describe('readPack', () => {
     const zip = makeZip([{ name: 'voice/180.wav', data: clip('a') }])
     const pack = await readPack(zip, 'voice.zip')
     expect(pack.clips['180'][0].mime).toBe('audio/wav')
+  })
+
+  it('gives an .ogg clip the ogg mime type', async () => {
+    const zip = makeZip([{ name: 'voice/busted.OGG', data: clip('a') }])
+    const pack = await readPack(zip, 'voice.zip')
+    expect(pack.clips.busted[0].mime).toBe('audio/ogg')
   })
 
   it('rejects a pack whose rows map to no caller key', async () => {

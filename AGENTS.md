@@ -49,6 +49,7 @@ corrected dart replays the open visit cleanly.
 | Lobby socket and per-user socket (`/ws/lobby`, `/ws/me`) | `backend/src/browser-gw/lobby.ts`, messages in `schema/lobby-ws-v1.json` |
 | Lobby screens (lobby, join, invites, indicator) | `backend/frontend/src/routes/{Lobby,Join,Invites}.svelte`; pieces in `lib/components/lobby/`; logic in `lib/lobby/` (`rules.ts` mirrors the server's rules, `sockets.ts` has `/ws/lobby` and the app-wide `/ws/me`, `start.ts` the soft ready gate, `play.ts` the Play page's Create/Continue/Open lobby button) |
 | Components (dartboard, bull off, correction, entry) | `backend/frontend/src/lib/components/`; shadcn-style primitives in `ui/` |
+| Settings page and the caller | `backend/frontend/src/routes/Settings.svelte`, its cards in `lib/components/settings/` (`CallerVoices`, `VoiceSelect`); what the caller says, its voices and the player in `lib/caller/` (`calls.ts`, `voices.ts`, `player.ts`); voice packs on the server in `backend/src/caller/`, their API in `backend/src/api/voices.ts` |
 | Dart helpers (labels, checkout hints) | `backend/frontend/src/lib/dartUtils.ts` |
 | Game history: input log, replay, results | `backend/src/session/{apply,replay}.ts`, `backend/src/history/`, `backend/src/db/history.ts`, `backend/src/api/games.ts` |
 | Architecture overview | `ARCHITECTURE.md`; the original research and Board Manager API findings in `docs/architecture.md` |
