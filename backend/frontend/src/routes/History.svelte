@@ -115,7 +115,8 @@
     {/if}
 
     <section aria-label="Matches" class="flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-line-2 bg-surface-panel">
-      <div class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] text-[12px] uppercase tracking-[0.1em] text-text-dim lg:grid lg:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]">
+      <!-- Desktops only: the column headings, and the Board column -->
+      <div class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] text-[12px] uppercase tracking-[0.1em] text-text-dim xl:grid xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]">
         <span>When</span><span>Game</span><span>Players</span><span>Result</span><span>Key stat</span><span>Board</span>
       </div>
 
@@ -152,8 +153,8 @@
                 {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
               </div>
 
-              <!-- lg and up: the full column grid -->
-              <div class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4">
+              <!-- lg and up: a column grid; tablets (up to xl) leave out the Board column -->
+              <div class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[110px_minmax(0,1fr)_200px_110px_90px] xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4">
                 <span class="flex flex-col gap-0.5">
                   <span class="text-[15px] font-semibold">{when.day}</span>
                   <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
@@ -174,7 +175,7 @@
                     <span class="text-[12px] text-text-dim">{key.label}</span>
                   {/if}
                 </span>
-                <span class="text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
+                <span class="hidden xl:inline text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
               </div>
             </li>
           {/each}
