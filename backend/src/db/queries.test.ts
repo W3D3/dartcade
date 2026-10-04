@@ -293,16 +293,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
   })
 
   describe('users to play with', () => {
-    it('finds other accounts by the start of their name or email, not yourself', async () => {
-      const byName = await searchUsers(db, 'test 2', 'u-test-1')
-      expect(byName).toEqual([{ id: 'u-test-2', name: 'Test 2' }])
-      const byEmail = await searchUsers(db, 'TEST2@', 'u-test-1')
-      expect(byEmail).toEqual([{ id: 'u-test-2', name: 'Test 2' }])
-      expect(await searchUsers(db, 'test', 'u-test-2')).toEqual([{ id: 'u-test-1', name: 'Test' }])
-    })
-
-    it('treats % and _ as plain characters', async () => {
-      expect(await searchUsers(db, '%', 'nobody')).toEqual([])
+    it('finds the other account with exactly that name, any case, never yourself', async () => {
+      await db.insertInto('user').values({ id: 'u-sam', name: 'sam.180', email: 'sam@example.com', emailVerified: false, image: null }).execute()
+      expect(await searchUsers(db, 'SAM.180', 'u-test-1')).toEqual([{ id: 'u-sam', name: 'sam.180' }])
+      expect(await searchUsers(db, '@sam.180', 'u-test-1')).toEqual([{ id: 'u-sam', name: 'sam.180' }])
+      expect(await searchUsers(db, 'sam', 'u-test-1')).toEqual([])
+      expect(await searchUsers(db, 'sam@example.com', 'u-test-1')).toEqual([])
+      expect(await searchUsers(db, 'sam.180', 'u-sam')).toEqual([])
     })
 
     it('reads accounts by id', async () => {

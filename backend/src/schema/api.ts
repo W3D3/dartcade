@@ -355,7 +355,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Find other accounts by name or email, to add them to a game */
+        /** Find the account with exactly this name, to invite it */
         get: operations["searchUsers"];
         put?: never;
         post?: never;
@@ -2192,7 +2192,7 @@ export interface operations {
     searchUsers: {
         parameters: {
             query: {
-                /** @description Start of a name or email */
+                /** @description Their name, any case (a leading @ is fine) */
                 q: string;
             };
             header?: never;
@@ -2201,7 +2201,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Up to 8 matching accounts, the signed-in user excluded */
+            /** @description The account, if there is one (never yourself) */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -1,11 +1,16 @@
 <script lang="ts">
-  // "Name or @username": a plain name adds a guest at your board, @ finds an account to invite.
+  // "Name or @username": a plain name adds a guest at your board; @ invites an account — your
+  // friends whose name starts with it first, then whoever has exactly that name. Under it, your
+  // friends as one-tap chips (online first). The lobby boards' "Friends: + name" row.
   import { Plus } from '@lucide/svelte'
   import { api } from '$lib/api'
   import { Button } from '$lib/components/ui/button/index.js'
+  import FriendChips from './FriendChips.svelte'
   import MenuItem from './MenuItem.svelte'
   import PopoverPanel from './PopoverPanel.svelte'
   import { parseAddInput } from '$lib/lobby/input'
+  import { friendChips, friendMatches } from '$lib/lobby/friendChips'
+  import { me } from '$lib/lobby/sockets'
 
   type Account = { id: string; name: string }
   let { exclude = [], onguest, oninvite }: {
@@ -17,17 +22,25 @@
 
   let text = $state('')
   let hint = $state('')
+  // The server's exact-name match for what's typed
   let matches = $state<Account[]>([])
   // The suggestions show until Escape, a click outside, or a pick
   let open = $state(false)
   let form: HTMLFormElement | undefined = $state()
   let timer: ReturnType<typeof setTimeout> | undefined
-  // The latest search, so Enter can wait for the one for what's typed now
+  // The latest lookup, so Enter can wait for the one for what's typed now
   let pending: { q: string; result: Promise<Account[]> } | null = null
   const parsed = $derived(parseAddInput(text))
   const query = $derived(parsed.kind === 'invite' ? parsed.query : '')
+  const friendList = $derived($me?.friends?.friends ?? [])
+  const chips = $derived(friendChips(friendList, exclude))
+  const friendHits = $derived(friendMatches(friendList, query, exclude))
+  const suggestions = $derived([
+    ...friendHits.map(f => ({ id: f.id, name: f.name, friend: true })),
+    ...matches.filter(u => !friendHits.some(f => f.id === u.id)).map(u => ({ ...u, friend: false })),
+  ])
 
-  function search(q: string): Promise<Account[]> {
+  function lookup(q: string): Promise<Account[]> {
     clearTimeout(timer)
     const result = api.GET('/api/users', { params: { query: { q } } })
       .then(({ data }) => (data?.users ?? []).filter(u => !exclude.includes(u.id)))
@@ -37,13 +50,14 @@
     return result
   }
 
-  // @name searches accounts (debounced), as in the new-game player list
+  // @name looks the name up (debounced); friends match at once
   $effect(() => {
     const q = query
     clearTimeout(timer)
     pending = null
-    if (!q) { matches = []; return }
-    timer = setTimeout(() => void search(q), 200)
+    matches = []
+    if (!q) return
+    timer = setTimeout(() => void lookup(q), 200)
   })
 
   async function invite(u: Account) {
@@ -55,12 +69,15 @@
     if (parsed.kind === 'invalid') { hint = parsed.hint; return }
     if (parsed.kind === 'invite') {
       const q = parsed.query
-      // Enter within the debounce: search now rather than use the previous query's matches
-      const found = await (pending?.q === q ? pending.result : search(q))
+      // Enter within the debounce: look up now rather than use the previous query's match
+      const found = await (pending?.q === q ? pending.result : lookup(q))
       if (q !== query) return
-      const only = found.length === 1 ? found[0] : null
+      const hits = friendMatches(friendList, q, exclude)
+      const all: Account[] = [...hits, ...found.filter(u => !hits.some(f => f.id === u.id))]
+      const exact = all.find(u => u.name.toLowerCase() === q.toLowerCase())
+      const only = exact ?? (all.length === 1 ? all[0] : null)
       if (only) await invite(only)
-      else hint = found.length === 0 ? `No account to invite matches @${q}` : 'Pick who to invite from the list'
+      else hint = all.length === 0 ? `No player called ${q}` : 'Pick who to invite from the list'
       return
     }
     if (await onguest(parsed.name)) text = ''
@@ -83,13 +100,16 @@
     <Button variant="outline" size="md" type="submit" class="bg-surface-key border-0 font-semibold">
       <Plus size={16} />{parsed.kind === 'invite' ? 'Invite' : 'Add guest'}
     </Button>
-    {#if open && matches.length > 0}
-      <PopoverPanel label="Accounts matching @{query}" align="stretch">
-        {#each matches as u (u.id)}<MenuItem label="Invite {u.name}" onclick={() => void invite(u)} />{/each}
+    {#if open && suggestions.length > 0}
+      <PopoverPanel label="Players matching @{query}" align="stretch">
+        {#each suggestions as s (s.id)}
+          <MenuItem label="Invite {s.name}" detail={s.friend ? 'Friend' : undefined} onclick={() => void invite(s)} />
+        {/each}
       </PopoverPanel>
     {/if}
   </form>
   <span class="text-[12px] {hint ? 'text-live-text' : 'text-text-dim'}">
-    {hint || 'A @username gets an invite. A plain name adds a guest at your board.'}
+    {hint || 'A @name gets an invite. A plain name adds a guest at your board.'}
   </span>
+  <FriendChips {chips} onpick={(id: string) => void oninvite(id)} />
 </div>
