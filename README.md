@@ -68,6 +68,8 @@ or straight from your phone. No board at hand? Tap your darts in and play anyway
 - **Pair a board with a code.** Start the bridge next to the board, type the code it shows, done.
 - **Run the board from dartcade**: Board Manager status, start, stop, reset, calibrate and a
   camera preview.
+- **See the real board.** Swap the drawn board for a camera's picture of yours, straightened and
+  updated after every dart, with the marks on top; remote players see it too.
 - **Every game kept**, with results and stats to look back on.
 
 <p align="center">
