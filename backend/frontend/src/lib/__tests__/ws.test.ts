@@ -62,7 +62,7 @@ describe('parseCamera', () => {
 
   it('ignores anything else, silently', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    for (const m of [null, { type: 'camera' }, { type: 'camera', boardId: 'b', cam: 3, version: 1 }, fixture]) {
+    for (const m of [null, { type: 'camera' }, { type: 'camera', boardId: 'b', cam: 4, version: 1 }, fixture]) {
       expect(parseCamera(m)).toBeNull()
     }
     expect(warn).not.toHaveBeenCalled()

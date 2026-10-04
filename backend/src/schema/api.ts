@@ -173,7 +173,7 @@ export interface paths {
             header?: never;
             path: {
                 id: components["parameters"]["BoardId"];
-                /** @description Camera number, 0-based */
+                /** @description Camera number, 0-based; 3 is the combined still (the three cameras blended) */
                 index: number;
             };
             cookie?: never;
@@ -1691,7 +1691,7 @@ export interface operations {
             header?: never;
             path: {
                 id: components["parameters"]["BoardId"];
-                /** @description Camera number, 0-based */
+                /** @description Camera number, 0-based; 3 is the combined still (the three cameras blended) */
                 index: number;
             };
             cookie?: never;

@@ -232,8 +232,8 @@ paths:
       - name: index
         in: path
         required: true
-        description: Camera number, 0-based
-        schema: { type: integer, minimum: 0, maximum: 2 }
+        description: Camera number, 0-based; 3 is the combined still (the three cameras blended)
+        schema: { type: integer, minimum: 0, maximum: 3 }
     get:
       operationId: getBoardCamera
       summary: Latest camera still

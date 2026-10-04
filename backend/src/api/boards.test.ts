@@ -244,9 +244,16 @@ describe('GET /api/boards/:id/camera/:index', () => {
     expect(stale.headers['cache-control']).toBe('no-store')
   })
 
-  it('rejects a fourth camera with 400', async () => {
-    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/3' })
-    expect(res.statusCode).toBe(400)
+  it('serves the combined still as camera 3, and rejects a camera beyond with 400', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    const stills = new CameraStills()
+    const v = put(stills, 3)
+    const res = await makeApp({ stills }).inject({ method: 'GET', url: `/api/boards/b1/camera/3?v=${v}` })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['cache-control']).toBe('private, max-age=31536000, immutable')
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/4' })).statusCode).toBe(400)
+    // The live preview is per real camera: no combined one
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/3/live' })).statusCode).toBe(400)
   })
 })
 

@@ -192,7 +192,7 @@
       "properties": {
         "type": { "const": "camera" },
         "boardId": { "type": "string" },
-        "cam": { "type": "integer", "minimum": 0, "maximum": 2, "description": "Camera number, 0-based." },
+        "cam": { "type": "integer", "minimum": 0, "maximum": 3, "description": "Camera number, 0-based; 3 is the combined still." },
         "version": { "type": "integer", "minimum": 1, "description": "Goes up with every still of this board and camera." }
       }
     },

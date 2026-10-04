@@ -43,10 +43,11 @@ describe('generated zod schemas', () => {
       .toEqual({ visit_id: 'v1', dart: { segment, score: 20 } })
   })
 
-  it('read a camera still from the bridge and reject one from a fourth camera', () => {
+  it('read a camera still from the bridge (3: combined) and reject a fifth camera', () => {
     const still = { kind: 'camera.still', data: { cam: 1, captured_at: '2026-10-04T12:00:00Z', content_type: 'image/jpeg', data: '/9j/4AAQ' } }
     expect(CameraStillMessageSchema.parse(still)).toEqual(still)
-    expect(CameraStillMessageSchema.safeParse({ ...still, data: { ...still.data, cam: 3 } }).success).toBe(false)
+    expect(CameraStillMessageSchema.safeParse({ ...still, data: { ...still.data, cam: 3 } }).success).toBe(true)
+    expect(CameraStillMessageSchema.safeParse({ ...still, data: { ...still.data, cam: 4 } }).success).toBe(false)
     expect(CameraStillMessageSchema.safeParse({ ...still, data: { ...still.data, data: 'not base64!' } }).success).toBe(false)
   })
 

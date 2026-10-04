@@ -330,7 +330,8 @@ func (j *BridgeHelloData) UnmarshalJSON(value []byte) error {
 // centre, the outer double wire (r = 1) at a third of the width, the image edge at
 // r = 1.5 and 20 at the top.
 type CameraStillData struct {
-	// Camera number, 0-based.
+	// Camera number, 0-based; 3 is the combined still (the three blended, each region
+	// from the camera that sees it sharpest).
 	Cam int `json:"cam" yaml:"cam" mapstructure:"cam"`
 
 	// UTC wall-clock time the bridge fetched it.
@@ -366,8 +367,8 @@ func (j *CameraStillData) UnmarshalJSON(value []byte) error {
 	if err := json.Unmarshal(value, &plain); err != nil {
 		return err
 	}
-	if 2 < plain.Cam {
-		return fmt.Errorf("field %s: must be <= %v", "cam", 2)
+	if 3 < plain.Cam {
+		return fmt.Errorf("field %s: must be <= %v", "cam", 3)
 	}
 	if 0 > plain.Cam {
 		return fmt.Errorf("field %s: must be >= %v", "cam", 0)
@@ -380,8 +381,9 @@ func (j *CameraStillData) UnmarshalJSON(value []byte) error {
 }
 
 // Sent after dart.detected, dart.corrected, takeout.finished and board.resync,
-// once per camera. Like bridge.hello it is not an event: no envelope, no seq,
-// never acked or stored, and dropped while the backend is unreachable.
+// once per camera, then once for the combined still (cam 3). Like bridge.hello it
+// is not an event: no envelope, no seq, never acked or stored, and dropped while
+// the backend is unreachable.
 type CameraStillMessage struct {
 	// Data corresponds to the JSON schema field "data".
 	Data CameraStillData `json:"data" yaml:"data" mapstructure:"data"`
