@@ -68,6 +68,19 @@ playing from their own devices and boards.
 The design and its decisions, including the lobby model, are in
 [`docs/superpowers/specs/2026-10-02-online-multiplayer-design.md`](docs/superpowers/specs/2026-10-02-online-multiplayer-design.md).
 
+## Camera view
+
+The match screen can show a camera's picture of the real board instead of the drawn one (a
+per-device setting: SVG, Cam 1–3). After each dart, correction, takeout and resync the bridge
+fetches a still from each camera, straightened by Board Manager (`/api/img/cams/{i}?warp=true`:
+bull at the centre, the double wire at a third of the width, 20 at the top, which is the board's
+own coordinate system), and sends it up its connection as a `camera.still` message: not an event,
+never stored or replayed. The backend keeps the latest still per board and camera in memory,
+tells the game's pages on the game socket (`camera`, with a version), and serves it at
+`GET /api/boards/{id}/camera/{i}` to anyone who may watch the board's game. Pictures only ever
+travel through the bridge, so this works whether or not the backend can reach the board's
+network. Design: [`docs/superpowers/specs/2026-10-04-camera-view-design.md`](docs/superpowers/specs/2026-10-04-camera-view-design.md).
+
 ## Contracts
 
 `schema/` holds the contracts. Generated files are committed and never edited by hand
@@ -75,9 +88,9 @@ The design and its decisions, including the lobby model, are in
 
 | File | Between | Generated into |
 |---|---|---|
-| `adbridge-v1.json` | bridge → backend events | TypeScript types (`backend/src/schema/types.ts`) |
+| `adbridge-v1.json` | bridge → backend events and camera stills | TypeScript types (`backend/src/schema/types.ts`), zod schemas, Go types (`bridge/internal/schema`) |
 | `api-v1.yaml` (OpenAPI 3.0.3) | HTTP API for the frontend and the bridge | TypeScript types and client, Go client for the bridge |
-| `game-ws-v1.json` | game WebSocket: snapshots, notices, user actions | TypeScript types and zod schemas (backend and frontend) |
+| `game-ws-v1.json` | game WebSocket: snapshots, notices, camera stills, user actions | TypeScript types and zod schemas (backend and frontend) |
 | `common-v1.json` | shared definitions | — |
 
 [`schema/diff-rules.md`](schema/diff-rules.md) describes how the bridge turns Board Manager
