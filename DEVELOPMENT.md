@@ -77,6 +77,11 @@ start the game — Luke throws his own turns from the other window. The password
 | `BRIDGE_SECRET`      | No       | Shared secret for bridge auth (default: `devsecret`) |
 | `VOICE_STORAGE_LIMIT_MB` | No   | Caller voice packs each user may store, in MB (default `50`; `0` turns imports off) |
 
+Voice clips are stored once per file and shared between users' packs. Deleting a pack removes
+the files no pack uses any more; deleting a user (there's no such path in the app yet) cascades
+away their packs but leaves their unshared files until `sweepOrphanClips` (`backend/src/db/voices.ts`)
+runs without a hash list.
+
 Backend-only (set automatically by the dev compose, documented here for manual runs):
 
 | Variable           | Description                              |
