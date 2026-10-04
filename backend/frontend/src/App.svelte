@@ -12,6 +12,7 @@
   import Join from './routes/Join.svelte'
   import Invites from './routes/Invites.svelte'
   import Settings from './routes/Settings.svelte'
+  import PickName from './routes/PickName.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
@@ -61,6 +62,10 @@
 
 <Tooltip.Provider>
   {#if checked}
-    <Router {routes} />
+    {#if $currentUser?.nameNeedsChange}
+      <PickName />
+    {:else}
+      <Router {routes} />
+    {/if}
   {/if}
 </Tooltip.Provider>
