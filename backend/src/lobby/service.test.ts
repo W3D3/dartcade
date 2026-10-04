@@ -40,6 +40,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     await db.deleteFrom('lobby_invites').execute()
     await db.deleteFrom('lobby_people').execute()
     await db.deleteFrom('lobbies').execute()
+    await db.deleteFrom('friendships').execute()
     online.clear()
     for (const b of ['living', 'lenas', 'garage']) online.add(b)
     engineStore = makeStore()
@@ -47,6 +48,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     engine = new SessionEngine(engineStore, vi.fn(), undefined, undefined, e => lobbies.onGameEnded(e), e => lobbies.onGameStarted(e))
     lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b) })
   })
+
+  const befriend = (a: string, b: string) => db.insertInto('friendships').values({ id: `${a}-${b}`, requester_id: a, addressee_id: b, status: 'accepted' }).execute()
 
   describe('create, join, leave', () => {
     it('keeps the default name within the 48 characters a rename allows', async () => {
@@ -147,6 +150,47 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.update('lena', id, { name: 'Ours now' })
       expect(await lobbies.view(id)).toMatchObject({ hostUserId: 'lena', name: 'Ours now' })
       await db.insertInto('user').values(user('sam', 'Sam')).execute()
+    })
+  })
+
+  describe('joining as a friend', () => {
+    it('a friend of the host joins a lobby open to friends without a code', async () => {
+      await befriend('chris', 'lena')
+      const { id } = await lobbies.create('chris')
+      expect((await lobbies.view(id))?.access).toBe('friends')
+      expect(await lobbies.join('lena', id)).toMatchObject({ id })
+      expect((await lobbies.view(id))?.people.map(p => p.name)).toEqual(['Christoph', 'Lena'])
+    })
+
+    it('anyone else needs the code (403); a wrong code is still 404', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await expect(lobbies.join('max', id)).rejects.toMatchObject({ statusCode: 403 })
+      await expect(lobbies.join('max', id, 'ZZZZZZ' === code ? 'YYYYYY' : 'ZZZZZZ')).rejects.toMatchObject({ statusCode: 404 })
+      await lobbies.join('max', id, code)
+    })
+
+    it("a removed friend, or a lobby switched to Invite only, can't be joined without a code", async () => {
+      await befriend('chris', 'lena')
+      await befriend('chris', 'max')
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.update('chris', id, { access: 'invite' })
+      await expect(lobbies.join('lena', id)).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.join('lena', id, code)   // the code works under both
+      await lobbies.update('chris', id, { access: 'friends' })
+      await db.deleteFrom('friendships').where('id', '=', 'chris-max').execute()
+      await expect(lobbies.join('max', id)).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.close('chris', id)
+      await expect(lobbies.join('lena', id)).rejects.toMatchObject({ statusCode: 404 })
+    })
+
+    it('only the host changes who can join; members see it', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await expect(lobbies.update('lena', id, { access: 'invite' })).rejects.toMatchObject({ statusCode: 403 })
+      const ws = sock()
+      hub.addLobbySocket(id, ws, 'lena')
+      await lobbies.update('chris', id, { access: 'invite' })
+      expect(lastMsg(ws).lobby.access).toBe('invite')
     })
   })
 

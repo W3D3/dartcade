@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
+import { areFriends } from '../db/friends.js'
 import { pgErrorCode } from '../db/errors.js'
 import { ActiveSessionError, BoardBusyError, type GameEnded, type GameStarted, type SessionEngine } from '../session/engine.js'
 import { WsCloseCode } from '../schema/game-ws.js'
@@ -15,14 +16,14 @@ import { newLobbyCode, normalizeCode } from './code.js'
 import { inviteView, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
 import { planGame, type PlanProblem } from './startPlan.js'
-import type { LobbyPerson, LobbyState, NextGame, StartGame, TeamId, ThrowOrder } from './types.js'
+import type { LobbyAccess, LobbyPerson, LobbyState, NextGame, StartGame, TeamId, ThrowOrder } from './types.js'
 
 const UNIQUE_VIOLATION = '23505'
 const CODE_ATTEMPTS = 5
 
 export type LobbyRef = { id: string; name: string; code: string }
 export type LobbyPreview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
-export type LobbyPatch = { name?: string; throwOrder?: ThrowOrder; nextGame?: NextGame | null; regenerateCode?: boolean }
+export type LobbyPatch = { name?: string; throwOrder?: ThrowOrder; access?: LobbyAccess; nextGame?: NextGame | null; regenerateCode?: boolean }
 export type PersonPatch = { boardId?: string | null; plays?: boolean; ready?: boolean; position?: number; team?: TeamId }
 
 export type LobbyDeps = {
@@ -256,18 +257,28 @@ export class LobbyService {
     throw new Error('no free lobby code')
   }
 
-  async join(userId: string, lobbyId: string, code: string): Promise<LobbyRef> {
-    // Checked here, read-only and unqueued, so a wrong code, a closed lobby or a running game
-    // never closes the joiner's own lobby before failing (see closeOwnSoloLobbyFirst)
-    const target = await q.loadLobby(this.db, lobbyId)
-    if (!target || target.closedAt !== null || target.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
+  /** By code (anyone), or without one as a friend of the host while the lobby is open to friends. */
+  async join(userId: string, lobbyId: string, code?: string): Promise<LobbyRef> {
+    // Checked here, read-only and unqueued, so a wrong code, a refused friend, a closed lobby or a
+    // running game never closes the joiner's own lobby before failing (see closeOwnSoloLobbyFirst)
+    await this.mayJoin(await q.loadLobby(this.db, lobbyId), userId, code)
     this.refuseIfPlaying(userId)
     await this.closeOwnSoloLobbyFirst(userId, lobbyId)
-    return this.enqueue(lobbyId, async () => {
-      const lobby = await this.reload(lobbyId)
-      if (!lobby || lobby.closedAt !== null || lobby.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
-      return this.addMember(lobby, userId)
-    })
+    return this.enqueue(lobbyId, async () => this.addMember(await this.mayJoin(await this.reload(lobbyId), userId, code), userId))
+  }
+
+  // The open lobby the user may join this way; 404 when closed or the code is wrong, 403 when a
+  // code is needed
+  private async mayJoin(lobby: LobbyState | undefined, userId: string, code: string | undefined): Promise<LobbyState> {
+    if (!lobby || lobby.closedAt !== null) throw LobbyError.notFound(code === undefined ? 'lobby not found' : 'no open lobby with this code')
+    if (code !== undefined) {
+      if (lobby.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
+      return lobby
+    }
+    if (rules.isMember(lobby, userId)) return lobby
+    const hostIsFriend = lobby.hostUserId !== null && await areFriends(this.db, lobby.hostUserId, userId)
+    if (!rules.friendsMayJoin(lobby, hostIsFriend)) throw LobbyError.forbidden("Only the host's friends can join without the code")
+    return lobby
   }
 
   // Before a join: closes the joiner's own solo lobby on its own queue, never inside the target's
@@ -405,6 +416,7 @@ export class LobbyService {
         if (name === '') throw LobbyError.badRequest('the name is empty')
         set.name = name
       }
+      if (patch.access !== undefined) set.access = patch.access
       if (patch.nextGame !== undefined && patch.nextGame !== null && !games[patch.nextGame.gameId]) {
         throw LobbyError.badRequest(`unknown game: ${patch.nextGame.gameId}`)
       }

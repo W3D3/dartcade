@@ -3,6 +3,9 @@ import type { GameConfig } from '../session/types.js'
 /** lobby: as the lobby lists people. random: shuffled per game. bulloff: a bull off decides. */
 export type ThrowOrder = 'lobby' | 'random' | 'bulloff'
 
+/** friends: the host's friends join without the code. invite: code, link or invite only. */
+export type LobbyAccess = 'friends' | 'invite'
+
 /** The game the host set up next. */
 export type NextGame = { gameId: string; config: GameConfig }
 
@@ -71,6 +74,7 @@ export type LobbyState = {
   hostUserId: string | null
   code: string
   throwOrder: ThrowOrder
+  access: LobbyAccess
   nextGame: NextGame | null
   createdAt: Date
   closedAt: Date | null

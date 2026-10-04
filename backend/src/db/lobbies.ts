@@ -2,7 +2,7 @@ import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import {
-  ACTIVITY_KINDS, type ActivityData, type ActivityKind, type InviteRow, type LobbyPerson, type LobbyState, type NextGame, type TeamId, type ThrowOrder,
+  ACTIVITY_KINDS, type ActivityData, type ActivityKind, type InviteRow, type LobbyAccess, type LobbyPerson, type LobbyState, type NextGame, type TeamId, type ThrowOrder,
 } from '../lobby/types.js'
 
 /** How many activity lines a lobby shows (newest first). */
@@ -14,7 +14,7 @@ export type NewPerson = {
   boardId: string | null; ready: boolean; joinedAt?: Date
 }
 export type LobbyUpdate = {
-  name?: string; host_user_id?: string | null; code?: string; throw_order?: ThrowOrder
+  name?: string; host_user_id?: string | null; code?: string; throw_order?: ThrowOrder; access?: LobbyAccess
   next_game?: NextGame | null
 }
 export type PersonUpdate = { board_id?: string | null; board_moved_by?: string | null; plays?: boolean; ready?: boolean; team?: TeamId | null }
@@ -23,6 +23,7 @@ export type PersonUpdate = { board_id?: string | null; board_moved_by?: string |
 const ConfigSchema = z.record(z.string(), z.unknown())
 const NextGameSchema = z.object({ gameId: z.string(), config: ConfigSchema })
 const ThrowOrderSchema = z.enum(['lobby', 'random', 'bulloff'])
+const AccessSchema = z.enum(['friends', 'invite'])
 const ActivityKindSchema = z.enum(ACTIVITY_KINDS)
 const ActivityDataSchema = z.object({
   name: z.string().optional(),
@@ -128,6 +129,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
   return {
     id: row.id, name: row.name, hostUserId: row.host_user_id, code: row.code,
     throwOrder: parsed(ThrowOrderSchema, row.throw_order) ?? 'lobby',
+    access: parsed(AccessSchema, row.access) ?? 'friends',
     nextGame: parsed(NextGameSchema, row.next_game),
     createdAt: row.created_at, closedAt: row.closed_at,
     people: people.map(p => ({

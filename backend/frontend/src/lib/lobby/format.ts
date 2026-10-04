@@ -1,5 +1,5 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
-import type { LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
+import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
 import { x01Rules, type Mode } from '../gameViews/meta.js'
 import { teamSizesLabel } from '../teams.js'
 
@@ -18,6 +18,13 @@ export function formatCode(code: string): string {
 /** Opening it (or scanning its QR code) lands on the Join page with the code filled in. */
 export function joinLink(origin: string, code: string): string {
   return `${origin}/#/join/${code}`
+}
+
+/** Under the host's "Who can join" choice. */
+export function accessHint(access: LobbyAccess): string {
+  return access === 'friends'
+    ? 'Your friends see this lobby in Friends and join without the code. The code and link work too.'
+    : 'Only people with the code, the link or an invite can join.'
 }
 
 const ATC_ORDER: Record<string, string> = { asc: '1–20', desc: '20–1', random: 'Random order' }

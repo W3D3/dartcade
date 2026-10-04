@@ -7320,7 +7320,7 @@
       ],
       "patch": {
         "operationId": "updateLobby",
-        "summary": "Host: rename, set the throw order or the next game, regenerate the code",
+        "summary": "Host: rename, set the throw order, the next game or who can join, regenerate the code",
         "tags": [
           "lobbies"
         ],
@@ -7364,6 +7364,14 @@
                         "additionalProperties": true
                       }
                     }
+                  },
+                  "access": {
+                    "type": "string",
+                    "enum": [
+                      "friends",
+                      "invite"
+                    ],
+                    "description": "Host: who can join without the code"
                   },
                   "regenerateCode": {
                     "type": "boolean"
@@ -7589,7 +7597,7 @@
       ],
       "post": {
         "operationId": "joinLobby",
-        "summary": "Join an open lobby by its code",
+        "summary": "Join an open lobby by its code, or as a friend of the host",
         "tags": [
           "lobbies"
         ],
@@ -7599,10 +7607,8 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": [
-                  "code"
-                ],
                 "additionalProperties": false,
+                "description": "Without a code: only a friend of the host, while the lobby is open to friends.",
                 "properties": {
                   "code": {
                     "type": "string",
@@ -7684,6 +7690,45 @@
           },
           "401": {
             "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
             "content": {
               "application/json": {
                 "schema": {
@@ -16415,6 +16460,14 @@
               }
             }
           },
+          "access": {
+            "type": "string",
+            "enum": [
+              "friends",
+              "invite"
+            ],
+            "description": "Host: who can join without the code"
+          },
           "regenerateCode": {
             "type": "boolean"
           }
@@ -16422,10 +16475,8 @@
       },
       "JoinLobbyRequest": {
         "type": "object",
-        "required": [
-          "code"
-        ],
         "additionalProperties": false,
+        "description": "Without a code: only a friend of the host, while the lobby is open to friends.",
         "properties": {
           "code": {
             "type": "string",

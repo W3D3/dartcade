@@ -11,7 +11,7 @@ const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Len
 const guest = person({ id: 'g', userId: null, addedByUserId: 'lena', name: 'Guest 1', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', position: 2 })
 const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', position: 3 })   // Manual
 const lobby = (over: Partial<LobbyState> = {}): LobbyState => ({
-  id: 'l1', name: 'L', hostUserId: 'chris', code: 'AAAAAA', throwOrder: 'lobby', nextGame: null,
+  id: 'l1', name: 'L', hostUserId: 'chris', code: 'AAAAAA', throwOrder: 'lobby', access: 'friends', nextGame: null,
   createdAt: new Date(0), closedAt: null, people: [chris, lena, guest, max], invites: [], activity: [], ...over,
 })
 const all = { gameId: 'x01', config: { startScore: 301 }, personIds: ['c', 'l', 'g', 'm'] }

@@ -12,11 +12,12 @@
   import ActivityFeed from '$lib/components/lobby/ActivityFeed.svelte'
   import GameRunningBar from '$lib/components/lobby/GameRunningBar.svelte'
   import InviteFriendsPanel from '$lib/components/lobby/InviteFriendsPanel.svelte'
+  import LobbyAccessPanel from '$lib/components/lobby/LobbyAccessPanel.svelte'
   import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import StartProblemDialog from '$lib/components/lobby/StartProblemDialog.svelte'
   import { api } from '$lib/api'
-  import type { Lobby, TeamId } from '$lib/api/lobby-ws'
+  import type { Lobby, LobbyAccess, TeamId } from '$lib/api/lobby-ws'
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
   import { isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
@@ -179,6 +180,7 @@
         </div>
         <div class="order-1 lg:order-none flex flex-col gap-4 md:gap-5 min-w-0 lg:min-h-0">
           {#if l.solo}<InviteFriendsPanel lobby={l} onnewcode={() => void newCode()} />{/if}
+          {#if host}<div class="shrink-0"><LobbyAccessPanel access={l.access} onchange={(access: LobbyAccess) => void updateLobby({ access })} /></div>{/if}
           {#if l.currentSessionId}
             <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
           {/if}

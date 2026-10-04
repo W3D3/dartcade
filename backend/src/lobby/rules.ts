@@ -30,6 +30,10 @@ export const isSolo = (lobby: LobbyState): boolean => lobby.people.filter(p => p
 export const isHost = (lobby: LobbyState, userId: string): boolean =>
   lobby.hostUserId === userId && isMember(lobby, userId)
 
+/** Joining without the code: only a friend of the host, while the lobby is open to friends. */
+export const friendsMayJoin = (lobby: Pick<LobbyState, 'access' | 'hostUserId'>, hostIsFriend: boolean): boolean =>
+  lobby.access === 'friends' && lobby.hostUserId !== null && hostIsFriend
+
 /**
  * The board rule (spec, Decisions → Boards). Menus only list your own boards. Anyone
  * gives a person on Manual one of their own boards. Once they have one, only the person

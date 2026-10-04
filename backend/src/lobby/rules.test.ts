@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { LobbyPerson, LobbyState } from './types.js'
 import {
-  assignTeams, canMove, canRemove, canSetBoard, canSetPlays, canSetReady, canSetTeam, effectiveReady, isHost, isSolo, isTeamGame, leavingWith, nextHost, reorder, shuffleTeams,
+  assignTeams, canMove, canRemove, canSetBoard, canSetPlays, canSetReady, canSetTeam, effectiveReady, friendsMayJoin, isHost, isSolo, isTeamGame, leavingWith, nextHost, reorder, shuffleTeams,
 } from './rules.js'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -9,7 +9,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   position: 0, plays: true, ready: false, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, team: null, ...over,
 })
 const lobbyOf = (people: LobbyPerson[], hostUserId: string | null = 'chris'): LobbyState => ({
-  id: 'l', name: 'L', hostUserId, code: 'AAAAAA', throwOrder: 'lobby', nextGame: null,
+  id: 'l', name: 'L', hostUserId, code: 'AAAAAA', throwOrder: 'lobby', access: 'friends', nextGame: null,
   createdAt: new Date(0), closedAt: null, people, invites: [], activity: [],
 })
 
@@ -172,5 +172,14 @@ describe('teams', () => {
   it('only the host sets teams', () => {
     expect(canSetTeam(lobby, 'chris')).toBe(true)
     expect(canSetTeam(lobby, 'lena')).toBe(false)
+  })
+})
+
+describe('friendsMayJoin', () => {
+  it('only a friend of the host, only while the lobby is open to friends', () => {
+    expect(friendsMayJoin({ access: 'friends', hostUserId: 'chris' }, true)).toBe(true)
+    expect(friendsMayJoin({ access: 'friends', hostUserId: 'chris' }, false)).toBe(false)
+    expect(friendsMayJoin({ access: 'invite', hostUserId: 'chris' }, true)).toBe(false)
+    expect(friendsMayJoin({ access: 'friends', hostUserId: null }, true)).toBe(false)
   })
 })
