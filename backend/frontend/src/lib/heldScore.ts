@@ -5,6 +5,9 @@
 
 export type ScoreUpdates = 'dart' | 'visit'
 
+/** A visit is over at its third dart or when it's locked (a bust or a checkout); else at the takeout. */
+export const visitOver = (locked: boolean, darts: number): boolean => locked || darts >= 3
+
 export function shownScore(o: {
   mode: ScoreUpdates
   /** The snapshot's score left (the team's in a team game). */
@@ -18,7 +21,7 @@ export function shownScore(o: {
   /** The score when the visit began, when known (null after a reload mid-visit). */
   start: number | null
 }): number {
-  const over = o.locked || o.darts.length >= 3
+  const over = visitOver(o.locked, o.darts.length)
   if (o.mode === 'dart' || !o.thrower || over || o.darts.length === 0) return o.score
   return o.start ?? o.score + o.darts.reduce((a, d) => a + d.score, 0)
 }
