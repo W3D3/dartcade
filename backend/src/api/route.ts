@@ -1,6 +1,10 @@
 import type { operations } from '../schema/api.js'
 
-type Json<T> = T extends { content: { 'application/json': infer B } } ? B : never
+// A JSON body as its schema's type; any other media type (image/jpeg, audio/*, application/zip)
+// is declared in the spec as a binary string and handled as a Buffer
+type Body<T> = T extends { content: infer C }
+  ? 'application/json' extends keyof C ? C['application/json'] : Buffer
+  : never
 // openapi-typescript marks absent parts as `never`/optional-never; Fastify wants `unknown` there
 type Defined<T> = [T] extends [never] ? unknown : [T] extends [undefined] ? unknown : T
 type Responses<K extends keyof operations> = operations[K]['responses']
@@ -12,6 +16,6 @@ type Responses<K extends keyof operations> = operations[K]['responses']
 export type Route<K extends keyof operations> = {
   Params: Defined<NonNullable<operations[K]['parameters']['path']>>
   Querystring: Defined<NonNullable<operations[K]['parameters']['query']>>
-  Body: Defined<Json<NonNullable<operations[K]['requestBody']>>>
-  Reply: { [S in keyof Responses<K>]: Json<Responses<K>[S]> }[keyof Responses<K>]
+  Body: Defined<Body<NonNullable<operations[K]['requestBody']>>>
+  Reply: { [S in keyof Responses<K>]: Body<Responses<K>[S]> }[keyof Responses<K>]
 }

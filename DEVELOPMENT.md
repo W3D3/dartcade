@@ -75,6 +75,7 @@ start the game — Luke throws his own turns from the other window. The password
 |----------------------|----------|-------------------------------------------------------|
 | `DARTCADE_BOARD_URL` | Yes      | Board Manager URL, e.g. `http://192.168.1.x:3180`    |
 | `BRIDGE_SECRET`      | No       | Shared secret for bridge auth (default: `devsecret`) |
+| `VOICE_STORAGE_LIMIT_MB` | No   | Caller voice packs each user may store, in MB (default `50`; `0` turns imports off) |
 
 Backend-only (set automatically by the dev compose, documented here for manual runs):
 

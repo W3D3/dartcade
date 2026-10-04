@@ -57,6 +57,10 @@
       "description": "Invites into lobbies"
     },
     {
+      "name": "voices",
+      "description": "Caller voice packs each user imports (only their own; files stored once by content)"
+    },
+    {
       "name": "bridge",
       "description": "Operations the Go bridge depends on"
     }
@@ -1620,6 +1624,204 @@
           }
         }
       }
+    },
+    "/api/voice-packs": {
+      "get": {
+        "operationId": "listVoicePacks",
+        "summary": "The signed-in user's voice packs, oldest first, and their storage use",
+        "tags": [
+          "voices"
+        ],
+        "responses": {
+          "200": {
+            "description": "Packs and usage",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoicePackList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "post": {
+        "operationId": "uploadVoicePack",
+        "summary": "Import a voice pack from a zip file",
+        "description": "A darts-caller download or a zip of clips named by key. Only the caller's clips are kept; the zip itself is not stored. One import at a time per user.\n",
+        "tags": [
+          "voices"
+        ],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "description": "The file name, e.g. `en-GB-Arthur-Male-v4.zip`; the pack's name and language come from it",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 255
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/zip": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "At most 128 MB"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The imported pack",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoicePackSummary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "$ref": "#/components/responses/VoiceLimit"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
+          },
+          "429": {
+            "$ref": "#/components/responses/ImportRunning"
+          }
+        }
+      }
+    },
+    "/api/voice-packs/{id}": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/VoicePackId"
+        }
+      ],
+      "get": {
+        "operationId": "getVoicePack",
+        "summary": "A voice pack's clips per key (one of the signed-in user's)",
+        "tags": [
+          "voices"
+        ],
+        "responses": {
+          "200": {
+            "description": "The pack's manifest",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/VoicePackManifest"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "deleteVoicePack",
+        "summary": "Remove one of the signed-in user's voice packs",
+        "tags": [
+          "voices"
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/voice-clips/{sha256}": {
+      "parameters": [
+        {
+          "name": "sha256",
+          "in": "path",
+          "required": true,
+          "description": "The clip's SHA-256, as a voice pack manifest lists it",
+          "schema": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getVoiceClip",
+        "summary": "A clip's audio, if one of the signed-in user's packs uses it",
+        "description": "The content never changes for a hash, so the response may be cached for good.",
+        "tags": [
+          "voices"
+        ],
+        "responses": {
+          "200": {
+            "description": "The audio file",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "example": "private, max-age=31536000, immutable"
+                }
+              }
+            },
+            "content": {
+              "audio/*": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
     }
   },
   "components": {
@@ -1678,6 +1880,15 @@
         }
       },
       "InviteId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "VoicePackId": {
         "name": "id",
         "in": "path",
         "required": true,
@@ -1795,6 +2006,39 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/LobbyConflict"
+            }
+          }
+        }
+      },
+      "VoiceLimit": {
+        "description": "The pack doesn't fit the user's voice storage limit, imports are turned off, or the upload is too large",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "Voice storage limit reached: 48.2 of 50 MB used"
+            }
+          }
+        }
+      },
+      "UnsupportedMediaType": {
+        "description": "The body isn't of the content type the operation takes",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        }
+      },
+      "ImportRunning": {
+        "description": "The user already has an import running, or the rate limit was exceeded",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
             }
           }
         }
@@ -3326,6 +3570,111 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Invite"
+            }
+          }
+        }
+      },
+      "VoicePackSummary": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "lang",
+          "clips",
+          "bytes",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "From the file name or link, e.g. \"en-GB Arthur (Male)\""
+          },
+          "lang": {
+            "type": "string",
+            "nullable": true,
+            "description": "Language tag from the name, e.g. en-GB"
+          },
+          "clips": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct audio files kept"
+          },
+          "bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Their total size; counts against the user's limit"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "VoicePackList": {
+        "type": "object",
+        "required": [
+          "packs",
+          "usage"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "packs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VoicePackSummary"
+            }
+          },
+          "usage": {
+            "type": "object",
+            "required": [
+              "bytes",
+              "limitBytes"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "bytes": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Every file of the user's packs at full size, shared with others or not"
+              },
+              "limitBytes": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The user's limit; 0 means imports are turned off"
+              }
+            }
+          }
+        }
+      },
+      "VoicePackManifest": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "clips"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "clips": {
+            "type": "object",
+            "description": "Caller key (`180`, `gameshot`, `leg_2`, …) → its variants' clip hashes (fetch each from /api/voice-clips/{sha256})",
+            "additionalProperties": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
             }
           }
         }

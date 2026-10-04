@@ -70,6 +70,9 @@ type PersonId = string
 // SessionId defines model for SessionId.
 type SessionId = string
 
+// VoicePackId defines model for VoicePackId.
+type VoicePackId = string
+
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorResponse
 
