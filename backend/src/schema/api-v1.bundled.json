@@ -1018,7 +1018,7 @@
       },
       "patch": {
         "operationId": "updateMe",
-        "summary": "Change your name (checked like name-available)",
+        "summary": "Change your name (checked like name-available), or go Invisible / Online",
         "tags": [
           "me"
         ],
@@ -3818,7 +3818,8 @@
           "name",
           "email",
           "nameNeedsChange",
-          "suggestedName"
+          "suggestedName",
+          "invisible"
         ],
         "additionalProperties": false,
         "properties": {
@@ -3840,6 +3841,10 @@
             "type": "string",
             "nullable": true,
             "description": "A free name close to yours, while nameNeedsChange"
+          },
+          "invisible": {
+            "type": "boolean",
+            "description": "Friends see you as offline"
           }
         }
       },
@@ -3852,6 +3857,9 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 64
+          },
+          "invisible": {
+            "type": "boolean"
           }
         }
       },
@@ -4413,13 +4421,116 @@
           }
         }
       },
+      "FriendPlaying": {
+        "title": "FriendPlaying",
+        "type": "object",
+        "required": [
+          "kind",
+          "gameId"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "playing"
+            ]
+          },
+          "gameId": {
+            "type": "string"
+          }
+        }
+      },
+      "FriendInLobby": {
+        "title": "FriendInLobby",
+        "type": "object",
+        "required": [
+          "kind",
+          "lobbyId",
+          "lobbyName",
+          "joinable"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "lobby"
+            ]
+          },
+          "lobbyId": {
+            "type": "string"
+          },
+          "lobbyName": {
+            "type": "string"
+          },
+          "joinable": {
+            "type": "boolean",
+            "description": "The lobby is open to friends and its host is your friend: join without the code"
+          }
+        }
+      },
+      "FriendOnline": {
+        "title": "FriendOnline",
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "online"
+            ]
+          }
+        }
+      },
+      "FriendOffline": {
+        "title": "FriendOffline",
+        "description": "Offline, or Invisible",
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "offline"
+            ]
+          }
+        }
+      },
+      "FriendStatus": {
+        "title": "FriendStatus",
+        "description": "What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.",
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/FriendPlaying"
+          },
+          {
+            "$ref": "#/components/schemas/FriendInLobby"
+          },
+          {
+            "$ref": "#/components/schemas/FriendOnline"
+          },
+          {
+            "$ref": "#/components/schemas/FriendOffline"
+          }
+        ]
+      },
       "Friend": {
         "title": "Friend",
         "type": "object",
         "required": [
           "id",
           "name",
-          "friendsSince"
+          "friendsSince",
+          "status",
+          "inYourLobby",
+          "invited"
         ],
         "additionalProperties": false,
         "properties": {
@@ -4432,6 +4543,17 @@
           "friendsSince": {
             "type": "string",
             "format": "date-time"
+          },
+          "status": {
+            "$ref": "#/components/schemas/FriendStatus"
+          },
+          "inYourLobby": {
+            "type": "boolean",
+            "description": "They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)"
+          },
+          "invited": {
+            "type": "boolean",
+            "description": "They have a pending invite to your lobby"
           }
         }
       },

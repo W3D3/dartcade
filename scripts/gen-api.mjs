@@ -87,6 +87,7 @@ async function genZod() {
     CameraMessageSchema: ws.$defs.CameraMessage,
     LobbyServerMessageSchema: lobby.$defs.LobbyServerMessage,
     MeMessageSchema: lobby.$defs.MeMessage,
+    MeServerMessageSchema: lobby.$defs.MeServerMessage,
     DartSchema: ab.$defs.Dart,
     DartDetectedDataSchema: ab.$defs.DartDetectedData,
     DartCorrectedDataSchema: ab.$defs.DartCorrectedData,

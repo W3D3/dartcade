@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "lobby-ws/v1",
   "title": "LobbyWs",
-  "description": "Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.",
+  "description": "Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.",
   "$defs": {
     "ThrowOrder": {
       "title": "ThrowOrder",
@@ -1983,6 +1983,672 @@
           ]
         }
       }
+    },
+    "FriendsMessage": {
+      "title": "FriendsMessage",
+      "description": "Pushed on /ws/me when it opens and whenever your friends, their status or your requests change. Same shape as GET /api/friends.",
+      "type": "object",
+      "required": [
+        "type",
+        "friends",
+        "incoming",
+        "outgoing"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "friends"
+        },
+        "friends": {
+          "type": "array",
+          "items": {
+            "title": "Friend",
+            "type": "object",
+            "required": [
+              "id",
+              "name",
+              "friendsSince",
+              "status",
+              "inYourLobby",
+              "invited"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "friendsSince": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "status": {
+                "title": "FriendStatus",
+                "description": "What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.",
+                "oneOf": [
+                  {
+                    "title": "FriendPlaying",
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "gameId"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "playing"
+                        ]
+                      },
+                      "gameId": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "title": "FriendInLobby",
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "lobbyId",
+                      "lobbyName",
+                      "joinable"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "lobby"
+                        ]
+                      },
+                      "lobbyId": {
+                        "type": "string"
+                      },
+                      "lobbyName": {
+                        "type": "string"
+                      },
+                      "joinable": {
+                        "type": "boolean",
+                        "description": "The lobby is open to friends and its host is your friend: join without the code"
+                      }
+                    }
+                  },
+                  {
+                    "title": "FriendOnline",
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "online"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "title": "FriendOffline",
+                    "description": "Offline, or Invisible",
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "offline"
+                        ]
+                      }
+                    }
+                  }
+                ]
+              },
+              "inYourLobby": {
+                "type": "boolean",
+                "description": "They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)"
+              },
+              "invited": {
+                "type": "boolean",
+                "description": "They have a pending invite to your lobby"
+              }
+            }
+          }
+        },
+        "incoming": {
+          "type": "array",
+          "items": {
+            "title": "IncomingFriendRequest",
+            "type": "object",
+            "required": [
+              "id",
+              "from",
+              "mutualFriends",
+              "createdAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "from": {
+                "title": "UserRef",
+                "type": "object",
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Their handle, shown as @name"
+                  }
+                }
+              },
+              "mutualFriends": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Friends you both have (\"3 friends in common\")"
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        },
+        "outgoing": {
+          "type": "array",
+          "items": {
+            "title": "OutgoingFriendRequest",
+            "type": "object",
+            "required": [
+              "id",
+              "to",
+              "createdAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "to": {
+                "title": "UserRef",
+                "type": "object",
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Their handle, shown as @name"
+                  }
+                }
+              },
+              "createdAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      }
+    },
+    "MeServerMessage": {
+      "title": "MeServerMessage",
+      "description": "Everything /ws/me pushes.",
+      "oneOf": [
+        {
+          "title": "MeMessage",
+          "description": "Pushed on /ws/me when it opens and whenever it changes.",
+          "type": "object",
+          "required": [
+            "type",
+            "invites",
+            "lobby",
+            "game"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "me"
+            },
+            "invites": {
+              "type": "array",
+              "items": {
+                "title": "PendingInvite",
+                "description": "An invite waiting for the viewer's answer (same shape as Invite in api-v1.yaml).",
+                "type": "object",
+                "required": [
+                  "id",
+                  "lobbyId",
+                  "lobbyName",
+                  "inviterUserId",
+                  "inviterName",
+                  "createdAt"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "lobbyId": {
+                    "type": "string"
+                  },
+                  "lobbyName": {
+                    "type": "string"
+                  },
+                  "inviterUserId": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "inviterName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "lobby": {
+              "anyOf": [
+                {
+                  "title": "LobbySummary",
+                  "description": "The viewer's lobby for the lobby indicator.",
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "hostName",
+                    "peopleCount",
+                    "nextGame",
+                    "sessionId",
+                    "gameId",
+                    "youThrowNext",
+                    "leg",
+                    "youHost",
+                    "solo"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "hostName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Null only if the host's account is gone, or a host who left during a game hasn't been replaced yet (both settle on the next change)."
+                    },
+                    "peopleCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "nextGame": {
+                      "anyOf": [
+                        {
+                          "title": "NextGame",
+                          "type": "object",
+                          "required": [
+                            "gameId",
+                            "config"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "gameId": {
+                              "type": "string"
+                            },
+                            "config": {
+                              "type": "object",
+                              "additionalProperties": true
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "sessionId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The lobby's running game."
+                    },
+                    "gameId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "Its game mode."
+                    },
+                    "youThrowNext": {
+                      "type": "boolean",
+                      "description": "The viewer controls the seat that's up in the running game."
+                    },
+                    "leg": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ],
+                      "minimum": 0,
+                      "description": "The running game's leg, 0-based; null for games without legs or without a game."
+                    },
+                    "youHost": {
+                      "type": "boolean",
+                      "description": "The viewer is the lobby's host."
+                    },
+                    "solo": {
+                      "type": "boolean",
+                      "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "game": {
+              "anyOf": [
+                {
+                  "title": "ActiveGame",
+                  "description": "The viewer's running game, wherever it started (a lobby or not); LobbySummary carries that game's lobby-specific state.",
+                  "type": "object",
+                  "required": [
+                    "sessionId",
+                    "gameId",
+                    "lobbyName",
+                    "players"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "sessionId": {
+                      "type": "string"
+                    },
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "lobbyName": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "The lobby it's playing in; null for a solo lobby or a game started outside a lobby."
+                    },
+                    "players": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The seat names, in seat order."
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "title": "FriendsMessage",
+          "description": "Pushed on /ws/me when it opens and whenever your friends, their status or your requests change. Same shape as GET /api/friends.",
+          "type": "object",
+          "required": [
+            "type",
+            "friends",
+            "incoming",
+            "outgoing"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "friends"
+            },
+            "friends": {
+              "type": "array",
+              "items": {
+                "title": "Friend",
+                "type": "object",
+                "required": [
+                  "id",
+                  "name",
+                  "friendsSince",
+                  "status",
+                  "inYourLobby",
+                  "invited"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "friendsSince": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "status": {
+                    "title": "FriendStatus",
+                    "description": "What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.",
+                    "oneOf": [
+                      {
+                        "title": "FriendPlaying",
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "gameId"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "playing"
+                            ]
+                          },
+                          "gameId": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "title": "FriendInLobby",
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "lobbyId",
+                          "lobbyName",
+                          "joinable"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "lobby"
+                            ]
+                          },
+                          "lobbyId": {
+                            "type": "string"
+                          },
+                          "lobbyName": {
+                            "type": "string"
+                          },
+                          "joinable": {
+                            "type": "boolean",
+                            "description": "The lobby is open to friends and its host is your friend: join without the code"
+                          }
+                        }
+                      },
+                      {
+                        "title": "FriendOnline",
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "online"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "title": "FriendOffline",
+                        "description": "Offline, or Invisible",
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "offline"
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  "inYourLobby": {
+                    "type": "boolean",
+                    "description": "They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)"
+                  },
+                  "invited": {
+                    "type": "boolean",
+                    "description": "They have a pending invite to your lobby"
+                  }
+                }
+              }
+            },
+            "incoming": {
+              "type": "array",
+              "items": {
+                "title": "IncomingFriendRequest",
+                "type": "object",
+                "required": [
+                  "id",
+                  "from",
+                  "mutualFriends",
+                  "createdAt"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "from": {
+                    "title": "UserRef",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Their handle, shown as @name"
+                      }
+                    }
+                  },
+                  "mutualFriends": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Friends you both have (\"3 friends in common\")"
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            },
+            "outgoing": {
+              "type": "array",
+              "items": {
+                "title": "OutgoingFriendRequest",
+                "type": "object",
+                "required": [
+                  "id",
+                  "to",
+                  "createdAt"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "to": {
+                    "title": "UserRef",
+                    "type": "object",
+                    "required": [
+                      "id",
+                      "name"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "Their handle, shown as @name"
+                      }
+                    }
+                  },
+                  "createdAt": {
+                    "type": "string",
+                    "format": "date-time"
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
     }
   }
 }

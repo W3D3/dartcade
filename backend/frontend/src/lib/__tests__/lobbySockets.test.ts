@@ -40,8 +40,15 @@ describe('parsing', () => {
   })
 
   it('takes the per-user message', () => {
-    expect(parseMeMessage(meMsg)?.lobby?.youHost).toBe(true)
+    const parsed = parseMeMessage(meMsg)
+    expect(parsed?.type === 'me' && parsed.lobby?.youHost).toBe(true)
     expect(parseMeMessage({ type: 'me', invites: 'x' })).toBeNull()
+  })
+
+  it('takes the friends message too', () => {
+    const friendsMsg = { type: 'friends', friends: [{ id: 'lena', name: 'Lena', friendsSince: '2026-10-04T10:00:00.000Z', status: { kind: 'online' }, inYourLobby: false, invited: false }], incoming: [], outgoing: [] }
+    expect(parseMeMessage(friendsMsg)?.type).toBe('friends')
+    expect(parseMeMessage({ type: 'friends', friends: 'x' })).toBeNull()
   })
 })
 
@@ -120,6 +127,27 @@ describe('createMeStore', () => {
     m.start()
     expect(FakeSocket.opened).toHaveLength(2)
     expect(m.running()).toBe(true)
+  })
+
+  it('keeps the friends list next to the rest, whichever comes first', () => {
+    const s = createMeStore(open)
+    s.start()
+    FakeSocket.opened[0].receive(meMsg)
+    expect(get(s)?.friends).toBeNull()
+    FakeSocket.opened[0].receive({ type: 'friends', friends: [], incoming: [{ id: 'f1', from: { id: 'max', name: 'Max' }, mutualFriends: 1, createdAt: '2026-10-04T10:00:00.000Z' }], outgoing: [] })
+    expect(get(s)?.friends?.incoming).toHaveLength(1)
+    FakeSocket.opened[0].receive(meMsg)
+    expect(get(s)?.friends?.incoming).toHaveLength(1)
+    expect(get(s)?.lobby?.youHost).toBe(true)
+    s.stop()
+  })
+
+  it('a friends message before the me message starts the state with an empty rest', () => {
+    const s = createMeStore(open)
+    s.start()
+    FakeSocket.opened[0].receive({ type: 'friends', friends: [], incoming: [], outgoing: [] })
+    expect(get(s)).toEqual({ invites: [], lobby: null, game: null, friends: { friends: [], incoming: [], outgoing: [] } })
+    s.stop()
   })
 
   it('stop() cancels a pending reconnect, so a restart leaves one socket', () => {

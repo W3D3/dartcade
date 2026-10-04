@@ -396,7 +396,7 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** Change your name (checked like name-available) */
+        /** Change your name (checked like name-available), or go Invisible / Online */
         patch: operations["updateMe"];
         trace?: never;
     };
@@ -1282,9 +1282,12 @@ export interface components {
             nameNeedsChange: boolean;
             /** @description A free name close to yours, while nameNeedsChange */
             suggestedName: string | null;
+            /** @description Friends see you as offline */
+            invisible: boolean;
         };
         UpdateMeRequest: {
             name?: string;
+            invisible?: boolean;
         };
         NameAvailability: {
             available: boolean;
@@ -1455,12 +1458,50 @@ export interface components {
             r: number;
             theta_deg: number;
         };
+        /** FriendPlaying */
+        FriendPlaying: {
+            /** @enum {string} */
+            kind: "playing";
+            gameId: string;
+        };
+        /** FriendInLobby */
+        FriendInLobby: {
+            /** @enum {string} */
+            kind: "lobby";
+            lobbyId: string;
+            lobbyName: string;
+            /** @description The lobby is open to friends and its host is your friend: join without the code */
+            joinable: boolean;
+        };
+        /** FriendOnline */
+        FriendOnline: {
+            /** @enum {string} */
+            kind: "online";
+        };
+        /**
+         * FriendOffline
+         * @description Offline, or Invisible
+         */
+        FriendOffline: {
+            /** @enum {string} */
+            kind: "offline";
+        };
+        /**
+         * FriendStatus
+         * @description What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.
+         */
+        FriendStatus: components["schemas"]["FriendPlaying"] | components["schemas"]["FriendInLobby"] | components["schemas"]["FriendOnline"] | components["schemas"]["FriendOffline"];
         /** Friend */
         Friend: {
             id: string;
             name: string;
             /** Format: date-time */
             friendsSince: string;
+            status: components["schemas"]["FriendStatus"];
+            /** @description They're in the lobby you're in (shown even while they're Invisible: you see them there anyway) */
+            inYourLobby: boolean;
+            /** @description They have a pending invite to your lobby */
+            invited: boolean;
         };
         /** UserRef */
         UserRef: {

@@ -111,15 +111,60 @@
       "additionalProperties": false,
       "properties": { "id": { "type": "string" }, "name": { "type": "string", "description": "Their handle, shown as @name" } }
     },
+    "FriendPlaying": {
+      "title": "FriendPlaying",
+      "type": "object",
+      "required": ["kind", "gameId"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "enum": ["playing"] }, "gameId": { "type": "string" } }
+    },
+    "FriendInLobby": {
+      "title": "FriendInLobby",
+      "type": "object",
+      "required": ["kind", "lobbyId", "lobbyName", "joinable"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["lobby"] },
+        "lobbyId": { "type": "string" },
+        "lobbyName": { "type": "string" },
+        "joinable": { "type": "boolean", "description": "The lobby is open to friends and its host is your friend: join without the code" }
+      }
+    },
+    "FriendOnline": {
+      "title": "FriendOnline",
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "enum": ["online"] } }
+    },
+    "FriendOffline": {
+      "title": "FriendOffline",
+      "description": "Offline, or Invisible",
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "enum": ["offline"] } }
+    },
+    "FriendStatus": {
+      "title": "FriendStatus",
+      "description": "What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.",
+      "oneOf": [
+        { "$ref": "#/$defs/FriendPlaying" }, { "$ref": "#/$defs/FriendInLobby" },
+        { "$ref": "#/$defs/FriendOnline" }, { "$ref": "#/$defs/FriendOffline" }
+      ]
+    },
     "Friend": {
       "title": "Friend",
       "type": "object",
-      "required": ["id", "name", "friendsSince"],
+      "required": ["id", "name", "friendsSince", "status", "inYourLobby", "invited"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
         "name": { "type": "string" },
-        "friendsSince": { "type": "string", "format": "date-time" }
+        "friendsSince": { "type": "string", "format": "date-time" },
+        "status": { "$ref": "#/$defs/FriendStatus" },
+        "inYourLobby": { "type": "boolean", "description": "They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)" },
+        "invited": { "type": "boolean", "description": "They have a pending invite to your lobby" }
       }
     },
     "IncomingFriendRequest": {

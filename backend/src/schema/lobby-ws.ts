@@ -20,9 +20,20 @@ export type TeamId = 'A' | 'B'
  * via the `definition` "LobbyServerMessage".
  */
 export type LobbyServerMessage = LobbyMessage | LobbyClosedMessage
+/**
+ * What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.
+ */
+export type FriendStatus = FriendPlaying | FriendInLobby | FriendOnline | FriendOffline
+/**
+ * Everything /ws/me pushes.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "MeServerMessage".
+ */
+export type MeServerMessage = MeMessage | FriendsMessage
 
 /**
- * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
+ * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
  */
 export interface LobbyWs {
   [k: string]: unknown
@@ -288,4 +299,73 @@ export interface MeMessage {
   invites: PendingInvite[]
   lobby: LobbySummary | null
   game: ActiveGame | null
+}
+/**
+ * Pushed on /ws/me when it opens and whenever your friends, their status or your requests change. Same shape as GET /api/friends.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "FriendsMessage".
+ */
+export interface FriendsMessage {
+  type: 'friends'
+  friends: Friend[]
+  incoming: IncomingFriendRequest[]
+  outgoing: OutgoingFriendRequest[]
+}
+export interface Friend {
+  id: string
+  name: string
+  friendsSince: string
+  status: FriendStatus
+  /**
+   * They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)
+   */
+  inYourLobby: boolean
+  /**
+   * They have a pending invite to your lobby
+   */
+  invited: boolean
+}
+export interface FriendPlaying {
+  kind: 'playing'
+  gameId: string
+}
+export interface FriendInLobby {
+  kind: 'lobby'
+  lobbyId: string
+  lobbyName: string
+  /**
+   * The lobby is open to friends and its host is your friend: join without the code
+   */
+  joinable: boolean
+}
+export interface FriendOnline {
+  kind: 'online'
+}
+/**
+ * Offline, or Invisible
+ */
+export interface FriendOffline {
+  kind: 'offline'
+}
+export interface IncomingFriendRequest {
+  id: string
+  from: UserRef
+  /**
+   * Friends you both have ("3 friends in common")
+   */
+  mutualFriends: number
+  createdAt: string
+}
+export interface UserRef {
+  id: string
+  /**
+   * Their handle, shown as @name
+   */
+  name: string
+}
+export interface OutgoingFriendRequest {
+  id: string
+  to: UserRef
+  createdAt: string
 }

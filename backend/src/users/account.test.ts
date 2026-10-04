@@ -44,7 +44,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('account names', () => {
 
   it('renames, clearing the flag; refuses taken and invalid names', async () => {
     expect(await renameUser(db, 'old', ' Phil_T ')).toBe('Phil_T')
-    expect(await getAccount(db, 'old')).toEqual({ id: 'old', name: 'Phil_T', email: 'old@example.com', nameNeedsChange: false })
+    expect(await getAccount(db, 'old')).toEqual({ id: 'old', name: 'Phil_T', email: 'old@example.com', nameNeedsChange: false, invisible: false })
     await expect(renameUser(db, 'dup', 'luke')).rejects.toMatchObject({ statusCode: 409, body: { error: 'That name is taken' } })
     await expect(renameUser(db, 'dup', 'l u k e')).rejects.toMatchObject({ statusCode: 400 })
   })
