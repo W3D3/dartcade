@@ -9,7 +9,7 @@
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "gen:types": "json-schema-to-typescript ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties",
+    "gen:types": "json2ts ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties",
     "lint": "eslint src"
   },
   "dependencies": {
