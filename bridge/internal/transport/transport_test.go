@@ -596,3 +596,35 @@ func TestStillMessageMatchesTheSchemaShape(t *testing.T) {
 		t.Errorf("message: %s", b)
 	}
 }
+
+// Each (re)connect runs the OnConnect hook once the connection is up, so the bridge can send
+// fresh stills right away.
+func TestOnConnectRunsOnEveryConnect(t *testing.T) {
+	var conns atomic.Int32
+	s := newTestServer(t, func(conn *websocket.Conn) {
+		n := conns.Add(1)
+		var e transport.Envelope
+		wsjson.Read(context.Background(), conn, &e) // hello
+		if n == 1 {
+			return // drop the first connection
+		}
+		time.Sleep(300 * time.Millisecond)
+	})
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	calls := make(chan bool, 4)
+	tr.OnConnect(func() { calls <- tr.Connected() })
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	go tr.Start(ctx) //nolint
+
+	for i := 0; i < 2; i++ {
+		select {
+		case up := <-calls:
+			if !up {
+				t.Error("OnConnect ran before the connection was up")
+			}
+		case <-time.After(2 * time.Second):
+			t.Fatalf("OnConnect ran %d times, want 2", i)
+		}
+	}
+}
