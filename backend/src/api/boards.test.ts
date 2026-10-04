@@ -30,7 +30,7 @@ import * as middleware from '../auth/middleware.js'
 beforeEach(() => vi.clearAllMocks())
 afterEach(() => vi.unstubAllGlobals())
 
-function makeApp(opts: { stills?: CameraStills; getSessionByBoard?: (boardId: string) => Session | undefined; isLobbyMember?: (lobbyId: string, userId: string) => Promise<boolean> } = {}) {
+function makeApp(opts: { stills?: CameraStills; getSessionByBoard?: (boardId: string) => Session | undefined; isLobbyMember?: (lobbyId: string, userId: string) => Promise<boolean>; liveCameraTimeoutMs?: number } = {}) {
   const app = createFastify()
   app.register(boardsApiPlugin, { db: {} as any, ...opts })
   return app
@@ -247,6 +247,87 @@ describe('GET /api/boards/:id/camera/:index', () => {
   it('rejects a fourth camera with 400', async () => {
     const res = await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/3' })
     expect(res.statusCode).toBe(400)
+  })
+})
+
+describe('GET /api/boards/:id/camera/:index/live', () => {
+  it('returns 404 when board not found', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(undefined)
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/nope/camera/0/live' })
+    expect(res.statusCode).toBe(404)
+  })
+
+  it('is for the owner only: a watcher of the board\'s game gets 403 here, but the stored still', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'other' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    const stills = new CameraStills()
+    stills.put('b1', 0, { bytes: Buffer.from([0xff, 0xd8]), contentType: 'image/jpeg', capturedAt: '2026-10-04T12:00:00Z' })
+    const watched = { ownerUserId: 'host', seats: [{ controllerUserId: 'user-1' }], lobbyId: null } as unknown as Session
+    const app = makeApp({ stills, getSessionByBoard: () => watched })
+    expect((await app.inject({ method: 'GET', url: '/api/boards/b1/camera/0/live' })).statusCode).toBe(403)
+    expect(fetch).not.toHaveBeenCalled()
+    expect((await app.inject({ method: 'GET', url: '/api/boards/b1/camera/0' })).statusCode).toBe(200)
+  })
+
+  it('returns 503 when the board is offline or has no Board Manager URL', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue(undefined)
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/0/live' })).statusCode).toBe(503)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: null } as any)
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/0/live' })).statusCode).toBe(503)
+  })
+
+  it('returns 502 when the camera does not answer, or not with an image', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('', { status: 400 })))
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })).statusCode).toBe(502)
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')))
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })).statusCode).toBe(502)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('<html>', { status: 200, headers: { 'content-type': 'text/html' } })))
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })).statusCode).toBe(502)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('x', { status: 200 })))
+    expect((await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })).statusCode).toBe(502)
+  })
+
+  it('gives up on a camera that hangs (502)', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    vi.stubGlobal('fetch', vi.fn((_url: string, init: RequestInit) => new Promise((_resolve, reject) => {
+      init.signal?.addEventListener('abort', () => { reject(new Error('aborted')) })
+    })))
+    const res = await makeApp({ liveCameraTimeoutMs: 20 }).inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })
+    expect(res.statusCode).toBe(502)
+  })
+
+  it('serves the owner the raw frame from the Board Manager, uncached', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://192.168.0.109:3180' } as any)
+    const frame = new Uint8Array([0xff, 0xd8, 0xff, 0xe0])
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(frame, { status: 200, headers: { 'content-type': 'image/jpeg; charset=binary' } })))
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/1/live?t=1790700000000' })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['content-type']).toBe('image/jpeg')
+    expect(res.headers['cache-control']).toBe('no-store')
+    expect(res.rawPayload).toEqual(Buffer.from(frame))
+    expect(vi.mocked(global.fetch as any)).toHaveBeenCalledWith('http://192.168.0.109:3180/api/img/cams/1', expect.objectContaining({ signal: expect.any(AbortSignal) }))
+  })
+
+  it('is off (404) with BOARD_LIVE_CAMERA=off', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    const fetch = vi.fn()
+    vi.stubGlobal('fetch', fetch)
+    vi.stubEnv('BOARD_LIVE_CAMERA', 'off')
+    try {
+      const res = await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })
+      expect(res.statusCode).toBe(404)
+      expect(fetch).not.toHaveBeenCalled()
+    } finally {
+      vi.unstubAllEnvs()
+    }
   })
 })
 

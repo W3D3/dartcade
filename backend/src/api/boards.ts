@@ -28,6 +28,8 @@ type Opts = FastifyPluginOptions & {
   isLobbyMember?: IsLobbyMember
   /** Camera stills of the boards (tests pass their own). */
   stills?: CameraStills
+  /** How long the live camera route waits for the Board Manager (3 s). */
+  liveCameraTimeoutMs?: number
 }
 
 // A still asked for by its current version never changes
@@ -42,7 +44,9 @@ const ACTIONS = [
 ] as const
 
 export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db, releaseBoard = () => Promise.resolve(), getSessionByBoard = () => undefined, isLobbyMember = noLobbies, stills = cameraStills } = opts
+  const { db, releaseBoard = () => Promise.resolve(), getSessionByBoard = () => undefined, isLobbyMember = noLobbies, stills = cameraStills, liveCameraTimeoutMs = 3000 } = opts
+  // BOARD_LIVE_CAMERA=off: a cloud backend can't reach boards' networks, so it never tries
+  const liveCamera = process.env.BOARD_LIVE_CAMERA !== 'off'
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
   async function ownBoard(id: string, userId: string, reply: { code(n: number): { send(b: { error: string }): unknown } }) {
@@ -87,6 +91,28 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     reply.header('content-type', still.contentType)
     reply.header('cache-control', req.query.v === still.version ? CACHE_FOR_GOOD : 'no-store')
     return reply.send(still.bytes)
+  })
+
+  // The camera's live raw frame, straight from the Board Manager: for the owner setting up the
+  // board (it works only when the backend can reach the board's network)
+  app.get<Route<'getBoardCameraLive'>>('/api/boards/:id/camera/:index/live', { preValidation: requireAuth, schema: fromSpec('getBoardCameraLive') }, async (req, reply) => {
+    if (!liveCamera) return reply.code(404).send({ error: 'not found' })
+    const { id, index } = req.params
+    if (!await ownBoard(id, req.userId, reply)) return reply
+    const conn = bridgeConnections.get(id)
+    // An http(s) origin: the bridge gateway keeps nothing else (parseHello)
+    if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
+    const url = new URL(`/api/img/cams/${index}`, conn.bmUrl).href
+    // A frame, or null when the camera didn't answer with an image in time
+    let frame: Buffer | null = null
+    try {
+      const upstream = await fetch(url, { signal: AbortSignal.timeout(liveCameraTimeoutMs) })
+      if (upstream.ok && upstream.headers.get('content-type')?.startsWith('image/')) frame = Buffer.from(await upstream.arrayBuffer())
+    } catch { /* unreachable, timed out */ }
+    if (!frame) return reply.code(502).send({ error: 'camera unavailable' })
+    reply.header('content-type', 'image/jpeg')
+    reply.header('cache-control', 'no-store')
+    return reply.send(frame)
   })
 
   app.post<Route<'createBoard'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('createBoard') }, async (req, reply) => {

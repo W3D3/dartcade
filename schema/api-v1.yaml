@@ -267,6 +267,37 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/boards/{id}/camera/{index}/live:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+      - name: index
+        in: path
+        required: true
+        description: Camera number, 0-based
+        schema: { type: integer, minimum: 0, maximum: 2 }
+    get:
+      operationId: getBoardCameraLive
+      summary: Live camera frame
+      description: >-
+        The camera's current raw frame, fetched from the Board Manager through the backend (for
+        setting up a board; works only when the backend can reach the board's network). Owner only.
+        Off (404) when the backend runs with BOARD_LIVE_CAMERA=off.
+        Clients may append a cache-busting query (e.g. `?t=<timestamp>`); it is ignored.
+      tags: [boards]
+      responses:
+        '200':
+          description: JPEG frame
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
   /api/boards/{id}/start:
     parameters:
       - $ref: '#/components/parameters/BoardId'

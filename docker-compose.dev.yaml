@@ -26,6 +26,7 @@ services:
       # Extra origins (e.g. this machine's tailnet address) come from .env
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5173,${DARTCADE_EXTRA_ORIGINS:-}
       VOICE_STORAGE_LIMIT_MB: ${VOICE_STORAGE_LIMIT_MB:-50}
+      BOARD_LIVE_CAMERA: ${BOARD_LIVE_CAMERA:-on}
     ports:
       - "3000:3000"
     depends_on:
