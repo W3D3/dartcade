@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 function uniqueUser(seed: string) {
   return {
-    name: `E2E Auth ${seed}`,
+    name: `e2e-${seed}-${Date.now().toString(36)}`,
     email: `e2e-auth-${seed}-${Date.now()}@test.local`,
     password: 'TestPass1!',
   }

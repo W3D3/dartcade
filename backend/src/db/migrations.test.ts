@@ -47,3 +47,39 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('006_game_history migration', ()
     expect(row.visibility).toBe('private')
   })
 })
+
+describe.skipIf(!process.env.TEST_DATABASE_URL)('013_unique_names migration', () => {
+  const SCHEMA_013 = 'mig_013_test'
+  let admin: Kysely<Database>
+  let db: Kysely<Database>
+
+  beforeAll(async () => {
+    admin = createDb(url)
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_013} CASCADE`).execute(admin)
+    await sql.raw(`CREATE SCHEMA ${SCHEMA_013}`).execute(admin)
+    db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_013}`)
+    await runMigrations(db, { until: '012_voice_packs.sql' })
+    await sql`INSERT INTO "user" (id, name, email, "createdAt") VALUES
+      ('u1', 'Luke', 'u1@x', '2026-01-01'), ('u2', 'luke', 'u2@x', '2026-02-01'), ('u3', 'LUKE', 'u3@x', '2026-03-01'),
+      ('u4', 'Phil Taylor', 'u4@x', '2026-01-01'), ('u5', 'x', 'u5@x', '2026-01-01'), ('u6', 'sam.180', 'u6@x', '2026-01-01')`.execute(db)
+    await runMigrations(db)
+  })
+
+  afterAll(async () => {
+    await db.destroy()
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_013} CASCADE`).execute(admin)
+    await admin.destroy()
+  })
+
+  const flagged = async () => (await db.selectFrom('user').select(['id', 'name_needs_change']).orderBy('id').execute())
+    .filter(u => u.name_needs_change).map(u => u.id)
+
+  it('flags all but the oldest of each case-insensitive group, and names that break the rules', async () => {
+    expect(await flagged()).toEqual(['u2', 'u3', 'u4', 'u5'])
+  })
+
+  it('keeps names unique ignoring case from now on, flagged names aside', async () => {
+    await expect(sql`INSERT INTO "user" (id, name, email) VALUES ('u7', 'SAM.180', 'u7@x')`.execute(db)).rejects.toMatchObject({ code: '23505' })
+    await sql`INSERT INTO "user" (id, name, email, name_needs_change) VALUES ('u8', 'Luke', 'u8@x', true)`.execute(db)
+  })
+})

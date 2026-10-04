@@ -49,6 +49,10 @@
       "description": "Other accounts, to play with"
     },
     {
+      "name": "me",
+      "description": "The signed-in account (name, status)"
+    },
+    {
       "name": "lobbies",
       "description": "Lobbies, to play games with friends (live state is on the lobby socket, schema/lobby-ws-v1.json)"
     },
@@ -932,6 +936,120 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/name-available": {
+      "get": {
+        "operationId": "checkNameAvailable",
+        "summary": "Whether a name can be yours (works signed out, for sign-up; your own name counts as free)",
+        "tags": [
+          "users"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "description": "The name as typed"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether it's free, and why not",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NameAvailability"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me": {
+      "get": {
+        "operationId": "getMe",
+        "summary": "The signed-in account",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "The account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "patch": {
+        "operationId": "updateMe",
+        "summary": "Change your name (checked like name-available)",
+        "tags": [
+          "me"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The account as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -3374,6 +3492,69 @@
             "items": {
               "$ref": "#/components/schemas/UserSummary"
             }
+          }
+        }
+      },
+      "Me": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "nameNeedsChange",
+          "suggestedName"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "description": "Your handle, shown as @name"
+          },
+          "email": {
+            "type": "string"
+          },
+          "nameNeedsChange": {
+            "type": "boolean",
+            "description": "Your name broke the rules or duplicated an older one when names became unique: pick a new one first"
+          },
+          "suggestedName": {
+            "type": "string",
+            "nullable": true,
+            "description": "A free name close to yours, while nameNeedsChange"
+          }
+        }
+      },
+      "UpdateMeRequest": {
+        "type": "object",
+        "minProperties": 1,
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      },
+      "NameAvailability": {
+        "type": "object",
+        "required": [
+          "available"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "taken",
+              "invalid"
+            ]
           }
         }
       },

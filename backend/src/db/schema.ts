@@ -9,6 +9,8 @@ export interface UserTable {
   image: string | null
   createdAt: ColumnType<Date, never, never>
   updatedAt: ColumnType<Date, never, never>
+  /** Broke the name rules or duplicated an older name when names became unique (migration 013): pick a new one. */
+  name_needs_change: ColumnType<boolean, boolean | undefined, boolean>
 }
 
 export interface BoardsTable {
