@@ -139,15 +139,16 @@
       </div>
     </header>
 
-    <div class="flex flex-col md:flex-row gap-4 md:gap-6 md:flex-grow md:min-h-0">
+    <!-- Tiles and setup side by side from lg (tablets: a 440 px setup); stacked below -->
+    <div class="flex flex-col lg:flex-row gap-4 md:gap-5 xl:gap-6 lg:flex-grow lg:min-h-0">
       <!-- Mode grid -->
       <GameModeTiles selected={displayMode} disabled={!canEditGame} onselect={selectMode} />
 
       <!-- Setup aside -->
-      <aside class="w-full md:w-[400px] md:flex-shrink-0 box-border border border-line-2 rounded-[14px]
-                    bg-[#151713] flex flex-col md:overflow-hidden">
+      <aside class="w-full lg:w-[440px] xl:w-[400px] lg:flex-shrink-0 box-border border border-line-2 rounded-[14px]
+                    bg-[#151713] flex flex-col lg:overflow-hidden">
         <!-- Scrollable body: title + config -->
-        <div class="md:flex-1 md:min-h-0 md:overflow-y-auto scrollbar-themed p-4 md:p-6 pb-4 md:pb-4 flex flex-col gap-[22px]">
+        <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-themed p-4 md:p-6 pb-4 md:pb-4 flex flex-col gap-[22px]">
         <div class="flex flex-col gap-1">
           <span class="text-[12px] tracking-[0.1em] uppercase text-text-dim">Setup</span>
           <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
