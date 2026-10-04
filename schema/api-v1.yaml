@@ -993,14 +993,14 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
-          example: { error: 'Voice storage limit reached: 48.2 of 50 MB used' }
+          example: { error: 'Voice storage limit reached: 10.0 of 50 MB used, this pack needs 45.2 MB' }
     UnsupportedMediaType:
       description: The body isn't of the content type the operation takes
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }
     ImportRunning:
-      description: The user already has an import running, or the rate limit was exceeded
+      description: The user already has an import running, the server is running as many as it takes, or the rate limit was exceeded
       content:
         application/json:
           schema: { $ref: '#/components/schemas/ErrorResponse' }

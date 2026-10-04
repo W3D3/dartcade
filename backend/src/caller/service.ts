@@ -19,36 +19,51 @@ export type PackSource = { kind: 'upload' | 'url'; url?: string }
 
 /** An import that would take the user over their storage limit (or imports are off). */
 export class VoiceLimitError extends Error {
-  constructor(readonly used: number, readonly limit: number) {
-    super(limit === 0 ? 'Voice imports are turned off' : `Voice storage limit reached: ${amounts(used, limit)} used`)
+  constructor(readonly used: number, readonly limit: number, readonly needed = 0) {
+    super(limit === 0 ? 'Voice imports are turned off' : limitMessage(used, limit, needed))
   }
 }
 
-/** The user already has an import running. */
+/** The user already has an import running, or the server has as many running as it takes. */
 export class VoiceBusyError extends Error {
-  constructor() { super('An import is already running') }
+  constructor(readonly server = false) {
+    super(server ? 'The server is busy importing voices, try again in a minute' : 'An import is already running')
+  }
 }
 
 const MB = 1024 * 1024
-/** "48.2 of 50 MB"; in KB when the limit is under a megabyte. */
-function amounts(used: number, limit: number): string {
+/** "…: 10.0 of 50 MB used, this pack needs 45.2 MB"; in KB when the limit is under a megabyte. */
+function limitMessage(used: number, limit: number, needed: number): string {
   const [unit, label] = limit >= MB ? [MB, 'MB'] : [1024, 'KB']
-  const fmt = (n: number) => String(Number((n / unit).toFixed(1)))
-  return `${fmt(used)} of ${fmt(limit)} ${label}`
+  const fixed = (n: number) => (n / unit).toFixed(1)
+  const short = (n: number) => String(Number(fixed(n)))
+  return `Voice storage limit reached: ${fixed(used)} of ${short(limit)} ${label} used, this pack needs ${fixed(needed)} ${label}`
 }
+
+/** The same memory as a Buffer (no copy), which is what pg writes to a BYTEA. */
+const asBuffer = (b: Uint8Array) => Buffer.from(b.buffer, b.byteOffset, b.byteLength)
 
 const summary = (r: VoicePackRow): VoicePackSummary => ({
   id: r.id, name: r.name, lang: r.lang, clips: r.clips, bytes: r.bytes, createdAt: r.created_at.toISOString(),
 })
 
+/** Imports running at once across all users: each holds a pack of up to 128 MB in memory. */
+const MAX_RUNNING = 2
 const running = new Set<string>()
 
-/** Runs one import for the user at a time; a second one while it runs gets a VoiceBusyError. */
-export async function withImportLock<T>(userId: string, run: () => Promise<T>): Promise<T> {
+/** A user's place among the imports running; release it once (more calls do nothing). */
+export interface ImportSlot { release(): void }
+
+/**
+ * Takes the user's import slot: one import at a time per user, and at most two across all users.
+ * Throws a VoiceBusyError when the user's import (or as many as the server takes) runs.
+ */
+export function reserveImport(userId: string): ImportSlot {
   if (running.has(userId)) throw new VoiceBusyError()
+  if (running.size >= MAX_RUNNING) throw new VoiceBusyError(true)
   running.add(userId)
-  try { return await run() }
-  finally { running.delete(userId) }
+  let held = true
+  return { release() { if (held) { held = false; running.delete(userId) } } }
 }
 
 /** Stores a parsed pack for the user. Refused with a VoiceLimitError if it doesn't fit. */
@@ -61,14 +76,14 @@ export async function importPack(
   for (const [key, variants] of Object.entries(parsed.clips)) {
     variants.forEach((clip, variant) => {
       const sha256 = createHash('sha256').update(clip.bytes).digest('hex')
-      if (!files.has(sha256)) files.set(sha256, { sha256, mime: clip.mime, bytes: Buffer.from(clip.bytes) })
+      if (!files.has(sha256)) files.set(sha256, { sha256, mime: clip.mime, bytes: asBuffer(clip.bytes) })
       mappings.push({ key, variant, sha256 })
     })
   }
 
   const used = limitBytes === 0 ? 0 : await usage(db, userId)
   const size = [...files.values()].reduce((sum, f) => sum + f.bytes.length, 0)
-  if (limitBytes === 0 || used + size > limitBytes) throw new VoiceLimitError(used, limitBytes)
+  if (limitBytes === 0 || used + size > limitBytes) throw new VoiceLimitError(used, limitBytes, size)
 
   const id = ulid()
   await insertVoicePack(db, {

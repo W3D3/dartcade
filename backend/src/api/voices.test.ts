@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeAll, afterAll, afterEach } from 'vitest'
 import { createHash } from 'crypto'
+import { request } from 'http'
+import type { AddressInfo } from 'net'
 import rateLimit from '@fastify/rate-limit'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -8,9 +10,12 @@ import { makeZip } from '../caller/zipFixture.js'
 import { createFastify } from './fastify.js'
 import { voicesApiPlugin } from './voices.js'
 
-// Signed in as whoever the x-user header names
+// Signed in as whoever the x-user header names; without it, not signed in
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = req.headers['x-user']; done() }),
+  requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
+    if (!req.headers['x-user']) { reply.code(401).send({ error: 'unauthorized' }); return }
+    req.userId = req.headers['x-user']; done()
+  }),
 }))
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
@@ -42,17 +47,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
   const fetchImpl = vi.fn((_url: string | URL | Request, _init?: RequestInit) => Promise.resolve(new Response(zip)))
   afterEach(() => { fetchImpl.mockClear() })
 
-  function makeApp(limitBytes = 1024 * 1024) {
+  function makeApp(limitBytes = 1024 * 1024, uploadLimit?: number) {
     const app = createFastify()
-    app.register(voicesApiPlugin, { db, limitBytes, fetchImpl })
+    app.register(voicesApiPlugin, { db, limitBytes, fetchImpl, uploadLimit })
     return app
   }
   const importLink = (app: ReturnType<typeof makeApp>, url: string, user = 'a') => app.inject({
     method: 'POST', url: '/api/voice-packs/import', headers: { 'x-user': user }, payload: { url },
   })
-  const upload = (app: ReturnType<typeof makeApp>, body: Buffer = zip, user = 'a') => app.inject({
+  const upload = (app: ReturnType<typeof makeApp>, body: Buffer = zip, user: string | null = 'a') => app.inject({
     method: 'POST', url: '/api/voice-packs?name=en-GB-Arthur-Male-v4.zip',
-    headers: { 'content-type': 'application/zip', 'x-user': user }, payload: body,
+    headers: { 'content-type': 'application/zip', ...(user && { 'x-user': user }) }, payload: body,
   })
   const get = (app: ReturnType<typeof makeApp>, url: string, user = 'a') => app.inject({ method: 'GET', url, headers: { 'x-user': user } })
 
@@ -100,6 +105,29 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
       method: 'POST', url: '/api/voice-packs?name=x.zip', headers: { 'content-type': 'application/json', 'x-user': 'a' }, payload: '{}',
     })
     expect(res.statusCode).toBe(415)
+    expect(res.json()).toEqual({ error: 'Unsupported Media Type: application/json' })
+  })
+
+  describe('before the body is read', () => {
+    const big = Buffer.alloc(5000)
+
+    it('asks for sign-in first', async () => {
+      const res = await upload(makeApp(undefined, 1000), big, null)
+      expect(res.statusCode).toBe(401)
+    })
+
+    it('says imports are off first', async () => {
+      const res = await upload(makeApp(0, 1000), big)
+      expect(res.json()).toEqual({ error: 'Voice imports are turned off' })
+    })
+
+    it('refuses a body over the upload limit, and over the usual 1 MiB elsewhere', async () => {
+      const res = await upload(makeApp(undefined, 1000), big)
+      expect(res.statusCode).toBe(413)
+      const link = await importLink(makeApp(), 'https://darts-downloads.peschi.org/' + 'x'.repeat(1024 * 1024))
+      expect(link.statusCode).toBe(413)
+      expect(fetchImpl).not.toHaveBeenCalled()
+    })
   })
 
   it('refuses an import over the limit, or every import when they are off', async () => {
@@ -107,7 +135,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     expect((await upload(tight)).statusCode).toBe(201)
     const over = await upload(tight)
     expect(over.statusCode).toBe(413)
-    expect(over.json().error).toBe('Voice storage limit reached: 2.9 of 3.9 KB used')
+    expect(over.json().error).toBe('Voice storage limit reached: 2.9 of 3.9 KB used, this pack needs 2.9 KB')
 
     const off = await upload(makeApp(0))
     expect(off.statusCode).toBe(413)
@@ -118,6 +146,120 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     const app = makeApp()
     const [first, second] = await Promise.all([upload(app), upload(app)])
     expect([first.statusCode, second.statusCode].sort()).toEqual([201, 429])
+  })
+
+  describe('imports running', () => {
+    const link = 'https://darts-downloads.peschi.org/x.zip'
+    // Link imports whose download waits until released: after the test at the latest, which then
+    // waits for them to finish, so a failing test doesn't leave imports running for the next ones
+    const held: { release: () => void; res: ReturnType<typeof importLink> }[] = []
+    afterEach(async () => {
+      const all = held.splice(0)
+      all.forEach(h => { h.release() })
+      await Promise.all(all.map(h => h.res))
+    })
+    async function holdImport(app: ReturnType<typeof makeApp>, user: string) {
+      let release = () => {}
+      fetchImpl.mockImplementationOnce(() => new Promise<Response>(resolve => { release = () => resolve(new Response(zip)) }))
+      const calls = fetchImpl.mock.calls.length
+      const res = importLink(app, link, user)
+      held.push({ release: () => release(), res })
+      await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(calls + 1))
+      return { release: () => release(), res }
+    }
+
+    it('refuses a second import of the same user before reading its body', async () => {
+      const app = makeApp(undefined, 1000)
+      const first = await holdImport(app, 'a')
+      // Over the upload limit (a 413 once read) and not a zip: refused before either matters
+      const second = await upload(app, Buffer.alloc(5000))
+      expect(second.statusCode).toBe(429)
+      expect(second.json()).toEqual({ error: 'An import is already running' })
+      first.release()
+      expect((await first.res).statusCode).toBe(201)
+    })
+
+    it('runs two imports at once across all users', async () => {
+      await db.insertInto('user').values({ id: 'c', name: 'Cleo', email: 'c@example.com', emailVerified: false, image: null })
+        .onConflict(oc => oc.doNothing()).execute()
+      const app = makeApp()
+      const running = [await holdImport(app, 'a'), await holdImport(app, 'b')]
+      for (const res of [await upload(app, zip, 'c'), await importLink(app, link, 'c')]) {
+        expect(res.statusCode).toBe(429)
+        expect(res.json()).toEqual({ error: 'The server is busy importing voices, try again in a minute' })
+      }
+      expect(fetchImpl).toHaveBeenCalledTimes(2)
+      running.forEach(r => { r.release() })
+      for (const r of running) expect((await r.res).statusCode).toBe(201)
+      expect((await upload(app, zip, 'c')).statusCode).toBe(201)
+    })
+
+    // An upload to a listening app whose body is still coming in: finish() sends the rest of the
+    // zip, drop() closes the connection
+    function slowUpload(app: ReturnType<typeof makeApp>, user: string) {
+      const { port } = app.server.address() as AddressInfo
+      const req = request({
+        host: '127.0.0.1', port, method: 'POST', path: '/api/voice-packs?name=x.zip',
+        headers: { 'content-type': 'application/zip', 'content-length': String(zip.length), 'x-user': user },
+      })
+      const status = new Promise<number | undefined>((resolve, reject) => {
+        req.on('response', res => { res.resume(); res.on('end', () => { resolve(res.statusCode) }) })
+        req.on('error', reject)
+      })
+      status.catch(() => {})
+      req.write(zip.subarray(0, 10))
+      return { status, finish: () => { req.end(zip.subarray(10)) }, drop: () => { req.destroy() } }
+    }
+    async function listening(app: ReturnType<typeof makeApp>) {
+      await app.listen({ port: 0, host: '127.0.0.1' })
+      return app
+    }
+
+    it('counts uploads still receiving their body against the two at once', async () => {
+      await db.insertInto('user').values({ id: 'c', name: 'Cleo', email: 'c@example.com', emailVerified: false, image: null })
+        .onConflict(oc => oc.doNothing()).execute()
+      const app = await listening(makeApp(undefined, 1000))
+      try {
+        const slow = [slowUpload(app, 'a'), slowUpload(app, 'b')]
+        let done: (number | undefined)[] = []
+        try {
+          // Over the upload limit (a 413 once read): refused before its body is
+          await vi.waitFor(async () => {
+            const third = await upload(app, Buffer.alloc(5000), 'c')
+            expect(third.json()).toEqual({ error: 'The server is busy importing voices, try again in a minute' })
+            expect(third.statusCode).toBe(429)
+          })
+          expect((await upload(app, Buffer.alloc(5000), 'a')).json()).toEqual({ error: 'An import is already running' })
+        } finally {
+          slow.forEach(s => { s.finish() })
+          done = await Promise.all(slow.map(s => s.status))
+        }
+        expect(done).toEqual([201, 201])
+        expect((await upload(app, zip, 'c')).statusCode).toBe(201)
+      } finally {
+        await app.close()
+      }
+    })
+
+    it('frees the slot after an error response', async () => {
+      const app = makeApp(undefined, 1000)
+      expect((await upload(app, Buffer.alloc(5000))).statusCode).toBe(413)
+      expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(400)
+      expect((await upload(app, zip)).statusCode).toBe(201)
+    })
+
+    it('frees the slot when the upload is dropped mid-body', async () => {
+      const app = await listening(makeApp())
+      try {
+        const slow = slowUpload(app, 'a')
+        // The slot is taken while the body comes in
+        await vi.waitFor(async () => { expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(429) })
+        slow.drop()
+        await vi.waitFor(async () => { expect((await upload(app, zip)).statusCode).toBe(201) })
+      } finally {
+        await app.close()
+      }
+    })
   })
 
   it('deletes a pack', async () => {
@@ -176,7 +318,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     app.register(voicesApiPlugin, { db, limitBytes: 1024 * 1024, fetchImpl })
     expect((await upload(app)).statusCode).toBe(201)
     for (let i = 0; i < 5; i++) expect((await get(app, `/api/voice-clips/${sha(ONE80)}`)).statusCode).toBe(200)
+    // The upload counts against its own limit; the list against the usual one
+    expect((await get(app, '/api/voice-packs')).statusCode).toBe(200)
     expect((await get(app, '/api/voice-packs')).statusCode).toBe(200)
     expect((await get(app, '/api/voice-packs')).statusCode).toBe(429)
+  })
+
+  it('takes ten uploads and ten link imports a minute', async () => {
+    const app = createFastify()
+    await app.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
+    app.register(voicesApiPlugin, { db, limitBytes: 1024 * 1024, fetchImpl })
+    // Refused quickly (not a zip, a link off the list) but counted all the same
+    for (let i = 0; i < 10; i++) expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(400)
+    expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(429)
+    for (let i = 0; i < 10; i++) expect((await importLink(app, 'https://example.com/x.zip')).statusCode).toBe(400)
+    expect((await importLink(app, 'https://example.com/x.zip')).statusCode).toBe(429)
+    expect((await get(app, '/api/voice-packs')).statusCode).toBe(200)
   })
 })

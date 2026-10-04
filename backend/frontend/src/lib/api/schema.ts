@@ -1336,7 +1336,7 @@ export interface components {
             content: {
                 /**
                  * @example {
-                 *       "error": "Voice storage limit reached: 48.2 of 50 MB used"
+                 *       "error": "Voice storage limit reached: 10.0 of 50 MB used, this pack needs 45.2 MB"
                  *     }
                  */
                 "application/json": components["schemas"]["ErrorResponse"];
@@ -1351,7 +1351,7 @@ export interface components {
                 "application/json": components["schemas"]["ErrorResponse"];
             };
         };
-        /** @description The user already has an import running, or the rate limit was exceeded */
+        /** @description The user already has an import running, the server is running as many as it takes, or the rate limit was exceeded */
         ImportRunning: {
             headers: {
                 [name: string]: unknown;

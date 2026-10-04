@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
+import type { FastifyInstance, FastifyPluginOptions, FastifyReply, FastifyRequest, HookHandlerDoneFunction } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
@@ -7,8 +7,8 @@ import { fetchPack, LinkError } from '../caller/fetchPack.js'
 import { ZipError } from '../caller/zip.js'
 import { voiceConfig } from '../caller/config.js'
 import {
-  importPack, listPacks, packManifest, clipFor, deletePack, usage, withImportLock, VoiceLimitError, VoiceBusyError,
-  type PackSource,
+  importPack, listPacks, packManifest, clipFor, deletePack, usage, reserveImport, VoiceLimitError, VoiceBusyError,
+  type ImportSlot, type PackSource,
 } from '../caller/service.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -19,19 +19,65 @@ type Opts = FastifyPluginOptions & {
   limitBytes?: number
   /** Fetches link imports; the global fetch unless given (tests). */
   fetchImpl?: typeof fetch
+  /** The largest zip accepted; UPLOAD_LIMIT unless given (tests). */
+  uploadLimit?: number
 }
 
 /** The largest zip accepted (a darts-caller download is about 60 MB). */
 const UPLOAD_LIMIT = 128 * 1024 * 1024
 
-export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db, limitBytes = voiceConfig().limitBytes, fetchImpl = fetch } = opts
+/** Fastify leaves the body undefined for a request without one: that reads as an empty file (not a zip). */
+const orEmpty = (body: Uint8Array | undefined): Uint8Array => body ?? new Uint8Array(0)
 
-  /** Reads and stores a pack under the user's import lock; the reply says how many files the source had. */
-  const runImport = (userId: string, read: () => Promise<ParsedPack>, source: PackSource) => withImportLock(userId, async () => {
-    const parsed = await read()
-    return { ...await importPack(db, userId, parsed, source, limitBytes), total: parsed.total }
+export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
+  const { db, limitBytes = voiceConfig().limitBytes, fetchImpl = fetch, uploadLimit = UPLOAD_LIMIT } = opts
+
+  // The import slot each import request holds: taken in onRequest, before Fastify reads (up to
+  // uploadLimit of) the body, so a body is only received while its import may run
+  const slots = new WeakMap<FastifyRequest, ImportSlot>()
+  // Requests whose handler is importing: the handler frees their slot when it's done
+  const importing = new WeakSet<FastifyRequest>()
+  const free = (req: FastifyRequest) => { slots.get(req)?.release(); slots.delete(req) }
+
+  /**
+   * Import routes refuse at once when imports are off, or while the user's import (or as many as
+   * the server takes) runs, before a body is read; otherwise the request takes the user's slot.
+   */
+  function reserve(req: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction): void {
+    if (limitBytes === 0) { reply.code(413).send({ error: new VoiceLimitError(0, 0).message }); return }
+    try { slots.set(req, reserveImport(req.userId)) } catch (err) {
+      if (!(err instanceof VoiceBusyError)) throw err
+      reply.code(429).send({ error: err.message }); return
+    }
+    done()
+  }
+  /** Frees the slot of a request that ends (answered, failed or dropped) without importing. */
+  function freeUnlessImporting(req: FastifyRequest, _reply: unknown, done: HookHandlerDoneFunction): void {
+    if (!importing.has(req)) free(req)
+    done()
+  }
+  // A new object per route: plugins (rate limit) add their own hooks to it. A few per minute: each
+  // one makes the server hold up to 128 MB
+  const importHooks = () => ({
+    onRequest: [requireAuth, reserve],
+    onResponse: freeUnlessImporting,
+    onError: (req: FastifyRequest, reply: FastifyReply, _err: Error, done: HookHandlerDoneFunction) => { freeUnlessImporting(req, reply, done) },
+    onRequestAbort: (req: FastifyRequest, done: HookHandlerDoneFunction) => { freeUnlessImporting(req, null, done) },
+    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
   })
+
+  /** Reads and stores a pack in the request's slot; the reply says how many files the source had. */
+  async function runImport(req: FastifyRequest, read: () => Promise<ParsedPack>, source: PackSource) {
+    if (!slots.has(req)) throw new Error('import without a slot')
+    importing.add(req)
+    try {
+      const parsed = await read()
+      return { ...await importPack(db, req.userId, parsed, source, limitBytes), total: parsed.total }
+    } finally {
+      importing.delete(req)
+      free(req)
+    }
+  }
   /** The import errors as responses; anything else is rethrown. */
   function importError(err: unknown): { status: 400 | 413 | 429; error: string } {
     if (err instanceof ZipError || err instanceof LinkError) return { status: 400, error: err.message }
@@ -48,15 +94,13 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   // Uploads in a scope of their own that takes zips only (as one Buffer); other bodies get a 415
   app.register((scope, _opts, registered) => {
     scope.removeAllContentTypeParsers()
-    scope.addContentTypeParser('application/zip', { parseAs: 'buffer', bodyLimit: UPLOAD_LIMIT }, (_req, body, parsed) => { parsed(null, body) })
+    scope.addContentTypeParser('application/zip', { parseAs: 'buffer', bodyLimit: uploadLimit }, (_req, body, parsed) => { parsed(null, body) })
 
     scope.post<Route<'uploadVoicePack'>>('/api/voice-packs', {
-      preValidation: requireAuth, schema: fromSpec('uploadVoicePack'), bodyLimit: UPLOAD_LIMIT,
+      ...importHooks(), schema: fromSpec('uploadVoicePack'), bodyLimit: uploadLimit,
     }, async (req, reply) => {
-      if (limitBytes === 0) return reply.code(413).send({ error: new VoiceLimitError(0, 0).message })
       try {
-        // A copy, so a request without a body (undefined) reads as an empty file: not a zip
-        const pack = await runImport(req.userId, () => readPack(new Uint8Array(req.body), req.query.name), { kind: 'upload' })
+        const pack = await runImport(req, () => readPack(orEmpty(req.body), req.query.name), { kind: 'upload' })
         return await reply.code(201).send(pack)
       } catch (err) {
         const { status, error } = importError(err)
@@ -66,14 +110,12 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     registered()
   })
 
-  // A few per minute: each one makes the server download up to 128 MB
   app.post<Route<'importVoicePack'>>('/api/voice-packs/import', {
-    preValidation: requireAuth, schema: fromSpec('importVoicePack'), config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+    ...importHooks(), schema: fromSpec('importVoicePack'),
   }, async (req, reply) => {
-    if (limitBytes === 0) return reply.code(413).send({ error: new VoiceLimitError(0, 0).message })
     const { url } = req.body
     try {
-      const pack = await runImport(req.userId, () => fetchPack(url, fetchImpl), { kind: 'url', url })
+      const pack = await runImport(req, () => fetchPack(url, fetchImpl), { kind: 'url', url })
       return await reply.code(201).send(pack)
     } catch (err) {
       const { status, error } = importError(err)

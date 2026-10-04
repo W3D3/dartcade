@@ -4,6 +4,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import type { Clip, ParsedPack } from '../caller/pack.js'
+import { sweepOrphanClips } from './voices.js'
 import { importPack, listPacks, packManifest, clipFor, deletePack, usage, VoiceLimitError } from '../caller/service.js'
 
 const clip = (s: string, mime = 'audio/mpeg'): Clip => ({ bytes: new TextEncoder().encode(s), mime })
@@ -90,6 +91,25 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
     expect(await clipCount()).toBe(3)
   })
 
+  it('sweeps the real orphans when an import maps one of the files again meanwhile', async () => {
+    const pa = await importPack(db, 'a', pack({ busted: [clip('busted')] }), UPLOAD, BIG)
+    const pb = await importPack(db, 'b', { name: 'B', lang: null, total: 1, clips: { '0': [clip('zero')] } }, UPLOAD, BIG)
+    const hashes = (await db.selectFrom('voice_pack_clips').select('clip_sha256').where('pack_id', '=', pa.id).execute()).map(r => r.clip_sha256)
+    await db.deleteFrom('voice_packs').where('id', '=', pa.id).execute()   // A's files are orphans now
+
+    // B's import maps 180 again but hasn't committed: the sweep blocks on that file, then the
+    // foreign key refuses its first try once B commits
+    const importing = await db.startTransaction().execute()
+    await importing.insertInto('voice_pack_clips').values({ pack_id: pb.id, key: '180', variant: 0, clip_sha256: sha('one-eighty') }).execute()
+    const sweeping = db.transaction().execute(trx => sweepOrphanClips(trx, hashes))
+    await new Promise(resolve => setTimeout(resolve, 200))
+    await importing.commit().execute()
+    await sweeping
+
+    const left = (await db.selectFrom('voice_clips').select('sha256').execute()).map(r => r.sha256).sort()
+    expect(left).toEqual([sha('one-eighty'), sha('zero')].sort())
+  })
+
   describe('storage limit', () => {
     const small = (s: string): ParsedPack => ({ name: s, lang: null, total: 1, clips: { '180': [clip(s.repeat(100))] } })
 
@@ -98,7 +118,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
       await importPack(db, 'a', small('yyyyyyy'), UPLOAD, 1024)   // 800 bytes
       const err = await importPack(db, 'a', small('zzz'), UPLOAD, 1024).catch((e: unknown) => e)
       expect(err).toBeInstanceOf(VoiceLimitError)
-      expect(err).toMatchObject({ used: 800, limit: 1024, message: 'Voice storage limit reached: 0.8 of 1 KB used' })
+      expect(err).toMatchObject({ used: 800, limit: 1024, needed: 300, message: 'Voice storage limit reached: 0.8 of 1 KB used, this pack needs 0.3 KB' })
       expect(await listPacks(db, 'a')).toHaveLength(2)
     })
 

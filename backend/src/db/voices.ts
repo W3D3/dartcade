@@ -1,4 +1,4 @@
-import { sql, type Kysely } from 'kysely'
+import { sql, type Kysely, type Transaction } from 'kysely'
 import type { Database } from './schema.js'
 import { pgErrorCode } from './errors.js'
 
@@ -12,6 +12,8 @@ export type NewVoicePack = {
 }
 export type VoicePackRow = { id: string; name: string; lang: string | null; clips: number; bytes: number; created_at: Date }
 
+const FK_VIOLATION = '23503'
+
 // Keeps each INSERT well under Postgres' 65535 parameters
 const CHUNK = 1000
 function chunks<T>(rows: T[]): T[][] {
@@ -20,8 +22,21 @@ function chunks<T>(rows: T[]): T[][] {
   return out
 }
 
-/** A pack with its clips (new files only are written) and key → clip rows, in one transaction. */
+/**
+ * A pack with its clips (new files only are written) and key → clip rows, in one transaction.
+ * Retried once if another user's delete removed one of its files between our insert of the files
+ * and of the key rows (the foreign key refuses the key rows then).
+ */
 export async function insertVoicePack(db: Kysely<Database>, pack: NewVoicePack): Promise<void> {
+  try {
+    await insertVoicePackOnce(db, pack)
+  } catch (err) {
+    if (pgErrorCode(err) !== FK_VIOLATION) throw err
+    await insertVoicePackOnce(db, pack)
+  }
+}
+
+async function insertVoicePackOnce(db: Kysely<Database>, pack: NewVoicePack): Promise<void> {
   await db.transaction().execute(async (trx) => {
     for (const rows of chunks(pack.clips)) {
       await trx.insertInto('voice_clips')
@@ -108,20 +123,34 @@ export async function deleteVoicePack(db: Kysely<Database>, ownerId: string, pac
       .execute()).map(r => r.clip_sha256)
     const deleted = await trx.deleteFrom('voice_packs').where('id', '=', packId).where('owner_id', '=', ownerId).executeTakeFirst()
     if (deleted.numDeletedRows === 0n) return false
-    if (hashes.length === 0) return true
-    // An import running alongside may have just mapped one of these files again: the foreign
-    // key then refuses the delete, and the files stay (one is in use again)
-    await sql`SAVEPOINT orphans`.execute(trx)
-    try {
-      await trx.deleteFrom('voice_clips as c')
-        .where('c.sha256', 'in', hashes)
-        .where(eb => eb.not(eb.exists(eb.selectFrom('voice_pack_clips as m').select(sql.lit(1).as('one')).whereRef('m.clip_sha256', '=', 'c.sha256'))))
-        .execute()
-      await sql`RELEASE SAVEPOINT orphans`.execute(trx)
-    } catch (err) {
-      if (pgErrorCode(err) !== '23503') throw err
-      await sql`ROLLBACK TO SAVEPOINT orphans`.execute(trx)
-    }
+    if (hashes.length > 0) await sweepOrphanClips(trx, hashes)
     return true
   })
+}
+
+/**
+ * Deletes the files no pack uses (only among `hashes` when given). Call it inside a transaction.
+ * An import running alongside may have just mapped one of them again: the foreign key then
+ * refuses the whole statement, so it runs once more, which (READ COMMITTED, a new snapshot)
+ * sees that mapping, keeps that file and deletes the real orphans. Should even that be refused,
+ * the files stay until a later sweep.
+ */
+export async function sweepOrphanClips(trx: Transaction<Database>, hashes?: string[]): Promise<void> {
+  const sweep = () => {
+    let q = trx.deleteFrom('voice_clips as c')
+      .where(eb => eb.not(eb.exists(eb.selectFrom('voice_pack_clips as m').select(sql.lit(1).as('one')).whereRef('m.clip_sha256', '=', 'c.sha256'))))
+    if (hashes) q = q.where('c.sha256', 'in', hashes)
+    return q.execute()
+  }
+  for (let attempt = 0; attempt < 2; attempt++) {
+    await sql`SAVEPOINT orphans`.execute(trx)
+    try {
+      await sweep()
+      await sql`RELEASE SAVEPOINT orphans`.execute(trx)
+      return
+    } catch (err) {
+      if (pgErrorCode(err) !== FK_VIOLATION) throw err
+      await sql`ROLLBACK TO SAVEPOINT orphans`.execute(trx)
+    }
+  }
 }
