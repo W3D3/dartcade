@@ -20,7 +20,10 @@
   import AtcRow from '../lib/components/AtcRow.svelte'
   import type { PillKind } from '../lib/components/pills.js'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
-  import { createSounds } from '../lib/sounds.js'
+  import { audioContext, createSounds } from '../lib/sounds.js'
+  import { callsFor } from '$lib/caller/calls'
+  import { createCaller } from '$lib/caller/player'
+  import { voiceClips, type Clips } from '$lib/caller/voices'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
   import { x01Slots, atcSlots } from '../lib/dartSlots.js'
   import { gameState } from '../lib/gameState.js'
@@ -53,6 +56,27 @@
   $effect(() => { saveSettings(localStorage, settings) })
   const sounds = createSounds(() => settings.volume)
 
+  // The caller (X01): the voice's clips start loading as soon as the caller is on (before the
+  // first snapshot, so "Game on" isn't missed) and again when the voice changes. Calls wait for
+  // them; the player drops a call overtaken by a newer one.
+  const caller = createCaller(() => settings.volume)
+  let callerClips: Promise<Clips | null> = Promise.resolve(null)
+  $effect(() => {
+    const on = settings.callerOn
+    const voice = settings.callerVoice
+    if (!on) { caller.stop(); callerClips = Promise.resolve(null); return }
+    callerClips = voiceClips(voice).catch(() => null)
+  })
+  // Browsers keep audio asleep until the page is tapped or typed on: wake it on the first one
+  function wakeAudio() {
+    audioContext()
+    stopWaking()
+  }
+  function stopWaking() {
+    window.removeEventListener('pointerdown', wakeAudio)
+    window.removeEventListener('keydown', wakeAudio)
+  }
+
   // ── Session ───────────────────────────────────────────────────────────────
   let sessionId = $state('')
   let sessionStore: ReturnType<typeof createSessionStore> | null = null
@@ -81,6 +105,8 @@
   let correcting = $state<number | null>(null)
 
   onMount(() => {
+    window.addEventListener('pointerdown', wakeAudio)
+    window.addEventListener('keydown', wakeAudio)
     sessionId = window.location.hash.match(/\/session\/([^/]+)/)?.[1] ?? ''
     if (!sessionId) return
     sessionStore = createSessionStore(sessionId)
@@ -89,6 +115,12 @@
       // Without a board of your own you start on the keypad (once)
       if (!viewModeSetByUser && startsOnKeypad(snap)) { viewMode = 'entry'; viewModeSetByUser = true }
       const next = gameState(snap)
+      // A new session starts the caller afresh (the previous game isn't this one's "before")
+      const before = snapshot?.sessionId === snap.sessionId ? gameState(snapshot) : gameState(null)
+      if (next.x01 && settings.callerOn) {
+        const call = callsFor(before.x01, next.x01)
+        if (call.length) void callerClips.then(c => c && caller.say(call, c))
+      }
       const g = next.x01 ?? next.atc
       if (g) {
         const prev = gameState(snapshot)
@@ -105,7 +137,7 @@
     unsubConnected = sessionStore.connected.subscribe(up => { if (!up) leavePending = false })
     authClient.getSession().then(r => { viewerId = r.data?.user.id ?? null }).catch(() => undefined)
   })
-  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); unsubConnected?.(); toast.dismiss(); sessionStore?.destroy() })
+  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); unsubConnected?.(); toast.dismiss(); sessionStore?.destroy(); caller.stop(); stopWaking() })
 
   function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
     const oldCount = before.currentVisitDarts.length

@@ -47,11 +47,15 @@ export function packName(fileName: string): { name: string; lang: string | null 
 const base = (path: string) => path.slice(path.lastIndexOf('/') + 1)
 const isJunk = (path: string) => path.startsWith('__MACOSX/') || base(path).startsWith('.')
 
+// Spelled-out shots ("game_shot", "match shot") and the keys they play for
+const SPELLED = /^(game|match)[_ ](shot|on)$/
+
 /** The key a clip named by key plays for: basename without extension, lowercased, hyphens as
- * underscores, a trailing "+N" variant marker dropped, "game on" folded to "gameon". */
+ * underscores, a trailing "+N" variant marker dropped, spelled-out shots folded ("game shot",
+ * "game_on", "match_shot" → "gameshot", "gameon", "matchshot"). */
 export function keyFromName(fileName: string): string {
   const key = base(fileName).replace(SOUND, '').toLowerCase().replace(/\+\d+$/, '').replace(/-/g, '_')
-  return key === 'game on' ? 'gameon' : key
+  return SPELLED.test(key) ? key.replace(/[_ ]/, '') : key
 }
 
 export async function readPack(bytes: Uint8Array, fileName: string): Promise<ParsedPack> {

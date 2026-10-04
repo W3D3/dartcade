@@ -1,6 +1,6 @@
 <script lang="ts">
   import BrandMark from './BrandMark.svelte'
-  import { Clock, Mail, Monitor, Target, Trophy } from '@lucide/svelte'
+  import { Clock, Mail, Monitor, Settings, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import { currentUser, signOut } from '$lib/auth'
   import DevUserSwitch from './DevUserSwitch.svelte'
@@ -19,6 +19,7 @@
     { href: '/boards',      label: 'Boards',       icon: 'boards' },
     { href: '/tournaments', label: 'Tournaments',  icon: 'trophy' },
     { href: '/history',     label: 'History',      icon: 'clock' },
+    { href: '/settings',    label: 'Settings',     icon: 'settings' },
   ]
 
   function isActive(href: string) {
@@ -48,6 +49,8 @@
           <Trophy size={20} strokeWidth={1.8} />
         {:else if link.icon === 'clock'}
           <Clock size={20} strokeWidth={1.8} />
+        {:else if link.icon === 'settings'}
+          <Settings size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {/if}
         {link.label}
       </NavLink>

@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Who's signed in, and signing out: the avatar in the phone header opens it.
-  import { LogOut } from '@lucide/svelte'
+  // Who's signed in, Settings and signing out: the avatar in the phone header opens it.
+  import { LogOut, Settings } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import DevUserSwitch from './DevUserSwitch.svelte'
 
@@ -33,6 +33,11 @@
           {#if email && email !== name}<span class="text-[13px] text-text-muted truncate">{email}</span>{/if}
         </span>
       </div>
+      <a href="#/settings" role="menuitem" onclick={() => open = false}
+        class="h-11 flex items-center gap-3 px-3 rounded-[10px] text-text no-underline text-[15px] font-medium hover:bg-surface-hover hover:text-text">
+        <Settings size={18} strokeWidth={1.8} />
+        Settings
+      </a>
       <button type="button" role="menuitem" onclick={() => void signOut()}
         class="h-11 flex items-center justify-center gap-2 rounded-[10px] border border-line-3 bg-transparent text-live-text text-[15px] font-medium cursor-pointer">
         <LogOut size={17} />
