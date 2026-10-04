@@ -248,7 +248,7 @@ export interface CameraMessage {
   type: 'camera'
   boardId: string
   /**
-   * Camera number, 0-based.
+   * Camera number, 0-based; 3 is the combined still.
    */
   cam: number
   /**

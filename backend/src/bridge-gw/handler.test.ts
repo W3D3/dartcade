@@ -261,11 +261,19 @@ describe('camera stills from the bridge', () => {
     expect(stills.versions('board-c4').map(v => v.cam)).toEqual([1])
   })
 
+  it('keeps the combined still as camera 3', async () => {
+    const { stills, onCameraStill, socket } = await connect('board-c5')
+    socket.emit('message', stillMsg(3))
+    await flush(); await flush()
+    expect(stills.get('board-c5', 3)?.bytes).toEqual(jpeg)
+    expect(onCameraStill).toHaveBeenCalledWith('board-c5', 3, stills.get('board-c5', 3)?.version)
+  })
+
   it('drops a still over 1 MiB, and a malformed one', async () => {
     const { stills, onCameraStill, socket } = await connect('board-c2')
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     socket.emit('message', stillMsg(0, Buffer.alloc(MAX_STILL_BYTES + 1, 0xff)))
-    socket.emit('message', stillMsg(3))
+    socket.emit('message', stillMsg(4))
     await flush(); await flush()
     expect(stills.get('board-c2', 0)).toBeUndefined()
     expect(stills.versions('board-c2')).toEqual([])

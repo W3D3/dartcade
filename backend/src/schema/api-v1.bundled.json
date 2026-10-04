@@ -492,11 +492,11 @@
           "name": "index",
           "in": "path",
           "required": true,
-          "description": "Camera number, 0-based",
+          "description": "Camera number, 0-based; 3 is the combined still (the three cameras blended)",
           "schema": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 2
+            "maximum": 3
           }
         }
       ],
