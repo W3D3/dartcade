@@ -8,6 +8,8 @@
   import { audioContext } from '$lib/sounds.js'
   import SettingSwitch from './SettingSwitch.svelte'
   import VoiceSelect from './settings/VoiceSelect.svelte'
+  import OptionSelect from './settings/OptionSelect.svelte'
+  import { BOARD_VIEWS } from '$lib/gameSettings.js'
 
   let { settings = $bindable(), gameId, onclose }: { settings: GameSettings; gameId: string; onclose: () => void } = $props()
 
@@ -24,10 +26,11 @@
     { value: 'visit', label: 'After the visit' },
   ]
   const boardViews: { value: BoardView; label: string }[] = [
-    { value: 'svg', label: 'SVG' },
+    { value: 'svg', label: 'Drawn' },
     { value: 'cam1', label: 'Cam 1' },
     { value: 'cam2', label: 'Cam 2' },
     { value: 'cam3', label: 'Cam 3' },
+    { value: 'combined', label: 'Combined' },
   ]
   const sounds = [
     { key: 'soundHit', label: 'Hit' },
@@ -82,11 +85,16 @@
         <span id="setting-boardView" class="text-[15px] text-text">Board view</span>
         <span class="text-[13px] text-text-dim">Drawn, or a camera's picture of the real board after each dart</span>
       </span>
-      <div role="radiogroup" aria-labelledby="setting-boardView" class="flex gap-1 p-1 bg-bg rounded-[10px]">
+      <!-- Phones: five options don't fit side by side, so a menu -->
+      <div class="sm:hidden">
+        <OptionSelect value={settings.boardView} groups={[{ options: boardViews }]} labelledby="setting-boardView" class="w-full"
+          onchange={(v: string) => { const view = BOARD_VIEWS.find(b => b === v); if (view) settings.boardView = view }} />
+      </div>
+      <div role="radiogroup" aria-labelledby="setting-boardView" class="hidden sm:flex gap-1 p-1 bg-bg rounded-[10px]">
         {#each boardViews as opt (opt.value)}
           {@const on = settings.boardView === opt.value}
           <button type="button" role="radio" aria-checked={on} onclick={() => settings.boardView = opt.value}
-            class="flex-1 h-10 rounded-[7px] text-[15px] border-0 cursor-pointer transition-colors
+            class="flex-1 h-10 whitespace-nowrap rounded-[7px] text-[15px] border-0 cursor-pointer transition-colors
                    {on ? 'bg-line text-text font-semibold' : 'bg-transparent text-ink-2 font-medium'}">{opt.label}</button>
         {/each}
       </div>
