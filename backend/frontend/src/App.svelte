@@ -12,6 +12,7 @@
   import Join from './routes/Join.svelte'
   import Invites from './routes/Invites.svelte'
   import Settings from './routes/Settings.svelte'
+  import Friends from './routes/Friends.svelte'
   import PickName from './routes/PickName.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
@@ -30,6 +31,7 @@
     '/join/:code': Join,
     '/invites': Invites,
     '/settings': Settings,
+    '/friends': Friends,
   }
 
   let checked = $state(false)

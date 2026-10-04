@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { navTabs, isActiveRoute, railLobby } from '../nav.js'
+import { friendsEntry, navTabs, isActiveRoute, railLobby } from '../nav.js'
 
 describe('navTabs', () => {
   it('has no Live tab without a running game', () => {
@@ -45,5 +45,13 @@ describe('railLobby', () => {
     expect(railLobby({ ...s, solo: true }, true)).toEqual({
       kind: 'solo', href: '/lobby', label: 'Lobby', aria: 'Play with friends: open the lobby',
     })
+  })
+})
+
+describe('friendsEntry', () => {
+  it('counts requests for you and friends online, for the badge and its label', () => {
+    expect(friendsEntry(null)).toEqual({ requests: 0, online: 0, aria: 'Friends: 0 online, 0 friend requests' })
+    const list = { friends: [{ status: { kind: 'online' } }, { status: { kind: 'offline' } }], incoming: [{}], outgoing: [] }
+    expect(friendsEntry(list as any)).toEqual({ requests: 1, online: 1, aria: 'Friends: 1 online, 1 friend request' })
   })
 })

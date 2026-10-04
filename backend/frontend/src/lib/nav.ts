@@ -1,4 +1,5 @@
 import type { LobbySummary } from './api/lobby-ws'
+import type { FriendList } from './lobby/sockets'
 import { indicatorView } from './lobby/format.js'
 
 export type NavTab = { href: string; label: string; icon: 'play' | 'live' | 'boards' | 'history'; badge?: number }
@@ -28,4 +29,11 @@ export function railLobby(summary: LobbySummary | null, signedIn: boolean): Rail
   if (summary.solo) return { kind: 'solo', href: '/lobby', label: 'Lobby', aria: 'Play with friends: open the lobby' }
   const view = indicatorView(summary)
   return { kind: 'in', href: '/lobby', label: view.name, aria: `You're in the lobby ${view.name}. ${view.line}. Open the lobby` }
+}
+
+/** The Friends entry's badge (requests for you) and its label (friends online too). */
+export function friendsEntry(list: FriendList | null): { requests: number; online: number; aria: string } {
+  const requests = list?.incoming.length ?? 0
+  const online = list?.friends.filter(f => f.status.kind !== 'offline').length ?? 0
+  return { requests, online, aria: `Friends: ${online} online, ${requests} friend ${requests === 1 ? 'request' : 'requests'}` }
 }
