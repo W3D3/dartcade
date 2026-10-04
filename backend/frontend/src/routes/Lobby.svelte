@@ -171,12 +171,13 @@
       {@const l = lobby}
       <LobbyHeader {lobby} {viewerId} onrename={rename} onnewcode={() => void newCode()} onclose={() => void close()} onleave={() => void leave()} />
       {@render errorBanner()}
-      <!-- Solo: no history, and Invite friends leads; the people list (add field included) shows either way -->
-      <div class="flex flex-col gap-4 md:grid md:grid-cols-[minmax(0,580px)_minmax(0,1fr)] md:gap-5 md:flex-grow md:min-h-0">
-        <div class="order-2 md:order-none flex flex-col min-w-0 md:min-h-0">
+      <!-- Solo: no history, and Invite friends leads; the people list (add field included) shows either way.
+           Two columns from lg (tablets: the next game in a 420 px column); one below, as on phones -->
+      <div class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:flex-grow lg:min-h-0">
+        <div class="order-2 lg:order-none flex flex-col min-w-0 lg:min-h-0">
           <LobbyPeople lobby={l} {viewerId} {ownBoards} onupdate={updatePerson} onremove={removePerson} onguest={addGuest} oninvite={invite} />
         </div>
-        <div class="order-1 md:order-none flex flex-col gap-4 md:gap-5 min-w-0 md:min-h-0">
+        <div class="order-1 lg:order-none flex flex-col gap-4 md:gap-5 min-w-0 lg:min-h-0">
           {#if l.solo}<InviteFriendsPanel lobby={l} onnewcode={() => void newCode()} />{/if}
           {#if l.currentSessionId}
             <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
@@ -189,11 +190,11 @@
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
           {/if}
           {#if !l.solo}
-            <div class="hidden md:flex md:flex-col md:min-h-0"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
+            <div class="hidden lg:flex lg:flex-col lg:min-h-0"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
           {/if}
         </div>
         {#if !l.solo}
-          <div class="order-3 md:hidden"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
+          <div class="order-3 lg:hidden"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
         {/if}
       </div>
     {:else}
