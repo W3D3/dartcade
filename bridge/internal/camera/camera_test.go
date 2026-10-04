@@ -236,3 +236,27 @@ func TestTriggers(t *testing.T) {
 		}
 	}
 }
+
+func TestStillsCarryTheirTriggerRound(t *testing.T) {
+	bm := &fakeBM{t: t, n: 2}
+	srv := httptest.NewServer(bm)
+	defer srv.Close()
+	s := newSink()
+	f := camera.New(srv.URL, func() int { return 2 }, s.put)
+	f.Trigger(context.Background())
+	s.wait(t, 2)
+	f.Trigger(context.Background())
+	all := s.wait(t, 2) // every still so far
+	rounds := map[uint64]int{}
+	for _, st := range all {
+		rounds[st.Round]++
+	}
+	if len(all) != 4 || len(rounds) != 2 || rounds[0] != 0 {
+		t.Fatalf("rounds: %v", rounds)
+	}
+	for r, n := range rounds {
+		if n != 2 {
+			t.Errorf("round %d has %d stills, want 2 (one per camera)", r, n)
+		}
+	}
+}
