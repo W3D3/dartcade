@@ -14,7 +14,10 @@ const makeStore = () => ({
   abortSession: vi.fn().mockResolvedValue(undefined),
 } satisfies EngineStore)
 const sock = () => ({ readyState: 1, send: vi.fn(), close: vi.fn() }) as any
-const lastMsg = (ws: { send: { mock: { calls: unknown[][] } } }) => JSON.parse(String(ws.send.mock.calls.at(-1)?.[0]))
+// The last lobby or me message (a /ws/me socket also gets the friends list when it opens)
+const lastMsg = (ws: { send: { mock: { calls: unknown[][] } } }) =>
+  ws.send.mock.calls.map(c => JSON.parse(String(c[0]))).filter(m => m.type !== 'friends').at(-1)
+const friendsMsg = { type: 'friends' as const, friends: [], incoming: [], outgoing: [] }
 const user = (id: string, name: string) => ({ id, name, email: `${id}@example.com`, emailVerified: false, image: null })
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
@@ -50,6 +53,34 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
   })
 
   const befriend = (a: string, b: string) => db.insertInto('friendships').values({ id: `${a}-${b}`, requester_id: a, addressee_id: b, status: 'accepted' }).execute()
+
+  it('tells friends even when a /ws/me push fails', async () => {
+    const statusChanged = vi.fn()
+    lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b), onStatusChange: statusChanged })
+    const { id } = await lobbies.create('chris')
+    const pushMe = vi.spyOn(lobbies, 'pushMe').mockRejectedValue(new Error('boom'))
+    await expect(lobbies.update('chris', id, { access: 'invite' })).rejects.toThrow('boom')
+    expect(statusChanged).toHaveBeenCalledTimes(2)
+    statusChanged.mockClear()
+    await expect(lobbies.close('chris', id)).rejects.toThrow('boom')
+    expect(statusChanged).toHaveBeenLastCalledWith(['chris'])
+    pushMe.mockRestore()
+  })
+
+  it('tells friends whose status changed: joins, leaves, closes, access changes', async () => {
+    const statusChanged = vi.fn()
+    lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b), onStatusChange: statusChanged })
+    const { id, code } = await lobbies.create('chris')
+    expect(statusChanged).toHaveBeenLastCalledWith(['chris'])
+    await lobbies.join('lena', id, code)
+    expect(statusChanged).toHaveBeenLastCalledWith(expect.arrayContaining(['chris', 'lena']))
+    await lobbies.update('chris', id, { access: 'invite' })
+    expect(statusChanged).toHaveBeenLastCalledWith(expect.arrayContaining(['chris', 'lena']))
+    await lobbies.leave('lena', id)
+    expect(statusChanged).toHaveBeenLastCalledWith(expect.arrayContaining(['lena']))
+    await lobbies.close('chris', id)
+    expect(statusChanged).toHaveBeenLastCalledWith(['chris'])
+  })
 
   describe('create, join, leave', () => {
     it('keeps the default name within the 48 characters a rename allows', async () => {
@@ -200,7 +231,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const luke = await lobbies.create('lena')
       await lobbies.addGuest('lena', luke.id, { name: 'Guest 1' })
       const me = sock()
-      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'))
+      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'), friendsMsg)
 
       await expect(lobbies.join('lena', admin.id, admin.code)).resolves.toMatchObject({ id: admin.id })
 
@@ -506,7 +537,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
 
     it('pushes /ws/me to members, only when it changed', async () => {
       const me = sock()
-      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'))
+      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'), friendsMsg)
       expect(lastMsg(me)).toEqual({ type: 'me', invites: [], lobby: null, game: null })
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
@@ -649,7 +680,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
       const me = sock()
-      hub.addMeSocket('max', me, await lobbies.meMessage('max'))
+      hub.addMeSocket('max', me, await lobbies.meMessage('max'), friendsMsg)
       const { id: inviteId } = await lobbies.invite('lena', id, 'max')
       expect(lastMsg(me).invites).toEqual([
         { id: inviteId, lobbyId: id, lobbyName: "Christoph's lobby", inviterUserId: 'lena', inviterName: 'Lena', createdAt: expect.any(String) },
@@ -947,7 +978,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.join('lena', id, code)
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       const me = sock()
-      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'))
+      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'), friendsMsg)
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(lastMsg(me).lobby).toMatchObject({ sessionId, gameId: 'x01', youThrowNext: false, leg: 0 })
       // Christoph throws one dart by hand and takes out: Lena is up
@@ -973,8 +1004,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       const chrisWs = sock()
       const lenaWs = sock()
-      hub.addMeSocket('chris', chrisWs, await lobbies.meMessage('chris'))
-      hub.addMeSocket('lena', lenaWs, await lobbies.meMessage('lena'))
+      hub.addMeSocket('chris', chrisWs, await lobbies.meMessage('chris'), friendsMsg)
+      hub.addMeSocket('lena', lenaWs, await lobbies.meMessage('lena'), friendsMsg)
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(lastMsg(chrisWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
       expect(lastMsg(lenaWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
@@ -989,7 +1020,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
 
     it('pushes `game` for a game started outside any lobby too, and null once it is aborted', async () => {
       const me = sock()
-      hub.addMeSocket('sam', me, await lobbies.meMessage('sam'))
+      hub.addMeSocket('sam', me, await lobbies.meMessage('sam'), friendsMsg)
       const { sessionId } = await engine.create('sam', null, 'atc', {}, [{ name: 'Sam' }])
       expect(lastMsg(me).game).toEqual({ sessionId, gameId: 'atc', lobbyName: null, players: ['Sam'] })
 
@@ -1003,8 +1034,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       const phoneWs = sock()
       const laptopWs = sock()
-      hub.addMeSocket('lena', phoneWs, await lobbies.meMessage('lena'))
-      hub.addMeSocket('lena', laptopWs, await lobbies.meMessage('lena'))
+      hub.addMeSocket('lena', phoneWs, await lobbies.meMessage('lena'), friendsMsg)
+      hub.addMeSocket('lena', laptopWs, await lobbies.meMessage('lena'), friendsMsg)
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(lastMsg(phoneWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
       expect(lastMsg(laptopWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
@@ -1019,7 +1050,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const maxId = lobby?.people.find(p => p.name === 'Max')?.id
       if (maxId) await lobbies.updatePerson('chris', id, maxId, { plays: false })
       const maxWs = sock()
-      hub.addMeSocket('max', maxWs, await lobbies.meMessage('max'))
+      hub.addMeSocket('max', maxWs, await lobbies.meMessage('max'), friendsMsg)
       await lobbies.start('chris', id, true)
       expect(lastMsg(maxWs).game).toBeNull()
     })

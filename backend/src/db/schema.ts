@@ -11,6 +11,8 @@ export interface UserTable {
   updatedAt: ColumnType<Date, never, never>
   /** Broke the name rules or duplicated an older name when names became unique (migration 013): pick a new one. */
   name_needs_change: ColumnType<boolean, boolean | undefined, boolean>
+  /** Friends see this user as offline (migration 016). */
+  invisible: ColumnType<boolean, boolean | undefined, boolean>
 }
 
 export interface BoardsTable {

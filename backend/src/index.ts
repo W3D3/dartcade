@@ -10,6 +10,7 @@ import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { FriendsService } from './friends/service.js'
+import { seatedGame } from './friends/status.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -41,15 +42,21 @@ const engine: SessionEngine = new SessionEngine(
   ended => lobbies.onGameEnded(ended),
   started => lobbies.onGameStarted(started),
 )
+const friends = new FriendsService({
+  db, hub,
+  gameOf: userId => seatedGame(engine.getSessionByUser(userId), userId),
+  warn: (message, details) => { warn(message, details) },
+})
 const lobbies: LobbyService = new LobbyService({
   db, engine, hub, isBoardOnline: boardId => bridgeConnections.isOnline(boardId), warn: (message, details) => { warn(message, details) },
+  onStatusChange: userIds => { friends.touch(userIds) },
 })
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
 
-const friends = new FriendsService({ db })
-
 const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../../frontend/dist') })
 warn = (message, details) => { app.log.warn({ details }, message) }
+// Stopping: no friends pushes, grace or debounce timers left running
+app.addHook('onClose', (_instance, done) => { friends.close(); done() })
 await app.listen({ port: PORT, host: '0.0.0.0' })

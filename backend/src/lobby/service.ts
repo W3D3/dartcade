@@ -32,6 +32,8 @@ export type LobbyDeps = {
   hub: LobbyHub
   isBoardOnline: (boardId: string) => boolean
   warn?: (message: string, details: unknown) => void
+  /** Members' status changed for their friends (joined, left, lobby closed or its access changed, a game started or ended). */
+  onStatusChange?: (userIds: string[]) => void
 }
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
@@ -160,7 +162,15 @@ export class LobbyService {
     const lobby = this.cache.get(lobbyId)
     if (lobby) this.send(lobby)
     const users = new Set([...(lobby ? [...memberIds(lobby), ...lobby.invites.map(i => i.userId)] : []), ...alsoUsers])
-    await Promise.all([...users].map(u => this.pushMe(u)))
+    try {
+      await Promise.all([...users].map(u => this.pushMe(u)))
+    } finally {
+      this.statusChanged([...users])
+    }
+  }
+
+  private statusChanged(userIds: string[]): void {
+    if (userIds.length > 0) this.deps.onStatusChange?.([...new Set(userIds)])
   }
 
   /** A lobby socket opened or closed: everyone sees who's online. */
@@ -348,7 +358,13 @@ export class LobbyService {
     })
     this.deps.hub.closeLobbyFor(lobby.id, memberUserId, WsCloseCode.Forbidden, kind === 'left' ? 'left the lobby' : 'removed from the lobby')
     if (await this.settleHost(lobby.id) === 'open') await this.publish(lobby.id, [memberUserId])
-    else await this.pushMe(memberUserId)
+    else {
+      try {
+        await this.pushMe(memberUserId)
+      } finally {
+        this.statusChanged([memberUserId])
+      }
+    }
   }
 
   // Runs in the lobby's queue, after people left. Between games the lobby needs a host
@@ -383,7 +399,11 @@ export class LobbyService {
     this.cache.delete(lobby.id)
     this.deps.hub.sendLobby(lobby.id, { type: 'lobby_closed', lobbyId: lobby.id })
     this.deps.hub.closeLobby(lobby.id, WsCloseCode.NotFound, 'lobby closed')
-    await Promise.all([...new Set([...memberIds(lobby), ...invitees])].map(u => this.pushMe(u)))
+    try {
+      await Promise.all([...new Set([...memberIds(lobby), ...invitees])].map(u => this.pushMe(u)))
+    } finally {
+      this.statusChanged([...memberIds(lobby), ...invitees])
+    }
   }
 
   // Runs in the lobby's queue. Closes it only while `userId` is still its one member and no
@@ -685,6 +705,7 @@ export class LobbyService {
   async onGameStarted(e: GameStarted): Promise<void> {
     await Promise.all(e.userIds.map(userId =>
       this.pushMe(userId).catch((err: unknown) => { this.warn('game-start push failed', { userId, sessionId: e.sessionId, error: String(err) }) })))
+    this.statusChanged(e.userIds)
   }
 
   /**
@@ -701,6 +722,7 @@ export class LobbyService {
    * two queues. Tests wait for it with `whenIdle`.
    */
   async onGameEnded(e: GameEnded): Promise<void> {
+    this.statusChanged(e.userIds)
     await Promise.all(e.userIds.map(userId =>
       this.pushMe(userId).catch((err: unknown) => { this.warn('game-end push failed', { userId, sessionId: e.sessionId, error: String(err) }) })))
     const lobbyId = e.lobbyId

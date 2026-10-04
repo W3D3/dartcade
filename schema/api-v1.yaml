@@ -481,7 +481,7 @@ paths:
         '429': { $ref: '#/components/responses/TooManyRequests' }
     patch:
       operationId: updateMe
-      summary: Change your name (checked like name-available)
+      summary: Change your name (checked like name-available), or go Invisible / Online
       tags: [me]
       requestBody:
         required: true
@@ -1633,7 +1633,7 @@ components:
           items: { $ref: '#/components/schemas/UserSummary' }
     Me:
       type: object
-      required: [id, name, email, nameNeedsChange, suggestedName]
+      required: [id, name, email, nameNeedsChange, suggestedName, invisible]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -1641,12 +1641,14 @@ components:
         email: { type: string }
         nameNeedsChange: { type: boolean, description: 'Your name broke the rules or duplicated an older one when names became unique: pick a new one first' }
         suggestedName: { type: string, nullable: true, description: 'A free name close to yours, while nameNeedsChange' }
+        invisible: { type: boolean, description: 'Friends see you as offline' }
     UpdateMeRequest:
       type: object
       minProperties: 1
       additionalProperties: false
       properties:
         name: { type: string, minLength: 1, maxLength: 64 }
+        invisible: { type: boolean }
     NameAvailability:
       type: object
       required: [available]

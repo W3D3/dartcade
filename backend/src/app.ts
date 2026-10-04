@@ -102,10 +102,10 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
     onCameraStill: (boardId, cam, version) => { pushCamera(engine, boardId, cam, version) },
   })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
-  await app.register(lobbyGwPlugin, { lobbies, hub })
+  await app.register(lobbyGwPlugin, { lobbies, hub, friends })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
-  await app.register(meApiPlugin, { db })
+  await app.register(meApiPlugin, { db, onChanged: userId => { friends.touch([userId]) } })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
   await app.register(boardsApiPlugin, {

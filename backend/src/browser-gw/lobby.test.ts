@@ -12,10 +12,10 @@ import { getAuthUser } from '../auth/session.js'
 let app: FastifyInstance | null = null
 afterEach(async () => { await app?.close(); app = null; vi.mocked(getAuthUser).mockReset().mockResolvedValue(null) })
 
-async function serve(lobbies: unknown, hub: LobbyHub): Promise<number> {
+async function serve(lobbies: unknown, hub: LobbyHub, friends: unknown = {}): Promise<number> {
   app = Fastify()
   await app.register(fastifyWebsocket)
-  await app.register(lobbyGwPlugin, { lobbies: lobbies as any, hub })
+  await app.register(lobbyGwPlugin, { lobbies: lobbies as any, hub, friends: friends as any })
   await app.listen({ port: 0, host: '127.0.0.1' })
   return (app.server.address() as AddressInfo).port
 }
@@ -61,21 +61,47 @@ describe('/ws/lobby', () => {
 })
 
 describe('/ws/me', () => {
-  it('closes for the signed out; sends the user\'s state when it opens', async () => {
+  const friendsMsg = { type: 'friends', friends: [], incoming: [], outgoing: [] }
+  const fakeFriends = () => ({ message: vi.fn().mockResolvedValue(friendsMsg), connected: vi.fn(), disconnected: vi.fn() })
+  const messages = (ws: WebSocket, n: number) => new Promise<unknown[]>((resolve, reject) => {
+    const got: unknown[] = []
+    ws.addEventListener('message', e => { got.push(JSON.parse(String(e.data))); if (got.length === n) resolve(got) })
+    setTimeout(() => reject(new Error('no message')), 2000)
+  })
+
+  it('closes for the signed out; sends the user\'s state and friends when it opens', async () => {
     const hub = new LobbyHub()
     const me = { type: 'me', invites: [], lobby: null }
-    const port = await serve({ meMessage: vi.fn().mockResolvedValue(me) }, hub)
+    const friends = fakeFriends()
+    const port = await serve({ meMessage: vi.fn().mockResolvedValue(me) }, hub, friends)
     expect(await closeCode(`ws://127.0.0.1:${port}/ws/me`)).toBe(WsCloseCode.Unauthorized)
+    expect(friends.connected).not.toHaveBeenCalled()
     vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
-    const first = await new Promise<unknown>((resolve, reject) => {
-      ws.addEventListener('message', e => { resolve(JSON.parse(String(e.data))) }, { once: true })
-      setTimeout(() => reject(new Error('no message')), 2000)
-    })
-    expect(first).toEqual(me)
+    expect(await messages(ws, 2)).toEqual([me, friendsMsg])
     expect(hub.hasMe('lena')).toBe(true)
+    expect(friends.connected).toHaveBeenCalledWith('lena')
     ws.close()
-    await until(() => !hub.hasMe('lena'))
+    await until(() => friends.disconnected.mock.calls.length > 0)
     expect(hub.hasMe('lena')).toBe(false)
+    expect(friends.disconnected).toHaveBeenCalledWith('lena')
+  })
+
+  it('counts each socket once: two tabs open, one closes', async () => {
+    const hub = new LobbyHub()
+    const friends = fakeFriends()
+    const port = await serve({ meMessage: vi.fn().mockResolvedValue({ type: 'me', invites: [], lobby: null }) }, hub, friends)
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
+    const a = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
+    const b = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
+    await Promise.all([messages(a, 2), messages(b, 2)])
+    expect(friends.connected).toHaveBeenCalledTimes(2)
+    a.close()
+    await until(() => friends.disconnected.mock.calls.length > 0)
+    expect(friends.disconnected).toHaveBeenCalledTimes(1)
+    expect(hub.hasMe('lena')).toBe(true)
+    b.close()
+    await until(() => friends.disconnected.mock.calls.length > 1)
+    expect(friends.disconnected).toHaveBeenCalledTimes(2)
   })
 })

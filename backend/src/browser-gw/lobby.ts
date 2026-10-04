@@ -5,18 +5,20 @@ import { getAuthUser } from '../auth/session.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { LobbyHub } from '../lobby/hub.js'
 import type { LobbyService } from '../lobby/service.js'
+import type { FriendsService } from '../friends/service.js'
 
 const LobbyQuerySchema = z.object({ lobbyId: z.string().min(1) })
 
-type Opts = FastifyPluginOptions & { lobbies: LobbyService; hub: LobbyHub }
+type Opts = FastifyPluginOptions & { lobbies: LobbyService; hub: LobbyHub; friends: FriendsService }
 
 /**
  * The lobby socket (/ws/lobby?lobbyId=…) and the per-user socket (/ws/me). Both only push
  * (schema/lobby-ws-v1.json); changes go through the REST API. An open lobby socket is
- * what makes a member "online" in the lobby.
+ * what makes a member "online" in the lobby; an open /ws/me is what makes a user online for
+ * their friends.
  */
 export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { lobbies, hub } = opts
+  const { lobbies, hub, friends } = opts
 
   app.get('/ws/lobby', { websocket: true }, (connection: SocketStream, req) => {
     const socket = connection.socket
@@ -54,15 +56,17 @@ export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Err
     getAuthUser(req).then(async user => {
       if (socket.readyState !== socket.OPEN) return
       if (!user) { socket.close(WsCloseCode.Unauthorized, 'unauthorized'); return }
-      const first = await lobbies.meMessage(user.userId)
+      const [first, friendsFirst] = await Promise.all([lobbies.meMessage(user.userId), friends.message(user.userId)])
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- readyState can change across the await, though TS doesn't see it
       if (socket.readyState !== socket.OPEN) return
-      hub.addMeSocket(user.userId, socket, first)
+      hub.addMeSocket(user.userId, socket, first, friendsFirst)
+      friends.connected(user.userId)
       let gone = false
       const onGone = () => {
         if (gone) return
         gone = true
         hub.removeMeSocket(user.userId, socket)
+        friends.disconnected(user.userId)
       }
       socket.on('close', onGone)
       socket.on('error', onGone)

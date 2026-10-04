@@ -1,10 +1,14 @@
 // The two lobby sockets. /ws/lobby?lobbyId= pushes the whole lobby after every change (the
 // lobby page). /ws/me pushes your pending invites and a summary of your lobby (the
-// indicator and the invite badge, everywhere). Both only push; changes go through REST.
+// indicator and the invite badge, everywhere), and your friends list with their status.
+// Both only push; changes go through REST.
 import { writable, type Readable } from 'svelte/store'
 import { WsCloseCode } from '../api/game-ws'
-import { LobbyServerMessageSchema, MeMessageSchema } from '../api/zod'
-import type { ActiveGame, Lobby, LobbyServerMessage, LobbySummary, MeMessage, PendingInvite } from '../api/lobby-ws'
+import { LobbyServerMessageSchema, MeServerMessageSchema } from '../api/zod'
+import type { ActiveGame, FriendsMessage, Lobby, LobbyServerMessage, LobbySummary, MeMessage, PendingInvite } from '../api/lobby-ws'
+
+/** Your friends and friend requests (the friends message on /ws/me, GET /api/friends). */
+export type FriendList = Omit<FriendsMessage, 'type'>
 
 const isTyped = (m: unknown, ...types: string[]): boolean =>
   typeof m === 'object' && m !== null && 'type' in m && typeof m.type === 'string' && types.includes(m.type)
@@ -17,8 +21,8 @@ export function parseLobbyMessage(m: unknown): LobbyServerMessage | null {
   return null
 }
 
-export function parseMeMessage(m: unknown): MeMessage | null {
-  const r = MeMessageSchema.safeParse(m)
+export function parseMeMessage(m: unknown): MeMessage | FriendsMessage | null {
+  const r = MeServerMessageSchema.safeParse(m)
   return r.success ? r.data : null
 }
 
@@ -73,7 +77,7 @@ export function createLobbyStore(lobbyId: string, open: OpenSocket = openWs) {
   }
 }
 
-export type MeState = { invites: PendingInvite[]; lobby: LobbySummary | null; game: ActiveGame | null }
+export type MeState = { invites: PendingInvite[]; lobby: LobbySummary | null; game: ActiveGame | null; friends: FriendList | null }
 
 /** The signed-in user's /ws/me; started once signed in, stopped on sign-out. */
 export function createMeStore(open: OpenSocket = openWs) {
@@ -90,7 +94,13 @@ export function createMeStore(open: OpenSocket = openWs) {
     ws = socket
     socket.onmessage = (e) => {
       const msg = parseMeMessage(readJson(e))
-      if (msg) { state.set({ invites: msg.invites, lobby: msg.lobby, game: msg.game }); backoff = 500 }
+      if (msg?.type === 'me') {
+        state.update(s => ({ invites: msg.invites, lobby: msg.lobby, game: msg.game, friends: s?.friends ?? null }))
+        backoff = 500
+      } else if (msg?.type === 'friends') {
+        const { type: _type, ...list } = msg
+        state.update(s => ({ ...(s ?? { invites: [], lobby: null, game: null }), friends: list }))
+      }
     }
     socket.onclose = (e) => {
       if (ws !== socket || !running) return

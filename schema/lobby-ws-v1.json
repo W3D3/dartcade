@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "lobby-ws/v1",
   "title": "LobbyWs",
-  "description": "Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.",
+  "description": "Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.",
   "$defs": {
     "ThrowOrder": {
       "title": "ThrowOrder",
@@ -220,6 +220,24 @@
         "lobby": { "anyOf": [{ "$ref": "#/$defs/LobbySummary" }, { "type": "null" }] },
         "game": { "anyOf": [{ "$ref": "#/$defs/ActiveGame" }, { "type": "null" }] }
       }
+    },
+    "FriendsMessage": {
+      "title": "FriendsMessage",
+      "description": "Pushed on /ws/me when it opens and whenever your friends, their status or your requests change. Same shape as GET /api/friends.",
+      "type": "object",
+      "required": ["type", "friends", "incoming", "outgoing"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "friends" },
+        "friends": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Friend" } },
+        "incoming": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/IncomingFriendRequest" } },
+        "outgoing": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/OutgoingFriendRequest" } }
+      }
+    },
+    "MeServerMessage": {
+      "title": "MeServerMessage",
+      "description": "Everything /ws/me pushes.",
+      "oneOf": [{ "$ref": "#/$defs/MeMessage" }, { "$ref": "#/$defs/FriendsMessage" }]
     }
   }
 }
