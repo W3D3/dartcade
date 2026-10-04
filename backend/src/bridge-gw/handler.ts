@@ -45,10 +45,20 @@ const EventIdSchema = z.object({ kind: z.unknown(), seq: z.unknown() }).partial(
 
 // bridge.hello is informational: each field is kept or dropped on its own
 const nonEmpty = z.string().min(1).nullable().catch(null)
+// The backend fetches from this URL (board status, commands, live camera): only an http(s)
+// origin is kept, never a path, query or another scheme
+const BmOrigin = z.string().transform((s, ctx) => {
+  try {
+    const u = new URL(s)
+    if (u.protocol === 'http:' || u.protocol === 'https:') return u.origin
+  } catch { /* not a URL */ }
+  ctx.addIssue({ code: 'custom', message: 'not an http(s) URL' })
+  return z.NEVER
+})
 const HelloSchema = z.object({
   bridge_version: nonEmpty.default(null),
   bm_version: nonEmpty.default(null),
-  bm_url: z.string().nullable().catch(null).default(null),
+  bm_url: BmOrigin.nullable().catch(null).default(null),
 }).catch({ bridge_version: null, bm_version: null, bm_url: null })
 
 export function parseHello(data: unknown): { bridgeVersion: string | null; bmVersion: string | null; bmUrl: string | null } {

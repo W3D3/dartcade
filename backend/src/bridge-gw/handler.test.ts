@@ -317,4 +317,17 @@ describe('bridge message parsing', () => {
       .toEqual({ bridgeVersion: '1.2', bmVersion: null, bmUrl: 'http://bm' })
     expect(parseHello(null)).toEqual({ bridgeVersion: null, bmVersion: null, bmUrl: null })
   })
+
+  it('hello keeps only the origin of the Board Manager URL', () => {
+    for (const url of ['http://192.168.1.5:3180/api?x=1', 'http://192.168.1.5:3180/#frag', 'http://192.168.1.5:3180/some/path', 'http://192.168.1.5:3180']) {
+      expect(parseHello({ bm_url: url }).bmUrl).toBe('http://192.168.1.5:3180')
+    }
+    expect(parseHello({ bm_url: 'https://board.local' }).bmUrl).toBe('https://board.local')
+  })
+
+  it('hello refuses a Board Manager URL that is not http(s)', () => {
+    for (const url of ['file:///etc/passwd', 'javascript:alert(1)', 'gopher://x', 'not a url', '']) {
+      expect(parseHello({ bridge_version: '1.2', bm_url: url })).toEqual({ bridgeVersion: '1.2', bmVersion: null, bmUrl: null })
+    }
+  })
 })

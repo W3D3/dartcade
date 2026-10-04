@@ -191,6 +191,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/camera/{index}/live": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                /** @description Camera number, 0-based */
+                index: number;
+            };
+            cookie?: never;
+        };
+        /**
+         * Live camera frame
+         * @description The camera's current raw frame, fetched from the Board Manager through the backend (for setting up a board; works only when the backend can reach the board's network). Owner only. Off (404) when the backend runs with BOARD_LIVE_CAMERA=off. Clients may append a cache-busting query (e.g. `?t=<timestamp>`); it is ignored.
+         */
+        get: operations["getBoardCameraLive"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards/{id}/start": {
         parameters: {
             query?: never;
@@ -1690,6 +1714,37 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getBoardCameraLive: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                /** @description Camera number, 0-based */
+                index: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description JPEG frame */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            502: components["responses"]["BoardError"];
+            503: components["responses"]["BoardUnavailable"];
         };
     };
     startBoard: {

@@ -375,7 +375,7 @@
                     <div class="absolute inset-0 animate-pulse bg-line-2" aria-hidden="true"></div>
                   {/if}
                   <img
-                    src="/api/boards/{selected.id}/camera/{camIndex}?t={cameraTs}"
+                    src="/api/boards/{selected.id}/camera/{camIndex}/live?t={cameraTs}"
                     alt="Camera {camIndex + 1}"
                     class="absolute inset-0 w-full h-full object-cover {camOk[camIndex] ? '' : 'invisible'}"
                     onload={() => { camOk[camIndex] = true }}
