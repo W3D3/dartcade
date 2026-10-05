@@ -57,7 +57,7 @@ jobs:
       - name: Go code is gofmt-formatted
         run: '[ -z "$(gofmt -l .)" ] || { gofmt -l .; echo "::error::Run gofmt -w . in bridge/ and commit the result"; exit 1; }'
         working-directory: bridge
-      - run: go test ./...
+      - run: go test -race ./...
         working-directory: bridge
 
   check-generated:
