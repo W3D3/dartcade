@@ -198,17 +198,22 @@ func main() {
 		if err := client.Start(ctx); err != nil && ctx.Err() == nil {
 			log.Error("BM client stopped", "err", err)
 		}
-		close(eventCh)
 	}()
 
-	// Differ loop (main goroutine)
+	runDiffer(ctx, client.Frames(), eventCh)
+	log.Info("shutting down")
+}
+
+// runDiffer turns Board Manager frames into event batches on eventCh until ctx ends or
+// frames is closed. It is eventCh's only sender, so it closes it when it returns.
+func runDiffer(ctx context.Context, frames <-chan bm.BMFrame, eventCh chan<- []differ.Event) {
+	defer close(eventCh)
 	s := differ.State{}
 	for {
 		select {
 		case <-ctx.Done():
-			log.Info("shutting down")
 			return
-		case frame, ok := <-client.Frames():
+		case frame, ok := <-frames:
 			if !ok {
 				return
 			}

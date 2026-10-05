@@ -39,6 +39,30 @@ func TestCommandsGiveUpOnAHungBoardManager(t *testing.T) {
 	}
 }
 
+// Frames is closed once Start returns, so readers see the end instead of blocking, and
+// nothing is sent on it afterwards.
+func TestFramesClosedWhenStartReturns(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/api/version":
+			w.Write([]byte(`{"version":"1.0.7"}`))
+		case "/api/config":
+			w.Write([]byte(`{"auth":{"board_id":"b1"},"cam":{"cams":["a","b","c"]}}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer srv.Close()
+	c := NewClient(srv.URL)
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	if err := c.Start(ctx); err != nil {
+		t.Fatalf("Start: %v", err)
+	}
+	for range c.Frames() {
+	}
+}
+
 func TestResetPostsToTheBoard(t *testing.T) {
 	var method, path string
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
