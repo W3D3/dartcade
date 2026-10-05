@@ -175,7 +175,10 @@
   const view = $derived(getGameView(gameId))
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
   const winner = $derived(game?.winner ?? null)
-  const isActive = $derived(winner === null)
+  // Until the session ends: a winning visit (Around the Clock names its winner on the dart)
+  // stays open, correctable, until Finish game
+  const isActive = $derived(snapshot?.status === 'active')
+  const finishPending = $derived(snapshot?.finishPending === true)
   // The host ends the game for everyone; a player with seats leaves it (forfeits them);
   // a watcher with no seats gets neither. Only shown while the game isn't won.
   const control = $derived(endControl(snapshot, viewerId))
@@ -300,7 +303,7 @@
   const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
   const advance = () => send({ type: 'takeout' })
-  const next = $derived(nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow }))
+  const next = $derived(nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending }))
   const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
   const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
@@ -595,7 +598,7 @@
     {/if}
 
     <!-- Winner overlay (unchanged; a designed win state is out of scope) -->
-    {#if winner !== null}
+    {#if snapshot.status === 'finished' && winner !== null}
       <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
         <div class="rounded-[18px] mx-4 px-6 py-6 md:mx-0 md:px-10 md:py-8 text-center pointer-events-auto
                     border border-line bg-[rgba(15,16,14,0.92)] [box-shadow:0_24px_60px_rgba(0,0,0,0.7)]">

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyInput, type GameInput } from './apply.js'
+import { applyInput, awaitsFinish, type GameInput } from './apply.js'
 import { atcModule } from '../games/atc.js'
 import { x01Module } from '../games/x01.js'
 import type { AnyGameModule, Session, Segment } from './types.js'
@@ -109,5 +109,39 @@ describe('applyInput', () => {
     const out = applyInput(s, { source: 'user', action: { type: 'forfeit', seats: [0] } }, new Date())
     expect(out).toEqual({ committed: null, won: true })
     expect(s.totalDarts).toEqual([3, 0])
+  })
+
+  describe('awaitsFinish', () => {
+    const D20: Segment = { name: 'D20', number: 20, bed: 'Double', multiplier: 2 }
+    const S20: Segment = { name: 'S20', number: 20, bed: 'Single', multiplier: 1 }
+    const add = (segment: Segment): GameInput => ({ source: 'user', action: { type: 'add_dart', segment } })
+
+    it('X01: a checkout that wins the match waits; one that only wins a leg does not', () => {
+      const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 40, firstTo: 1 }, 2)
+      expect(awaitsFinish(s)).toBe(false)
+      applyInput(s, add(D20), t(0))
+      expect(awaitsFinish(s)).toBe(true)
+      const leg = session(x01Module, { ...x01Module.defaultConfig, startScore: 40, firstTo: 2 }, 2)
+      applyInput(leg, add(D20), t(0))
+      expect(awaitsFinish(leg)).toBe(false)
+    })
+
+    it('X01: correcting the double away ends the wait', () => {
+      const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 40, firstTo: 1 }, 2)
+      applyInput(s, add(D20), t(0))
+      applyInput(s, { source: 'user', action: { type: 'correct_dart', visitIndex: 0, segment: S20 } }, t(1))
+      expect(awaitsFinish(s)).toBe(false)
+    })
+
+    it('Around the Clock: the last target hit waits', () => {
+      const s = session(atcModule, atcModule.defaultConfig)
+      for (let n = 1; n <= 20; n++) {
+        applyInput(s, add({ name: `S${n}`, number: n, bed: 'Single', multiplier: 1 }), t(n))
+        applyInput(s, { source: 'user', action: { type: 'takeout' } }, t(n))
+      }
+      expect(awaitsFinish(s)).toBe(false)
+      applyInput(s, add({ name: '25', number: 25, bed: 'Single', multiplier: 1 }), t(30))
+      expect(awaitsFinish(s)).toBe(true)
+    })
   })
 })

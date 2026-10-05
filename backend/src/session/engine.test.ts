@@ -189,6 +189,49 @@ describe('onBridgeEvent', () => {
     expect(session.openVisitEvents).toHaveLength(0)
     expect(session.currentState).toEqual(session.committedState)
   })
+
+  describe('the visit that wins the game', () => {
+    const D20 = { name: 'D20', number: 20, bed: 'Double', multiplier: 2 }
+    async function checkedOut() {
+      const store = makeStore()
+      const engine = new SessionEngine(store, push)
+      const { sessionId } = await engine.create('user-1', 'board-1', 'x01',
+        { ...x01Module.defaultConfig, startScore: 40, firstTo: 1 }, [{ name: 'Alice' }, { name: 'Bob' }])
+      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v1' })
+      await engine.onBridgeEvent('board-1', 'dart.detected', { visit_id: 'v1', index: 0, source_seq: 1, dart: { segment: D20, score: 40 } })
+      return { store, engine, sessionId }
+    }
+
+    it('waits for Finish: the board\'s takeout, a new visit and darts are dropped unlogged', async () => {
+      const { store, engine, sessionId } = await checkedOut()
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(true)
+      const logged = store.appendEvent.mock.calls.length
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v2' })
+      await engine.onBridgeEvent('board-1', 'dart.detected', { visit_id: 'v2', index: 0, source_seq: 2, dart: { segment: D20, score: 40 } })
+      await engine.onBridgeEvent('board-1', 'visit.cleared', {})
+      expect(store.appendEvent).toHaveBeenCalledTimes(logged)
+      expect(store.finishSession).not.toHaveBeenCalled()
+      expect(engine.getSnapshot(sessionId)!.game.currentVisitDarts).toHaveLength(1)
+    })
+
+    it('Finish ends the game', async () => {
+      const { store, engine, sessionId } = await checkedOut()
+      await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+      expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [
+        expect.objectContaining({ placement: 1 }), expect.objectContaining({ placement: 2 }),
+      ])
+      expect(engine.getSnapshot(sessionId)!.status).toBe('finished')
+    })
+
+    it('a correction that no longer wins lets the board take out again', async () => {
+      const { engine, sessionId } = await checkedOut()
+      await engine.onUserAction(sessionId, 'user-1', { type: 'correct_dart', visitIndex: 0, segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 } })
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(false)
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      expect((engine.getSnapshot(sessionId)!.game as X01Game).currentPlayer).toBe(1)
+    })
+  })
 })
 
 describe('onUserAction', () => {

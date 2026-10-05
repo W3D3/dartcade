@@ -281,6 +281,10 @@ export interface X01Snapshot {
   bmStatus: BmStatus | null
   status: SessionStatus
   /**
+   * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
+   */
+  finishPending: boolean
+  /**
    * The host: starts the bull off, aborts the game.
    */
   ownerUserId: string
@@ -320,6 +324,10 @@ export interface AtcSnapshot {
    */
   bmStatus: BmStatus | null
   status: SessionStatus
+  /**
+   * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
+   */
+  finishPending: boolean
   /**
    * The host: starts the bull off, aborts the game.
    */
