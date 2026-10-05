@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
+import { findOwnBoard } from '../boards/own.js'
 import { areFriends } from '../db/friends.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import type { GameEnded, GameStarted, SessionEngine } from '../session/engine.js'
@@ -526,11 +527,14 @@ export class LobbyService {
 
   // A board the user owns that isn't in another game
   private async ownFreeBoard(lobbyId: string, userId: string, boardId: string): Promise<{ id: string; name: string }> {
-    const board = await getBoardById(this.db, boardId)
-    if (!board) throw LobbyError.badRequest('board not found')
-    if (board.owner_user_id !== userId) throw LobbyError.forbidden('you can only pick your own boards')
-    this.assertBoardFree(lobbyId, board.id)
-    return { id: board.id, name: board.name }
+    const own = await findOwnBoard(this.db, boardId, userId)
+    if (!('board' in own)) {
+      throw own.problem === 'not_found'
+        ? LobbyError.badRequest('board not found')
+        : LobbyError.forbidden('you can only pick your own boards')
+    }
+    this.assertBoardFree(lobbyId, own.board.id)
+    return { id: own.board.id, name: own.board.name }
   }
 
   // Busy: in an active game that isn't this lobby's own (that one ends before the next starts)
