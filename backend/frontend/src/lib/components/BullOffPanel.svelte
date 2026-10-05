@@ -7,6 +7,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import type { Segment, UserAction, BullOffView } from '$lib/api'
   import { initial as nameInitial, ordinal } from '$lib/fmt'
+  import { ACTIVE_CARD } from '$lib/playerCard'
 
   type Throw = NonNullable<BullOffView['throws'][number]>
 
@@ -263,7 +264,7 @@
   <section
     aria-label={name(p)}
     class="flex-1 min-w-0 box-border p-7 rounded-[18px] flex flex-col gap-6
-           {lead ? 'bg-surface-active border-2 border-accent' : 'bg-surface-2 border border-line-2'}"
+           {lead ? ACTIVE_CARD : 'bg-surface-2 border border-line-2'}"
   >
     <div class="flex items-center gap-3">
       <Avatar name={name(p)} tone={throwing ? 'accent' : 'quiet'} size={40} />
@@ -314,7 +315,7 @@
         {@const highlight = throwing || (ranked && pos === 0)}
         <div
           class="grid grid-cols-[56px_minmax(0,1fr)_auto_auto] items-center gap-4 box-border px-5 py-4 rounded-[14px]
-                  {highlight ? 'bg-surface-active border-2 border-accent' : 'bg-surface-2 border border-line-2'}"
+                  {highlight ? ACTIVE_CARD : 'bg-surface-2 border border-line-2'}"
         >
           {#if ranked}
             <span class="font-display font-bold text-[34px] leading-none {pos === 0 ? 'text-accent' : 'text-text-dim'}"

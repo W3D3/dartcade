@@ -2,6 +2,7 @@
   // A player in a team panel: initial, name, their board (remote games) and average, and
   // Throwing / Up next / "after".
   import Avatar from './Avatar.svelte'
+  import PlayerName from './PlayerName.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { TeamMember } from '$lib/teams'
@@ -30,17 +31,24 @@
       : 'border-line'}"
 >
   <Avatar name={member.name} tone={throwing ? 'accent' : 'default'} size={30} />
-  <span class="flex flex-col gap-[1px] min-w-0">
-    <span
-      class="font-semibold leading-[1.1] truncate {compact ? 'text-[15px]' : 'text-[17px]'}
-                 {throwing ? 'text-text' : member.role === 'up-next' ? 'text-ink-2' : 'text-text-muted'}"
-      >{member.name}{#if seat?.you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span
-    >
-    <span class="flex items-center gap-1 min-w-0 text-[12px] text-text-dim">
-      {#if seat}<SeatBoardLine line={seat} size="sm" /><span class="shrink-0">·</span>{/if}
-      <span class="shrink-0 whitespace-nowrap">{seat ? 'avg' : 'Avg'} {member.avg}</span>
-    </span>
-  </span>
+  <PlayerName
+    name={member.name}
+    you={seat?.you ?? false}
+    nameClass="{compact ? 'text-[15px]' : 'text-[17px]'} {throwing
+      ? 'text-text'
+      : member.role === 'up-next'
+        ? 'text-ink-2'
+        : 'text-text-muted'}"
+    youClass="text-[12px]"
+    gap="gap-[1px]"
+  >
+    {#snippet below()}
+      <span class="flex items-center gap-1 min-w-0 text-[12px] text-text-dim">
+        {#if seat}<SeatBoardLine line={seat} size="sm" /><span class="shrink-0">·</span>{/if}
+        <span class="shrink-0 whitespace-nowrap">{seat ? 'avg' : 'Avg'} {member.avg}</span>
+      </span>
+    {/snippet}
+  </PlayerName>
   <span class="ml-auto shrink-0 flex items-center">
     {#if member.role === 'throwing' || member.role === 'up-next'}
       <PlayerPill kind={member.role} small />
