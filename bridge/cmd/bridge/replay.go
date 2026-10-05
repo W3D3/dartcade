@@ -7,7 +7,9 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	"dartcade/bridge/internal/bm"
@@ -74,11 +76,12 @@ func runReplayToBackend(backendURL, path string) {
 		CompressionMode: websocket.CompressionDisabled,
 	})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "dial %s: %v\n", backendURL, err)
+		// The URL may carry a token: keep its query out of the output
+		fmt.Fprintf(os.Stderr, "dial %s: %s\n", hostOf(backendURL), withoutQuery(err.Error(), backendURL))
 		os.Exit(1)
 	}
 	defer conn.Close(websocket.StatusNormalClosure, "")
-	log.Info("connected to backend", "url", backendURL)
+	log.Info("connected to backend", "host", hostOf(backendURL))
 
 	// coder/websocket requires the read path to be driven; without it
 	// control frames go unhandled and the conn dies. We discard ACKs here.
@@ -162,6 +165,15 @@ func runReplayToBackend(backendURL, path string) {
 		fmt.Fprintf(os.Stderr, "scan error: %v\n", err)
 	}
 	log.Info("replay complete", "events", seq)
+}
+
+// withoutQuery returns msg with rawURL's query (which may hold a token) taken out.
+func withoutQuery(msg, rawURL string) string {
+	u, err := url.Parse(rawURL)
+	if err != nil || u.RawQuery == "" {
+		return msg
+	}
+	return strings.ReplaceAll(msg, u.RawQuery, "REDACTED")
 }
 
 func replayScanner(path string) *bufio.Scanner {

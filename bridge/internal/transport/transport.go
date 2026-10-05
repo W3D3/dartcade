@@ -4,8 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"net/url"
 	"runtime"
 	"slices"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -47,12 +51,15 @@ type Envelope struct {
 
 // Config holds the transport's static configuration.
 type Config struct {
+	// Backend WebSocket URL, without the token
 	BackendURL string
-	BridgeID   string
-	BootID     string
-	BoardID    string
-	BMVersion  string
-	BMUrl      string // Board Manager base URL, reported in bridge.hello
+	// Bridge token, sent as the token query parameter; never logged
+	Token     string
+	BridgeID  string
+	BootID    string
+	BoardID   string
+	BMVersion string
+	BMUrl     string // Board Manager base URL, reported in bridge.hello
 	// Bridge build version (main.version), reported in bridge.hello
 	BridgeVersion string
 }
@@ -142,15 +149,24 @@ func (t *Transport) Send(evs []differ.Event) {
 
 // Start connects to the backend and runs the send loop. Blocks until ctx is cancelled.
 func (t *Transport) Start(ctx context.Context) error {
+	dialURL, err := withToken(t.cfg.BackendURL, t.cfg.Token)
+	if err != nil {
+		return err
+	}
+	// The token to keep out of logs, also when it is part of the configured URL
+	token := t.cfg.Token
+	if u, err := url.Parse(dialURL); err == nil {
+		token = u.Query().Get("token")
+	}
 	go t.runCommands(ctx)
 	delay := 500 * time.Millisecond
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
-		conn, _, err := websocket.Dial(ctx, t.cfg.BackendURL, nil)
+		conn, _, err := websocket.Dial(ctx, dialURL, nil)
 		if err != nil {
-			log.Warn("backend connect failed", "err", err, "retry_in", delay)
+			log.Warn("backend connect failed", "err", redact(err, token), "retry_in", delay)
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
@@ -164,6 +180,34 @@ func (t *Transport) Start(ctx context.Context) error {
 		t.runConn(ctx, conn)
 		conn.Close(websocket.StatusNormalClosure, "")
 	}
+}
+
+// withToken adds the token to the backend URL's query, keeping any query it already has.
+func withToken(backendURL, token string) (string, error) {
+	u, err := url.Parse(backendURL)
+	if err != nil {
+		return "", fmt.Errorf("backend url: %w", redact(err, token))
+	}
+	if token == "" {
+		return backendURL, nil
+	}
+	q := u.Query()
+	q.Set("token", token)
+	u.RawQuery = q.Encode()
+	return u.String(), nil
+}
+
+// redact returns err with the token taken out of its message (dial errors carry the
+// full URL).
+func redact(err error, token string) error {
+	if token == "" {
+		return err
+	}
+	msg := err.Error()
+	for _, s := range []string{url.QueryEscape(token), url.PathEscape(token), token} {
+		msg = strings.ReplaceAll(msg, s, "REDACTED")
+	}
+	return errors.New(msg)
 }
 
 func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
