@@ -132,6 +132,9 @@ export function handleBridgeConnection(
   // Authenticate once. The result gates message processing below.
   const authed = getBoardByTokenHash(db, tokenHash)
     .then(board => {
+      // Closed while its token was being checked: registering it now would leave the board online
+      // for good (the close handler already ran, before the connection had a board)
+      if (socket.readyState !== socket.OPEN) return false
       if (!board) {
         socket.close(4401, 'unauthorized')
         return false
