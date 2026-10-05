@@ -18,6 +18,8 @@ export function registerResponseValidation(app: FastifyInstance): void {
   addFormats(ajv)
   const validators = new Map<string, ValidateFunction>()
 
+  // Async on purpose: Fastify then uses the returned payload instead of waiting for done()
+  // oxlint-disable-next-line typescript/require-await
   app.addHook('onSend', async (req, reply, payload) => {
     const operationId = req.routeOptions.schema?.operationId
     if (!operationId || reply.statusCode >= 500) return payload

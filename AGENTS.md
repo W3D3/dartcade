@@ -92,6 +92,7 @@ corrected dart replays the open visit cleanly.
   Postgres, see `DEVELOPMENT.md`), `cd backend/frontend && npm test`,
   `cd bridge && go test ./...`.
 - Type checks: `cd backend && npm run typecheck`, `cd backend/frontend && npm run typecheck`.
+- Lint: `npm run lint` in `backend/` (oxlint, type-aware, config in `.oxlintrc.json`) and in `backend/frontend/` (ESLint: oxlint can't type-check `.svelte` files).
 - Formatting: oxfmt (Prettier-compatible) for TS, Svelte, JSON, YAML and Markdown, run from the repo root: `npm run format` (CI runs `npm run format:check`); config in `.oxfmtrc.json`; `gofmt -w .` in `bridge/`.
 
 ## Commits and merging
