@@ -8,11 +8,11 @@
   import { badgeVariants, type BadgeVariant } from './badge-variants.js'
 
   let {
-    variant = 'throwing',
+    variant,
     class: className = '',
     children,
   }: {
-    variant?: BadgeVariant
+    variant: NonNullable<BadgeVariant>
     class?: string
     children?: Snippet
   } = $props()
