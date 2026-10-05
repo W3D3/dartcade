@@ -142,15 +142,14 @@ func main() {
 		con.pairedOK()
 	}
 
-	exec := func(name string) (int, error) {
-		execCtx := context.Background()
+	exec := func(ctx context.Context, name string) (int, error) {
 		switch name {
 		case "reset":
-			return client.Reset(execCtx)
+			return client.Reset(ctx)
 		case "start":
-			return client.StartDetection(execCtx)
+			return client.StartDetection(ctx)
 		case "stop":
-			return client.StopDetection(execCtx)
+			return client.StopDetection(ctx)
 		}
 		return 0, nil
 	}
