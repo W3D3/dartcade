@@ -12,6 +12,8 @@ export type ApplyOutcome = {
   committed: CommittedVisit<unknown> | null
   /** The input decided the game. */
   won: boolean
+  /** Undo put this committed visit (its number) back: its darts are open again. */
+  reopened?: number
 }
 
 const NONE: ApplyOutcome = { committed: null, won: false }
@@ -112,6 +114,8 @@ function applyBoardEvent(session: Session, event: BoardEvent, at: Date): ApplyOu
 function applyUserAction(session: Session, action: UserAction, at: Date): ApplyOutcome {
   switch (action.type) {
     case 'undo_dart': {
+      // Nothing open: the last committed visit comes back, darts and all, for its thrower
+      if (!session.openVisitEvents.some(isDart)) return reopen(session)
       const events = session.openVisitEvents
       for (let i = events.length - 1; i >= 0; i--) {
         if (events[i].kind !== 'dart.detected') continue
@@ -186,6 +190,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
       const seats = action.seats ?? []
       if (seats.length === 0) return NONE
       session.forfeited = [...new Set([...session.forfeited, ...seats])].sort((a, b) => a - b)
+      session.undoable = []
       // The visit in progress doesn't count (mirrors board.resync)
       countDarts(session, session.currentState, -dartEvents(session).length)
       session.openVisitEvents = []
@@ -201,6 +206,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
       session.committedState = next
       session.openVisitEvents = []
       session.openDarts = []
+      session.undoable = []
       return { committed: null, won: hasWinner(session, next) }
     }
   }
@@ -243,6 +249,10 @@ function commit(session: Session, closing: BoardEvent, at: Date): ApplyOutcome {
     darts, start, end, after,
   }
 
+  // Bull off visits can't be undone (its result is the game's start)
+  session.undoable = visit.phase === 'game'
+    ? [...session.undoable, { committedState: session.committedState, openVisitEvents: events, openDarts: session.openDarts, seat: visit.seat }]
+    : []
   session.visitCount++
   session.committedState = after
   session.openVisitEvents = []
@@ -250,3 +260,16 @@ function commit(session: Session, closing: BoardEvent, at: Date): ApplyOutcome {
   return { committed: visit, won: hasWinner(session, after) }
 }
 
+// Undo with nothing open: the game goes back to before the last committed visit and its darts
+// are the open visit again, to correct and commit anew
+function reopen(session: Session): ApplyOutcome {
+  const last = session.undoable.at(-1)
+  if (!last) return NONE
+  session.undoable = session.undoable.slice(0, -1)
+  session.committedState = last.committedState
+  session.openVisitEvents = last.openVisitEvents
+  session.openDarts = last.openDarts
+  session.totalVisits[last.seat] = Math.max(0, (session.totalVisits[last.seat] ?? 0) - 1)
+  session.visitCount--
+  return { committed: null, won: false, reopened: session.visitCount }
+}

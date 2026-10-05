@@ -26,6 +26,10 @@ function memoryStore() {
       for (const r of rows) if (!darts.some(d => d.session_id === r.session_id && d.visit === r.visit && d.dart_index === r.dart_index)) darts.push(r)
       return Promise.resolve()
     },
+    deleteDarts: (id, visit) => {
+      for (let i = darts.length - 1; i >= 0; i--) if (darts[i].session_id === id && darts[i].visit === visit) darts.splice(i, 1)
+      return Promise.resolve()
+    },
     finishSession: (id, _at, r) => { finished.set(id, r); const s = sessions.get(id); if (s) s.status = 'finished'; return Promise.resolve() },
     abortSession: (id) => { aborted.push(id); const s = sessions.get(id); if (s) s.status = 'aborted'; return Promise.resolve() },
   }
@@ -215,5 +219,21 @@ describe('engine persistence', () => {
     mem.sessions.set('gone', { id: 'gone', owner_user_id: 'user-1', board_db_id: null, game_id: 'no-such-game', game_version: 1, rng_seed: 0, config: {}, players: [{ name: 'A', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null }], status: 'active', created_at: new Date() })
     await new SessionEngine(mem.store, vi.fn()).rebuild()
     expect(mem.aborted).toEqual(['gone'])
+  })
+
+  it('an undone visit, corrected and committed again, replays and saves as corrected', async () => {
+    const mem = memoryStore()
+    const live = new SessionEngine(mem.store, vi.fn())
+    const { sessionId } = await live.create('user-1', null, 'x01', { ...CONFIG, bullOff: 'off' }, PLAYERS)
+    await play(live, sessionId, [
+      ['user', { type: 'add_dart', segment: T20 }], ['user', { type: 'takeout' }],
+      ['user', { type: 'undo_dart' }],
+      ['user', { type: 'correct_dart', visitIndex: 0, segment: S20 }], ['user', { type: 'takeout' }],
+    ])
+    expect(mem.darts.filter(d => d.session_id === sessionId).map(d => [d.visit, (d.segment as Segment).name])).toEqual([[0, 'S20']])
+
+    const restarted = new SessionEngine(mem.store, vi.fn())
+    await restarted.rebuild()
+    expect(restarted.getSnapshot(sessionId)).toEqual(live.getSnapshot(sessionId))
   })
 })

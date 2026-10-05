@@ -8,7 +8,7 @@ vi.mock('./auth/session.js', () => ({ getAuthUser: vi.fn() }))
 const store: EngineStore = {
   insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
   getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
-  insertDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+  insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
   abortSession: vi.fn().mockResolvedValue(undefined),
 }
 const sock = () => ({ readyState: 1, send: vi.fn() }) as any

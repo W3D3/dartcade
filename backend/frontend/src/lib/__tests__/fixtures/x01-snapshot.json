@@ -61,6 +61,7 @@
   "bmStatus": null,
   "status": "active",
   "finishPending": false,
+  "canUndoVisit": false,
   "ownerUserId": "u1",
   "lobbyId": null,
   "lobbyName": null,

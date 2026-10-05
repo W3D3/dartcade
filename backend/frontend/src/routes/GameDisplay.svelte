@@ -306,6 +306,8 @@
   const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
   const advance = () => send({ type: 'takeout' })
+  // Undo takes back the last dart, or with none open reopens the last visit (its thrower is up again)
+  const canUndo = $derived(canThrow && (darts.length > 0 || snapshot?.canUndoVisit === true))
   const next = $derived(nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending }))
   const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
@@ -405,13 +407,13 @@
   {#if keypad}
     <div class="flex-1 min-h-[220px]">
       <DartKeypad onDart={canThrow ? keypadDart : () => {}} dartCount={darts.length} {locked} replacing={correcting} disabled={!canThrow}
-        canUndo={canThrow && darts.length > 0} onUndo={undo}
+        canUndo={canUndo} onUndo={undo}
         nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
     </div>
   {:else if turn}
     <TurnStatusBar status={turn} compact />
   {:else}
-    <ControlBar compact canUndo={canThrow && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+    <ControlBar compact canUndo={canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled}
       onUndo={undo} onNext={advance} />
   {/if}
 {/snippet}
@@ -421,7 +423,7 @@
   {#if keypad}
     <div class="flex-1 min-h-0">
       <DartKeypad onDart={canThrow ? addManualDart : () => {}} dartCount={darts.length} {locked} disabled={!canThrow}
-        canUndo={canThrow && darts.length > 0} onUndo={undo}
+        canUndo={canUndo} onUndo={undo}
         nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
     </div>
   {:else if remote.kind === 'waiting' && variant === 'party'}
@@ -456,7 +458,7 @@
     {#if turn}
       <TurnStatusBar status={turn} />
     {:else}
-      <ControlBar canUndo={canThrow && darts.length > 0} label={next.label} prominent={next.prominent} enabled={next.enabled}
+      <ControlBar canUndo={canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled}
         onUndo={undo} onNext={advance} />
     {/if}
   {/if}

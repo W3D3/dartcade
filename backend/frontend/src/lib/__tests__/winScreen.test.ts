@@ -21,7 +21,7 @@ function x01(o: { players?: string[]; game?: Record<string, unknown>; guests?: n
       currentVisitDarts: [], totalDarts: [66, 65, 60, 60].slice(0, n), totalVisits: [22, 22, 20, 20].slice(0, n),
       ...o.game,
     },
-    bmStatus: null, status: 'finished', finishPending: false, ownerUserId: 'u1',
+    bmStatus: null, status: 'finished', finishPending: false, canUndoVisit: false, ownerUserId: 'u1',
     seats: names.map((_, i) => seat({ userId: o.guests?.includes(i) ? null : `u${i + 1}` })), mySeats: [0],
   } as unknown as Snapshot
 }

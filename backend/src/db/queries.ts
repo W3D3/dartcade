@@ -162,6 +162,11 @@ export async function insertGameDarts(db: Kysely<Database>, rows: NewGameDart[])
   }
 }
 
+/** Undo reopened a committed visit: its darts are open again, so its rows go. */
+export async function deleteGameDarts(db: Kysely<Database>, sessionId: string, visit: number): Promise<void> {
+  await db.deleteFrom('game_darts').where('session_id', '=', sessionId).where('visit', '=', visit).execute()
+}
+
 /** The game was won: placements, stats and forfeited status per seat (in seat order). */
 export async function finishGameSession(db: Kysely<Database>, id: string, finishedAt: Date, results: { placement: number; stats: Record<string, number>; throwPosition: number; forfeited: boolean }[]): Promise<void> {
   await db.transaction().execute(async (trx) => {

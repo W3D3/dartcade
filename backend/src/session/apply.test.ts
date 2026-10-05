@@ -13,7 +13,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
     committedState: s, currentState: s, openVisitEvents: [], openDarts: [],
     status: 'active', createdAt: new Date(0), seed: 0, visitCount: 0, nextSeq: 0,
     totalDarts: Array<number>(n).fill(0), totalVisits: Array<number>(n).fill(0),
-    boardStatus: new Map(), forfeited: [],
+    boardStatus: new Map(), forfeited: [], undoable: [],
   }
 }
 const S1: Segment = { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }
@@ -142,6 +142,46 @@ describe('applyInput', () => {
       expect(awaitsFinish(s)).toBe(false)
       applyInput(s, add({ name: '25', number: 25, bed: 'Single', multiplier: 1 }), t(30))
       expect(awaitsFinish(s)).toBe(true)
+    })
+  })
+
+  describe('undo with nothing open', () => {
+    const T20: Segment = { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }
+    const S20: Segment = { name: 'S20', number: 20, bed: 'Single', multiplier: 1 }
+    const D20: Segment = { name: 'D20', number: 20, bed: 'Double', multiplier: 2 }
+    const add = (segment: Segment): GameInput => ({ source: 'user', action: { type: 'add_dart', segment } })
+    const user = (type: 'takeout' | 'undo_dart'): GameInput => ({ source: 'user', action: { type } })
+    const game = (s: Session) => s.module.view(s.currentState, s.players) as unknown as { currentPlayer: number; scores: number[]; legs: number[] }
+
+    it('reopens the last visit for its thrower, to correct and commit again', () => {
+      const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 301 }, 2)
+      applyInput(s, add(T20), t(0))
+      applyInput(s, user('takeout'), t(1))
+      expect(game(s).currentPlayer).toBe(1)
+
+      expect(applyInput(s, user('undo_dart'), t(2))).toEqual({ committed: null, won: false, reopened: 0 })
+      expect(game(s)).toMatchObject({ currentPlayer: 0, scores: [241, 301] })
+      expect(s.totalVisits).toEqual([0, 0])
+      expect(s.totalDarts).toEqual([1, 0])
+
+      applyInput(s, { source: 'user', action: { type: 'correct_dart', visitIndex: 0, segment: S20 } }, t(3))
+      const out = applyInput(s, user('takeout'), t(4))
+      expect(out.committed).toMatchObject({ visit: 0, seat: 0 })
+      expect(game(s)).toMatchObject({ currentPlayer: 1, scores: [281, 301] })
+    })
+
+    it('goes back across a won leg', () => {
+      const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 40, firstTo: 2 }, 2)
+      applyInput(s, add(D20), t(0))
+      applyInput(s, user('takeout'), t(1))
+      expect(game(s).legs).toEqual([1, 0])
+      applyInput(s, user('undo_dart'), t(2))
+      expect(game(s)).toMatchObject({ currentPlayer: 0, legs: [0, 0], scores: [0, 40] })
+    })
+
+    it('does nothing before the first visit', () => {
+      const s = session(x01Module, x01Module.defaultConfig, 2)
+      expect(applyInput(s, user('undo_dart'), t(0))).toEqual({ committed: null, won: false })
     })
   })
 })

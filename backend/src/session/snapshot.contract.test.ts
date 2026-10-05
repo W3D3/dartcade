@@ -22,7 +22,7 @@ function engine() {
     getActiveSessions: vi.fn().mockResolvedValue([]),
     getSessionEvents: vi.fn().mockResolvedValue([]),
     appendEvent: vi.fn().mockResolvedValue(undefined),
-    insertDarts: vi.fn().mockResolvedValue(undefined),
+    insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
   }
