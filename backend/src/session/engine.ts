@@ -118,6 +118,35 @@ const isTeamGame = (s: Session): boolean => {
 }
 const storedSeatedUserIds = (row: Pick<StoredGameSession, 'owner_user_id' | 'players'>): string[] =>
   distinct([row.owner_user_id, ...row.players.map(p => p.controller_user_id)])
+// A stored game that couldn't be brought back ended aborted, by nobody, without results
+const storedAborted = (row: StoredGameSession): GameEnded => ({
+  sessionId: row.id,
+  lobbyId: row.lobby_id,
+  gameId: row.game_id,
+  status: 'aborted',
+  abortedByUserId: null,
+  results: [],
+  teamGame: false,
+  userIds: storedSeatedUserIds(row),
+})
+
+/** The seats as one viewer sees them: boards online, controllers connected or since when not. */
+function seatViews(session: Session, view: SnapshotView) {
+  return session.seats.map((s, i) => {
+    const connected = view.connectedUserIds.has(s.controllerUserId)
+    return {
+      controllerUserId: s.controllerUserId,
+      userId: s.userId,
+      boardId: s.boardId,
+      boardName: s.boardName,
+      boardOnline: s.boardId !== null && view.isBoardOnline(s.boardId),
+      controllerConnected: connected,
+      // Only a controller without the game open has a time; it says how long the game waits
+      disconnectedAt: connected ? null : (view.disconnectedAt(s.controllerUserId)?.toISOString() ?? null),
+      forfeited: session.forfeited.includes(i),
+    }
+  })
+}
 
 export class SessionEngine {
   private byBoard: Map<string, Session> = new Map()
@@ -286,25 +315,48 @@ export class SessionEngine {
   private async apply(session: Session, input: GameInput, raw: { kind: string; data: unknown }, origin: Origin): Promise<boolean> {
     if (session.status !== 'active') return false
     if (origin.boardId !== null && session.seats[currentSeat(session)].boardId !== origin.boardId) {
-      if (input.source === 'board' && input.event.kind === 'dart.detected') {
-        const boardId = origin.boardId
-        const up = session.seats[currentSeat(session)]
-        const users = [...new Set(session.seats.filter(s => s.boardId === boardId).map(s => s.controllerUserId))]
-        this.notify(session.id, users, {
-          type: 'notice',
-          code: 'not_your_turn',
-          boardId,
-          throwerName: up.name,
-          // a board whose name is gone (deleted) is still a board, not hand entry
-          throwerBoard: up.boardId === null ? null : (up.boardName ?? 'Board'),
-        })
-      }
+      if (input.source === 'board' && input.event.kind === 'dart.detected') this.notifyNotYourTurn(session, origin.boardId)
       return false
     }
     // The visit that wins the game waits for Finish: the board can't end or add to it (dropped
     // before it's logged, so logs from before this rule replay as they were played)
     if (input.source === 'board' && HELD.has(input.event.kind) && awaitsFinish(session)) return false
     const at = new Date()
+    await this.logInput(session, input, raw, origin, at)
+    const outcome = applyInput(session, input, at)
+    if (outcome.reopened !== undefined) await this.store.deleteDarts(session.id, outcome.reopened)
+    if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
+    // finish() pushes the final snapshot itself (before notifying), so the caller doesn't
+    // push it a second time
+    if (outcome.won) {
+      await this.finish(session, at)
+      return false
+    }
+    return true
+  }
+
+  // A dart on a board whose seat isn't up: whoever throws at that board hears whose turn it is
+  private notifyNotYourTurn(session: Session, boardId: string): void {
+    const up = session.seats[currentSeat(session)]
+    const users = [...new Set(session.seats.filter(s => s.boardId === boardId).map(s => s.controllerUserId))]
+    this.notify(session.id, users, {
+      type: 'notice',
+      code: 'not_your_turn',
+      boardId,
+      throwerName: up.name,
+      // a board whose name is gone (deleted) is still a board, not hand entry
+      throwerBoard: up.boardId === null ? null : (up.boardName ?? 'Board'),
+    })
+  }
+
+  // Appends the input, as received, to the session's log
+  private async logInput(
+    session: Session,
+    input: GameInput,
+    raw: { kind: string; data: unknown },
+    origin: Origin,
+    at: Date,
+  ): Promise<void> {
     await this.store.appendEvent({
       session_id: session.id,
       seq: session.nextSeq,
@@ -316,16 +368,6 @@ export class SessionEngine {
       created_at: at,
     })
     session.nextSeq++
-    const outcome = applyInput(session, input, at)
-    if (outcome.reopened !== undefined) await this.store.deleteDarts(session.id, outcome.reopened)
-    if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
-    // finish() pushes the final snapshot itself (before notifying), so the caller doesn't
-    // push it a second time
-    if (outcome.won) {
-      await this.finish(session, at)
-      return false
-    }
-    return true
   }
 
   /** The game-end listener must not undo the end: whatever it throws (or rejects with) is logged, never passed on. */
@@ -387,17 +429,7 @@ export class SessionEngine {
         // (and fail) to bring it back; its log stays untouched for later recovery.
         this.warn('failed to rebuild session, aborting it', { sessionId: row.id, error: String(err) })
         try {
-          await this.store.abortSession(row.id, new Date(), null)
-          await this.notifyEnded({
-            sessionId: row.id,
-            lobbyId: row.lobby_id,
-            gameId: row.game_id,
-            status: 'aborted',
-            abortedByUserId: null,
-            results: [],
-            teamGame: false,
-            userIds: storedSeatedUserIds(row),
-          })
+          await this.abortStored(row)
         } catch (abortErr) {
           this.warn('failed to abort an unrebuildable session', { sessionId: row.id, error: String(abortErr) })
         }
@@ -405,22 +437,18 @@ export class SessionEngine {
     }
   }
 
+  // A stored game that can't be played on: aborted, and its players' lobby resets
+  private async abortStored(row: StoredGameSession): Promise<void> {
+    await this.store.abortSession(row.id, new Date(), null)
+    await this.notifyEnded(storedAborted(row))
+  }
+
   private async rebuildOne(row: StoredGameSession): Promise<void> {
     const mod = games[row.game_id]
     const config = StoredConfigSchema.safeParse(row.config)
     // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
     if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
-      await this.store.abortSession(row.id, new Date(), null)
-      await this.notifyEnded({
-        sessionId: row.id,
-        lobbyId: row.lobby_id,
-        gameId: row.game_id,
-        status: 'aborted',
-        abortedByUserId: null,
-        results: [],
-        teamGame: false,
-        userIds: storedSeatedUserIds(row),
-      })
+      await this.abortStored(row)
       return
     }
     const owner = row.owner_user_id
@@ -478,20 +506,7 @@ export class SessionEngine {
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
-      seats: session.seats.map((s, i) => {
-        const connected = view.connectedUserIds.has(s.controllerUserId)
-        return {
-          controllerUserId: s.controllerUserId,
-          userId: s.userId,
-          boardId: s.boardId,
-          boardName: s.boardName,
-          boardOnline: s.boardId !== null && view.isBoardOnline(s.boardId),
-          controllerConnected: connected,
-          // Only a controller without the game open has a time; it says how long the game waits
-          disconnectedAt: connected ? null : (view.disconnectedAt(s.controllerUserId)?.toISOString() ?? null),
-          forfeited: session.forfeited.includes(i),
-        }
-      }),
+      seats: seatViews(session, view),
       mySeats: session.seats.flatMap((s, i) => (s.controllerUserId === view.viewerUserId ? [i] : [])),
       // The status pill follows the board of the seat that's up
       bmStatus: upBoard === null ? null : (session.boardStatus.get(upBoard) ?? null),
