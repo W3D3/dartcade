@@ -174,6 +174,7 @@ describe('bridgeGwPlugin export', () => {
 })
 
 class FakeSocket extends EventEmitter {
+  readonly OPEN = 1
   readyState = 1
   close = vi.fn()
   send = vi.fn()
@@ -182,6 +183,24 @@ class FakeSocket extends EventEmitter {
 const flush = () => new Promise(r => setImmediate(r))
 
 describe('handleBridgeConnection', () => {
+  it('a bridge that closes while its token is checked never shows the board online', async () => {
+    let resolveBoard!: (b: any) => void
+    vi.mocked(queries.getBoardByTokenHash).mockReturnValue(
+      new Promise(r => {
+        resolveBoard = r
+      }) as any,
+    )
+    const presence = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine: {} as any, onBoardPresence: presence })
+    socket.readyState = 3
+    socket.emit('close')
+    resolveBoard({ id: 'board-gone', hardware_id: null })
+    await flush()
+    expect(bridgeConnections.isOnline('board-gone')).toBe(false)
+    expect(presence).not.toHaveBeenCalledWith('board-gone')
+  })
+
   it('does not drop bridge.hello that arrives before the token lookup resolves', async () => {
     // getBoardByTokenHash stays pending so hello arrives during the auth window.
     let resolveBoard!: (b: any) => void
