@@ -8,7 +8,7 @@
   import type { Lobby, LobbyPerson, TeamId } from '$lib/api/lobby-ws'
   import { sortable, type SortableDrop } from '$lib/actions/sortable'
   import { Button } from '$lib/components/ui/button/index.js'
-  import Avatar from './Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
   import DragHandle from './DragHandle.svelte'
   import ReorderStatus from './ReorderStatus.svelte'
   import { teamRosters, teamsMessage, type PersonPatch } from '$lib/lobby/rules'

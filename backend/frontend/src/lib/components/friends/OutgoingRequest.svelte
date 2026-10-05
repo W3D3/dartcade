@@ -1,7 +1,7 @@
 <script lang="ts">
   // A request you sent: @handle, "Sent yesterday, 18:40", Cancel. The dashed ring marks "not yet".
   import type { OutgoingFriendRequest } from '$lib/api/lobby-ws'
-  import Avatar from '$lib/components/lobby/Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
   import { outgoingMeta } from '$lib/friends/view'
 
   let { request, now, busy, oncancel }: { request: OutgoingFriendRequest; now: Date; busy: boolean; oncancel: () => void } = $props()

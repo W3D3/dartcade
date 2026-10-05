@@ -2,6 +2,7 @@
   import { isPhone } from '$lib/viewport'
   // Bull off for any game wrapped with withBullOff: one dart each, closest to
   // the centre throws first. Driven entirely by the snapshot's `bullOff` view.
+  import Avatar from './Avatar.svelte'
   import DartBoard from './DartBoard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import type { Segment, UserAction, BullOffView } from '$lib/api'
@@ -265,10 +266,7 @@
            {lead ? 'bg-surface-active border-2 border-accent' : 'bg-surface-2 border border-line-2'}"
   >
     <div class="flex items-center gap-3">
-      <span
-        class="w-10 h-10 flex-shrink-0 rounded-full flex items-center justify-center font-bold text-[17px]
-                   {throwing ? 'bg-accent text-accent-fg' : 'bg-line-3 text-text'}">{initial(p)}</span
-      >
+      <Avatar name={name(p)} tone={throwing ? 'accent' : 'quiet'} size={40} />
       <span class="text-[22px] font-semibold truncate {lead ? 'text-text' : 'text-text-muted'}">{name(p)}</span>
       <span
         class="ml-auto h-6 px-[10px] inline-flex items-center rounded-full text-[11px] font-bold tracking-[0.08em] uppercase whitespace-nowrap
@@ -323,10 +321,7 @@
               >{ordinal(pos + 1)}</span
             >
           {:else}
-            <span
-              class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-[16px]
-                       {throwing ? 'bg-accent text-accent-fg' : 'bg-line-3 text-text'}">{initial(p)}</span
-            >
+            <Avatar name={name(p)} tone={throwing ? 'accent' : 'quiet'} class="w-10 h-10 text-[16px]" />
           {/if}
 
           <div class="flex flex-col gap-1 min-w-0">

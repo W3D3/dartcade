@@ -2,7 +2,7 @@
   // One pending invite (Invites-Phone): the lobby, who invited you and when, Decline and Accept.
   import type { PendingInvite } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
-  import Avatar from './Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
   import { inviteTime } from '$lib/lobby/format'
 
   let {

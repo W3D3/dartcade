@@ -1,6 +1,7 @@
 <script lang="ts">
   // Frame of a player panel (1–2 players): avatar, name, optional aside (leg pips), pill.
   import type { Snippet } from 'svelte'
+  import Avatar from './Avatar.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
@@ -34,7 +35,6 @@
 
   // Two players on tablets (md up to xl) get the smaller sizes; one player keeps the desktop ones
   const nameSize = $derived(solo ? 'text-[22px]' : 'text-[19px] xl:text-[22px]')
-  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
 
 <section
@@ -45,12 +45,11 @@
          {active ? 'bg-surface-active border-2 border-accent' : 'bg-surface-panel border border-line-2'}"
 >
   <div class="flex items-center {solo ? 'gap-3' : 'gap-[10px] xl:gap-3'} min-w-0">
-    <span
-      class="{solo
-        ? 'w-10 h-10 text-[17px]'
-        : 'w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]'} shrink-0 rounded-full flex items-center justify-center font-bold
-                 {active ? 'bg-accent text-accent-fg' : 'bg-line-chip text-text'}">{initial}</span
-    >
+    <Avatar
+      {name}
+      tone={active ? 'accent' : 'default'}
+      class={solo ? 'w-10 h-10 text-[17px]' : 'w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]'}
+    />
     {#if seat}
       <span class="flex flex-col gap-[3px] min-w-0">
         <span class="{nameSize} leading-[1.1] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}"

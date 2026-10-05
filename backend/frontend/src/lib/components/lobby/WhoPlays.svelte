@@ -1,7 +1,7 @@
 <script lang="ts">
   // Who plays the next game: a chip per person; the host taps one to sit them out or back in.
   import type { Lobby } from '$lib/api/lobby-ws'
-  import Avatar from './Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
   import ToggleChip from './ToggleChip.svelte'
   import { boardSummary } from '$lib/lobby/rules'
 

@@ -2,6 +2,7 @@
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
   import { x01Roll } from '$lib/playerStats'
+  import Avatar from './Avatar.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
@@ -17,7 +18,6 @@
   }: { name: string; p: X01PlayerView; active: boolean; pill: PillKind | null; seat?: SeatLine | null } = $props()
   // Stacked rows (portrait tablets): only the thrower's stats; the others keep their leg pips
   const stacked = $derived(active ? '' : '@max-lg:hidden')
-  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
 
 <!-- Tablets, by the row's own width: from 672 px three columns; 512 to 672 px (landscape
@@ -38,10 +38,7 @@
   >
     <div class="flex flex-col gap-[10px] min-w-0">
       <span class="flex items-center gap-[10px] xl:gap-3 min-w-0">
-        <span
-          class="w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px] shrink-0 rounded-full flex items-center justify-center font-bold
-                   {active ? 'bg-accent text-accent-fg' : 'bg-line-chip text-text'}">{initial}</span
-        >
+        <Avatar {name} tone={active ? 'accent' : 'default'} class="w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]" />
         {#if seat}
           <span class="flex flex-col gap-[2px] min-w-0">
             <span class="text-[18px] xl:text-[21px] leading-[1.1] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}"

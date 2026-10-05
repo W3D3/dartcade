@@ -1,6 +1,6 @@
 <script lang="ts">
   // Which lobby a code opens (Lobby-Join): its name, host, boards and how many are in.
-  import Avatar from './Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
 
   let { name, hostName, boardNames, peopleCount }: { name: string; hostName: string | null; boardNames: string[]; peopleCount: number } =
     $props()

@@ -5,7 +5,7 @@
   import type { Snippet } from 'svelte'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import Avatar from './Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
   import { personLine } from '$lib/lobby/format'
 
   let {

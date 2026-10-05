@@ -55,6 +55,7 @@
   import WinScreen from '../lib/components/WinScreen.svelte'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { GameDetail } from '$lib/api'
+  import { initial } from '$lib/fmt'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -338,7 +339,7 @@
     !isX01 && isActive && players.length > 2 && settings.showMarkers
       ? players
           .map((p, i) => ({
-            initial: p.name.trim().charAt(0).toUpperCase() || '?',
+            initial: initial(p.name),
             segment: atcTargetSegment(sequence, targets.at(i)) ?? 0,
             isActive: i === currentPlayer,
           }))

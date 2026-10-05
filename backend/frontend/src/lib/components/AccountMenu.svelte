@@ -8,6 +8,7 @@
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
   import { STATUS_COPY, setInvisible } from '$lib/presence'
+  import Avatar from './Avatar.svelte'
   import DevUserSwitch from './DevUserSwitch.svelte'
   import ErrorText from './ErrorText.svelte'
   import NavBadge from './NavBadge.svelte'
@@ -20,7 +21,6 @@
   const email = $derived($currentUser?.email ?? '')
   const invisible = $derived($currentUser?.invisible ?? false)
   const friends = $derived(friendsEntry($me?.friends ?? null))
-  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
   const requestsText = $derived(friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '')
   const triggerLabel = $derived(`Account${name ? `: ${name}` : ''}, ${invisible ? 'Invisible' : 'Online'}${requestsText}`)
   let open = $state(false)
@@ -61,10 +61,7 @@
 
 {#snippet avatar(size: number)}
   <span class="relative shrink-0">
-    <span
-      style="width: {size}px; height: {size}px; font-size: {Math.round(size * 0.42)}px"
-      class="rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold">{initial}</span
-    >
+    <Avatar {name} tone="accent" {size} />
     <StatusDot kind={invisible ? 'offline' : 'online'} class="absolute -right-[2px] -bottom-[2px]" />
   </span>
 {/snippet}

@@ -3,7 +3,7 @@
   // on the same line).
   import { X } from '@lucide/svelte'
   import type { IncomingFriendRequest } from '$lib/api/lobby-ws'
-  import Avatar from '$lib/components/lobby/Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
   import { isPhone } from '$lib/viewport'
   import { Button } from '$lib/components/ui/button/index.js'
   import { incomingMeta } from '$lib/friends/view'
