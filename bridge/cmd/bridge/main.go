@@ -155,7 +155,8 @@ func main() {
 	}
 
 	tr := transport.New(transport.Config{
-		BackendURL:    cfg.BackendURL + "?token=" + cfg.Token,
+		BackendURL:    cfg.BackendURL,
+		Token:         cfg.Token,
 		BridgeID:      cfg.BridgeID,
 		BootID:        bootID,
 		BoardID:       client.BoardID(),
