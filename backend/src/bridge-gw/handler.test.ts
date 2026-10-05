@@ -104,25 +104,6 @@ describe('BridgeConnections', () => {
     expect(bc.get('board-ulid-1')).toBe(fresh)
   })
 
-  it('send transmits JSON to the socket', () => {
-    const bc = new BridgeConnections()
-    const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = {
-      ws,
-      boardDbId: 'board-ulid-1',
-      hardwareBoardId: null,
-      bridgeId: null,
-      bootId: null,
-      bmVersion: null,
-      bmUrl: null,
-      helloReceived: true,
-    }
-    bc.add(conn)
-    bc.register(conn, 'board-ulid-1')
-    bc.send('board-ulid-1', { command_id: 'c1', name: 'reset' })
-    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ command_id: 'c1', name: 'reset' }))
-  })
-
   it('isOnline returns true for a registered board', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any

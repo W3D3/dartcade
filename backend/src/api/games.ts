@@ -18,7 +18,7 @@ type GameSummary = components['schemas']['GameSummary']
 const DAY_MS = 86_400_000
 
 /** The API shape of a game; account ids only for someone who holds a seat. */
-export function toSummary(g: HistoryGame): GameSummary {
+function toSummary(g: HistoryGame): GameSummary {
   return {
     id: g.id,
     mode: g.game_id,

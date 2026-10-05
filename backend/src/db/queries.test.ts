@@ -4,8 +4,6 @@ import {
   runMigrations,
   insertGameSession,
   getActiveGameSessions,
-  getGameSessionById,
-  getSeats,
   appendSessionEvent,
   getSessionEvents,
   insertGameDarts,
@@ -30,6 +28,9 @@ const url = process.env.TEST_DATABASE_URL ?? 'postgres://postgres:postgres@local
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
   let db: Kysely<Database>
+  // A game's seats, in seat order
+  const seatsOf = (sessionId: string) =>
+    db.selectFrom('game_players').selectAll().where('session_id', '=', sessionId).orderBy('seat').execute()
 
   beforeAll(async () => {
     db = createDb(url)
@@ -83,8 +84,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       expect(rows[0].game_id).toBe('atc')
     })
 
-    it('getGameSessionById finds the session', async () => {
-      const row = await getGameSessionById(db, '01JTEST00000000000000000AA')
+    it('insertGameSession stores the session', async () => {
+      const row = await db.selectFrom('game_sessions').selectAll().where('id', '=', '01JTEST00000000000000000AA').executeTakeFirst()
       expect(row).toBeDefined()
       expect(row!.id).toBe('01JTEST00000000000000000AA')
     })
@@ -256,14 +257,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       await abortGameSession(db, 'g-abort', at)
       const fin = await db.selectFrom('game_sessions').selectAll().where('id', '=', 'g-fin').executeTakeFirstOrThrow()
       expect([fin.status, fin.finished_at?.toISOString()]).toEqual(['finished', at.toISOString()])
-      const seats = (await getSeats(db, ['g-fin'])).get('g-fin') ?? []
+      const seats = await seatsOf('g-fin')
       expect(seats.map(s => [s.placement, s.stats, s.throw_position])).toEqual([
         [1, { average: 60 }, 1],
         [2, { average: 40 }, 0],
       ])
       const ab = await db.selectFrom('game_sessions').selectAll().where('id', '=', 'g-abort').executeTakeFirstOrThrow()
       expect(ab.status).toBe('aborted')
-      expect(((await getSeats(db, ['g-abort'])).get('g-abort') ?? []).every(s => s.placement === null)).toBe(true)
+      expect((await seatsOf('g-abort')).every(s => s.placement === null)).toBe(true)
     })
 
     it('deleting a board keeps its finished games; a running game blocks it', async () => {
@@ -301,7 +302,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       await db.deleteFrom('user').where('id', '=', 'u-gone').execute()
       const row = await db.selectFrom('game_sessions').selectAll().where('id', '=', 'g-gone').executeTakeFirstOrThrow()
       expect(row.owner_user_id).toBeNull()
-      const seats = (await getSeats(db, ['g-gone'])).get('g-gone') ?? []
+      const seats = await seatsOf('g-gone')
       expect(seats.map(s => s.user_id)).toEqual([null, 'u-test-2'])
     })
   })
@@ -383,7 +384,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
         { placement: 1, stats: {}, throwPosition: 0, forfeited: false },
         { placement: 2, stats: {}, throwPosition: 1, forfeited: true },
       ])
-      const seats = (await getSeats(db, ['mp-1'])).get('mp-1') ?? []
+      const seats = await seatsOf('mp-1')
       expect(seats.map(s => s.forfeited)).toEqual([false, true])
     })
 

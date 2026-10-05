@@ -19,7 +19,7 @@ const UserActionSchema = ClientMessageSchema.shape.action
 export type LoggedInput = { seq: number; source: string; kind: string; data: unknown; created_at: Date }
 
 /** The input a log entry recorded, or null when it can't be read back. */
-export function parseLoggedInput(row: LoggedInput): GameInput | null {
+function parseLoggedInput(row: LoggedInput): GameInput | null {
   if (row.source === 'board') {
     const event = parseBoardEvent(row.kind, row.data)
     return event ? { source: 'board', event } : null
