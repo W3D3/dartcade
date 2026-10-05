@@ -91,27 +91,26 @@ func (c *Client) Start(ctx context.Context) error {
 }
 
 func (c *Client) fetchVersion(ctx context.Context) error {
-	resp, err := httpGet(ctx, c.boardURL+"/api/version")
+	raw, err := getBody(ctx, c.boardURL+"/api/version")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
 	var v struct {
 		Version string `json:"version"`
 	}
-	json.NewDecoder(resp.Body).Decode(&v)
+	if err := json.Unmarshal(raw, &v); err != nil {
+		return fmt.Errorf("decode /api/version: %w", err)
+	}
 	c.bmVersion = v.Version
 	log.Debug("BM version", "version", c.bmVersion)
 	return nil
 }
 
 func (c *Client) fetchConfig(ctx context.Context) error {
-	resp, err := httpGet(ctx, c.boardURL+"/api/config")
+	raw, err := getBody(ctx, c.boardURL+"/api/config")
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
-	raw, _ := io.ReadAll(resp.Body)
 	redacted := redactSecrets(raw)
 
 	var cfg struct {
@@ -122,7 +121,9 @@ func (c *Client) fetchConfig(ctx context.Context) error {
 			Cams []string `json:"cams"`
 		} `json:"cam"`
 	}
-	json.Unmarshal(raw, &cfg)
+	if err := json.Unmarshal(raw, &cfg); err != nil {
+		return fmt.Errorf("decode /api/config: %w", err)
+	}
 
 	prev, _ := c.boardID.Load().(string)
 	if prev != "" && prev != cfg.Auth.BoardID {
@@ -213,13 +214,11 @@ func (c *Client) pollLoop(ctx context.Context) {
 			return
 		case <-time.After(2 * time.Second):
 		}
-		resp, err := httpGet(ctx, c.boardURL+"/api/state")
+		raw, err := getBody(ctx, c.boardURL+"/api/state")
 		if err != nil {
 			log.Warn("BM poll failed", "err", err)
 			continue
 		}
-		raw, _ := io.ReadAll(resp.Body)
-		resp.Body.Close()
 		c.emit(BMFrame{Kind: "poll", BMType: "state", Data: raw, RecvWall: time.Now(), RecvMonoNs: c.mono()})
 	}
 }
@@ -278,12 +277,26 @@ func (c *Client) emit(f BMFrame) {
 
 func (c *Client) mono() int64 { return time.Since(c.startTime).Nanoseconds() }
 
-func httpGet(ctx context.Context, url string) (*http.Response, error) {
+// getBody GETs url and returns its body, or an error if the request failed or the status
+// isn't 2xx.
+func getBody(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, err
 	}
-	return httpClient.Do(req)
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return nil, fmt.Errorf("GET %s: %s", req.URL.Path, resp.Status)
+	}
+	raw, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("GET %s: %w", req.URL.Path, err)
+	}
+	return raw, nil
 }
 
 // redactSecrets replaces values of sensitive keys at any depth in a JSON object.
