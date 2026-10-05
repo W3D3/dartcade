@@ -1,7 +1,7 @@
-import { createHash } from 'crypto'
 import { ulid } from 'ulid'
 import { db } from '../db/index.js'
 import { auth } from './index.js'
+import { hashBoardToken } from '../boards/token.js'
 
 /** Players for trying multiplayer on one machine; the login page offers them (frontend lib/devUsers.ts). */
 const DEV_PLAYERS = ['Luke', 'Phil', 'Michael', 'Gerwyn']
@@ -26,8 +26,7 @@ export async function seedDev(): Promise<void> {
 
   const admin = await db.selectFrom('user').select('id').where('email', '=', 'admin@dartcade.local').executeTakeFirstOrThrow()
 
-  const DEV_TOKEN = 'dev-bridge-token'
-  const tokenHash = createHash('sha256').update(DEV_TOKEN).digest('hex')
+  const tokenHash = hashBoardToken('dev-bridge-token')
   await db
     .insertInto('boards')
     .values({ id: ulid(), owner_user_id: admin.id, name: 'Dev Board', token_hash: tokenHash })

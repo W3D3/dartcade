@@ -1,4 +1,3 @@
-import { createHash } from 'crypto'
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { SocketStream } from '@fastify/websocket'
 import type { WebSocket } from 'ws'
@@ -11,6 +10,7 @@ import { z } from 'zod'
 import { BaseEnvelopeSchema, CameraStillMessageSchema } from '../schema/zod.js'
 import { cameraStills, type CameraStills } from '../camera/store.js'
 import { onceGone } from '../util/socket.js'
+import { hashBoardToken } from '../boards/token.js'
 
 export { bridgeConnections }
 
@@ -116,8 +116,7 @@ export function handleBridgeConnection(
     engine.onBoardPresence(boardId)
     opts.onBoardPresence?.(boardId)
   }
-  const providedToken = query.token ?? ''
-  const tokenHash = createHash('sha256').update(providedToken).digest('hex')
+  const tokenHash = hashBoardToken(query.token ?? '')
 
   const conn: BridgeConn = {
     ws: socket,

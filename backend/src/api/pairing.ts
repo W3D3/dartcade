@@ -1,4 +1,4 @@
-import { createHash, randomBytes } from 'crypto'
+import { randomBytes } from 'crypto'
 import { ulid } from 'ulid'
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
@@ -9,6 +9,7 @@ import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import { normalizeCode } from '../lobby/code.js'
 import { PairingCodeClaimedError } from '../db/errors.js'
+import { newBoardToken } from '../boards/token.js'
 
 const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_TTL_MS = 10 * 60 * 1000
@@ -78,8 +79,7 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
       if (row.expires_at < new Date()) return reply.code(410).send({ error: 'expired' })
       if (row.claimed_at) return reply.code(409).send({ error: 'already claimed' })
 
-      const rawToken = randomBytes(32).toString('hex')
-      const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+      const { token: rawToken, tokenHash } = newBoardToken()
       const boardId = ulid()
 
       try {

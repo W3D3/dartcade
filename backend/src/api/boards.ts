@@ -1,11 +1,12 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
-import { createHash, randomBytes } from 'crypto'
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { bridgeConnections } from '../bridge-gw/connections.js'
 import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard, hasActiveSessionOnBoard } from '../db/queries.js'
+import { findOwnBoard } from '../boards/own.js'
+import { newBoardToken } from '../boards/token.js'
 import { fromSpec } from './spec.js'
 import { cameraStills, type CameraStills } from '../camera/store.js'
 import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/access.js'
@@ -62,16 +63,11 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
   async function ownBoard(id: string, userId: string, reply: { code(n: number): { send(b: { error: string }): unknown } }) {
-    const board = await getBoardById(db, id)
-    if (!board) {
-      reply.code(404).send({ error: 'not found' })
-      return null
-    }
-    if (board.owner_user_id !== userId) {
-      reply.code(403).send({ error: 'forbidden' })
-      return null
-    }
-    return board
+    const own = await findOwnBoard(db, id, userId)
+    if ('board' in own) return own.board
+    if (own.problem === 'not_found') reply.code(404).send({ error: 'not found' })
+    else reply.code(403).send({ error: 'forbidden' })
+    return null
   }
 
   app.get<Route<'listBoards'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('listBoards') }, async req => {
@@ -154,11 +150,10 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
 
   app.post<Route<'createBoard'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('createBoard') }, async (req, reply) => {
     const name = req.body.name.trim()
-    const rawToken = randomBytes(32).toString('hex')
-    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+    const { token, tokenHash } = newBoardToken()
     const id = ulid()
     await insertBoard(db, { id, owner_user_id: req.userId, name, token_hash: tokenHash })
-    return reply.code(201).send({ id, name, token: rawToken })
+    return reply.code(201).send({ id, name, token })
   })
 
   app.patch<Route<'renameBoard'>>(

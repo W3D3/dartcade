@@ -5,7 +5,7 @@ import type { SessionEngine } from '../session/engine.js'
 import type { Session } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
 import { canAccessSession, canWatchSession, isHost, noLobbies, type IsLobbyMember } from '../session/access.js'
-import { getBoardById } from '../db/queries.js'
+import { findOwnBoard } from '../boards/own.js'
 import { fromSpec } from './spec.js'
 import { engineApiError } from './engineErrors.js'
 import type { Route } from './route.js'
@@ -38,10 +38,13 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       // The seats show the board's name, as they do after a restart (read from the boards table)
       let boardName: string | null = null
       if (resolvedBoardId) {
-        const board = await getBoardById(db, resolvedBoardId)
-        if (!board) return reply.code(400).send({ error: 'board not found' })
-        if (board.owner_user_id !== req.userId) return reply.code(403).send({ error: 'forbidden' })
-        boardName = board.name
+        const own = await findOwnBoard(db, resolvedBoardId, req.userId)
+        if (!('board' in own)) {
+          return own.problem === 'not_found'
+            ? reply.code(400).send({ error: 'board not found' })
+            : reply.code(403).send({ error: 'forbidden' })
+        }
+        boardName = own.board.name
       }
       let sessionId: string
       try {
