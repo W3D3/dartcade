@@ -3,6 +3,7 @@
   // Top bar of a live game: leave, title, meta and lobby, board/entry toggle, end, live or paused, board, settings.
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
+  import { Badge } from '$lib/components/ui/badge/index.js'
   import type { GameSettings } from '$lib/gameSettings.js'
   import type { MyBoard } from '$lib/remote'
   import type { Snapshot } from '$lib/ws.js'
@@ -184,11 +185,7 @@
           <span class="w-2 h-2 rounded-[2px] bg-text-muted"></span>PAUSED
         </span>
       {:else}
-        <span
-          class="h-7 px-[10px] text-[12px] xl:h-[30px] xl:px-3 xl:text-[13px] inline-flex items-center gap-2 rounded-full bg-live-soft text-live-text font-bold tracking-[0.1em]"
-        >
-          <span class="w-2 h-2 rounded-full bg-live"></span>LIVE
-        </span>
+        <Badge variant="live" class="h-7 px-[10px] text-[12px] xl:h-[30px] xl:px-3 xl:text-[13px]">LIVE</Badge>
       {/if}
 
       {#if myBoard}

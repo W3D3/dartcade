@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Button } from '$lib/components/ui/button/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
 
   let {
@@ -22,21 +23,7 @@
 
 <Modal {title} subtitle={body} onclose={oncancel} showClose={false} dismissOnBackdrop={true} widthClass="max-w-[380px]" zClass="z-[200]">
   {#snippet footer()}
-    <button
-      type="button"
-      onclick={oncancel}
-      class="flex-1 h-12 rounded-[10px] border border-line-3 bg-transparent text-text
-             text-[15px] font-medium cursor-pointer"
-    >
-      {cancelLabel}
-    </button>
-    <button
-      type="button"
-      onclick={onconfirm}
-      class="flex-1 h-12 rounded-[10px] border-0 text-[15px] font-bold cursor-pointer
-             {danger ? 'bg-live text-[#fff]' : 'bg-accent text-accent-fg'}"
-    >
-      {confirmLabel}
-    </button>
+    <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={oncancel}>{cancelLabel}</Button>
+    <Button variant="accent" size="lg" class="flex-1 {danger ? 'bg-live text-[#fff]' : ''}" onclick={onconfirm}>{confirmLabel}</Button>
   {/snippet}
 </Modal>
