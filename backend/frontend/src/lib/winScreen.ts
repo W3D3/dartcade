@@ -5,6 +5,7 @@ import type { AtcGame, GameDetail, Snapshot, X01Game } from './api'
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { atcRules, x01Rules } from './gameViews/meta.js'
 import { teamsLabel } from './teams.js'
+import { plural } from './fmt.js'
 
 type X01Detail = Extract<GameDetail['detail'], { mode: 'x01' }>
 
@@ -52,7 +53,6 @@ export type WinView = {
 }
 
 const pair = (a: string, b: string): [string, string] => [a, b]
-const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 const dartName = (d: { segment?: { name?: string } }) => d.segment?.name || 'Miss'
 const stat = (detail: GameDetail | null, seat: number, key: string): number | undefined => {
   const p = detail?.game.players.find(s => s.seat === seat)

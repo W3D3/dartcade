@@ -2,7 +2,7 @@
   // The match screen once a game is won: two sides face off around the score (a duel, or two
   // teams), three or more stand on a podium with the standings beside it. Confetti falls behind.
   import { Check, House, RotateCcwClock, Trophy } from '@lucide/svelte'
-  import { ordinal } from '$lib/history'
+  import { initial, ordinal } from '$lib/fmt'
   import type { Competitor, WinView } from '$lib/winScreen'
 
   let {
@@ -68,8 +68,6 @@
       delay: 'r3',
     },
   }
-
-  const initial = (name: string) => name.trim().charAt(0).toUpperCase() || '?'
 
   // Confetti: the same pieces every time (a fixed seed), spread across the width
   const COLORS = ['var(--color-accent)', 'var(--color-accent)', '#8fb23a', 'var(--color-warn)', 'var(--color-text)']
