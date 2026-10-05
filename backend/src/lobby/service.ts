@@ -48,6 +48,48 @@ export type LobbyDeps = {
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
 const memberIds = (l: LobbyState): string[] => l.people.flatMap(p => (p.userId === null ? [] : [p.userId]))
 
+/** A person's board changing: the board (null for Manual), and who moved them if not themselves. */
+type BoardChange = { boardId: string | null; boardName: string | null; movedBy: string | null }
+
+/** Whether the user may make every change in the patch to this person; throws for the first they may not. */
+function assertMayPatch(lobby: LobbyState, userId: string, person: LobbyPerson, patch: PersonPatch): void {
+  if (patch.ready !== undefined && !rules.canSetReady(userId, person)) throw LobbyError.forbidden('only they set their own ready')
+  if (patch.plays !== undefined && !rules.canSetPlays(lobby, userId, person))
+    throw LobbyError.forbidden('only they or the host decide whether they play')
+  if (patch.position !== undefined && !rules.canMove(lobby, userId)) throw LobbyError.forbidden('only the host reorders people')
+  if (patch.team !== undefined && !rules.canSetTeam(lobby, userId)) throw LobbyError.forbidden('only the host changes teams')
+}
+
+/** The person's own columns a patch sets (a new position reorders everyone, so it's written apart). */
+function personColumns(patch: PersonPatch, board: BoardChange | undefined): q.PersonUpdate {
+  const set: q.PersonUpdate = {}
+  if (patch.ready !== undefined) set.ready = patch.ready
+  if (patch.plays !== undefined) set.plays = patch.plays
+  if (patch.team !== undefined) set.team = patch.team
+  if (board) {
+    set.board_id = board.boardId
+    set.board_moved_by = board.movedBy
+  }
+  return set
+}
+
+/** The lobby feed's line for a game that ended: who won, or that it was aborted. */
+async function addGameEndActivity(trx: Kysely<Database>, lobbyId: string, e: GameEnded): Promise<void> {
+  if (e.status === 'finished') {
+    // A team win names the whole team ("Phil & Michael")
+    const winners = e.results.filter(r => r.placement === 1 && !r.forfeited).map(r => r.name)
+    const winnerName = (e.teamGame ? winners.join(' & ') : winners.at(0)) || null
+    await q.addActivity(trx, lobbyId, 'game_played', null, {
+      sessionId: e.sessionId,
+      gameId: e.gameId,
+      winnerName,
+      players: e.results,
+    })
+  } else {
+    await q.addActivity(trx, lobbyId, 'game_aborted', e.abortedByUserId, { sessionId: e.sessionId, gameId: e.gameId })
+  }
+}
+
 function planError(p: PlanProblem): LobbyError {
   if (p.status === 400) return LobbyError.badRequest(p.error)
   const { status: _status, ...body } = p
@@ -175,11 +217,23 @@ export class LobbyService {
   private async publish(lobbyId: string, alsoUsers: string[] = []): Promise<void> {
     const lobby = this.cache.get(lobbyId)
     if (lobby) this.send(lobby)
-    const users = new Set([...(lobby ? [...memberIds(lobby), ...lobby.invites.map(i => i.userId)] : []), ...alsoUsers])
+    await this.notifyUsers([...(lobby ? [...memberIds(lobby), ...lobby.invites.map(i => i.userId)] : []), ...alsoUsers])
+  }
+
+  /** After a change: reloads the lobby and publishes it. Returns the lobby as reloaded. */
+  private async refreshAndPublish(lobbyId: string, alsoUsers: string[] = []): Promise<LobbyState | undefined> {
+    const lobby = await this.reload(lobbyId)
+    await this.publish(lobbyId, alsoUsers)
+    return lobby
+  }
+
+  /** Pushes /ws/me to each of these users, then tells their friends their status changed. */
+  private async notifyUsers(userIds: string[]): Promise<void> {
+    const users = [...new Set(userIds)]
     try {
-      await Promise.all([...users].map(u => this.pushMe(u)))
+      await Promise.all(users.map(u => this.pushMe(u)))
     } finally {
-      this.statusChanged([...users])
+      this.statusChanged(users)
     }
   }
 
@@ -258,21 +312,26 @@ export class LobbyService {
   async create(userId: string): Promise<LobbyRef> {
     const open = await q.getOpenLobbyIdOfUser(this.db, userId)
     if (open !== undefined) throw inLobby(open)
-    const user = (await getUsersByIds(this.db, [userId])).at(0)
-    if (!user) throw LobbyError.notFound('account not found')
-    const board = (await q.usualBoards(this.db, [userId])).get(userId) ?? null
+    const joiner = await this.loadJoiner(userId)
     const id = ulid()
     await this.withFreshCode(userId, code =>
       q.insertLobby(
         this.db,
-        { id, name: defaultLobbyName(user.name), hostUserId: userId, code },
-        { id: ulid(), userId, addedByUserId: userId, name: user.name, boardId: board?.id ?? null, ready: false },
+        { id, name: defaultLobbyName(joiner.name), hostUserId: userId, code },
+        { id: ulid(), userId, addedByUserId: userId, name: joiner.name, boardId: joiner.boardId, ready: false },
       ),
     )
-    const lobby = await this.reload(id)
+    const lobby = await this.refreshAndPublish(id)
     if (!lobby) throw new Error(`lobby ${id} missing after insert`)
-    await this.publish(id)
     return refOf(lobby)
+  }
+
+  // Someone coming into a lobby: their name, and their usual board to sit at
+  private async loadJoiner(userId: string): Promise<{ name: string; boardId: string | null }> {
+    const user = (await getUsersByIds(this.db, [userId])).at(0)
+    if (!user) throw LobbyError.notFound('account not found')
+    const board = (await q.usualBoards(this.db, [userId])).get(userId) ?? null
+    return { name: user.name, boardId: board?.id ?? null }
   }
 
   // Writes with fresh codes until one is free (codes are unique among open lobbies). With
@@ -339,9 +398,7 @@ export class LobbyService {
     this.refuseIfPlaying(userId)
     const open = await q.getOpenLobbyIdOfUser(this.db, userId)
     if (open !== undefined) throw inLobby(open)
-    const user = (await getUsersByIds(this.db, [userId])).at(0)
-    if (!user) throw LobbyError.notFound('account not found')
-    const board = (await q.usualBoards(this.db, [userId])).get(userId) ?? null
+    const joiner = await this.loadJoiner(userId)
     try {
       // The lock (not just this app-level check) is the backstop against inserting into a
       // lobby that a concurrent close just slipped past us — see lobbyIsOpenForShare.
@@ -352,12 +409,12 @@ export class LobbyService {
           lobbyId: lobby.id,
           userId,
           addedByUserId: userId,
-          name: user.name,
-          boardId: board?.id ?? null,
+          name: joiner.name,
+          boardId: joiner.boardId,
           ready: false,
         })
         await q.acceptInvites(trx, lobby.id, userId)
-        await q.addActivity(trx, lobby.id, 'joined', userId, { name: user.name })
+        await q.addActivity(trx, lobby.id, 'joined', userId, { name: joiner.name })
         await this.fillTeams(trx, lobby.id, lobby.nextGame)
         return true
       })
@@ -369,8 +426,7 @@ export class LobbyService {
       if (other !== undefined) throw inLobby(other)
       throw err
     }
-    const fresh = await this.reload(lobby.id)
-    await this.publish(lobby.id, [userId])
+    const fresh = await this.refreshAndPublish(lobby.id, [userId])
     return refOf(fresh ?? lobby)
   }
 
@@ -401,13 +457,7 @@ export class LobbyService {
       kind === 'left' ? 'left the lobby' : 'removed from the lobby',
     )
     if ((await this.settleHost(lobby.id)) === 'open') await this.publish(lobby.id, [memberUserId])
-    else {
-      try {
-        await this.pushMe(memberUserId)
-      } finally {
-        this.statusChanged([memberUserId])
-      }
-    }
+    else await this.notifyUsers([memberUserId])
   }
 
   // Runs in the lobby's queue, after people left. Between games the lobby needs a host
@@ -442,11 +492,7 @@ export class LobbyService {
     this.cache.delete(lobby.id)
     this.deps.hub.sendLobby(lobby.id, { type: 'lobby_closed', lobbyId: lobby.id })
     this.deps.hub.closeLobby(lobby.id, WsCloseCode.NotFound, 'lobby closed')
-    try {
-      await Promise.all([...new Set([...memberIds(lobby), ...invitees])].map(u => this.pushMe(u)))
-    } finally {
-      this.statusChanged([...memberIds(lobby), ...invitees])
-    }
+    await this.notifyUsers([...memberIds(lobby), ...invitees])
   }
 
   // Runs in the lobby's queue. Closes it only while `userId` is still its one member and no
@@ -496,8 +542,7 @@ export class LobbyService {
         })
       }
       if (patch.regenerateCode === true) await this.withFreshCode(null, code => q.updateLobby(this.db, lobbyId, { code }))
-      await this.reload(lobbyId)
-      await this.publish(lobbyId)
+      await this.refreshAndPublish(lobbyId)
     })
   }
 
@@ -519,8 +564,7 @@ export class LobbyService {
         await q.addActivity(trx, lobbyId, 'guest_added', userId, { name })
         await this.fillTeams(trx, lobbyId, lobby.nextGame)
       })
-      await this.reload(lobbyId)
-      await this.publish(lobbyId)
+      await this.refreshAndPublish(lobbyId)
       return { id }
     })
   }
@@ -549,21 +593,10 @@ export class LobbyService {
       const person = lobby.people.find(p => p.id === personId)
       if (!person) throw LobbyError.notFound('person not found')
       // Every field is checked before anything is written
-      if (patch.ready !== undefined && !rules.canSetReady(userId, person)) throw LobbyError.forbidden('only they set their own ready')
-      if (patch.plays !== undefined && !rules.canSetPlays(lobby, userId, person))
-        throw LobbyError.forbidden('only they or the host decide whether they play')
-      if (patch.position !== undefined && !rules.canMove(lobby, userId)) throw LobbyError.forbidden('only the host reorders people')
-      if (patch.team !== undefined && !rules.canSetTeam(lobby, userId)) throw LobbyError.forbidden('only the host changes teams')
+      assertMayPatch(lobby, userId, person, patch)
       const board = patch.boardId === undefined ? undefined : await this.boardChange(lobby, userId, person, patch.boardId)
 
-      const set: q.PersonUpdate = {}
-      if (patch.ready !== undefined) set.ready = patch.ready
-      if (patch.plays !== undefined) set.plays = patch.plays
-      if (patch.team !== undefined) set.team = patch.team
-      if (board) {
-        set.board_id = board.boardId
-        set.board_moved_by = board.movedBy
-      }
+      const set = personColumns(patch, board)
       await this.db.transaction().execute(async trx => {
         if (Object.keys(set).length > 0) await q.updatePerson(trx, personId, set)
         if (patch.position !== undefined) await q.setPositions(trx, lobbyId, rules.reorder(lobby.people, personId, patch.position))
@@ -578,8 +611,7 @@ export class LobbyService {
         // Back in from sitting out: a team if they have none
         if (patch.plays === true) await this.fillTeams(trx, lobbyId, lobby.nextGame)
       })
-      await this.reload(lobbyId)
-      await this.publish(lobbyId)
+      await this.refreshAndPublish(lobbyId)
     })
   }
 
@@ -591,8 +623,7 @@ export class LobbyService {
       if (!rules.isTeamGame(lobby)) throw LobbyError.badRequest("the next game isn't played in teams")
       const teams = rules.shuffleTeams(lobby)
       await this.db.transaction().execute(trx => q.setTeams(trx, teams))
-      await this.reload(lobbyId)
-      await this.publish(lobbyId)
+      await this.refreshAndPublish(lobbyId)
     })
   }
 
@@ -602,7 +633,7 @@ export class LobbyService {
     userId: string,
     person: LobbyPerson,
     boardId: string | null,
-  ): Promise<{ boardId: string | null; boardName: string | null; movedBy: string | null } | undefined> {
+  ): Promise<BoardChange | undefined> {
     const target = boardId === null ? null : await getBoardById(this.db, boardId)
     if (target === undefined) throw LobbyError.badRequest('board not found')
     const allowed = rules.canSetBoard(userId, person, target === null ? null : { boardId: target.id, ownerUserId: target.owner_user_id })
@@ -629,8 +660,7 @@ export class LobbyService {
         await q.deletePeople(trx, [person.id])
         await q.addActivity(trx, lobbyId, 'removed', userId, { name: person.name })
       })
-      await this.reload(lobbyId)
-      await this.publish(lobbyId)
+      await this.refreshAndPublish(lobbyId)
     })
   }
 
@@ -654,8 +684,7 @@ export class LobbyService {
         if (pgErrorCode(err) === UNIQUE_VIOLATION) throw invitedAlready
         throw err
       }
-      await this.reload(lobbyId)
-      await this.publish(lobbyId)
+      await this.refreshAndPublish(lobbyId)
       return { id }
     })
   }
@@ -689,8 +718,7 @@ export class LobbyService {
     const { lobbyId } = await this.pendingInvite(userId, inviteId)
     await this.enqueue(lobbyId, async () => {
       await q.setInviteStatus(this.db, inviteId, 'declined')
-      await this.reload(lobbyId)
-      await this.publish(lobbyId, [userId])
+      await this.refreshAndPublish(lobbyId, [userId])
     })
   }
 
@@ -729,8 +757,7 @@ export class LobbyService {
       throw this.startError(lobby, hostUserId, err)
     }
     await q.setPlaying(this.db, lobby.id, plan.personIds)
-    await this.reload(lobby.id)
-    await this.publish(lobby.id)
+    await this.refreshAndPublish(lobby.id)
     return { sessionId }
   }
 
@@ -743,8 +770,7 @@ export class LobbyService {
     const host = rules.memberOf(lobby, hostUserId)
     if (!host || host.ready) return lobby
     await q.updatePerson(this.db, host.id, { ready: true })
-    await this.reload(lobby.id)
-    await this.publish(lobby.id)
+    await this.refreshAndPublish(lobby.id)
     return this.cache.get(lobby.id) ?? lobby
   }
 
@@ -784,8 +810,7 @@ export class LobbyService {
    * deleteSession) resolves. For a lobby game, also runs the lobby's own reset: everyone
    * plays again and no member is ready (guests follow their adder's ready); the feed gets
    * a line; a host who left during the game hands over now, and a lobby everyone left
-   * closes. That reset is
-   * enqueued but NOT awaited here: it runs on the lobby's own queue, which could in turn
+   * closes (resetAfterGame). That reset is enqueued but NOT awaited here: it runs on the lobby's own queue, which could in turn
    * wait on this same session's queue (e.g. a lobby task started from inside it) —
    * awaiting it from inside the engine's own ended-hook would risk a deadlock between the
    * two queues. Tests wait for it with `whenIdle`.
@@ -802,31 +827,22 @@ export class LobbyService {
     )
     const lobbyId = e.lobbyId
     if (lobbyId === null) return
-    this.enqueue(lobbyId, async () => {
-      const lobby = await this.reload(lobbyId)
-      if (!lobby || lobby.closedAt !== null) return
-      await this.db.transaction().execute(async trx => {
-        await q.resetAfterGame(trx, lobbyId)
-        // Everyone is back in: whoever sat out without a team gets one
-        await this.fillTeams(trx, lobbyId, lobby.nextGame)
-        if (e.status === 'finished') {
-          // A team win names the whole team ("Phil & Michael")
-          const winners = e.results.filter(r => r.placement === 1 && !r.forfeited).map(r => r.name)
-          const winnerName = (e.teamGame ? winners.join(' & ') : winners.at(0)) || null
-          await q.addActivity(trx, lobbyId, 'game_played', null, {
-            sessionId: e.sessionId,
-            gameId: e.gameId,
-            winnerName,
-            players: e.results,
-          })
-        } else {
-          await q.addActivity(trx, lobbyId, 'game_aborted', e.abortedByUserId, { sessionId: e.sessionId, gameId: e.gameId })
-        }
-      })
-      if ((await this.settleHost(lobbyId)) === 'open') await this.publish(lobbyId)
-    }).catch((err: unknown) => {
+    this.enqueue(lobbyId, () => this.resetAfterGame(lobbyId, e)).catch((err: unknown) => {
       this.warn('lobby reset after a game failed', { lobbyId, sessionId: e.sessionId, error: String(err) })
     })
+  }
+
+  // Runs in the lobby's queue, after its game ended (see onGameEnded)
+  private async resetAfterGame(lobbyId: string, e: GameEnded): Promise<void> {
+    const lobby = await this.reload(lobbyId)
+    if (!lobby || lobby.closedAt !== null) return
+    await this.db.transaction().execute(async trx => {
+      await q.resetAfterGame(trx, lobbyId)
+      // Everyone is back in: whoever sat out without a team gets one
+      await this.fillTeams(trx, lobbyId, lobby.nextGame)
+      await addGameEndActivity(trx, lobbyId, e)
+    })
+    if ((await this.settleHost(lobbyId)) === 'open') await this.publish(lobbyId)
   }
 
   /**
@@ -862,10 +878,7 @@ export class LobbyService {
   async releaseBoard(boardId: string): Promise<void> {
     const lobbyIds = await q.releaseBoard(this.db, boardId)
     for (const id of lobbyIds) {
-      await this.enqueue(id, async () => {
-        await this.reload(id)
-        await this.publish(id)
-      })
+      await this.enqueue(id, () => this.refreshAndPublish(id))
     }
   }
 
