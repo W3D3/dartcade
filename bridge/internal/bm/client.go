@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -71,12 +72,21 @@ func (c *Client) Init(ctx context.Context) error {
 }
 
 // Start calls Init then runs the WS and poll loops. Blocks until ctx is cancelled.
+// Frames is closed when Start returns: nothing emits after that, so the client is not
+// reusable.
 func (c *Client) Start(ctx context.Context) error {
+	defer close(c.frames)
 	if err := c.Init(ctx); err != nil {
 		return err
 	}
-	go c.pollLoop(ctx)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		c.pollLoop(ctx)
+	}()
 	c.wsLoop(ctx)
+	wg.Wait()
 	return nil
 }
 
