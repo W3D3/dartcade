@@ -42,6 +42,16 @@ describe('nearbyPicks', () => {
 })
 
 describe('checkoutHint', () => {
+  it('straight out: the easiest dart finishes (a single before a double before a triple)', () => {
+    expect(checkoutHint(18, 'straight')).toEqual(['S18'])
+    expect(checkoutHint(3, 'straight')).toEqual(['S3'])
+    expect(checkoutHint(40, 'straight')).toEqual(['D20'])
+    expect(checkoutHint(60, 'straight')).toEqual(['T20'])
+  })
+  it('master out: a double before a triple', () => {
+    expect(checkoutHint(18, 'master')).toEqual(['D9'])
+    expect(checkoutHint(57, 'master')).toEqual(['T19'])
+  })
   it('direct double finish', () => expect(checkoutHint(40)).toEqual(['D20']))
   it('bull finish', () => expect(checkoutHint(50)).toEqual(['Bull']))
   it('two-dart finish', () => expect(checkoutHint(81)).toEqual(['T19', 'D12']))
