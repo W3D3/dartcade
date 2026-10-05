@@ -32,9 +32,6 @@ type State struct {
 	TakeoutStartedAt time.Time // zero when !InTakeout
 }
 
-// ExportedToDart wraps toDart for tests.
-func ExportedToDart(t bm.BMThrow) schema.Dart { return toDart(t) }
-
 func toDart(t bm.BMThrow) schema.Dart {
 	score := t.Segment.Number * t.Segment.Multiplier
 	d := schema.Dart{
@@ -87,11 +84,7 @@ func Process(s State, frame bm.BMFrame) (State, []Event) {
 		case "motion_state":
 			return processMotion(s, frame)
 		default:
-			src := schema.BmFrameDataSourceWs
-			if frame.Kind == "poll" {
-				src = schema.BmFrameDataSourcePoll
-			}
-			return s, []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}, RecvWall: wall, RecvMonoNs: mono}}
+			return s, []Event{frameEvent(frame)}
 		}
 	default:
 		return s, nil
@@ -105,11 +98,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 	}
 
 	wall, mono := frame.RecvWall, frame.RecvMonoNs
-	src := schema.BmFrameDataSourceWs
-	if frame.Kind == "poll" {
-		src = schema.BmFrameDataSourcePoll
-	}
-	evs := []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}, RecvWall: wall, RecvMonoNs: mono}}
+	evs := []Event{frameEvent(frame)}
 
 	// 1. Resync
 	if s.ExpectResync {
@@ -128,20 +117,12 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 		}
 		s.InTakeout = false
 		s.TakeoutStartedAt = time.Time{}
-		s.PrevThrows = cur.Throws
-		s.PrevStatus = cur.Status
-		s.PrevEvent = cur.Event
-		s.PrevRunning = cur.Running
-		return s, evs
+		return s.remember(cur), evs
 	}
 
 	// 2. Spurious frame guard: skip if both empty
 	if len(cur.Throws) == 0 && len(s.PrevThrows) == 0 {
-		evs = append(evs, boardStatusEvents(s, cur, wall, mono)...)
-		s.PrevStatus = cur.Status
-		s.PrevEvent = cur.Event
-		s.PrevRunning = cur.Running
-		return s, evs
+		return s.remember(cur), append(evs, boardStatusEvents(s, cur, wall, mono)...)
 	}
 
 	// 3. board.status (before dart events)
@@ -242,11 +223,25 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 		s.TakeoutStartedAt = time.Time{}
 	}
 
+	return s.remember(cur), evs
+}
+
+// remember makes cur the frame the next one is compared against.
+func (s State) remember(cur bm.BMStateData) State {
 	s.PrevThrows = cur.Throws
 	s.PrevStatus = cur.Status
 	s.PrevEvent = cur.Event
 	s.PrevRunning = cur.Running
-	return s, evs
+	return s
+}
+
+// frameEvent is the bm.frame event every ws and poll frame starts with.
+func frameEvent(frame bm.BMFrame) Event {
+	src := schema.BmFrameDataSourceWs
+	if frame.Kind == "poll" {
+		src = schema.BmFrameDataSourcePoll
+	}
+	return Event{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}, RecvWall: frame.RecvWall, RecvMonoNs: frame.RecvMonoNs}
 }
 
 func processMotion(s State, frame bm.BMFrame) (State, []Event) {
@@ -255,11 +250,7 @@ func processMotion(s State, frame bm.BMFrame) (State, []Event) {
 		return s, nil
 	}
 	wall, mono := frame.RecvWall, frame.RecvMonoNs
-	src := schema.BmFrameDataSourceWs
-	if frame.Kind == "poll" {
-		src = schema.BmFrameDataSourcePoll
-	}
-	evs := []Event{{Kind: "bm.frame", Data: &schema.BmFrameData{Source: src}, RecvWall: wall, RecvMonoNs: mono}}
+	evs := []Event{frameEvent(frame)}
 
 	if !s.InTakeout && !s.VisitID.IsZero() && len(s.PrevThrows) > 0 {
 		if cur.IsHand || cur.IsTakeoutPartial {
