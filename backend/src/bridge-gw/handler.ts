@@ -10,6 +10,7 @@ import type { Database } from '../db/schema.js'
 import { z } from 'zod'
 import { BaseEnvelopeSchema, CameraStillMessageSchema } from '../schema/zod.js'
 import { cameraStills, type CameraStills } from '../camera/store.js'
+import { onceGone } from '../util/socket.js'
 
 export { bridgeConnections }
 
@@ -237,16 +238,14 @@ export function handleBridgeConnection(
       })
   })
 
-  const gone = () => {
+  onceGone(socket, () => {
     const boardDbId = conn.boardDbId
     bridgeConnections.remove(conn)
     if (!boardDbId) return
     // Its stills would be old by the time it's back (a replaced connection leaves its successor's)
     if (!bridgeConnections.isOnline(boardDbId)) stills.clear(boardDbId)
     presence(boardDbId)
-  }
-  socket.on('close', gone)
-  socket.on('error', gone)
+  })
 }
 
 export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
