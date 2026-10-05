@@ -30,6 +30,17 @@ export function hasWinner(session: Session, state: unknown): boolean {
   return session.module.view(state, session.players).winner !== null
 }
 
+/**
+ * The open visit decides the game once it's committed (a match-winning checkout, the last
+ * target hit). It waits for the Finish button (the user's takeout) so a misread dart can still
+ * be corrected; the engine drops the board's takeout, new visits and darts until then.
+ */
+export function awaitsFinish(session: Session): boolean {
+  if (!session.openVisitEvents.some(isDart) || inBullOff(session, session.currentState)) return false
+  const after = session.module.onBoardEvent(session.currentState, { kind: 'takeout.finished', data: {} }).state
+  return hasWinner(session, after)
+}
+
 // Adds `delta` darts to the thrower in `state`, unless that's the bull off
 function countDarts(session: Session, state: unknown, delta: number): void {
   if (inBullOff(session, state)) return
@@ -238,3 +249,4 @@ function commit(session: Session, closing: BoardEvent, at: Date): ApplyOutcome {
   session.openDarts = []
   return { committed: visit, won: hasWinner(session, after) }
 }
+

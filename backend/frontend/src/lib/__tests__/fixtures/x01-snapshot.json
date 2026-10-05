@@ -60,6 +60,7 @@
   },
   "bmStatus": null,
   "status": "active",
+  "finishPending": false,
   "ownerUserId": "u1",
   "lobbyId": null,
   "lobbyName": null,

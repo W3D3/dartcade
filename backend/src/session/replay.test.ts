@@ -62,9 +62,10 @@ const SCRIPT: Step[] = [
   camera('g3', 0, T20), camera('g3', 1, S1), takeout('g3'),
 ]
 const ENDING: Step[] = [
-  // A: empty turn → three misses; B: T20 checks out 60
+  // A: empty turn → three misses; B: T20 checks out 60. The board's takeout waits (dropped
+  // unlogged); Finish ends the game
   ['user', { type: 'takeout' }],
-  opened('g5'), camera('g5', 0, T20), takeout('g5'),
+  opened('g5'), camera('g5', 0, T20), takeout('g5'), ['user', { type: 'takeout' }],
 ]
 
 async function play(engine: SessionEngine, sessionId: string, steps: Step[]) {

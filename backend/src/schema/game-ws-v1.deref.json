@@ -977,6 +977,7 @@
         "game",
         "bmStatus",
         "status",
+        "finishPending",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -1450,6 +1451,10 @@
             "aborted"
           ]
         },
+        "finishPending": {
+          "type": "boolean",
+          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+        },
         "ownerUserId": {
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
@@ -1546,6 +1551,7 @@
         "game",
         "bmStatus",
         "status",
+        "finishPending",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -1839,6 +1845,10 @@
             "aborted"
           ]
         },
+        "finishPending": {
+          "type": "boolean",
+          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+        },
         "ownerUserId": {
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
@@ -1939,6 +1949,7 @@
             "game",
             "bmStatus",
             "status",
+            "finishPending",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -2412,6 +2423,10 @@
                 "aborted"
               ]
             },
+            "finishPending": {
+              "type": "boolean",
+              "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+            },
             "ownerUserId": {
               "type": "string",
               "description": "The host: starts the bull off, aborts the game."
@@ -2508,6 +2523,7 @@
             "game",
             "bmStatus",
             "status",
+            "finishPending",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -2800,6 +2816,10 @@
                 "finished",
                 "aborted"
               ]
+            },
+            "finishPending": {
+              "type": "boolean",
+              "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
             },
             "ownerUserId": {
               "type": "string",

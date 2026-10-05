@@ -9,10 +9,11 @@ describe('nextButton', () => {
   it('visit over (bust, checkout): next player', () => expect(nextButton({ ...base, locked: true }).label).toBe('Next player'))
   it('no board: always next player', () => expect(nextButton({ ...base, manual: true, dartCount: 0 }).label).toBe('Next player'))
 
-  it('after a win with the winning visit still open: next player commits it', () => {
-    expect(nextButton({ ...base, active: false, dartCount: 2, locked: true })).toEqual({ label: 'Next player', prominent: true, enabled: true })
+  it('the visit that wins the game: finish game, even mid-visit on a board', () => {
+    expect(nextButton({ ...base, finish: true })).toEqual({ label: 'Finish game', prominent: true, enabled: true })
   })
-  it('after a win with nothing open: disabled', () => {
-    expect(nextButton({ ...base, active: false, dartCount: 0, locked: true }).enabled).toBe(false)
+  it('not your turn: disabled', () => {
+    expect(nextButton({ ...base, active: false }).enabled).toBe(false)
+    expect(nextButton({ ...base, active: false, finish: true }).enabled).toBe(false)
   })
 })

@@ -1,6 +1,6 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
-import { applyInput, type GameInput } from './apply.js'
+import { applyInput, awaitsFinish, type GameInput } from './apply.js'
 import type { GameConfig, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
@@ -17,6 +17,9 @@ export type Notice = { type: 'notice'; code: 'not_your_turn'; boardId: string; t
 export type NotifyFn = (sessionId: string, userIds: string[], notice: Notice) => void
 
 export type ActionResult = { ok: true } | { ok: false; code: 'forbidden' }
+
+/** Board events that would end or add to the visit that wins the game (see awaitsFinish). */
+const HELD = new Set(['visit.opened', 'dart.detected', 'takeout.finished', 'visit.cleared'])
 
 /** A game ended: the lobby it came from resets and logs it (see LobbyService.onGameEnded). */
 export type GameEnded = {
@@ -256,6 +259,9 @@ export class SessionEngine {
       }
       return false
     }
+    // The visit that wins the game waits for Finish: the board can't end or add to it (dropped
+    // before it's logged, so logs from before this rule replay as they were played)
+    if (input.source === 'board' && HELD.has(input.event.kind) && awaitsFinish(session)) return false
     const at = new Date()
     await this.store.appendEvent({
       session_id: session.id, seq: session.nextSeq, source: input.source,
@@ -379,6 +385,7 @@ export class SessionEngine {
       lobbyName: session.lobbyName,
       players: session.players,
       status: session.status,
+      finishPending: session.status === 'active' && awaitsFinish(session),
       ownerUserId: session.ownerUserId,
       seats: session.seats.map((s, i) => {
         const connected = view.connectedUserIds.has(s.controllerUserId)

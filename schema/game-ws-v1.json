@@ -199,7 +199,7 @@
     "X01Snapshot": {
       "title": "X01Snapshot",
       "type": "object",
-      "required": ["type", "sessionId", "gameId", "boardId", "lobbyId", "lobbyName", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats"],
+      "required": ["type", "sessionId", "gameId", "boardId", "lobbyId", "lobbyName", "players", "game", "bmStatus", "status", "finishPending", "ownerUserId", "seats", "mySeats"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "snapshot" },
@@ -212,6 +212,7 @@
         "game": { "$ref": "#/$defs/X01Game" },
         "bmStatus": { "anyOf": [{ "$ref": "#/$defs/BmStatus" }, { "type": "null" }], "description": "Status of the board of the seat that's up." },
         "status": { "$ref": "#/$defs/SessionStatus" },
+        "finishPending": { "type": "boolean", "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected." },
         "ownerUserId": { "type": "string", "description": "The host: starts the bull off, aborts the game." },
         "seats": { "type": "array", "items": { "$ref": "#/$defs/SeatInfo" }, "description": "Same order as players." },
         "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." }
@@ -220,7 +221,7 @@
     "AtcSnapshot": {
       "title": "AtcSnapshot",
       "type": "object",
-      "required": ["type", "sessionId", "gameId", "boardId", "lobbyId", "lobbyName", "players", "game", "bmStatus", "status", "ownerUserId", "seats", "mySeats"],
+      "required": ["type", "sessionId", "gameId", "boardId", "lobbyId", "lobbyName", "players", "game", "bmStatus", "status", "finishPending", "ownerUserId", "seats", "mySeats"],
       "additionalProperties": false,
       "properties": {
         "type": { "const": "snapshot" },
@@ -233,6 +234,7 @@
         "game": { "$ref": "#/$defs/AtcGame" },
         "bmStatus": { "anyOf": [{ "$ref": "#/$defs/BmStatus" }, { "type": "null" }], "description": "Status of the board of the seat that's up." },
         "status": { "$ref": "#/$defs/SessionStatus" },
+        "finishPending": { "type": "boolean", "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected." },
         "ownerUserId": { "type": "string", "description": "The host: starts the bull off, aborts the game." },
         "seats": { "type": "array", "items": { "$ref": "#/$defs/SeatInfo" }, "description": "Same order as players." },
         "mySeats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Seats the viewer controls." }
