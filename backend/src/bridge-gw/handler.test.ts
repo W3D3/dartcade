@@ -318,6 +318,19 @@ describe('handleBridgeConnection', () => {
     socket.emit('close')
     expect(onBoardPresence).toHaveBeenCalledTimes(2)
   })
+
+  it('tells them once when the socket errors and then closes', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-10', hardware_id: null } as any)
+    const engine = { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any
+    const onBoardPresence = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, onBoardPresence })
+    await flush()
+    socket.emit('error', new Error('reset'))
+    socket.emit('close')
+    expect(onBoardPresence).toHaveBeenCalledTimes(2)
+    expect(engine.onBoardPresence).toHaveBeenCalledTimes(2)
+  })
 })
 
 describe('camera stills from the bridge', () => {
