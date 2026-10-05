@@ -460,6 +460,17 @@ describe('onUserAction', () => {
     expect((engine.getSnapshot(sessionId)!.game as X01Game).phase).toBe('bulloff')
   })
 
+  it('a win whose result fails to save still frees its players and board', async () => {
+    const store = makeStore()
+    store.finishSession.mockRejectedValue(new Error('db down'))
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01', { ...x01Cfg, startScore: 40, firstTo: 1 }, [{ name: 'A' }])
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: { name: 'D20', number: 20, bed: 'Double', multiplier: 2 } })
+    await expect(engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })).rejects.toThrow('db down')
+    expect(engine.getSessionByUser('user-1')).toBeUndefined()
+    expect(engine.getSessionByBoard('board-1')).toBeUndefined()
+  })
+
   it('empty takeout is ignored after a win', async () => {
     const store = makeStore()
     const engine = new SessionEngine(store, push)

@@ -367,8 +367,13 @@ export class SessionEngine {
   private async finish(session: Session, at: Date): Promise<void> {
     session.status = 'finished'
     const seatResults = results(session)
-    await this.store.finishSession(session.id, at, seatResults)
-    this.release(session)
+    // Released even if saving the result fails: its players and boards mustn't stay stuck in a
+    // game nobody can play (a restart replays the log and saves the result then)
+    try {
+      await this.store.finishSession(session.id, at, seatResults)
+    } finally {
+      this.release(session)
+    }
     // Everyone still watching sees the game end before the game-end listeners run (the
     // lobby reset, the /ws/me pushes) — same as deleteSession, below
     this.push(session.id)
