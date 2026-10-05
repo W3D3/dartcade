@@ -119,6 +119,15 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 		}
 		evs = append(evs, Event{Kind: "board.resync", Data: &schema.BoardResyncData{Throws: throws}, RecvWall: wall, RecvMonoNs: mono})
 		s.ExpectResync = false
+		// Darts already on the board belong to a visit in progress: give it an id so the
+		// darts, takeout and clear that follow carry one. No visit.opened: the resync is
+		// the baseline, not new darts.
+		s.VisitID = ulid.ULID{}
+		if len(cur.Throws) > 0 {
+			s.VisitID = ulid.Make()
+		}
+		s.InTakeout = false
+		s.TakeoutStartedAt = time.Time{}
 		s.PrevThrows = cur.Throws
 		s.PrevStatus = cur.Status
 		s.PrevEvent = cur.Event
