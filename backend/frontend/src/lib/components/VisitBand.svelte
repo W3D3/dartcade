@@ -4,7 +4,11 @@
   import RollingNumber from './RollingNumber.svelte'
   import { shouldReplay, type BandData } from '$lib/visitBand.js'
 
-  let { band, compact = false, visit = 0 }: {
+  let {
+    band,
+    compact = false,
+    visit = 0,
+  }: {
     band: BandData
     compact?: boolean
     /** Changes with every new visit: the sum starts over at 0 without rolling. */
@@ -33,7 +37,8 @@
   // Scattered all round the sum, mostly upwards, each a moment apart (as on the canvas)
   const confetti = Array.from({ length: 34 }, (_, i) => ({
     c: CONFETTI[i % CONFETTI.length],
-    w: 6 + ((i * 7) % 5), h: 10 + ((i * 5) % 7),
+    w: 6 + ((i * 7) % 5),
+    h: 10 + ((i * 5) % 7),
     x: Math.round(Math.cos(i * 2.4) * (70 + ((i * 37) % 240))),
     y: Math.round(Math.sin(i * 2.4) * (60 + ((i * 53) % 150)) - 40),
     r: ((i * 97) % 960) - 540,
@@ -41,11 +46,17 @@
   }))
 
   const box = $derived(
-    tone === 'max' ? 'bg-accent border-2 border-accent text-accent-fg fx-max'
-    : tone === 'ton' ? 'bg-[#1f2618] border-2 border-accent fx-ton'
-    : tone === 'bust' ? 'bg-surface-panel border border-danger-line'
-    : 'bg-surface-panel border border-line-2')
-  const eyebrowColor = $derived(tone === 'max' ? '' : tone === 'ton' ? 'text-accent font-bold' : tone === 'bust' ? 'text-danger-text font-bold' : 'text-text-muted')
+    tone === 'max'
+      ? 'bg-accent border-2 border-accent text-accent-fg fx-max'
+      : tone === 'ton'
+        ? 'bg-[#1f2618] border-2 border-accent fx-ton'
+        : tone === 'bust'
+          ? 'bg-surface-panel border border-danger-line'
+          : 'bg-surface-panel border border-line-2',
+  )
+  const eyebrowColor = $derived(
+    tone === 'max' ? '' : tone === 'ton' ? 'text-accent font-bold' : tone === 'bust' ? 'text-danger-text font-bold' : 'text-text-muted',
+  )
   const sumColor = $derived(tone === 'ton' ? 'text-accent' : tone === 'bust' ? 'text-danger-text line-through' : '')
   const quiet = $derived(tone === 'max' ? '' : 'text-text-dim')
   const afterColor = $derived(tone === 'max' ? '' : 'text-ink-3')
@@ -54,11 +65,17 @@
 <span class="sr-only" role="status" aria-live="polite">{band.eyebrow}: {band.sum}. {band.afterLabel} {band.after}</span>
 
 {#if compact}
-  <div bind:this={boxEl} class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}">
+  <div
+    bind:this={boxEl}
+    class="relative h-[58px] md:h-[min(124px,14vh)] box-border px-2 py-1 md:px-[18px] md:py-3 rounded-[12px] md:rounded-[14px] flex flex-col justify-between {box}"
+  >
     <span class="flex justify-between gap-2 text-[10px] md:text-[13px] leading-none">
       <span class="{eyebrowColor} truncate">{band.eyebrow}</span><span class="hidden md:inline {quiet}">{band.progressShort}</span>
     </span>
-    <span class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}" class:fx-tick={band.bigDart}>{@render sum()}</span>
+    <span
+      class="font-display font-bold text-[28px] md:text-[80px] leading-[0.85] tabular-nums self-center {sumColor}"
+      class:fx-tick={band.bigDart}>{@render sum()}</span
+    >
     <span class="flex items-baseline justify-between gap-1 text-[10px] md:text-[13px] leading-none">
       <span class="{quiet} truncate">{band.afterLabel}</span>
       <span class="font-display font-bold text-[13px] md:text-[24px] leading-none {afterColor}">{band.after}</span>
@@ -66,12 +83,18 @@
     {#if tone === 'max'}{@render burst()}{/if}
   </div>
 {:else}
-  <div bind:this={boxEl} class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}">
+  <div
+    bind:this={boxEl}
+    class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}"
+  >
     <span class="flex flex-col items-end gap-[2px] text-right">
       <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
       <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
     </span>
-    <span class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}" class:fx-tick={band.bigDart}>{@render sum()}</span>
+    <span
+      class="sum font-display font-bold text-[48px] md:text-[min(96px,11vh)] leading-[0.85] tabular-nums {sumColor}"
+      class:fx-tick={band.bigDart}>{@render sum()}</span
+    >
     <span class="flex flex-col gap-[2px]">
       <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
       <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
@@ -92,35 +115,103 @@
 {/snippet}
 
 <style>
-  .fx-ton { animation: dc-ton 1.6s ease-in-out 1; }
-  .fx-ton .sum { animation: dc-num 1.6s ease-in-out 1; }
-  .fx-max { animation: dc-max 2.6s cubic-bezier(.2, .8, .2, 1) 1; }
-  .fx-tick { animation: dc-tick 0.9s ease-out 1; }
+  .fx-ton {
+    animation: dc-ton 1.6s ease-in-out 1;
+  }
+  .fx-ton .sum {
+    animation: dc-num 1.6s ease-in-out 1;
+  }
+  .fx-max {
+    animation: dc-max 2.6s cubic-bezier(0.2, 0.8, 0.2, 1) 1;
+  }
+  .fx-tick {
+    animation: dc-tick 0.9s ease-out 1;
+  }
   .confetti {
-    position: absolute; left: 50%; top: 50%;
-    width: var(--w); height: var(--h); background: var(--c); border-radius: 2px; opacity: 0;
-    animation: dc-conf 2.6s cubic-bezier(.15, .7, .3, 1) 1 forwards;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--w);
+    height: var(--h);
+    background: var(--c);
+    border-radius: 2px;
+    opacity: 0;
+    animation: dc-conf 2.6s cubic-bezier(0.15, 0.7, 0.3, 1) 1 forwards;
   }
   @keyframes dc-ton {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(198, 242, 78, 0); }
-    50% { box-shadow: 0 0 0 8px rgba(198, 242, 78, .16), 0 0 36px rgba(198, 242, 78, .25); border-color: #dcff7a; }
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(198, 242, 78, 0);
+    }
+    50% {
+      box-shadow:
+        0 0 0 8px rgba(198, 242, 78, 0.16),
+        0 0 36px rgba(198, 242, 78, 0.25);
+      border-color: #dcff7a;
+    }
   }
-  @keyframes dc-num { 50% { transform: scale(1.05); } }
+  @keyframes dc-num {
+    50% {
+      transform: scale(1.05);
+    }
+  }
   @keyframes dc-max {
-    0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198, 242, 78, .7); }
-    10% { transform: scale(1.07); box-shadow: 0 0 0 14px rgba(198, 242, 78, .45), 0 0 80px rgba(198, 242, 78, .6); }
-    22% { transform: scale(.99); }
-    32% { transform: scale(1.04); box-shadow: 0 0 0 22px rgba(198, 242, 78, .12), 0 0 60px rgba(198, 242, 78, .4); }
-    50%, 100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(198, 242, 78, 0); }
+    0% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(198, 242, 78, 0.7);
+    }
+    10% {
+      transform: scale(1.07);
+      box-shadow:
+        0 0 0 14px rgba(198, 242, 78, 0.45),
+        0 0 80px rgba(198, 242, 78, 0.6);
+    }
+    22% {
+      transform: scale(0.99);
+    }
+    32% {
+      transform: scale(1.04);
+      box-shadow:
+        0 0 0 22px rgba(198, 242, 78, 0.12),
+        0 0 60px rgba(198, 242, 78, 0.4);
+    }
+    50%,
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 0 0 rgba(198, 242, 78, 0);
+    }
   }
-  @keyframes dc-tick { 12% { transform: scale(1.12); } 100% { transform: scale(1); } }
+  @keyframes dc-tick {
+    12% {
+      transform: scale(1.12);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
   @keyframes dc-conf {
-    0% { opacity: 0; transform: translate(-50%, -50%) rotate(0deg); }
-    6%, 70% { opacity: 1; }
-    100% { opacity: 0; transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--r)); }
+    0% {
+      opacity: 0;
+      transform: translate(-50%, -50%) rotate(0deg);
+    }
+    6%,
+    70% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+      transform: translate(calc(-50% + var(--x)), calc(-50% + var(--y))) rotate(var(--r));
+    }
   }
   @media (prefers-reduced-motion: reduce) {
-    .fx-ton, .fx-ton .sum, .fx-max, .fx-tick { animation: none; }
-    .confetti { display: none; }
+    .fx-ton,
+    .fx-ton .sum,
+    .fx-max,
+    .fx-tick {
+      animation: none;
+    }
+    .confetti {
+      display: none;
+    }
   }
 </style>

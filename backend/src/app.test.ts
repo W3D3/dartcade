@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { buildApp } from './app.js'
 
 describe('unmatched routes', () => {
-  it('POST /api/nope returns 404 with our ErrorResponse shape, not Fastify\'s default', async () => {
+  it("POST /api/nope returns 404 with our ErrorResponse shape, not Fastify's default", async () => {
     const app = await buildApp({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any })
     const res = await app.inject({ method: 'POST', url: '/api/nope' })
     expect(res.statusCode).toBe(404)

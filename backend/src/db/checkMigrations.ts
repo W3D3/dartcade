@@ -36,9 +36,7 @@ async function describe(db: Kysely<Database>, schema: string): Promise<string[]>
     FROM pg_constraint c JOIN pg_namespace n ON n.oid = c.connamespace WHERE n.nspname = ${schema}`.execute(db)
   const indexes = await sql<{ line: string }>`
     SELECT indexdef AS line FROM pg_indexes WHERE schemaname = ${schema}`.execute(db)
-  return [...columns.rows, ...constraints.rows, ...indexes.rows]
-    .map(r => r.line.replaceAll(`${schema}.`, ''))
-    .sort()
+  return [...columns.rows, ...constraints.rows, ...indexes.rows].map(r => r.line.replaceAll(`${schema}.`, '')).sort()
 }
 
 const upgraded = 'migcheck_upgraded'
@@ -52,8 +50,16 @@ function changeReport(before: string[], after: string[]): string {
   const added = after.filter(l => !before.includes(l)).map(l => `+ ${l}`)
   const marker = '<!-- schema-diff -->'
   if (!removed.length && !added.length) return `${marker}\n**Database schema:** no changes in this PR.\n`
-  return [marker, `**Database schema changes in this PR** (${added.length} added, ${removed.length} removed lines)`, '',
-    '```diff', ...removed, ...added, '```', ''].join('\n')
+  return [
+    marker,
+    `**Database schema changes in this PR** (${added.length} added, ${removed.length} removed lines)`,
+    '',
+    '```diff',
+    ...removed,
+    ...added,
+    '```',
+    '',
+  ].join('\n')
 }
 
 const admin = inSchema('public')

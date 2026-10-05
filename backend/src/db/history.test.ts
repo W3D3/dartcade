@@ -14,13 +14,38 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
   let db: Kysely<Database>
   const t = (min: number) => new Date(Date.UTC(2026, 9, 1, 10, min))
 
-  async function game(id: string, mode: string, owner: string, seats: { name: string; user_id: string | null }[], finishedAt: Date | 'abort' | 'active', board: string | null = null, forfeitedSeats: number[] = []) {
+  async function game(
+    id: string,
+    mode: string,
+    owner: string,
+    seats: { name: string; user_id: string | null }[],
+    finishedAt: Date | 'abort' | 'active',
+    board: string | null = null,
+    forfeitedSeats: number[] = [],
+  ) {
     await insertGameSession(db, {
-      id, owner_user_id: owner, board_db_id: board, game_id: mode, game_version: 1, rng_seed: 0, config: {},
+      id,
+      owner_user_id: owner,
+      board_db_id: board,
+      game_id: mode,
+      game_version: 1,
+      rng_seed: 0,
+      config: {},
       players: seats.map(s => ({ ...s, controller_user_id: owner, board_db_id: null })),
     })
     if (finishedAt === 'abort') await abortGameSession(db, id, t(0))
-    else if (finishedAt !== 'active') await finishGameSession(db, id, finishedAt, seats.map((_, i) => ({ placement: i + 1, stats: { dartsThrown: 10 + i }, throwPosition: seats.length - 1 - i, forfeited: forfeitedSeats.includes(i) })))
+    else if (finishedAt !== 'active')
+      await finishGameSession(
+        db,
+        id,
+        finishedAt,
+        seats.map((_, i) => ({
+          placement: i + 1,
+          stats: { dartsThrown: 10 + i },
+          throwPosition: seats.length - 1 - i,
+          forfeited: forfeitedSeats.includes(i),
+        })),
+      )
   }
 
   beforeAll(async () => {
@@ -29,14 +54,37 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     await sql.raw(`CREATE SCHEMA ${SCHEMA}`).execute(admin)
     db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA}`)
     await runMigrations(db)
-    await db.insertInto('user').values([
-      { id: 'u1', name: 'One', email: 'one@example.com', emailVerified: false, image: null },
-      { id: 'u2', name: 'Two', email: 'two@example.com', emailVerified: false, image: null },
-    ]).execute()
+    await db
+      .insertInto('user')
+      .values([
+        { id: 'u1', name: 'One', email: 'one@example.com', emailVerified: false, image: null },
+        { id: 'u2', name: 'Two', email: 'two@example.com', emailVerified: false, image: null },
+      ])
+      .execute()
     await insertBoard(db, { id: 'b1', owner_user_id: 'u1', name: 'Living room', token_hash: 'h-b1' })
-    await game('x-1', 'x01', 'u1', [{ name: 'One', user_id: 'u1' }, { name: 'Guest', user_id: null }], t(1), 'b1', [1])
+    await game(
+      'x-1',
+      'x01',
+      'u1',
+      [
+        { name: 'One', user_id: 'u1' },
+        { name: 'Guest', user_id: null },
+      ],
+      t(1),
+      'b1',
+      [1],
+    )
     await game('a-1', 'atc', 'u1', [{ name: 'One', user_id: 'u1' }], t(2))
-    await game('x-2', 'x01', 'u1', [{ name: 'One', user_id: 'u1' }, { name: 'Guest', user_id: null }], t(3))
+    await game(
+      'x-2',
+      'x01',
+      'u1',
+      [
+        { name: 'One', user_id: 'u1' },
+        { name: 'Guest', user_id: null },
+      ],
+      t(3),
+    )
     await game('x-aborted', 'x01', 'u1', [{ name: 'One', user_id: 'u1' }], 'abort')
     await game('x-running', 'x01', 'u1', [{ name: 'One', user_id: 'u1' }], 'active')
     await game('x-other', 'x01', 'u2', [{ name: 'Two', user_id: 'u2' }], t(4))
@@ -53,7 +101,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     expect(games.map(g => g.id)).toEqual(['x-2', 'a-1', 'x-1'])
     expect(next).toBeNull()
     expect(games[2]).toMatchObject({ board: { id: 'b1', name: 'Living room' }, mySeat: 0, finished_at: t(1) })
-    expect(games[2].seats.map(s => [s.name, s.placement, s.throw_position, s.stats, s.forfeited])).toEqual([['One', 1, 1, { dartsThrown: 10 }, false], ['Guest', 2, 0, { dartsThrown: 11 }, true]])
+    expect(games[2].seats.map(s => [s.name, s.placement, s.throw_position, s.stats, s.forfeited])).toEqual([
+      ['One', 1, 1, { dartsThrown: 10 }, false],
+      ['Guest', 2, 0, { dartsThrown: 11 }, true],
+    ])
   })
 
   it('filters by mode and pages with the cursor', async () => {
@@ -66,7 +117,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
 
   it('stat rows: my seat, placed games since the date, seat count', async () => {
     const rows = await getStatRows(db, 'u1', t(2))
-    expect(rows.map(r => [r.mode, r.placement, r.seats, r.stats])).toEqual(expect.arrayContaining([['atc', 1, 1, { dartsThrown: 10 }], ['x01', 1, 2, { dartsThrown: 10 }]]))
+    expect(rows.map(r => [r.mode, r.placement, r.seats, r.stats])).toEqual(
+      expect.arrayContaining([
+        ['atc', 1, 1, { dartsThrown: 10 }],
+        ['x01', 1, 2, { dartsThrown: 10 }],
+      ]),
+    )
     expect(rows).toHaveLength(2)
   })
 

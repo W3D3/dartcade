@@ -9,7 +9,11 @@ export function fmtVersion(v?: string | null): string | null {
 
 /** host:port of the Board Manager, falling back to the bare IP. */
 export function bmHost(b: Board): string {
-  try { if (b.bmUrl) return new URL(b.bmUrl).host } catch { /* fall through */ }
+  try {
+    if (b.bmUrl) return new URL(b.bmUrl).host
+  } catch {
+    /* fall through */
+  }
   return b.ip ?? ''
 }
 

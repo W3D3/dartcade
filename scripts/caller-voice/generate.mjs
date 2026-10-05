@@ -46,10 +46,21 @@ async function encode(wavPath, mp3Path) {
     'loudnorm=I=-16:TP=-1.5:LRA=11',
   ].join(',')
   await run('nix', [
-    'shell', 'nixpkgs#ffmpeg', '-c', 'ffmpeg',
-    '-y', '-i', wavPath,
-    '-af', filter,
-    '-ac', '1', '-ar', '22050', '-b:a', '48k',
+    'shell',
+    'nixpkgs#ffmpeg',
+    '-c',
+    'ffmpeg',
+    '-y',
+    '-i',
+    wavPath,
+    '-af',
+    filter,
+    '-ac',
+    '1',
+    '-ar',
+    '22050',
+    '-b:a',
+    '48k',
     mp3Path,
   ])
 }

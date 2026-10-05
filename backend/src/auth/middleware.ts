@@ -19,5 +19,7 @@ export function requireAuth(req: FastifyRequest, reply: FastifyReply, done: Hook
       done()
     })
     // Also catches a throw from the success path above, so nothing is left unhandled
-    .catch((err: unknown) => { done(err instanceof Error ? err : new Error(String(err))) })
+    .catch((err: unknown) => {
+      done(err instanceof Error ? err : new Error(String(err)))
+    })
 }

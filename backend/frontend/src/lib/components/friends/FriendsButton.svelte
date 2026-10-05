@@ -11,9 +11,16 @@
   const active = $derived($location === '/friends')
 </script>
 
-<a href="#/friends" aria-label={entry.aria} title="Friends" aria-current={active ? 'page' : undefined}
+<a
+  href="#/friends"
+  aria-label={entry.aria}
+  title="Friends"
+  aria-current={active ? 'page' : undefined}
   class="relative shrink-0 w-[38px] h-[38px] box-border flex items-center justify-center rounded-[9px] border no-underline
-         {active ? 'border-accent-line-strong bg-accent-tint text-accent hover:text-accent' : 'border-line-chip text-ink-2 hover:text-text'}">
+         {active
+    ? 'border-accent-line-strong bg-accent-tint text-accent hover:text-accent'
+    : 'border-line-chip text-ink-2 hover:text-text'}"
+>
   <UsersRound size={18} strokeWidth={1.8} />
   {#if entry.requests > 0}
     <NavBadge count={entry.requests} hidden label="" class="absolute -top-1 -right-1 border-2 border-surface-1" />

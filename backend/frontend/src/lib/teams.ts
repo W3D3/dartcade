@@ -66,7 +66,12 @@ export type X01TeamView = {
 }
 
 /** One view per team; none in a singles game. */
-export function x01Teams(game: X01Game, players: { name: string }[], history: VisitHistory, o: { suggest: boolean; scoreUpdates?: ScoreUpdates }): X01TeamView[] {
+export function x01Teams(
+  game: X01Game,
+  players: { name: string }[],
+  history: VisitHistory,
+  o: { suggest: boolean; scoreUpdates?: ScoreUpdates },
+): X01TeamView[] {
   const teams = game.teams
   if (!teams) return []
   const playing = game.winner === null
@@ -79,8 +84,13 @@ export function x01Teams(game: X01Game, players: { name: string }[], history: Vi
   return teams.map(team => {
     const active = playing && upTeam === team
     // The thrower carries the running visit; any seat of the team has its score
-    const seat = active ? cp : team.seats.at(0) ?? 0
-    const p = x01Player(game, seat, history, { active, suggest: o.suggest, bust: active && game.bustThisVisit, scoreUpdates: o.scoreUpdates })
+    const seat = active ? cp : (team.seats.at(0) ?? 0)
+    const p = x01Player(game, seat, history, {
+      active,
+      suggest: o.suggest,
+      bust: active && game.bustThisVisit,
+      scoreUpdates: o.scoreUpdates,
+    })
 
     // Interleave the players' leg visits in the order they were thrown
     const taken = new Map<number, number>()
@@ -91,23 +101,37 @@ export function x01Teams(game: X01Game, players: { name: string }[], history: Vi
       const k = taken.get(s) ?? 0
       taken.set(s, k + 1)
       const visit = history.leg.at(s)?.at(k)
-      if (visit) { visits.push(visit); marks.push(initial(nameOf(s))) }
+      if (visit) {
+        visits.push(visit)
+        marks.push(initial(nameOf(s)))
+      }
     }
     const legVisits = team.seats.flatMap(s => history.leg.at(s) ?? [])
     const allVisits = team.seats.flatMap(s => history.all.at(s) ?? [])
 
     return {
-      id: team.id, name: team.name, active,
+      id: team.id,
+      name: team.name,
+      active,
       won: game.winner !== null && team.seats.includes(game.winner),
-      remaining: team.score, shown: active ? p.shown : team.score, opened: p.opened, canFinish: p.canFinish,
+      remaining: team.score,
+      shown: active ? p.shown : team.score,
+      opened: p.opened,
+      canFinish: p.canFinish,
       teamAvg: fmtAvg(threeDartAvg(legVisits)),
       matchAvg: fmtAvg(threeDartAvg(allVisits)),
       darts: team.seats.reduce((a, s) => a + (game.totalDarts.at(s) ?? 0), 0),
-      legsWon: team.legs, firstTo: game.firstTo, leg: teams.reduce((a, t) => a + t.legs, 0),
-      visits, marks,
-      current: p.current, currentMark: p.current ? initial(nameOf(cp)) : null,
+      legsWon: team.legs,
+      firstTo: game.firstTo,
+      leg: teams.reduce((a, t) => a + t.legs, 0),
+      visits,
+      marks,
+      current: p.current,
+      currentMark: p.current ? initial(nameOf(cp)) : null,
       members: team.seats.map(s => ({
-        seat: s, name: nameOf(s), avg: fmtAvg(threeDartAvg(history.all.at(s) ?? [])),
+        seat: s,
+        name: nameOf(s),
+        avg: fmtAvg(threeDartAvg(history.all.at(s) ?? [])),
         role: !playing ? null : s === cp ? 'throwing' : s === nextSeat ? 'up-next' : 'after',
       })),
     }

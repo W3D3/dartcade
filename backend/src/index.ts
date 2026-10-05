@@ -29,34 +29,58 @@ await seedDev()
 const hub = new LobbyHub()
 // The rebuild below can already warn (a log entry that won't parse), before the app and its
 // logger exist: until then warnings go to the console
-let warn = (message: string, details: unknown) => { console.warn(message, details) }
+let warn = (message: string, details: unknown) => {
+  console.warn(message, details)
+}
 // The other callbacks only run after the engine and the lobbies exist
 const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
   sessionId => {
     pushSnapshot(sessionId, engine)
-    lobbies.onSessionPush(sessionId).catch((err: unknown) => { warn('lobby indicator push failed', { sessionId, error: String(err) }) })
+    lobbies.onSessionPush(sessionId).catch((err: unknown) => {
+      warn('lobby indicator push failed', { sessionId, error: String(err) })
+    })
   },
-  (message, details) => { warn(message, details) },
-  (sessionId, userIds, notice) => { pushNotice(sessionId, userIds, notice) },
+  (message, details) => {
+    warn(message, details)
+  },
+  (sessionId, userIds, notice) => {
+    pushNotice(sessionId, userIds, notice)
+  },
   ended => lobbies.onGameEnded(ended),
   started => lobbies.onGameStarted(started),
 )
 const friends = new FriendsService({
-  db, hub,
+  db,
+  hub,
   gameOf: userId => seatedGame(engine.getSessionByUser(userId), userId),
-  warn: (message, details) => { warn(message, details) },
+  warn: (message, details) => {
+    warn(message, details)
+  },
 })
 const lobbies: LobbyService = new LobbyService({
-  db, engine, hub, isBoardOnline: boardId => bridgeConnections.isOnline(boardId), warn: (message, details) => { warn(message, details) },
-  onStatusChange: userIds => { friends.touch(userIds) },
+  db,
+  engine,
+  hub,
+  isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
+  warn: (message, details) => {
+    warn(message, details)
+  },
+  onStatusChange: userIds => {
+    friends.touch(userIds)
+  },
 })
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
 
 const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../../frontend/dist') })
-warn = (message, details) => { app.log.warn({ details }, message) }
+warn = (message, details) => {
+  app.log.warn({ details }, message)
+}
 // Stopping: no friends pushes, grace or debounce timers left running
-app.addHook('onClose', (_instance, done) => { friends.close(); done() })
+app.addHook('onClose', (_instance, done) => {
+  friends.close()
+  done()
+})
 await app.listen({ port: PORT, host: '0.0.0.0' })

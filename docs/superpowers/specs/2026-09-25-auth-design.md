@@ -48,6 +48,7 @@ backend/
 ```
 
 Files changed from existing:
+
 - `backend/src/db/schema.ts` — add `UsersTable`, `SessionTable`, `BoardsTable`; rename `SessionsTable` → `GameSessionsTable`
 - `backend/src/db/queries.ts` — add board queries; update session queries to use `game_sessions`
 - `backend/src/bridge-gw/handler.ts` — replace env var auth with DB token lookup
@@ -234,6 +235,7 @@ DELETE /api/boards/:id
 ```
 
 Token generation:
+
 ```ts
 const rawToken = randomBytes(32).toString('hex')   // 64-char hex
 const tokenHash = createHash('sha256').update(rawToken).digest('hex')
@@ -265,17 +267,20 @@ On first envelope, if `board.hardware_id` is null, update it with the reported `
 ## 6. Session engine + API changes
 
 **Session engine (`session/engine.ts`):**
+
 - `create(boardDbId, ...)` takes the `boards.id` ULID (not hardware board_id)
 - Internal maps key on `boardDbId`
 - `game_sessions.board_db_id` FK used for persistence
 
 **Session API (`api/sessions.ts`):**
+
 - `POST /api/sessions` — add `requireAuth` preHandler; verify `board.owner_user_id = req.userId`
 - `GET /api/sessions` — filter by `req.userId`'s boards
 - `GET /api/sessions/:id` — ownership check
 - `DELETE /api/sessions/:id` — ownership check
 
 **Browser gateway (`browser-gw/handler.ts`):**
+
 - Validate session cookie at WS upgrade: call `getAuthUser(req)` before accepting connection
 
 ---
@@ -285,17 +290,20 @@ On first envelope, if `board.hardware_id` is null, update it with the reported `
 Two new routes + minor changes to existing:
 
 **`/login` — `Login.svelte`**
+
 - Email + password form → `POST /api/auth/sign-in/email`
 - Register form → `POST /api/auth/sign-up/email` (requires email, password, name)
 - Redirects to `/` on success
 - App root redirects to `/login` if no active session
 
 **`/boards` — `Boards.svelte`** (accessible from nav)
+
 - Lists user's boards (`GET /api/boards`)
 - "Add board" → `POST /api/boards` → shows token in a one-time modal with copy button
 - Delete board with confirmation
 
 **`CreateSession.svelte` change:**
+
 - Replace free-text `boardId` input with a dropdown populated from `GET /api/boards`
 
 ---
@@ -303,6 +311,7 @@ Two new routes + minor changes to existing:
 ## 8. Docker / environment changes
 
 **`docker-compose.dev.yaml` bridge service:**
+
 ```yaml
 bridge:
   environment:
@@ -311,10 +320,12 @@ bridge:
 ```
 
 **`backend/docker-compose.yaml`:**
+
 - Remove `BRIDGE_SECRET` env var
 - No new env vars needed (token auth is DB-driven)
 
 **`.env.example`:**
+
 - Remove `BRIDGE_SECRET=`
 - No replacement needed
 

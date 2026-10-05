@@ -30,22 +30,46 @@ describe('applyStatusPick', () => {
   // revert signal StatusCard uses to discard that stale local value and show the confirmed one.
   it('reverts after a failed change', async () => {
     let reverted = false
-    await applyStatusPick(() => Promise.resolve('nope'), true, () => { reverted = true })
+    await applyStatusPick(
+      () => Promise.resolve('nope'),
+      true,
+      () => {
+        reverted = true
+      },
+    )
     expect(reverted).toBe(true)
   })
   it('does not revert after a successful change', async () => {
     let reverted = false
-    await applyStatusPick(() => Promise.resolve(null), true, () => { reverted = true })
+    await applyStatusPick(
+      () => Promise.resolve(null),
+      true,
+      () => {
+        reverted = true
+      },
+    )
     expect(reverted).toBe(false)
   })
   it('leaves a synchronous, successful onchange alone', async () => {
     let reverted = false
-    await applyStatusPick(() => null, true, () => { reverted = true })
+    await applyStatusPick(
+      () => null,
+      true,
+      () => {
+        reverted = true
+      },
+    )
     expect(reverted).toBe(false)
   })
   it('reverts a synchronous, failed onchange too', async () => {
     let reverted = false
-    await applyStatusPick(() => 'nope', true, () => { reverted = true })
+    await applyStatusPick(
+      () => 'nope',
+      true,
+      () => {
+        reverted = true
+      },
+    )
     expect(reverted).toBe(true)
   })
 })

@@ -50,7 +50,7 @@ So the next game can add teams by opting in, the generic parts are shared:
   - `TeamId`: `'A' | 'B'`.
   - `TeamView`: `{ id: TeamId, name: string, seats: number[] }` plus game-specific fields in the
     game's own view (X01 adds `score`, `legs`, `next`). Snapshots of a team game carry `teams:
-    TeamView[]`.
+TeamView[]`.
   - `TeamsConfig` (TypeScript only, `backend/src/games/teams.ts`, not in the JSON schema):
     `{ format?: 'singles' | 'teams', teams?: number[], teamStart?: 'first' | 'random' }`: the
     format, the team index of each seat once a game starts (index = seat; 0 = Team A, 1 = Team
@@ -75,6 +75,7 @@ So the next game can add teams by opting in, the generic parts are shared:
   and `teamPlacements` weren't built under those names. X01 keeps the turn order in its state
   [`order`] rather than rotating a leg starter function; a leg starts at
   `legsPlayed % order.length`.)
+
 - **Frontend:** a generic team panel (`TeamPanel`) and the lobby's Teams panel are driven by the
   common `TeamView`; a game supplies only its score line.
 

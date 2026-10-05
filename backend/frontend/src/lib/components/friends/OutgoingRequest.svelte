@@ -13,6 +13,11 @@
     <span class="font-mono text-[13px] text-text truncate">{`@${request.to.name}`}</span>
     <span class="text-[12px] text-text-dim truncate">{outgoingMeta(request, now)}</span>
   </span>
-  <button type="button" disabled={busy} onclick={oncancel}
-    class="shrink-0 h-9 px-[10px] md:px-3 border-0 rounded-[8px] bg-transparent text-text-muted text-[13px] font-[inherit] cursor-pointer hover:text-text disabled:opacity-50">Cancel</button>
+  <button
+    type="button"
+    disabled={busy}
+    onclick={oncancel}
+    class="shrink-0 h-9 px-[10px] md:px-3 border-0 rounded-[8px] bg-transparent text-text-muted text-[13px] font-[inherit] cursor-pointer hover:text-text disabled:opacity-50"
+    >Cancel</button
+  >
 </div>

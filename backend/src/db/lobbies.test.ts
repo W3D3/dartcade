@@ -5,9 +5,27 @@ import { openTestSchema } from './testSchema.js'
 import { abortGameSession, getActiveGameSessions, insertGameSession, insertBoard } from './queries.js'
 import { pgErrorCode } from './errors.js'
 import {
-  insertLobby, insertPerson, loadLobby, updateLobby, updatePerson, setPositions, setPlaying, resetAfterGame,
-  clearBoardsOf, releaseBoard, insertInvite, getInvite, setInviteStatus, acceptInvites, pendingInvitesFor,
-  closeLobbyRows, getOpenLobbyIdByCode, getOpenLobbyIdOfUser, usualBoards, addActivity, deletePeople,
+  insertLobby,
+  insertPerson,
+  loadLobby,
+  updateLobby,
+  updatePerson,
+  setPositions,
+  setPlaying,
+  resetAfterGame,
+  clearBoardsOf,
+  releaseBoard,
+  insertInvite,
+  getInvite,
+  setInviteStatus,
+  acceptInvites,
+  pendingInvitesFor,
+  closeLobbyRows,
+  getOpenLobbyIdByCode,
+  getOpenLobbyIdOfUser,
+  usualBoards,
+  addActivity,
+  deletePeople,
 } from './lobbies.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
@@ -15,21 +33,33 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
   let close: () => Promise<void>
 
   beforeAll(async () => {
-    ({ db, close } = await openTestSchema('lobbies_db_test'))
-    await db.insertInto('user').values([
-      { id: 'chris', name: 'Christoph', email: 'c@example.com', emailVerified: false, image: null },
-      { id: 'lena', name: 'Lena', email: 'l@example.com', emailVerified: false, image: null },
-      { id: 'max', name: 'Max', email: 'm@example.com', emailVerified: false, image: null },
-      { id: 'sam', name: 'Sam', email: 's@example.com', emailVerified: false, image: null },
-    ]).execute()
+    ;({ db, close } = await openTestSchema('lobbies_db_test'))
+    await db
+      .insertInto('user')
+      .values([
+        { id: 'chris', name: 'Christoph', email: 'c@example.com', emailVerified: false, image: null },
+        { id: 'lena', name: 'Lena', email: 'l@example.com', emailVerified: false, image: null },
+        { id: 'max', name: 'Max', email: 'm@example.com', emailVerified: false, image: null },
+        { id: 'sam', name: 'Sam', email: 's@example.com', emailVerified: false, image: null },
+      ])
+      .execute()
   })
-  afterAll(async () => { await close() })
+  afterAll(async () => {
+    await close()
+  })
 
   describe('games from a lobby', () => {
     it('links a game to its lobby and reads the lobby name back', async () => {
       await db.insertInto('lobbies').values({ id: 'l1', name: "Christoph's lobby", host_user_id: 'chris', code: 'K7Q4MA' }).execute()
       await insertGameSession(db, {
-        id: 'g1', owner_user_id: 'chris', board_db_id: null, game_id: 'x01', game_version: 1, rng_seed: 1, config: {}, lobby_id: 'l1',
+        id: 'g1',
+        owner_user_id: 'chris',
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 1,
+        config: {},
+        lobby_id: 'l1',
         players: [{ name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null }],
       })
       const game = (await getActiveGameSessions(db)).find(s => s.id === 'g1')
@@ -38,7 +68,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
 
     it('reads a local game with no lobby', async () => {
       await insertGameSession(db, {
-        id: 'g-local', owner_user_id: 'chris', board_db_id: null, game_id: 'atc', game_version: 1, rng_seed: 1, config: {},
+        id: 'g-local',
+        owner_user_id: 'chris',
+        board_db_id: null,
+        game_id: 'atc',
+        game_version: 1,
+        rng_seed: 1,
+        config: {},
         players: [{ name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null }],
       })
       const game = (await getActiveGameSessions(db)).find(s => s.id === 'g-local')
@@ -57,25 +93,45 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
   })
 
   describe('constraints', () => {
-    afterAll(async () => { await db.deleteFrom('lobby_people').execute() })
+    afterAll(async () => {
+      await db.deleteFrom('lobby_people').execute()
+    })
 
     it('keeps a user in one open lobby', async () => {
-      await db.insertInto('lobbies').values([
-        { id: 'c1', name: 'A', host_user_id: 'sam', code: 'AAAAAA' },
-        { id: 'c2', name: 'B', host_user_id: 'sam', code: 'BBBBBB' },
-      ]).execute()
+      await db
+        .insertInto('lobbies')
+        .values([
+          { id: 'c1', name: 'A', host_user_id: 'sam', code: 'AAAAAA' },
+          { id: 'c2', name: 'B', host_user_id: 'sam', code: 'BBBBBB' },
+        ])
+        .execute()
       const row = (id: string, lobbyId: string) => ({
-        id, lobby_id: lobbyId, user_id: 'sam', added_by_user_id: 'sam', name: 'Sam', board_id: null, position: 0, board_moved_by: null,
+        id,
+        lobby_id: lobbyId,
+        user_id: 'sam',
+        added_by_user_id: 'sam',
+        name: 'Sam',
+        board_id: null,
+        position: 0,
+        board_moved_by: null,
       })
       await db.insertInto('lobby_people').values(row('p1', 'c1')).execute()
-      const err = await db.insertInto('lobby_people').values(row('p2', 'c2')).execute().catch((e: unknown) => e)
+      const err = await db
+        .insertInto('lobby_people')
+        .values(row('p2', 'c2'))
+        .execute()
+        .catch((e: unknown) => e)
       expect(pgErrorCode(err)).toBe('23505')
     })
 
-    it('lets a closed lobby\'s code be used again, but not an open one\'s', async () => {
+    it("lets a closed lobby's code be used again, but not an open one's", async () => {
       await db.updateTable('lobbies').set({ closed_at: new Date() }).where('id', '=', 'c1').execute()
       await db.insertInto('lobbies').values({ id: 'c3', name: 'C', host_user_id: 'sam', code: 'AAAAAA' }).execute()
-      const err = await db.insertInto('lobbies').values({ id: 'c4', name: 'D', host_user_id: 'sam', code: 'BBBBBB' }).execute().catch((e: unknown) => e)
+      const err = await db
+        .insertInto('lobbies')
+        .values({ id: 'c4', name: 'D', host_user_id: 'sam', code: 'BBBBBB' })
+        .execute()
+        .catch((e: unknown) => e)
       expect(pgErrorCode(err)).toBe('23505')
     })
   })
@@ -88,13 +144,40 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
       await insertBoard(db, { id: 'lenas', owner_user_id: 'lena', name: "Lena's place", token_hash: 'h-lenas' })
       // Lena's latest game was on her own board; Christoph's had none (g1), so his first board counts
       await insertGameSession(db, {
-        id: 'old', owner_user_id: 'lena', board_db_id: null, game_id: 'x01', game_version: 1, rng_seed: 1, config: {},
+        id: 'old',
+        owner_user_id: 'lena',
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 1,
+        config: {},
         players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: 'lenas' }],
       })
-      await insertLobby(db, { id: 'q1', name: "Christoph's lobby", hostUserId: 'chris', code: 'K7Q4MD' },
-        { id: 'host', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', boardId: 'living', ready: false, joinedAt: t(0) })
-      await insertPerson(db, { id: 'lena-p', lobbyId: 'q1', userId: 'lena', addedByUserId: 'lena', name: 'Lena', boardId: 'lenas', ready: false, joinedAt: t(1) })
-      await insertPerson(db, { id: 'guest', lobbyId: 'q1', userId: null, addedByUserId: 'chris', name: 'Guest 1', boardId: 'living', ready: true, joinedAt: t(2) })
+      await insertLobby(
+        db,
+        { id: 'q1', name: "Christoph's lobby", hostUserId: 'chris', code: 'K7Q4MD' },
+        { id: 'host', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', boardId: 'living', ready: false, joinedAt: t(0) },
+      )
+      await insertPerson(db, {
+        id: 'lena-p',
+        lobbyId: 'q1',
+        userId: 'lena',
+        addedByUserId: 'lena',
+        name: 'Lena',
+        boardId: 'lenas',
+        ready: false,
+        joinedAt: t(1),
+      })
+      await insertPerson(db, {
+        id: 'guest',
+        lobbyId: 'q1',
+        userId: null,
+        addedByUserId: 'chris',
+        name: 'Guest 1',
+        boardId: 'living',
+        ready: true,
+        joinedAt: t(2),
+      })
     })
 
     it('finds the usual board: the own board of the latest game, else the first paired one', async () => {
@@ -107,8 +190,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
     it('loads a lobby with its people in order, their boards and usual boards', async () => {
       const lobby = await loadLobby(db, 'q1')
       expect(lobby).toMatchObject({
-        id: 'q1', name: "Christoph's lobby", hostUserId: 'chris', code: 'K7Q4MD',
-        throwOrder: 'lobby', nextGame: null, closedAt: null,
+        id: 'q1',
+        name: "Christoph's lobby",
+        hostUserId: 'chris',
+        code: 'K7Q4MD',
+        throwOrder: 'lobby',
+        nextGame: null,
+        closedAt: null,
       })
       expect(lobby?.people.map(p => [p.id, p.name, p.boardName, p.boardOwnerUserId, p.usualBoardName, p.plays, p.ready])).toEqual([
         ['host', 'Christoph', 'Living room', 'chris', 'Living room', true, false],
@@ -127,7 +215,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
     it('keeps the JSON settings', async () => {
       await updateLobby(db, 'q1', { throw_order: 'random', next_game: { gameId: 'x01', config: { startScore: 301 } } })
       expect(await loadLobby(db, 'q1')).toMatchObject({
-        throwOrder: 'random', nextGame: { gameId: 'x01', config: { startScore: 301 } },
+        throwOrder: 'random',
+        nextGame: { gameId: 'x01', config: { startScore: 301 } },
       })
     })
 
@@ -135,7 +224,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
       await setPositions(db, 'q1', ['guest', 'host', 'lena-p'])
       await setPlaying(db, 'q1', ['guest', 'lena-p'])
       const lobby = await loadLobby(db, 'q1')
-      expect(lobby?.people.map(p => [p.id, p.plays])).toEqual([['guest', true], ['host', false], ['lena-p', true]])
+      expect(lobby?.people.map(p => [p.id, p.plays])).toEqual([
+        ['guest', true],
+        ['host', false],
+        ['lena-p', true],
+      ])
     })
 
     it('resets after a game: everyone plays, members not ready, guests ready', async () => {
@@ -143,14 +236,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
       await updatePerson(db, 'guest', { ready: false })
       await resetAfterGame(db, 'q1')
       const lobby = await loadLobby(db, 'q1')
-      expect(lobby?.people.map(p => [p.id, p.plays, p.ready])).toEqual([['guest', true, true], ['host', true, false], ['lena-p', true, false]])
+      expect(lobby?.people.map(p => [p.id, p.plays, p.ready])).toEqual([
+        ['guest', true, true],
+        ['host', true, false],
+        ['lena-p', true, false],
+      ])
     })
 
-    it('sends people on an owner\'s boards to Manual', async () => {
+    it("sends people on an owner's boards to Manual", async () => {
       await updatePerson(db, 'guest', { board_moved_by: 'chris' })
       await clearBoardsOf(db, 'q1', 'chris')
       const lobby = await loadLobby(db, 'q1')
-      expect(lobby?.people.map(p => [p.id, p.boardId, p.boardMovedBy])).toEqual([['guest', null, null], ['host', null, null], ['lena-p', 'lenas', null]])
+      expect(lobby?.people.map(p => [p.id, p.boardId, p.boardMovedBy])).toEqual([
+        ['guest', null, null],
+        ['host', null, null],
+        ['lena-p', 'lenas', null],
+      ])
     })
 
     it('releases a board in every lobby', async () => {
@@ -160,7 +261,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
     })
 
     it('deletes people, leaving the others in order', async () => {
-      await insertPerson(db, { id: 'leaver', lobbyId: 'q1', userId: null, addedByUserId: 'chris', name: 'Guest 2', boardId: null, ready: true, joinedAt: t(3) })
+      await insertPerson(db, {
+        id: 'leaver',
+        lobbyId: 'q1',
+        userId: null,
+        addedByUserId: 'chris',
+        name: 'Guest 2',
+        boardId: null,
+        ready: true,
+        joinedAt: t(3),
+      })
       await deletePeople(db, ['leaver'])
       await deletePeople(db, [])
       expect((await loadLobby(db, 'q1'))?.people.map(p => p.id)).toEqual(['guest', 'host', 'lena-p'])
@@ -169,7 +279,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
     it('lists pending invites of open lobbies, and expires them when the lobby closes', async () => {
       await insertInvite(db, { id: 'inv1', lobbyId: 'q1', inviteeUserId: 'max', inviterUserId: 'lena' })
       expect(await pendingInvitesFor(db, 'max')).toEqual([
-        { id: 'inv1', lobbyId: 'q1', lobbyName: "Christoph's lobby", inviterUserId: 'lena', inviterName: 'Lena', createdAt: expect.any(Date) },
+        {
+          id: 'inv1',
+          lobbyId: 'q1',
+          lobbyName: "Christoph's lobby",
+          inviterUserId: 'lena',
+          inviterName: 'Lena',
+          createdAt: expect.any(Date),
+        },
       ])
       expect((await loadLobby(db, 'q1'))?.invites).toEqual([
         { id: 'inv1', userId: 'max', name: 'Max', invitedByUserId: 'lena', createdAt: expect.any(Date) },
@@ -189,8 +306,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
     })
 
     it('accepts and declines invites', async () => {
-      await insertLobby(db, { id: 'q2', name: "Max's lobby", hostUserId: 'max', code: 'QQQQQQ' },
-        { id: 'max-p', userId: 'max', addedByUserId: 'max', name: 'Max', boardId: null, ready: false })
+      await insertLobby(
+        db,
+        { id: 'q2', name: "Max's lobby", hostUserId: 'max', code: 'QQQQQQ' },
+        { id: 'max-p', userId: 'max', addedByUserId: 'max', name: 'Max', boardId: null, ready: false },
+      )
       await insertInvite(db, { id: 'inv2', lobbyId: 'q2', inviteeUserId: 'lena', inviterUserId: 'max' })
       await insertInvite(db, { id: 'inv3', lobbyId: 'q2', inviteeUserId: 'chris', inviterUserId: 'max' })
       await acceptInvites(db, 'q2', 'lena')

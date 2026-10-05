@@ -4,8 +4,13 @@ import { emptyHistory, trackVisits, threeDartAvg, type VisitHistory } from '../v
 type G = Record<string, unknown>
 const dart = (score: number) => ({ segment: { name: `S${score}` }, score })
 const x01 = (o: { scores: number[]; totalVisits: number[]; legs?: number[]; cp: number; darts?: number[]; bust?: boolean }): G => ({
-  scores: o.scores, totalVisits: o.totalVisits, legs: o.legs ?? o.scores.map(() => 0), currentPlayer: o.cp,
-  currentVisitDarts: (o.darts ?? []).map(dart), bustThisVisit: o.bust ?? false, totalDarts: o.scores.map(() => 0),
+  scores: o.scores,
+  totalVisits: o.totalVisits,
+  legs: o.legs ?? o.scores.map(() => 0),
+  currentPlayer: o.cp,
+  currentVisitDarts: (o.darts ?? []).map(dart),
+  bustThisVisit: o.bust ?? false,
+  totalDarts: o.scores.map(() => 0),
 })
 const run = (games: G[]) => games.reduce<VisitHistory>((h, g) => trackVisits(h, g as any), emptyHistory())
 
@@ -134,10 +139,7 @@ describe('trackVisits after a gap (reconnect)', () => {
   })
 
   it('does not merge visits missed while disconnected', () => {
-    const h = run([
-      x01({ scores: [301], totalVisits: [0], cp: 0 }),
-      x01({ scores: [200], totalVisits: [2], cp: 0 }),
-    ])
+    const h = run([x01({ scores: [301], totalVisits: [0], cp: 0 }), x01({ scores: [200], totalVisits: [2], cp: 0 })])
     expect(h.all[0]).toEqual([])
     expect(h.start[0]).toBe(200)
   })
@@ -145,13 +147,14 @@ describe('trackVisits after a gap (reconnect)', () => {
 
 describe('trackVisits (ATC)', () => {
   it('records targets advanced per visit', () => {
-    const atc = (hitCounts: number[], totalVisits: number[], cp: number, darts: number[] = []): G =>
-      ({ hitCounts, totalVisits, currentPlayer: cp, currentVisitDarts: darts.map(dart), totalDarts: hitCounts.map(() => 0) })
-    const h = run([
-      atc([4, 2], [3, 3], 0),
-      atc([6, 2], [3, 3], 0, [1, 1, 0]),
-      atc([6, 2], [4, 3], 1),
-    ])
+    const atc = (hitCounts: number[], totalVisits: number[], cp: number, darts: number[] = []): G => ({
+      hitCounts,
+      totalVisits,
+      currentPlayer: cp,
+      currentVisitDarts: darts.map(dart),
+      totalDarts: hitCounts.map(() => 0),
+    })
+    const h = run([atc([4, 2], [3, 3], 0), atc([6, 2], [3, 3], 0, [1, 1, 0]), atc([6, 2], [4, 3], 1)])
     expect(h.leg[0]).toEqual([{ scored: 2, left: 0, darts: 3, bust: false }])
     expect(h.start[1]).toBe(2)
   })
@@ -159,7 +162,12 @@ describe('trackVisits (ATC)', () => {
 
 describe('threeDartAvg', () => {
   it('is points per dart times three', () => {
-    expect(threeDartAvg([{ scored: 60, left: 0, darts: 3, bust: false }, { scored: 45, left: 0, darts: 3, bust: false }])).toBe(52.5)
+    expect(
+      threeDartAvg([
+        { scored: 60, left: 0, darts: 3, bust: false },
+        { scored: 45, left: 0, darts: 3, bust: false },
+      ]),
+    ).toBe(52.5)
   })
   it('counts the darts of short visits', () => {
     expect(threeDartAvg([{ scored: 40, left: 0, darts: 1, bust: false }])).toBe(120)

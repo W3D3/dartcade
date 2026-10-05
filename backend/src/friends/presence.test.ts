@@ -1,8 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { Presence } from './presence.js'
 
-beforeEach(() => { vi.useFakeTimers() })
-afterEach(() => { vi.useRealTimers() })
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('Presence', () => {
   it('is online from the first socket, offline 30 s after the last one closes', () => {
@@ -54,9 +58,9 @@ describe('Presence', () => {
     expect(vi.getTimerCount()).toBe(1)
     p.close()
     expect(vi.getTimerCount()).toBe(0)
-    p.disconnect('max')   // sockets closing as the server stops
+    p.disconnect('max') // sockets closing as the server stops
     expect(vi.getTimerCount()).toBe(0)
     vi.advanceTimersByTime(60_000)
-    expect(changed).toHaveBeenCalledTimes(2)   // the two connects only
+    expect(changed).toHaveBeenCalledTimes(2) // the two connects only
   })
 })

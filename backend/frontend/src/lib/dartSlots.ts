@@ -8,7 +8,10 @@ export type ThrownDart = { segment?: { name?: string; number?: number; multiplie
 function thrownSlot(d: ThrownDart, i: number, hit: boolean, points: string): Slot {
   const label = d.segment?.name || 'Miss'
   return {
-    kind: hit ? 'thrown' : 'miss', label, points, foot: '',
+    kind: hit ? 'thrown' : 'miss',
+    label,
+    points,
+    foot: '',
     aria: `Dart ${i + 1}: ${label}, ${hit ? `${points} points` : 'no hit'}. Correct this dart`,
   }
 }
@@ -19,28 +22,53 @@ function openSlots(from: number, suggestions: { label: string; foot: string }[])
   for (let i = from; i < 3; i++) {
     const s = suggestions.at(i - from)
     const next = i === from
-    out.push(s
-      ? { kind: next ? 'suggested-next' : 'suggested-later', label: s.label, points: '', foot: s.foot, aria: `Dart ${i + 1}: suggested ${s.label}, ${s.foot}` }
-      : { kind: next ? 'empty-next' : 'empty-later', label: '', points: '', foot: '', aria: `Dart ${i + 1}: ${next ? 'next' : 'not thrown'}` })
+    out.push(
+      s
+        ? {
+            kind: next ? 'suggested-next' : 'suggested-later',
+            label: s.label,
+            points: '',
+            foot: s.foot,
+            aria: `Dart ${i + 1}: suggested ${s.label}, ${s.foot}`,
+          }
+        : {
+            kind: next ? 'empty-next' : 'empty-later',
+            label: '',
+            points: '',
+            foot: '',
+            aria: `Dart ${i + 1}: ${next ? 'next' : 'not thrown'}`,
+          },
+    )
   }
   return out
 }
 
 export function x01Slots(o: {
-  darts: ThrownDart[]; remaining: number; outMode: 'straight' | 'double' | 'master'
-  opened: boolean; bust: boolean; suggest: boolean
+  darts: ThrownDart[]
+  remaining: number
+  outMode: 'straight' | 'double' | 'master'
+  opened: boolean
+  bust: boolean
+  suggest: boolean
 }): Slot[] {
   const done = o.darts.slice(0, 3).map((d, i) => {
     const score = d.score ?? 0
     return thrownSlot(d, i, score > 0, String(score))
   })
   if (o.bust) {
-    return [...done, ...Array.from({ length: 3 - done.length }, (_, k): Slot =>
-      ({ kind: 'bust', label: 'Bust', points: '', foot: '', aria: `Dart ${done.length + k + 1}: bust` }))]
+    return [
+      ...done,
+      ...Array.from({ length: 3 - done.length }, (_, k): Slot => ({
+        kind: 'bust',
+        label: 'Bust',
+        points: '',
+        foot: '',
+        aria: `Dart ${done.length + k + 1}: bust`,
+      })),
+    ]
   }
   const dartsLeft = 3 - done.length
-  const hint = o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0
-    ? checkoutHint(o.remaining, o.outMode, dartsLeft) : null
+  const hint = o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0 ? checkoutHint(o.remaining, o.outMode, dartsLeft) : null
   let rest = o.remaining
   const suggestions = (hint ?? []).map((label, k, all) => {
     rest -= parseLabel(label).score

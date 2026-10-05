@@ -19,8 +19,12 @@ export function createReorder(
   })
 
   return {
-    get people(): LobbyPerson[] { return preview ?? source() },
-    get announcement(): string { return announcement },
+    get people(): LobbyPerson[] {
+      return preview ?? source()
+    },
+    get announcement(): string {
+      return announcement
+    },
     /** Moves someone; `say` words where they ended up, from the new order. */
     async place(personId: string, placement: Placement, say: (people: LobbyPerson[], person: LobbyPerson) => string): Promise<void> {
       const now = preview ?? source()
@@ -35,6 +39,8 @@ export function createReorder(
         announcement = `Couldn't move ${person.name}.`
       }
     },
-    cancelled(): void { announcement = 'Move cancelled.' },
+    cancelled(): void {
+      announcement = 'Move cancelled.'
+    },
   }
 }

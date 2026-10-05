@@ -15,6 +15,7 @@ Catch broken user flows before they merge to main. Not a substitute for unit/int
 ## Scope
 
 ### In scope (smoke tests — run on every PR)
+
 - Auth: register, login, logout
 - Boards: list renders
 - CreateSession: manual-only session creation through to the game display
@@ -22,11 +23,13 @@ Catch broken user flows before they merge to main. Not a substitute for unit/int
 - X01 game: manual dart entry, bust state renders correctly
 
 ### Out of scope
+
 - Board-connected flows (no bridge in this suite)
 - Full game completion flows (integration tests cover scoring rules)
 - Camera tiles (flaky without real hardware)
 
 ### Future: nightly extended suite
+
 Add a `--no-delay` flag to `bridge replay` and a separate nightly workflow to cover board-driven flows (full ATC/X01 via JSONL replay). Not part of this implementation.
 
 ---
@@ -75,6 +78,7 @@ Tests hit `http://localhost:5173` (frontend) and `http://localhost:3000` (backen
 ## Auth Fixture
 
 Creating a user and logging in is a prerequisite for every test except `auth.spec.ts`. Rather than driving the UI for every test, the `auth` fixture:
+
 1. `POST /api/auth/sign-up` via `request` (Playwright API context — no browser needed)
 2. Saves the session cookie into browser storage state
 3. Reuses storage state across tests in the same worker
@@ -86,24 +90,29 @@ Each worker gets its own unique email (`worker-{n}-{timestamp}@test.local`) so t
 ## Test Specs
 
 ### `auth.spec.ts`
+
 - Register with a new email → redirected to Boards
 - Login with wrong password → error message shown
 - Login → Logout → redirected to Login page
 
 ### `boards.spec.ts`
+
 - After login, Boards page shows the heading and the "New session" button
 - _(No board rows expected in CI — just asserts the page renders without error)_
 
 ### `create-session.spec.ts`
+
 - Open CreateSession, select "Manual only", add two players, submit
 - Assert: redirected to GameDisplay, player names visible, session is active
 
 ### `game-atc.spec.ts`
+
 - Start a 2-player ATC session (manual)
 - Enter a dart via the manual entry panel (e.g. S1)
 - Assert: dart appears in the throw tracker, score updates
 
 ### `game-x01.spec.ts`
+
 - Start a 2-player X01 501 session (manual)
 - Enter darts until the remaining score is low (e.g. 3 left), then throw a dart that exceeds it (S4) to trigger a bust
 - Assert: bust state indicator rendered (red score / bust badge)

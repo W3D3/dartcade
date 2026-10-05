@@ -12,9 +12,10 @@ export async function sendRequest(raw: string): Promise<{ ok: boolean; text: str
 }
 
 export async function answerRequest(id: string, answer: 'accept' | 'decline'): Promise<string | null> {
-  const res = answer === 'accept'
-    ? await api.POST('/api/friends/requests/{id}/accept', { params: { path: { id } } })
-    : await api.POST('/api/friends/requests/{id}/decline', { params: { path: { id } } })
+  const res =
+    answer === 'accept'
+      ? await api.POST('/api/friends/requests/{id}/accept', { params: { path: { id } } })
+      : await api.POST('/api/friends/requests/{id}/decline', { params: { path: { id } } })
   return res.error ? res.error.error : null
 }
 

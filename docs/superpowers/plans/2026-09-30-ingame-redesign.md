@@ -37,17 +37,17 @@
 
 New pure modules (each with a test in `src/lib/__tests__/`):
 
-| File | Responsibility |
-|---|---|
-| `src/lib/gameSettings.ts` (rewrite) | Settings type, defaults, `loadSettings`, `saveSettings` |
-| `src/lib/visitHistory.ts` | Fold snapshots into per-player finished visits; 3-dart average |
-| `src/lib/dartSlots.ts` | The three dart slots (thrown, miss, bust, suggestion, empty) for X01 and ATC |
-| `src/lib/visitBand.ts` | Visit band content and the celebration level |
-| `src/lib/atc.ts` | ATC target labels, progress cells, board segment, leaders |
-| `src/lib/playerStats.ts` | Everything a player panel/row shows, per game |
-| `src/lib/gameViews/meta.ts` | Header meta line per game |
-| `src/lib/sounds.ts` | Web Audio tones with a volume (no test: needs a browser) |
-| `src/lib/dartUtils.ts` (add) | `labelToSegment` |
+| File                                | Responsibility                                                               |
+| ----------------------------------- | ---------------------------------------------------------------------------- |
+| `src/lib/gameSettings.ts` (rewrite) | Settings type, defaults, `loadSettings`, `saveSettings`                      |
+| `src/lib/visitHistory.ts`           | Fold snapshots into per-player finished visits; 3-dart average               |
+| `src/lib/dartSlots.ts`              | The three dart slots (thrown, miss, bust, suggestion, empty) for X01 and ATC |
+| `src/lib/visitBand.ts`              | Visit band content and the celebration level                                 |
+| `src/lib/atc.ts`                    | ATC target labels, progress cells, board segment, leaders                    |
+| `src/lib/playerStats.ts`            | Everything a player panel/row shows, per game                                |
+| `src/lib/gameViews/meta.ts`         | Header meta line per game                                                    |
+| `src/lib/sounds.ts`                 | Web Audio tones with a volume (no test: needs a browser)                     |
+| `src/lib/dartUtils.ts` (add)        | `labelToSegment`                                                             |
 
 New components (`src/lib/components/`): `BoardLegend`, `VisitBand`, `DartSlots`, `ControlBar`, `LegPips`, `PlayerPill`, `Chalkboard`, `AtcProgress`, `PanelShell`, `X01Panel`, `AtcPanel`, `X01Row`, `AtcRow`, `SettingsDrawer`.
 
@@ -60,6 +60,7 @@ Deleted in the last tasks: `PlayerCard.svelte`, `PlayerListRow.svelte`, `Correct
 ### Task 1: Design tokens and settings module
 
 **Files:**
+
 - Modify: `backend/frontend/src/app.css` (the `@theme` block, lines 3–21)
 - Rewrite: `backend/frontend/src/lib/gameSettings.ts`
 - Modify: `backend/frontend/src/routes/GameDisplay.svelte` (settings load/save and `showMarkers`)
@@ -67,6 +68,7 @@ Deleted in the last tasks: `PlayerCard.svelte`, `PlayerListRow.svelte`, `Correct
 - Test: `backend/frontend/src/lib/__tests__/gameSettings.test.ts`
 
 **Interfaces:**
+
 - Produces: `GameSettings` (`checkoutSuggestions`, `visitSum`, `chalkboard`: boolean; `volume`: number 0–1; `soundHit`, `soundMiss`, `soundSwitch`, `soundBust`: boolean), `defaultSettings`, `SETTINGS_KEY`, `loadSettings(storage: Pick<Storage,'getItem'> | null): GameSettings`, `saveSettings(storage: Pick<Storage,'setItem'> | null, s: GameSettings): void`. Tailwind colors `surface-panel`, `surface-inset`, `surface-chip`, `surface-key`, `line-strong`, `line-chip`, `line-key`, `line-dashed`, `line-popover`, `line-pip`, `line-next`, `ink-soft`, `ink-2`, `ink-3`, `ink-faint`, `accent-hover`, `live-soft`, `danger-text`, `danger-line`, `bg-deep`.
 
 - [ ] **Step 1: Write the failing test**
@@ -206,6 +208,7 @@ In `backend/frontend/src/app.css`, add these lines inside `@theme`, after `--col
 ```
 
 In `backend/frontend/src/routes/GameDisplay.svelte`:
+
 - Replace the import `import { defaultSettings, type GameSettings } from '../lib/gameSettings.js'` with `import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'`.
 - Replace the whole settings block (from `const SETTINGS_KEY = ...` through the `$effect(...)` that writes localStorage) with:
 
@@ -236,10 +239,12 @@ git commit -m "feat(ingame): design tokens and a tested settings module"
 ### Task 2: Visit history
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/visitHistory.ts`
 - Test: `backend/frontend/src/lib/__tests__/visitHistory.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type Visit = { scored: number; left: number; darts: number; bust: boolean }` (X01: points scored and left; ATC: targets advanced, `left` 0)
   - `type VisitHistory = { leg: Visit[][]; all: Visit[][]; start: (number | null)[]; prev: {...} | null }` — `leg[i]` visits of the current leg, `all[i]` every visit of the match, `start[i]` player i's score (X01) or progress (ATC `hitCounts`) when their current visit began, `null` when unknown
@@ -447,11 +452,13 @@ git commit -m "feat(ingame): client-side visit history from snapshot scores"
 ### Task 3: Dart slots, visit band and label-to-segment
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/dartSlots.ts`, `backend/frontend/src/lib/visitBand.ts`
 - Modify: `backend/frontend/src/lib/dartUtils.ts` (add `labelToSegment`)
 - Test: `backend/frontend/src/lib/__tests__/dartSlots.test.ts`, `backend/frontend/src/lib/__tests__/visitBand.test.ts`, add to `backend/frontend/src/lib/__tests__/dartUtils.test.ts`
 
 **Interfaces:**
+
 - Consumes: `checkoutHint(remaining, outMode, dartsLeft): string[] | null` and `parseLabel(label)` from `dartUtils.ts`.
 - Produces:
   - `type SlotKind = 'thrown' | 'miss' | 'bust' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'`
@@ -738,11 +745,13 @@ git commit -m "feat(ingame): dart slot and visit band logic with checkout sugges
 ### Task 4: ATC helpers and header meta
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/atc.ts`, `backend/frontend/src/lib/gameViews/meta.ts`
 - Modify: `backend/frontend/src/lib/gameViews/index.ts` (`getSubtitle` of both views)
 - Test: `backend/frontend/src/lib/__tests__/atc.test.ts`, `backend/frontend/src/lib/__tests__/meta.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `type AtcCell = { label: string; short: string; state: 'hit' | 'current' | 'todo' }`
   - `atcTargetLabel(sequence: number[], target: number): string` ("14", "25", "Bull", "✓" when finished)
@@ -935,6 +944,7 @@ export function atcMeta(game: Record<string, unknown>, playerCount: number): str
 ```
 
 In `backend/frontend/src/lib/gameViews/index.ts`:
+
 - Add `import { x01Meta, atcMeta } from './meta.js'`.
 - Replace the whole `getSubtitle: (game, playerCount) => { … }` of `atcView` with `getSubtitle: (game, playerCount) => atcMeta(game, playerCount ?? 1),`.
 - Replace the whole `getSubtitle: (game) => { … }` of `x01View` with `getSubtitle: (game, playerCount) => x01Meta(game, playerCount ?? 1),`.
@@ -957,10 +967,12 @@ git commit -m "feat(ingame): ATC helpers and header meta lines"
 ### Task 5: Per-player stats
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/playerStats.ts`
 - Test: `backend/frontend/src/lib/__tests__/playerStats.test.ts`
 
 **Interfaces:**
+
 - Consumes: `checkoutHint` (dartUtils), `atcCells`, `atcDone`, `atcTargetLabel`, `AtcCell` (Task 4), `threeDartAvg`, `Visit`, `VisitHistory` (Task 2).
 - Produces:
   - `type X01PlayerView = { remaining: number; opened: boolean; canFinish: string | null; avg: string; legAvg: string; last: string; darts: number; legsWon: number; firstTo: number; visits: Visit[]; current: { scored: number; left: number } | null }`
@@ -1125,11 +1137,13 @@ git commit -m "feat(ingame): per-player stats for panels and rows"
 ### Task 6: Dartboard styling for targets and checkout, board legend
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/components/DartBoard.svelte`
 - Create: `backend/frontend/src/lib/components/BoardLegend.svelte`
 - Modify: `backend/frontend/src/routes/GameDisplay.svelte` (the two `<DartBoard …>` usages)
 
 **Interfaces:**
+
 - DartBoard props change: remove `selectedSegments`; add `target?: number | null` (segment 1–20, 25 or 50: lime wedge), `nextTarget?: number | null` (white dashed outline), `dim?: boolean` (45% dark layer over the board, grey numbers). `checkoutTargets` rings get the design size.
 - Produces: `BoardLegend.svelte` with props `{ items: { label: string; kind: 'current' | 'next' | 'others' }[] }`.
 
@@ -1234,9 +1248,11 @@ git commit -m "feat(dartboard): design target highlights, dim mode and checkout 
 ### Task 7: Center column pieces: visit band, dart slots, control bar
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/components/VisitBand.svelte`, `DartSlots.svelte`, `ControlBar.svelte`
 
 **Interfaces:**
+
 - Consumes: `BandData` (Task 3), `Slot` (Task 3), `nearbyPicks`, `parseLabel` (dartUtils).
 - Produces:
   - `VisitBand.svelte` props `{ band: BandData; compact?: boolean }`
@@ -1555,9 +1571,11 @@ git commit -m "feat(ingame): visit band with celebrations, dart slots and contro
 ### Task 8: Player pieces: pills, pips, chalkboard, ATC progress, panels and rows
 
 **Files:**
+
 - Create in `backend/frontend/src/lib/components/`: `PlayerPill.svelte`, `LegPips.svelte`, `Chalkboard.svelte`, `AtcProgress.svelte`, `PanelShell.svelte`, `X01Panel.svelte`, `AtcPanel.svelte`, `X01Row.svelte`, `AtcRow.svelte`
 
 **Interfaces:**
+
 - Consumes: `X01PlayerView`, `AtcPlayerView` (Task 5), `Visit` (Task 2), `AtcCell` (Task 4).
 - Produces:
   - `type PillKind = 'throwing' | 'up-next' | 'practice' | 'leading' | 'winner'` exported from `PlayerPill.svelte` (`<script module>`); props `{ kind: PillKind; small?: boolean }`
@@ -1927,12 +1945,14 @@ git commit -m "feat(ingame): player panels, party rows, chalkboard and ATC progr
 ### Task 9: Header, settings drawer and sounds
 
 **Files:**
+
 - Rewrite: `backend/frontend/src/lib/components/GameHeader.svelte`
 - Create: `backend/frontend/src/lib/components/SettingsDrawer.svelte`, `backend/frontend/src/lib/sounds.ts`
 - Delete: `backend/frontend/src/lib/components/GameSettingsPanel.svelte`
 - Modify: `backend/frontend/src/routes/GameDisplay.svelte` (header props, sounds)
 
 **Interfaces:**
+
 - Consumes: `GameSettings` (Task 1).
 - Produces:
   - `GameHeader` props `{ title: string; meta?: string; sessionId: string; boardId: string | null; bmStatus: Snapshot['bmStatus']; viewMode: 'board' | 'entry'; canEnd: boolean; showViewToggle?: boolean; settings: GameSettings (bindable); onleave: () => void; onend: () => void; onviewmode: (m: 'board' | 'entry') => void }` (`subtitle` is renamed `meta`)
@@ -2155,6 +2175,7 @@ Delete `backend/frontend/src/lib/components/GameSettingsPanel.svelte`.
 - [ ] **Step 4: Keep GameDisplay compiling**
 
 In `backend/frontend/src/routes/GameDisplay.svelte`:
+
 - In `<GameHeader …>` rename the prop `subtitle=` to `meta=`.
 - Replace the whole `// ── Sound effects (Web Audio API)` block (from `let audioCtx` through `function soundSwitch() …`) with:
 
@@ -2163,7 +2184,8 @@ In `backend/frontend/src/routes/GameDisplay.svelte`:
   const sounds = createSounds(() => settings.volume)
 ```
 
-  (move the `import` line up to the other imports).
+(move the `import` line up to the other imports).
+
 - In `playSoundEvents`, replace `soundHit()` with `sounds.hit()`, `soundMiss()` with `sounds.miss()`, `soundSwitch()` with `sounds.switchPlayer()`.
 
 - [ ] **Step 5: Verify**
@@ -2183,11 +2205,13 @@ git commit -m "feat(ingame): redesigned header and settings drawer with volume a
 ### Task 10: Game screen layouts
 
 **Files:**
+
 - Rewrite: `backend/frontend/src/routes/GameDisplay.svelte`
 - Rewrite: `backend/frontend/src/lib/gameViews/index.ts`
 - Delete: `backend/frontend/src/lib/components/PlayerCard.svelte`, `PlayerListRow.svelte`, `CorrectionPanel.svelte`, `backend/frontend/src/lib/gameViews/x01.svelte`, `atc.svelte`, `fallback.svelte`, `backend/frontend/src/lib/__tests__/CorrectionPanel.test.ts`
 
 **Interfaces:**
+
 - Consumes everything above: `loadSettings`/`saveSettings`, `createSounds`, `emptyHistory`/`trackVisits`, `x01Slots`/`atcSlots`, `x01Band`/`atcBand`/`isBigDart`, `x01Player`/`atcPlayer`, `atcTargetSegment`/`atcLeaders`, `labelToSegment`, and the components from Tasks 6–9.
 - Produces: `GameView = { title: string; meta: (game, playerCount) => string }`, `getGameView(gameId)`.
 
@@ -2544,6 +2568,7 @@ Expected: 0 errors; all tests pass.
 Setup: the backend runs on :3000 (`scripts/dev.sh`, or the dev compose). Start the frontend locally: `cd backend/frontend && npx vite --port 5174`, open http://localhost:5174 and sign in with the dev account seeded by `backend/src/auth/seed.ts`. Only one game can run per user: end the running one (End button) before creating the next. Create boardless games from the lobby ("Manual only"). Use the header's Board view and click the board to throw.
 
 Check each, at 1440×900 and at 1280×720:
+
 - X01, 2 players: sides fixed; active panel lime-bordered with the 220px score; waiting panel shows "Can finish" when finishable; chalkboard rows appear after each visit (Scored | Left, older Left struck); throw T20 at 81 left → slots show T19 "leaves 24" and D12 "to win the leg", dashed rings on the board; band shows 60 / Left after 21.
 - Celebrations: throw T20, T20, S20 → band turns "Ton plus"; T20 ×3 → "Maximum" with confetti; each dart ≥ 50 makes its slot pop once. With the OS "reduce motion" setting on, only colors change.
 - Bust: throw more than the score → band "Bust" in red, remaining slots "Bust", chalkboard row "Bust" after "Next player".

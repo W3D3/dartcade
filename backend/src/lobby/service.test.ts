@@ -7,16 +7,24 @@ import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { LobbyHub } from './hub.js'
 import { LobbyService } from './service.js'
 
-const makeStore = () => ({
-  insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
-  getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
-  insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
-  abortSession: vi.fn().mockResolvedValue(undefined),
-} satisfies EngineStore)
+const makeStore = () =>
+  ({
+    insertSession: vi.fn().mockResolvedValue(undefined),
+    getActiveSessions: vi.fn().mockResolvedValue([]),
+    getSessionEvents: vi.fn().mockResolvedValue([]),
+    appendEvent: vi.fn().mockResolvedValue(undefined),
+    insertDarts: vi.fn().mockResolvedValue(undefined),
+    deleteDarts: vi.fn().mockResolvedValue(undefined),
+    finishSession: vi.fn().mockResolvedValue(undefined),
+    abortSession: vi.fn().mockResolvedValue(undefined),
+  }) satisfies EngineStore
 const sock = () => ({ readyState: 1, send: vi.fn(), close: vi.fn() }) as any
 // The last lobby or me message (a /ws/me socket also gets the friends list when it opens)
 const lastMsg = (ws: { send: { mock: { calls: unknown[][] } } }) =>
-  ws.send.mock.calls.map(c => JSON.parse(String(c[0]))).filter(m => m.type !== 'friends').at(-1)
+  ws.send.mock.calls
+    .map(c => JSON.parse(String(c[0])))
+    .filter(m => m.type !== 'friends')
+    .at(-1)
 const friendsMsg = { type: 'friends' as const, friends: [], incoming: [], outgoing: [] }
 const user = (id: string, name: string) => ({ id, name, email: `${id}@example.com`, emailVerified: false, image: null })
 
@@ -30,13 +38,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
   const online = new Set<string>()
 
   beforeAll(async () => {
-    ({ db, close } = await openTestSchema('lobby_service_test'))
-    await db.insertInto('user').values([user('chris', 'Christoph'), user('lena', 'Lena'), user('max', 'Max'), user('sam', 'Sam')]).execute()
+    ;({ db, close } = await openTestSchema('lobby_service_test'))
+    await db
+      .insertInto('user')
+      .values([user('chris', 'Christoph'), user('lena', 'Lena'), user('max', 'Max'), user('sam', 'Sam')])
+      .execute()
     await insertBoard(db, { id: 'living', owner_user_id: 'chris', name: 'Living room', token_hash: 'h-living' })
     await insertBoard(db, { id: 'lenas', owner_user_id: 'lena', name: "Lena's place", token_hash: 'h-lenas' })
     await insertBoard(db, { id: 'garage', owner_user_id: 'chris', name: 'Garage', token_hash: 'h-garage' })
   })
-  afterAll(async () => { await close() })
+  afterAll(async () => {
+    await close()
+  })
 
   beforeEach(async () => {
     await db.deleteFrom('lobby_activity').execute()
@@ -48,11 +61,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     for (const b of ['living', 'lenas', 'garage']) online.add(b)
     engineStore = makeStore()
     hub = new LobbyHub()
-    engine = new SessionEngine(engineStore, vi.fn(), undefined, undefined, e => lobbies.onGameEnded(e), e => lobbies.onGameStarted(e))
+    engine = new SessionEngine(
+      engineStore,
+      vi.fn(),
+      undefined,
+      undefined,
+      e => lobbies.onGameEnded(e),
+      e => lobbies.onGameStarted(e),
+    )
     lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b) })
   })
 
-  const befriend = (a: string, b: string) => db.insertInto('friendships').values({ id: `${a}-${b}`, requester_id: a, addressee_id: b, status: 'accepted' }).execute()
+  const befriend = (a: string, b: string) =>
+    db
+      .insertInto('friendships')
+      .values({ id: `${a}-${b}`, requester_id: a, addressee_id: b, status: 'accepted' })
+      .execute()
 
   it('tells friends even when a /ws/me push fails', async () => {
     const statusChanged = vi.fn()
@@ -108,14 +132,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await db.selectFrom('lobbies').select('id').where('closed_at', 'is', null).execute()).toHaveLength(1)
     })
 
-    it('joins by code as people type it, on the joiner\'s usual board; Manual without boards', async () => {
+    it("joins by code as people type it, on the joiner's usual board; Manual without boards", async () => {
       const { id, code } = await lobbies.create('chris')
       expect(await lobbies.join('lena', id, `${code.slice(0, 4).toLowerCase()}-${code.slice(4)}`)).toMatchObject({ id })
       await lobbies.join('max', id, code)
-      await lobbies.join('max', id, code)   // twice is fine
+      await lobbies.join('max', id, code) // twice is fine
       const lobby = await lobbies.view(id)
       expect(lobby?.people.map(p => [p.name, p.boardName, p.ready])).toEqual([
-        ['Christoph', 'Living room', false], ['Lena', "Lena's place", false], ['Max', null, false],
+        ['Christoph', 'Living room', false],
+        ['Lena', "Lena's place", false],
+        ['Max', null, false],
       ])
       expect(lobby?.activity.map(a => a.kind)).toEqual(['joined', 'joined', 'opened'])
     })
@@ -135,7 +161,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
       expect(await lobbies.preview(code.toLowerCase())).toEqual({
-        id, name: "Christoph's lobby", hostName: 'Christoph', peopleCount: 2, boardNames: ['Living room', "Lena's place"],
+        id,
+        name: "Christoph's lobby",
+        hostName: 'Christoph',
+        peopleCount: 2,
+        boardNames: ['Living room', "Lena's place"],
       })
     })
 
@@ -147,7 +177,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const lobby = await lobbies.view(id)
       expect(lobby?.hostUserId).toBe('lena')
       expect(lobby?.activity.map(a => [a.kind, a.data.name])).toEqual([
-        ['host_changed', 'Lena'], ['left', 'Christoph'], ['joined', 'Max'], ['joined', 'Lena'], ['opened', 'Christoph'],
+        ['host_changed', 'Lena'],
+        ['left', 'Christoph'],
+        ['joined', 'Max'],
+        ['joined', 'Lena'],
+        ['opened', 'Christoph'],
       ])
       expect(await lobbies.current('chris')).toBeNull()
       await expect(lobbies.leave('chris', id)).rejects.toMatchObject({ statusCode: 404 })
@@ -206,7 +240,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { id, code } = await lobbies.create('chris')
       await lobbies.update('chris', id, { access: 'invite' })
       await expect(lobbies.join('lena', id)).rejects.toMatchObject({ statusCode: 403 })
-      await lobbies.join('lena', id, code)   // the code works under both
+      await lobbies.join('lena', id, code) // the code works under both
       await lobbies.update('chris', id, { access: 'friends' })
       await db.deleteFrom('friendships').where('id', '=', 'chris-max').execute()
       await expect(lobbies.join('max', id)).rejects.toMatchObject({ statusCode: 403 })
@@ -260,7 +294,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const luke = await lobbies.create('lena')
       await lobbies.join('max', luke.id, luke.code)
 
-      await expect(lobbies.join('lena', admin.id, admin.code)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: luke.id } })
+      await expect(lobbies.join('lena', admin.id, admin.code)).rejects.toMatchObject({
+        statusCode: 409,
+        body: { code: 'in_lobby', lobbyId: luke.id },
+      })
 
       expect(await lobbies.view(luke.id)).toMatchObject({ people: [{ name: 'Lena' }, { name: 'Max' }] })
       expect(await lobbies.view(admin.id)).toMatchObject({ people: [{ name: 'Christoph' }] })
@@ -273,7 +310,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { sessionId } = await lobbies.start('lena', luke.id, true)
 
       await expect(lobbies.join('lena', admin.id, admin.code)).rejects.toMatchObject({
-        statusCode: 409, body: { code: 'active_session', error: 'You already have a game running', sessionId },
+        statusCode: 409,
+        body: { code: 'active_session', error: 'You already have a game running', sessionId },
       })
 
       expect(await lobbies.view(luke.id)).not.toBeNull()
@@ -281,19 +319,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await lobbies.view(admin.id)).toMatchObject({ people: [{ name: 'Christoph' }] })
     })
 
-    it('two solo users joining each other\'s lobby at the same instant never strand a membership in a closed lobby', async () => {
+    it("two solo users joining each other's lobby at the same instant never strand a membership in a closed lobby", async () => {
       const l = await lobbies.create('lena')
       const t = await lobbies.create('max')
 
-      await Promise.allSettled([
-        lobbies.join('lena', t.id, t.code),
-        lobbies.join('max', l.id, l.code),
-      ])
+      await Promise.allSettled([lobbies.join('lena', t.id, t.code), lobbies.join('max', l.id, l.code)])
 
       // Whatever the race resolved to, nobody's lobby_people row points at a closed lobby
       // (the bug this guards against: such a row is permanent, since getOpenLobbyIdOfUser
       // ignores closed_at and nothing else ever cleans it up).
-      const rows = await db.selectFrom('lobby_people as p')
+      const rows = await db
+        .selectFrom('lobby_people as p')
         .innerJoin('lobbies as lb', 'lb.id', 'p.lobby_id')
         .select(['p.user_id', 'lb.closed_at'])
         .where('p.user_id', 'in', ['lena', 'max'])
@@ -302,7 +338,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
 
       // And either way, both can still get back into a lobby afterwards
       for (const userId of ['lena', 'max']) {
-        if (await lobbies.current(userId) === null) await expect(lobbies.create(userId)).resolves.toBeDefined()
+        if ((await lobbies.current(userId)) === null) await expect(lobbies.create(userId)).resolves.toBeDefined()
       }
     })
 
@@ -334,7 +370,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
   describe('settings', () => {
     it('the host renames, sets the throw order and next game, and regenerates the code', async () => {
       const { id, code } = await lobbies.create('chris')
-      await lobbies.update('chris', id, { name: ' Friday darts ', throwOrder: 'random', nextGame: { gameId: 'x01', config: { startScore: 301 } }, regenerateCode: true })
+      await lobbies.update('chris', id, {
+        name: ' Friday darts ',
+        throwOrder: 'random',
+        nextGame: { gameId: 'x01', config: { startScore: 301 } },
+        regenerateCode: true,
+      })
       const lobby = await lobbies.view(id)
       expect(lobby).toMatchObject({ name: 'Friday darts', throwOrder: 'random', nextGame: { gameId: 'x01', config: { startScore: 301 } } })
       expect(lobby?.code).not.toBe(code)
@@ -416,7 +457,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     }
 
     beforeEach(async () => {
-      ({ id, code } = await lobbies.create('chris'))
+      ;({ id, code } = await lobbies.create('chris'))
       await lobbies.join('lena', id, code)
       await lobbies.join('max', id, code)
     })
@@ -432,7 +473,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(lastMsg(ws).lobby.people.map((p: { team: string }) => p.team)).toEqual(['A', 'B', 'A'])
     })
 
-    it('newcomers go to the smaller team; someone sitting out keeps their team and isn\'t counted', async () => {
+    it("newcomers go to the smaller team; someone sitting out keeps their team and isn't counted", async () => {
       await lobbies.update('chris', id, { nextGame: teamsX01 })
       await lobbies.addGuest('chris', id, { name: 'Pia' })
       expect((await teamsOf()).Pia).toBe('B')
@@ -454,7 +495,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'B', Pia: 'A' })
     })
 
-    it('the host moves people between teams and shuffles; members can\'t', async () => {
+    it("the host moves people between teams and shuffles; members can't", async () => {
       await lobbies.update('chris', id, { nextGame: teamsX01 })
       await lobbies.updatePerson('chris', id, await personId('Max'), { team: 'B' })
       expect(await teamsOf()).toEqual({ Christoph: 'A', Lena: 'B', Max: 'B' })
@@ -494,7 +535,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       // A: Lena, Max; B: Christoph
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(engine.getSession(sessionId)?.seats.map(s => s.name)).toEqual(['Lena', 'Christoph', 'Max'])
-      expect(engineStore.insertSession).toHaveBeenCalledWith(expect.objectContaining({ config: expect.objectContaining({ format: 'teams', teams: [0, 1, 0] }) }))
+      expect(engineStore.insertSession).toHaveBeenCalledWith(
+        expect.objectContaining({ config: expect.objectContaining({ format: 'teams', teams: [0, 1, 0] }) }),
+      )
     })
 
     it('refuses to start with an empty team', async () => {
@@ -510,7 +553,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
       await lobbies.whenIdle(id)
       expect((await lobbies.view(id))?.activity[0]).toMatchObject({
-        kind: 'game_played', data: { sessionId, gameId: 'x01', winnerName: 'Christoph & Max' },
+        kind: 'game_played',
+        data: { sessionId, gameId: 'x01', winnerName: 'Christoph & Max' },
       })
     })
 
@@ -574,16 +618,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.join('max', id, lobby.code)
     })
 
-    it('adds a guest at the adder\'s board; the guest\'s ready follows the adder\'s', async () => {
+    it("adds a guest at the adder's board; the guest's ready follows the adder's", async () => {
       const { id: guestId } = await lobbies.addGuest('lena', id, { name: '  Guest 1 ' })
       // Lena isn't ready yet, so neither is her new guest
-      expect(await person('Guest 1')).toMatchObject({ id: guestId, userId: null, addedByUserId: 'lena', boardId: 'lenas', ready: false, plays: true })
+      expect(await person('Guest 1')).toMatchObject({
+        id: guestId,
+        userId: null,
+        addedByUserId: 'lena',
+        boardId: 'lenas',
+        ready: false,
+        plays: true,
+      })
       expect((await lobbies.view(id))?.activity[0]).toMatchObject({ kind: 'guest_added', actorUserId: 'lena', data: { name: 'Guest 1' } })
       await lobbies.updatePerson('lena', id, (await person('Lena')).id, { ready: true })
       expect(await person('Guest 1')).toMatchObject({ ready: true })
     })
 
-    it('puts a guest on Manual or on one of the adder\'s own boards only', async () => {
+    it("puts a guest on Manual or on one of the adder's own boards only", async () => {
       await lobbies.addGuest('chris', id, { name: 'Pia', boardId: null })
       await lobbies.addGuest('chris', id, { name: 'Tom', boardId: 'garage' })
       expect(await person('Pia')).toMatchObject({ boardId: null })
@@ -596,11 +647,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' })
       expect(await person('Max')).toMatchObject({ boardId: 'garage', boardName: 'Garage', boardMovedBy: 'chris' })
       expect((await lobbies.view(id))?.activity[0]).toMatchObject({
-        kind: 'board_moved', actorUserId: 'chris', data: { name: 'Max', fromBoardName: null, toBoardName: 'Garage' },
+        kind: 'board_moved',
+        actorUserId: 'chris',
+        data: { name: 'Max', fromBoardName: null, toBoardName: 'Garage' },
       })
     })
 
-    it('after that only the person, or the board\'s owner taking it back', async () => {
+    it("after that only the person, or the board's owner taking it back", async () => {
       const max = await person('Max')
       await lobbies.updatePerson('chris', id, max.id, { boardId: 'garage' })
       await expect(lobbies.updatePerson('lena', id, max.id, { boardId: 'lenas' })).rejects.toMatchObject({ statusCode: 403 })
@@ -615,13 +668,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     })
 
     it('the host has no extra board rights', async () => {
-      await expect(lobbies.updatePerson('chris', id, (await person('Lena')).id, { boardId: 'living' })).rejects.toMatchObject({ statusCode: 403 })
+      await expect(lobbies.updatePerson('chris', id, (await person('Lena')).id, { boardId: 'living' })).rejects.toMatchObject({
+        statusCode: 403,
+      })
     })
 
     it('refuses a board that is in another game', async () => {
       await engine.create('chris', 'garage', 'atc', {}, [{ name: 'Christoph' }])
-      await expect(lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' }))
-        .rejects.toMatchObject({ statusCode: 409, body: { code: 'board_busy' } })
+      await expect(lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' })).rejects.toMatchObject({
+        statusCode: 409,
+        body: { code: 'board_busy' },
+      })
     })
 
     it('ready: only the person, not even the host; plays: the person or the host', async () => {
@@ -683,7 +740,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       hub.addMeSocket('max', me, await lobbies.meMessage('max'), friendsMsg)
       const { id: inviteId } = await lobbies.invite('lena', id, 'max')
       expect(lastMsg(me).invites).toEqual([
-        { id: inviteId, lobbyId: id, lobbyName: "Christoph's lobby", inviterUserId: 'lena', inviterName: 'Lena', createdAt: expect.any(String) },
+        {
+          id: inviteId,
+          lobbyId: id,
+          lobbyName: "Christoph's lobby",
+          inviterUserId: 'lena',
+          inviterName: 'Lena',
+          createdAt: expect.any(String),
+        },
       ])
       expect((await lobbies.view(id))?.invites).toMatchObject([{ userId: 'max', name: 'Max', invitedByUserId: 'lena' }])
       expect(await lobbies.listInvites('max')).toHaveLength(1)
@@ -722,7 +786,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { id: inviteId } = await lobbies.invite('chris', id, 'lena')
       const own = await lobbies.create('lena')
       await lobbies.join('max', own.id, own.code) // lena isn't solo in her own lobby, so accepting doesn't just close it
-      await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({ statusCode: 409, body: { code: 'in_lobby', lobbyId: own.id } })
+      await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({
+        statusCode: 409,
+        body: { code: 'in_lobby', lobbyId: own.id },
+      })
       expect(await lobbies.listInvites('lena')).toHaveLength(1)
     })
 
@@ -734,7 +801,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { sessionId } = await lobbies.start('lena', own.id, true)
 
       await expect(lobbies.acceptInvite('lena', inviteId)).rejects.toMatchObject({
-        statusCode: 409, body: { code: 'active_session', error: 'You already have a game running', sessionId },
+        statusCode: 409,
+        body: { code: 'active_session', error: 'You already have a game running', sessionId },
       })
       expect(await lobbies.view(own.id)).not.toBeNull()
       expect(engine.getLobbySession(own.id)?.id).toBe(sessionId)
@@ -749,7 +817,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect((await lobbies.view(id))?.people.map(p => p.name)).toEqual(['Christoph'])
     })
 
-    it('a closed lobby\'s invites expire; joining by code accepts a pending invite', async () => {
+    it("a closed lobby's invites expire; joining by code accepts a pending invite", async () => {
       const a = await lobbies.create('chris')
       const { id: expiring } = await lobbies.invite('chris', a.id, 'max')
       await lobbies.close('chris', a.id)
@@ -771,18 +839,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       if (!p) throw new Error(`${name} is not in the lobby`)
       return p
     }
-    const setReady = async (userId: string, name: string) => { await lobbies.updatePerson(userId, id, (await person(name)).id, { ready: true }) }
+    const setReady = async (userId: string, name: string) => {
+      await lobbies.updatePerson(userId, id, (await person(name)).id, { ready: true })
+    }
 
     beforeEach(async () => {
-      ({ id, code } = await lobbies.create('chris'))
+      ;({ id, code } = await lobbies.create('chris'))
       await lobbies.join('lena', id, code)
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
     })
 
-    it('asks the host to confirm when people aren\'t ready, then starts with the roster as seats', async () => {
+    it("asks the host to confirm when people aren't ready, then starts with the roster as seats", async () => {
       await setReady('chris', 'Christoph')
       await expect(lobbies.start('chris', id, false)).rejects.toMatchObject({
-        statusCode: 409, body: { code: 'not_ready', notReady: [{ name: 'Lena' }] },
+        statusCode: 409,
+        body: { code: 'not_ready', notReady: [{ name: 'Lena' }] },
       })
       const { sessionId } = await lobbies.start('chris', id, true)
       const session = engine.getSession(sessionId)
@@ -791,14 +862,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
         { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room' },
         { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" },
       ])
-      expect(engineStore.insertSession).toHaveBeenCalledWith(expect.objectContaining({ lobby_id: id, config: expect.objectContaining({ startScore: 101, bullOff: 'off' }) }))
+      expect(engineStore.insertSession).toHaveBeenCalledWith(
+        expect.objectContaining({ lobby_id: id, config: expect.objectContaining({ startScore: 101, bullOff: 'off' }) }),
+      )
       expect((await lobbies.view(id))?.currentSessionId).toBe(sessionId)
     })
 
     it('pressing Start makes the host ready, persisted even while they still need to confirm', async () => {
       // Neither chris nor lena is ready; chris is the starter, so only Lena blocks it
       await expect(lobbies.start('chris', id, false)).rejects.toMatchObject({
-        statusCode: 409, body: { code: 'not_ready', notReady: [{ name: 'Lena' }] },
+        statusCode: 409,
+        body: { code: 'not_ready', notReady: [{ name: 'Lena' }] },
       })
       expect(await person('Christoph')).toMatchObject({ ready: true })
       expect(await person('Lena')).toMatchObject({ ready: false })
@@ -820,7 +894,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(engine.getSession(sessionId)?.seats.map(s => [s.name, s.controllerUserId, s.boardId])).toEqual([
-        ['Christoph', 'chris', 'living'], ['Lena', 'lena', 'lenas'], ['Guest 1', 'lena', 'lenas'],
+        ['Christoph', 'chris', 'living'],
+        ['Lena', 'lena', 'lenas'],
+        ['Guest 1', 'lena', 'lenas'],
       ])
     })
 
@@ -838,7 +914,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       online.delete('lenas')
       await expect(lobbies.start('chris', id, false)).rejects.toMatchObject({
-        statusCode: 409, body: { code: 'board_offline', offlineBoards: ["Lena's place"] },
+        statusCode: 409,
+        body: { code: 'board_offline', offlineBoards: ["Lena's place"] },
       })
     })
 
@@ -857,7 +934,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     it('one game per person: someone already in a game blocks the start, by name', async () => {
       await engine.create('lena', null, 'atc', {}, [{ name: 'Lena' }])
       await expect(lobbies.start('chris', id, true)).rejects.toMatchObject({
-        statusCode: 409, body: { code: 'active_session', error: 'Lena already has a game running' },
+        statusCode: 409,
+        body: { code: 'active_session', error: 'Lena already has a game running' },
       })
     })
 
@@ -874,13 +952,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(lobby?.currentSessionId).toBeNull()
       // Guest 1 follows Lena: not ready, same as every reset member
       expect(lobby?.people.map(p => [p.name, p.plays, p.ready])).toEqual([
-        ['Christoph', true, false], ['Lena', true, false], ['Max', true, false], ['Guest 1', true, false],
+        ['Christoph', true, false],
+        ['Lena', true, false],
+        ['Max', true, false],
+        ['Guest 1', true, false],
       ])
       expect(lobby?.activity[0]).toMatchObject({
-        kind: 'game_played', actorUserId: null,
+        kind: 'game_played',
+        actorUserId: null,
         data: {
-          sessionId, gameId: 'x01', winnerName: 'Christoph',
-          players: [{ name: 'Christoph', placement: 1, forfeited: false }, { name: 'Lena', forfeited: true }, { name: 'Guest 1', forfeited: true }],
+          sessionId,
+          gameId: 'x01',
+          winnerName: 'Christoph',
+          players: [
+            { name: 'Christoph', placement: 1, forfeited: false },
+            { name: 'Lena', forfeited: true },
+            { name: 'Guest 1', forfeited: true },
+          ],
         },
       })
     })
@@ -889,13 +977,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { sessionId } = await lobbies.start('chris', id, true)
       await engine.deleteSession(sessionId, 'chris')
       await lobbies.whenIdle(id)
-      expect((await lobbies.view(id))?.activity[0]).toMatchObject({ kind: 'game_aborted', actorUserId: 'chris', data: { sessionId, gameId: 'x01' } })
+      expect((await lobbies.view(id))?.activity[0]).toMatchObject({
+        kind: 'game_aborted',
+        actorUserId: 'chris',
+        data: { sessionId, gameId: 'x01' },
+      })
     })
 
-    it('throw order: a bull off turns the game\'s bull off on', async () => {
+    it("throw order: a bull off turns the game's bull off on", async () => {
       await lobbies.update('chris', id, { throwOrder: 'bulloff' })
       await lobbies.start('chris', id, true)
-      expect(engineStore.insertSession).toHaveBeenLastCalledWith(expect.objectContaining({ config: expect.objectContaining({ bullOff: 'wdc' }) }))
+      expect(engineStore.insertSession).toHaveBeenLastCalledWith(
+        expect.objectContaining({ config: expect.objectContaining({ bullOff: 'wdc' }) }),
+      )
     })
 
     it('a host who leaves mid-game stays host (and can abort) until the game ends; then the role passes on', async () => {
@@ -917,8 +1011,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       hook.mockRestore()
       expect((await lobbies.view(id))?.hostUserId).toBe('chris')
       // Lena changes something: the role passes on first, so the host-only change works
-      await lobbies.update('lena', id, { name: 'Lena\'s lobby' })
-      expect(await lobbies.view(id)).toMatchObject({ hostUserId: 'lena', name: 'Lena\'s lobby' })
+      await lobbies.update('lena', id, { name: "Lena's lobby" })
+      expect(await lobbies.view(id)).toMatchObject({ hostUserId: 'lena', name: "Lena's lobby" })
     })
 
     it('at start-up, a lobby everyone left during a game closes even if the game-end hook was lost', async () => {
@@ -982,7 +1076,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { sessionId } = await lobbies.start('chris', id, true)
       expect(lastMsg(me).lobby).toMatchObject({ sessionId, gameId: 'x01', youThrowNext: false, leg: 0 })
       // Christoph throws one dart by hand and takes out: Lena is up
-      await engine.onUserAction(sessionId, 'chris', { type: 'add_dart', segment: { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 } })
+      await engine.onUserAction(sessionId, 'chris', {
+        type: 'add_dart',
+        segment: { name: 'S1', number: 1, bed: 'SingleOuter', multiplier: 1 },
+      })
       await engine.onUserAction(sessionId, 'chris', { type: 'takeout' })
       await lobbies.onSessionPush(sessionId)
       expect(lastMsg(me).lobby.youThrowNext).toBe(true)
@@ -990,7 +1087,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
   })
 
   describe('the lobby summary names its host', () => {
-    it('carries the host\'s name on /ws/me, null only once their account is gone', async () => {
+    it("carries the host's name on /ws/me, null only once their account is gone", async () => {
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
       expect((await lobbies.meMessage('lena')).lobby).toMatchObject({ hostName: 'Christoph' })
@@ -1028,7 +1125,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(lastMsg(me).game).toBeNull()
     })
 
-    it('pushes both of a user\'s open /ws/me sockets', async () => {
+    it("pushes both of a user's open /ws/me sockets", async () => {
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
@@ -1041,7 +1138,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(lastMsg(laptopWs).game).toEqual({ sessionId, gameId: 'x01', lobbyName: "Christoph's lobby", players: ['Christoph', 'Lena'] })
     })
 
-    it('a lobby member who isn\'t seated in the game gets no `game`', async () => {
+    it("a lobby member who isn't seated in the game gets no `game`", async () => {
       const { id, code } = await lobbies.create('chris')
       await lobbies.join('lena', id, code)
       await lobbies.join('max', id, code)

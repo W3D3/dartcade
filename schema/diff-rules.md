@@ -7,7 +7,7 @@ spec for that logic. Confirmed against hardware (Board Manager 1.0.7, 2026-09-24
 ## Inputs
 
 - `prev []Throw` — the `throws[]` array from the last processed `state` frame. Empty at startup and after a takeout.
-- `cur []Throw`  — the `throws[]` array from the current `state` frame.
+- `cur []Throw` — the `throws[]` array from the current `state` frame.
 - `prevStatus string` — the `status` field from the last frame.
 
 ## Rules (evaluate in order)
@@ -27,12 +27,14 @@ the board is idle (confirmed on hardware).
 ### 3. New darts
 
 If `len(cur) > len(prev)`:
+
 - If `len(prev) == 0`: emit `visit.opened` with a new ULID `visit_id`.
 - For each index `i` in `[len(prev), len(cur))`: emit `dart.detected` with `dart=cur[i]`.
 
 ### 4. Correction and movement
 
 For each index `i` in `[0, min(len(cur), len(prev)))`:
+
 - If `cur[i].segment.name != prev[i].segment.name` (or bed/number changed): emit `dart.corrected`.
 - Else if both have coords and `dist(cur[i].coords, prev[i].coords) > 0.02`: emit `dart.moved`.
 
@@ -48,6 +50,7 @@ any event — the backend will see the full takeout when `len(cur)` reaches 0.
 ### 6. Full takeout / visit cleared
 
 If `len(cur) == 0` and `len(prev) > 0`:
+
 - If the frame's `event` is `"Manual reset"` or a `POST /api/reset` command was recently
   issued: emit `visit.cleared`.
 - Otherwise: emit `takeout.finished` (with `duration_ms` measured from `takeout.started`).
@@ -55,6 +58,7 @@ If `len(cur) == 0` and `len(prev) > 0`:
 ### 7. Takeout started (motion signal)
 
 Emit `takeout.started` on whichever arrives first:
+
 1. `motion_state.isHand == true` (earliest — leads the state frame by ~33 ms on hardware).
 2. `state.status == "Takeout in progress"` or `state.event == "Takeout started"`.
 
@@ -70,10 +74,10 @@ Emit `board.status` but do **not** treat it as a takeout signal.
 
 Outside throws (`bed = "Outside"`) come in two variants:
 
-| Variant    | `name`    | `number` | `coords` | `bouncer` |
-|------------|-----------|----------|----------|-----------|
-| Bounce-out | `"Miss"`  | `0`      | absent   | `true`    |
-| Near-miss  | `"M<n>"`  | `n`      | present (r > 1) | absent |
+| Variant    | `name`   | `number` | `coords`        | `bouncer` |
+| ---------- | -------- | -------- | --------------- | --------- |
+| Bounce-out | `"Miss"` | `0`      | absent          | `true`    |
+| Near-miss  | `"M<n>"` | `n`      | present (r > 1) | absent    |
 
 `coords` is **optional** on every throw — the bridge must not assume it is present.
 `score = segment.number × segment.multiplier` gives 0 for both variants.
@@ -87,10 +91,10 @@ board mid-visit.
 
 ## Bull payloads
 
-| Target | `name` | `number` | `bed`    | `multiplier` | Confirmed |
-|--------|--------|----------|----------|--------------|-----------|
-| Outer bull (25) | `"25"` | `25` | `"Single"` | `1` | ✅ hardware |
-| Inner bull (50) | `"50"` | `50` | `"Double"` | `2` | ❌ assumed by analogy |
+| Target          | `name` | `number` | `bed`      | `multiplier` | Confirmed             |
+| --------------- | ------ | -------- | ---------- | ------------ | --------------------- |
+| Outer bull (25) | `"25"` | `25`     | `"Single"` | `1`          | ✅ hardware           |
+| Inner bull (50) | `"50"` | `50`     | `"Double"` | `2`          | ❌ assumed by analogy |
 
 ## ε for dart.moved
 

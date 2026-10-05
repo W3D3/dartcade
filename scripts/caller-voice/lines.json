@@ -1,613 +1,203 @@
 {
-  "0": [
-    "No score"
-  ],
-  "1": [
-    "One"
-  ],
-  "2": [
-    "Two"
-  ],
-  "3": [
-    "Three"
-  ],
-  "4": [
-    "Four"
-  ],
-  "5": [
-    "Five"
-  ],
-  "6": [
-    "Six"
-  ],
-  "7": [
-    "Seven"
-  ],
-  "8": [
-    "Eight"
-  ],
-  "9": [
-    "Nine"
-  ],
-  "10": [
-    "Ten"
-  ],
-  "11": [
-    "Eleven"
-  ],
-  "12": [
-    "Twelve"
-  ],
-  "13": [
-    "Thirteen"
-  ],
-  "14": [
-    "Fourteen"
-  ],
-  "15": [
-    "Fifteen"
-  ],
-  "16": [
-    "Sixteen"
-  ],
-  "17": [
-    "Seventeen"
-  ],
-  "18": [
-    "Eighteen"
-  ],
-  "19": [
-    "Nineteen"
-  ],
-  "20": [
-    "Twenty"
-  ],
-  "21": [
-    "Twenty-one"
-  ],
-  "22": [
-    "Twenty-two"
-  ],
-  "23": [
-    "Twenty-three"
-  ],
-  "24": [
-    "Twenty-four"
-  ],
-  "25": [
-    "Twenty-five"
-  ],
-  "26": [
-    "Twenty-six"
-  ],
-  "27": [
-    "Twenty-seven"
-  ],
-  "28": [
-    "Twenty-eight"
-  ],
-  "29": [
-    "Twenty-nine"
-  ],
-  "30": [
-    "Thirty"
-  ],
-  "31": [
-    "Thirty-one"
-  ],
-  "32": [
-    "Thirty-two"
-  ],
-  "33": [
-    "Thirty-three"
-  ],
-  "34": [
-    "Thirty-four"
-  ],
-  "35": [
-    "Thirty-five"
-  ],
-  "36": [
-    "Thirty-six"
-  ],
-  "37": [
-    "Thirty-seven"
-  ],
-  "38": [
-    "Thirty-eight"
-  ],
-  "39": [
-    "Thirty-nine"
-  ],
-  "40": [
-    "Forty"
-  ],
-  "41": [
-    "Forty-one"
-  ],
-  "42": [
-    "Forty-two"
-  ],
-  "43": [
-    "Forty-three"
-  ],
-  "44": [
-    "Forty-four"
-  ],
-  "45": [
-    "Forty-five"
-  ],
-  "46": [
-    "Forty-six"
-  ],
-  "47": [
-    "Forty-seven"
-  ],
-  "48": [
-    "Forty-eight"
-  ],
-  "49": [
-    "Forty-nine"
-  ],
-  "50": [
-    "Fifty"
-  ],
-  "51": [
-    "Fifty-one"
-  ],
-  "52": [
-    "Fifty-two"
-  ],
-  "53": [
-    "Fifty-three"
-  ],
-  "54": [
-    "Fifty-four"
-  ],
-  "55": [
-    "Fifty-five"
-  ],
-  "56": [
-    "Fifty-six"
-  ],
-  "57": [
-    "Fifty-seven"
-  ],
-  "58": [
-    "Fifty-eight"
-  ],
-  "59": [
-    "Fifty-nine"
-  ],
-  "60": [
-    "Sixty"
-  ],
-  "61": [
-    "Sixty-one"
-  ],
-  "62": [
-    "Sixty-two"
-  ],
-  "63": [
-    "Sixty-three"
-  ],
-  "64": [
-    "Sixty-four"
-  ],
-  "65": [
-    "Sixty-five"
-  ],
-  "66": [
-    "Sixty-six"
-  ],
-  "67": [
-    "Sixty-seven"
-  ],
-  "68": [
-    "Sixty-eight"
-  ],
-  "69": [
-    "Sixty-nine"
-  ],
-  "70": [
-    "Seventy"
-  ],
-  "71": [
-    "Seventy-one"
-  ],
-  "72": [
-    "Seventy-two"
-  ],
-  "73": [
-    "Seventy-three"
-  ],
-  "74": [
-    "Seventy-four"
-  ],
-  "75": [
-    "Seventy-five"
-  ],
-  "76": [
-    "Seventy-six"
-  ],
-  "77": [
-    "Seventy-seven"
-  ],
-  "78": [
-    "Seventy-eight"
-  ],
-  "79": [
-    "Seventy-nine"
-  ],
-  "80": [
-    "Eighty"
-  ],
-  "81": [
-    "Eighty-one"
-  ],
-  "82": [
-    "Eighty-two"
-  ],
-  "83": [
-    "Eighty-three"
-  ],
-  "84": [
-    "Eighty-four"
-  ],
-  "85": [
-    "Eighty-five"
-  ],
-  "86": [
-    "Eighty-six"
-  ],
-  "87": [
-    "Eighty-seven"
-  ],
-  "88": [
-    "Eighty-eight"
-  ],
-  "89": [
-    "Eighty-nine"
-  ],
-  "90": [
-    "Ninety"
-  ],
-  "91": [
-    "Ninety-one"
-  ],
-  "92": [
-    "Ninety-two"
-  ],
-  "93": [
-    "Ninety-three"
-  ],
-  "94": [
-    "Ninety-four"
-  ],
-  "95": [
-    "Ninety-five"
-  ],
-  "96": [
-    "Ninety-six"
-  ],
-  "97": [
-    "Ninety-seven"
-  ],
-  "98": [
-    "Ninety-eight"
-  ],
-  "99": [
-    "Ninety-nine"
-  ],
-  "100": [
-    "One hundred!"
-  ],
-  "101": [
-    "One hundred and one!"
-  ],
-  "102": [
-    "One hundred and two!"
-  ],
-  "103": [
-    "One hundred and three!"
-  ],
-  "104": [
-    "One hundred and four!"
-  ],
-  "105": [
-    "One hundred and five!"
-  ],
-  "106": [
-    "One hundred and six!"
-  ],
-  "107": [
-    "One hundred and seven!"
-  ],
-  "108": [
-    "One hundred and eight!"
-  ],
-  "109": [
-    "One hundred and nine!"
-  ],
-  "110": [
-    "One hundred and ten!"
-  ],
-  "111": [
-    "One hundred and eleven!"
-  ],
-  "112": [
-    "One hundred and twelve!"
-  ],
-  "113": [
-    "One hundred and thirteen!"
-  ],
-  "114": [
-    "One hundred and fourteen!"
-  ],
-  "115": [
-    "One hundred and fifteen!"
-  ],
-  "116": [
-    "One hundred and sixteen!"
-  ],
-  "117": [
-    "One hundred and seventeen!"
-  ],
-  "118": [
-    "One hundred and eighteen!"
-  ],
-  "119": [
-    "One hundred and nineteen!"
-  ],
-  "120": [
-    "One hundred and twenty!"
-  ],
-  "121": [
-    "One hundred and twenty-one!"
-  ],
-  "122": [
-    "One hundred and twenty-two!"
-  ],
-  "123": [
-    "One hundred and twenty-three!"
-  ],
-  "124": [
-    "One hundred and twenty-four!"
-  ],
-  "125": [
-    "One hundred and twenty-five!"
-  ],
-  "126": [
-    "One hundred and twenty-six!"
-  ],
-  "127": [
-    "One hundred and twenty-seven!"
-  ],
-  "128": [
-    "One hundred and twenty-eight!"
-  ],
-  "129": [
-    "One hundred and twenty-nine!"
-  ],
-  "130": [
-    "One hundred and thirty!"
-  ],
-  "131": [
-    "One hundred and thirty-one!"
-  ],
-  "132": [
-    "One hundred and thirty-two!"
-  ],
-  "133": [
-    "One hundred and thirty-three!"
-  ],
-  "134": [
-    "One hundred and thirty-four!"
-  ],
-  "135": [
-    "One hundred and thirty-five!"
-  ],
-  "136": [
-    "One hundred and thirty-six!"
-  ],
-  "137": [
-    "One hundred and thirty-seven!"
-  ],
-  "138": [
-    "One hundred and thirty-eight!"
-  ],
-  "139": [
-    "One hundred and thirty-nine!"
-  ],
-  "140": [
-    "One hundred and forty!"
-  ],
-  "141": [
-    "One hundred and forty-one!"
-  ],
-  "142": [
-    "One hundred and forty-two!"
-  ],
-  "143": [
-    "One hundred and forty-three!"
-  ],
-  "144": [
-    "One hundred and forty-four!"
-  ],
-  "145": [
-    "One hundred and forty-five!"
-  ],
-  "146": [
-    "One hundred and forty-six!"
-  ],
-  "147": [
-    "One hundred and forty-seven!"
-  ],
-  "148": [
-    "One hundred and forty-eight!"
-  ],
-  "149": [
-    "One hundred and forty-nine!"
-  ],
-  "150": [
-    "One hundred and fifty!"
-  ],
-  "151": [
-    "One hundred and fifty-one!"
-  ],
-  "152": [
-    "One hundred and fifty-two!"
-  ],
-  "153": [
-    "One hundred and fifty-three!"
-  ],
-  "154": [
-    "One hundred and fifty-four!"
-  ],
-  "155": [
-    "One hundred and fifty-five!"
-  ],
-  "156": [
-    "One hundred and fifty-six!"
-  ],
-  "157": [
-    "One hundred and fifty-seven!"
-  ],
-  "158": [
-    "One hundred and fifty-eight!"
-  ],
-  "159": [
-    "One hundred and fifty-nine!"
-  ],
-  "160": [
-    "One hundred and sixty!"
-  ],
-  "161": [
-    "One hundred and sixty-one!"
-  ],
-  "162": [
-    "One hundred and sixty-two!"
-  ],
-  "163": [
-    "One hundred and sixty-three!"
-  ],
-  "164": [
-    "One hundred and sixty-four!"
-  ],
-  "165": [
-    "One hundred and sixty-five!"
-  ],
-  "166": [
-    "One hundred and sixty-six!"
-  ],
-  "167": [
-    "One hundred and sixty-seven!"
-  ],
-  "168": [
-    "One hundred and sixty-eight!"
-  ],
-  "169": [
-    "One hundred and sixty-nine!"
-  ],
-  "170": [
-    "One hundred and seventy!"
-  ],
-  "171": [
-    "One hundred and seventy-one!"
-  ],
-  "172": [
-    "One hundred and seventy-two!"
-  ],
-  "173": [
-    "One hundred and seventy-three!"
-  ],
-  "174": [
-    "One hundred and seventy-four!"
-  ],
-  "175": [
-    "One hundred and seventy-five!"
-  ],
-  "176": [
-    "One hundred and seventy-six!"
-  ],
-  "177": [
-    "One hundred and seventy-seven!"
-  ],
-  "178": [
-    "One hundred and seventy-eight!"
-  ],
-  "179": [
-    "One hundred and seventy-nine!"
-  ],
-  "180": [
-    "One hundred and eighty!"
-  ],
-  "gameshot": [
-    "Game shot!",
-    "Game shot, and the leg!",
-    "That's the game, shot and leg!"
-  ],
-  "matchshot": [
-    "Game shot, and the match!",
-    "That's the match!",
-    "Game, shot and match!"
-  ],
-  "busted": [
-    "Bust!",
-    "No score, bust!",
-    "That's a bust!"
-  ],
-  "gameon": [
-    "Game on!",
-    "Let's play darts!",
-    "New game, let's go!"
-  ],
-  "bulling_start": [
-    "Bull up to throw first"
-  ],
-  "leg_1": [
-    "First leg"
-  ],
-  "leg_2": [
-    "Second leg"
-  ],
-  "leg_3": [
-    "Third leg"
-  ],
-  "leg_4": [
-    "Fourth leg"
-  ],
-  "leg_5": [
-    "Fifth leg"
-  ],
-  "leg_6": [
-    "Sixth leg"
-  ],
-  "leg_7": [
-    "Seventh leg"
-  ],
-  "leg_8": [
-    "Eighth leg"
-  ],
-  "leg_9": [
-    "Ninth leg"
-  ],
-  "leg_10": [
-    "Tenth leg"
-  ],
-  "leg_11": [
-    "Eleventh leg"
-  ],
-  "leg_12": [
-    "Twelfth leg"
-  ],
-  "leg_13": [
-    "Thirteenth leg"
-  ],
-  "leg_14": [
-    "Fourteenth leg"
-  ],
-  "leg_15": [
-    "Fifteenth leg"
-  ]
+  "0": ["No score"],
+  "1": ["One"],
+  "2": ["Two"],
+  "3": ["Three"],
+  "4": ["Four"],
+  "5": ["Five"],
+  "6": ["Six"],
+  "7": ["Seven"],
+  "8": ["Eight"],
+  "9": ["Nine"],
+  "10": ["Ten"],
+  "11": ["Eleven"],
+  "12": ["Twelve"],
+  "13": ["Thirteen"],
+  "14": ["Fourteen"],
+  "15": ["Fifteen"],
+  "16": ["Sixteen"],
+  "17": ["Seventeen"],
+  "18": ["Eighteen"],
+  "19": ["Nineteen"],
+  "20": ["Twenty"],
+  "21": ["Twenty-one"],
+  "22": ["Twenty-two"],
+  "23": ["Twenty-three"],
+  "24": ["Twenty-four"],
+  "25": ["Twenty-five"],
+  "26": ["Twenty-six"],
+  "27": ["Twenty-seven"],
+  "28": ["Twenty-eight"],
+  "29": ["Twenty-nine"],
+  "30": ["Thirty"],
+  "31": ["Thirty-one"],
+  "32": ["Thirty-two"],
+  "33": ["Thirty-three"],
+  "34": ["Thirty-four"],
+  "35": ["Thirty-five"],
+  "36": ["Thirty-six"],
+  "37": ["Thirty-seven"],
+  "38": ["Thirty-eight"],
+  "39": ["Thirty-nine"],
+  "40": ["Forty"],
+  "41": ["Forty-one"],
+  "42": ["Forty-two"],
+  "43": ["Forty-three"],
+  "44": ["Forty-four"],
+  "45": ["Forty-five"],
+  "46": ["Forty-six"],
+  "47": ["Forty-seven"],
+  "48": ["Forty-eight"],
+  "49": ["Forty-nine"],
+  "50": ["Fifty"],
+  "51": ["Fifty-one"],
+  "52": ["Fifty-two"],
+  "53": ["Fifty-three"],
+  "54": ["Fifty-four"],
+  "55": ["Fifty-five"],
+  "56": ["Fifty-six"],
+  "57": ["Fifty-seven"],
+  "58": ["Fifty-eight"],
+  "59": ["Fifty-nine"],
+  "60": ["Sixty"],
+  "61": ["Sixty-one"],
+  "62": ["Sixty-two"],
+  "63": ["Sixty-three"],
+  "64": ["Sixty-four"],
+  "65": ["Sixty-five"],
+  "66": ["Sixty-six"],
+  "67": ["Sixty-seven"],
+  "68": ["Sixty-eight"],
+  "69": ["Sixty-nine"],
+  "70": ["Seventy"],
+  "71": ["Seventy-one"],
+  "72": ["Seventy-two"],
+  "73": ["Seventy-three"],
+  "74": ["Seventy-four"],
+  "75": ["Seventy-five"],
+  "76": ["Seventy-six"],
+  "77": ["Seventy-seven"],
+  "78": ["Seventy-eight"],
+  "79": ["Seventy-nine"],
+  "80": ["Eighty"],
+  "81": ["Eighty-one"],
+  "82": ["Eighty-two"],
+  "83": ["Eighty-three"],
+  "84": ["Eighty-four"],
+  "85": ["Eighty-five"],
+  "86": ["Eighty-six"],
+  "87": ["Eighty-seven"],
+  "88": ["Eighty-eight"],
+  "89": ["Eighty-nine"],
+  "90": ["Ninety"],
+  "91": ["Ninety-one"],
+  "92": ["Ninety-two"],
+  "93": ["Ninety-three"],
+  "94": ["Ninety-four"],
+  "95": ["Ninety-five"],
+  "96": ["Ninety-six"],
+  "97": ["Ninety-seven"],
+  "98": ["Ninety-eight"],
+  "99": ["Ninety-nine"],
+  "100": ["One hundred!"],
+  "101": ["One hundred and one!"],
+  "102": ["One hundred and two!"],
+  "103": ["One hundred and three!"],
+  "104": ["One hundred and four!"],
+  "105": ["One hundred and five!"],
+  "106": ["One hundred and six!"],
+  "107": ["One hundred and seven!"],
+  "108": ["One hundred and eight!"],
+  "109": ["One hundred and nine!"],
+  "110": ["One hundred and ten!"],
+  "111": ["One hundred and eleven!"],
+  "112": ["One hundred and twelve!"],
+  "113": ["One hundred and thirteen!"],
+  "114": ["One hundred and fourteen!"],
+  "115": ["One hundred and fifteen!"],
+  "116": ["One hundred and sixteen!"],
+  "117": ["One hundred and seventeen!"],
+  "118": ["One hundred and eighteen!"],
+  "119": ["One hundred and nineteen!"],
+  "120": ["One hundred and twenty!"],
+  "121": ["One hundred and twenty-one!"],
+  "122": ["One hundred and twenty-two!"],
+  "123": ["One hundred and twenty-three!"],
+  "124": ["One hundred and twenty-four!"],
+  "125": ["One hundred and twenty-five!"],
+  "126": ["One hundred and twenty-six!"],
+  "127": ["One hundred and twenty-seven!"],
+  "128": ["One hundred and twenty-eight!"],
+  "129": ["One hundred and twenty-nine!"],
+  "130": ["One hundred and thirty!"],
+  "131": ["One hundred and thirty-one!"],
+  "132": ["One hundred and thirty-two!"],
+  "133": ["One hundred and thirty-three!"],
+  "134": ["One hundred and thirty-four!"],
+  "135": ["One hundred and thirty-five!"],
+  "136": ["One hundred and thirty-six!"],
+  "137": ["One hundred and thirty-seven!"],
+  "138": ["One hundred and thirty-eight!"],
+  "139": ["One hundred and thirty-nine!"],
+  "140": ["One hundred and forty!"],
+  "141": ["One hundred and forty-one!"],
+  "142": ["One hundred and forty-two!"],
+  "143": ["One hundred and forty-three!"],
+  "144": ["One hundred and forty-four!"],
+  "145": ["One hundred and forty-five!"],
+  "146": ["One hundred and forty-six!"],
+  "147": ["One hundred and forty-seven!"],
+  "148": ["One hundred and forty-eight!"],
+  "149": ["One hundred and forty-nine!"],
+  "150": ["One hundred and fifty!"],
+  "151": ["One hundred and fifty-one!"],
+  "152": ["One hundred and fifty-two!"],
+  "153": ["One hundred and fifty-three!"],
+  "154": ["One hundred and fifty-four!"],
+  "155": ["One hundred and fifty-five!"],
+  "156": ["One hundred and fifty-six!"],
+  "157": ["One hundred and fifty-seven!"],
+  "158": ["One hundred and fifty-eight!"],
+  "159": ["One hundred and fifty-nine!"],
+  "160": ["One hundred and sixty!"],
+  "161": ["One hundred and sixty-one!"],
+  "162": ["One hundred and sixty-two!"],
+  "163": ["One hundred and sixty-three!"],
+  "164": ["One hundred and sixty-four!"],
+  "165": ["One hundred and sixty-five!"],
+  "166": ["One hundred and sixty-six!"],
+  "167": ["One hundred and sixty-seven!"],
+  "168": ["One hundred and sixty-eight!"],
+  "169": ["One hundred and sixty-nine!"],
+  "170": ["One hundred and seventy!"],
+  "171": ["One hundred and seventy-one!"],
+  "172": ["One hundred and seventy-two!"],
+  "173": ["One hundred and seventy-three!"],
+  "174": ["One hundred and seventy-four!"],
+  "175": ["One hundred and seventy-five!"],
+  "176": ["One hundred and seventy-six!"],
+  "177": ["One hundred and seventy-seven!"],
+  "178": ["One hundred and seventy-eight!"],
+  "179": ["One hundred and seventy-nine!"],
+  "180": ["One hundred and eighty!"],
+  "gameshot": ["Game shot!", "Game shot, and the leg!", "That's the game, shot and leg!"],
+  "matchshot": ["Game shot, and the match!", "That's the match!", "Game, shot and match!"],
+  "busted": ["Bust!", "No score, bust!", "That's a bust!"],
+  "gameon": ["Game on!", "Let's play darts!", "New game, let's go!"],
+  "bulling_start": ["Bull up to throw first"],
+  "leg_1": ["First leg"],
+  "leg_2": ["Second leg"],
+  "leg_3": ["Third leg"],
+  "leg_4": ["Fourth leg"],
+  "leg_5": ["Fifth leg"],
+  "leg_6": ["Sixth leg"],
+  "leg_7": ["Seventh leg"],
+  "leg_8": ["Eighth leg"],
+  "leg_9": ["Ninth leg"],
+  "leg_10": ["Tenth leg"],
+  "leg_11": ["Eleventh leg"],
+  "leg_12": ["Twelfth leg"],
+  "leg_13": ["Thirteenth leg"],
+  "leg_14": ["Fourteenth leg"],
+  "leg_15": ["Fifteenth leg"]
 }

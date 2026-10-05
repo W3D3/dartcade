@@ -19,7 +19,9 @@
   // Ticks so "just now" ages while the page is open
   let now = $state(new Date())
   onMount(() => {
-    const tick = setInterval(() => { now = new Date() }, 30_000)
+    const tick = setInterval(() => {
+      now = new Date()
+    }, 30_000)
     return () => clearInterval(tick)
   })
   let error = $state('')
@@ -33,14 +35,21 @@
   async function once(run: () => Promise<void>) {
     if (busy) return
     busy = true
-    try { await run() } finally { busy = false }
+    try {
+      await run()
+    } finally {
+      busy = false
+    }
   }
 
   async function sendAccept(inv: PendingInvite) {
     error = ''
     runningSessionId = null
     const res = await api.POST('/api/invites/{id}/accept', { params: { path: { id: inv.id } } })
-    if (res.data) { void push('/lobby'); return }
+    if (res.data) {
+      void push('/lobby')
+      return
+    }
     const r: Refusal = res.error
     if (r.code === 'in_lobby' && r.lobbyId) switching = { invite: inv, from: r.lobbyId }
     else {
@@ -60,11 +69,12 @@
     })
   }
 
-  const decline = (inv: PendingInvite) => once(async () => {
-    const res = await api.POST('/api/invites/{id}/decline', { params: { path: { id: inv.id } } })
-    runningSessionId = null
-    error = res.error ? describeConflict(res.error) : ''
-  })
+  const decline = (inv: PendingInvite) =>
+    once(async () => {
+      const res = await api.POST('/api/invites/{id}/decline', { params: { path: { id: inv.id } } })
+      runningSessionId = null
+      error = res.error ? describeConflict(res.error) : ''
+    })
 </script>
 
 <Layout title="Invites">
@@ -73,7 +83,9 @@
     {#if error}
       <span class="flex flex-wrap items-center gap-3">
         <ErrorText>{error}</ErrorText>
-        {#if runningSessionId}<Button variant="outline" size="sm" href="#/session/{runningSessionId}" class="px-3 text-[13px]">Return to game</Button>{/if}
+        {#if runningSessionId}<Button variant="outline" size="sm" href="#/session/{runningSessionId}" class="px-3 text-[13px]"
+            >Return to game</Button
+          >{/if}
       </span>
     {/if}
     {#if invites.length === 0}
@@ -93,6 +105,10 @@
 
 {#if switching}
   {@const s = switching}
-  <SwitchLobbyConfirm from={$me?.lobby?.name ?? 'your lobby'} to={s.invite.lobbyName}
-    onconfirm={() => void leaveAndAccept()} oncancel={() => switching = null} />
+  <SwitchLobbyConfirm
+    from={$me?.lobby?.name ?? 'your lobby'}
+    to={s.invite.lobbyName}
+    onconfirm={() => void leaveAndAccept()}
+    oncancel={() => (switching = null)}
+  />
 {/if}

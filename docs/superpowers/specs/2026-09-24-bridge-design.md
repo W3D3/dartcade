@@ -67,13 +67,13 @@ When the TypeScript backend is started, the same `schema/adbridge-v1.json` drive
 
 ## 4. Dependencies
 
-| Package | Purpose |
-|---|---|
-| `coder/websocket` | WS to Board Manager and WSS to backend |
-| `knadh/koanf` + TOML provider | Layered config (file → env → flags) |
-| `oklog/ulid` | `bridge_id`, `boot_id`, `visit_id` generation |
-| `charmbracelet/log` | Structured, levelled logging |
-| `omissis/go-jsonschema` | Code generation (dev tool, `go:generate`) |
+| Package                       | Purpose                                       |
+| ----------------------------- | --------------------------------------------- |
+| `coder/websocket`             | WS to Board Manager and WSS to backend        |
+| `knadh/koanf` + TOML provider | Layered config (file → env → flags)           |
+| `oklog/ulid`                  | `bridge_id`, `boot_id`, `visit_id` generation |
+| `charmbracelet/log`           | Structured, levelled logging                  |
+| `omissis/go-jsonschema`       | Code generation (dev tool, `go:generate`)     |
 
 No other dependencies. Keep it this way.
 
@@ -101,12 +101,12 @@ type Config struct {
 
 ### 5.3 Environment variables
 
-| Key | Env var |
-|---|---|
-| `board_url` | `DARTCADE_BOARD_URL` |
+| Key           | Env var                |
+| ------------- | ---------------------- |
+| `board_url`   | `DARTCADE_BOARD_URL`   |
 | `backend_url` | `DARTCADE_BACKEND_URL` |
-| `bridge_id` | `DARTCADE_BRIDGE_ID` |
-| `log_level` | `DARTCADE_LOG_LEVEL` |
+| `bridge_id`   | `DARTCADE_BRIDGE_ID`   |
+| `log_level`   | `DARTCADE_LOG_LEVEL`   |
 
 ### 5.4 Config file
 
@@ -127,6 +127,7 @@ One struct: `Client`. Two goroutines: WS loop, poll loop. One output channel: `c
 ### 6.1 Startup
 
 On `Client.Start()`:
+
 1. `GET /api/version` — emit `startup_version` frame, store version in client for board identity check.
 2. `GET /api/config` — redact `auth.api_key` (and any key named `api_key`, `token`, `apikey`, `api-key` at any depth), emit `startup_config`. Store `auth.board_id`.
 
@@ -188,14 +189,14 @@ type State struct {
 
 ### 7.3 Frame dispatch
 
-| Frame kind / BMType | Action |
-|---|---|
-| `bm_connect` | Set `ExpectResync = true`, emit `bm.link{up: true}` |
-| `bm_reconnect` | Set `ExpectResync = true`, emit `bm.link{up: true, gap_ms}` |
-| `bm_disconnect` | Emit `bm.link{up: false}` |
-| `BMType = "state"` | Run diff logic (§7.4) |
-| `BMType = "motion_state"` | Run takeout signal logic (§7.5) |
-| Anything else | Emit as `bm.frame`, no state change |
+| Frame kind / BMType       | Action                                                      |
+| ------------------------- | ----------------------------------------------------------- |
+| `bm_connect`              | Set `ExpectResync = true`, emit `bm.link{up: true}`         |
+| `bm_reconnect`            | Set `ExpectResync = true`, emit `bm.link{up: true, gap_ms}` |
+| `bm_disconnect`           | Emit `bm.link{up: false}`                                   |
+| `BMType = "state"`        | Run diff logic (§7.4)                                       |
+| `BMType = "motion_state"` | Run takeout signal logic (§7.5)                             |
+| Anything else             | Emit as `bm.frame`, no state change                         |
 
 ### 7.4 Diff logic (on `state` frames)
 
@@ -213,6 +214,7 @@ type State struct {
 7. Always: set `PrevThrows = cur.throws`.
 
 **Takeout signals from state frames** (step between 2 and 5, only if `!InTakeout && VisitID != zero`):
+
 - `status ∈ {"Takeout", "Takeout in progress"}` or `event == "Takeout started"` → emit `takeout.started{visit_id, trigger}`, set `InTakeout = true`.
 
 **Spurious takeout suppression:** ignore any takeout signal when `cur.numThrows == 0`.
@@ -220,6 +222,7 @@ type State struct {
 ### 7.5 Motion state signals
 
 On `motion_state` frames, if `!InTakeout && VisitID != zero && PrevThrows > 0`:
+
 - `isHand == true` or `isTakeoutPartial == true` → emit `takeout.started{visit_id, trigger: "motion"}`, set `InTakeout = true`.
 
 ### 7.6 Dart helpers (pure)
@@ -229,6 +232,7 @@ func toDart(t bm.Throw) schema.Dart
 ```
 
 Computes:
+
 - `score`: `segment.number × segment.multiplier`. Bull-25 → 25, bull-50 → 50, Outside/Miss → 0.
 - `polar`: `r = sqrt(x²+y²)`, `theta_deg = atan2(y, x) * 180/π` (standard math convention: 0° = right/6-wedge, 90° = top/20-wedge, matches the BM coordinate system where x is right and y is up). `coords` is nil for bounce-outs; `polar` is omitted when `coords` is absent.
 
@@ -283,6 +287,7 @@ App-level ping every 20 s both ways. Link considered dead after 45 s silence. On
 ### 8.6 Downstream commands
 
 The backend may send:
+
 ```json
 {"command_id": "…", "name": "reset" | "start" | "stop"}
 ```
@@ -300,6 +305,7 @@ The BM client tries `PUT /api/start` (new path) first; on 404 or 405, falls back
 Exponential backoff (0.5 s → 30 s, jitter; reset after 30 s stable). Independent from BM-side reconnect.
 
 On connect, send `bridge.hello` before replaying the outbox:
+
 ```json
 {
   "kind": "bridge.hello",
@@ -327,6 +333,7 @@ BMClient ──chan bm.BMFrame──▶ differ loop ──chan []schema.Event─
 The differ loop is the only place `differ.Process` is called. It reads one `BMFrame` at a time, calls `Process`, and puts resulting events onto the transport channel. No goroutines inside the differ.
 
 Startup sequence in `main`:
+
 1. Load config (koanf).
 2. If no `bridge_id`, generate and persist one.
 3. Generate `boot_id` (new ULID, in memory only).
@@ -359,19 +366,19 @@ Short hand-crafted JSONL fixtures in `internal/differ/testdata/`. Each covers on
 
 Required fixtures:
 
-| Fixture | Covers |
-|---|---|
-| `first-dart.jsonl` | `visit.opened` + `dart.detected` |
+| Fixture                     | Covers                                                                  |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `first-dart.jsonl`          | `visit.opened` + `dart.detected`                                        |
 | `three-darts-takeout.jsonl` | Three darts, `takeout.started` via `status=Takeout`, `takeout.finished` |
-| `correction.jsonl` | `dart.corrected` on same index |
-| `move.jsonl` | `dart.moved` on coord shift > 0.02 |
-| `takeout-motion.jsonl` | `takeout.started` via `motion_state.isHand` |
-| `visit-cleared.jsonl` | `visit.cleared` via `numThrows=0` without takeout |
-| `spurious-takeout.jsonl` | Takeout signal with `numThrows=0` → nothing emitted |
-| `resync.jsonl` | `bm_reconnect` → `board.resync`, no `dart.detected` |
-| `bounce-out.jsonl` | Throw with no `coords` field |
-| `near-miss.jsonl` | Throw with `r > 1.0` |
-| `unknown-frame.jsonl` | Unknown `BMType` passes through as `bm.frame` |
+| `correction.jsonl`          | `dart.corrected` on same index                                          |
+| `move.jsonl`                | `dart.moved` on coord shift > 0.02                                      |
+| `takeout-motion.jsonl`      | `takeout.started` via `motion_state.isHand`                             |
+| `visit-cleared.jsonl`       | `visit.cleared` via `numThrows=0` without takeout                       |
+| `spurious-takeout.jsonl`    | Takeout signal with `numThrows=0` → nothing emitted                     |
+| `resync.jsonl`              | `bm_reconnect` → `board.resync`, no `dart.detected`                     |
+| `bounce-out.jsonl`          | Throw with no `coords` field                                            |
+| `near-miss.jsonl`           | Throw with `r > 1.0`                                                    |
+| `unknown-frame.jsonl`       | Unknown `BMType` passes through as `bm.frame`                           |
 
 ### 11.2 Transport unit tests
 
@@ -384,9 +391,11 @@ One test marshals each differ fixture's output events and validates them against
 ### 11.4 Manual replay
 
 The 8 long recordings in `spike/recorder/` are for manual testing only:
+
 ```
 cd bridge && go run ./cmd/bridge replay ../spike/recorder/recording-2026-09-24T16-20-56Z.jsonl
 ```
+
 Not automated. Not used as test fixtures.
 
 ---

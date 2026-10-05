@@ -9,7 +9,10 @@ export class BrowserConnections {
 
   add(sessionId: string, ws: WebSocket, userId: string): void {
     let m = this.sessions.get(sessionId)
-    if (!m) { m = new Map(); this.sessions.set(sessionId, m) }
+    if (!m) {
+      m = new Map()
+      this.sessions.set(sessionId, m)
+    }
     m.set(ws, userId)
     this.closed.get(sessionId)?.delete(userId)
   }
@@ -21,7 +24,10 @@ export class BrowserConnections {
     m.delete(ws)
     if (!hasUser(m, userId)) {
       let c = this.closed.get(sessionId)
-      if (!c) { c = new Map(); this.closed.set(sessionId, c) }
+      if (!c) {
+        c = new Map()
+        this.closed.set(sessionId, c)
+      }
       c.set(userId, at)
     }
     if (m.size === 0) this.sessions.delete(sessionId)

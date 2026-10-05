@@ -9,7 +9,11 @@
 
   type Problem = Extract<StartOutcome, { kind: 'problem' }>
 
-  let { problem, onstartanyway, onback }: {
+  let {
+    problem,
+    onstartanyway,
+    onback,
+  }: {
     problem: Problem
     onstartanyway: () => void
     onback: () => void
@@ -25,29 +29,53 @@
   // active_session only carries a sessionId when it's your own running game (the server's
   // text names the other player otherwise) — that's when there's a game to return to.
   const returnSessionId = $derived(
-    problem.code === 'other' && problem.refusal.code === 'active_session' ? problem.refusal.sessionId ?? null : null,
+    problem.code === 'other' && problem.refusal.code === 'active_session' ? (problem.refusal.sessionId ?? null) : null,
   )
 </script>
 
 {#if problem.code === 'board_offline'}
-  <ConfirmModal title="Board offline" body={offlineBody(problem.offlineBoards)}
-    confirmLabel="Start anyway" cancelLabel="Back to lobby" onconfirm={onstartanyway} oncancel={onback} />
+  <ConfirmModal
+    title="Board offline"
+    body={offlineBody(problem.offlineBoards)}
+    confirmLabel="Start anyway"
+    cancelLabel="Back to lobby"
+    onconfirm={onstartanyway}
+    oncancel={onback}
+  />
 {:else if problem.code === 'not_ready'}
-  <ConfirmModal title="Start anyway?" body={`Not ready yet: ${problem.notReady.join(', ')}.`}
-    confirmLabel="Start anyway" cancelLabel="Back to lobby" onconfirm={onstartanyway} oncancel={onback} />
+  <ConfirmModal
+    title="Start anyway?"
+    body={`Not ready yet: ${problem.notReady.join(', ')}.`}
+    confirmLabel="Start anyway"
+    cancelLabel="Back to lobby"
+    onconfirm={onstartanyway}
+    oncancel={onback}
+  />
 {:else if problem.code === 'other'}
-  <Modal title="Can't start yet" subtitle={describeConflict(problem.refusal)} onclose={onback}
-    showClose={false} dismissOnBackdrop={true} widthClass="max-w-[380px]" zClass="z-[200]">
+  <Modal
+    title="Can't start yet"
+    subtitle={describeConflict(problem.refusal)}
+    onclose={onback}
+    showClose={false}
+    dismissOnBackdrop={true}
+    widthClass="max-w-[380px]"
+    zClass="z-[200]"
+  >
     {#snippet footer()}
-      <button type="button" onclick={onback}
+      <button
+        type="button"
+        onclick={onback}
         class="flex-1 h-12 rounded-[10px] border border-line-3 bg-transparent text-text
-               text-[15px] font-medium cursor-pointer">
+               text-[15px] font-medium cursor-pointer"
+      >
         Back to lobby
       </button>
       {#if returnSessionId}
-        <a href="#/session/{returnSessionId}"
+        <a
+          href="#/session/{returnSessionId}"
           class="flex-1 h-12 rounded-[10px] border-0 bg-accent text-accent-fg text-[15px] font-bold
-                 cursor-pointer flex items-center justify-center no-underline">
+                 cursor-pointer flex items-center justify-center no-underline"
+        >
           Return to game
         </a>
       {/if}

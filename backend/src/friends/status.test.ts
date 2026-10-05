@@ -8,7 +8,12 @@ const friendsOfViewer = new Set(['lena'])
 describe('friendStatus', () => {
   it('first match wins: playing, then lobby, then online', () => {
     expect(friendStatus(facts({ game: { gameId: 'x01' }, lobby }), friendsOfViewer)).toEqual({ kind: 'playing', gameId: 'x01' })
-    expect(friendStatus(facts({ lobby }), friendsOfViewer)).toEqual({ kind: 'lobby', lobbyId: 'l1', lobbyName: 'Friday darts', joinable: true })
+    expect(friendStatus(facts({ lobby }), friendsOfViewer)).toEqual({
+      kind: 'lobby',
+      lobbyId: 'l1',
+      lobbyName: 'Friday darts',
+      joinable: true,
+    })
     expect(friendStatus(facts(), friendsOfViewer)).toEqual({ kind: 'online' })
   })
 
@@ -25,7 +30,13 @@ describe('friendStatus', () => {
 })
 
 describe('seatedGame', () => {
-  const seat = (userId: string | null, controllerUserId: string) => ({ name: 'x', userId, controllerUserId, boardId: null, boardName: null })
+  const seat = (userId: string | null, controllerUserId: string) => ({
+    name: 'x',
+    userId,
+    controllerUserId,
+    boardId: null,
+    boardName: null,
+  })
   const session = (status: string, seats: ReturnType<typeof seat>[]) => ({ status, seats, module: { id: 'x01' } }) as any
 
   it('a seat of your own or one you throw for, in a running game', () => {

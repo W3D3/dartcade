@@ -16,7 +16,8 @@ export function lobbiesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
   const auth = { preValidation: requireAuth }
 
   app.post<Route<'createLobby'>>('/api/lobbies', { ...auth, schema: fromSpec('createLobby') }, async (req, reply) =>
-    reply.code(201).send(await lobbies.create(req.userId)))
+    reply.code(201).send(await lobbies.create(req.userId)),
+  )
 
   app.get<Route<'getCurrentLobby'>>('/api/lobbies/current', { ...auth, schema: fromSpec('getCurrentLobby') }, async (req, reply) => {
     const lobby = await lobbies.current(req.userId)
@@ -34,7 +35,8 @@ export function lobbiesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
   })
 
   app.post<Route<'joinLobby'>>('/api/lobbies/:id/join', { ...auth, schema: fromSpec('joinLobby') }, async (req, reply) =>
-    reply.send(await lobbies.join(req.userId, req.params.id, req.body.code)))
+    reply.send(await lobbies.join(req.userId, req.params.id, req.body.code)),
+  )
 
   app.post<Route<'leaveLobby'>>('/api/lobbies/:id/leave', { ...auth, schema: fromSpec('leaveLobby') }, async (req, reply) => {
     await lobbies.leave(req.userId, req.params.id)
@@ -47,34 +49,51 @@ export function lobbiesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
   })
 
   app.post<Route<'addLobbyGuest'>>('/api/lobbies/:id/people', { ...auth, schema: fromSpec('addLobbyGuest') }, async (req, reply) =>
-    reply.code(201).send(await lobbies.addGuest(req.userId, req.params.id, req.body)))
+    reply.code(201).send(await lobbies.addGuest(req.userId, req.params.id, req.body)),
+  )
 
-  app.patch<Route<'updateLobbyPerson'>>('/api/lobbies/:id/people/:personId', { ...auth, schema: fromSpec('updateLobbyPerson') }, async (req, reply) => {
-    await lobbies.updatePerson(req.userId, req.params.id, req.params.personId, req.body)
-    return reply.code(204).send()
-  })
+  app.patch<Route<'updateLobbyPerson'>>(
+    '/api/lobbies/:id/people/:personId',
+    { ...auth, schema: fromSpec('updateLobbyPerson') },
+    async (req, reply) => {
+      await lobbies.updatePerson(req.userId, req.params.id, req.params.personId, req.body)
+      return reply.code(204).send()
+    },
+  )
 
-  app.delete<Route<'removeLobbyPerson'>>('/api/lobbies/:id/people/:personId', { ...auth, schema: fromSpec('removeLobbyPerson') }, async (req, reply) => {
-    await lobbies.removePerson(req.userId, req.params.id, req.params.personId)
-    return reply.code(204).send()
-  })
+  app.delete<Route<'removeLobbyPerson'>>(
+    '/api/lobbies/:id/people/:personId',
+    { ...auth, schema: fromSpec('removeLobbyPerson') },
+    async (req, reply) => {
+      await lobbies.removePerson(req.userId, req.params.id, req.params.personId)
+      return reply.code(204).send()
+    },
+  )
 
-  app.post<Route<'shuffleLobbyTeams'>>('/api/lobbies/:id/teams/shuffle', { ...auth, schema: fromSpec('shuffleLobbyTeams') }, async (req, reply) => {
-    await lobbies.shuffleTeams(req.userId, req.params.id)
-    return reply.code(204).send()
-  })
+  app.post<Route<'shuffleLobbyTeams'>>(
+    '/api/lobbies/:id/teams/shuffle',
+    { ...auth, schema: fromSpec('shuffleLobbyTeams') },
+    async (req, reply) => {
+      await lobbies.shuffleTeams(req.userId, req.params.id)
+      return reply.code(204).send()
+    },
+  )
 
   app.post<Route<'startLobbyGame'>>('/api/lobbies/:id/start', { ...auth, schema: fromSpec('startLobbyGame') }, async (req, reply) =>
-    reply.code(201).send(await lobbies.start(req.userId, req.params.id, req.body.force ?? false)))
+    reply.code(201).send(await lobbies.start(req.userId, req.params.id, req.body.force ?? false)),
+  )
 
   app.post<Route<'inviteToLobby'>>('/api/lobbies/:id/invites', { ...auth, schema: fromSpec('inviteToLobby') }, async (req, reply) =>
-    reply.code(201).send(await lobbies.invite(req.userId, req.params.id, req.body.userId)))
+    reply.code(201).send(await lobbies.invite(req.userId, req.params.id, req.body.userId)),
+  )
 
-  app.get<Route<'listInvites'>>('/api/invites', { ...auth, schema: fromSpec('listInvites') }, async (req) =>
-    ({ invites: await lobbies.listInvites(req.userId) }))
+  app.get<Route<'listInvites'>>('/api/invites', { ...auth, schema: fromSpec('listInvites') }, async req => ({
+    invites: await lobbies.listInvites(req.userId),
+  }))
 
   app.post<Route<'acceptInvite'>>('/api/invites/:id/accept', { ...auth, schema: fromSpec('acceptInvite') }, async (req, reply) =>
-    reply.send(await lobbies.acceptInvite(req.userId, req.params.id)))
+    reply.send(await lobbies.acceptInvite(req.userId, req.params.id)),
+  )
 
   app.post<Route<'declineInvite'>>('/api/invites/:id/decline', { ...auth, schema: fromSpec('declineInvite') }, async (req, reply) => {
     await lobbies.declineInvite(req.userId, req.params.id)

@@ -16,7 +16,16 @@
   import { gameModes, settlePending, withDefaults } from '$lib/gameModes'
   import { counts, isTeamFormat, type LobbyPatch, type PersonPatch } from '$lib/lobby/rules'
 
-  let { lobby, busy = false, onupdate, onplays, onteammove, onteamplace, onteamshuffle, onstart }: {
+  let {
+    lobby,
+    busy = false,
+    onupdate,
+    onplays,
+    onteammove,
+    onteamplace,
+    onteamshuffle,
+    onstart,
+  }: {
     lobby: Lobby
     /** A start is in flight: Start waits. */
     busy?: boolean
@@ -42,9 +51,9 @@
   // only the snapshot effect reads it
   let settled: Config = {}
   // What the form shows: the lobby's saved settings and the pending changes over the mode's defaults
-  const config = $derived(game
-    ? withDefaults({ ...game.config, ...(pending?.gameId === game.gameId ? pending.config : {}) }, defaults)
-    : {})
+  const config = $derived(
+    game ? withDefaults({ ...game.config, ...(pending?.gameId === game.gameId ? pending.config : {}) }, defaults) : {},
+  )
   let picking = $state(false)
   let settingsOpen = $state(false)
   const teamGame = $derived(isTeamFormat(info?.teams, config))
@@ -55,7 +64,11 @@
     const g = game
     untrack(() => {
       if (!pending) return
-      if (!g || g.gameId !== pending.gameId) { pending = null; settled = {}; return }
+      if (!g || g.gameId !== pending.gameId) {
+        pending = null
+        settled = {}
+        return
+      }
       const left = settlePending(pending.config, g.config, settled)
       settled = {}
       pending = Object.keys(left).length > 0 ? { gameId: g.gameId, config: left } : null
@@ -92,37 +105,55 @@
   }
 </script>
 
-<section aria-label="Next game"
-  class="box-border p-4 md:px-6 md:py-[22px] rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[14px] md:gap-[18px]">
+<section
+  aria-label="Next game"
+  class="box-border p-4 md:px-6 md:py-[22px] rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[14px] md:gap-[18px]"
+>
   <NextGameSummary {lobby} pickedBy="picked by you" />
   <div class="grid grid-cols-2 gap-2">
     {#if game}
-      <SettingsToggleButton open={settingsOpen} ontoggle={() => settingsOpen = !settingsOpen} />
+      <SettingsToggleButton open={settingsOpen} ontoggle={() => (settingsOpen = !settingsOpen)} />
     {/if}
-    <Button variant="outline" size="md" class="font-semibold {game ? '' : 'col-span-2'}" aria-haspopup="dialog"
-      onclick={() => picking = true}>{game ? 'Change game' : 'Pick a game'}</Button>
+    <Button
+      variant="outline"
+      size="md"
+      class="font-semibold {game ? '' : 'col-span-2'}"
+      aria-haspopup="dialog"
+      onclick={() => (picking = true)}>{game ? 'Change game' : 'Pick a game'}</Button
+    >
   </div>
   {#if game}
-    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} teams={info?.teams ?? false}
-      onchange={(key: string, value: unknown) => void setConfig(key, value)} />
+    <NextGameSettingsPanel
+      open={settingsOpen}
+      gameId={game.gameId}
+      {config}
+      {defaults}
+      meta={info?.configMeta ?? {}}
+      teams={info?.teams ?? false}
+      onchange={(key: string, value: unknown) => void setConfig(key, value)}
+    />
   {/if}
   {#if teamGame}
-    <TeamsPanel {lobby} editable
+    <TeamsPanel
+      {lobby}
+      editable
       onmove={(personId: string, team: TeamId) => void onteammove(personId, team)}
       onplace={onteamplace}
-      onshuffle={() => void onteamshuffle()} />
+      onshuffle={() => void onteamshuffle()}
+    />
   {:else}
     <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
   {/if}
   <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
   <div class="flex flex-col gap-[6px]">
     <Button size="xl" class="w-full" disabled={!game || running || busy} onclick={() => onstart()}>
-      Start · {c.playing} {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
+      Start · {c.playing}
+      {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
     </Button>
     <span class="text-[13px]"><ReadyCount {lobby} suffix="you can start anyway" /></span>
   </div>
 </section>
 
 {#if picking}
-  <ChangeGameDialog current={game?.gameId ?? null} games={$gameModes} onpick={pickGame} oncancel={() => picking = false} />
+  <ChangeGameDialog current={game?.gameId ?? null} games={$gameModes} onpick={pickGame} oncancel={() => (picking = false)} />
 {/if}

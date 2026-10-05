@@ -7,15 +7,26 @@ function fakeMatchMedia(initial: boolean) {
   let matches = initial
   let listener: ((e: { matches: boolean }) => void) | null = null
   const mm: MatchMediaFn = () => ({
-    get matches() { return matches },
-    addEventListener: (_t, cb) => { listener = cb },
-    removeEventListener: () => { listener = null },
+    get matches() {
+      return matches
+    },
+    addEventListener: (_t, cb) => {
+      listener = cb
+    },
+    removeEventListener: () => {
+      listener = null
+    },
   })
   return {
     mm,
-    fire: (m: boolean) => { matches = m; listener?.({ matches: m }) },
+    fire: (m: boolean) => {
+      matches = m
+      listener?.({ matches: m })
+    },
     /** The viewport changes while nobody listens (no event reaches the store). */
-    setSilently: (m: boolean) => { matches = m },
+    setSilently: (m: boolean) => {
+      matches = m
+    },
     attached: () => listener !== null,
   }
 }

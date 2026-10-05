@@ -232,6 +232,7 @@ Used whenever `openVisitEvents` changes (dart.corrected, user correction, undo).
 **Startup rebuild**
 
 On process start, before accepting connections:
+
 1. Load all `active` sessions from Postgres.
 2. For each session, fetch its `bridge_events` ordered by `inserted_at` where `board_id = session.board_id AND inserted_at >= session.created_at`.
 3. Replay through `onBridgeEvent` to rebuild in-memory state.
@@ -409,11 +410,13 @@ export function createSessionStore(sessionId: string)
 ## 10. Deployment
 
 `backend/Dockerfile` is a multi-stage build:
+
 1. **Stage `frontend-build`**: `node:22-alpine`, install deps, `vite build` → `frontend/dist/`.
 2. **Stage `backend-build`**: same base, install deps, `tsc`.
 3. **Stage `runtime`**: copy `dist/` (backend JS), `frontend/dist/` (static files), `node_modules` (prod only). `CMD ["node", "dist/index.js"]`.
 
 `backend/docker-compose.yaml`:
+
 ```yaml
 services:
   backend:

@@ -49,7 +49,12 @@ describe('loadOnce', () => {
 
   it('does not load twice while a load is in flight', async () => {
     let resolve: (v: string) => void = () => undefined
-    const fetch = vi.fn(() => new Promise<string>(r => { resolve = r }))
+    const fetch = vi.fn(
+      () =>
+        new Promise<string>(r => {
+          resolve = r
+        }),
+    )
     const store = loadOnce(fetch, null)
     store.subscribe(() => undefined)
     store.subscribe(() => undefined)

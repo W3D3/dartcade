@@ -9,7 +9,12 @@
   import { gameModes } from '$lib/gameModes'
   import { hasBullOff } from '$lib/lobby/rules'
 
-  let { lobby, gameId, readonly = false, onchange }: {
+  let {
+    lobby,
+    gameId,
+    readonly = false,
+    onchange,
+  }: {
     lobby: Lobby
     /** The game it's for: the lobby's next game. */
     gameId: string | null
@@ -36,6 +41,12 @@
 </script>
 
 <Field label="Throw order">
-  <SegmentedControl {options} value={lobby.throwOrder} disabled={readonly}
-    onchange={(v) => { if (!readonly && isOrder(v)) onchange?.(v) }} />
+  <SegmentedControl
+    {options}
+    value={lobby.throwOrder}
+    disabled={readonly}
+    onchange={v => {
+      if (!readonly && isOrder(v)) onchange?.(v)
+    }}
+  />
 </Field>

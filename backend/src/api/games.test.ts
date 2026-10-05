@@ -4,7 +4,10 @@ import { gamesApiPlugin } from './games.js'
 import type { HistoryGame } from '../db/history.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
+    req.userId = 'user-1'
+    done()
+  }),
 }))
 vi.mock('../db/history.js', () => ({
   listFinishedGames: vi.fn(),
@@ -17,11 +20,24 @@ import * as history from '../db/history.js'
 import * as queries from '../db/queries.js'
 
 const game = (o: Partial<HistoryGame> = {}): HistoryGame => ({
-  id: 'g1', game_id: 'x01', config: { startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3, bullOff: 'off', bullValue: '25_50', maxRounds: 50 },
-  rng_seed: 0, created_at: new Date('2026-10-01T09:00:00Z'), finished_at: new Date('2026-10-01T09:30:00Z'),
-  board: { id: 'b1', name: 'Living room' }, mySeat: 0,
+  id: 'g1',
+  game_id: 'x01',
+  config: { startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3, bullOff: 'off', bullValue: '25_50', maxRounds: 50 },
+  rng_seed: 0,
+  created_at: new Date('2026-10-01T09:00:00Z'),
+  finished_at: new Date('2026-10-01T09:30:00Z'),
+  board: { id: 'b1', name: 'Living room' },
+  mySeat: 0,
   seats: [
-    { seat: 0, name: 'Christoph', user_id: 'user-1', placement: 1, throw_position: 1, stats: { average: 83.9, legsWon: 3 }, forfeited: false },
+    {
+      seat: 0,
+      name: 'Christoph',
+      user_id: 'user-1',
+      placement: 1,
+      throw_position: 1,
+      stats: { average: 83.9, legsWon: 3 },
+      forfeited: false,
+    },
     { seat: 1, name: 'Guest', user_id: null, placement: 2, throw_position: 0, stats: { average: 71.6, legsWon: 1 }, forfeited: false },
   ],
   ...o,
@@ -48,13 +64,30 @@ describe('GET /api/gamemodes', () => {
 
 describe('GET /api/games', () => {
   it('returns a page of summaries and the next cursor', async () => {
-    vi.mocked(history.listFinishedGames).mockResolvedValue({ games: [game()], next: { finishedAt: new Date('2026-10-01T09:30:00Z'), id: 'g1' } })
+    vi.mocked(history.listFinishedGames).mockResolvedValue({
+      games: [game()],
+      next: { finishedAt: new Date('2026-10-01T09:30:00Z'), id: 'g1' },
+    })
     const res = await makeApp().inject({ method: 'GET', url: '/api/games?mode=x01&limit=10' })
     expect(res.statusCode).toBe(200)
     expect(history.listFinishedGames).toHaveBeenCalledWith(expect.anything(), 'user-1', { mode: 'x01', limit: 10, after: null })
     const body = res.json()
-    expect(body.games[0]).toMatchObject({ id: 'g1', mode: 'x01', mySeat: 0, board: { name: 'Living room' }, finishedAt: '2026-10-01T09:30:00.000Z' })
-    expect(body.games[0].players[1]).toEqual({ seat: 1, name: 'Guest', userId: null, placement: 2, throwPosition: 0, stats: { average: 71.6, legsWon: 1 }, forfeited: false })
+    expect(body.games[0]).toMatchObject({
+      id: 'g1',
+      mode: 'x01',
+      mySeat: 0,
+      board: { name: 'Living room' },
+      finishedAt: '2026-10-01T09:30:00.000Z',
+    })
+    expect(body.games[0].players[1]).toEqual({
+      seat: 1,
+      name: 'Guest',
+      userId: null,
+      placement: 2,
+      throwPosition: 0,
+      stats: { average: 71.6, legsWon: 1 },
+      forfeited: false,
+    })
     expect(typeof body.nextCursor).toBe('string')
   })
 

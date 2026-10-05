@@ -1,21 +1,94 @@
 import { describe, it, expect } from 'vitest'
-import { alreadyInOrInvited, boardChoices, boardSummary, hasBullOff, canMove, canRemove, canSetPlays, canSetReady, counts, isHost, isMine, isTeamFormat, myRow, nextGameInTeams, playsInGame, teamRosters, teamsMessage } from '../lobby/rules.js'
+import {
+  alreadyInOrInvited,
+  boardChoices,
+  boardSummary,
+  hasBullOff,
+  canMove,
+  canRemove,
+  canSetPlays,
+  canSetReady,
+  counts,
+  isHost,
+  isMine,
+  isTeamFormat,
+  myRow,
+  nextGameInTeams,
+  playsInGame,
+  teamRosters,
+  teamsMessage,
+} from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
-  id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
-  boardOnline: false, boardMovedBy: null, usualBoardName: null, plays: true, ready: false, team: null, presence: null, ...over,
+  id: 'p',
+  userId: null,
+  addedByUserId: 'chris',
+  name: 'X',
+  boardId: null,
+  boardName: null,
+  boardOwnerUserId: null,
+  boardOnline: false,
+  boardMovedBy: null,
+  usualBoardName: null,
+  plays: true,
+  ready: false,
+  team: null,
+  presence: null,
+  ...over,
 })
-const chris = person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', boardId: 'living', boardName: 'Living room', boardOwnerUserId: 'chris', ready: true, presence: 'online' })
-const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', presence: 'away' })
+const chris = person({
+  id: 'c',
+  userId: 'chris',
+  addedByUserId: 'chris',
+  name: 'Christoph',
+  boardId: 'living',
+  boardName: 'Living room',
+  boardOwnerUserId: 'chris',
+  ready: true,
+  presence: 'online',
+})
+const lena = person({
+  id: 'l',
+  userId: 'lena',
+  addedByUserId: 'lena',
+  name: 'Lena',
+  boardId: 'lenas',
+  boardName: "Lena's place",
+  boardOwnerUserId: 'lena',
+  presence: 'away',
+})
 const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', plays: false })
-const pia = person({ id: 'g', name: 'Pia', addedByUserId: 'lena', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', ready: true })
+const pia = person({
+  id: 'g',
+  name: 'Pia',
+  addedByUserId: 'lena',
+  boardId: 'lenas',
+  boardName: "Lena's place",
+  boardOwnerUserId: 'lena',
+  ready: true,
+})
 const lobby: Lobby = {
-  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', hostName: 'Christoph', throwOrder: 'lobby', access: 'friends', nextGame: null,
-  currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [chris, lena, max, pia], invites: [], activity: [],
-  solo: false, nextHostName: 'Lena',
+  id: 'l1',
+  name: 'Friday darts',
+  code: 'K7Q4MD',
+  hostUserId: 'chris',
+  hostName: 'Christoph',
+  throwOrder: 'lobby',
+  access: 'friends',
+  nextGame: null,
+  currentSessionId: null,
+  createdAt: '2026-10-02T19:40:00.000Z',
+  people: [chris, lena, max, pia],
+  invites: [],
+  activity: [],
+  solo: false,
+  nextHostName: 'Lena',
 }
-const own = [{ id: 'living', name: 'Living room' }, { id: 'garage', name: 'Garage' }]
+const own = [
+  { id: 'living', name: 'Living room' },
+  { id: 'garage', name: 'Garage' },
+]
 
 describe('lobby rules for the screens', () => {
   it('knows the host and your own rows', () => {
@@ -40,7 +113,7 @@ describe('lobby rules for the screens', () => {
     expect(canSetPlays(lobby, max, 'lena')).toBe(false)
   })
 
-  it('order is the host\'s; members remove only their own guests, nobody removes themselves', () => {
+  it("order is the host's; members remove only their own guests, nobody removes themselves", () => {
     expect(canMove(lobby, 'chris')).toBe(true)
     expect(canMove(lobby, 'lena')).toBe(false)
     expect(canRemove(lobby, max, 'chris')).toBe(true)
@@ -51,15 +124,20 @@ describe('lobby rules for the screens', () => {
 
   it('board menu: your own boards for someone on Manual', () => {
     const c = boardChoices(max, 'chris', own)
-    expect(c.map(b => [b.boardId, b.label, b.current])).toEqual([['living', 'Living room', false], ['garage', 'Garage', false]])
+    expect(c.map(b => [b.boardId, b.label, b.current])).toEqual([
+      ['living', 'Living room', false],
+      ['garage', 'Garage', false],
+    ])
   })
 
   it('board menu: once someone has a board, only they change it, and its owner takes it back', () => {
     // Lena on her own board: Chris can't move her
     expect(boardChoices(lena, 'chris', own)).toEqual([])
     // Lena herself: Manual and her own boards
-    expect(boardChoices(lena, 'lena', [{ id: 'lenas', name: "Lena's place" }]).map(b => [b.boardId, b.current]))
-      .toEqual([[null, false], ['lenas', true]])
+    expect(boardChoices(lena, 'lena', [{ id: 'lenas', name: "Lena's place" }]).map(b => [b.boardId, b.current])).toEqual([
+      [null, false],
+      ['lenas', true],
+    ])
     // Chris put Max on his board: as the owner he can take it back, not swap it
     const onChris = { ...max, boardId: 'living', boardName: 'Living room', boardOwnerUserId: 'chris' }
     expect(boardChoices(onChris, 'chris', own).map(b => b.boardId)).toEqual([null])
@@ -78,14 +156,17 @@ describe('lobby rules for the screens', () => {
     expect(playsInGame({ ...lobby, people: [chris, { ...lena, plays: false }, pia] }, 'lena')).toBe(true)
   })
 
-  it('knows which games have a bull off from their defaults (people are the server\'s to count)', () => {
+  it("knows which games have a bull off from their defaults (people are the server's to count)", () => {
     expect(hasBullOff({ defaultConfig: { startScore: 501, bullOff: 'off' } })).toBe(true)
     expect(hasBullOff({ defaultConfig: { order: 'asc', finishOn: 'bull' } })).toBe(false)
     expect(hasBullOff(undefined)).toBe(false)
   })
 
   it('lists the accounts already in the lobby or invited, so the add field skips them', () => {
-    const invited = { ...lobby, invites: [{ id: 'i1', userId: 'phil', name: 'Phil', invitedByUserId: 'chris', createdAt: '2026-10-02T19:41:00.000Z' }] }
+    const invited = {
+      ...lobby,
+      invites: [{ id: 'i1', userId: 'phil', name: 'Phil', invitedByUserId: 'chris', createdAt: '2026-10-02T19:41:00.000Z' }],
+    }
     expect(alreadyInOrInvited(invited)).toEqual(['chris', 'lena', 'max', 'phil'])
   })
 
@@ -96,8 +177,11 @@ describe('lobby rules for the screens', () => {
     expect(isTeamFormat(undefined, { format: 'teams' })).toBe(false)
   })
 
-  it('the lobby\'s next game is in teams: its mode does teams and its settings (over the defaults) pick them', () => {
-    const modes = [{ id: 'x01', teams: true, defaultConfig: { format: 'singles' } }, { id: 'atc', teams: false, defaultConfig: {} }]
+  it("the lobby's next game is in teams: its mode does teams and its settings (over the defaults) pick them", () => {
+    const modes = [
+      { id: 'x01', teams: true, defaultConfig: { format: 'singles' } },
+      { id: 'atc', teams: false, defaultConfig: {} },
+    ]
     const next = (gameId: string, config: Record<string, unknown>): Lobby => ({ ...lobby, nextGame: { gameId, config } })
     expect(nextGameInTeams(next('x01', { format: 'teams' }), modes)).toBe(true)
     expect(nextGameInTeams(next('x01', {}), modes)).toBe(false)
@@ -114,7 +198,7 @@ describe('lobby rules for the screens', () => {
     expect(teamRosters({ ...lobby, people: [a, b1, b2, sitsOut] })).toEqual({ a: [a], b: [b1, b2] })
   })
 
-  it('says when a team needs a player, or the split is uneven; nothing once it\'s even', () => {
+  it("says when a team needs a player, or the split is uneven; nothing once it's even", () => {
     expect(teamsMessage(0, 2)).toBe('Both teams need a player.')
     expect(teamsMessage(2, 0)).toBe('Both teams need a player.')
     expect(teamsMessage(1, 2)).toBe("Teams are uneven. The smaller team's players throw more often.")

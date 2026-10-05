@@ -8,6 +8,4 @@ export function createDb(url: string): Kysely<Database> {
   })
 }
 
-export const db: Kysely<Database> = createDb(
-  process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/dartcade',
-)
+export const db: Kysely<Database> = createDb(process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/dartcade')

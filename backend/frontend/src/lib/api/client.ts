@@ -11,7 +11,11 @@ type ApiOptions = {
 /** Typed client for schema/api-v1.yaml. Paths, params, bodies and responses are checked at compile time. */
 export function createApi({ baseUrl = '', fetch, onUnauthorized }: ApiOptions = {}) {
   const client = createClient<paths>({ baseUrl, ...(fetch && { fetch }) })
-  const goToLogin = onUnauthorized ?? (() => { window.location.hash = '#/login' })
+  const goToLogin =
+    onUnauthorized ??
+    (() => {
+      window.location.hash = '#/login'
+    })
   client.use({
     onResponse({ response }) {
       if (response.status === 401) goToLogin()

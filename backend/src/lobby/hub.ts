@@ -10,15 +10,27 @@ export class LobbyHub {
   private readonly lastMe = new Map<string, string>()
   private readonly lastFriends = new Map<string, string>()
 
-  addLobbySocket(lobbyId: string, ws: WebSocket, userId: string): void { this.lobbies.add(lobbyId, ws, userId) }
-  removeLobbySocket(lobbyId: string, ws: WebSocket): void { this.lobbies.remove(lobbyId, ws) }
+  addLobbySocket(lobbyId: string, ws: WebSocket, userId: string): void {
+    this.lobbies.add(lobbyId, ws, userId)
+  }
+  removeLobbySocket(lobbyId: string, ws: WebSocket): void {
+    this.lobbies.remove(lobbyId, ws)
+  }
 
   /** Members with the lobby open: shown online, the others away. */
-  online(lobbyId: string): Set<string> { return this.lobbies.connectedUsers(lobbyId) }
+  online(lobbyId: string): Set<string> {
+    return this.lobbies.connectedUsers(lobbyId)
+  }
 
-  sendLobby(lobbyId: string, msg: LobbyServerMessage): void { this.lobbies.pushEach(lobbyId, () => msg) }
-  closeLobby(lobbyId: string, code: number, reason: string): void { this.lobbies.closeAll(lobbyId, code, reason) }
-  closeLobbyFor(lobbyId: string, userId: string, code: number, reason: string): void { this.lobbies.closeAll(lobbyId, code, reason, userId) }
+  sendLobby(lobbyId: string, msg: LobbyServerMessage): void {
+    this.lobbies.pushEach(lobbyId, () => msg)
+  }
+  closeLobby(lobbyId: string, code: number, reason: string): void {
+    this.lobbies.closeAll(lobbyId, code, reason)
+  }
+  closeLobbyFor(lobbyId: string, userId: string, code: number, reason: string): void {
+    this.lobbies.closeAll(lobbyId, code, reason, userId)
+  }
 
   /**
    * A /ws/me socket opened: it gets the user's current state and friends list right away.
@@ -45,7 +57,9 @@ export class LobbyHub {
     }
   }
 
-  hasMe(userId: string): boolean { return this.users.has(userId) }
+  hasMe(userId: string): boolean {
+    return this.users.has(userId)
+  }
 
   /** Sends the user's /ws/me sockets their state, unless it's what they already have. */
   sendMe(userId: string, msg: MeMessage): void {

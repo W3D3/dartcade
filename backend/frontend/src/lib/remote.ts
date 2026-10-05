@@ -13,7 +13,7 @@ export function isRemoteGame(snap: Snapshot): boolean {
 
 /** The seat's board as people call it ("Board" once its name is gone); null for a seat entering by hand. */
 export function boardLabel(seat: SeatInfo): string | null {
-  return seat.boardId === null ? null : seat.boardName ?? 'Board'
+  return seat.boardId === null ? null : (seat.boardName ?? 'Board')
 }
 
 /** What a seat shows under its name in a remote game. */
@@ -25,7 +25,13 @@ export function seatLines(snap: Snapshot | null): (SeatLine | null)[] {
   if (!isRemoteGame(snap)) return snap.seats.map(() => null)
   return snap.seats.map((s, i) => {
     const offline = s.boardId !== null && !s.boardOnline
-    return { board: boardLabel(s), byHand: s.boardId === null || offline, offline, disconnected: !s.controllerConnected, you: snap.mySeats.includes(i) }
+    return {
+      board: boardLabel(s),
+      byHand: s.boardId === null || offline,
+      offline,
+      disconnected: !s.controllerConnected,
+      you: snap.mySeats.includes(i),
+    }
   })
 }
 
@@ -71,7 +77,14 @@ export function centerState(snap: Snapshot | null, viewerUserId: string | null):
   if (snap.mySeats.includes(i)) return offlineBoard === null ? PLAY : { kind: 'play-offline', board: offlineBoard }
   // Waiting beats board offline: nobody is there to enter the darts either way
   if (!seat.controllerConnected) {
-    return { kind: 'waiting', seat: i, name, board, disconnectedAt: seat.disconnectedAt, canAbort: viewerUserId !== null && viewerUserId === snap.ownerUserId }
+    return {
+      kind: 'waiting',
+      seat: i,
+      name,
+      board,
+      disconnectedAt: seat.disconnectedAt,
+      canAbort: viewerUserId !== null && viewerUserId === snap.ownerUserId,
+    }
   }
   return offlineBoard === null ? { kind: 'watch', name, board } : { kind: 'watch-offline', name, board: offlineBoard }
 }

@@ -25,7 +25,11 @@ export function createCaller(volume: () => number) {
         return null
       }
       // Not audio: kept as nothing for the session rather than downloaded on every call
-      try { return await ctx.decodeAudioData(data) } catch { return null }
+      try {
+        return await ctx.decodeAudioData(data)
+      } catch {
+        return null
+      }
     })()
     buffers.set(url, p)
     return p
@@ -36,7 +40,11 @@ export function createCaller(volume: () => number) {
 
   function silence() {
     for (const src of playing) {
-      try { src.stop() } catch { /* already ended */ }
+      try {
+        src.stop()
+      } catch {
+        /* already ended */
+      }
     }
     playing = []
   }
@@ -60,7 +68,9 @@ export function createCaller(volume: () => number) {
       const src = ctx.createBufferSource()
       src.buffer = buffer
       src.connect(gain)
-      src.onended = () => { src.disconnect() }
+      src.onended = () => {
+        src.disconnect()
+      }
       src.start(at)
       at += buffer.duration
       playing.push(src)

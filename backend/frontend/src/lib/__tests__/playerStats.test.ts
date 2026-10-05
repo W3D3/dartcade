@@ -5,16 +5,30 @@ import type { AtcGame, X01Game } from '../api/game-ws'
 
 const visit = (scored: number, left: number, darts = 3) => ({ scored, left, darts, bust: false })
 const history = (leg: VisitHistory['leg'], all = leg): VisitHistory => ({ ...emptyHistory(), leg, all })
-const game = (o: Record<string, unknown> = {}): X01Game => ({
-  scores: [81, 87], opened: [true, true], legs: [1, 0], firstTo: 3, totalDarts: [16, 18],
-  config: { outMode: 'double' }, currentVisitDarts: [{ segment: { name: 'T20' }, score: 60 }], ...o,
-}) as unknown as X01Game
+const game = (o: Record<string, unknown> = {}): X01Game =>
+  ({
+    scores: [81, 87],
+    opened: [true, true],
+    legs: [1, 0],
+    firstTo: 3,
+    totalDarts: [16, 18],
+    config: { outMode: 'double' },
+    currentVisitDarts: [{ segment: { name: 'T20' }, score: 60 }],
+    ...o,
+  }) as unknown as X01Game
 
 describe('x01Player', () => {
   it('the thrower: running visit on the chalkboard, finish with the darts left', () => {
     const p = x01Player(game(), 0, history([[visit(100, 401), visit(60, 341)]]), { active: true, suggest: true })
     expect(p).toMatchObject({
-      remaining: 81, canFinish: 'T19 · D12', avg: '80.0', legAvg: '80.0', last: '60', darts: 16, legsWon: 1, firstTo: 3,
+      remaining: 81,
+      canFinish: 'T19 · D12',
+      avg: '80.0',
+      legAvg: '80.0',
+      last: '60',
+      darts: 16,
+      legsWon: 1,
+      firstTo: 3,
       current: { scored: 60, left: 81, bust: false },
     })
   })
@@ -24,7 +38,9 @@ describe('x01Player', () => {
     const p = x01Player(game(), 0, h, { active: true, suggest: true, scoreUpdates: 'visit' })
     expect(p).toMatchObject({ remaining: 81, shown: 141, canFinish: 'T19 · D12', current: { scored: 60, left: 81 } })
     expect(x01Player(game(), 0, h, { active: true, suggest: true }).shown).toBe(81)
-    expect(x01Player(game({ visitLocked: true, scores: [0, 87] }), 0, h, { active: true, suggest: true, scoreUpdates: 'visit' }).shown).toBe(0)
+    expect(
+      x01Player(game({ visitLocked: true, scores: [0, 87] }), 0, h, { active: true, suggest: true, scoreUpdates: 'visit' }).shown,
+    ).toBe(0)
   })
 
   it('x01Roll: how the big score rolls (new leg, bust, checkout), for players and teams alike', () => {

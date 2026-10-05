@@ -3,7 +3,10 @@ import { createFastify } from './fastify.js'
 import { usersApiPlugin } from './users.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
+    req.userId = 'user-1'
+    done()
+  }),
 }))
 vi.mock('../db/queries.js', () => ({
   searchUsers: vi.fn().mockResolvedValue([{ id: 'user-2', name: 'Lena' }]),

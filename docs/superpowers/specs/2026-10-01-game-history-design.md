@@ -62,28 +62,28 @@ Migration `006_game_history.sql`.
 
 One row per seat, written when the game is created.
 
-| column | type | notes |
-|---|---|---|
-| `session_id` | TEXT, FK `game_sessions` ON DELETE CASCADE | |
-| `seat` | INT | 0-based, throw order as set up |
-| `name` | TEXT | display name at the time of the game |
-| `user_id` | TEXT NULL, FK `user` ON DELETE SET NULL | null for guests; deleting an account keeps the game for the other seats |
-| `placement` | INT NULL | 1-based, ties share a placement; null until finished |
-| `stats` | JSONB NULL | `Record<string, number>` from `summarize()`; null until finished |
+| column       | type                                       | notes                                                                   |
+| ------------ | ------------------------------------------ | ----------------------------------------------------------------------- |
+| `session_id` | TEXT, FK `game_sessions` ON DELETE CASCADE |                                                                         |
+| `seat`       | INT                                        | 0-based, throw order as set up                                          |
+| `name`       | TEXT                                       | display name at the time of the game                                    |
+| `user_id`    | TEXT NULL, FK `user` ON DELETE SET NULL    | null for guests; deleting an account keeps the game for the other seats |
+| `placement`  | INT NULL                                   | 1-based, ties share a placement; null until finished                    |
+| `stats`      | JSONB NULL                                 | `Record<string, number>` from `summarize()`; null until finished        |
 
 PK `(session_id, seat)`, index on `user_id`.
 
 ### `game_session_events` (new): the input log, the source of truth
 
-| column | type | notes |
-|---|---|---|
-| `session_id` | TEXT, FK `game_sessions` ON DELETE CASCADE | |
-| `seq` | INT | per-session order, from 0 |
-| `source` | TEXT | `board` or `user` |
-| `kind` | TEXT | board event kind, or user action type |
-| `data` | JSONB | the board event's data, or the full user action, as received |
-| `bridge_event_id` | BIGINT NULL, FK `bridge_events` ON DELETE SET NULL | provenance for board events |
-| `created_at` | TIMESTAMPTZ DEFAULT now() | |
+| column            | type                                               | notes                                                        |
+| ----------------- | -------------------------------------------------- | ------------------------------------------------------------ |
+| `session_id`      | TEXT, FK `game_sessions` ON DELETE CASCADE         |                                                              |
+| `seq`             | INT                                                | per-session order, from 0                                    |
+| `source`          | TEXT                                               | `board` or `user`                                            |
+| `kind`            | TEXT                                               | board event kind, or user action type                        |
+| `data`            | JSONB                                              | the board event's data, or the full user action, as received |
+| `bridge_event_id` | BIGINT NULL, FK `bridge_events` ON DELETE SET NULL | provenance for board events                                  |
+| `created_at`      | TIMESTAMPTZ DEFAULT now()                          |                                                              |
 
 PK `(session_id, seq)`.
 
@@ -98,19 +98,19 @@ as today).
 
 ### `game_darts` (new): normalized, derived from the log at each visit commit
 
-| column | type | notes |
-|---|---|---|
-| `session_id` | TEXT, FK `game_sessions` ON DELETE CASCADE | |
-| `visit` | INT | per-session visit number, from 0 |
-| `dart_index` | INT | 0–2 |
-| `seat` | INT | |
-| `leg` | INT | from `getLeg()`, 0 for single-leg games |
-| `phase` | TEXT | `game` or `bulloff` |
-| `segment` | JSONB | `BoardManagerSegment` (name, number, bed, multiplier) |
-| `coords` | JSONB NULL | absent for manual darts without a position |
-| `source` | TEXT | `camera` (added by a board `dart.detected`) or `manual` (added by `add_dart`, or one of the three misses of an empty `takeout`); `apply` tracks it per open dart |
-| `corrected` | BOOL | a `dart.corrected` or `correct_dart` touched this dart |
-| `thrown_at` | TIMESTAMPTZ | `created_at` of the log entry that added the dart |
+| column       | type                                       | notes                                                                                                                                                            |
+| ------------ | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `session_id` | TEXT, FK `game_sessions` ON DELETE CASCADE |                                                                                                                                                                  |
+| `visit`      | INT                                        | per-session visit number, from 0                                                                                                                                 |
+| `dart_index` | INT                                        | 0–2                                                                                                                                                              |
+| `seat`       | INT                                        |                                                                                                                                                                  |
+| `leg`        | INT                                        | from `getLeg()`, 0 for single-leg games                                                                                                                          |
+| `phase`      | TEXT                                       | `game` or `bulloff`                                                                                                                                              |
+| `segment`    | JSONB                                      | `BoardManagerSegment` (name, number, bed, multiplier)                                                                                                            |
+| `coords`     | JSONB NULL                                 | absent for manual darts without a position                                                                                                                       |
+| `source`     | TEXT                                       | `camera` (added by a board `dart.detected`) or `manual` (added by `add_dart`, or one of the three misses of an empty `takeout`); `apply` tracks it per open dart |
+| `corrected`  | BOOL                                       | a `dart.corrected` or `correct_dart` touched this dart                                                                                                           |
+| `thrown_at`  | TIMESTAMPTZ                                | `created_at` of the log entry that added the dart                                                                                                                |
 
 PK `(session_id, visit, dart_index)`. Bust is a game rule and is not stored here; it is
 derived from the log. Busted visits keep their darts.
@@ -205,7 +205,7 @@ last dart; `after`: once committed), collected while replaying the log. `History
   0 points), `dartsThrown`, `legsWon`, `pointsScored`. This needs a running per-player
   `pointsScored` in the X01 state (the state only keeps remaining scores today).
 - `detail`: `{ mode: 'x01', legs: [{ leg, starter, winner, visits: [{ visit, seat,
-  committedAt, darts, scored, remaining, bust }] }] }`. Bull off visits are left out of
+committedAt, darts, scored, remaining, bust }] }] }`. Bull off visits are left out of
   the detail (their darts stay in `game_darts`).
 
 ### Around the Clock
@@ -214,7 +214,7 @@ last dart; `after`: once committed), collected while replaying the log. `History
   darts thrown (ascending).
 - `summarize` stats: `dartsThrown`, `targetsHit`.
 - `detail`: `{ mode: 'atc', visits: [{ visit, seat, committedAt, darts, hits, targetBefore,
-  targetAfter }] }`.
+targetAfter }] }`.
 
 Solo games get placement 1.
 

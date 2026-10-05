@@ -8,7 +8,18 @@
   import type { ConfigFieldMeta } from '$lib/api'
   import GameSettings from '$lib/components/GameSettings.svelte'
 
-  let { open, gameId, config, defaults, meta, teams = false, readonly = false, onchange, class: className = '', children }: {
+  let {
+    open,
+    gameId,
+    config,
+    defaults,
+    meta,
+    teams = false,
+    readonly = false,
+    onchange,
+    class: className = '',
+    children,
+  }: {
     open: boolean
     gameId: string
     /** The settings shown: the saved ones over the mode's defaults. */
@@ -28,7 +39,15 @@
 
 {#if open}
   <div class="p-[14px] rounded-[12px] bg-surface-panel border border-line-2 flex flex-col gap-[14px] {className}">
-    <GameSettings {gameId} {config} {defaults} {meta} {teams} {readonly} onchange={(key: string, value: unknown) => onchange?.(key, value)} />
+    <GameSettings
+      {gameId}
+      {config}
+      {defaults}
+      {meta}
+      {teams}
+      {readonly}
+      onchange={(key: string, value: unknown) => onchange?.(key, value)}
+    />
     {#if children}{@render children()}{/if}
   </div>
 {/if}

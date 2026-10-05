@@ -6,7 +6,8 @@ import fixture from './fixtures/x01-snapshot.json'
 const snap = (patch: { mySeats: number[]; currentPlayer?: number; bullOff?: unknown }): Snapshot => {
   const base = structuredClone(fixture) as unknown as Snapshot
   return {
-    ...base, mySeats: patch.mySeats,
+    ...base,
+    mySeats: patch.mySeats,
     game: { ...base.game, currentPlayer: patch.currentPlayer ?? 0, ...(patch.bullOff !== undefined && { bullOff: patch.bullOff }) },
   } as Snapshot
 }

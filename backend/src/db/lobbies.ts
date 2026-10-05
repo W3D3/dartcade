@@ -2,7 +2,16 @@ import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import {
-  ACTIVITY_KINDS, type ActivityData, type ActivityKind, type InviteRow, type LobbyAccess, type LobbyPerson, type LobbyState, type NextGame, type TeamId, type ThrowOrder,
+  ACTIVITY_KINDS,
+  type ActivityData,
+  type ActivityKind,
+  type InviteRow,
+  type LobbyAccess,
+  type LobbyPerson,
+  type LobbyState,
+  type NextGame,
+  type TeamId,
+  type ThrowOrder,
 } from '../lobby/types.js'
 
 /** How many activity lines a lobby shows (newest first). */
@@ -10,14 +19,30 @@ export const ACTIVITY_LIMIT = 50
 
 export type NewLobby = { id: string; name: string; hostUserId: string; code: string }
 export type NewPerson = {
-  id: string; lobbyId: string; userId: string | null; addedByUserId: string; name: string
-  boardId: string | null; ready: boolean; joinedAt?: Date
+  id: string
+  lobbyId: string
+  userId: string | null
+  addedByUserId: string
+  name: string
+  boardId: string | null
+  ready: boolean
+  joinedAt?: Date
 }
 export type LobbyUpdate = {
-  name?: string; host_user_id?: string | null; code?: string; throw_order?: ThrowOrder; access?: LobbyAccess
+  name?: string
+  host_user_id?: string | null
+  code?: string
+  throw_order?: ThrowOrder
+  access?: LobbyAccess
   next_game?: NextGame | null
 }
-export type PersonUpdate = { board_id?: string | null; board_moved_by?: string | null; plays?: boolean; ready?: boolean; team?: TeamId | null }
+export type PersonUpdate = {
+  board_id?: string | null
+  board_moved_by?: string | null
+  plays?: boolean
+  ready?: boolean
+  team?: TeamId | null
+}
 
 // JSON columns are read defensively: a value that doesn't parse reads as absent
 const ConfigSchema = z.record(z.string(), z.unknown())
@@ -41,11 +66,11 @@ function parsed<T>(schema: z.ZodType<T>, value: unknown): T | null {
   return r.success ? r.data : null
 }
 
-const json = (v: NextGame | null): string | null => v === null ? null : JSON.stringify(v)
+const json = (v: NextGame | null): string | null => (v === null ? null : JSON.stringify(v))
 
 /** A new lobby with its host as the first person and an "opened" line. Its own transaction. */
 export async function insertLobby(db: Kysely<Database>, lobby: NewLobby, host: Omit<NewPerson, 'lobbyId'>): Promise<void> {
-  await db.transaction().execute(async (trx) => {
+  await db.transaction().execute(async trx => {
     await trx.insertInto('lobbies').values({ id: lobby.id, name: lobby.name, host_user_id: lobby.hostUserId, code: lobby.code }).execute()
     await insertPerson(trx, { ...host, lobbyId: lobby.id })
     await addActivity(trx, lobby.id, 'opened', lobby.hostUserId, { name: host.name })
@@ -54,11 +79,21 @@ export async function insertLobby(db: Kysely<Database>, lobby: NewLobby, host: O
 
 /** Adds a person at the end of the lobby order. */
 export async function insertPerson(db: Kysely<Database>, p: NewPerson): Promise<void> {
-  await db.insertInto('lobby_people').values({
-    id: p.id, lobby_id: p.lobbyId, user_id: p.userId, added_by_user_id: p.addedByUserId, name: p.name,
-    board_id: p.boardId, ready: p.ready, board_moved_by: null, joined_at: p.joinedAt ?? new Date(),
-    position: sql<number>`(SELECT COALESCE(MAX(position) + 1, 0) FROM lobby_people WHERE lobby_id = ${p.lobbyId})`,
-  }).execute()
+  await db
+    .insertInto('lobby_people')
+    .values({
+      id: p.id,
+      lobby_id: p.lobbyId,
+      user_id: p.userId,
+      added_by_user_id: p.addedByUserId,
+      name: p.name,
+      board_id: p.boardId,
+      ready: p.ready,
+      board_moved_by: null,
+      joined_at: p.joinedAt ?? new Date(),
+      position: sql<number>`(SELECT COALESCE(MAX(position) + 1, 0) FROM lobby_people WHERE lobby_id = ${p.lobbyId})`,
+    })
+    .execute()
 }
 
 export async function getOpenLobbyIdOfUser(db: Kysely<Database>, userId: string): Promise<string | undefined> {
@@ -83,18 +118,25 @@ export async function getOpenLobbyIdByCode(db: Kysely<Database>, code: string): 
 export async function usualBoards(db: Kysely<Database>, userIds: string[]): Promise<Map<string, { id: string; name: string }>> {
   const usual = new Map<string, { id: string; name: string }>()
   if (userIds.length === 0) return usual
-  const recent = await db.selectFrom('game_players as gp')
+  const recent = await db
+    .selectFrom('game_players as gp')
     .innerJoin('game_sessions as gs', 'gs.id', 'gp.session_id')
     .innerJoin('boards as b', 'b.id', 'gp.board_db_id')
     .select(['gp.controller_user_id as user_id', 'b.id', 'b.name'])
     .where('gp.controller_user_id', 'in', userIds)
     .whereRef('b.owner_user_id', '=', 'gp.controller_user_id')
     .distinctOn('gp.controller_user_id')
-    .orderBy('gp.controller_user_id').orderBy('gs.created_at', 'desc')
+    .orderBy('gp.controller_user_id')
+    .orderBy('gs.created_at', 'desc')
     .execute()
   for (const r of recent) if (r.user_id !== null) usual.set(r.user_id, { id: r.id, name: r.name })
-  const owned = await db.selectFrom('boards').select(['owner_user_id', 'id', 'name'])
-    .where('owner_user_id', 'in', userIds).orderBy('created_at').orderBy('id').execute()
+  const owned = await db
+    .selectFrom('boards')
+    .select(['owner_user_id', 'id', 'name'])
+    .where('owner_user_id', 'in', userIds)
+    .orderBy('created_at')
+    .orderBy('id')
+    .execute()
   for (const b of owned) if (!usual.has(b.owner_user_id)) usual.set(b.owner_user_id, { id: b.id, name: b.name })
   return usual
 }
@@ -103,23 +145,42 @@ export async function usualBoards(db: Kysely<Database>, userIds: string[]): Prom
 export async function loadLobby(db: Kysely<Database>, id: string): Promise<LobbyState | undefined> {
   const row = await db.selectFrom('lobbies').selectAll().where('id', '=', id).executeTakeFirst()
   if (!row) return undefined
-  const people = await db.selectFrom('lobby_people as p')
+  const people = await db
+    .selectFrom('lobby_people as p')
     .leftJoin('boards as b', 'b.id', 'p.board_id')
     .select([
-      'p.id', 'p.user_id', 'p.added_by_user_id', 'p.name', 'p.board_id', 'b.name as board_name', 'b.owner_user_id as board_owner_user_id',
-      'p.position', 'p.plays', 'p.ready', 'p.board_moved_by', 'p.joined_at', 'p.team',
+      'p.id',
+      'p.user_id',
+      'p.added_by_user_id',
+      'p.name',
+      'p.board_id',
+      'b.name as board_name',
+      'b.owner_user_id as board_owner_user_id',
+      'p.position',
+      'p.plays',
+      'p.ready',
+      'p.board_moved_by',
+      'p.joined_at',
+      'p.team',
     ])
     .where('p.lobby_id', '=', id)
-    .orderBy('p.position').orderBy('p.joined_at')
+    .orderBy('p.position')
+    .orderBy('p.joined_at')
     .execute()
-  const usual = await usualBoards(db, people.flatMap(p => p.user_id === null ? [] : [p.user_id]))
-  const invites = await db.selectFrom('lobby_invites as i')
+  const usual = await usualBoards(
+    db,
+    people.flatMap(p => (p.user_id === null ? [] : [p.user_id])),
+  )
+  const invites = await db
+    .selectFrom('lobby_invites as i')
     .innerJoin('user as u', 'u.id', 'i.invitee_user_id')
     .select(['i.id', 'i.invitee_user_id', 'u.name', 'i.inviter_user_id', 'i.created_at'])
-    .where('i.lobby_id', '=', id).where('i.status', '=', 'pending')
+    .where('i.lobby_id', '=', id)
+    .where('i.status', '=', 'pending')
     .orderBy('i.created_at')
     .execute()
-  const activity = await db.selectFrom('lobby_activity as a')
+  const activity = await db
+    .selectFrom('lobby_activity as a')
     .leftJoin('user as u', 'u.id', 'a.actor_user_id')
     .select(['a.id', 'a.at', 'a.kind', 'a.actor_user_id', 'u.name as actor_name', 'a.data'])
     .where('a.lobby_id', '=', id)
@@ -127,33 +188,59 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
     .limit(ACTIVITY_LIMIT)
     .execute()
   return {
-    id: row.id, name: row.name, hostUserId: row.host_user_id, code: row.code,
+    id: row.id,
+    name: row.name,
+    hostUserId: row.host_user_id,
+    code: row.code,
     throwOrder: parsed(ThrowOrderSchema, row.throw_order) ?? 'lobby',
     access: parsed(AccessSchema, row.access) ?? 'friends',
     nextGame: parsed(NextGameSchema, row.next_game),
-    createdAt: row.created_at, closedAt: row.closed_at,
+    createdAt: row.created_at,
+    closedAt: row.closed_at,
     people: people.map(p => ({
-      id: p.id, userId: p.user_id, addedByUserId: p.added_by_user_id, name: p.name,
-      boardId: p.board_id, boardName: p.board_name, boardOwnerUserId: p.board_owner_user_id,
-      position: p.position, plays: p.plays, ready: p.ready, boardMovedBy: p.board_moved_by, joinedAt: p.joined_at,
-      usualBoardName: p.user_id === null ? null : usual.get(p.user_id)?.name ?? null, team: p.team,
+      id: p.id,
+      userId: p.user_id,
+      addedByUserId: p.added_by_user_id,
+      name: p.name,
+      boardId: p.board_id,
+      boardName: p.board_name,
+      boardOwnerUserId: p.board_owner_user_id,
+      position: p.position,
+      plays: p.plays,
+      ready: p.ready,
+      boardMovedBy: p.board_moved_by,
+      joinedAt: p.joined_at,
+      usualBoardName: p.user_id === null ? null : (usual.get(p.user_id)?.name ?? null),
+      team: p.team,
     })),
-    invites: invites.map(i => ({ id: i.id, userId: i.invitee_user_id, name: i.name, invitedByUserId: i.inviter_user_id, createdAt: i.created_at })),
+    invites: invites.map(i => ({
+      id: i.id,
+      userId: i.invitee_user_id,
+      name: i.name,
+      invitedByUserId: i.inviter_user_id,
+      createdAt: i.created_at,
+    })),
     activity: activity.flatMap(a => {
       // A kind this build doesn't know (written by a newer one) is left out
       const kind = parsed(ActivityKindSchema, a.kind)
       if (kind === null) return []
-      return [{ id: a.id, at: a.at, kind, actorUserId: a.actor_user_id, actorName: a.actor_name, data: parsed(ActivityDataSchema, a.data) ?? {} }]
+      return [
+        { id: a.id, at: a.at, kind, actorUserId: a.actor_user_id, actorName: a.actor_name, data: parsed(ActivityDataSchema, a.data) ?? {} },
+      ]
     }),
   }
 }
 
 export async function updateLobby(db: Kysely<Database>, id: string, u: LobbyUpdate): Promise<void> {
   const { next_game, ...plain } = u
-  await db.updateTable('lobbies').set({
-    ...plain,
-    ...(next_game === undefined ? {} : { next_game: json(next_game) }),
-  }).where('id', '=', id).execute()
+  await db
+    .updateTable('lobbies')
+    .set({
+      ...plain,
+      ...(next_game === undefined ? {} : { next_game: json(next_game) }),
+    })
+    .where('id', '=', id)
+    .execute()
 }
 
 export async function updatePerson(db: Kysely<Database>, id: string, u: PersonUpdate): Promise<void> {
@@ -162,9 +249,12 @@ export async function updatePerson(db: Kysely<Database>, id: string, u: PersonUp
 
 /** Who's on which team, in lobby order: what assigning teams needs. */
 export async function teamRoster(db: Kysely<Database>, lobbyId: string): Promise<Pick<LobbyPerson, 'id' | 'plays' | 'team'>[]> {
-  return db.selectFrom('lobby_people').select(['id', 'plays', 'team'])
+  return db
+    .selectFrom('lobby_people')
+    .select(['id', 'plays', 'team'])
     .where('lobby_id', '=', lobbyId)
-    .orderBy('position').orderBy('joined_at')
+    .orderBy('position')
+    .orderBy('joined_at')
     .execute()
 }
 
@@ -172,7 +262,7 @@ export async function teamRoster(db: Kysely<Database>, lobbyId: string): Promise
 export async function setTeams(db: Kysely<Database>, teams: ReadonlyMap<string, TeamId>): Promise<void> {
   const both: TeamId[] = ['A', 'B']
   for (const team of both) {
-    const ids = [...teams].flatMap(([id, t]) => t === team ? [id] : [])
+    const ids = [...teams].flatMap(([id, t]) => (t === team ? [id] : []))
     if (ids.length > 0) await db.updateTable('lobby_people').set({ team }).where('id', 'in', ids).execute()
   }
 }
@@ -181,7 +271,8 @@ export async function setTeams(db: Kysely<Database>, teams: ReadonlyMap<string, 
 export async function setPositions(db: Kysely<Database>, lobbyId: string, ids: string[]): Promise<void> {
   if (ids.length === 0) return
   // one statement, so a reorder lands whole or not at all
-  await db.updateTable('lobby_people')
+  await db
+    .updateTable('lobby_people')
     .set({ position: sql<number>`array_position(${ids}::text[], id) - 1` })
     .where('lobby_id', '=', lobbyId)
     .where('id', 'in', ids)
@@ -190,7 +281,8 @@ export async function setPositions(db: Kysely<Database>, lobbyId: string, ids: s
 
 /** Exactly these people play the game that starts; the others sit it out. */
 export async function setPlaying(db: Kysely<Database>, lobbyId: string, personIds: string[]): Promise<void> {
-  await db.updateTable('lobby_people')
+  await db
+    .updateTable('lobby_people')
     .set({ plays: sql<boolean>`id = ANY(${personIds})` })
     .where('lobby_id', '=', lobbyId)
     .execute()
@@ -203,7 +295,8 @@ export async function deletePeople(db: Kysely<Database>, ids: string[]): Promise
 
 /** People in the lobby on one of the owner's boards go to Manual: the boards left with their owner. */
 export async function clearBoardsOf(db: Kysely<Database>, lobbyId: string, ownerUserId: string): Promise<void> {
-  await db.updateTable('lobby_people')
+  await db
+    .updateTable('lobby_people')
     .set({ board_id: null, board_moved_by: null })
     .where('lobby_id', '=', lobbyId)
     .where('board_id', 'in', db.selectFrom('boards').select('id').where('owner_user_id', '=', ownerUserId))
@@ -212,7 +305,8 @@ export async function clearBoardsOf(db: Kysely<Database>, lobbyId: string, owner
 
 /** A board is going away: everyone on it in any lobby goes to Manual. Returns the lobbies changed. */
 export async function releaseBoard(db: Kysely<Database>, boardId: string): Promise<string[]> {
-  const rows = await db.updateTable('lobby_people')
+  const rows = await db
+    .updateTable('lobby_people')
     .set({ board_id: null, board_moved_by: null })
     .where('board_id', '=', boardId)
     .returning('lobby_id')
@@ -222,14 +316,24 @@ export async function releaseBoard(db: Kysely<Database>, boardId: string): Promi
 
 /** After every game: everyone is back in and no member is ready (a guest's ready follows its adder's: effectiveReady). */
 export async function resetAfterGame(db: Kysely<Database>, lobbyId: string): Promise<void> {
-  await db.updateTable('lobby_people')
+  await db
+    .updateTable('lobby_people')
     .set({ plays: true, ready: sql<boolean>`user_id IS NULL` })
     .where('lobby_id', '=', lobbyId)
     .execute()
 }
 
-export async function addActivity(db: Kysely<Database>, lobbyId: string, kind: ActivityKind, actorUserId: string | null, data: ActivityData): Promise<void> {
-  await db.insertInto('lobby_activity').values({ lobby_id: lobbyId, kind, actor_user_id: actorUserId, data: JSON.stringify(data) }).execute()
+export async function addActivity(
+  db: Kysely<Database>,
+  lobbyId: string,
+  kind: ActivityKind,
+  actorUserId: string | null,
+  data: ActivityData,
+): Promise<void> {
+  await db
+    .insertInto('lobby_activity')
+    .values({ lobby_id: lobbyId, kind, actor_user_id: actorUserId, data: JSON.stringify(data) })
+    .execute()
 }
 
 /**
@@ -252,24 +356,36 @@ export async function lobbyIsOpenForShare(db: Kysely<Database>, lobbyId: string)
  * statement that conflicts with `lobbyIsOpenForShare`'s row lock (see there).
  */
 export async function closeLobbyRows(db: Kysely<Database>, lobbyId: string, at: Date): Promise<string[] | null> {
-  return db.transaction().execute(async (trx) => {
-    const closed = await trx.updateTable('lobbies').set({ closed_at: at })
-      .where('id', '=', lobbyId).where('closed_at', 'is', null)
-      .returning('id').executeTakeFirst()
+  return db.transaction().execute(async trx => {
+    const closed = await trx
+      .updateTable('lobbies')
+      .set({ closed_at: at })
+      .where('id', '=', lobbyId)
+      .where('closed_at', 'is', null)
+      .returning('id')
+      .executeTakeFirst()
     if (!closed) return null
     await trx.deleteFrom('lobby_people').where('lobby_id', '=', lobbyId).execute()
     await trx.deleteFrom('lobby_activity').where('lobby_id', '=', lobbyId).execute()
-    const expired = await trx.updateTable('lobby_invites')
+    const expired = await trx
+      .updateTable('lobby_invites')
       .set({ status: 'expired' })
-      .where('lobby_id', '=', lobbyId).where('status', '=', 'pending')
+      .where('lobby_id', '=', lobbyId)
+      .where('status', '=', 'pending')
       .returning('invitee_user_id')
       .execute()
     return expired.map(r => r.invitee_user_id)
   })
 }
 
-export async function insertInvite(db: Kysely<Database>, i: { id: string; lobbyId: string; inviteeUserId: string; inviterUserId: string }): Promise<void> {
-  await db.insertInto('lobby_invites').values({ id: i.id, lobby_id: i.lobbyId, invitee_user_id: i.inviteeUserId, inviter_user_id: i.inviterUserId }).execute()
+export async function insertInvite(
+  db: Kysely<Database>,
+  i: { id: string; lobbyId: string; inviteeUserId: string; inviterUserId: string },
+): Promise<void> {
+  await db
+    .insertInto('lobby_invites')
+    .values({ id: i.id, lobby_id: i.lobbyId, invitee_user_id: i.inviteeUserId, inviter_user_id: i.inviterUserId })
+    .execute()
 }
 
 export async function getInvite(db: Kysely<Database>, id: string) {
@@ -282,21 +398,33 @@ export async function setInviteStatus(db: Kysely<Database>, id: string, status: 
 
 /** The user joined: their pending invites to this lobby are accepted. */
 export async function acceptInvites(db: Kysely<Database>, lobbyId: string, userId: string): Promise<void> {
-  await db.updateTable('lobby_invites').set({ status: 'accepted' })
-    .where('lobby_id', '=', lobbyId).where('invitee_user_id', '=', userId).where('status', '=', 'pending')
+  await db
+    .updateTable('lobby_invites')
+    .set({ status: 'accepted' })
+    .where('lobby_id', '=', lobbyId)
+    .where('invitee_user_id', '=', userId)
+    .where('status', '=', 'pending')
     .execute()
 }
 
 /** The user's pending invites to open lobbies, newest first. */
 export async function pendingInvitesFor(db: Kysely<Database>, userId: string): Promise<InviteRow[]> {
-  const rows = await db.selectFrom('lobby_invites as i')
+  const rows = await db
+    .selectFrom('lobby_invites as i')
     .innerJoin('lobbies as l', 'l.id', 'i.lobby_id')
     .leftJoin('user as u', 'u.id', 'i.inviter_user_id')
     .select(['i.id', 'i.lobby_id', 'l.name as lobby_name', 'i.inviter_user_id', 'u.name as inviter_name', 'i.created_at'])
-    .where('i.invitee_user_id', '=', userId).where('i.status', '=', 'pending').where('l.closed_at', 'is', null)
+    .where('i.invitee_user_id', '=', userId)
+    .where('i.status', '=', 'pending')
+    .where('l.closed_at', 'is', null)
     .orderBy('i.created_at', 'desc')
     .execute()
   return rows.map(r => ({
-    id: r.id, lobbyId: r.lobby_id, lobbyName: r.lobby_name, inviterUserId: r.inviter_user_id, inviterName: r.inviter_name, createdAt: r.created_at,
+    id: r.id,
+    lobbyId: r.lobby_id,
+    lobbyName: r.lobby_name,
+    inviterUserId: r.inviter_user_id,
+    inviterName: r.inviter_name,
+    createdAt: r.created_at,
   }))
 }

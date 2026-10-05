@@ -37,8 +37,13 @@
   <AuthHero />
 
   <main class="flex flex-grow md:items-center md:justify-center">
-    <form onsubmit={(e) => { e.preventDefault(); void submit() }} class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
-
+    <form
+      onsubmit={e => {
+        e.preventDefault()
+        void submit()
+      }}
+      class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0"
+    >
       <div class="flex flex-col gap-2">
         <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
           Sign in
@@ -49,8 +54,7 @@
       <div class="flex flex-col gap-[18px]">
         <div class="flex flex-col gap-2">
           <label for="login-email" class="text-[14px] font-medium text-[#d8d8ce]">Email</label>
-          <Input id="login-email" type="email" bind:value={email} autocomplete="email"
-            placeholder="you@example.com" required />
+          <Input id="login-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
         </div>
 
         <div class="flex flex-col gap-2">
@@ -58,13 +62,18 @@
             <label for="login-password" class="text-[14px] font-medium text-[#d8d8ce]">Password</label>
             <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
           </div>
-          <Input id="login-password" type="password" bind:value={password}
-            autocomplete="current-password" placeholder="••••••••" required />
+          <Input
+            id="login-password"
+            type="password"
+            bind:value={password}
+            autocomplete="current-password"
+            placeholder="••••••••"
+            required
+          />
         </div>
 
         <label class="flex items-center gap-[10px] text-[15px] text-[#c9c9bf] min-h-[44px] cursor-pointer">
-          <input type="checkbox" bind:checked={keepSignedIn}
-            class="w-[18px] h-[18px] m-0 accent-accent" />
+          <input type="checkbox" bind:checked={keepSignedIn} class="w-[18px] h-[18px] m-0 accent-accent" />
           Keep me signed in on this device
         </label>
       </div>

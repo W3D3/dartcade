@@ -9,7 +9,15 @@
   import PersonControls from './PersonControls.svelte'
   import { alreadyInOrInvited, boardChoices, canMove, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
 
-  let { lobby, viewerId, ownBoards, onupdate, onremove, onguest, oninvite }: {
+  let {
+    lobby,
+    viewerId,
+    ownBoards,
+    onupdate,
+    onremove,
+    onguest,
+    oninvite,
+  }: {
     lobby: Lobby
     viewerId: string | null
     ownBoards: OwnBoard[]
@@ -22,7 +30,11 @@
 
 <PeopleList {lobby} {viewerId} onplace={canMove(lobby, viewerId) ? onupdate : undefined}>
   {#snippet boardOf(p: LobbyPerson)}
-    <BoardChip person={p} choices={boardChoices(p, viewerId, ownBoards)} onpick={(boardId: string | null) => void onupdate(p.id, { boardId })} />
+    <BoardChip
+      person={p}
+      choices={boardChoices(p, viewerId, ownBoards)}
+      onpick={(boardId: string | null) => void onupdate(p.id, { boardId })}
+    />
   {/snippet}
   {#snippet controlsOf(p: LobbyPerson, i: number)}
     <PersonControls {lobby} person={p} index={i} {viewerId} {onupdate} {onremove} />

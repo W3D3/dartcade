@@ -101,10 +101,16 @@ describe('planChange', () => {
   })
 
   it('takes progress over the numbers when given (ATC in random order)', () => {
-    expect(planChange({ normal: 'up', from: '17', to: '5', progress: 4, prevProgress: 3 }))
-      .toEqual({ kind: 'roll', dir: 'down', tone: 'plain' })
-    expect(planChange({ normal: 'up', from: '5', to: '17', progress: 3, prevProgress: 4 }))
-      .toEqual({ kind: 'roll', dir: 'up', tone: 'back' })
+    expect(planChange({ normal: 'up', from: '17', to: '5', progress: 4, prevProgress: 3 })).toEqual({
+      kind: 'roll',
+      dir: 'down',
+      tone: 'plain',
+    })
+    expect(planChange({ normal: 'up', from: '5', to: '17', progress: 3, prevProgress: 4 })).toEqual({
+      kind: 'roll',
+      dir: 'up',
+      tone: 'back',
+    })
   })
 
   it('a bust rolls back up in red', () => {
@@ -121,11 +127,19 @@ describe('planChange', () => {
   })
 
   it('a bust in the same snapshot as a new leg just jumps, no red flash', () => {
-    expect(planChange({ ...base, from: '32', to: '501', bust: true, wasBust: false, reset: true })).toEqual({ kind: 'jump', dir: 'up', tone: 'plain' })
+    expect(planChange({ ...base, from: '32', to: '501', bust: true, wasBust: false, reset: true })).toEqual({
+      kind: 'jump',
+      dir: 'up',
+      tone: 'plain',
+    })
   })
 
   it('reduced motion jumps but keeps the colour', () => {
     expect(planChange({ ...base, from: '36', to: '81', reducedMotion: true })).toEqual({ kind: 'jump', dir: 'up', tone: 'back' })
-    expect(planChange({ ...base, from: '12', to: '32', bust: true, reducedMotion: true })).toEqual({ kind: 'jump', dir: 'up', tone: 'bust' })
+    expect(planChange({ ...base, from: '12', to: '32', bust: true, reducedMotion: true })).toEqual({
+      kind: 'jump',
+      dir: 'up',
+      tone: 'bust',
+    })
   })
 })

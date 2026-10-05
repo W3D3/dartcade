@@ -2,9 +2,7 @@ import type { operations } from '../schema/api.js'
 
 // A JSON body as its schema's type; any other media type (image/jpeg, audio/*, application/zip)
 // is declared in the spec as a binary string and handled as a Buffer
-type Body<T> = T extends { content: infer C }
-  ? 'application/json' extends keyof C ? C['application/json'] : Buffer
-  : never
+type Body<T> = T extends { content: infer C } ? ('application/json' extends keyof C ? C['application/json'] : Buffer) : never
 // openapi-typescript marks absent parts as `never`/optional-never; Fastify wants `unknown` there
 type Defined<T> = [T] extends [never] ? unknown : [T] extends [undefined] ? unknown : T
 type Responses<K extends keyof operations> = operations[K]['responses']

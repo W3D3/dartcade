@@ -13,11 +13,11 @@
   const inviteCount = $derived($me?.invites.length ?? 0)
 
   const links = [
-    { href: '/',            label: 'Play',         icon: 'play' },
-    { href: '/boards',      label: 'Boards',       icon: 'boards' },
-    { href: '/tournaments', label: 'Tournaments',  icon: 'trophy' },
-    { href: '/history',     label: 'History',      icon: 'clock' },
-    { href: '/settings',    label: 'Settings',     icon: 'settings' },
+    { href: '/', label: 'Play', icon: 'play' },
+    { href: '/boards', label: 'Boards', icon: 'boards' },
+    { href: '/tournaments', label: 'Tournaments', icon: 'trophy' },
+    { href: '/history', label: 'History', icon: 'clock' },
+    { href: '/settings', label: 'Settings', icon: 'settings' },
   ]
 
   function isActive(href: string) {
@@ -25,9 +25,10 @@
   }
 </script>
 
-<nav aria-label="Main"
-  class="hidden xl:flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]">
-
+<nav
+  aria-label="Main"
+  class="hidden xl:flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]"
+>
   <!-- Logo -->
   <div class="flex items-center gap-[10px] px-2">
     <BrandMark size={28} />
@@ -63,11 +64,11 @@
   </div>
 
   <div class="mt-auto flex flex-col gap-4">
-  <LobbyIndicator />
+    <LobbyIndicator />
 
-  <div class="flex items-stretch gap-2">
-    <div class="flex-grow min-w-0"><AccountMenu placement="sidebar" /></div>
-    <FriendsButton />
-  </div>
+    <div class="flex items-stretch gap-2">
+      <div class="flex-grow min-w-0"><AccountMenu placement="sidebar" /></div>
+      <FriendsButton />
+    </div>
   </div>
 </nav>

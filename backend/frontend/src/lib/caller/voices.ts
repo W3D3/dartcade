@@ -25,7 +25,11 @@ export type VoiceLibrary = {
 }
 
 export const voiceLibrary = writable<VoiceLibrary>({
-  packs: [], usage: { bytes: 0, limitBytes: 0 }, builtins: [], loaded: false, error: null,
+  packs: [],
+  usage: { bytes: 0, limitBytes: 0 },
+  builtins: [],
+  loaded: false,
+  error: null,
 })
 
 // ── URLs and manifests ────────────────────────────────────────────────────
@@ -69,7 +73,9 @@ function builtinManifest(id: string): Promise<BuiltinManifest | null> {
     }
   })()
   // Only a manifest that loaded is kept; a missing one is asked for again next time
-  void load.then(m => { if (!m) builtinManifests.delete(id) })
+  void load.then(m => {
+    if (!m) builtinManifests.delete(id)
+  })
   builtinManifests.set(id, load)
   return load
 }
@@ -122,9 +128,12 @@ export async function loadVoiceLibrary(): Promise<void> {
   const builtinsP = Promise.all(BUILTINS.map(builtinManifest))
   try {
     const { data } = await api.GET('/api/voice-packs')
-    const builtins = (await builtinsP).flatMap(m => m ? [{ id: m.id, name: m.name }] : [])
+    const builtins = (await builtinsP).flatMap(m => (m ? [{ id: m.id, name: m.name }] : []))
     if (seq !== librarySeq) return
-    if (!data) { voiceLibrary.update(l => ({ ...l, builtins, error: "Your voices couldn't be loaded." })); return }
+    if (!data) {
+      voiceLibrary.update(l => ({ ...l, builtins, error: "Your voices couldn't be loaded." }))
+      return
+    }
     voiceLibrary.set({ packs: data.packs, usage: data.usage, builtins, loaded: true, error: null })
   } catch {
     if (seq !== librarySeq) return
@@ -137,8 +146,13 @@ export async function loadVoiceLibrary(): Promise<void> {
 export type ImportOutcome = { kind: 'done'; pack: VoicePackImport } | { kind: 'error'; error: string } | { kind: 'cancelled' }
 
 const ImportSchema: z.ZodType<VoicePackImport> = z.object({
-  id: z.string(), name: z.string(), lang: z.string().nullable(), clips: z.number(), bytes: z.number(),
-  createdAt: z.string(), total: z.number(),
+  id: z.string(),
+  name: z.string(),
+  lang: z.string().nullable(),
+  clips: z.number(),
+  bytes: z.number(),
+  createdAt: z.string(),
+  total: z.number(),
 })
 const ErrorBodySchema = z.object({ error: z.string().min(1) })
 
@@ -156,7 +170,11 @@ export const keptText = (p: Pick<VoicePackImport, 'clips' | 'total'>) =>
   `Kept ${p.clips.toLocaleString('en-US')} of ${p.total.toLocaleString('en-US')} clips`
 
 function parseJson(text: string): unknown {
-  try { return JSON.parse(text) } catch { return null }
+  try {
+    return JSON.parse(text)
+  } catch {
+    return null
+  }
 }
 
 /**
@@ -165,22 +183,37 @@ function parseJson(text: string): unknown {
  */
 export function uploadVoicePack(file: File, onProgress: (fraction: number) => void, signal: AbortSignal): Promise<ImportOutcome> {
   return new Promise(resolve => {
-    if (signal.aborted) { resolve({ kind: 'cancelled' }); return }
+    if (signal.aborted) {
+      resolve({ kind: 'cancelled' })
+      return
+    }
     const xhr = new XMLHttpRequest()
     xhr.open('POST', `/api/voice-packs?name=${encodeURIComponent(file.name)}`)
     xhr.setRequestHeader('content-type', 'application/zip')
-    xhr.upload.onprogress = e => { if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total) }
-    const onAbort = () => { xhr.abort() }
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable && e.total > 0) onProgress(e.loaded / e.total)
+    }
+    const onAbort = () => {
+      xhr.abort()
+    }
     signal.addEventListener('abort', onAbort, { once: true })
     const finish = (outcome: ImportOutcome) => {
       signal.removeEventListener('abort', onAbort)
       if (outcome.kind === 'done') void loadVoiceLibrary()
       resolve(outcome)
     }
-    xhr.onabort = () => { finish({ kind: 'cancelled' }) }
-    xhr.onerror = () => { finish({ kind: 'error', error: importErrorText(0, null) }) }
+    xhr.onabort = () => {
+      finish({ kind: 'cancelled' })
+    }
+    xhr.onerror = () => {
+      finish({ kind: 'error', error: importErrorText(0, null) })
+    }
     xhr.onload = () => {
-      if (xhr.status === 401) { window.location.hash = '#/login'; finish({ kind: 'cancelled' }); return }
+      if (xhr.status === 401) {
+        window.location.hash = '#/login'
+        finish({ kind: 'cancelled' })
+        return
+      }
       const body = parseJson(xhr.responseText)
       const pack = ImportSchema.safeParse(body)
       if (xhr.status === 201 && pack.success) finish({ kind: 'done', pack: pack.data })
@@ -194,7 +227,10 @@ export function uploadVoicePack(file: File, onProgress: (fraction: number) => vo
 export async function importVoicePackFromLink(url: string): Promise<ImportOutcome> {
   try {
     const { data, error, response } = await api.POST('/api/voice-packs/import', { body: { url } })
-    if (data) { void loadVoiceLibrary(); return { kind: 'done', pack: data } }
+    if (data) {
+      void loadVoiceLibrary()
+      return { kind: 'done', pack: data }
+    }
     return { kind: 'error', error: importErrorText(response.status, error) }
   } catch {
     return { kind: 'error', error: importErrorText(0, null) }

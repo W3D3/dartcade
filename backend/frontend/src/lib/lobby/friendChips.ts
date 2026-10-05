@@ -10,7 +10,10 @@ const online = (f: Friend) => f.status.kind !== 'offline'
 export function friendChips(friends: Friend[], exclude: readonly string[], max = 6): FriendChip[] {
   const free = friends.filter(f => !exclude.includes(f.id))
   return [...free.filter(online).sort(byName), ...free.filter(f => !online(f)).sort(byName)].slice(0, max).map(f => ({
-    id: f.id, name: f.name, online: online(f), aria: `Add your friend ${f.name}${online(f) ? ', online now' : ''}`,
+    id: f.id,
+    name: f.name,
+    online: online(f),
+    aria: `Add your friend ${f.name}${online(f) ? ', online now' : ''}`,
   }))
 }
 

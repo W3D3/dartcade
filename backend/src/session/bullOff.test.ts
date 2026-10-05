@@ -1,7 +1,13 @@
 import { describe, it, expect } from 'vitest'
 import {
-  clearCurrentBullOffThrow, initBullOff, onBullOffDart, onBullOffTakeout, rank, rethrowBullOff,
-  skipBullOffThrow, throwFromDart,
+  clearCurrentBullOffThrow,
+  initBullOff,
+  onBullOffDart,
+  onBullOffTakeout,
+  rank,
+  rethrowBullOff,
+  skipBullOffThrow,
+  throwFromDart,
 } from './bullOff.js'
 import type { BullOffThrow } from './bullOff.js'
 import type { Dart } from './types.js'

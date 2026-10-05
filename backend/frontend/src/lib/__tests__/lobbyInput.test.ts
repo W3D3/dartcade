@@ -24,9 +24,17 @@ describe('lobby codes as people type them', () => {
 })
 
 describe('what a refusal means', () => {
-  it('names who isn\'t ready and which boards are offline', () => {
-    expect(describeConflict({ error: 'x', code: 'not_ready', notReady: [{ personId: 'l', name: 'Lena' }, { personId: 'm', name: 'Max' }] }))
-      .toBe('Not ready yet: Lena, Max')
+  it("names who isn't ready and which boards are offline", () => {
+    expect(
+      describeConflict({
+        error: 'x',
+        code: 'not_ready',
+        notReady: [
+          { personId: 'l', name: 'Lena' },
+          { personId: 'm', name: 'Max' },
+        ],
+      }),
+    ).toBe('Not ready yet: Lena, Max')
     expect(describeConflict({ error: 'x', code: 'board_offline', offlineBoards: ["Lena's place"] })).toBe("Board offline: Lena's place")
   })
 
@@ -39,12 +47,13 @@ describe('what a refusal means', () => {
   })
 
   it('a running game: yours (it comes with its id), or a player named by the server', () => {
-    expect(describeConflict({ error: 'Admin already has a game running', code: 'active_session', sessionId: 's9' }))
-      .toBe('You already have a game running')
+    expect(describeConflict({ error: 'Admin already has a game running', code: 'active_session', sessionId: 's9' })).toBe(
+      'You already have a game running',
+    )
     expect(describeConflict({ error: 'Lena already has a game running', code: 'active_session' })).toBe('Lena already has a game running')
   })
 
-  it('passes the server\'s own words through otherwise', () => {
+  it("passes the server's own words through otherwise", () => {
     expect(describeConflict({ error: 'lobby not found' })).toBe('lobby not found')
   })
 })

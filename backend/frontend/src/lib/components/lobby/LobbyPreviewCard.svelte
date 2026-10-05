@@ -2,12 +2,15 @@
   // Which lobby a code opens (Lobby-Join): its name, host, boards and how many are in.
   import Avatar from './Avatar.svelte'
 
-  let { name, hostName, boardNames, peopleCount }: { name: string; hostName: string | null; boardNames: string[]; peopleCount: number } = $props()
-  const line = $derived([
-    hostName ? `${hostName}'s lobby` : 'Lobby',
-    ...(boardNames.length ? [boardNames.join(', ')] : []),
-    `${peopleCount} ${peopleCount === 1 ? 'person' : 'people'}`,
-  ].join(' · '))
+  let { name, hostName, boardNames, peopleCount }: { name: string; hostName: string | null; boardNames: string[]; peopleCount: number } =
+    $props()
+  const line = $derived(
+    [
+      hostName ? `${hostName}'s lobby` : 'Lobby',
+      ...(boardNames.length ? [boardNames.join(', ')] : []),
+      `${peopleCount} ${peopleCount === 1 ? 'person' : 'people'}`,
+    ].join(' · '),
+  )
 </script>
 
 <div class="flex items-center gap-3 p-[14px] rounded-[12px] bg-surface-active border border-line-2">

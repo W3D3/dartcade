@@ -73,12 +73,12 @@ Rate limit: 5 req / min / IP.
 
 Responses:
 
-| Condition | Status | Body |
-|---|---|---|
-| Code not found or expired | 404 | `{ error: "not found" }` |
-| Found, not yet claimed | 200 | `{ status: "pending" }` |
-| Found, claimed, `raw_token` present | 200 | `{ status: "claimed", token: string }` — then nulls `raw_token` |
-| Found, claimed, `raw_token` null | 200 | `{ status: "consumed" }` |
+| Condition                           | Status | Body                                                            |
+| ----------------------------------- | ------ | --------------------------------------------------------------- |
+| Code not found or expired           | 404    | `{ error: "not found" }`                                        |
+| Found, not yet claimed              | 200    | `{ status: "pending" }`                                         |
+| Found, claimed, `raw_token` present | 200    | `{ status: "claimed", token: string }` — then nulls `raw_token` |
+| Found, claimed, `raw_token` null    | 200    | `{ status: "consumed" }`                                        |
 
 The bridge treats `consumed` as a fatal error (token was already delivered and lost).
 
@@ -191,26 +191,26 @@ State: `pairOpen bool`, `pairCode string`, `pairName string`, `pairError string 
 
 ## 6. Security
 
-| Defence | Detail |
-|---|---|
-| Rate limiting | `/api/pairing/request`: 10/min/IP. `/api/pairing/:code/token`: 5/min/IP. |
-| Short expiry | Codes expire after 10 minutes. |
-| One-time delivery | `raw_token` is nulled out after the first successful delivery poll. |
-| Code entropy | 8 chars × 32-symbol alphabet ≈ 10¹² combinations; impractical to brute-force within 10 min at 5 req/min. |
-| Token storage | Only SHA-256 hash persisted in `boards`; plaintext exists only in `pairing_codes.raw_token` for the window between claim and delivery. |
+| Defence           | Detail                                                                                                                                 |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Rate limiting     | `/api/pairing/request`: 10/min/IP. `/api/pairing/:code/token`: 5/min/IP.                                                               |
+| Short expiry      | Codes expire after 10 minutes.                                                                                                         |
+| One-time delivery | `raw_token` is nulled out after the first successful delivery poll.                                                                    |
+| Code entropy      | 8 chars × 32-symbol alphabet ≈ 10¹² combinations; impractical to brute-force within 10 min at 5 req/min.                               |
+| Token storage     | Only SHA-256 hash persisted in `boards`; plaintext exists only in `pairing_codes.raw_token` for the window between claim and delivery. |
 
 ---
 
 ## 7. Files touched
 
-| File | Change |
-|---|---|
-| `backend/src/db/migrations/004_pairing.sql` | new |
-| `backend/src/db/schema.ts` | add `PairingCodesTable`, extend `Database` |
-| `backend/src/db/queries.ts` | 4 new query functions |
-| `backend/src/api/pairing.ts` | new plugin (3 routes) |
-| `backend/src/index.ts` | register `@fastify/rate-limit` + pairing plugin |
-| `backend/package.json` | add `@fastify/rate-limit` |
-| `bridge/cmd/bridge/config.go` | `Token` field, `runPairing`, `persistToken` |
-| `bridge/cmd/bridge/main.go` | token gate, construct WS URL |
-| `backend/frontend/src/routes/Boards.svelte` | pairing modal |
+| File                                        | Change                                          |
+| ------------------------------------------- | ----------------------------------------------- |
+| `backend/src/db/migrations/004_pairing.sql` | new                                             |
+| `backend/src/db/schema.ts`                  | add `PairingCodesTable`, extend `Database`      |
+| `backend/src/db/queries.ts`                 | 4 new query functions                           |
+| `backend/src/api/pairing.ts`                | new plugin (3 routes)                           |
+| `backend/src/index.ts`                      | register `@fastify/rate-limit` + pairing plugin |
+| `backend/package.json`                      | add `@fastify/rate-limit`                       |
+| `bridge/cmd/bridge/config.go`               | `Token` field, `runPairing`, `persistToken`     |
+| `bridge/cmd/bridge/main.go`                 | token gate, construct WS URL                    |
+| `backend/frontend/src/routes/Boards.svelte` | pairing modal                                   |

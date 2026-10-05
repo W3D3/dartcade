@@ -5,7 +5,13 @@
   import Avatar from './Avatar.svelte'
   import { inviteTime } from '$lib/lobby/format'
 
-  let { invite, now, busy = false, onaccept, ondecline }: {
+  let {
+    invite,
+    now,
+    busy = false,
+    onaccept,
+    ondecline,
+  }: {
     invite: PendingInvite
     now: Date
     /** An accept or decline is in flight. */
@@ -25,7 +31,15 @@
     <span class="text-[12px] text-text-dim shrink-0">{inviteTime(invite.createdAt, now)}</span>
   </div>
   <div class="grid grid-cols-2 gap-2">
-    <Button variant="outline" class="h-[46px] font-semibold text-[15px]" aria-label="Decline the invite to {invite.lobbyName}" disabled={busy} onclick={ondecline}>Decline</Button>
-    <Button variant="accent" class="h-[46px]" aria-label="Accept the invite to {invite.lobbyName}" disabled={busy} onclick={onaccept}>Accept</Button>
+    <Button
+      variant="outline"
+      class="h-[46px] font-semibold text-[15px]"
+      aria-label="Decline the invite to {invite.lobbyName}"
+      disabled={busy}
+      onclick={ondecline}>Decline</Button
+    >
+    <Button variant="accent" class="h-[46px]" aria-label="Accept the invite to {invite.lobbyName}" disabled={busy} onclick={onaccept}
+      >Accept</Button
+    >
   </div>
 </li>

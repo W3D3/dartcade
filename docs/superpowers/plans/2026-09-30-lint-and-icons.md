@@ -45,6 +45,7 @@
 ### Task 1: ESLint setup (frontend errors, backend warnings)
 
 **Files:**
+
 - Create: `backend/frontend/eslint.config.js`, `backend/eslint.config.js`
 - Modify: `backend/frontend/package.json`, `backend/package.json` (devDependencies, `lint` script), `mise.toml` (lint tasks)
 
@@ -231,10 +232,12 @@ export function nextButton(o: { manual: boolean; dartCount: number; locked: bool
 The logic modules take the generated game types instead of `Record<string, unknown>`.
 
 **Files:**
+
 - Create: `src/lib/gameState.ts`, test `src/lib/__tests__/gameState.test.ts`
 - Modify: `src/lib/visitHistory.ts`, `playerStats.ts`, `gameViews/meta.ts`, `gameViews/index.ts`; tests for these (fixtures may keep casting — tests are relaxed)
 
 **Interfaces (produces):**
+
 - `gameState(snapshot: Snapshot | null): { x01: X01Game; atc: null } | { x01: null; atc: AtcGame } | { x01: null; atc: null }` — narrows by `gameId`; unknown ids give both null.
 - `trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHistory`
 - `x01Player(game: X01Game, i, history, o)`, `atcPlayer(game: AtcGame, i)`
@@ -420,10 +423,11 @@ interface ImportMetaEnv {
 ```
 
 `CreateSession`:
-  - `loadPrefs()` returns `JSON.parse(...)` (any): parse into `unknown` and accept it only through a `isSavedPrefs(v: unknown): v is SavedPrefs` guard (object with a string `mode`, an object `configs`, optional string `boardId`); otherwise `null`.
-  - The four `config.maxRounds as number` / similar reads (lines ~273–299): read through `typeof config.maxRounds === 'number' ? config.maxRounds : <the default from the game's defaultConfig>`, or a small helper `num(v: unknown, d: number)`.
-  - Line ~322 `no-unsafe-assignment`: same helper for the value read from the config record.
-`ui/input/input.svelte` (`no-unsafe-assignment` on the `files` binding): give the props an explicit type for `files` (`files?: FileList | null`). `ui/button/button.svelte` (`no-useless-default-assignment`): drop the `= undefined` default. `App.svelte` `no-floating-promises`: `void push(...)` / `void` the async init call. Everything else: fix per the rule's message; no assertions, no `eslint-disable` comments.
+
+- `loadPrefs()` returns `JSON.parse(...)` (any): parse into `unknown` and accept it only through a `isSavedPrefs(v: unknown): v is SavedPrefs` guard (object with a string `mode`, an object `configs`, optional string `boardId`); otherwise `null`.
+- The four `config.maxRounds as number` / similar reads (lines ~273–299): read through `typeof config.maxRounds === 'number' ? config.maxRounds : <the default from the game's defaultConfig>`, or a small helper `num(v: unknown, d: number)`.
+- Line ~322 `no-unsafe-assignment`: same helper for the value read from the config record.
+  `ui/input/input.svelte` (`no-unsafe-assignment` on the `files` binding): give the props an explicit type for `files` (`files?: FileList | null`). `ui/button/button.svelte` (`no-useless-default-assignment`): drop the `= undefined` default. `App.svelte` `no-floating-promises`: `void push(...)` / `void` the async init call. Everything else: fix per the rule's message; no assertions, no `eslint-disable` comments.
 
 - [ ] **Step 5:** `npx eslint src` → **0 problems**; `npm run typecheck` → 0; `npx vitest run` → pass.
 
@@ -441,33 +445,33 @@ interface ImportMetaEnv {
 
 - [ ] **Step 3: Replace** each inline icon SVG with the Lucide component (`import { Name } from '@lucide/svelte'`), passing `size` = the old width and `strokeWidth` when it was not 2, and moving `class` (e.g. `animate-spin`, `opacity-50`) onto the component:
 
-| File (line) | Old shape | Lucide |
-|---|---|---|
-| `BoardSelector.svelte` (24, 64) | pencil in a box | `SquarePen` |
-| `BoardSelector.svelte` (37) | chevron down | `ChevronDown` |
-| `BoardStatusPanel.svelte` (98, 127, 153, 172, 193, 215) | spinner arc | `LoaderCircle` |
-| `BoardStatusPanel.svelte` (107) | three lines with dots | `SlidersHorizontal` |
-| `BoardStatusPanel.svelte` (158), `Boards.svelte` (231) | play triangle (filled) | `Play` with `fill="currentColor"` |
-| `BoardStatusPanel.svelte` (177), `Boards.svelte` (236) | square (filled) | `Square` with `fill="currentColor"` |
-| `BoardStatusPanel.svelte` (198), `Boards.svelte` (241) | rotate counter-clockwise | `RotateCcw` |
-| `BoardStatusPanel.svelte` (220), `Boards.svelte` (248) | sun (calibrate) | `Sun` |
-| `Boards.svelte` (219, 461) | spinner arc | `LoaderCircle` |
-| `Boards.svelte` (271), `CreateSession.svelte` (346) | plus | `Plus` |
-| `Boards.svelte` (370) | pencil | `Pencil` |
-| `Boards.svelte` (423) | external link | `ExternalLink` |
-| `ControlBar.svelte` (19) | undo arrow | `Undo2` |
-| `ControlBar.svelte` (29), `PairBoardModal.svelte` (112) | chevron right | `ChevronRight` |
-| `DartSlots.svelte` (94), `GameHeader.svelte` (33) | chevron left | `ChevronLeft` |
-| `DartSlots.svelte` (104), `GameHeader.svelte` (56), `SettingsDrawer.svelte` (50), `ui/modal/modal.svelte` (76), `ui/toast/toast.svelte` (60) | cross | `X` |
-| `GameHeader.svelte` (74) | gear | `Settings` |
-| `PairBoardModal.svelte` (172) | spinner arc | `LoaderCircle` |
-| `PlayerPill.svelte` (16), `SideNav.svelte` (63) | trophy | `Trophy` |
-| `SessionBanner.svelte` (33), `CreateSession.svelte` (377) | arrow right | `ArrowRight` |
-| `SideNav.svelte` (50) | target | `Target` |
-| `SideNav.svelte` (57) | monitor | `Monitor` |
-| `SideNav.svelte` (68) | clock | `Clock` |
-| `CreateSession.svelte` (191) | check | `Check` |
-| `ui/toast/toast.svelte` (29, 34) | check / exclamation in a coloured badge | the badge `<span>` is replaced by `CircleCheck` (success, `text-accent`) / `CircleAlert` (error, `text-live`), `size={24}` |
+| File (line)                                                                                                                                  | Old shape                               | Lucide                                                                                                                     |
+| -------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `BoardSelector.svelte` (24, 64)                                                                                                              | pencil in a box                         | `SquarePen`                                                                                                                |
+| `BoardSelector.svelte` (37)                                                                                                                  | chevron down                            | `ChevronDown`                                                                                                              |
+| `BoardStatusPanel.svelte` (98, 127, 153, 172, 193, 215)                                                                                      | spinner arc                             | `LoaderCircle`                                                                                                             |
+| `BoardStatusPanel.svelte` (107)                                                                                                              | three lines with dots                   | `SlidersHorizontal`                                                                                                        |
+| `BoardStatusPanel.svelte` (158), `Boards.svelte` (231)                                                                                       | play triangle (filled)                  | `Play` with `fill="currentColor"`                                                                                          |
+| `BoardStatusPanel.svelte` (177), `Boards.svelte` (236)                                                                                       | square (filled)                         | `Square` with `fill="currentColor"`                                                                                        |
+| `BoardStatusPanel.svelte` (198), `Boards.svelte` (241)                                                                                       | rotate counter-clockwise                | `RotateCcw`                                                                                                                |
+| `BoardStatusPanel.svelte` (220), `Boards.svelte` (248)                                                                                       | sun (calibrate)                         | `Sun`                                                                                                                      |
+| `Boards.svelte` (219, 461)                                                                                                                   | spinner arc                             | `LoaderCircle`                                                                                                             |
+| `Boards.svelte` (271), `CreateSession.svelte` (346)                                                                                          | plus                                    | `Plus`                                                                                                                     |
+| `Boards.svelte` (370)                                                                                                                        | pencil                                  | `Pencil`                                                                                                                   |
+| `Boards.svelte` (423)                                                                                                                        | external link                           | `ExternalLink`                                                                                                             |
+| `ControlBar.svelte` (19)                                                                                                                     | undo arrow                              | `Undo2`                                                                                                                    |
+| `ControlBar.svelte` (29), `PairBoardModal.svelte` (112)                                                                                      | chevron right                           | `ChevronRight`                                                                                                             |
+| `DartSlots.svelte` (94), `GameHeader.svelte` (33)                                                                                            | chevron left                            | `ChevronLeft`                                                                                                              |
+| `DartSlots.svelte` (104), `GameHeader.svelte` (56), `SettingsDrawer.svelte` (50), `ui/modal/modal.svelte` (76), `ui/toast/toast.svelte` (60) | cross                                   | `X`                                                                                                                        |
+| `GameHeader.svelte` (74)                                                                                                                     | gear                                    | `Settings`                                                                                                                 |
+| `PairBoardModal.svelte` (172)                                                                                                                | spinner arc                             | `LoaderCircle`                                                                                                             |
+| `PlayerPill.svelte` (16), `SideNav.svelte` (63)                                                                                              | trophy                                  | `Trophy`                                                                                                                   |
+| `SessionBanner.svelte` (33), `CreateSession.svelte` (377)                                                                                    | arrow right                             | `ArrowRight`                                                                                                               |
+| `SideNav.svelte` (50)                                                                                                                        | target                                  | `Target`                                                                                                                   |
+| `SideNav.svelte` (57)                                                                                                                        | monitor                                 | `Monitor`                                                                                                                  |
+| `SideNav.svelte` (68)                                                                                                                        | clock                                   | `Clock`                                                                                                                    |
+| `CreateSession.svelte` (191)                                                                                                                 | check                                   | `Check`                                                                                                                    |
+| `ui/toast/toast.svelte` (29, 34)                                                                                                             | check / exclamation in a coloured badge | the badge `<span>` is replaced by `CircleCheck` (success, `text-accent`) / `CircleAlert` (error, `text-live`), `size={24}` |
 
 `Boards.svelte`'s local icon snippets (`startIcon`, `stopIcon`, …) and the `icon: Snippet` parameter of its `control` snippet become a Lucide component passed as a prop (`icon: typeof Play` — the Lucide component type, imported as `type Icon` from `@lucide/svelte`) and rendered with `<icon size={12} />` (Svelte 5 dynamic component).
 

@@ -19,7 +19,11 @@ export function loadOnce<T>(fetch: () => Promise<T>, initial: T): LoadOnce<T> {
   async function refresh(): Promise<void> {
     // An explicit load counts as the first: subscribing afterwards doesn't load again
     started = true
-    try { store.set(await fetch()) } catch { started = false /* keep what we have; the next use retries */ }
+    try {
+      store.set(await fetch())
+    } catch {
+      started = false /* keep what we have; the next use retries */
+    }
   }
   return {
     subscribe(run) {

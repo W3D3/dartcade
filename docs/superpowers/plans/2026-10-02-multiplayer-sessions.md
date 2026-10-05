@@ -55,6 +55,7 @@ This plan doesn't add lobbies. The local "New game" flow builds seats from today
 ### Task 1: DB: seat controller, seat board, forfeited, event board
 
 **Files:**
+
 - Create: `backend/src/db/migrations/008_multiplayer_seats.sql`
 - Modify: `backend/src/db/schema.ts` (`GamePlayersTable`, `GameSessionEventsTable`)
 - Modify: `backend/src/db/queries.ts`:
@@ -63,7 +64,9 @@ This plan doesn't add lobbies. The local "New game" flow builds seats from today
 - Test: `backend/src/db/queries.test.ts`
 
 **Interfaces:**
+
 - Produces:
+
   ```ts
   export type SeatRow = { name: string; user_id: string | null; controller_user_id: string; board_db_id: string | null }
   export type StoredSeatRow = { name: string; user_id: string | null; controller_user_id: string | null; board_db_id: string | null; board_name: string | null }
@@ -245,6 +248,7 @@ export async function hasActiveSessionOnBoard(db: Kysely<Database>, boardDbId: s
 Run: `cd backend && npm run typecheck`
 
 Callers to update:
+
 - `FinishedSeat` users: these are fixed in Task 6. For now, add `forfeited: false` in `results()` in `session/replay.ts`, so `{ ...r, throwPosition, forfeited: false }`.
 - `engine.ts` `record()` passes `board_db_id: null` to `appendEvent`. Task 4 fills it in.
 - `engine.ts` `create()` seat mapping: add `controller_user_id: ownerUserId, board_db_id: boardId`.
@@ -269,11 +273,13 @@ git commit -m "feat(db): seat controller, seat board and forfeited per game seat
 ### Task 2: WS schema: seats, status, forfeit, notices, errors
 
 **Files:**
+
 - Modify: `schema/game-ws-v1.json`
 - Regenerate: run `npm run gen:api` at the repo root. It writes `backend/src/schema/{game-ws,zod}.ts` and `backend/frontend/src/lib/api/{game-ws,zod}.ts`.
 - Test: `backend/src/session/snapshot.contract.test.ts` gets extended in Task 5. This task is checked by gen and the typecheck.
 
 **Interfaces:**
+
 - Produces these generated types in `backend/src/schema/game-ws.ts`:
   - `SeatInfo`, `ForfeitAction`, `NoticeMessage`, `ErrorMessage`
   - `Snapshot` with the new required fields `status`, `ownerUserId`, `seats`, `mySeats`
@@ -388,13 +394,16 @@ git add schema/game-ws-v1.json backend/src/schema backend/frontend/src/lib/api b
 ### Task 3: Seats in the engine (create, indexes, rebuild)
 
 **Files:**
+
 - Modify: `backend/src/session/types.ts` (`Seat`, `Session`)
 - Modify: `backend/src/session/replay.ts` (`newSession`)
 - Modify: `backend/src/session/engine.ts` (`create`, `createWithSeats`, indexes, `rebuildOne`, `release`, the errors)
 - Test: `backend/src/session/engine.test.ts`
 
 **Interfaces:**
+
 - Produces:
+
   ```ts
   // types.ts
   export type Seat = { name: string; userId: string | null; controllerUserId: string; boardId: string | null; boardName: string | null }
@@ -524,6 +533,7 @@ export type BmStatus = { status: string; running: boolean; event: string }
 ```
 
 In `Session`:
+
 - Replace `bmStatus: … | null` with `boardStatus: Map<string, BmStatus>`.
 - Add `seats: Seat[]` and `forfeited: number[]`.
 - Change `status` to `'active' | 'finished' | 'aborted'`.
@@ -554,6 +564,7 @@ export function newSession(a: {
 ```
 
 Fix the test callers:
+
 - `replay.test.ts:87`: pass `seats: PLAYERS.map((p, i) => ({ name: p.name, userId: i === 0 ? 'user-1' : null, controllerUserId: 'user-1', boardId: 'board-1', boardName: null }))` instead of `players: PLAYERS`.
 - `apply.test.ts`'s `session()` helper, which builds a `Session` literal: replace `bmStatus: null` with `boardStatus: new Map(), forfeited: [], seats: players.map(p => ({ name: p.name, userId: null, controllerUserId: 'u1', boardId: 'b1', boardName: null }))`.
 - Any other `Session` literal that `npm run typecheck` reports gets the same fields.
@@ -685,13 +696,16 @@ git commit -m "feat(engine): seats with controller and board; index every board 
 ### Task 4: Route board events to the seat that's up
 
 **Files:**
+
 - Modify: `backend/src/session/engine.ts` (`onBridgeEvent`, `record`, constructor, `onBoardPresence`)
 - Modify: `backend/src/bridge-gw/handler.ts` (call `engine.onBoardPresence` on connect and disconnect)
 - Test: `backend/src/session/engine.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Session.seats`, `Session.boardStatus` (Task 3).
 - Produces:
+
   ```ts
   export type Notice = { type: 'notice'; code: 'not_your_turn'; boardId: string }
   export type NotifyFn = (sessionId: string, userIds: string[], notice: Notice) => void
@@ -860,6 +874,7 @@ Then:
 - [ ] **Step 4: Wire up bridge presence**
 
 In `backend/src/bridge-gw/handler.ts`:
+
 - after `bridgeConnections.register(conn, board.id)`, call `engine.onBoardPresence(board.id)`
 - in both `close` and `error` handlers, call `if (conn.boardDbId) engine.onBoardPresence(conn.boardDbId)` after `bridgeConnections.remove(conn)`
 
@@ -882,6 +897,7 @@ git commit -m "feat(engine): only the board of the seat that's up feeds the game
 ### Task 5: Who may act, who may watch, per-viewer snapshots
 
 **Files:**
+
 - Create: `backend/src/session/access.ts`
 - Create: `backend/src/session/access.test.ts`
 - Modify: `backend/src/session/engine.ts` (`onUserAction`, `getSnapshot`, `deleteSession`)
@@ -892,8 +908,10 @@ git commit -m "feat(engine): only the board of the seat that's up feeds the game
 - Test: `backend/src/browser-gw/handler.test.ts`, `backend/src/session/snapshot.contract.test.ts`, `backend/src/session/engine.test.ts`, `backend/src/api/sessions.test.ts`
 
 **Interfaces:**
+
 - Consumes: `currentSeat`, `Notice`, `NotifyFn` (Task 4); `Seat` (Task 3); the Task 2 generated types `Snapshot`, `ErrorMessage`, `NoticeMessage`.
 - Produces:
+
   ```ts
   // access.ts
   export function canAccessSession(userId: string, session: Session): boolean
@@ -1095,6 +1113,7 @@ In `api/sessions.test.ts`, add a test that `DELETE /api/sessions/:id` by a contr
 Also add one for `GET` by that controller getting 200. Mock `getSnapshot` to return `undefined` so `game` is `null`.
 
 In `browser-gw/handler.test.ts`:
+
 - Update the `BrowserConnections` tests to the new `add(sessionId, ws, userId)` / `pushEach` API.
 - Add:
 
@@ -1122,6 +1141,7 @@ In `browser-gw/handler.test.ts`:
 ```
 
 Add a WS test: a refused action gets an `error` message back. Follow the existing `WS auth` test's setup. Use `getAuthUser` resolving `{ userId: 'lena' }`. The engine mock has:
+
 - `getSession` returning `{ id: 's1', ownerUserId: 'host', seats: [{ controllerUserId: 'lena' }] }`
 - `getSnapshot` returning `{ type: 'snapshot' }`
 - `onUserAction` resolving `{ ok: false, code: 'forbidden' }`
@@ -1268,6 +1288,7 @@ export class BrowserConnections {
 ```
 
 `handler.ts`:
+
 - `browserConnections.add(sessionId, socket, user.userId)`
 - send the first snapshot via `engine.getSnapshot(sessionId, viewFor(sessionId, user.userId))`
 - after `add`, call `pushSnapshot(sessionId, engine)` so the others see this controller connect
@@ -1306,6 +1327,7 @@ export function pushNotice(sessionId: string, userIds: string[], notice: Notice)
 Check that `bridge-gw/connections.ts` doesn't import anything from `browser-gw`, so there's no import cycle. It only imports schema types.
 
 `api/sessions.ts`:
+
 - `DELETE` checks `isHost(req.userId, session)` (403 otherwise). `GET`/list keep `canAccessSession`.
 - `GET /api/sessions/:id`: `engine.getSnapshot(session.id)` still works with the default view.
 
@@ -1330,6 +1352,7 @@ git commit -m "feat: per-seat control, per-viewer snapshots, notices and refused
 ### Task 6: Forfeit ends the game with forfeited seats last
 
 **Files:**
+
 - Modify: `backend/src/games/ranking.ts` (`forfeitPlacements`)
 - Modify: `backend/src/session/apply.ts` (`forfeit` case)
 - Modify: `backend/src/session/replay.ts` (`results`)
@@ -1337,8 +1360,10 @@ git commit -m "feat: per-seat control, per-viewer snapshots, notices and refused
 - Test: `backend/src/games/ranking.test.ts`, `backend/src/session/apply.test.ts`, `backend/src/session/engine.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Session.forfeited` (Task 3); `ForfeitAction` with `seats` filled in by `authorizeAction` (Task 5).
 - Produces:
+
   ```ts
   export function forfeitPlacements(placements: number[], forfeited: ReadonlySet<number>): number[]
   export type FinishedSeat = SeatResult & { throwPosition: number; forfeited: boolean }
@@ -1491,12 +1516,14 @@ git commit -m "feat(engine): forfeit ends the game, forfeited seats placed last"
 ### Task 7: History shows forfeits
 
 **Files:**
+
 - Modify: `backend/src/db/history.ts` (`HistorySeat` gets `forfeited`)
 - Modify: `schema/api-v1.yaml` (`HistorySeat`, or the name `GET /api/games` uses for a seat, gets `forfeited: boolean`)
 - Regenerate: `npm run gen:api`
 - Test: `backend/src/db/history.test.ts`, `backend/src/api/games.test.ts`
 
 **Interfaces:**
+
 - Consumes: `game_players.forfeited` (Task 1).
 - Produces: `HistorySeat.forfeited: boolean` in the API.
 
@@ -1544,14 +1571,17 @@ git commit -m "feat(history): mark forfeited seats"
 ### Task 8: Two-board end-to-end check through the real gateways
 
 **Files:**
+
 - Create: `backend/src/multiplayer.test.ts`
 
 **Interfaces:**
+
 - Consumes: everything above.
 
 - [ ] **Step 1: Write the test**
 
 This uses the engine plus the real `BrowserConnections` and `pushSnapshot` with fake sockets, with no HTTP. It checks the whole push path:
+
 - per-viewer `mySeats`
 - presence
 - notices to the right user
@@ -1620,12 +1650,14 @@ git commit -m "test: two players on two boards through the push path"
 ### Task 9: Bring the spec and agent notes up to date
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-10-02-online-multiplayer-design.md`
 - Modify: `AGENTS.md`
 
 - [ ] **Step 1: Update the spec**
 
 Apply the "Spec deviations" listed at the top of this plan to the spec:
+
 - In "Ending early → Forfeit", remove the `standings` hook and the "last player / one controller wins" rule. Say that `summarize` ranks by standing when there's no winner.
 - In "Access → Actions", remove `actionScope`. Make `bulloff_skip` per seat and `bulloff_rethrow` host-only. Abort is `DELETE /api/sessions/:id`.
 - In "Testing", remove `standings` from the module tests.

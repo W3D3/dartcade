@@ -18,7 +18,9 @@ export function rememberReturn(storage: Store | null, hash: string): void {
   try {
     if (path) storage?.setItem(KEY, path)
     else storage?.removeItem(KEY)
-  } catch { /* no storage: sign-in goes home */ }
+  } catch {
+    /* no storage: sign-in goes home */
+  }
 }
 
 /** The remembered page, forgotten once taken; the start page when there is none. */
@@ -27,10 +29,16 @@ export function takeReturn(storage: Store | null): string {
     const path = storage?.getItem(KEY) ?? null
     storage?.removeItem(KEY)
     return (path && route(path)) ?? '/'
-  } catch { return '/' }
+  } catch {
+    return '/'
+  }
 }
 
 /** The tab's sessionStorage, or null where the browser blocks it. */
 export function sessionStore(): Store | null {
-  try { return window.sessionStorage } catch { return null }
+  try {
+    return window.sessionStorage
+  } catch {
+    return null
+  }
 }

@@ -3,11 +3,28 @@ import { listKeyMove, listPlacement, placed, reorder, samePlace, teamKeyMove, te
 import type { LobbyPerson, TeamId } from '../api/lobby-ws'
 
 const person = (id: string, team: TeamId | null, plays = true): LobbyPerson => ({
-  id, userId: null, addedByUserId: 'chris', name: id.toUpperCase(), boardId: null, boardName: null, boardOwnerUserId: null,
-  boardOnline: false, boardMovedBy: null, usualBoardName: null, plays, ready: false, team, presence: null,
+  id,
+  userId: null,
+  addedByUserId: 'chris',
+  name: id.toUpperCase(),
+  boardId: null,
+  boardName: null,
+  boardOwnerUserId: null,
+  boardOnline: false,
+  boardMovedBy: null,
+  usualBoardName: null,
+  plays,
+  ready: false,
+  team,
+  presence: null,
 })
 // Lobby order: a1 b1 x(sits out, team A) a2 b2 a3
-const a1 = person('a1', 'A'), b1 = person('b1', 'B'), x = person('x', 'A', false), a2 = person('a2', 'A'), b2 = person('b2', 'B'), a3 = person('a3', 'A')
+const a1 = person('a1', 'A'),
+  b1 = person('b1', 'B'),
+  x = person('x', 'A', false),
+  a2 = person('a2', 'A'),
+  b2 = person('b2', 'B'),
+  a3 = person('a3', 'A')
 const people = [a1, b1, x, a2, b2, a3]
 const ids = (ps: LobbyPerson[]) => ps.map(p => p.id)
 const teamOf = (ps: LobbyPerson[], id: string) => ps.find(p => p.id === id)?.team

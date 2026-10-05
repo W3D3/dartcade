@@ -54,14 +54,14 @@ Keys we use: `0`–`180`, `busted`, `gameshot`, `matchshot`, `gameon`, `leg_N`, 
 
 ## What the caller says
 
-| Moment | Clip | Notes |
-|---|---|---|
-| A visit ends with a score | the visit total, `0`–`180` | a visit of 0 plays the pack's `0` clip |
-| A bust | `busted` | instead of the total |
-| A checkout that wins a leg | `gameshot` | then `leg_N` for the next leg if the pack has it ("Second leg") |
-| A checkout that wins the match | `matchshot` | falls back to `gameshot` |
-| The game starts | `gameon` | after the bull off, if there is one |
-| A bull off starts | `bulling_start` | optional; silent without it |
+| Moment                         | Clip                       | Notes                                                           |
+| ------------------------------ | -------------------------- | --------------------------------------------------------------- |
+| A visit ends with a score      | the visit total, `0`–`180` | a visit of 0 plays the pack's `0` clip                          |
+| A bust                         | `busted`                   | instead of the total                                            |
+| A checkout that wins a leg     | `gameshot`                 | then `leg_N` for the next leg if the pack has it ("Second leg") |
+| A checkout that wins the match | `matchshot`                | falls back to `gameshot`                                        |
+| The game starts                | `gameon`                   | after the bull off, if there is one                             |
+| A bull off starts              | `bulling_start`            | optional; silent without it                                     |
 
 **When a visit ends** is the same rule as the "Score left: After the visit" setting: the third dart,
 a bust, a checkout, or else the takeout / Next player. Each visit is called once; a correction that

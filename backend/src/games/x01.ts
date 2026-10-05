@@ -8,7 +8,7 @@ import { seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, type Te
 export type X01Config = {
   /** Any score; the setup offers 301, 501 and 701. */
   startScore: number
-  inMode:  'straight' | 'double' | 'master'
+  inMode: 'straight' | 'double' | 'master'
   outMode: 'straight' | 'double' | 'master'
   bullOff: 'off' | 'wdc' | 'pdc'
   bullValue: '25_50' | '50_50'
@@ -59,7 +59,7 @@ export type X01State = {
 function withVisitScored(s: X01State): number[] {
   const cp = s.currentPlayer
   const t = s.teamOf[cp]
-  return s.pointsScored.map((p, i) => i === cp ? p + s.visitOpenedScores[t] - s.scores[t] : p)
+  return s.pointsScored.map((p, i) => (i === cp ? p + s.visitOpenedScores[t] - s.scores[t] : p))
 }
 
 function effectiveDartScore(dart: Dart, bullValue: '25_50' | '50_50'): number {
@@ -106,7 +106,7 @@ function upNext(s: X01State): number | null {
   if (s.phase === 'finished') return null
   const t = s.teamOf[s.currentPlayer]
   if (s.scores[t] === 0) {
-    const legs = s.legs.map((l, i) => i === t ? l + 1 : l)
+    const legs = s.legs.map((l, i) => (i === t ? l + 1 : l))
     return legs[t] >= s.cfg.firstTo ? null : s.order[legStart(s.order, legs)]
   }
   const { nextPlayer, round } = nextTurn(s)
@@ -146,8 +146,8 @@ const TEAM_IDS = ['A', 'B'] as const
 function validateTeams(cfg: X01Config, players: Player[]): string | null {
   if (cfg.format !== 'teams') return null
   const teams = cfg.teams
-  const ok = teams !== undefined && teams.length === players.length
-    && teams.every(t => t === 0 || t === 1) && teams.includes(0) && teams.includes(1)
+  const ok =
+    teams !== undefined && teams.length === players.length && teams.every(t => t === 0 || t === 1) && teams.includes(0) && teams.includes(1)
   return ok ? null : 'teams need one entry per player, and both teams a player'
 }
 
@@ -174,8 +174,8 @@ export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>,
     tooltip: 'How a player starts scoring. Straight: any dart. Double/Master: must hit a double or master first.',
     options: [
       { value: 'straight', label: 'Straight' },
-      { value: 'double',   label: 'Double'   },
-      { value: 'master',   label: 'Master'   },
+      { value: 'double', label: 'Double' },
+      { value: 'master', label: 'Master' },
     ],
   },
   outMode: {
@@ -183,8 +183,8 @@ export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>,
     tooltip: 'How a player finishes. Straight: any dart on 0. Double: must finish on a double. Master: double or triple.',
     options: [
       { value: 'straight', label: 'Straight' },
-      { value: 'double',   label: 'Double'   },
-      { value: 'master',   label: 'Master'   },
+      { value: 'double', label: 'Double' },
+      { value: 'master', label: 'Master' },
     ],
   },
   bullOff: {
@@ -219,8 +219,14 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   id: 'x01',
   version: 1,
   defaultConfig: {
-    startScore: 501, inMode: 'straight', outMode: 'double',
-    bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3, format: 'singles',
+    startScore: 501,
+    inMode: 'straight',
+    outMode: 'double',
+    bullOff: 'off',
+    bullValue: '25_50',
+    maxRounds: 50,
+    firstTo: 3,
+    format: 'singles',
   },
   configMeta,
   teams: true,
@@ -235,15 +241,20 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
     // In singles: [0 … n-1]
     const order = turnOrder(teamOf, startTeam)
     return {
-      cfg, phase: 'game', teamOf,
+      cfg,
+      phase: 'game',
+      teamOf,
       scores: Array<number>(teams).fill(cfg.startScore),
       legs: Array<number>(teams).fill(0),
       opened: Array<boolean>(teams).fill(cfg.inMode === 'straight'),
-      order, turn: 0,
-      currentPlayer: order[0], round: 1,
+      order,
+      turn: 0,
+      currentPlayer: order[0],
+      round: 1,
       bustThisVisit: false,
       visitOpenedScores: Array<number>(teams).fill(cfg.startScore),
-      winner: null, playerCount: n,
+      winner: null,
+      playerCount: n,
       pointsScored: Array<number>(n).fill(0),
       bestCheckout: Array<number>(n).fill(0),
     }
@@ -274,23 +285,25 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         if (!s.opened[t]) {
           const opens = opensPlayer(dart, s.cfg.inMode)
           if (!opens) return { state: s }
-          const opened = s.opened.map((o, i) => i === t ? true : o)
+          const opened = s.opened.map((o, i) => (i === t ? true : o))
           const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
           const newScore = s.scores[t] - dartScore
           if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
-            return { state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => i === t ? s.visitOpenedScores[t] : sc) } }
+            return {
+              state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)) },
+            }
           }
-          return { state: { ...s, opened, scores: s.scores.map((sc, i) => i === t ? newScore : sc) } }
+          return { state: { ...s, opened, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
         }
 
         const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
         const newScore = s.scores[t] - dartScore
 
         if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
-          return { state: { ...s, scores: s.scores.map((sc, i) => i === t ? s.visitOpenedScores[t] : sc), bustThisVisit: true } }
+          return { state: { ...s, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
         }
 
-        return { state: { ...s, scores: s.scores.map((sc, i) => i === t ? newScore : sc) } }
+        return { state: { ...s, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
       }
 
       case 'takeout.finished': {
@@ -300,8 +313,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
 
         // Leg win, for the thrower's team; the checkout counts for the thrower
         if (s.scores[t] === 0) {
-          const legs = s.legs.map((l, i) => i === t ? l + 1 : l)
-          const bestCheckout = s.bestCheckout.map((b, i) => i === cp ? Math.max(b, s.visitOpenedScores[t]) : b)
+          const legs = s.legs.map((l, i) => (i === t ? l + 1 : l))
+          const bestCheckout = s.bestCheckout.map((b, i) => (i === cp ? Math.max(b, s.visitOpenedScores[t]) : b))
           if (legs[t] >= s.cfg.firstTo) {
             return { state: { ...s, legs, winner: t, phase: 'finished', pointsScored, bestCheckout } }
           }
@@ -311,10 +324,14 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         const { nextPlayer, turn, round } = nextTurn(s)
 
         if (round > s.cfg.maxRounds) {
-          return { state: { ...s, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished', pointsScored } }
+          return {
+            state: { ...s, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished', pointsScored },
+          }
         }
 
-        return { state: { ...s, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored } }
+        return {
+          state: { ...s, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored },
+        }
       }
 
       case 'visit.cleared': {
@@ -322,10 +339,14 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         const { nextPlayer, turn, round } = nextTurn(s)
 
         if (round > s.cfg.maxRounds) {
-          return { state: { ...s, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished', pointsScored } }
+          return {
+            state: { ...s, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished', pointsScored },
+          }
         }
 
-        return { state: { ...s, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored } }
+        return {
+          state: { ...s, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored },
+        }
       }
 
       default:
@@ -344,7 +365,10 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       scores: s.teamOf.map(t => s.scores[t]),
       legs: s.teamOf.map(t => s.legs[t]),
       firstTo: s.cfg.firstTo,
-      currentPlayer: s.currentPlayer, nextPlayer: upNext(s), round: s.round, phase: s.phase,
+      currentPlayer: s.currentPlayer,
+      nextPlayer: upNext(s),
+      round: s.round,
+      phase: s.phase,
       winner: s.winner === null ? null : s.teamOf.indexOf(s.winner),
       opened: s.teamOf.map(t => s.opened[t]),
       bustThisVisit: s.bustThisVisit,
@@ -353,7 +377,11 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
     }
     if (s.cfg.format !== 'teams') return view
     const teams = seatsByTeam(s.teamOf).map((seats, t) => ({
-      id: TEAM_IDS[t], name: `Team ${TEAM_IDS[t]}`, seats, score: s.scores[t], legs: s.legs[t],
+      id: TEAM_IDS[t],
+      name: `Team ${TEAM_IDS[t]}`,
+      seats,
+      score: s.scores[t],
+      legs: s.legs[t],
     }))
     return { ...view, teams }
   },
@@ -371,13 +399,13 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   summarize(s: X01State, { totalDarts }): SeatResult[] {
     // One entry per seat
     const teamOf = Array.from({ length: s.playerCount }, (_, seat) => s.teamOf[seat])
-    const teamPlaces = rankSeats(teamCount(teamOf), s.winner, (a, b) => (s.legs[b] - s.legs[a]) || (s.scores[a] - s.scores[b]))
+    const teamPlaces = rankSeats(teamCount(teamOf), s.winner, (a, b) => s.legs[b] - s.legs[a] || s.scores[a] - s.scores[b])
     return seatPlacements(teamOf, teamPlaces).map((placement, i) => {
       const darts = totalDarts[i] ?? 0
       return {
         placement,
         stats: {
-          average: darts > 0 ? s.pointsScored[i] / darts * 3 : 0,
+          average: darts > 0 ? (s.pointsScored[i] / darts) * 3 : 0,
           dartsThrown: darts,
           legsWon: s.legs[s.teamOf[i]],
           pointsScored: s.pointsScored[i],
@@ -403,9 +431,13 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       const remaining = v.end.scores[t]
       if (v.after.legs[t] > v.start.legs[t]) leg.winner = v.seat
       leg.visits.push({
-        visit: v.visit, seat: v.seat, committedAt: v.committedAt, darts: v.darts,
+        visit: v.visit,
+        seat: v.seat,
+        committedAt: v.committedAt,
+        darts: v.darts,
         scored: bust ? 0 : v.start.scores[t] - remaining,
-        remaining, bust,
+        remaining,
+        bust,
       })
     }
     if (final.cfg.format !== 'teams') return { mode: 'x01', legs }

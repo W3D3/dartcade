@@ -80,7 +80,11 @@
       "properties": {
         "id": { "$ref": "#/$defs/TeamId" },
         "name": { "type": "string" },
-        "seats": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "The team's seats in its own throwing order." }
+        "seats": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "description": "The team's seats in its own throwing order."
+        }
       }
     },
     "ErrorResponse": {
@@ -149,8 +153,10 @@
       "title": "FriendStatus",
       "description": "What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.",
       "oneOf": [
-        { "$ref": "#/$defs/FriendPlaying" }, { "$ref": "#/$defs/FriendInLobby" },
-        { "$ref": "#/$defs/FriendOnline" }, { "$ref": "#/$defs/FriendOffline" }
+        { "$ref": "#/$defs/FriendPlaying" },
+        { "$ref": "#/$defs/FriendInLobby" },
+        { "$ref": "#/$defs/FriendOnline" },
+        { "$ref": "#/$defs/FriendOffline" }
       ]
     },
     "Friend": {
@@ -163,7 +169,10 @@
         "name": { "type": "string" },
         "friendsSince": { "type": "string", "format": "date-time" },
         "status": { "$ref": "#/$defs/FriendStatus" },
-        "inYourLobby": { "type": "boolean", "description": "They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)" },
+        "inYourLobby": {
+          "type": "boolean",
+          "description": "They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)"
+        },
         "invited": { "type": "boolean", "description": "They have a pending invite to your lobby" }
       }
     },

@@ -11,9 +11,15 @@
   const active = $derived($location === '/friends')
 </script>
 
-<a href="#/friends" aria-label={entry.aria} aria-current={active ? 'page' : undefined}
+<a
+  href="#/friends"
+  aria-label={entry.aria}
+  aria-current={active ? 'page' : undefined}
   class="relative w-[72px] h-14 box-border flex flex-col items-center justify-center gap-[3px] rounded-[10px] border no-underline text-[11px] font-semibold
-         {active ? 'bg-accent-tint border-accent-line-strong text-accent hover:text-accent' : 'border-transparent text-text-muted hover:text-text'}">
+         {active
+    ? 'bg-accent-tint border-accent-line-strong text-accent hover:text-accent'
+    : 'border-transparent text-text-muted hover:text-text'}"
+>
   <UsersRound size={18} strokeWidth={1.8} />
   Friends
   {#if entry.requests > 0}

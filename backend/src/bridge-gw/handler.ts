@@ -24,12 +24,12 @@ type Opts = FastifyPluginOptions & {
 
 export type OnCameraStill = (boardId: string, cam: number, version: number) => void
 
-
 // The envelope fields an event is stored and acked by (schema/adbridge-v1.json). The rest
 // of BaseEnvelope (bm_version, recv_mono_ns, …) isn't required, as before.
-const EnvelopeSchema = BaseEnvelopeSchema
-  .pick({ v: true, seq: true, kind: true, bridge_id: true, boot_id: true, recv_wall: true })
-  .extend({ board_id: z.string().optional(), data: z.unknown() })
+const EnvelopeSchema = BaseEnvelopeSchema.pick({ v: true, seq: true, kind: true, bridge_id: true, boot_id: true, recv_wall: true }).extend({
+  board_id: z.string().optional(),
+  data: z.unknown(),
+})
 
 export function parseEnvelope(msg: unknown): z.output<typeof EnvelopeSchema> | null {
   const r = EnvelopeSchema.safeParse(msg)
@@ -51,15 +51,19 @@ const BmOrigin = z.string().transform((s, ctx) => {
   try {
     const u = new URL(s)
     if (u.protocol === 'http:' || u.protocol === 'https:') return u.origin
-  } catch { /* not a URL */ }
+  } catch {
+    /* not a URL */
+  }
   ctx.addIssue({ code: 'custom', message: 'not an http(s) URL' })
   return z.NEVER
 })
-const HelloSchema = z.object({
-  bridge_version: nonEmpty.default(null),
-  bm_version: nonEmpty.default(null),
-  bm_url: BmOrigin.nullable().catch(null).default(null),
-}).catch({ bridge_version: null, bm_version: null, bm_url: null })
+const HelloSchema = z
+  .object({
+    bridge_version: nonEmpty.default(null),
+    bm_version: nonEmpty.default(null),
+    bm_url: BmOrigin.nullable().catch(null).default(null),
+  })
+  .catch({ bridge_version: null, bm_version: null, bm_url: null })
 
 export function parseHello(data: unknown): { bridgeVersion: string | null; bmVersion: string | null; bmUrl: string | null } {
   const h = HelloSchema.parse(data)
@@ -75,10 +79,16 @@ const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).part
 /** A camera.still message: like bridge.hello, not an event (no seq, never acked or stored). */
 function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCameraStill?: OnCameraStill): void {
   const r = CameraStillMessageSchema.safeParse(msg)
-  if (!r.success) { console.warn('Ignoring a camera still that does not match the schema', { boardId, issues: r.error.issues.slice(0, 3) }); return }
+  if (!r.success) {
+    console.warn('Ignoring a camera still that does not match the schema', { boardId, issues: r.error.issues.slice(0, 3) })
+    return
+  }
   const { cam, captured_at: capturedAt, content_type: contentType, data } = r.data.data
   const version = stills.put(boardId, cam, { bytes: Buffer.from(data, 'base64'), contentType, capturedAt })
-  if (version === null) { console.warn('Ignoring a camera still over 1 MiB', { boardId, cam }); return }
+  if (version === null) {
+    console.warn('Ignoring a camera still over 1 MiB', { boardId, cam })
+    return
+  }
   onCameraStill?.(boardId, cam, version)
 }
 const TokenQuerySchema = z.object({ token: z.string() })
@@ -91,7 +101,9 @@ export function handleBridgeConnection(
   socket: WebSocket,
   query: { token?: string },
   opts: {
-    db: Kysely<Database>; engine: SessionEngine; onBoardPresence?: (boardId: string) => void
+    db: Kysely<Database>
+    engine: SessionEngine
+    onBoardPresence?: (boardId: string) => void
     onCameraStill?: OnCameraStill
     /** Where camera stills are kept (tests pass their own). */
     stills?: CameraStills
@@ -110,19 +122,30 @@ export function handleBridgeConnection(
     ws: socket,
     boardDbId: null,
     hardwareBoardId: null,
-    bridgeId: null, bootId: null,
-    bmVersion: null, bmUrl: null, helloReceived: false,
+    bridgeId: null,
+    bootId: null,
+    bmVersion: null,
+    bmUrl: null,
+    helloReceived: false,
   }
 
   // Authenticate once. The result gates message processing below.
-  const authed = getBoardByTokenHash(db, tokenHash).then(board => {
-    if (!board) { socket.close(4401, 'unauthorized'); return false }
-    conn.hardwareBoardId = board.hardware_id ?? null
-    bridgeConnections.add(conn)
-    bridgeConnections.register(conn, board.id)
-    presence(board.id)
-    return true
-  }).catch(() => { socket.close(4500, 'internal error'); return false })
+  const authed = getBoardByTokenHash(db, tokenHash)
+    .then(board => {
+      if (!board) {
+        socket.close(4401, 'unauthorized')
+        return false
+      }
+      conn.hardwareBoardId = board.hardware_id ?? null
+      bridgeConnections.add(conn)
+      bridgeConnections.register(conn, board.id)
+      presence(board.id)
+      return true
+    })
+    .catch(() => {
+      socket.close(4500, 'internal error')
+      return false
+    })
 
   // Serialize all event processing for this connection to prevent race
   // conditions between rapidly-arriving events, and to hold messages until auth
@@ -130,71 +153,85 @@ export function handleBridgeConnection(
   let eventQueue: Promise<void> = authed.then(() => {})
 
   socket.on('message', (raw: Buffer) => {
-    eventQueue = eventQueue.then(async () => {
-      const boardDbId = conn.boardDbId
-      if (!boardDbId) return // unauthenticated (socket already closed)
+    eventQueue = eventQueue
+      .then(async () => {
+        const boardDbId = conn.boardDbId
+        if (!boardDbId) return // unauthenticated (socket already closed)
 
-      let parsed: unknown
-      try { parsed = JSON.parse(raw.toString()) } catch { return }
+        let parsed: unknown
+        try {
+          parsed = JSON.parse(raw.toString())
+        } catch {
+          return
+        }
 
-      if (!conn.helloReceived) {
-        const first = MessageKindSchema.safeParse(parsed)
-        if (!first.success || first.data.kind !== 'bridge.hello') { socket.close(4400, 'expected bridge.hello'); return }
-        const hello = parseHello(first.data.data)
-        conn.helloReceived = true
-        conn.bmVersion = hello.bmVersion
-        conn.bridgeVersion = hello.bridgeVersion
-        conn.bmUrl = hello.bmUrl
-        return
-      }
+        if (!conn.helloReceived) {
+          const first = MessageKindSchema.safeParse(parsed)
+          if (!first.success || first.data.kind !== 'bridge.hello') {
+            socket.close(4400, 'expected bridge.hello')
+            return
+          }
+          const hello = parseHello(first.data.data)
+          conn.helloReceived = true
+          conn.bmVersion = hello.bmVersion
+          conn.bridgeVersion = hello.bridgeVersion
+          conn.bmUrl = hello.bmUrl
+          return
+        }
 
-      const ping = PingSchema.safeParse(parsed)
-      if (ping.success) { socket.send(JSON.stringify({ pong: ping.data.ping })); return }
+        const ping = PingSchema.safeParse(parsed)
+        if (ping.success) {
+          socket.send(JSON.stringify({ pong: ping.data.ping }))
+          return
+        }
 
-      if (MessageKindSchema.safeParse(parsed).data?.kind === 'camera.still') {
-        takeStill(boardDbId, parsed, stills, opts.onCameraStill)
-        return
-      }
+        if (MessageKindSchema.safeParse(parsed).data?.kind === 'camera.still') {
+          takeStill(boardDbId, parsed, stills, opts.onCameraStill)
+          return
+        }
 
-      const env = parseEnvelope(parsed)
-      if (!env) return
-      const { seq, kind, bridge_id: bridgeId, boot_id: bootId, recv_wall: recvWall } = env
-      const hardwareId = env.board_id
-      const data = env.data ?? {}
+        const env = parseEnvelope(parsed)
+        if (!env) return
+        const { seq, kind, bridge_id: bridgeId, boot_id: bootId, recv_wall: recvWall } = env
+        const hardwareId = env.board_id
+        const data = env.data ?? {}
 
-      if (!conn.hardwareBoardId && hardwareId) {
-        conn.hardwareBoardId = hardwareId
-        await updateBoardHardwareId(db, boardDbId, hardwareId)
-      }
+        if (!conn.hardwareBoardId && hardwareId) {
+          conn.hardwareBoardId = hardwareId
+          await updateBoardHardwareId(db, boardDbId, hardwareId)
+        }
 
-      if (conn.bridgeId === null) {
-        conn.bridgeId = bridgeId
-        conn.bootId = bootId
-      }
+        if (conn.bridgeId === null) {
+          conn.bridgeId = bridgeId
+          conn.bootId = bootId
+        }
 
-      const { inserted, id } = await insertBridgeEvent(db, {
-        bridge_id: bridgeId,
-        boot_id: bootId,
-        seq: BigInt(seq),
-        board_id: hardwareId ?? conn.hardwareBoardId ?? boardDbId,
-        recv_wall: new Date(recvWall),
-        kind,
-        data,
+        const { inserted, id } = await insertBridgeEvent(db, {
+          bridge_id: bridgeId,
+          boot_id: bootId,
+          seq: BigInt(seq),
+          board_id: hardwareId ?? conn.hardwareBoardId ?? boardDbId,
+          recv_wall: new Date(recvWall),
+          kind,
+          data,
+        })
+
+        socket.send(JSON.stringify({ ack: seq }))
+        if (!inserted) return
+
+        bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })
+
+        // Already acked: a failure here (e.g. the game's log write) drops this input, so
+        // name the board and event to keep the dropped dart traceable
+        try {
+          await engine.onBridgeEvent(boardDbId, kind, data, id)
+        } catch (err: unknown) {
+          console.error('Bridge event not applied to the game:', { boardDbId, kind, seq, bridgeEventId: id }, err)
+        }
       })
-
-      socket.send(JSON.stringify({ ack: seq }))
-      if (!inserted) return
-
-      bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })
-
-      // Already acked: a failure here (e.g. the game's log write) drops this input, so
-      // name the board and event to keep the dropped dart traceable
-      try {
-        await engine.onBridgeEvent(boardDbId, kind, data, id)
-      } catch (err: unknown) {
-        console.error('Bridge event not applied to the game:', { boardDbId, kind, seq, bridgeEventId: id }, err)
-      }
-    }).catch((err: unknown) => { console.error('Bridge event processing error:', { boardDbId: conn.boardDbId }, err) })
+      .catch((err: unknown) => {
+        console.error('Bridge event processing error:', { boardDbId: conn.boardDbId }, err)
+      })
   })
 
   const gone = () => {
@@ -214,7 +251,11 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
 
   app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
     const q = TokenQuerySchema.safeParse(req.query)
-    handleBridgeConnection(connection.socket, { token: q.success ? q.data.token : undefined }, { db, engine, onBoardPresence: opts.onBoardPresence, onCameraStill: opts.onCameraStill })
+    handleBridgeConnection(
+      connection.socket,
+      { token: q.success ? q.data.token : undefined },
+      { db, engine, onBoardPresence: opts.onBoardPresence, onCameraStill: opts.onCameraStill },
+    )
   })
   done()
 }

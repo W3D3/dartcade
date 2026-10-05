@@ -5,8 +5,14 @@ import { openTestSchema } from '../db/testSchema.js'
 import { FriendsService } from './service.js'
 import { LobbyHub } from '../lobby/hub.js'
 
-const user = (id: string, name: string, flagged = false) =>
-  ({ id, name, email: `${id}@example.com`, emailVerified: false, image: null, name_needs_change: flagged })
+const user = (id: string, name: string, flagged = false) => ({
+  id,
+  name,
+  email: `${id}@example.com`,
+  emailVerified: false,
+  image: null,
+  name_needs_change: flagged,
+})
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
   let db: Kysely<Database>
@@ -17,12 +23,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
   const onChange = vi.fn()
 
   beforeAll(async () => {
-    ({ db, close } = await openTestSchema('friends_service_test'))
-    await db.insertInto('user').values([
-      user('chris', 'Christoph'), user('lena', 'Lena'), user('max', 'Max'), user('sam', 'sam.180'), user('oldlena', 'LENA', true),
-    ]).execute()
+    ;({ db, close } = await openTestSchema('friends_service_test'))
+    await db
+      .insertInto('user')
+      .values([user('chris', 'Christoph'), user('lena', 'Lena'), user('max', 'Max'), user('sam', 'sam.180'), user('oldlena', 'LENA', true)])
+      .execute()
   })
-  afterAll(async () => { await close() })
+  afterAll(async () => {
+    await close()
+  })
   beforeEach(async () => {
     await db.deleteFrom('friendships').execute()
     await db.deleteFrom('lobby_invites').execute()
@@ -44,17 +53,28 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     expect(r).toEqual({ id: expect.any(String), status: 'pending' })
     expect(onChange).toHaveBeenCalledWith(['chris', 'lena'])
     expect((await friends.list('chris')).outgoing).toEqual([{ id: r.id, to: { id: 'lena', name: 'Lena' }, createdAt: expect.any(String) }])
-    expect((await friends.list('lena')).incoming).toEqual([{ id: r.id, from: { id: 'chris', name: 'Christoph' }, mutualFriends: 0, createdAt: expect.any(String) }])
+    expect((await friends.list('lena')).incoming).toEqual([
+      { id: r.id, from: { id: 'chris', name: 'Christoph' }, mutualFriends: 0, createdAt: expect.any(String) },
+    ])
     expect((await friends.list('oldlena')).incoming).toEqual([])
   })
 
   it('refuses yourself, an unknown name, a pending request and an existing friendship, both ways', async () => {
-    await expect(friends.request('chris', 'christoph')).rejects.toMatchObject({ statusCode: 400, body: { error: "You can't add yourself" } })
+    await expect(friends.request('chris', 'christoph')).rejects.toMatchObject({
+      statusCode: 400,
+      body: { error: "You can't add yourself" },
+    })
     await expect(friends.request('chris', 'Nobody')).rejects.toMatchObject({ statusCode: 404, body: { error: 'No player called Nobody' } })
     const r = await friends.request('chris', 'Lena')
-    await expect(friends.request('chris', 'Lena')).rejects.toMatchObject({ statusCode: 409, body: { code: 'already_requested', error: 'Request already sent' } })
+    await expect(friends.request('chris', 'Lena')).rejects.toMatchObject({
+      statusCode: 409,
+      body: { code: 'already_requested', error: 'Request already sent' },
+    })
     await friends.accept('lena', r.id)
-    await expect(friends.request('chris', 'Lena')).rejects.toMatchObject({ statusCode: 409, body: { code: 'already_friends', error: "You're already friends" } })
+    await expect(friends.request('chris', 'Lena')).rejects.toMatchObject({
+      statusCode: 409,
+      body: { code: 'already_friends', error: "You're already friends" },
+    })
     await expect(friends.request('lena', 'Christoph')).rejects.toMatchObject({ statusCode: 409, body: { code: 'already_friends' } })
   })
 
@@ -113,11 +133,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     await friends.flush()
     return ws
   }
-  const befriend = async (a: string, b: string) => friends.accept(b, (await friends.request(a, (await db.selectFrom('user').select('name').where('id', '=', b).executeTakeFirstOrThrow()).name)).id)
+  const befriend = async (a: string, b: string) =>
+    friends.accept(
+      b,
+      (await friends.request(a, (await db.selectFrom('user').select('name').where('id', '=', b).executeTakeFirstOrThrow()).name)).id,
+    )
   async function openLobby(id: string, hostUserId: string, access: 'friends' | 'invite', members: string[]) {
-    await db.insertInto('lobbies').values({ id, name: 'Friday darts', host_user_id: hostUserId, code: id.toUpperCase().padEnd(6, 'X'), access }).execute()
+    await db
+      .insertInto('lobbies')
+      .values({ id, name: 'Friday darts', host_user_id: hostUserId, code: id.toUpperCase().padEnd(6, 'X'), access })
+      .execute()
     for (const [i, userId] of members.entries()) {
-      await db.insertInto('lobby_people').values({ id: `${id}-${userId}`, lobby_id: id, user_id: userId, added_by_user_id: userId, name: userId, board_id: null, position: i, board_moved_by: null }).execute()
+      await db
+        .insertInto('lobby_people')
+        .values({
+          id: `${id}-${userId}`,
+          lobby_id: id,
+          user_id: userId,
+          added_by_user_id: userId,
+          name: userId,
+          board_id: null,
+          position: i,
+          board_moved_by: null,
+        })
+        .execute()
     }
   }
 
@@ -129,7 +168,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       expect(last(chris)).toMatchObject({ type: 'friends', friends: [{ id: 'lena', status: { kind: 'offline' } }] })
       await open('lena')
       expect(last(chris).friends[0].status).toEqual({ kind: 'online' })
-      expect(max.send).toHaveBeenCalledTimes(2)   // its me and friends messages on connect, nothing since
+      expect(max.send).toHaveBeenCalledTimes(2) // its me and friends messages on connect, nothing since
     })
 
     it('playing over lobby over online; Invisible shows offline', async () => {
@@ -158,7 +197,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       await db.insertInto('lobby_invites').values({ id: 'i1', lobby_id: 'l2', invitee_user_id: 'max', inviter_user_id: 'chris' }).execute()
       await db.updateTable('user').set({ invisible: true }).where('id', '=', 'lena').execute()
       const list = await friends.list('chris')
-      expect(list.friends.map(f => [f.id, f.status.kind, f.inYourLobby, f.invited])).toEqual([['lena', 'offline', true, false], ['max', 'offline', false, true]])
+      expect(list.friends.map(f => [f.id, f.status.kind, f.inYourLobby, f.invited])).toEqual([
+        ['lena', 'offline', true, false],
+        ['max', 'offline', false, true],
+      ])
       await db.updateTable('user').set({ invisible: false }).where('id', '=', 'lena').execute()
     })
 
@@ -178,11 +220,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       await open('lena')
       await open('lena')
       const sent = chris.send.mock.calls.length
-      friends.disconnected('lena')   // one of two tabs
+      friends.disconnected('lena') // one of two tabs
       await new Promise(r => setTimeout(r, 40))
-      friends.disconnected('lena')   // the other one reloads...
+      friends.disconnected('lena') // the other one reloads...
       await new Promise(r => setTimeout(r, 5))
-      friends.connected('lena')      // ...and is back within the grace
+      friends.connected('lena') // ...and is back within the grace
       await new Promise(r => setTimeout(r, 40))
       await friends.flush()
       expect(friends.isOnline('lena')).toBe(true)
@@ -195,10 +237,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       const chris = await open('chris')
       await open('lena')
       await db.updateTable('user').set({ invisible: true }).where('id', '=', 'lena').execute()
-      friends.touch(['lena'])                 // chris's push is now pending
+      friends.touch(['lena']) // chris's push is now pending
       await new Promise(r => setTimeout(r, 1))
       const tab2 = sock()
-      hub.addMeSocket('chris', tab2, meMsg, await friends.message('chris'))   // already the new list
+      hub.addMeSocket('chris', tab2, meMsg, await friends.message('chris')) // already the new list
       friends.connected('chris')
       await friends.flush()
       expect(last(chris).friends[0].status).toEqual({ kind: 'offline' })
@@ -212,10 +254,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       await open('lena')
       const before = await open('chris')
       hub.removeMeSocket('chris', before)
-      friends.disconnected('chris')                   // reloading: still online for the grace
-      const first = await friends.message('chris')   // lena online
+      friends.disconnected('chris') // reloading: still online for the grace
+      const first = await friends.message('chris') // lena online
       await db.updateTable('user').set({ invisible: true }).where('id', '=', 'lena').execute()
-      friends.touch(['lena'])                          // chris has no /ws/me right now: nothing to push
+      friends.touch(['lena']) // chris has no /ws/me right now: nothing to push
       await friends.flush()
       const chris = sock()
       hub.addMeSocket('chris', chris, meMsg, first)
@@ -232,12 +274,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
       let calls = 0
       vi.spyOn(friends, 'message').mockImplementation(async userId => {
         const msg = await real(userId)
-        if (calls++ === 0) await new Promise(r => setTimeout(r, 50))   // the first build is slow
+        if (calls++ === 0) await new Promise(r => setTimeout(r, 50)) // the first build is slow
         return msg
       })
       await db.updateTable('user').set({ invisible: true }).where('id', '=', 'lena').execute()
       friends.refresh(['chris'])
-      await new Promise(r => setTimeout(r, 15))   // the first push has started building
+      await new Promise(r => setTimeout(r, 15)) // the first push has started building
       await db.updateTable('user').set({ invisible: false }).where('id', '=', 'lena').execute()
       friends.refresh(['chris'])
       await friends.flush()

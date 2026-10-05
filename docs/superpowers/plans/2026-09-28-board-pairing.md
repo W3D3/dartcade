@@ -34,12 +34,14 @@
 ## Task 1: DB migration, schema types, and query functions
 
 **Files:**
+
 - Create: `backend/src/db/migrations/004_pairing.sql`
 - Modify: `backend/src/db/schema.ts`
 - Modify: `backend/src/db/queries.ts`
 - Modify: `backend/src/db/queries.test.ts`
 
 **Interfaces:**
+
 - Produces:
   - `insertPairingCode(db, { code: string, expiresAt: Date }): Promise<void>`
   - `getPairingCode(db, code: string): Promise<PairingCodesRow | undefined>`
@@ -239,12 +241,14 @@ git commit -m "feat(db): pairing_codes table, schema types, and query functions"
 ## Task 2: Backend pairing API
 
 **Files:**
+
 - Create: `backend/src/api/pairing.ts`
 - Create: `backend/src/api/pairing.test.ts`
 - Modify: `backend/src/index.ts`
 - Modify: `backend/package.json` (new dep: `@fastify/rate-limit@^9`)
 
 **Interfaces:**
+
 - Consumes: `insertPairingCode`, `getPairingCode`, `claimPairingCode`, `consumePairingToken`, `insertBoard` from `../db/queries.js`; `requireAuth` from `../auth/middleware.js`
 - Produces: `pairingApiPlugin(app, { db })` — registers 3 routes on the Fastify instance
 
@@ -621,10 +625,12 @@ git commit -m "feat(api): board pairing endpoints with rate limiting"
 ## Task 3: Bridge startup pairing flow
 
 **Files:**
+
 - Modify: `bridge/cmd/bridge/config.go`
 - Modify: `bridge/cmd/bridge/main.go`
 
 **Interfaces:**
+
 - Consumes: `loadConfig` (already exists), `configFilePath` (make exported or call from `main.go`)
 - Produces:
   - `runPairing(ctx context.Context, cfg Config) (token string, err error)`
@@ -982,9 +988,11 @@ git commit -m "feat(bridge): auto-pairing flow on startup when no token is confi
 ## Task 4: Frontend pairing modal
 
 **Files:**
+
 - Modify: `backend/frontend/src/routes/Boards.svelte`
 
 **Interfaces:**
+
 - Consumes: `POST /api/pairing/claim` → `{ code, name }` → `{ boardId, name }` or error
 
 ---
@@ -1113,6 +1121,7 @@ cd backend && npm run dev
 ```
 
 Navigate to `/boards`. Click "Pair new board" — the modal appears. Verify:
+
 - Code input auto-uppercases typed text.
 - "Pair board" button is disabled until code is 8 chars and name is non-empty.
 - Cancel closes the modal.

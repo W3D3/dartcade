@@ -48,12 +48,12 @@ scripts/dev.sh
 
 Tagged releases report the tag (e.g. `v0.4.2`) instead.
 
-| Service  | URL                        | Notes                          |
-|----------|----------------------------|--------------------------------|
-| frontend | http://localhost:5173      | Vite hot-reload                |
-| backend  | http://localhost:3000      | tsx watch hot-reload           |
-| postgres | localhost:5432             | user/pass: dartgames/dev       |
-| bridge   | —                          | connects to your board on LAN  |
+| Service  | URL                   | Notes                         |
+| -------- | --------------------- | ----------------------------- |
+| frontend | http://localhost:5173 | Vite hot-reload               |
+| backend  | http://localhost:3000 | tsx watch hot-reload          |
+| postgres | localhost:5432        | user/pass: dartgames/dev      |
+| bridge   | —                     | connects to your board on LAN |
 
 Once the bridge connects, open http://localhost:5173, pick your board in the dropdown, add players, and start a game.
 
@@ -71,12 +71,12 @@ start the game — Luke throws his own turns from the other window. The password
 
 `.env` (copied from `.env.example`):
 
-| Variable             | Required | Description                                           |
-|----------------------|----------|-------------------------------------------------------|
-| `DARTCADE_BOARD_URL` | Yes      | Board Manager URL, e.g. `http://192.168.1.x:3180`    |
-| `BRIDGE_SECRET`      | No       | Shared secret for bridge auth (default: `devsecret`) |
-| `VOICE_STORAGE_LIMIT_MB` | No   | Caller voice packs each user may store, in MB (default `50`; `0` turns imports off) |
-| `BOARD_LIVE_CAMERA` | No       | `off` turns off the owner's live camera frames on the Boards page (`GET /api/boards/{id}/camera/{i}/live`, which the backend fetches from the Board Manager); set it where the backend can't reach the boards' network, e.g. in the cloud. Default on. The game's camera stills come through the bridge and are not affected |
+| Variable                 | Required | Description                                                                                                                                                                                                                                                                                                                  |
+| ------------------------ | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DARTCADE_BOARD_URL`     | Yes      | Board Manager URL, e.g. `http://192.168.1.x:3180`                                                                                                                                                                                                                                                                            |
+| `BRIDGE_SECRET`          | No       | Shared secret for bridge auth (default: `devsecret`)                                                                                                                                                                                                                                                                         |
+| `VOICE_STORAGE_LIMIT_MB` | No       | Caller voice packs each user may store, in MB (default `50`; `0` turns imports off)                                                                                                                                                                                                                                          |
+| `BOARD_LIVE_CAMERA`      | No       | `off` turns off the owner's live camera frames on the Boards page (`GET /api/boards/{id}/camera/{i}/live`, which the backend fetches from the Board Manager); set it where the backend can't reach the boards' network, e.g. in the cloud. Default on. The game's camera stills come through the bridge and are not affected |
 
 Voice clips are stored once per file and shared between users' packs. Deleting a pack removes
 the files no pack uses any more; deleting a user (there's no such path in the app yet) cascades
@@ -85,11 +85,11 @@ runs without a hash list.
 
 Backend-only (set automatically by the dev compose, documented here for manual runs):
 
-| Variable           | Description                              |
-|--------------------|------------------------------------------|
-| `DATABASE_URL`     | Postgres connection string               |
-| `PORT`             | HTTP/WS listen port (default `3000`)     |
-| `TEST_DATABASE_URL`| Override DB URL for `npm test`           |
+| Variable            | Description                          |
+| ------------------- | ------------------------------------ |
+| `DATABASE_URL`      | Postgres connection string           |
+| `PORT`              | HTTP/WS listen port (default `3000`) |
+| `TEST_DATABASE_URL` | Override DB URL for `npm test`       |
 
 ## Running backend tests
 
@@ -110,6 +110,7 @@ database from `main` gives the same schema as a fresh one (`scripts/check-migrat
 `backend/src/db/checkMigrations.ts`).
 
 Override the connection string if needed:
+
 ```bash
 TEST_DATABASE_URL=postgres://... npm test
 ```

@@ -15,13 +15,20 @@
   import { gameModes, withDefaults } from '$lib/gameModes'
   import { isTeamFormat, type PersonPatch } from '$lib/lobby/rules'
 
-  let { lobby, me, onupdate }: {
+  let {
+    lobby,
+    me,
+    onupdate,
+  }: {
     lobby: Lobby
     me: LobbyPerson
     onupdate: (personId: string, patch: PersonPatch) => Promise<boolean>
   } = $props()
 
-  const PLAYS = [{ value: true, label: "I'm in" }, { value: false, label: 'Sitting this one out' }]
+  const PLAYS = [
+    { value: true, label: "I'm in" },
+    { value: false, label: 'Sitting this one out' },
+  ]
   const hostName = $derived(lobby.hostName ?? 'The host')
 
   const game = $derived(lobby.nextGame)
@@ -35,15 +42,29 @@
 <section aria-label="Next game" class="p-[14px] md:p-5 rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[10px]">
   <NextGameSummary {lobby} pickedBy="{hostName}'s pick" size="sm" />
   {#if game}
-    <SettingsToggleButton open={settingsOpen} ontoggle={() => settingsOpen = !settingsOpen} />
-    <NextGameSettingsPanel open={settingsOpen} gameId={game.gameId} {config} {defaults} meta={info?.configMeta ?? {}} teams={info?.teams ?? false} readonly>
+    <SettingsToggleButton open={settingsOpen} ontoggle={() => (settingsOpen = !settingsOpen)} />
+    <NextGameSettingsPanel
+      open={settingsOpen}
+      gameId={game.gameId}
+      {config}
+      {defaults}
+      meta={info?.configMeta ?? {}}
+      teams={info?.teams ?? false}
+      readonly
+    >
       <ThrowOrderField {lobby} gameId={game.gameId} readonly />
     </NextGameSettingsPanel>
   {/if}
   {#if teamGame}
     <TeamsPanel {lobby} editable={false} />
   {/if}
-  <SegmentedControl options={PLAYS} value={me.plays} onchange={(v) => { if (v !== me.plays) void onupdate(me.id, { plays: v === true }) }} />
+  <SegmentedControl
+    options={PLAYS}
+    value={me.plays}
+    onchange={v => {
+      if (v !== me.plays) void onupdate(me.id, { plays: v === true })
+    }}
+  />
   {#if !me.plays}
     <Button variant="ghost" size="lg" disabled class="border-dashed">Ready · not needed this game</Button>
   {:else if me.ready}
@@ -51,8 +72,7 @@
       <Check size={18} strokeWidth={3} />Ready
     </Button>
   {:else}
-    <Button variant="accent-outline" size="lg" aria-pressed="false"
-      onclick={() => void onupdate(me.id, { ready: true })}>I'm ready</Button>
+    <Button variant="accent-outline" size="lg" aria-pressed="false" onclick={() => void onupdate(me.id, { ready: true })}>I'm ready</Button>
   {/if}
   <div class="flex justify-between gap-[10px] text-[13px]">
     <span><ReadyCount {lobby} suffix="{hostName} starts" /></span>

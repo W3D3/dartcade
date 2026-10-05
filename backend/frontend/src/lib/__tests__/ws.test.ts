@@ -79,15 +79,24 @@ type MockSocket = {
 
 function stubWebSocket(): MockSocket[] {
   const sockets: MockSocket[] = []
-  vi.stubGlobal('WebSocket', class {
-    onopen: (() => void) | null = null
-    onclose: ((e: { code: number }) => void) | null = null
-    onmessage: ((e: { data: string }) => void) | null = null
-    onerror = null
-    constructor() { sockets.push(this) }
-    close() { /* the test closes it */ }
-    send() { /* unused */ }
-  })
+  vi.stubGlobal(
+    'WebSocket',
+    class {
+      onopen: (() => void) | null = null
+      onclose: ((e: { code: number }) => void) | null = null
+      onmessage: ((e: { data: string }) => void) | null = null
+      onerror = null
+      constructor() {
+        sockets.push(this)
+      }
+      close() {
+        /* the test closes it */
+      }
+      send() {
+        /* unused */
+      }
+    },
+  )
   return sockets
 }
 
@@ -133,8 +142,12 @@ describe('createSessionStore', () => {
   })
 
   describe('a dead session (NotFound/Forbidden close)', () => {
-    beforeEach(() => { vi.stubGlobal('window', { location: { hash: '' } }) })
-    afterEach(() => { vi.unstubAllGlobals() })
+    beforeEach(() => {
+      vi.stubGlobal('window', { location: { hash: '' } })
+    })
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
 
     it('goes home when the game carried no lobby', () => {
       const sockets = stubWebSocket()
@@ -144,7 +157,7 @@ describe('createSessionStore', () => {
       expect(window.location.hash).toBe('#/')
     })
 
-    it("goes to the lobby when the last snapshot had one (Forbidden too)", () => {
+    it('goes to the lobby when the last snapshot had one (Forbidden too)', () => {
       const sockets = stubWebSocket()
       window.location.hash = '#/session/s1'
       createSessionStore('s1')

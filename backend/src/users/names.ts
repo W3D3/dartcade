@@ -34,5 +34,9 @@ export function cleanName(raw: string): string {
 /** `base` with a number on the end; the base is cut so the whole stays within NAME_MAX. */
 export function numbered(base: string, n: number): string {
   const suffix = String(n)
-  return Array.from(base).slice(0, NAME_MAX - suffix.length).join('') + suffix
+  return (
+    Array.from(base)
+      .slice(0, NAME_MAX - suffix.length)
+      .join('') + suffix
+  )
 }

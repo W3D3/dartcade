@@ -13,7 +13,11 @@ export const DEV_USERS: DevUser[] = [
     email: import.meta.env.VITE_DEV_EMAIL ?? 'admin@dartcade.local',
     password: import.meta.env.VITE_DEV_PASSWORD ?? 'admin1234',
   },
-  ...['Luke', 'Phil', 'Michael', 'Gerwyn'].map(name => ({ name, email: `${name.toLowerCase()}@dartcade.local`, password: DARTERS_PASSWORD })),
+  ...['Luke', 'Phil', 'Michael', 'Gerwyn'].map(name => ({
+    name,
+    email: `${name.toLowerCase()}@dartcade.local`,
+    password: DARTERS_PASSWORD,
+  })),
 ]
 
 /** Signs out whoever is signed in, then in as `user`, and goes home. Returns an error message or null. */

@@ -37,7 +37,10 @@ export function registerResponseValidation(app: FastifyInstance): void {
 
     const key = `${operationId} ${status}`
     let validate = validators.get(key)
-    if (!validate) { validate = ajv.compile(schema); validators.set(key, validate) }
+    if (!validate) {
+      validate = ajv.compile(schema)
+      validators.set(key, validate)
+    }
     return validate(JSON.parse(payload)) ? payload : fail(ajv.errorsText(validate.errors))
   })
 }

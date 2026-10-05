@@ -24,7 +24,7 @@ export const noLobbies: IsLobbyMember = () => Promise.resolve(false)
 /** Who may watch a game: its host and seat controllers and, for a lobby game, everyone in the lobby. */
 export async function canWatchSession(userId: string, session: Session, isLobbyMember: IsLobbyMember): Promise<boolean> {
   if (canAccessSession(userId, session)) return true
-  return session.lobbyId !== null && await isLobbyMember(session.lobbyId, userId)
+  return session.lobbyId !== null && (await isLobbyMember(session.lobbyId, userId))
 }
 
 // Actions on the turn in progress: only whoever controls the seat that's up
@@ -36,9 +36,9 @@ export function authorizeAction(session: Session, userId: string, action: UserAc
     return session.seats[currentSeat(session)].controllerUserId === userId ? action : null
   }
   if (action.type === 'forfeit') {
-    const live = session.seats.flatMap((s, i) => session.forfeited.includes(i) ? [] : [{ s, i }])
+    const live = session.seats.flatMap((s, i) => (session.forfeited.includes(i) ? [] : [{ s, i }]))
     const mine = live.filter(x => x.s.controllerUserId === userId).map(x => x.i)
-    if (mine.length === 0) return null  // Nothing to give up
+    if (mine.length === 0) return null // Nothing to give up
     const teamOf = session.module.teamsOf?.(session.committedState) ?? session.seats.map((_, i) => i)
     // Nobody left to lose to: the sender's teams plus the already-forfeited teams cover every team
     const covered = new Set([...mine, ...session.forfeited].map(i => teamOf[i]))

@@ -32,11 +32,11 @@ The repo root is the project root for all of this: `schema/` lives there and out
 
 ### Source of truth (`schema/`, hand-written)
 
-| File | Contents |
-|---|---|
-| `common-v1.json` | Shared JSON Schema `$defs`: `Segment`, `Dart`, `Player`, `ErrorResponse` |
-| `api-v1.yaml` | OpenAPI 3.0.3 for every `/api` route and `/health`; `$ref`s `common-v1.json`; cookie auth as a `securityScheme` |
-| `game-ws-v1.json` | JSON Schema (draft-07) for `/ws`: `Snapshot`, `ClientMessage`/`UserAction`, `WsCloseCode` |
+| File               | Contents                                                                                                                                        |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| `common-v1.json`   | Shared JSON Schema `$defs`: `Segment`, `Dart`, `Player`, `ErrorResponse`                                                                        |
+| `api-v1.yaml`      | OpenAPI 3.0.3 for every `/api` route and `/health`; `$ref`s `common-v1.json`; cookie auth as a `securityScheme`                                 |
+| `game-ws-v1.json`  | JSON Schema (draft-07) for `/ws`: `Snapshot`, `ClientMessage`/`UserAction`, `WsCloseCode`                                                       |
 | `adbridge-v1.json` | Unchanged. Its `Segment`/`Coords` move into `common-v1.json` only if the bridge's Go codegen output stays identical; otherwise it is left alone |
 
 OpenAPI **3.0.3**, not 3.1: `oapi-codegen` (Go) has only partial 3.1 support, and Fastify 4's Ajv validates JSON Schema draft-07, which matches 3.0's schema dialect and `adbridge-v1.json`.
@@ -45,13 +45,13 @@ OpenAPI **3.0.3**, not 3.1: `oapi-codegen` (Go) has only partial 3.1 support, an
 
 A root `package.json` provides `npm run gen:api`, which writes:
 
-| Output | Tool |
-|---|---|
-| `backend/src/schema/api-v1.bundled.json` (spec with `$ref`s resolved) | `@redocly/cli bundle` |
-| `backend/src/schema/api.ts` | `openapi-typescript` |
-| `backend/src/schema/game-ws.ts` | `json-schema-to-typescript` (existing tool) |
-| `backend/frontend/src/lib/api/schema.ts`, `game-ws.ts` | copies of the two above (the frontend container/build stage can't see backend files at runtime) |
-| `bridge/internal/api/api.gen.go` | `oapi-codegen` via `go generate`, `include-tags: [bridge]` |
+| Output                                                                | Tool                                                                                            |
+| --------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `backend/src/schema/api-v1.bundled.json` (spec with `$ref`s resolved) | `@redocly/cli bundle`                                                                           |
+| `backend/src/schema/api.ts`                                           | `openapi-typescript`                                                                            |
+| `backend/src/schema/game-ws.ts`                                       | `json-schema-to-typescript` (existing tool)                                                     |
+| `backend/frontend/src/lib/api/schema.ts`, `game-ws.ts`                | copies of the two above (the frontend container/build stage can't see backend files at runtime) |
+| `bridge/internal/api/api.gen.go`                                      | `oapi-codegen` via `go generate`, `include-tags: [bridge]`                                      |
 
 The `$shared` stopgap from #33 (`backend/src/shared/`, its Vite alias, tsconfig path, Dockerfile `COPY` and compose mount) is removed; the generated `WsCloseCode` enum replaces it.
 
@@ -87,25 +87,25 @@ A test builds the app, records every registered route under `/api` plus `/health
 
 ### Operations
 
-| operationId | Method + path | Auth | Tags |
-|---|---|---|---|
-| `health` | GET `/health` | – | system |
-| `listGames` | GET `/api/games` | – | games |
-| `listBoards` | GET `/api/boards` | ✓ | boards |
-| `createBoard` | POST `/api/boards` | ✓ | boards |
-| `renameBoard` | PATCH `/api/boards/{id}` | ✓ | boards |
-| `deleteBoard` | DELETE `/api/boards/{id}` | ✓ | boards |
-| `getBoardStatus` | GET `/api/boards/{id}/status` | ✓ | boards |
-| `getBoardEvents` | GET `/api/boards/{id}/events` | ✓ | boards |
-| `getBoardCamera` | GET `/api/boards/{id}/camera/{index}` (image/jpeg) | ✓ | boards |
-| `startBoard` / `stopBoard` / `resetBoard` / `calibrateBoard` | POST `/api/boards/{id}/{start,stop,reset,calibrate}` | ✓ | boards |
-| `requestPairing` | POST `/api/pairing/request` → 201 `{ code, expiresAt }` | – | pairing, bridge |
-| `getPairingToken` | GET `/api/pairing/{code}/token` → `{ status: pending \| claimed(+token) \| consumed }`, 404 | – | pairing, bridge |
-| `claimPairing` | POST `/api/pairing/claim` → 201 `{ boardId, name }`; 400/404/409/410 | ✓ | pairing |
-| `listSessions` | GET `/api/sessions` | ✓ | sessions |
-| `createSession` | POST `/api/sessions` → 201 `{ sessionId }`; 400/403/409 (+`sessionId`) | ✓ | sessions |
-| `getSession` | GET `/api/sessions/{id}` | ✓ | sessions |
-| `deleteSession` | DELETE `/api/sessions/{id}` → 204 | ✓ | sessions |
+| operationId                                                  | Method + path                                                                               | Auth | Tags            |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------- | ---- | --------------- |
+| `health`                                                     | GET `/health`                                                                               | –    | system          |
+| `listGames`                                                  | GET `/api/games`                                                                            | –    | games           |
+| `listBoards`                                                 | GET `/api/boards`                                                                           | ✓    | boards          |
+| `createBoard`                                                | POST `/api/boards`                                                                          | ✓    | boards          |
+| `renameBoard`                                                | PATCH `/api/boards/{id}`                                                                    | ✓    | boards          |
+| `deleteBoard`                                                | DELETE `/api/boards/{id}`                                                                   | ✓    | boards          |
+| `getBoardStatus`                                             | GET `/api/boards/{id}/status`                                                               | ✓    | boards          |
+| `getBoardEvents`                                             | GET `/api/boards/{id}/events`                                                               | ✓    | boards          |
+| `getBoardCamera`                                             | GET `/api/boards/{id}/camera/{index}` (image/jpeg)                                          | ✓    | boards          |
+| `startBoard` / `stopBoard` / `resetBoard` / `calibrateBoard` | POST `/api/boards/{id}/{start,stop,reset,calibrate}`                                        | ✓    | boards          |
+| `requestPairing`                                             | POST `/api/pairing/request` → 201 `{ code, expiresAt }`                                     | –    | pairing, bridge |
+| `getPairingToken`                                            | GET `/api/pairing/{code}/token` → `{ status: pending \| claimed(+token) \| consumed }`, 404 | –    | pairing, bridge |
+| `claimPairing`                                               | POST `/api/pairing/claim` → 201 `{ boardId, name }`; 400/404/409/410                        | ✓    | pairing         |
+| `listSessions`                                               | GET `/api/sessions`                                                                         | ✓    | sessions        |
+| `createSession`                                              | POST `/api/sessions` → 201 `{ sessionId }`; 400/403/409 (+`sessionId`)                      | ✓    | sessions        |
+| `getSession`                                                 | GET `/api/sessions/{id}`                                                                    | ✓    | sessions        |
+| `deleteSession`                                              | DELETE `/api/sessions/{id}` → 204                                                           | ✓    | sessions        |
 
 Response bodies are specified from the current handlers; the spec documents existing behaviour, apart from the error format above.
 

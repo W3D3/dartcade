@@ -33,7 +33,11 @@ const openWs: OpenSocket = url => new WebSocket(url)
 
 function readJson(e: MessageEvent): unknown {
   if (typeof e.data !== 'string') return null
-  try { return JSON.parse(e.data) } catch { return null }
+  try {
+    return JSON.parse(e.data)
+  } catch {
+    return null
+  }
 }
 
 export function createLobbyStore(lobbyId: string, open: OpenSocket = openWs) {
@@ -52,16 +56,28 @@ export function createLobbyStore(lobbyId: string, open: OpenSocket = openWs) {
   function connect() {
     if (stopped) return
     ws = open(`/ws/lobby?lobbyId=${encodeURIComponent(lobbyId)}`)
-    ws.onmessage = (e) => {
+    ws.onmessage = e => {
       const msg = parseLobbyMessage(readJson(e))
-      if (msg?.type === 'lobby') { lobby.set(msg.lobby); backoff = 500 }
-      else if (msg?.type === 'lobby_closed') stop('closed')
+      if (msg?.type === 'lobby') {
+        lobby.set(msg.lobby)
+        backoff = 500
+      } else if (msg?.type === 'lobby_closed') stop('closed')
     }
-    ws.onclose = (e) => {
+    ws.onclose = e => {
       const code: string | undefined = WsCloseCode[e.code]
-      if (code === 'Unauthorized') { stopped = true; window.location.hash = '#/login'; return }
-      if (code === 'Forbidden') { stop('left'); return }
-      if (code === 'NotFound') { stop('closed'); return }
+      if (code === 'Unauthorized') {
+        stopped = true
+        window.location.hash = '#/login'
+        return
+      }
+      if (code === 'Forbidden') {
+        stop('left')
+        return
+      }
+      if (code === 'NotFound') {
+        stop('closed')
+        return
+      }
       if (stopped) return
       setTimeout(connect, backoff)
       backoff = Math.min(backoff * 2, 30_000)
@@ -92,7 +108,7 @@ export function createMeStore(open: OpenSocket = openWs) {
     if (!running) return
     const socket = open('/ws/me')
     ws = socket
-    socket.onmessage = (e) => {
+    socket.onmessage = e => {
       const msg = parseMeMessage(readJson(e))
       if (msg?.type === 'me') {
         state.update(s => ({ invites: msg.invites, lobby: msg.lobby, game: msg.game, friends: s?.friends ?? null }))
@@ -102,9 +118,12 @@ export function createMeStore(open: OpenSocket = openWs) {
         state.update(s => ({ ...(s ?? { invites: [], lobby: null, game: null }), friends: list }))
       }
     }
-    socket.onclose = (e) => {
+    socket.onclose = e => {
       if (ws !== socket || !running) return
-      if (WsCloseCode[e.code] === 'Unauthorized') { running = false; return }
+      if (WsCloseCode[e.code] === 'Unauthorized') {
+        running = false
+        return
+      }
       retry = setTimeout(connect, backoff)
       backoff = Math.min(backoff * 2, 30_000)
     }
@@ -123,7 +142,10 @@ export function createMeStore(open: OpenSocket = openWs) {
     },
     stop() {
       running = false
-      if (retry !== null) { clearTimeout(retry); retry = null }
+      if (retry !== null) {
+        clearTimeout(retry)
+        retry = null
+      }
       ws?.close()
       ws = null
       state.set(null)

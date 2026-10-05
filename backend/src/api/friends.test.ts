@@ -4,15 +4,21 @@ import { friendsApiPlugin } from './friends.js'
 import { FriendError } from '../friends/errors.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'chris'; done() }),
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
+    req.userId = 'chris'
+    done()
+  }),
 }))
 
 const empty = { friends: [], incoming: [], outgoing: [] }
 function makeApp() {
   const friends = {
-    list: vi.fn().mockResolvedValue(empty), request: vi.fn().mockResolvedValue({ id: 'f1', status: 'pending' }),
-    accept: vi.fn().mockResolvedValue(undefined), decline: vi.fn().mockResolvedValue(undefined),
-    cancel: vi.fn().mockResolvedValue(undefined), remove: vi.fn().mockResolvedValue(undefined),
+    list: vi.fn().mockResolvedValue(empty),
+    request: vi.fn().mockResolvedValue({ id: 'f1', status: 'pending' }),
+    accept: vi.fn().mockResolvedValue(undefined),
+    decline: vi.fn().mockResolvedValue(undefined),
+    cancel: vi.fn().mockResolvedValue(undefined),
+    remove: vi.fn().mockResolvedValue(undefined),
   }
   const app = createFastify()
   app.register(friendsApiPlugin, { friends: friends as any })

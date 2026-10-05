@@ -4,24 +4,36 @@
 import type { X01Game } from '$lib/api/game-ws'
 import { visitOver } from '../heldScore.js'
 
-export type CallGame = Pick<X01Game, 'scores' | 'legs' | 'firstTo' | 'currentPlayer' | 'phase'
-  | 'bustThisVisit' | 'visitLocked' | 'currentVisitDarts' | 'totalVisits' | 'teams'>
+export type CallGame = Pick<
+  X01Game,
+  | 'scores'
+  | 'legs'
+  | 'firstTo'
+  | 'currentPlayer'
+  | 'phase'
+  | 'bustThisVisit'
+  | 'visitLocked'
+  | 'currentVisitDarts'
+  | 'totalVisits'
+  | 'teams'
+>
 
 /** Parts said in order; each part lists keys by preference (the first the pack has plays). */
 export type Call = string[][]
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 const visitTotal = (g: CallGame) => sum(g.currentVisitDarts.map(d => d.score))
-const legsPlayed = (g: CallGame) => g.teams ? sum(g.teams.map(t => t.legs)) : sum(g.legs)
+const legsPlayed = (g: CallGame) => (g.teams ? sum(g.teams.map(t => t.legs)) : sum(g.legs))
 const legsOf = (g: CallGame, seat: number) => {
   const teamLegs = g.teams?.find(t => t.seats.includes(seat))?.legs
-  return teamLegs !== undefined ? teamLegs : (g.legs[seat] || 0)
+  return teamLegs !== undefined ? teamLegs : g.legs[seat] || 0
 }
 
 export function callsFor(before: CallGame | null, after: CallGame): Call {
   if (before === null) {
     if (after.phase === 'bulloff') return [['bulling_start']]
-    const pristine = after.phase === 'game' && sum(after.totalVisits) === 0 && after.currentVisitDarts.length === 0 && legsPlayed(after) === 0
+    const pristine =
+      after.phase === 'game' && sum(after.totalVisits) === 0 && after.currentVisitDarts.length === 0 && legsPlayed(after) === 0
     return pristine ? [['gameon']] : []
   }
   if (after.phase === 'bulloff') return before.phase === 'bulloff' ? [] : [['bulling_start']]
@@ -58,7 +70,11 @@ function endOfVisit(g: CallGame): Call {
 }
 
 /** One clip per part: the first key the pack has, a random variant of it. Missing parts are skipped. */
-export function pickClips<T>(call: Call, clips: Record<string, T[]>, pick: (n: number) => number = n => Math.floor(Math.random() * n)): T[] {
+export function pickClips<T>(
+  call: Call,
+  clips: Record<string, T[]>,
+  pick: (n: number) => number = n => Math.floor(Math.random() * n),
+): T[] {
   const out: T[] = []
   for (const part of call) {
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition

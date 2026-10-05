@@ -11,15 +11,23 @@ export class Presence {
   private readonly leaving = new Map<string, ReturnType<typeof setTimeout>>()
   private closed = false
 
-  constructor(private readonly onChange: (userId: string) => void, private readonly graceMs = OFFLINE_GRACE_MS) {}
+  constructor(
+    private readonly onChange: (userId: string) => void,
+    private readonly graceMs = OFFLINE_GRACE_MS,
+  ) {}
 
-  isOnline(userId: string): boolean { return this.sockets.has(userId) || this.leaving.has(userId) }
+  isOnline(userId: string): boolean {
+    return this.sockets.has(userId) || this.leaving.has(userId)
+  }
 
   connect(userId: string): void {
     if (this.closed) return
     const wasOnline = this.isOnline(userId)
     const timer = this.leaving.get(userId)
-    if (timer !== undefined) { clearTimeout(timer); this.leaving.delete(userId) }
+    if (timer !== undefined) {
+      clearTimeout(timer)
+      this.leaving.delete(userId)
+    }
     this.sockets.set(userId, (this.sockets.get(userId) ?? 0) + 1)
     if (!wasOnline) this.onChange(userId)
   }
@@ -28,12 +36,18 @@ export class Presence {
     if (this.closed) return
     const open = this.sockets.get(userId)
     if (open === undefined) return
-    if (open > 1) { this.sockets.set(userId, open - 1); return }
+    if (open > 1) {
+      this.sockets.set(userId, open - 1)
+      return
+    }
     this.sockets.delete(userId)
-    this.leaving.set(userId, setTimeout(() => {
-      this.leaving.delete(userId)
-      this.onChange(userId)
-    }, this.graceMs))
+    this.leaving.set(
+      userId,
+      setTimeout(() => {
+        this.leaving.delete(userId)
+        this.onChange(userId)
+      }, this.graceMs),
+    )
   }
 
   /** The server stops: clears the grace timers; sockets closing after this start none. */

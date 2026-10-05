@@ -55,10 +55,10 @@
       class="flex-1 aspect-[3/4] max-w-[46px] flex items-center justify-center rounded-[10px]
              font-mono text-[24px] font-semibold border transition-colors
              {invalid
-               ? 'border-live bg-live/5 text-text'
-               : i === activeIndex && focused
-                 ? 'border-accent bg-surface-2 text-text'
-                 : 'border-line-2 bg-surface-2 text-text'}"
+        ? 'border-live bg-live/5 text-text'
+        : i === activeIndex && focused
+          ? 'border-accent bg-surface-2 text-text'
+          : 'border-line-2 bg-surface-2 text-text'}"
     >
       {value[i] ?? ''}
       {#if i === activeIndex && focused && !value[i]}
@@ -68,10 +68,13 @@
   {/each}
   <input
     bind:this={inputEl}
-    value={value}
+    {value}
     oninput={onInput}
     onpaste={onPaste}
-    onfocus={() => { focused = true; onfocus?.() }}
+    onfocus={() => {
+      focused = true
+      onfocus?.()
+    }}
     onblur={() => (focused = false)}
     inputmode="text"
     autocapitalize="characters"

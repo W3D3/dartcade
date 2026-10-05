@@ -6,16 +6,25 @@ import { seededRng } from '../session/rng.js'
 
 const players: Player[] = [{ name: 'Alice' }, { name: 'Bob' }]
 const defaultCfg: ATCConfig = {
-  throwAgainOnAllHit: false, finishOn: 'single_bull',
-  multiplierAdvances: false, order: 'asc',
+  throwAgainOnAllHit: false,
+  finishOn: 'single_bull',
+  multiplierAdvances: false,
+  order: 'asc',
 }
 
 function makeState(overrides: Partial<ATCState> = {}): ATCState {
   const cfg = overrides.cfg ?? defaultCfg
   const sequence = overrides.sequence ?? buildSequence(cfg)
   return {
-    sequence, targets: [1, 1], currentPlayer: 0, allHitThisVisit: true, winner: null,
-    cfg, playerCount: 2, currentVisitHits: [], ...overrides,
+    sequence,
+    targets: [1, 1],
+    currentPlayer: 0,
+    allHitThisVisit: true,
+    winner: null,
+    cfg,
+    playerCount: 2,
+    currentVisitHits: [],
+    ...overrides,
   }
 }
 
@@ -23,7 +32,8 @@ function dartEvent(number: number, bed: string, multiplier: number, index = 0): 
   return {
     kind: 'dart.detected',
     data: {
-      visit_id: 'v1', index,
+      visit_id: 'v1',
+      index,
       dart: { segment: { name: '', number, bed, multiplier }, score: number * multiplier },
       source_seq: 1,
     } as any,
@@ -33,28 +43,28 @@ function dartEvent(number: number, bed: string, multiplier: number, index = 0): 
 describe('buildSequence', () => {
   it('asc order produces 1–20 then 21 for single_bull', () => {
     const seq = buildSequence({ ...defaultCfg, order: 'asc', finishOn: 'single_bull' })
-    expect(seq).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21])
+    expect(seq).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21])
   })
 
   it('desc order produces 20–1 then 21 for single_bull', () => {
     const seq = buildSequence({ ...defaultCfg, order: 'desc', finishOn: 'single_bull' })
-    expect(seq).toEqual([20,19,18,17,16,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,21])
+    expect(seq).toEqual([20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 21])
   })
 
   it('asc finishOn twenty ends at 20, no bull', () => {
     const seq = buildSequence({ ...defaultCfg, order: 'asc', finishOn: 'twenty' })
-    expect(seq).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+    expect(seq).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
   })
 
   it('asc finishOn bull ends at 22', () => {
     const seq = buildSequence({ ...defaultCfg, order: 'asc', finishOn: 'bull' })
     expect(seq.at(-1)).toBe(22)
-    expect(seq.slice(0, -1)).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+    expect(seq.slice(0, -1)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
   })
 
   it('random order has same elements as asc, in different order', () => {
     const seq = buildSequence({ ...defaultCfg, order: 'random', finishOn: 'twenty' })
-    expect(seq.slice().sort((a,b) => a-b)).toEqual([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20])
+    expect(seq.slice().sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20])
   })
 })
 
@@ -145,7 +155,9 @@ describe('onBoardEvent takeout.finished', () => {
   it('throwAgainOnAllHit at win: session ends, no extra throw granted', () => {
     const s = makeState({
       cfg: { ...defaultCfg, throwAgainOnAllHit: true },
-      allHitThisVisit: true, winner: 0, currentPlayer: 0,
+      allHitThisVisit: true,
+      winner: 0,
+      currentPlayer: 0,
     })
     const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
@@ -197,7 +209,8 @@ describe('finishOn single_bull', () => {
     const { state } = atcModule.onBoardEvent(s, {
       kind: 'dart.detected',
       data: {
-        visit_id: 'v1', index: 0,
+        visit_id: 'v1',
+        index: 0,
         dart: { segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 }, score: 25 },
         source_seq: 1,
       } as any,
@@ -211,7 +224,8 @@ describe('finishOn single_bull', () => {
     const { state } = atcModule.onBoardEvent(s, {
       kind: 'dart.detected',
       data: {
-        visit_id: 'v1', index: 0,
+        visit_id: 'v1',
+        index: 0,
         dart: { segment: { name: '50', number: 50, bed: 'Double', multiplier: 2 }, score: 50 },
         source_seq: 1,
       } as any,
@@ -234,7 +248,8 @@ describe('finishOn bull', () => {
     const { state } = atcModule.onBoardEvent(s, {
       kind: 'dart.detected',
       data: {
-        visit_id: 'v1', index: 0,
+        visit_id: 'v1',
+        index: 0,
         dart: { segment: { name: '50', number: 50, bed: 'Double', multiplier: 2 }, score: 50 },
         source_seq: 1,
       } as any,
@@ -248,7 +263,8 @@ describe('finishOn bull', () => {
     const { state } = atcModule.onBoardEvent(s, {
       kind: 'dart.detected',
       data: {
-        visit_id: 'v1', index: 0,
+        visit_id: 'v1',
+        index: 0,
         dart: { segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 }, score: 25 },
         source_seq: 1,
       } as any,

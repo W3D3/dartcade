@@ -26,20 +26,30 @@ export function normalizeCode(raw: string): string {
 }
 
 /** An error body from the lobby API: a plain `{ error }`, or a 409 with its code. */
-export type Refusal = Pick<LobbyConflict, 'error'> & Partial<Pick<LobbyConflict, 'code' | 'notReady' | 'offlineBoards' | 'sessionId' | 'lobbyId'>>
+export type Refusal = Pick<LobbyConflict, 'error'> &
+  Partial<Pick<LobbyConflict, 'code' | 'notReady' | 'offlineBoards' | 'sessionId' | 'lobbyId'>>
 
 /** One line for the screen. */
 export function describeConflict(body: Refusal): string {
   switch (body.code) {
-    case 'not_ready': return `Not ready yet: ${(body.notReady ?? []).map(p => p.name).join(', ')}`
-    case 'board_offline': return `Board offline: ${(body.offlineBoards ?? []).join(', ')}`
-    case 'in_lobby': return "You're in another lobby. Leave it first."
-    case 'game_running': return 'A game is running in this lobby'
-    case 'already_member': return "They're already in the lobby"
-    case 'already_invited': return "They're already invited"
-    case 'board_busy': return 'A board is in another game'
+    case 'not_ready':
+      return `Not ready yet: ${(body.notReady ?? []).map(p => p.name).join(', ')}`
+    case 'board_offline':
+      return `Board offline: ${(body.offlineBoards ?? []).join(', ')}`
+    case 'in_lobby':
+      return "You're in another lobby. Leave it first."
+    case 'game_running':
+      return 'A game is running in this lobby'
+    case 'already_member':
+      return "They're already in the lobby"
+    case 'already_invited':
+      return "They're already invited"
+    case 'board_busy':
+      return 'A board is in another game'
     // The server sends the game's id only when it's yours; otherwise its text names the player
-    case 'active_session': return body.sessionId ? 'You already have a game running' : body.error
-    default: return body.error
+    case 'active_session':
+      return body.sessionId ? 'You already have a game running' : body.error
+    default:
+      return body.error
   }
 }

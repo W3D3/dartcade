@@ -6,19 +6,35 @@ import type { BoardEvent, Player } from '../session/types.js'
 const players: Player[] = [{ name: 'Alice' }, { name: 'Bob' }]
 
 const defaultCfg: X01Config = {
-  startScore: 501, inMode: 'straight', outMode: 'double',
-  bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3,
+  startScore: 501,
+  inMode: 'straight',
+  outMode: 'double',
+  bullOff: 'off',
+  bullValue: '25_50',
+  maxRounds: 50,
+  firstTo: 3,
 }
 
 function makeState(overrides: Partial<X01State> = {}): X01State {
   return {
-    cfg: defaultCfg, scores: [501, 501], legs: [0, 0],
-    opened: [true, true], phase: 'game', order: [0, 1],
+    cfg: defaultCfg,
+    scores: [501, 501],
+    legs: [0, 0],
+    opened: [true, true],
+    phase: 'game',
+    order: [0, 1],
     // Singles: every seat its own team
-    teamOf: Array.from({ length: overrides.playerCount ?? 2 }, (_, i) => i), turn: 0,
-    currentPlayer: 0, round: 1,
-    bustThisVisit: false, visitOpenedScores: [501, 501],
-    winner: null, playerCount: 2, pointsScored: [0, 0], bestCheckout: [0, 0], ...overrides,
+    teamOf: Array.from({ length: overrides.playerCount ?? 2 }, (_, i) => i),
+    turn: 0,
+    currentPlayer: 0,
+    round: 1,
+    bustThisVisit: false,
+    visitOpenedScores: [501, 501],
+    winner: null,
+    playerCount: 2,
+    pointsScored: [0, 0],
+    bestCheckout: [0, 0],
+    ...overrides,
   }
 }
 
@@ -26,7 +42,8 @@ function dartEvent(number: number, bed: string, multiplier: number, index = 0): 
   return {
     kind: 'dart.detected',
     data: {
-      visit_id: 'v1', index,
+      visit_id: 'v1',
+      index,
       dart: { segment: { name: '', number, bed, multiplier }, score: number * multiplier },
       source_seq: 1,
     } as any,
@@ -287,15 +304,28 @@ describe('takeout.finished — rotation and rounds', () => {
 
   it('the start moves on every leg, whoever wins, and rounds count from the leg starter', () => {
     const cfg = { ...defaultCfg, firstTo: 3 }
-    const three = makeState({ cfg, scores: [501, 501, 501], legs: [0, 0, 0], opened: [true, true, true], order: [0, 1, 2], visitOpenedScores: [501, 501, 501], playerCount: 3, pointsScored: [0, 0, 0], bestCheckout: [0, 0, 0] })
+    const three = makeState({
+      cfg,
+      scores: [501, 501, 501],
+      legs: [0, 0, 0],
+      opened: [true, true, true],
+      order: [0, 1, 2],
+      visitOpenedScores: [501, 501, 501],
+      playerCount: 3,
+      pointsScored: [0, 0, 0],
+      bestCheckout: [0, 0, 0],
+    })
     const takeout = (st: X01State) => x01Game.onBoardEvent(st, { kind: 'takeout.finished', data: {} }).state
     // Leg 1: player 2 wins it → leg 2 starts with player 1 (next in order after the leg-1 starter 0)
     let s = takeout(openedVisit({ ...three, currentPlayer: 2, scores: [100, 100, 0] }))
     expect([s.currentPlayer, s.round]).toEqual([1, 1])
     // Leg 2 runs 1, 2, 0, then back to its starter 1 in round 2
-    s = takeout(s); expect([s.currentPlayer, s.round]).toEqual([2, 1])
-    s = takeout(s); expect([s.currentPlayer, s.round]).toEqual([0, 1])
-    s = takeout(s); expect([s.currentPlayer, s.round]).toEqual([1, 2])
+    s = takeout(s)
+    expect([s.currentPlayer, s.round]).toEqual([2, 1])
+    s = takeout(s)
+    expect([s.currentPlayer, s.round]).toEqual([0, 1])
+    s = takeout(s)
+    expect([s.currentPlayer, s.round]).toEqual([1, 2])
     // Player 1 wins leg 2 → leg 3 starts with player 2, leg 4 would start with player 0 again
     s = takeout(openedVisit({ ...s, scores: [100, 0, 100] }))
     expect([s.currentPlayer, s.round, s.legs]).toEqual([2, 1, [0, 1, 1]])
@@ -372,13 +402,20 @@ describe('bull off integration', () => {
 
   // A dart at `mm` from the centre, as the cameras report it
   function dartAt(mm: number): BoardEvent {
-    const segment = mm <= 6.35 ? { name: 'Bull', number: 50, bed: 'Double', multiplier: 2 }
-      : mm <= 15.9 ? { name: '25', number: 25, bed: 'Single', multiplier: 1 }
-      : { name: 'S20', number: 20, bed: 'SingleInner', multiplier: 1 }
+    const segment =
+      mm <= 6.35
+        ? { name: 'Bull', number: 50, bed: 'Double', multiplier: 2 }
+        : mm <= 15.9
+          ? { name: '25', number: 25, bed: 'Single', multiplier: 1 }
+          : { name: 'S20', number: 20, bed: 'SingleInner', multiplier: 1 }
     return {
       kind: 'dart.detected',
-      data: { visit_id: 'v', index: 0, source_seq: 1,
-        dart: { segment, score: segment.number * segment.multiplier, polar: { r: mm / 170, theta_deg: 90 } } } as any,
+      data: {
+        visit_id: 'v',
+        index: 0,
+        source_seq: 1,
+        dart: { segment, score: segment.number * segment.multiplier, polar: { r: mm / 170, theta_deg: 90 } },
+      } as any,
     }
   }
 
@@ -512,7 +549,7 @@ describe('teams', () => {
   const s20 = () => dartEvent(20, 'SingleOuter', 1)
   const miss = () => dartEvent(0, 'Outside', 0)
 
-  it('2v2: a visit by A2 counts down Team A\'s score', () => {
+  it("2v2: a visit by A2 counts down Team A's score", () => {
     let s = x01Game.init(team2v2, four)
     s = visit(s, s20())
     s = visit(s, miss())
@@ -528,9 +565,9 @@ describe('teams', () => {
 
   it('2v2: a bust by the second player reverts the team score to the start of their visit', () => {
     let s = x01Game.init(team2v2, four)
-    s = visit(s, t20())          // A1: 41
-    s = visit(s, miss())         // B1
-    s = play(s, opened, t20())   // A2 overshoots 41 → bust
+    s = visit(s, t20()) // A1: 41
+    s = visit(s, miss()) // B1
+    s = play(s, opened, t20()) // A2 overshoots 41 → bust
     expect(s.bustThisVisit).toBe(true)
     expect(x01Game.view(s, four).scores).toEqual([41, 101, 41, 101])
     s = play(s, takeout)
@@ -540,19 +577,26 @@ describe('teams', () => {
 
   it('2v2: a checkout by either player wins the leg for the team', () => {
     let s = x01Game.init({ ...team2v2, startScore: 61, firstTo: 2 }, four)
-    s = visit(s, s20())                                  // A1: 41
-    s = visit(s, miss())                                 // B1
+    s = visit(s, s20()) // A1: 41
+    s = visit(s, miss()) // B1
     s = visit(s, dartEvent(1, 'SingleInner', 1), dartEvent(20, 'Double', 2)) // A2 checks out 41
     const v = x01Game.view(s, four)
     expect(v.legs).toEqual([1, 0, 1, 0])
-    expect(v.teams?.map(t => [t.score, t.legs])).toEqual([[61, 1], [61, 0]])
+    expect(v.teams?.map(t => [t.score, t.legs])).toEqual([
+      [61, 1],
+      [61, 0],
+    ])
     expect(s.bestCheckout).toEqual([0, 0, 41, 0])
     // The next leg starts with Team B's first seat
     expect([s.currentPlayer, s.round]).toEqual([1, 1])
-    s = visit(s, miss()); expect(s.currentPlayer).toBe(2)
-    s = visit(s, miss()); expect(s.currentPlayer).toBe(3)
-    s = visit(s, miss()); expect([s.currentPlayer, s.round]).toEqual([0, 1])
-    s = visit(s, miss()); expect([s.currentPlayer, s.round]).toEqual([1, 2])
+    s = visit(s, miss())
+    expect(s.currentPlayer).toBe(2)
+    s = visit(s, miss())
+    expect(s.currentPlayer).toBe(3)
+    s = visit(s, miss())
+    expect([s.currentPlayer, s.round]).toEqual([0, 1])
+    s = visit(s, miss())
+    expect([s.currentPlayer, s.round]).toEqual([1, 2])
   })
 
   it('2v1: the single player throws every other turn', () => {
@@ -562,7 +606,10 @@ describe('teams', () => {
     s = visit(s, miss())
     expect(x01Game.view(s, three).nextPlayer).toBe(2)
     seen.push(s.currentPlayer)
-    for (let i = 0; i < 2; i++) { s = visit(s, miss()); seen.push(s.currentPlayer) }
+    for (let i = 0; i < 2; i++) {
+      s = visit(s, miss())
+      seen.push(s.currentPlayer)
+    }
     expect(seen).toEqual([0, 1, 2, 1])
     expect(s.round).toBe(1)
     // B1 throws twice a round: who's next depends on the turn, not just the thrower
@@ -573,14 +620,19 @@ describe('teams', () => {
 
   it('teams: the winner is the team; summarize places both team members first', () => {
     let s = x01Game.init({ ...team2v2, startScore: 40, firstTo: 1 }, four)
-    s = visit(s, s20())                        // A1: 20 left
-    s = visit(s, dartEvent(20, 'Double', 2))   // B1 checks out 40
+    s = visit(s, s20()) // A1: 20 left
+    s = visit(s, dartEvent(20, 'Double', 2)) // B1 checks out 40
     expect(s.phase).toBe('finished')
     expect(s.winner).toBe(1)
     expect(x01Game.view(s, four).winner).toBe(1)
     const r = x01Game.summarize(s, { totalDarts: [1, 1, 0, 0], totalVisits: [1, 1, 0, 0] })
     expect(r.map(x => x.placement)).toEqual([2, 1, 2, 1])
-    expect(r.map(x => [x.stats.pointsScored, x.stats.dartsThrown, x.stats.legsWon])).toEqual([[20, 1, 0], [40, 1, 1], [0, 0, 0], [0, 0, 1]])
+    expect(r.map(x => [x.stats.pointsScored, x.stats.dartsThrown, x.stats.legsWon])).toEqual([
+      [20, 1, 0],
+      [40, 1, 1],
+      [0, 0, 0],
+      [0, 0, 1],
+    ])
   })
 
   it('teamStart random picks the starting team with the rng', () => {
@@ -603,7 +655,7 @@ describe('teams', () => {
     expect(x01Module.validate!({ ...team2v2, teams: undefined }, four)).toMatch(/teams/)
   })
 
-  it('bull off: the winner\'s team starts, and the teams take turns', () => {
+  it("bull off: the winner's team starts, and the teams take turns", () => {
     let s = x01Module.init({ ...team2v2, bullOff: 'wdc' }, four)
     s = x01Module.onUserAction(s, { type: 'bulloff_start' }).state // no result yet: ignored
     expect(s.stage).toBe('bulloff')
@@ -612,7 +664,10 @@ describe('teams', () => {
     // A2 won: A2 throws first, Team A's seats rotated to start at A2
     expect(after.game.order).toEqual([2, 1, 0, 3])
     expect(after.game.currentPlayer).toBe(2)
-    const bStarts = x01Module.onUserAction({ ...s, bullOff: { ...s.bullOff, result: { order: [1, 0, 3, 2], rethrow: false } } }, { type: 'bulloff_start' }).state
+    const bStarts = x01Module.onUserAction(
+      { ...s, bullOff: { ...s.bullOff, result: { order: [1, 0, 3, 2], rethrow: false } } },
+      { type: 'bulloff_start' },
+    ).state
     expect(bStarts.game.order).toEqual([1, 0, 3, 2])
     expect(x01Module.teamsOf!(bStarts)).toEqual([0, 1, 0, 1])
     expect(x01Module.teams).toBe(true)
@@ -634,26 +689,26 @@ describe('teams', () => {
     it('mid-leg in 2v1 follows the turn order (A1 B1 A2 B1)', () => {
       let s = x01Game.init(team2v1, three)
       expect(x01Game.view(s, three).nextPlayer).toBe(1)
-      s = visit(s, miss())                       // A1 → B1 up
+      s = visit(s, miss()) // A1 → B1 up
       expect(x01Game.view(s, three).nextPlayer).toBe(2)
-      s = visit(s, miss())                       // B1 → A2 up
+      s = visit(s, miss()) // B1 → A2 up
       expect(x01Game.view(s, three).nextPlayer).toBe(1)
-      s = visit(s, miss())                       // A2 → B1 up
+      s = visit(s, miss()) // A2 → B1 up
       expect(x01Game.view(s, three).nextPlayer).toBe(0)
     })
 
     it('after a bust, the next turn as usual', () => {
       let s = x01Game.init(team2v1, three)
-      s = visit(s, t20())                        // A1: 41
-      s = visit(s, miss())                       // B1
-      s = play(s, opened, t20())                 // A2 busts
+      s = visit(s, t20()) // A1: 41
+      s = visit(s, miss()) // B1
+      s = play(s, opened, t20()) // A2 busts
       expect(s.bustThisVisit).toBe(true)
       expect(x01Game.view(s, three).nextPlayer).toBe(1)
     })
 
-    it('at a locked checkout, the next leg\'s starter', () => {
+    it("at a locked checkout, the next leg's starter", () => {
       let s = x01Game.init({ ...team2v1, startScore: 40 }, three)
-      s = play(s, opened, dartEvent(20, 'Double', 2))   // A1 checks out leg 1, visit locked
+      s = play(s, opened, dartEvent(20, 'Double', 2)) // A1 checks out leg 1, visit locked
       expect(x01Game.view(s, three).visitLocked).toBe(true)
       // Leg 2 starts at the second position in the order: B1
       expect(x01Game.view(s, three).nextPlayer).toBe(1)
@@ -672,7 +727,9 @@ describe('teams', () => {
 
     it('null on the last visit before the round limit ends the game', () => {
       let s = x01Game.init({ ...team2v1, maxRounds: 1 }, three)
-      s = visit(s, miss()); s = visit(s, miss()); s = visit(s, miss())   // A1 B1 A2; B1 throws the last turn
+      s = visit(s, miss())
+      s = visit(s, miss())
+      s = visit(s, miss()) // A1 B1 A2; B1 throws the last turn
       expect(s.currentPlayer).toBe(1)
       expect(x01Game.view(s, three).nextPlayer).toBeNull()
     })
@@ -691,11 +748,11 @@ describe('teams', () => {
   it('2v1 round limit: the lowest team score wins, both seats of that team placed 1st', () => {
     const three: Player[] = [{ name: 'A1' }, { name: 'B1' }, { name: 'A2' }]
     let s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0], startScore: 101, maxRounds: 1 }, three)
-    s = visit(s, s20())    // A1: Team A 81
-    s = visit(s, miss())   // B1
-    s = visit(s, miss())   // A2
+    s = visit(s, s20()) // A1: Team A 81
+    s = visit(s, miss()) // B1
+    s = visit(s, miss()) // A2
     expect(s.phase).toBe('game')
-    s = visit(s, miss())   // B1 again: the round is over
+    s = visit(s, miss()) // B1 again: the round is over
     expect(s.phase).toBe('finished')
     expect(s.winner).toBe(0)
     const r = x01Game.summarize(s, { totalDarts: [1, 2, 1], totalVisits: [1, 2, 1] })
@@ -707,7 +764,7 @@ describe('teams', () => {
     let s = x01Game.init({ ...defaultCfg, format: 'teams', teams: [0, 1, 0], startScore: 40, firstTo: 5 }, three)
     const starters = [s.currentPlayer]
     for (let leg = 0; leg < 3; leg++) {
-      s = visit(s, dartEvent(20, 'Double', 2))   // the leg's starter checks out
+      s = visit(s, dartEvent(20, 'Double', 2)) // the leg's starter checks out
       starters.push(s.currentPlayer)
       expect(s.round).toBe(1)
     }

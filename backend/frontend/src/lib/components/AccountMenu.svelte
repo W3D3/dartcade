@@ -33,7 +33,8 @@
     rail: 'fixed left-24 bottom-4 w-[296px]',
     sidebar: 'absolute left-0 bottom-full mb-2 w-[296px]',
   }
-  const ITEM = 'h-11 flex items-center gap-3 px-3 rounded-[10px] text-text no-underline text-[15px] font-medium hover:bg-surface-hover hover:text-text'
+  const ITEM =
+    'h-11 flex items-center gap-3 px-3 rounded-[10px] text-text no-underline text-[15px] font-medium hover:bg-surface-hover hover:text-text'
 
   async function pick(next: boolean) {
     if (next === invisible) return
@@ -60,16 +61,25 @@
 
 {#snippet avatar(size: number)}
   <span class="relative shrink-0">
-    <span style="width: {size}px; height: {size}px; font-size: {Math.round(size * 0.42)}px"
-      class="rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold">{initial}</span>
+    <span
+      style="width: {size}px; height: {size}px; font-size: {Math.round(size * 0.42)}px"
+      class="rounded-full bg-accent text-accent-fg flex items-center justify-center font-bold">{initial}</span
+    >
     <StatusDot kind={invisible ? 'offline' : 'online'} class="absolute -right-[2px] -bottom-[2px]" />
   </span>
 {/snippet}
 
 <div class="relative {placement === 'sidebar' ? 'w-full' : 'shrink-0'}">
   {#if placement === 'sidebar'}
-    <button bind:this={triggerEl} type="button" onclick={() => open = !open} aria-label={triggerLabel} aria-haspopup="menu" aria-expanded={open}
-      class="w-full h-[60px] box-border flex items-center gap-3 px-3 rounded-[10px] border border-line bg-transparent text-left text-text cursor-pointer font-[inherit] hover:bg-surface-active">
+    <button
+      bind:this={triggerEl}
+      type="button"
+      onclick={() => (open = !open)}
+      aria-label={triggerLabel}
+      aria-haspopup="menu"
+      aria-expanded={open}
+      class="w-full h-[60px] box-border flex items-center gap-3 px-3 rounded-[10px] border border-line bg-transparent text-left text-text cursor-pointer font-[inherit] hover:bg-surface-active"
+    >
       {@render avatar(36)}
       <span class="flex flex-col gap-[2px] min-w-0 flex-grow">
         <span class="text-[14px] font-semibold truncate">{name}</span>
@@ -78,8 +88,17 @@
       <ChevronUp size={16} class="text-text-muted" />
     </button>
   {:else}
-    <button bind:this={triggerEl} type="button" onclick={() => open = !open} aria-label={triggerLabel} aria-haspopup="menu" aria-expanded={open}
-      class="{placement === 'rail' ? 'w-14 h-14 rounded-[12px]' : 'w-11 h-11'} relative flex items-center justify-center bg-transparent border-0 cursor-pointer">
+    <button
+      bind:this={triggerEl}
+      type="button"
+      onclick={() => (open = !open)}
+      aria-label={triggerLabel}
+      aria-haspopup="menu"
+      aria-expanded={open}
+      class="{placement === 'rail'
+        ? 'w-14 h-14 rounded-[12px]'
+        : 'w-11 h-11'} relative flex items-center justify-center bg-transparent border-0 cursor-pointer"
+    >
       {@render avatar(placement === 'rail' ? 40 : 36)}
       {#if placement === 'header' && friends.requests > 0}
         <NavBadge count={friends.requests} hidden label="" class="absolute top-0 right-0 border-2 border-surface-1" />
@@ -88,8 +107,13 @@
   {/if}
   {#if open}
     <div class="fixed inset-0 z-40" onclick={closeMenu} aria-hidden="true"></div>
-    <div bind:this={menuEl} role="menu" aria-label="Account" class="{MENU_POSITION[placement]} z-50 box-border p-3 rounded-[14px]
-                bg-surface-2 border border-line-3 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)] flex flex-col gap-2">
+    <div
+      bind:this={menuEl}
+      role="menu"
+      aria-label="Account"
+      class="{MENU_POSITION[placement]} z-50 box-border p-3 rounded-[14px]
+                bg-surface-2 border border-line-3 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)] flex flex-col gap-2"
+    >
       <div class="flex items-center gap-3 min-w-0 px-1">
         {@render avatar(40)}
         <span class="flex flex-col gap-[2px] min-w-0">
@@ -100,7 +124,13 @@
       <span class="px-1 pt-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted">Your status</span>
       <div role="radiogroup" aria-label="Your status" class="flex flex-col gap-1">
         <StatusOption title="Online" text={STATUS_COPY.menu.online} kind="online" checked={!invisible} onpick={() => void pick(false)} />
-        <StatusOption title="Invisible" text={STATUS_COPY.menu.invisible} kind="offline" checked={invisible} onpick={() => void pick(true)} />
+        <StatusOption
+          title="Invisible"
+          text={STATUS_COPY.menu.invisible}
+          kind="offline"
+          checked={invisible}
+          onpick={() => void pick(true)}
+        />
       </div>
       {#if statusError}<ErrorText>{statusError}</ErrorText>{/if}
       <hr class="m-0 border-0 border-t border-line-3" />
@@ -108,15 +138,22 @@
         <UsersRound size={18} strokeWidth={1.8} />
         Friends
         <span class="ml-auto text-[13px] text-text-muted">{friends.online} online</span>
-        {#if friends.requests > 0}<NavBadge count={friends.requests} label="{friends.requests} friend {friends.requests === 1 ? 'request' : 'requests'}" />{/if}
+        {#if friends.requests > 0}<NavBadge
+            count={friends.requests}
+            label="{friends.requests} friend {friends.requests === 1 ? 'request' : 'requests'}"
+          />{/if}
       </a>
       <a href="#/settings" role="menuitem" onclick={closeMenu} class={ITEM}>
         <Settings size={18} strokeWidth={1.8} />
         Settings
       </a>
       <hr class="m-0 border-0 border-t border-line-3" />
-      <button type="button" role="menuitem" onclick={() => void signOut()}
-        class="h-11 flex items-center gap-3 px-3 rounded-[10px] border-0 bg-transparent text-live-text text-[15px] font-medium cursor-pointer font-[inherit] hover:bg-surface-hover">
+      <button
+        type="button"
+        role="menuitem"
+        onclick={() => void signOut()}
+        class="h-11 flex items-center gap-3 px-3 rounded-[10px] border-0 bg-transparent text-live-text text-[15px] font-medium cursor-pointer font-[inherit] hover:bg-surface-hover"
+      >
         <LogOut size={17} />
         Sign out
       </button>

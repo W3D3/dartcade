@@ -8,7 +8,14 @@
   import ToggleChip from './ToggleChip.svelte'
   import { canMove, canRemove, canSetReady, isMine, type PersonPatch } from '$lib/lobby/rules'
 
-  let { lobby, person, index, viewerId, onupdate, onremove }: {
+  let {
+    lobby,
+    person,
+    index,
+    viewerId,
+    onupdate,
+    onremove,
+  }: {
     lobby: Lobby
     person: LobbyPerson
     index: number
@@ -28,14 +35,21 @@
 </script>
 
 {#if mine}
-  <ToggleChip on={person.plays} onclick={() => void onupdate(person.id, { plays: !person.plays })}
-    label={person.plays ? `${person.name} plays the next game. Sit out` : `${person.name} sits out. Play the next game`}>
+  <ToggleChip
+    on={person.plays}
+    onclick={() => void onupdate(person.id, { plays: !person.plays })}
+    label={person.plays ? `${person.name} plays the next game. Sit out` : `${person.name} sits out. Play the next game`}
+  >
     {person.plays ? 'In' : 'Sits out'}
   </ToggleChip>
   {#if person.plays}
     {#if readyControl}
-      <ToggleChip tone="solid" on={person.ready} onclick={() => void onupdate(person.id, { ready: !person.ready })}
-        label={person.ready ? `${person.name} is ready. Mark as not ready` : `${person.name} is not ready. Mark as ready`}>
+      <ToggleChip
+        tone="solid"
+        on={person.ready}
+        onclick={() => void onupdate(person.id, { ready: !person.ready })}
+        label={person.ready ? `${person.name} is ready. Mark as not ready` : `${person.name} is not ready. Mark as ready`}
+      >
         {person.ready ? 'Ready' : 'Ready?'}
       </ToggleChip>
     {:else}
@@ -45,14 +59,30 @@
 {:else}
   <PersonStatus {person} />
 {/if}
-<RowMenu name={person.name}
+<RowMenu
+  name={person.name}
   onup={mover && index > 0 ? () => void onupdate(person.id, { position: index - 1 }) : undefined}
   ondown={mover && index < last ? () => void onupdate(person.id, { position: index + 1 }) : undefined}
-  onremove={canRemove(lobby, person, viewerId) ? () => { removing = true } : undefined} />
+  onremove={canRemove(lobby, person, viewerId)
+    ? () => {
+        removing = true
+      }
+    : undefined}
+/>
 
 {#if removing}
-  <ConfirmModal title="Remove {person.name}?"
-    body={person.userId !== null ? `${person.name} leaves the lobby, and their guests leave with them.` : `${person.name} leaves the lobby.`}
-    confirmLabel="Remove" cancelLabel="Keep" danger
-    onconfirm={() => { removing = false; void onremove(person.id) }} oncancel={() => removing = false} />
+  <ConfirmModal
+    title="Remove {person.name}?"
+    body={person.userId !== null
+      ? `${person.name} leaves the lobby, and their guests leave with them.`
+      : `${person.name} leaves the lobby.`}
+    confirmLabel="Remove"
+    cancelLabel="Keep"
+    danger
+    onconfirm={() => {
+      removing = false
+      void onremove(person.id)
+    }}
+    oncancel={() => (removing = false)}
+  />
 {/if}

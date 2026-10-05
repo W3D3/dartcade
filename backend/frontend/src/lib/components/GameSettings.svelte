@@ -10,7 +10,15 @@
   import type { ConfigFieldMeta } from '$lib/api'
   import { GAME_MODES } from '$lib/gameModes'
 
-  let { gameId, config, defaults, meta, teams = false, readonly = false, onchange }: {
+  let {
+    gameId,
+    config,
+    defaults,
+    meta,
+    teams = false,
+    readonly = false,
+    onchange,
+  }: {
     gameId: string
     /** The settings shown: the saved ones over the mode's defaults. */
     config: Record<string, unknown>
@@ -37,8 +45,8 @@
   ]
   const inOutOptions = [
     { value: 'straight', label: 'Straight' },
-    { value: 'double',   label: 'Double'   },
-    { value: 'master',   label: 'Master'   },
+    { value: 'double', label: 'Double' },
+    { value: 'master', label: 'Master' },
   ]
   const bullOffOptions = [
     { value: 'off', label: 'Off' },
@@ -68,27 +76,47 @@
             <Tooltip text={meta.format.tooltip} />
           {/if}
         </legend>
-        <SegmentedControl options={meta.format.options ?? []} value={config.format} disabled={readonly}
-          defaultValue={defaults.format} onchange={(v) => set('format', v)} />
+        <SegmentedControl
+          options={meta.format.options ?? []}
+          value={config.format}
+          disabled={readonly}
+          defaultValue={defaults.format}
+          onchange={v => set('format', v)}
+        />
       </fieldset>
     {/if}
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
       <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Start score</legend>
-      <SegmentedControl options={startScoreOptions} value={config.startScore} disabled={readonly}
-        defaultValue={defaults.startScore} onchange={(v) => set('startScore', v)} />
+      <SegmentedControl
+        options={startScoreOptions}
+        value={config.startScore}
+        disabled={readonly}
+        defaultValue={defaults.startScore}
+        onchange={v => set('startScore', v)}
+      />
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
       <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-in</legend>
-      <SegmentedControl options={inOutOptions} value={config.inMode} disabled={readonly}
-        defaultValue={defaults.inMode} onchange={(v) => set('inMode', v)} />
+      <SegmentedControl
+        options={inOutOptions}
+        value={config.inMode}
+        disabled={readonly}
+        defaultValue={defaults.inMode}
+        onchange={v => set('inMode', v)}
+      />
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
       <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Check-out</legend>
-      <SegmentedControl options={inOutOptions} value={config.outMode} disabled={readonly}
-        defaultValue={defaults.outMode} onchange={(v) => set('outMode', v)} />
+      <SegmentedControl
+        options={inOutOptions}
+        value={config.outMode}
+        disabled={readonly}
+        defaultValue={defaults.outMode}
+        onchange={v => set('outMode', v)}
+      />
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
@@ -96,29 +124,53 @@
         Bull off
         <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
       </legend>
-      <SegmentedControl options={bullOffOptions} value={config.bullOff} disabled={readonly}
-        defaultValue={defaults.bullOff} onchange={(v) => set('bullOff', v)} />
+      <SegmentedControl
+        options={bullOffOptions}
+        value={config.bullOff}
+        disabled={readonly}
+        defaultValue={defaults.bullOff}
+        onchange={v => set('bullOff', v)}
+      />
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
       <legend class="text-[14px] font-medium text-[#d8d8ce] mb-2">Bull value</legend>
-      <SegmentedControl options={bullValueOptions} value={config.bullValue} disabled={readonly}
-        defaultValue={defaults.bullValue} onchange={(v) => set('bullValue', v)} />
+      <SegmentedControl
+        options={bullValueOptions}
+        value={config.bullValue}
+        disabled={readonly}
+        defaultValue={defaults.bullValue}
+        onchange={v => set('bullValue', v)}
+      />
     </fieldset>
 
     <div class="flex justify-between items-center">
-      <span class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce]">Max rounds <Tooltip text="Maximum number of rounds before the game ends. The player with the lowest score wins if nobody checks out. Set higher for longer games." /></span>
-      <Stepper value={num(config.maxRounds, 50)} label="rounds" highlight={isNonDefault('maxRounds')} disabled={readonly}
-        onchange={(n) => set('maxRounds', n)} />
+      <span class="flex items-center gap-2 text-[14px] font-medium text-[#d8d8ce]"
+        >Max rounds <Tooltip
+          text="Maximum number of rounds before the game ends. The player with the lowest score wins if nobody checks out. Set higher for longer games."
+        /></span
+      >
+      <Stepper
+        value={num(config.maxRounds, 50)}
+        label="rounds"
+        highlight={isNonDefault('maxRounds')}
+        disabled={readonly}
+        onchange={n => set('maxRounds', n)}
+      />
     </div>
 
     <div class="flex justify-between items-center">
       <span class="text-[14px] font-medium text-[#d8d8ce]">First to</span>
-      <Stepper value={num(config.firstTo, 3)} label="legs" unit={(n) => (n === 1 ? 'leg' : 'legs')} highlight={isNonDefault('firstTo')} disabled={readonly}
-        onchange={(n) => set('firstTo', n)} />
+      <Stepper
+        value={num(config.firstTo, 3)}
+        label="legs"
+        unit={n => (n === 1 ? 'leg' : 'legs')}
+        highlight={isNonDefault('firstTo')}
+        disabled={readonly}
+        onchange={n => set('firstTo', n)}
+      />
     </div>
   </div>
-
 {:else if gameId === 'atc'}
   <div class="flex flex-col gap-[18px]">
     {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
@@ -136,15 +188,17 @@
             value={config[fieldKey]}
             defaultValue={defaults[fieldKey]}
             disabled={readonly}
-            onchange={(v: unknown) => set(fieldKey, v)} />
+            onchange={(v: unknown) => set(fieldKey, v)}
+          />
         </fieldset>
       {/if}
     {/each}
   </div>
-
 {:else}
-  <div class="p-4 border border-dashed border-[#3e4239] rounded-[10px] text-[14px]
-              leading-[1.5] text-text-muted">
+  <div
+    class="p-4 border border-dashed border-[#3e4239] rounded-[10px] text-[14px]
+              leading-[1.5] text-text-muted"
+  >
     [{GAME_MODES.find(m => m.id === gameId)?.name ?? gameId} options — rules and settings to be defined]
   </div>
 {/if}

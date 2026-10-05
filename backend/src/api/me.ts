@@ -24,9 +24,9 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     return { ...account, suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null }
   }
 
-  app.get<Route<'getMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('getMe') }, async (req) => me(req.userId))
+  app.get<Route<'getMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('getMe') }, async req => me(req.userId))
 
-  app.patch<Route<'updateMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('updateMe') }, async (req) => {
+  app.patch<Route<'updateMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('updateMe') }, async req => {
     if (req.body.name !== undefined) await renameUser(db, req.userId, req.body.name)
     if (req.body.invisible !== undefined) await setInvisible(db, req.userId, req.body.invisible)
     opts.onChanged?.(req.userId)

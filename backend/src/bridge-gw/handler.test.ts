@@ -33,8 +33,26 @@ describe('BridgeConnections', () => {
     const bc = new BridgeConnections()
     const ws1 = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
     const ws2 = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn1 = { ws: ws1, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: false }
-    const conn2 = { ws: ws2, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: false }
+    const conn1 = {
+      ws: ws1,
+      boardDbId: null,
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      helloReceived: false,
+    }
+    const conn2 = {
+      ws: ws2,
+      boardDbId: null,
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      helloReceived: false,
+    }
     bc.add(conn1)
     bc.register(conn1, 'board-ulid-1')
     bc.add(conn2)
@@ -46,7 +64,16 @@ describe('BridgeConnections', () => {
   it('remove cleans up the connection', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = { ws, boardDbId: 'board-ulid-1', hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: true }
+    const conn = {
+      ws,
+      boardDbId: 'board-ulid-1',
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      helloReceived: true,
+    }
     bc.add(conn)
     bc.register(conn, 'board-ulid-1')
     bc.remove(conn)
@@ -55,10 +82,22 @@ describe('BridgeConnections', () => {
 
   it('a replaced connection closing late leaves the new one online', () => {
     const bc = new BridgeConnections()
-    const mk = () => ({ ws: { readyState: 1, close: vi.fn(), send: vi.fn() } as any, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: true })
-    const old = mk(), fresh = mk()
-    bc.add(old); bc.register(old, 'board-ulid-1')
-    bc.add(fresh); bc.register(fresh, 'board-ulid-1')
+    const mk = () => ({
+      ws: { readyState: 1, close: vi.fn(), send: vi.fn() } as any,
+      boardDbId: null,
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      helloReceived: true,
+    })
+    const old = mk(),
+      fresh = mk()
+    bc.add(old)
+    bc.register(old, 'board-ulid-1')
+    bc.add(fresh)
+    bc.register(fresh, 'board-ulid-1')
     // The old socket's close event arrives after the reconnect registered
     bc.remove(old)
     expect(bc.isOnline('board-ulid-1')).toBe(true)
@@ -68,7 +107,16 @@ describe('BridgeConnections', () => {
   it('send transmits JSON to the socket', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = { ws, boardDbId: 'board-ulid-1', hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: true }
+    const conn = {
+      ws,
+      boardDbId: 'board-ulid-1',
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      helloReceived: true,
+    }
     bc.add(conn)
     bc.register(conn, 'board-ulid-1')
     bc.send('board-ulid-1', { command_id: 'c1', name: 'reset' })
@@ -78,7 +126,16 @@ describe('BridgeConnections', () => {
   it('isOnline returns true for a registered board', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = { ws, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: null, bmUrl: null, helloReceived: false }
+    const conn = {
+      ws,
+      boardDbId: null,
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      helloReceived: false,
+    }
     bc.add(conn)
     bc.register(conn, 'board-ulid-1')
     expect(bc.isOnline('board-ulid-1')).toBe(true)
@@ -88,7 +145,16 @@ describe('BridgeConnections', () => {
   it('bmUrl is accessible after registering a connection', () => {
     const bc = new BridgeConnections()
     const ws = { readyState: 1, close: vi.fn(), send: vi.fn() } as any
-    const conn = { ws, boardDbId: null, hardwareBoardId: null, bridgeId: null, bootId: null, bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180', helloReceived: true }
+    const conn = {
+      ws,
+      boardDbId: null,
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: '1.0.7',
+      bmUrl: 'http://192.168.0.109:3180',
+      helloReceived: true,
+    }
     bc.add(conn)
     bc.register(conn, 'board-ulid-1')
     expect(bc.get('board-ulid-1')?.bmUrl).toBe('http://192.168.0.109:3180')
@@ -120,7 +186,9 @@ describe('handleBridgeConnection', () => {
     // getBoardByTokenHash stays pending so hello arrives during the auth window.
     let resolveBoard!: (b: any) => void
     vi.mocked(queries.getBoardByTokenHash).mockReturnValue(
-      new Promise(r => { resolveBoard = r }) as any,
+      new Promise(r => {
+        resolveBoard = r
+      }) as any,
     )
     const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined) } as any
     const socket = new FakeSocket()
@@ -128,21 +196,39 @@ describe('handleBridgeConnection', () => {
     handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
 
     // hello sent immediately on connect — before auth resolves
-    socket.emit('message', Buffer.from(JSON.stringify({
-      kind: 'bridge.hello', data: { bridge_version: 'v0.4.2', bm_version: '1.0', bm_url: 'http://board' },
-    })))
+    socket.emit(
+      'message',
+      Buffer.from(
+        JSON.stringify({
+          kind: 'bridge.hello',
+          data: { bridge_version: 'v0.4.2', bm_version: '1.0', bm_url: 'http://board' },
+        }),
+      ),
+    )
     await flush()
 
     // auth resolves after hello already arrived
     resolveBoard({ id: 'board-1', hardware_id: null })
-    await flush(); await flush()
+    await flush()
+    await flush()
 
     // a real board event follows
-    socket.emit('message', Buffer.from(JSON.stringify({
-      v: 1, seq: 1, kind: 'bm.frame', bridge_id: 'br', boot_id: 'boot',
-      recv_wall: new Date().toISOString(), data: {},
-    })))
-    await flush(); await flush()
+    socket.emit(
+      'message',
+      Buffer.from(
+        JSON.stringify({
+          v: 1,
+          seq: 1,
+          kind: 'bm.frame',
+          bridge_id: 'br',
+          boot_id: 'boot',
+          recv_wall: new Date().toISOString(),
+          data: {},
+        }),
+      ),
+    )
+    await flush()
+    await flush()
 
     // hello was processed (not dropped) → no 4400, and the event was acked
     expect(socket.close).not.toHaveBeenCalledWith(4400, 'expected bridge.hello')
@@ -163,7 +249,8 @@ describe('handleBridgeConnection', () => {
     socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
     // transport.go sends this every 20 s; any reply resets the bridge's 45 s read deadline
     socket.emit('message', Buffer.from(JSON.stringify({ ping: '1' })))
-    await flush(); await flush()
+    await flush()
+    await flush()
 
     expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ pong: '1' }))
     expect(warn).not.toHaveBeenCalled()
@@ -178,10 +265,22 @@ describe('handleBridgeConnection', () => {
     const socket = new FakeSocket()
     handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
     socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
-    socket.emit('message', Buffer.from(JSON.stringify({
-      v: 1, seq: 5, kind: 'dart.detected', bridge_id: 'br', boot_id: 'boot', recv_wall: '', data: {},
-    })))
-    await flush(); await flush()
+    socket.emit(
+      'message',
+      Buffer.from(
+        JSON.stringify({
+          v: 1,
+          seq: 5,
+          kind: 'dart.detected',
+          bridge_id: 'br',
+          boot_id: 'boot',
+          recv_wall: '',
+          data: {},
+        }),
+      ),
+    )
+    await flush()
+    await flush()
 
     // The next ack would silently cover it on the bridge side: the warning is the only trace
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('envelope'), expect.objectContaining({ kind: 'dart.detected', seq: 5 }))
@@ -204,9 +303,13 @@ describe('handleBridgeConnection', () => {
 
 describe('camera stills from the bridge', () => {
   const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9])
-  const stillMsg = (cam: number, bytes: Buffer = jpeg) => Buffer.from(JSON.stringify({
-    kind: 'camera.still', data: { cam, captured_at: '2026-10-04T12:00:00Z', content_type: 'image/jpeg', data: bytes.toString('base64') },
-  }))
+  const stillMsg = (cam: number, bytes: Buffer = jpeg) =>
+    Buffer.from(
+      JSON.stringify({
+        kind: 'camera.still',
+        data: { cam, captured_at: '2026-10-04T12:00:00Z', content_type: 'image/jpeg', data: bytes.toString('base64') },
+      }),
+    )
   async function connect(boardId: string) {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: boardId, hardware_id: null } as any)
     vi.mocked(queries.insertBridgeEvent).mockClear()
@@ -224,7 +327,8 @@ describe('camera stills from the bridge', () => {
     const { engine, stills, onCameraStill, socket } = await connect('board-c1')
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     socket.emit('message', stillMsg(2))
-    await flush(); await flush()
+    await flush()
+    await flush()
 
     const still = stills.get('board-c1', 2)
     expect(still?.bytes).toEqual(jpeg)
@@ -238,10 +342,11 @@ describe('camera stills from the bridge', () => {
     warn.mockRestore()
   })
 
-  it('forgets the board\'s stills when its bridge drops', async () => {
+  it("forgets the board's stills when its bridge drops", async () => {
     const { stills, socket } = await connect('board-c3')
     socket.emit('message', stillMsg(0))
-    await flush(); await flush()
+    await flush()
+    await flush()
     expect(stills.versions('board-c3')).toHaveLength(1)
     socket.emit('close')
     expect(stills.versions('board-c3')).toEqual([])
@@ -256,7 +361,8 @@ describe('camera stills from the bridge', () => {
     await flush()
     fresh.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
     fresh.emit('message', stillMsg(1))
-    await flush(); await flush()
+    await flush()
+    await flush()
     first.socket.emit('close')
     expect(stills.versions('board-c4').map(v => v.cam)).toEqual([1])
   })
@@ -264,7 +370,8 @@ describe('camera stills from the bridge', () => {
   it('keeps the combined still as camera 3', async () => {
     const { stills, onCameraStill, socket } = await connect('board-c5')
     socket.emit('message', stillMsg(3))
-    await flush(); await flush()
+    await flush()
+    await flush()
     expect(stills.get('board-c5', 3)?.bytes).toEqual(jpeg)
     expect(onCameraStill).toHaveBeenCalledWith('board-c5', 3, stills.get('board-c5', 3)?.version)
   })
@@ -274,7 +381,8 @@ describe('camera stills from the bridge', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     socket.emit('message', stillMsg(0, Buffer.alloc(MAX_STILL_BYTES + 1, 0xff)))
     socket.emit('message', stillMsg(4))
-    await flush(); await flush()
+    await flush()
+    await flush()
     expect(stills.get('board-c2', 0)).toBeUndefined()
     expect(stills.versions('board-c2')).toEqual([])
     expect(onCameraStill).not.toHaveBeenCalled()
@@ -296,7 +404,16 @@ describe('BridgeConnections event feed', () => {
 })
 
 describe('bridge message parsing', () => {
-  const envelope = { v: 1, seq: 7, kind: 'dart.detected', bridge_id: 'b', boot_id: 'o', recv_wall: '2026-10-01T10:00:00.123456789Z', board_id: 'hw', data: { a: 1 } }
+  const envelope = {
+    v: 1,
+    seq: 7,
+    kind: 'dart.detected',
+    bridge_id: 'b',
+    boot_id: 'o',
+    recv_wall: '2026-10-01T10:00:00.123456789Z',
+    board_id: 'hw',
+    data: { a: 1 },
+  }
 
   it('envelope accepts UTC and offset timestamps', () => {
     expect(parseEnvelope(envelope)?.seq).toBe(7)
@@ -306,10 +423,20 @@ describe('bridge message parsing', () => {
   it('envelope is null when a field the event is stored by is missing or wrong', () => {
     // An event that still says which one it is gets a warning: it's never acked, so that's its only trace
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    for (const bad of [{ ...envelope, v: 2 }, { ...envelope, seq: '7' }, { ...envelope, boot_id: undefined }, { ...envelope, recv_wall: 'yesterday' }, null, 'x']) {
+    for (const bad of [
+      { ...envelope, v: 2 },
+      { ...envelope, seq: '7' },
+      { ...envelope, boot_id: undefined },
+      { ...envelope, recv_wall: 'yesterday' },
+      null,
+      'x',
+    ]) {
       expect(parseEnvelope(bad)).toBeNull()
     }
-    expect(warn).toHaveBeenCalledWith('Ignoring a bridge event whose envelope does not match the schema', expect.objectContaining({ kind: 'dart.detected' }))
+    expect(warn).toHaveBeenCalledWith(
+      'Ignoring a bridge event whose envelope does not match the schema',
+      expect.objectContaining({ kind: 'dart.detected' }),
+    )
     warn.mockRestore()
   })
 
@@ -321,13 +448,21 @@ describe('bridge message parsing', () => {
   })
 
   it('hello keeps each valid field even when another is broken', () => {
-    expect(parseHello({ bridge_version: '1.2', bm_version: 3, bm_url: 'http://bm' }))
-      .toEqual({ bridgeVersion: '1.2', bmVersion: null, bmUrl: 'http://bm' })
+    expect(parseHello({ bridge_version: '1.2', bm_version: 3, bm_url: 'http://bm' })).toEqual({
+      bridgeVersion: '1.2',
+      bmVersion: null,
+      bmUrl: 'http://bm',
+    })
     expect(parseHello(null)).toEqual({ bridgeVersion: null, bmVersion: null, bmUrl: null })
   })
 
   it('hello keeps only the origin of the Board Manager URL', () => {
-    for (const url of ['http://192.168.1.5:3180/api?x=1', 'http://192.168.1.5:3180/#frag', 'http://192.168.1.5:3180/some/path', 'http://192.168.1.5:3180']) {
+    for (const url of [
+      'http://192.168.1.5:3180/api?x=1',
+      'http://192.168.1.5:3180/#frag',
+      'http://192.168.1.5:3180/some/path',
+      'http://192.168.1.5:3180',
+    ]) {
       expect(parseHello({ bm_url: url }).bmUrl).toBe('http://192.168.1.5:3180')
     }
     expect(parseHello({ bm_url: 'https://board.local' }).bmUrl).toBe('https://board.local')

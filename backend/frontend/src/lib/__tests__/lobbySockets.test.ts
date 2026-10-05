@@ -9,23 +9,64 @@ class FakeSocket {
   onclose: ((e: { code: number }) => void) | null = null
   onerror: (() => void) | null = null
   closed = false
-  constructor(readonly url: string) { FakeSocket.opened.push(this) }
-  close() { this.closed = true }
-  receive(m: unknown) { this.onmessage?.({ data: JSON.stringify(m) }) }
-  drop(code: number) { this.onclose?.({ code }) }
+  constructor(readonly url: string) {
+    FakeSocket.opened.push(this)
+  }
+  close() {
+    this.closed = true
+  }
+  receive(m: unknown) {
+    this.onmessage?.({ data: JSON.stringify(m) })
+  }
+  drop(code: number) {
+    this.onclose?.({ code })
+  }
 }
 const open = (url: string) => new FakeSocket(url) as unknown as WebSocket
 
 const lobby = {
-  id: 'l1', name: 'Friday darts', code: 'K7Q4MD', hostUserId: 'chris', hostName: null, throwOrder: 'lobby', access: 'friends', nextGame: null,
-  currentSessionId: null, createdAt: '2026-10-02T19:40:00.000Z', people: [], invites: [], activity: [], solo: true, nextHostName: null,
+  id: 'l1',
+  name: 'Friday darts',
+  code: 'K7Q4MD',
+  hostUserId: 'chris',
+  hostName: null,
+  throwOrder: 'lobby',
+  access: 'friends',
+  nextGame: null,
+  currentSessionId: null,
+  createdAt: '2026-10-02T19:40:00.000Z',
+  people: [],
+  invites: [],
+  activity: [],
+  solo: true,
+  nextHostName: null,
 }
-const meMsg = { type: 'me', invites: [], game: null, lobby: {
-  id: 'l1', name: 'Friday darts', hostName: 'Christoph', peopleCount: 2, nextGame: null, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: true, solo: false,
-} }
+const meMsg = {
+  type: 'me',
+  invites: [],
+  game: null,
+  lobby: {
+    id: 'l1',
+    name: 'Friday darts',
+    hostName: 'Christoph',
+    peopleCount: 2,
+    nextGame: null,
+    sessionId: null,
+    gameId: null,
+    youThrowNext: false,
+    leg: null,
+    youHost: true,
+    solo: false,
+  },
+}
 
-beforeEach(() => { FakeSocket.opened = []; vi.useFakeTimers() })
-afterEach(() => { vi.useRealTimers() })
+beforeEach(() => {
+  FakeSocket.opened = []
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('parsing', () => {
   it('takes lobby snapshots and the closed message; drops the rest quietly', () => {
@@ -46,7 +87,21 @@ describe('parsing', () => {
   })
 
   it('takes the friends message too', () => {
-    const friendsMsg = { type: 'friends', friends: [{ id: 'lena', name: 'Lena', friendsSince: '2026-10-04T10:00:00.000Z', status: { kind: 'online' }, inYourLobby: false, invited: false }], incoming: [], outgoing: [] }
+    const friendsMsg = {
+      type: 'friends',
+      friends: [
+        {
+          id: 'lena',
+          name: 'Lena',
+          friendsSince: '2026-10-04T10:00:00.000Z',
+          status: { kind: 'online' },
+          inYourLobby: false,
+          invited: false,
+        },
+      ],
+      incoming: [],
+      outgoing: [],
+    }
     expect(parseMeMessage(friendsMsg)?.type).toBe('friends')
     expect(parseMeMessage({ type: 'friends', friends: 'x' })).toBeNull()
   })
@@ -110,7 +165,10 @@ describe('createMeStore', () => {
   it('carries the running game from /ws/me, live (#69)', () => {
     const m = createMeStore(open)
     m.start()
-    FakeSocket.opened[0].receive({ ...meMsg, game: { sessionId: 's1', gameId: 'x01', lobbyName: 'Friday darts', players: ['Christoph', 'Lena'] } })
+    FakeSocket.opened[0].receive({
+      ...meMsg,
+      game: { sessionId: 's1', gameId: 'x01', lobbyName: 'Friday darts', players: ['Christoph', 'Lena'] },
+    })
     expect(get(m)?.game).toEqual({ sessionId: 's1', gameId: 'x01', lobbyName: 'Friday darts', players: ['Christoph', 'Lena'] })
     FakeSocket.opened[0].receive({ ...meMsg, game: null })
     expect(get(m)?.game).toBeNull()
@@ -134,7 +192,12 @@ describe('createMeStore', () => {
     s.start()
     FakeSocket.opened[0].receive(meMsg)
     expect(get(s)?.friends).toBeNull()
-    FakeSocket.opened[0].receive({ type: 'friends', friends: [], incoming: [{ id: 'f1', from: { id: 'max', name: 'Max' }, mutualFriends: 1, createdAt: '2026-10-04T10:00:00.000Z' }], outgoing: [] })
+    FakeSocket.opened[0].receive({
+      type: 'friends',
+      friends: [],
+      incoming: [{ id: 'f1', from: { id: 'max', name: 'Max' }, mutualFriends: 1, createdAt: '2026-10-04T10:00:00.000Z' }],
+      outgoing: [],
+    })
     expect(get(s)?.friends?.incoming).toHaveLength(1)
     FakeSocket.opened[0].receive(meMsg)
     expect(get(s)?.friends?.incoming).toHaveLength(1)

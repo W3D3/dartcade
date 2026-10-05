@@ -29,7 +29,9 @@ const browserMatchMedia: MatchMediaFn | null =
     ? q => {
         const list = window.matchMedia(q)
         return {
-          get matches() { return list.matches },
+          get matches() {
+            return list.matches
+          },
           addEventListener: (_t, cb) => list.addEventListener('change', cb),
           removeEventListener: (_t, cb) => list.removeEventListener('change', cb),
         }

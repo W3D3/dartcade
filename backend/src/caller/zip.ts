@@ -3,7 +3,14 @@
 
 export class ZipError extends Error {}
 
-export interface ZipEntry { name: string; method: number; flags: number; compressedSize: number; size: number; offset: number }
+export interface ZipEntry {
+  name: string
+  method: number
+  flags: number
+  compressedSize: number
+  size: number
+  offset: number
+}
 
 const END = 0x06054b50
 const CENTRAL = 0x02014b50
@@ -17,7 +24,10 @@ export function listEntries(buf: Uint8Array): ZipEntry[] {
   let end = -1
   // The end record sits in the last 22 bytes plus an optional comment of up to 64 KiB
   for (let i = buf.length - 22; i >= Math.max(0, buf.length - 22 - 0xffff); i--) {
-    if (v.getUint32(i, true) === END) { end = i; break }
+    if (v.getUint32(i, true) === END) {
+      end = i
+      break
+    }
   }
   if (end < 0) throw new ZipError('Not a zip file')
   if (end + 20 > buf.length) throw new ZipError('Not a zip file')
@@ -87,6 +97,9 @@ export async function readEntry(buf: Uint8Array, e: ZipEntry, maxBytes = 128 * 1
   }
   const out = new Uint8Array(size)
   let at = 0
-  for (const c of chunks) { out.set(c, at); at += c.length }
+  for (const c of chunks) {
+    out.set(c, at)
+    at += c.length
+  }
   return out
 }

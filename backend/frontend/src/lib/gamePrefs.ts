@@ -18,7 +18,9 @@ export function loadPrefs(storage: Pick<Storage, 'getItem'> | null): SavedPrefs 
     if (!r.success) return null
     const { boardId, ...rest } = r.data
     return boardId === undefined ? rest : { ...rest, boardId }
-  } catch { return null }
+  } catch {
+    return null
+  }
 }
 
 export function savePrefs(storage: Pick<Storage, 'setItem'> | null, p: SavedPrefs): void {

@@ -4,7 +4,9 @@
   import BrandMark from './BrandMark.svelte'
 </script>
 
-<div class="md:hidden relative shrink-0 h-[250px] box-border px-5 py-6 bg-surface-1 border-b border-line overflow-hidden flex flex-col justify-between">
+<div
+  class="md:hidden relative shrink-0 h-[250px] box-border px-5 py-6 bg-surface-1 border-b border-line overflow-hidden flex flex-col justify-between"
+>
   <div class="absolute right-[-120px] top-[-40px] opacity-85 pointer-events-none" aria-hidden="true">
     <AuthBoard size={300} />
   </div>

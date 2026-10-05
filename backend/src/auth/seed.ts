@@ -16,11 +16,7 @@ export async function seedDev(): Promise<void> {
     if (!found) await auth.api.signUpEmail({ body: { email, password: DEV_PLAYERS_PASSWORD, name } })
   }
 
-  const existing = await db
-    .selectFrom('user')
-    .select('id')
-    .where('email', '=', 'admin@dartcade.local')
-    .executeTakeFirst()
+  const existing = await db.selectFrom('user').select('id').where('email', '=', 'admin@dartcade.local').executeTakeFirst()
 
   if (!existing) {
     await auth.api.signUpEmail({
@@ -28,11 +24,7 @@ export async function seedDev(): Promise<void> {
     })
   }
 
-  const admin = await db
-    .selectFrom('user')
-    .select('id')
-    .where('email', '=', 'admin@dartcade.local')
-    .executeTakeFirstOrThrow()
+  const admin = await db.selectFrom('user').select('id').where('email', '=', 'admin@dartcade.local').executeTakeFirstOrThrow()
 
   const DEV_TOKEN = 'dev-bridge-token'
   const tokenHash = createHash('sha256').update(DEV_TOKEN).digest('hex')

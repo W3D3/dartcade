@@ -18,7 +18,10 @@ export function createToast<T>(durationMs: number): ToastStore<T> {
     clear()
     id += 1
     set({ value, id })
-    timer = setTimeout(() => { timer = null; set(null) }, durationMs)
+    timer = setTimeout(() => {
+      timer = null
+      set(null)
+    }, durationMs)
   }
   const dismiss = () => {
     clear()

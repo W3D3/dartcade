@@ -44,11 +44,17 @@ export class FriendsService {
   private closed = false
 
   constructor(private readonly deps: FriendsDeps) {
-    this.presence = new Presence(userId => { this.touch([userId]) }, deps.graceMs ?? OFFLINE_GRACE_MS)
-    this.pushes = new KeyedDebounce(deps.debounceMs ?? PUSH_DEBOUNCE_MS, userId => { this.push(userId) })
+    this.presence = new Presence(userId => {
+      this.touch([userId])
+    }, deps.graceMs ?? OFFLINE_GRACE_MS)
+    this.pushes = new KeyedDebounce(deps.debounceMs ?? PUSH_DEBOUNCE_MS, userId => {
+      this.push(userId)
+    })
   }
 
-  private get db(): Kysely<Database> { return this.deps.db }
+  private get db(): Kysely<Database> {
+    return this.deps.db
+  }
 
   private warn(message: string, details: unknown): void {
     if (this.deps.warn) this.deps.warn(message, details)
@@ -70,17 +76,23 @@ export class FriendsService {
     this.presence.connect(userId)
     this.refresh([userId])
   }
-  disconnected(userId: string): void { this.presence.disconnect(userId) }
-  isOnline(userId: string): boolean { return this.presence.isOnline(userId) }
+  disconnected(userId: string): void {
+    this.presence.disconnect(userId)
+  }
+  isOnline(userId: string): boolean {
+    return this.presence.isOnline(userId)
+  }
 
   /** These users' status changed (presence, lobby, game, Invisible, name): they and their friends get fresh lists. */
   touch(userIds: string[]): void {
     if (this.closed) return
-    void this.track((async () => {
-      const affected = new Set(userIds)
-      for (const userId of userIds) for (const f of await q.friendIdsOf(this.db, userId)) affected.add(f)
-      this.refresh([...affected])
-    })())
+    void this.track(
+      (async () => {
+        const affected = new Set(userIds)
+        for (const userId of userIds) for (const f of await q.friendIdsOf(this.db, userId)) affected.add(f)
+        this.refresh([...affected])
+      })(),
+    )
   }
 
   /** Exactly these users' lists changed: pushed (debounced) to those with /ws/me open. */
@@ -91,17 +103,27 @@ export class FriendsService {
 
   private push(userId: string): void {
     const previous = this.pushChains.get(userId) ?? Promise.resolve()
-    const next = this.track(previous
-      .then(() => this.message(userId))
-      .then(msg => { if (!this.closed) this.deps.hub.sendFriends(userId, msg) }))
+    const next = this.track(
+      previous
+        .then(() => this.message(userId))
+        .then(msg => {
+          if (!this.closed) this.deps.hub.sendFriends(userId, msg)
+        }),
+    )
     this.pushChains.set(userId, next)
-    void next.then(() => { if (this.pushChains.get(userId) === next) this.pushChains.delete(userId) })
+    void next.then(() => {
+      if (this.pushChains.get(userId) === next) this.pushChains.delete(userId)
+    })
   }
 
   private track(p: Promise<void>): Promise<void> {
     const tracked: Promise<void> = p
-      .catch((err: unknown) => { this.warn('friends push failed', { error: String(err) }) })
-      .finally(() => { this.inflight.delete(tracked) })
+      .catch((err: unknown) => {
+        this.warn('friends push failed', { error: String(err) })
+      })
+      .finally(() => {
+        this.inflight.delete(tracked)
+      })
     this.inflight.add(tracked)
     return tracked
   }
@@ -123,7 +145,9 @@ export class FriendsService {
 
   async message(userId: string): Promise<FriendsMessage> {
     const msg: FriendsMessage = { type: 'friends', ...(await this.list(userId)) }
-    checkLobbyMessage(msg, m => { this.warn(m, {}) })
+    checkLobbyMessage(msg, m => {
+      this.warn(m, {})
+    })
     return msg
   }
 
@@ -138,19 +162,31 @@ export class FriendsService {
     const lobbies = await q.openLobbiesOf(this.db, [userId, ...friendIds])
     const myLobby = lobbies.get(userId) ?? null
     const invited = myLobby ? await q.pendingInviteesOf(this.db, myLobby.id) : new Set<string>()
-    const mutual = await q.mutualFriendCounts(this.db, userId, incoming.map(r => r.otherId))
+    const mutual = await q.mutualFriendCounts(
+      this.db,
+      userId,
+      incoming.map(r => r.otherId),
+    )
     return {
       friends: accepted.map(r => {
         const lobby = lobbies.get(r.otherId) ?? null
         return {
-          id: r.otherId, name: r.otherName, friendsSince: (r.respondedAt ?? r.createdAt).toISOString(),
-          status: friendStatus({ online: this.isOnline(r.otherId), invisible: r.otherInvisible, game: this.deps.gameOf(r.otherId), lobby }, friendIds),
+          id: r.otherId,
+          name: r.otherName,
+          friendsSince: (r.respondedAt ?? r.createdAt).toISOString(),
+          status: friendStatus(
+            { online: this.isOnline(r.otherId), invisible: r.otherInvisible, game: this.deps.gameOf(r.otherId), lobby },
+            friendIds,
+          ),
           inYourLobby: myLobby !== null && lobby?.id === myLobby.id,
           invited: invited.has(r.otherId),
         }
       }),
       incoming: incoming.map(r => ({
-        id: r.id, from: { id: r.otherId, name: r.otherName }, mutualFriends: mutual.get(r.otherId) ?? 0, createdAt: r.createdAt.toISOString(),
+        id: r.id,
+        from: { id: r.otherId, name: r.otherName },
+        mutualFriends: mutual.get(r.otherId) ?? 0,
+        createdAt: r.createdAt.toISOString(),
       })),
       outgoing: outgoing.map(r => ({ id: r.id, to: { id: r.otherId, name: r.otherName }, createdAt: r.createdAt.toISOString() })),
     }
@@ -172,7 +208,7 @@ export class FriendsService {
           this.changed([userId, target.id])
           return { id: existing.id, status: 'accepted' }
         }
-        continue   // cancelled or declined meanwhile: look again
+        continue // cancelled or declined meanwhile: look again
       }
       const id = ulid()
       try {

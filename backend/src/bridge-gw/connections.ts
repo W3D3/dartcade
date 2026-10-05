@@ -4,12 +4,12 @@ import { FeedEventDataSchema } from '../schema/zod.js'
 
 export type BridgeConn = {
   ws: WebSocket
-  boardDbId: string | null       // boards.id ULID — engine key
+  boardDbId: string | null // boards.id ULID — engine key
   hardwareBoardId: string | null // board_id from wire — stored in bridge_events
   bridgeId: string | null
   bootId: string | null
   bmVersion: string | null
-  bridgeVersion?: string | null  // from bridge.hello
+  bridgeVersion?: string | null // from bridge.hello
   bmUrl: string | null
   helloReceived: boolean
 }
@@ -33,7 +33,9 @@ export class BridgeConnections {
   private all: Set<BridgeConn> = new Set()
   private feeds: Map<string, FeedEvent[]> = new Map()
 
-  add(conn: BridgeConn): void { this.all.add(conn) }
+  add(conn: BridgeConn): void {
+    this.all.add(conn)
+  }
 
   register(conn: BridgeConn, boardDbId: string): void {
     const existing = this.byBoard.get(boardDbId)

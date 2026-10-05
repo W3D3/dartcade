@@ -23,7 +23,7 @@ type Event struct {
 // State is the differ's mutable context between frames.
 type State struct {
 	PrevThrows       []bm.BMThrow
-	VisitID          ulid.ULID  // zero value = no open visit
+	VisitID          ulid.ULID // zero value = no open visit
 	InTakeout        bool
 	ExpectResync     bool
 	PrevStatus       string

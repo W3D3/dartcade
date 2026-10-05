@@ -3,6 +3,7 @@
 ## Overview
 
 Add developer tooling infrastructure to the dartcade monorepo:
+
 - `mise.toml` for tool version pinning and task shortcuts
 - GitHub Actions CI that runs all three test suites on PRs
 - GitHub Actions release workflow that publishes named artifacts on version tags
@@ -16,21 +17,22 @@ No existing CI/CD or mise config. Three workloads in the repo: Node/TS backend, 
 **File:** `mise.toml` (repo root)
 
 Pin tool versions:
+
 - Node 22 (LTS)
 - Go 1.23
 
 Tasks (all runnable via `mise run <task>`):
 
-| Task | Command |
-|------|---------|
-| `dev` | `docker compose -f docker-compose.dev.yaml up --build` |
-| `test` | runs all three suites in sequence (backend, frontend, bridge) |
-| `test:backend` | `cd backend && npm test` |
-| `test:frontend` | `cd backend/frontend && npm test` |
-| `test:bridge` | `cd bridge && go test ./...` |
-| `build:backend` | `cd backend && npm run build` |
-| `build:bridge` | `cd bridge && go build ./cmd/bridge` |
-| `gen:types` | `cd backend && npm run gen:types` |
+| Task            | Command                                                       |
+| --------------- | ------------------------------------------------------------- |
+| `dev`           | `docker compose -f docker-compose.dev.yaml up --build`        |
+| `test`          | runs all three suites in sequence (backend, frontend, bridge) |
+| `test:backend`  | `cd backend && npm test`                                      |
+| `test:frontend` | `cd backend/frontend && npm test`                             |
+| `test:bridge`   | `cd bridge && go test ./...`                                  |
+| `build:backend` | `cd backend && npm run build`                                 |
+| `build:bridge`  | `cd bridge && go build ./cmd/bridge`                          |
+| `gen:types`     | `cd backend && npm run gen:types`                             |
 
 The `test` task is a convenience wrapper; CI uses the individual tasks in parallel jobs.
 
@@ -43,6 +45,7 @@ The `test` task is a convenience wrapper; CI uses the individual tasks in parall
 Three parallel jobs — each sets up its own toolchain:
 
 ### `test-backend`
+
 - Runs on: `ubuntu-latest`
 - Tools: Node 22
 - Services: `postgres:16-alpine` (user: postgres, password: postgres, db: dartcade_test)
@@ -50,11 +53,13 @@ Three parallel jobs — each sets up its own toolchain:
 - Env: `TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dartcade_test`
 
 ### `test-frontend`
+
 - Runs on: `ubuntu-latest`
 - Tools: Node 22
 - Steps: `npm ci` → `npm test` in `backend/frontend/`
 
 ### `test-bridge`
+
 - Runs on: `ubuntu-latest`
 - Tools: Go 1.23
 - Steps: `go test ./...` in `bridge/`
@@ -71,23 +76,25 @@ Cross-compiles the Go bridge binary using a matrix strategy. All binaries are at
 
 Matrix targets:
 
-| GOOS | GOARCH | Artifact name |
-|------|--------|--------------|
-| linux | amd64 | `dartcade-bridge_linux_amd64` |
-| linux | arm64 | `dartcade-bridge_linux_arm64` |
-| darwin | amd64 | `dartcade-bridge_darwin_amd64` |
-| darwin | arm64 | `dartcade-bridge_darwin_arm64` |
-| windows | amd64 | `dartcade-bridge_windows_amd64.exe` |
+| GOOS    | GOARCH | Artifact name                       |
+| ------- | ------ | ----------------------------------- |
+| linux   | amd64  | `dartcade-bridge_linux_amd64`       |
+| linux   | arm64  | `dartcade-bridge_linux_arm64`       |
+| darwin  | amd64  | `dartcade-bridge_darwin_amd64`      |
+| darwin  | arm64  | `dartcade-bridge_darwin_arm64`      |
+| windows | amd64  | `dartcade-bridge_windows_amd64.exe` |
 
 ### Job: `release-bridge-image`
 
 Builds `bridge/Dockerfile` and pushes to GHCR:
+
 - `ghcr.io/<owner>/dartcade-bridge:<tag>` (e.g. `v0.1.0`)
 - `ghcr.io/<owner>/dartcade-bridge:latest`
 
 ### Job: `release-backend-image`
 
 Builds `backend/Dockerfile` and pushes to GHCR:
+
 - `ghcr.io/<owner>/dartcade:<tag>`
 - `ghcr.io/<owner>/dartcade:latest`
 

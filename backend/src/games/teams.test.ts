@@ -10,7 +10,10 @@ describe('teamOfSeats', () => {
   it('uses cfg.teams for a team game', () => {
     expect(teamOfSeats({ format: 'teams', teams: [0, 1, 0, 1] }, 4)).toEqual([0, 1, 0, 1])
     expect(teamCount([0, 1, 0, 1])).toBe(2)
-    expect(seatsByTeam([0, 1, 0, 1])).toEqual([[0, 2], [1, 3]])
+    expect(seatsByTeam([0, 1, 0, 1])).toEqual([
+      [0, 2],
+      [1, 3],
+    ])
   })
   it('falls back to singles if teams list is missing or has wrong length', () => {
     expect(teamOfSeats({ format: 'teams', teams: [0, 1] }, 3)).toEqual([0, 1, 2])
@@ -78,7 +81,7 @@ describe('teamForfeitPlacements', () => {
     // Team A (seats 0, 2) is ahead (placement 1) before the forfeit, Team B (seats 1, 3) behind (2)
     expect(teamForfeitPlacements([0, 1, 0, 1], [1, 2, 1, 2], new Set([2]))).toEqual([2, 1, 2, 1])
   })
-  it('a team game with no forfeit keeps each team\'s own placement', () => {
+  it("a team game with no forfeit keeps each team's own placement", () => {
     expect(teamForfeitPlacements([0, 1, 0, 1], [1, 2, 1, 2], new Set())).toEqual([1, 2, 1, 2])
   })
 })

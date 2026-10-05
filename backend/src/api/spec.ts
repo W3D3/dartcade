@@ -50,18 +50,18 @@ function paramsSchema(params: Parameter[], location: 'path' | 'query'): JsonSche
 }
 
 /** Fastify route schema (params, querystring, body, JSON responses) for an operation of the spec. */
-export function fromSpec(
-  operationId: string,
-): FastifySchema & { operationId: string; summary?: string; tags?: string[] } {
+export function fromSpec(operationId: string): FastifySchema & { operationId: string; summary?: string; tags?: string[] } {
   const op = getOperation(operationId)
   const params = op.parameters ?? []
   const path = paramsSchema(params, 'path')
   const query = paramsSchema(params, 'query')
   const body = op.requestBody?.content['application/json']?.schema
-  const response = Object.fromEntries(Object.entries(op.responses).flatMap(([status, res]) => {
-    const json = res.content?.['application/json']?.schema
-    return json ? [[status, json]] : []   // 204 and image/jpeg have no JSON schema
-  }))
+  const response = Object.fromEntries(
+    Object.entries(op.responses).flatMap(([status, res]) => {
+      const json = res.content?.['application/json']?.schema
+      return json ? [[status, json]] : [] // 204 and image/jpeg have no JSON schema
+    }),
+  )
   return {
     operationId,
     summary: op.summary,

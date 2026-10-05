@@ -13,7 +13,10 @@ describe('DartBoard camera still', () => {
   })
 
   it('draws the still under the marks, over three board units each way of the bull (r = 1 at a third)', () => {
-    const out = html({ cameraSrc: '/api/boards/b1/camera/0?v=5', darts: [{ segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }, score: 60, coords: { x: 0, y: 0.6 } }] })
+    const out = html({
+      cameraSrc: '/api/boards/b1/camera/0?v=5',
+      darts: [{ segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }, score: 60, coords: { x: 0, y: 0.6 } }],
+    })
     const image = /<image[^>]*>/.exec(out)?.[0] ?? ''
     expect(image).toContain('href="/api/boards/b1/camera/0?v=5"')
     expect(image).toContain('x="-1.5"')

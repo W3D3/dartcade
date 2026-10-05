@@ -4,7 +4,11 @@
   import { api, runBoardAction, type Board, type BoardAction } from '$lib/api'
   import type { Snapshot } from '$lib/api'
 
-  let { sessionId, bmStatus, compact = false }: {
+  let {
+    sessionId,
+    bmStatus,
+    compact = false,
+  }: {
     sessionId: string
     bmStatus: Snapshot['bmStatus']
     /** The phone header: a 44 px button with only the status dot. */
@@ -18,26 +22,31 @@
   async function loadBoard() {
     if (!sessionId) return
     try {
-      const [sr, br] = await Promise.all([
-        api.GET('/api/sessions/{id}', { params: { path: { id: sessionId } } }),
-        api.GET('/api/boards'),
-      ])
+      const [sr, br] = await Promise.all([api.GET('/api/sessions/{id}', { params: { path: { id: sessionId } } }), api.GET('/api/boards')])
       board = br.data?.boards.find(b => b.id === sr.data?.boardId) ?? null
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   }
 
   // Board Manager commands for this session's board
   async function runAction(name: string, action: BoardAction) {
     if (!board) return
     busy = name
-    try { await runBoardAction(board.id, action) }
-    catch { /* ignore */ }
-    finally { busy = null }
+    try {
+      await runBoardAction(board.id, action)
+    } catch {
+      /* ignore */
+    } finally {
+      busy = null
+    }
   }
 
   onMount(loadBoard)
 
-  function onkeydown(e: KeyboardEvent) { if (e.key === 'Escape') open = false }
+  function onkeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape') open = false
+  }
 
   // ── BM state colour classification ─────────────────────────────────────────
   type DotColor = 'green' | 'yellow' | 'purple' | 'red' | 'gray'
@@ -69,38 +78,43 @@
   }
 
   const DOT_BG: Record<DotColor, string> = {
-    green:  'bg-[#84cc16]',
+    green: 'bg-[#84cc16]',
     yellow: 'bg-[#facc15]',
     purple: 'bg-[#a78bfa]',
-    red:    'bg-[#f87171]',
-    gray:   'bg-[#4a4e45]',
+    red: 'bg-[#f87171]',
+    gray: 'bg-[#4a4e45]',
   }
   const DOT_TEXT: Record<DotColor, string> = {
-    green:  'text-[#84cc16]',
+    green: 'text-[#84cc16]',
     yellow: 'text-[#facc15]',
     purple: 'text-[#a78bfa]',
-    red:    'text-[#f87171]',
-    gray:   'text-[#4a4e45]',
+    red: 'text-[#f87171]',
+    gray: 'text-[#4a4e45]',
   }
 
-  const dotColor  = $derived(bmDotColor(bmStatus?.status ?? null, board?.online ?? false))
-  const dotBg     = $derived(DOT_BG[dotColor])
-  const dotText   = $derived(DOT_TEXT[dotColor])
+  const dotColor = $derived(bmDotColor(bmStatus?.status ?? null, board?.online ?? false))
+  const dotBg = $derived(DOT_BG[dotColor])
+  const dotText = $derived(DOT_TEXT[dotColor])
   const isRunning = $derived(bmStatus?.running === true)
-  const bmLabel   = $derived(bmStatus?.status ?? (board?.online ? '—' : 'Offline'))
+  const bmLabel = $derived(bmStatus?.status ?? (board?.online ? '—' : 'Offline'))
 </script>
 
 <svelte:window {onkeydown} />
 
 <div class="relative">
   <!-- Trigger -->
-  <button type="button" onclick={() => open = !open}
+  <button
+    type="button"
+    onclick={() => (open = !open)}
     aria-label={compact ? `Board ${board?.name ?? ''}: status and controls` : undefined}
-    class="flex items-center gap-[8px] {compact ? 'w-11 h-11 justify-center rounded-[10px]' : 'h-9 px-3 rounded-[8px]'} text-[13px] font-[inherit] cursor-pointer
+    class="flex items-center gap-[8px] {compact
+      ? 'w-11 h-11 justify-center rounded-[10px]'
+      : 'h-9 px-3 rounded-[8px]'} text-[13px] font-[inherit] cursor-pointer
            transition-colors border
            {open
-             ? 'bg-surface-active border-accent/50 text-text'
-             : 'bg-transparent border-line-2 text-text-muted hover:border-line-3 hover:text-text'}">
+      ? 'bg-surface-active border-accent/50 text-text'
+      : 'bg-transparent border-line-2 text-text-muted hover:border-line-3 hover:text-text'}"
+  >
     {#if isSpinning}
       <LoaderCircle size={10} strokeWidth={3} class="shrink-0 animate-spin {dotText}" />
     {:else}
@@ -113,11 +127,12 @@
   </button>
 
   {#if open}
-    <div class="fixed inset-0 z-40" onclick={() => open = false} aria-hidden="true"></div>
+    <div class="fixed inset-0 z-40" onclick={() => (open = false)} aria-hidden="true"></div>
 
-    <div class="absolute right-0 top-full mt-2 w-[min(260px,calc(100vw-32px))] z-50 rounded-[14px] border border-line-3
-                bg-[#191c17] [box-shadow:0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden">
-
+    <div
+      class="absolute right-0 top-full mt-2 w-[min(260px,calc(100vw-32px))] z-50 rounded-[14px] border border-line-3
+                bg-[#191c17] [box-shadow:0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden"
+    >
       <!-- Header -->
       <div class="px-4 py-3 border-b border-line-2 flex items-center justify-between gap-3">
         <div class="flex items-center gap-[10px] min-w-0">
@@ -137,12 +152,14 @@
       <div class="p-3 flex flex-col gap-2">
         <!-- Start + Stop -->
         <div class="grid grid-cols-2 gap-2">
-          <button type="button"
+          <button
+            type="button"
             onclick={() => runAction('start', 'start')}
             disabled={busy !== null || !board?.online || isRunning}
             class="flex items-center justify-center gap-[6px] h-9 rounded-[8px] text-[13px] font-medium
                    border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                   text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
+                   text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+          >
             {#if busy === 'start'}
               <LoaderCircle size={13} class="animate-spin" />
             {:else}
@@ -151,12 +168,14 @@
             Start
           </button>
 
-          <button type="button"
+          <button
+            type="button"
             onclick={() => runAction('stop', 'stop')}
             disabled={busy !== null || !board?.online || !isRunning}
             class="flex items-center justify-center gap-[6px] h-9 rounded-[8px] text-[13px] font-medium
                    border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                   text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
+                   text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+          >
             {#if busy === 'stop'}
               <LoaderCircle size={13} class="animate-spin" />
             {:else}
@@ -167,12 +186,14 @@
         </div>
 
         <!-- Reset -->
-        <button type="button"
+        <button
+          type="button"
           onclick={() => runAction('reset', 'reset')}
           disabled={busy !== null || !board?.online}
           class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-medium
                  border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                 text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
+                 text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+        >
           {#if busy === 'reset'}
             <LoaderCircle size={13} class="animate-spin" />
           {:else}
@@ -182,12 +203,14 @@
         </button>
 
         <!-- Calibrate -->
-        <button type="button"
+        <button
+          type="button"
           onclick={() => runAction('calibrate', 'calibrate')}
           disabled={busy !== null || !board?.online}
           class="flex items-center justify-center gap-[6px] w-full h-9 rounded-[8px] text-[13px] font-medium
                  border border-line-3 bg-transparent cursor-pointer font-[inherit] transition-colors
-                 text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed">
+                 text-text hover:bg-surface-active disabled:opacity-35 disabled:cursor-not-allowed"
+        >
           {#if busy === 'calibrate'}
             <LoaderCircle size={13} class="animate-spin" />
           {:else}

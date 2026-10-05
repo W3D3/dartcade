@@ -2,8 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { get } from 'svelte/store'
 import { createNameCheck, nameHint, nameSendable, nameStatusText, normalizeName } from '../names.js'
 
-beforeEach(() => { vi.useFakeTimers() })
-afterEach(() => { vi.useRealTimers() })
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('nameHint', () => {
   it('explains what is wrong while typing, null when the rules are met', () => {
@@ -18,7 +22,9 @@ describe('nameHint', () => {
 
 describe('createNameCheck', () => {
   it('asks the server after a quiet moment; only the latest answer counts', async () => {
-    const lookup = vi.fn((name: string) => Promise.resolve(name === 'Luke' ? { available: false, reason: 'taken' as const } : { available: true }))
+    const lookup = vi.fn((name: string) =>
+      Promise.resolve(name === 'Luke' ? { available: false, reason: 'taken' as const } : { available: true }),
+    )
     const c = createNameCheck(lookup, () => null)
     c.check('Lu')
     c.check('Luke')

@@ -4,7 +4,10 @@ import { createFastify } from './fastify.js'
 import { pairingApiPlugin } from './pairing.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: (req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() },
+  requireAuth: (req: any, _reply: any, done: () => void) => {
+    req.userId = 'user-1'
+    done()
+  },
 }))
 
 vi.mock('../db/queries.js', () => ({
@@ -155,7 +158,8 @@ describe('POST /api/pairing/claim', () => {
   it('returns 400 when code or name is missing', async () => {
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { name: 'Living Room' },
     })
     expect(res.statusCode).toBe(400)
@@ -165,7 +169,8 @@ describe('POST /api/pairing/claim', () => {
     vi.mocked(queries.getPairingCode).mockResolvedValue(undefined)
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { code: 'ABCD1234', name: 'Board' },
     })
     expect(res.statusCode).toBe(404)
@@ -182,7 +187,8 @@ describe('POST /api/pairing/claim', () => {
     })
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { code: 'ABCD1234', name: 'Board' },
     })
     expect(res.statusCode).toBe(410)
@@ -199,7 +205,8 @@ describe('POST /api/pairing/claim', () => {
     })
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { code: 'ABCD1234', name: 'Board' },
     })
     expect(res.statusCode).toBe(409)
@@ -216,7 +223,8 @@ describe('POST /api/pairing/claim', () => {
     })
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { code: 'ABCD1234', name: 'Living Room' },
     })
     expect(res.statusCode).toBe(201)
@@ -239,7 +247,8 @@ describe('POST /api/pairing/claim', () => {
     vi.mocked(queries.claimPairingCode).mockRejectedValueOnce(new Error('pairing code already claimed'))
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { code: 'ABCD1234', name: 'Board' },
     })
     expect(res.statusCode).toBe(409)
@@ -256,7 +265,8 @@ describe('POST /api/pairing/claim', () => {
     })
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { code: 'abcd1234', name: 'Board' },
     })
     expect(res.statusCode).toBe(201)
@@ -274,7 +284,8 @@ describe('POST /api/pairing/claim', () => {
     })
     const app = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/pairing/claim',
+      method: 'POST',
+      url: '/api/pairing/claim',
       payload: { code: ' 7kq4-m2xd ', name: 'Board' },
     })
     expect(res.statusCode).toBe(201)

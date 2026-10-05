@@ -32,7 +32,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('006_game_history migration', ()
 
   it('moves players into seats, the creator holding seat 0', async () => {
     const seats = await db.selectFrom('game_players').selectAll().where('session_id', '=', 'old-finished').orderBy('seat').execute()
-    expect(seats.map(s => [s.seat, s.name, s.user_id, s.placement])).toEqual([[0, 'Christoph', 'u1', null], [1, 'Guest', null, null]])
+    expect(seats.map(s => [s.seat, s.name, s.user_id, s.placement])).toEqual([
+      [0, 'Christoph', 'u1', null],
+      [1, 'Guest', null, null],
+    ])
   })
 
   it('aborts games that were running', async () => {
@@ -71,15 +74,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('013_unique_names migration', ()
     await admin.destroy()
   })
 
-  const flagged = async () => (await db.selectFrom('user').select(['id', 'name_needs_change']).orderBy('id').execute())
-    .filter(u => u.name_needs_change).map(u => u.id)
+  const flagged = async () =>
+    (await db.selectFrom('user').select(['id', 'name_needs_change']).orderBy('id').execute())
+      .filter(u => u.name_needs_change)
+      .map(u => u.id)
 
   it('flags all but the oldest of each case-insensitive group, and names that break the rules', async () => {
     expect(await flagged()).toEqual(['u2', 'u3', 'u4', 'u5'])
   })
 
   it('keeps names unique ignoring case from now on, flagged names aside', async () => {
-    await expect(sql`INSERT INTO "user" (id, name, email) VALUES ('u7', 'SAM.180', 'u7@x')`.execute(db)).rejects.toMatchObject({ code: '23505' })
+    await expect(sql`INSERT INTO "user" (id, name, email) VALUES ('u7', 'SAM.180', 'u7@x')`.execute(db)).rejects.toMatchObject({
+      code: '23505',
+    })
     await sql`INSERT INTO "user" (id, name, email, name_needs_change) VALUES ('u8', 'Luke', 'u8@x', true)`.execute(db)
   })
 })

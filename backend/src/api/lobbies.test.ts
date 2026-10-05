@@ -4,20 +4,32 @@ import { lobbiesApiPlugin } from './lobbies.js'
 import { LobbyError, inLobby } from '../lobby/errors.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'chris'; done() }),
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
+    req.userId = 'chris'
+    done()
+  }),
 }))
 
 const ref = { id: 'l1', name: "Christoph's lobby", code: 'K7Q4MD' }
 
 function makeApp() {
   const lobbies = {
-    create: vi.fn().mockResolvedValue(ref), current: vi.fn().mockResolvedValue(null), preview: vi.fn().mockResolvedValue(null),
-    join: vi.fn().mockResolvedValue(ref), leave: vi.fn().mockResolvedValue(undefined), update: vi.fn().mockResolvedValue(undefined),
-    close: vi.fn().mockResolvedValue(undefined), addGuest: vi.fn().mockResolvedValue({ id: 'p9' }),
-    updatePerson: vi.fn().mockResolvedValue(undefined), removePerson: vi.fn().mockResolvedValue(undefined),
-    start: vi.fn().mockResolvedValue({ sessionId: 's1' }), shuffleTeams: vi.fn().mockResolvedValue(undefined),
-    invite: vi.fn().mockResolvedValue({ id: 'i1' }), listInvites: vi.fn().mockResolvedValue([]),
-    acceptInvite: vi.fn().mockResolvedValue(ref), declineInvite: vi.fn().mockResolvedValue(undefined),
+    create: vi.fn().mockResolvedValue(ref),
+    current: vi.fn().mockResolvedValue(null),
+    preview: vi.fn().mockResolvedValue(null),
+    join: vi.fn().mockResolvedValue(ref),
+    leave: vi.fn().mockResolvedValue(undefined),
+    update: vi.fn().mockResolvedValue(undefined),
+    close: vi.fn().mockResolvedValue(undefined),
+    addGuest: vi.fn().mockResolvedValue({ id: 'p9' }),
+    updatePerson: vi.fn().mockResolvedValue(undefined),
+    removePerson: vi.fn().mockResolvedValue(undefined),
+    start: vi.fn().mockResolvedValue({ sessionId: 's1' }),
+    shuffleTeams: vi.fn().mockResolvedValue(undefined),
+    invite: vi.fn().mockResolvedValue({ id: 'i1' }),
+    listInvites: vi.fn().mockResolvedValue([]),
+    acceptInvite: vi.fn().mockResolvedValue(ref),
+    declineInvite: vi.fn().mockResolvedValue(undefined),
   }
   const app = createFastify()
   app.register(lobbiesApiPlugin, { lobbies: lobbies as any })
@@ -108,7 +120,9 @@ describe('lobbies API', () => {
 
   it('starts with the soft ready gate: 409 not_ready, then force', async () => {
     const { app, lobbies } = makeApp()
-    lobbies.start.mockRejectedValueOnce(LobbyError.conflict({ error: 'not everyone is ready', code: 'not_ready', notReady: [{ personId: 'p2', name: 'Lena' }] }))
+    lobbies.start.mockRejectedValueOnce(
+      LobbyError.conflict({ error: 'not everyone is ready', code: 'not_ready', notReady: [{ personId: 'p2', name: 'Lena' }] }),
+    )
     const first = await app.inject({ method: 'POST', url: '/api/lobbies/l1/start', payload: {} })
     expect(first.statusCode).toBe(409)
     expect(JSON.parse(first.body)).toMatchObject({ code: 'not_ready', notReady: [{ name: 'Lena' }] })
@@ -123,7 +137,14 @@ describe('lobbies API', () => {
     const { app, lobbies } = makeApp()
     expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/invites', payload: { userId: 'max' } })).statusCode).toBe(201)
     expect(lobbies.invite).toHaveBeenCalledWith('chris', 'l1', 'max')
-    const invite = { id: 'i1', lobbyId: 'l1', lobbyName: 'L', inviterUserId: 'lena', inviterName: 'Lena', createdAt: new Date(0).toISOString() }
+    const invite = {
+      id: 'i1',
+      lobbyId: 'l1',
+      lobbyName: 'L',
+      inviterUserId: 'lena',
+      inviterName: 'Lena',
+      createdAt: new Date(0).toISOString(),
+    }
     lobbies.listInvites.mockResolvedValueOnce([invite])
     expect(JSON.parse((await app.inject({ method: 'GET', url: '/api/invites' })).body)).toEqual({ invites: [invite] })
     expect(JSON.parse((await app.inject({ method: 'POST', url: '/api/invites/i1/accept' })).body)).toEqual(ref)

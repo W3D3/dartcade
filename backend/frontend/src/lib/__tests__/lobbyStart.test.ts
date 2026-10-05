@@ -7,13 +7,19 @@ describe('startOutcome', () => {
   })
 
   it('an offline board: the dialog names it, straight from the code', () => {
-    expect(startOutcome(undefined, { error: 'x', code: 'board_offline', offlineBoards: ['Garage'] }))
-      .toEqual({ kind: 'problem', code: 'board_offline', offlineBoards: ['Garage'] })
+    expect(startOutcome(undefined, { error: 'x', code: 'board_offline', offlineBoards: ['Garage'] })).toEqual({
+      kind: 'problem',
+      code: 'board_offline',
+      offlineBoards: ['Garage'],
+    })
   })
 
   it("people who play aren't ready: ask before starting anyway", () => {
-    expect(startOutcome(undefined, { error: 'x', code: 'not_ready', notReady: [{ personId: 'l', name: 'Lena' }] }))
-      .toEqual({ kind: 'problem', code: 'not_ready', notReady: ['Lena'] })
+    expect(startOutcome(undefined, { error: 'x', code: 'not_ready', notReady: [{ personId: 'l', name: 'Lena' }] })).toEqual({
+      kind: 'problem',
+      code: 'not_ready',
+      notReady: ['Lena'],
+    })
   })
 
   it('any other refusal: the whole refusal, for the dialog to describe', () => {
@@ -37,19 +43,27 @@ describe('shouldOpenGame', () => {
 describe('initialGameSelection', () => {
   const fallback = { mode: 'atc', config: { finishOn: 'twenty' } }
   const defaultsFor = (mode: string): Record<string, unknown> | undefined =>
-    ({ x01: { startScore: 501, inMode: 'straight', outMode: 'double', bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3 } })[mode]
+    ({ x01: { startScore: 501, inMode: 'straight', outMode: 'double', bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3 } })[
+      mode
+    ]
 
   it('no next game yet: the fallback (the remembered mode and settings)', () => {
     expect(initialGameSelection(null, fallback, defaultsFor)).toEqual(fallback)
   })
 
   it("the lobby's next game, merged over that mode's defaults so every field the form reads exists", () => {
-    expect(initialGameSelection({ gameId: 'x01', config: { startScore: 301, outMode: 'straight', firstTo: 5 } }, fallback, defaultsFor))
-      .toEqual({ mode: 'x01', config: { startScore: 301, inMode: 'straight', outMode: 'straight', bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 5 } })
+    expect(
+      initialGameSelection({ gameId: 'x01', config: { startScore: 301, outMode: 'straight', firstTo: 5 } }, fallback, defaultsFor),
+    ).toEqual({
+      mode: 'x01',
+      config: { startScore: 301, inMode: 'straight', outMode: 'straight', bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 5 },
+    })
   })
 
   it('a mode with no known defaults: the next game config as is', () => {
-    expect(initialGameSelection({ gameId: 'atc', config: { finishOn: 'bull' } }, fallback, defaultsFor))
-      .toEqual({ mode: 'atc', config: { finishOn: 'bull' } })
+    expect(initialGameSelection({ gameId: 'atc', config: { finishOn: 'bull' } }, fallback, defaultsFor)).toEqual({
+      mode: 'atc',
+      config: { finishOn: 'bull' },
+    })
   })
 })

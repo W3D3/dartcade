@@ -7,6 +7,7 @@ Autodarts computer vision. The system talks to each board's local **Board Manage
 and does not use darts-caller, darts-extern or darts-hub.
 
 Contents:
+
 1. [TL;DR](#1-tldr)
 2. [What the Board Manager local API actually exposes](#2-what-the-board-manager-local-api-actually-exposes)
 3. [Review of the stated architecture](#3-review-of-the-stated-architecture)
@@ -61,26 +62,26 @@ changelog. The confidence column tells you how far to trust each item.
 
 ### 2.1 Transport
 
-| Item | Finding | Confidence |
-|---|---|---|
-| Port | `3180`, plain HTTP and WS, reachable from other LAN hosts, not only localhost | High: every client uses it |
-| Auth for local reads | None. Clients connect with no credentials. | High |
-| Auth for local **writes** | None either. `PUT /api/start`, `POST /api/reset`, `PATCH /api/config` and others are unauthenticated on the LAN. | High (HACSAutodarts client) |
-| Push channel | `GET ws://<host>:3180/api/events`. No subscribe message is needed; the server pushes after connect. | High: used by an ESP32 client in 2023 and HACSAutodarts in 2026, so stable across versions |
-| Frame format | Text JSON envelope `{"type": <string>, "data": <object>}` | High |
-| Poll fallback | `GET /api/state` returns the same shape as a `state` frame's `data` | High |
-| Server keepalive / ping cadence | Not documented. HACSAutodarts uses a client heartbeat of 30 s. | Unverified |
+| Item                            | Finding                                                                                                          | Confidence                                                                                 |
+| ------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| Port                            | `3180`, plain HTTP and WS, reachable from other LAN hosts, not only localhost                                    | High: every client uses it                                                                 |
+| Auth for local reads            | None. Clients connect with no credentials.                                                                       | High                                                                                       |
+| Auth for local **writes**       | None either. `PUT /api/start`, `POST /api/reset`, `PATCH /api/config` and others are unauthenticated on the LAN. | High (HACSAutodarts client)                                                                |
+| Push channel                    | `GET ws://<host>:3180/api/events`. No subscribe message is needed; the server pushes after connect.              | High: used by an ESP32 client in 2023 and HACSAutodarts in 2026, so stable across versions |
+| Frame format                    | Text JSON envelope `{"type": <string>, "data": <object>}`                                                        | High                                                                                       |
+| Poll fallback                   | `GET /api/state` returns the same shape as a `state` frame's `data`                                              | High                                                                                       |
+| Server keepalive / ping cadence | Not documented. HACSAutodarts uses a client heartbeat of 30 s.                                                   | Unverified                                                                                 |
 
 ### 2.2 WebSocket frame types seen
 
-| `type` | `data` | Notes |
-|---|---|---|
-| `state` | `{connected, running, status, event, numThrows, throws[]}` | The one that matters. Sent on change. |
-| `motion_state` | `{isWaiting, isStable, isDart, isHand, isTakeoutPartial, isTakeoutFull}` (booleans) | Hand and takeout motion. Useful for takeout timing. |
-| `cam_state` | `{isOpened, isRunning}` | |
-| `stats` | `{fps}` | Detection FPS. High-rate telemetry. |
-| `cam_stats` | `{id, fps}` | Per-camera FPS. High-rate. |
-| `auth`(?) | `{"token": …}` | **Unverified.** It only appears as a synthetic fixture in HACSAutodarts' tests, which check that the frame is dropped. Design for the possibility that secret-bearing frames exist. |
+| `type`         | `data`                                                                              | Notes                                                                                                                                                                               |
+| -------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `state`        | `{connected, running, status, event, numThrows, throws[]}`                          | The one that matters. Sent on change.                                                                                                                                               |
+| `motion_state` | `{isWaiting, isStable, isDart, isHand, isTakeoutPartial, isTakeoutFull}` (booleans) | Hand and takeout motion. Useful for takeout timing.                                                                                                                                 |
+| `cam_state`    | `{isOpened, isRunning}`                                                             |                                                                                                                                                                                     |
+| `stats`        | `{fps}`                                                                             | Detection FPS. High-rate telemetry.                                                                                                                                                 |
+| `cam_stats`    | `{id, fps}`                                                                         | Per-camera FPS. High-rate.                                                                                                                                                          |
+| `auth`(?)      | `{"token": …}`                                                                      | **Unverified.** It only appears as a synthetic fixture in HACSAutodarts' tests, which check that the frame is dropped. Design for the possibility that secret-bearing frames exist. |
 
 Treat this list as open-ended. The bridge must pass unknown `type`s through, not drop them.
 
@@ -106,10 +107,10 @@ Observed on Board Manager **1.0.7** (Raspberry Pi 4), from slopdarts' `API_STATE
 
 - `status` values (from the Board Manager frontend's switch statements, not all seen live):
   `Offline, Starting, Running, Stopping, Stopped, Throw, Takeout, Takeout in progress,
-  Calibrating, Setup, Error`.
+Calibrating, Setup, Error`.
 - `event` values seen in client code (ESP32 client 2023, darts-caller 2026): `Started,
-  Stopped, Starting, Stopping, Throw detected, Takeout started, Takeout finished,
-  Manual reset, Calibration started, Calibration finished`. Treat `event` as **free text**.
+Stopped, Starting, Stopping, Throw detected, Takeout started, Takeout finished,
+Manual reset, Calibration started, Calibration finished`. Treat `event` as **free text**.
 - `bed` enum: `Single, SingleInner, SingleOuter, Double, Triple, Outside`.
 - **`connected` is unreliable.** It has been seen as `false` while `running: true` and a dart
   was being detected. Use `running` and `status` to tell whether detection is live.
@@ -141,13 +142,13 @@ them "image-space 0–1". I checked the five published samples against standard 
 (outer double wire 170 mm, triple 99–107 mm, double 162–170 mm, wedges 18° wide with 6 at 0°
 and 20 at 90°):
 
-| Sample | (x, y) | angle | r | Expected wedge / ring | Match |
-|---|---|---|---|---|---|
-| S6 SingleOuter | (0.637, 0.079) | 7° | 0.64 | 6: −9…9°, r 0.63–0.95 | ✅ |
-| S18 SingleInner | (0.137, 0.168) | 51° | 0.22 | 18: 45…63°, r 0.09–0.58 | ✅ |
-| S20 SingleOuter | (0.067, 0.663) | 84° | 0.67 | 20: 81…99°, r 0.63–0.95 | ✅ |
-| S1 SingleInner | (0.102, 0.276) | 70° | 0.29 | 1: 63…81°, r 0.09–0.58 | ✅ |
-| S11 SingleOuter | (−0.653, −0.084) | 187° | 0.66 | 11: 171…189°, r 0.63–0.95 | ✅ |
+| Sample          | (x, y)           | angle | r    | Expected wedge / ring     | Match |
+| --------------- | ---------------- | ----- | ---- | ------------------------- | ----- |
+| S6 SingleOuter  | (0.637, 0.079)   | 7°    | 0.64 | 6: −9…9°, r 0.63–0.95     | ✅    |
+| S18 SingleInner | (0.137, 0.168)   | 51°   | 0.22 | 18: 45…63°, r 0.09–0.58   | ✅    |
+| S20 SingleOuter | (0.067, 0.663)   | 84°   | 0.67 | 20: 81…99°, r 0.63–0.95   | ✅    |
+| S1 SingleInner  | (0.102, 0.276)   | 70°   | 0.29 | 1: 63…81°, r 0.09–0.58    | ✅    |
+| S11 SingleOuter | (−0.653, −0.084) | 187°  | 0.66 | 11: 171…189°, r 0.63–0.95 | ✅    |
 
 All five match: **bull-centred, r = 1.0 at the outer double wire, y up**. That gives
 board-relative polar coordinates, which is exactly what a zone-mapping game needs. It also
@@ -162,15 +163,15 @@ comparable between boards. Caveats:
 
 ### 2.5 HTTP endpoints (for the bridge's metadata and commands)
 
-| Endpoint | Use in this system |
-|---|---|
-| `GET /api/version` | Plain text, for example `1.0.7`. Record it with every session, and gate features on it. |
-| `GET /api/config` | `auth.board_id` identifies the board. **The response also contains `auth.api_key`, which must never be forwarded.** |
-| `GET /api/state`, `/api/state/motion`, `/api/cams/state`, `/api/state/stats`, `/api/cams/stats` | Poll fallback and resync after reconnect |
-| `POST /api/reset` | Clear current throws (force a new visit). **Candidate downstream command.** |
-| `PUT /api/start`, `PUT /api/stop` | Detection on/off. Older firmware used `/api/detection/{start,stop}`; fall back on 404/405. |
-| `POST /api/config/calibration/auto[?distortion=true]`, `PATCH /api/config`, `POST /api/restart`, `PUT /api/upstream/{connect,disconnect}` | Out of scope. Never expose these remotely. |
-| `GET /api/streams/live?cam=0&warp=true&update=onDart` | MJPEG stream. Possible later "replay the dart" feature. |
+| Endpoint                                                                                                                                  | Use in this system                                                                                                  |
+| ----------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| `GET /api/version`                                                                                                                        | Plain text, for example `1.0.7`. Record it with every session, and gate features on it.                             |
+| `GET /api/config`                                                                                                                         | `auth.board_id` identifies the board. **The response also contains `auth.api_key`, which must never be forwarded.** |
+| `GET /api/state`, `/api/state/motion`, `/api/cams/state`, `/api/state/stats`, `/api/cams/stats`                                           | Poll fallback and resync after reconnect                                                                            |
+| `POST /api/reset`                                                                                                                         | Clear current throws (force a new visit). **Candidate downstream command.**                                         |
+| `PUT /api/start`, `PUT /api/stop`                                                                                                         | Detection on/off. Older firmware used `/api/detection/{start,stop}`; fall back on 404/405.                          |
+| `POST /api/config/calibration/auto[?distortion=true]`, `PATCH /api/config`, `POST /api/restart`, `PUT /api/upstream/{connect,disconnect}` | Out of scope. Never expose these remotely.                                                                          |
+| `GET /api/streams/live?cam=0&warp=true&update=onDart`                                                                                     | MJPEG stream. Possible later "replay the dart" feature.                                                             |
 
 ### 2.6 Version differences to guard against
 
@@ -203,15 +204,15 @@ comparable between boards. Caveats:
 
 ## 3. Review of the stated architecture
 
-| Decision | Verdict | Why / change |
-|---|---|---|
-| Bridge talks to Board Manager directly | ✅ Keep | The local API is stable enough (the envelope is unchanged since 2023) and needs no auth. |
-| Bridge is "dumb", no game logic | ✅ Keep, **but** it must compare snapshots | Board Manager sends state, not events. Turning snapshots into `dart.detected` / `dart.corrected` / `visit.cleared` is protocol normalisation. It is the same for every game, depends on Board Manager's version, and has to happen next to the source, where the arrival order and timing are exact. It is not game logic. |
-| Keep data complete | ✅ Keep, with a **secret denylist** | Forward every frame raw and in full, including telemetry. Never forward `/api/config` bodies or `auth`-type frames; redact known secret paths. |
-| Outbound WSS bridge→backend | ✅ Keep, **messages flow both ways** | The backend needs `reset` (end a visit or undo a bounce-out) and possibly start/stop. The bridge still opens the socket, so the NAT and firewall benefits remain. Commands are allowlisted in the bridge, and anything off the list is rejected there. |
-| Backend owns rules, mapping, sessions | ✅ Keep | The coordinates make backend-side zone mapping possible. Rule engines must handle **revisable** darts (see §5.4). |
-| Frontend never touches the board | ✅ Keep | This is now also a Chromium rule: since Chrome 142 (fetch) and 147 (WebSockets), a public page reaching a private IP triggers a Local Network Access permission prompt. Safari and Firefox behave differently, and a page served over HTTPS still cannot open `ws://`. |
-| Cloud API optional | ✅ Keep it out of v1 | See §2.7. |
+| Decision                               | Verdict                                    | Why / change                                                                                                                                                                                                                                                                                                               |
+| -------------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bridge talks to Board Manager directly | ✅ Keep                                    | The local API is stable enough (the envelope is unchanged since 2023) and needs no auth.                                                                                                                                                                                                                                   |
+| Bridge is "dumb", no game logic        | ✅ Keep, **but** it must compare snapshots | Board Manager sends state, not events. Turning snapshots into `dart.detected` / `dart.corrected` / `visit.cleared` is protocol normalisation. It is the same for every game, depends on Board Manager's version, and has to happen next to the source, where the arrival order and timing are exact. It is not game logic. |
+| Keep data complete                     | ✅ Keep, with a **secret denylist**        | Forward every frame raw and in full, including telemetry. Never forward `/api/config` bodies or `auth`-type frames; redact known secret paths.                                                                                                                                                                             |
+| Outbound WSS bridge→backend            | ✅ Keep, **messages flow both ways**       | The backend needs `reset` (end a visit or undo a bounce-out) and possibly start/stop. The bridge still opens the socket, so the NAT and firewall benefits remain. Commands are allowlisted in the bridge, and anything off the list is rejected there.                                                                     |
+| Backend owns rules, mapping, sessions  | ✅ Keep                                    | The coordinates make backend-side zone mapping possible. Rule engines must handle **revisable** darts (see §5.4).                                                                                                                                                                                                          |
+| Frontend never touches the board       | ✅ Keep                                    | This is now also a Chromium rule: since Chrome 142 (fetch) and 147 (WebSockets), a public page reaching a private IP triggers a Local Network Access permission prompt. Safari and Firefox behave differently, and a page served over HTTPS still cannot open `ws://`.                                                     |
+| Cloud API optional                     | ✅ Keep it out of v1                       | See §2.7.                                                                                                                                                                                                                                                                                                                  |
 
 **Nothing is a hard blocker.** The biggest schema consequence is that darts can be revised.
 The biggest operational one is that **the bridge is the only source of timing**.
@@ -245,14 +246,15 @@ already runs Board Manager. That is usually a Raspberry Pi or small Linux PC set
 `bash <(curl -sL get.autodarts.io)`, which installs a systemd service. Sometimes it is a
 Windows or macOS box.
 
-| Option | For | Against | Verdict |
-|---|---|---|---|
-| **Go** | Cross-compiles to linux/arm64, amd64, armv7, windows and darwin as one static file with no runtime. About 10 MB RSS. Good WS library (`coder/websocket`). Simple self-update. `kardianos/service` covers systemd, Windows Service and launchd from one codebase. | Its types differ from the TS backend's (solved by generating code from JSON Schema, §5.6) | **Chosen** |
-| Rust | Same deployment story, smaller binary | Slower to write for a small I/O shim; no real benefit here | Would also work |
-| Node/Python + pkg/pyinstaller | Could share code with the backend | Big bundles, runtime quirks on ARM, and antivirus false positives on Windows for pyinstaller builds | No |
-| Docker | Easy for homelab users | Autodarts Pi setups do not have Docker, and asking venue owners to install it is too much | **Secondary** distribution only |
+| Option                        | For                                                                                                                                                                                                                                                              | Against                                                                                             | Verdict                         |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | ------------------------------- |
+| **Go**                        | Cross-compiles to linux/arm64, amd64, armv7, windows and darwin as one static file with no runtime. About 10 MB RSS. Good WS library (`coder/websocket`). Simple self-update. `kardianos/service` covers systemd, Windows Service and launchd from one codebase. | Its types differ from the TS backend's (solved by generating code from JSON Schema, §5.6)           | **Chosen**                      |
+| Rust                          | Same deployment story, smaller binary                                                                                                                                                                                                                            | Slower to write for a small I/O shim; no real benefit here                                          | Would also work                 |
+| Node/Python + pkg/pyinstaller | Could share code with the backend                                                                                                                                                                                                                                | Big bundles, runtime quirks on ARM, and antivirus false positives on Windows for pyinstaller builds | No                              |
+| Docker                        | Easy for homelab users                                                                                                                                                                                                                                           | Autodarts Pi setups do not have Docker, and asking venue owners to install it is too much           | **Secondary** distribution only |
 
 What the bridge does, and nothing more:
+
 - Holds one WS to `/api/events` and polls `GET /api/state` every 2 s as a fallback and
   consistency check.
 - Stamps every received frame with `recv_wall` (UTC, ms) and `recv_mono` (ns since the
@@ -271,13 +273,14 @@ What the bridge does, and nothing more:
 
 ### 4.2 Backend: **TypeScript on Node, one process at first**
 
-| Option | For | Against |
-|---|---|---|
-| **TypeScript / Node** | The same types are shared by the rule engines, the frontend and tests. Game reducers are pure functions, so the frontend can also run them for instant previews, and replay tests run in the same toolchain. Easy to hire for or come back to. | Single-threaded. That is fine at this scale: a few msgs/s per board and hundreds of boards per process. |
-| Elixir / Phoenix | Channels, Presence and one process per game fit this problem almost exactly. Supervision and failover come built in. | A second ecosystem, no type sharing with the frontend, and fewer people who can maintain it. Worth it only at thousands of concurrent boards. |
-| Go (same as the bridge) | One language for the whole server side | Loses type sharing with the frontend, which is where most game-specific code lives |
+| Option                  | For                                                                                                                                                                                                                                            | Against                                                                                                                                       |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| **TypeScript / Node**   | The same types are shared by the rule engines, the frontend and tests. Game reducers are pure functions, so the frontend can also run them for instant previews, and replay tests run in the same toolchain. Easy to hire for or come back to. | Single-threaded. That is fine at this scale: a few msgs/s per board and hundreds of boards per process.                                       |
+| Elixir / Phoenix        | Channels, Presence and one process per game fit this problem almost exactly. Supervision and failover come built in.                                                                                                                           | A second ecosystem, no type sharing with the frontend, and fewer people who can maintain it. Worth it only at thousands of concurrent boards. |
+| Go (same as the bridge) | One language for the whole server side                                                                                                                                                                                                         | Loses type sharing with the frontend, which is where most game-specific code lives                                                            |
 
 Internals:
+
 - **Bridge gateway:** authenticates bridge tokens, dedupes by `(bridge_id, boot_id, seq)`,
   appends events to the log, sends acks, and routes commands.
 - **Session engine:** one in-memory actor per active game session. The session state is
@@ -370,22 +373,22 @@ Internals:
 
 ### 5.2 Kinds
 
-| Kind | Derived from | `data` |
-|---|---|---|
-| `bridge.hello` | connect | `{bridge_version, schema, os, arch, bm_version, bm_url}` |
-| `bm.link` | BM WS up or down | `{up: bool, reason?}` |
-| `bm.frame` | every WS frame and poll result | `{source: "ws"\|"poll"}` + `raw` |
-| `board.status` | change in `status`, `event` or `running` | `{status, event, running, connected}`. `connected` is passed on but documented as unreliable. |
-| `board.resync` | first snapshot after (re)connect | `{throws: Dart[]}`. **A baseline, not new darts.** Consumers must not score these. |
-| `visit.opened` | first dart after the board is empty | `{visit_id}` |
-| `dart.detected` | `throws[i]` newly present | `{visit_id, index, dart: Dart, source_seq}` |
-| `dart.corrected` | `throws[i]` segment changed | `{visit_id, index, dart: Dart, previous: Dart, source_seq}` |
-| `dart.moved` | same segment, `coords` moved more than ε | `{visit_id, index, coords, previous_coords}`. Only games that use coordinates care. |
-| `takeout.started` | `event`="Takeout started" or `status` ∈ {Takeout, Takeout in progress} or `motion_state.isHand`/`isTakeoutPartial` while `numThrows>0` | `{visit_id, trigger}` |
-| `takeout.finished` | `event`="Takeout finished" or `numThrows` drops to 0 or `isTakeoutFull` | `{visit_id, trigger, duration_ms}` |
-| `visit.cleared` | `numThrows` drops to 0 without a takeout (`Manual reset`, a `reset` command) | `{visit_id, reason}` |
-| `motion` | `motion_state` frame | the flags, unchanged |
-| `command.result` | after a downstream command runs | `{command_id, ok, http_status?}` |
+| Kind               | Derived from                                                                                                                           | `data`                                                                                        |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `bridge.hello`     | connect                                                                                                                                | `{bridge_version, schema, os, arch, bm_version, bm_url}`                                      |
+| `bm.link`          | BM WS up or down                                                                                                                       | `{up: bool, reason?}`                                                                         |
+| `bm.frame`         | every WS frame and poll result                                                                                                         | `{source: "ws"\|"poll"}` + `raw`                                                              |
+| `board.status`     | change in `status`, `event` or `running`                                                                                               | `{status, event, running, connected}`. `connected` is passed on but documented as unreliable. |
+| `board.resync`     | first snapshot after (re)connect                                                                                                       | `{throws: Dart[]}`. **A baseline, not new darts.** Consumers must not score these.            |
+| `visit.opened`     | first dart after the board is empty                                                                                                    | `{visit_id}`                                                                                  |
+| `dart.detected`    | `throws[i]` newly present                                                                                                              | `{visit_id, index, dart: Dart, source_seq}`                                                   |
+| `dart.corrected`   | `throws[i]` segment changed                                                                                                            | `{visit_id, index, dart: Dart, previous: Dart, source_seq}`                                   |
+| `dart.moved`       | same segment, `coords` moved more than ε                                                                                               | `{visit_id, index, coords, previous_coords}`. Only games that use coordinates care.           |
+| `takeout.started`  | `event`="Takeout started" or `status` ∈ {Takeout, Takeout in progress} or `motion_state.isHand`/`isTakeoutPartial` while `numThrows>0` | `{visit_id, trigger}`                                                                         |
+| `takeout.finished` | `event`="Takeout finished" or `numThrows` drops to 0 or `isTakeoutFull`                                                                | `{visit_id, trigger, duration_ms}`                                                            |
+| `visit.cleared`    | `numThrows` drops to 0 without a takeout (`Manual reset`, a `reset` command)                                                           | `{visit_id, reason}`                                                                          |
+| `motion`           | `motion_state` frame                                                                                                                   | the flags, unchanged                                                                          |
+| `command.result`   | after a downstream command runs                                                                                                        | `{command_id, ok, http_status?}`                                                              |
 
 `Dart`:
 
@@ -490,6 +493,7 @@ sequenceDiagram
 ## 7. Deployment
 
 ### Bridge (at each board)
+
 1. `curl -fsSL https://<get-host>/install.sh | bash` (Linux or macOS) or a signed MSI or
    `install.ps1` (Windows). This matches how Autodarts itself is installed.
 2. The installer picks the right binary, installs the systemd or Windows service (running
@@ -499,10 +503,12 @@ sequenceDiagram
    Autodarts' own updater service). The backend can require a minimum bridge version per
    schema major.
 4. A Docker image (`ghcr.io/…/autodarts-bridge`) for homelab users, with `network_mode:
-   host` or an explicit `BM_URL`.
+host` or an explicit `BM_URL`.
 
 ### Backend and frontend (hades)
+
 Follows this repo's conventions (see `CLAUDE.md` and `docs/adding-a-new-service.md`):
+
 - New stack, for example `docker-compose/gaming/dartgames.docker-compose.yaml`, with
   `backend` and `postgres` containers. The static frontend is served by the backend or by a
   small nginx.
@@ -519,22 +525,23 @@ Follows this repo's conventions (see `CLAUDE.md` and `docs/adding-a-new-service.
 
 ## 8. Risks and open questions
 
-| # | Risk | Impact | Mitigation |
-|---|---|---|---|
-| R1 | Board Manager API is undocumented and can change without notice | Bridge breaks after a Board Manager update | Record `bm_version` and keep raw frames. Keep a contract test suite of recorded frames per version. Run a canary board on Autodarts' beta channel. |
-| R2 | Bull and miss payloads (`number` for bull, `Outside` shape) not verified | Wrong scores on bull or miss | **Confirmed on hardware (2026-09-24).** Bull 25: `name="25"`,`number=25`,`bed="Single"`. Miss: two variants — bounce-out (`name="Miss"`,`number=0`, no coords, `bouncer=true`) and near-miss (`name="M<n>"`,`number=n`, coords with r>1). Bull 50 not yet captured but expected shape is known. |
-| R3 | Behaviour with more than 3 darts per visit unknown | Games that want more than 3 darts per visit | **Confirmed on hardware (2026-09-24): BM hard-caps at 3.** A 4th dart is silently ignored — `numThrows` never exceeds 3. Games needing more than 3 darts must issue `POST /api/reset` to clear the board mid-visit. |
-| R4 | Detection revises darts (`dart.corrected`) | Scores change after they were shown | No manual correction UI exists in Board Manager 1.0.7. Auto-correction (BM changing its mind on a borderline dart) not yet observed on hardware. The refold logic in §5.4 stands; this risk remains open but lower priority. |
-| R5 | A dart lands while the link is down | A missed or double-counted dart | Not yet tested on hardware. Mitigation unchanged: resync baseline, then a "Did you throw X?" prompt. |
-| R6 | Coordinate accuracy depends on calibration | Zone games feel unfair near boundaries | Pick zone boundaries on wire lines where possible, show `dart.moved` corrections, and offer a hysteresis option per game |
-| R7 | Board Manager write endpoints are unauthenticated on the LAN | A bridge with a remote command channel adds attack surface | Hard-coded allowlist (`reset`, `start`, `stop`), a per-bridge opt-in flag, commands signed with the session, rate limits |
-| R8 | Secrets in Board Manager responses (`auth.api_key`, a possible `auth` frame) | Leaking a board's cloud key | Denylist redaction in the bridge and a test that fails if `api_key` or `token` appears in anything sent out |
-| R9 | Does local detection run with no autodarts.io match active, or with the board disconnected from the cloud? | The system doesn't work at all | slopdarts and ioBroker do exactly this, so it is likely fine. **Confirm on hardware**, including whether a live autodarts.io match interferes. |
-| R10 | Two consumers at once (the play.autodarts.io tab and our game) | Confusing UX, and `reset` could disrupt an Autodarts match | The bridge sees `event`, but not cloud match state. Document "one or the other", and possibly check `/api/upstream` status. |
-| R11 | Legal / ToS: using an undocumented API | Autodarts could object | Read-only use of a local API on hardware the user owns is low risk. Don't use the cloud API or Autodarts branding. Consider contacting Autodarts (they approve cloud client IDs on Discord anyway). |
-| R12 | Cloudflare Tunnel as the only way in | A Cloudflare outage stops every venue | Acceptable for v1. The bridge buffers, and games pause visibly. |
+| #   | Risk                                                                                                       | Impact                                                     | Mitigation                                                                                                                                                                                                                                                                                      |
+| --- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Board Manager API is undocumented and can change without notice                                            | Bridge breaks after a Board Manager update                 | Record `bm_version` and keep raw frames. Keep a contract test suite of recorded frames per version. Run a canary board on Autodarts' beta channel.                                                                                                                                              |
+| R2  | Bull and miss payloads (`number` for bull, `Outside` shape) not verified                                   | Wrong scores on bull or miss                               | **Confirmed on hardware (2026-09-24).** Bull 25: `name="25"`,`number=25`,`bed="Single"`. Miss: two variants — bounce-out (`name="Miss"`,`number=0`, no coords, `bouncer=true`) and near-miss (`name="M<n>"`,`number=n`, coords with r>1). Bull 50 not yet captured but expected shape is known. |
+| R3  | Behaviour with more than 3 darts per visit unknown                                                         | Games that want more than 3 darts per visit                | **Confirmed on hardware (2026-09-24): BM hard-caps at 3.** A 4th dart is silently ignored — `numThrows` never exceeds 3. Games needing more than 3 darts must issue `POST /api/reset` to clear the board mid-visit.                                                                             |
+| R4  | Detection revises darts (`dart.corrected`)                                                                 | Scores change after they were shown                        | No manual correction UI exists in Board Manager 1.0.7. Auto-correction (BM changing its mind on a borderline dart) not yet observed on hardware. The refold logic in §5.4 stands; this risk remains open but lower priority.                                                                    |
+| R5  | A dart lands while the link is down                                                                        | A missed or double-counted dart                            | Not yet tested on hardware. Mitigation unchanged: resync baseline, then a "Did you throw X?" prompt.                                                                                                                                                                                            |
+| R6  | Coordinate accuracy depends on calibration                                                                 | Zone games feel unfair near boundaries                     | Pick zone boundaries on wire lines where possible, show `dart.moved` corrections, and offer a hysteresis option per game                                                                                                                                                                        |
+| R7  | Board Manager write endpoints are unauthenticated on the LAN                                               | A bridge with a remote command channel adds attack surface | Hard-coded allowlist (`reset`, `start`, `stop`), a per-bridge opt-in flag, commands signed with the session, rate limits                                                                                                                                                                        |
+| R8  | Secrets in Board Manager responses (`auth.api_key`, a possible `auth` frame)                               | Leaking a board's cloud key                                | Denylist redaction in the bridge and a test that fails if `api_key` or `token` appears in anything sent out                                                                                                                                                                                     |
+| R9  | Does local detection run with no autodarts.io match active, or with the board disconnected from the cloud? | The system doesn't work at all                             | slopdarts and ioBroker do exactly this, so it is likely fine. **Confirm on hardware**, including whether a live autodarts.io match interferes.                                                                                                                                                  |
+| R10 | Two consumers at once (the play.autodarts.io tab and our game)                                             | Confusing UX, and `reset` could disrupt an Autodarts match | The bridge sees `event`, but not cloud match state. Document "one or the other", and possibly check `/api/upstream` status.                                                                                                                                                                     |
+| R11 | Legal / ToS: using an undocumented API                                                                     | Autodarts could object                                     | Read-only use of a local API on hardware the user owns is low risk. Don't use the cloud API or Autodarts branding. Consider contacting Autodarts (they approve cloud client IDs on Discord anyway).                                                                                             |
+| R12 | Cloudflare Tunnel as the only way in                                                                       | A Cloudflare outage stops every venue                      | Acceptable for v1. The bridge buffers, and games pause visibly.                                                                                                                                                                                                                                 |
 
 Open decisions for you:
+
 1. Player accounts: Authentik or OIDC vs anonymous per-venue players.
 2. Does any minigame need more than 3 darts per visit? That decides how urgent R3 is.
 3. Are cross-location multi-board sessions (remote matches) in v1, or only one venue?
@@ -560,6 +567,7 @@ Open decisions for you:
 ## 10. Sources
 
 Read directly from source code (cloned 2026-09-24):
+
 - [Dennis-Otto/HACSAutodarts](https://github.com/Dennis-Otto/HACSAutodarts): `local_api.py`
   (endpoints, `/api/events` envelope, commands, route fallback), `local_coordinator.py`
   (frame types, motion flags, takeout inference, reconnect/baseline), `training.py` (diff
@@ -580,6 +588,7 @@ Read directly from source code (cloned 2026-09-24):
   takeout detection history, platform support.
 
 Web:
+
 - [Autodarts authentication migration guide (gist)](https://gist.github.com/lloydowen/960079f2b518f6f5d68e160465298964):
   Keycloak retirement, new OAuth, device flow, manual client-ID approval.
 - [Chrome: Local Network Access restrictions (Chrome Platform Status)](https://chromestatus.com/feature/5152728072060928)

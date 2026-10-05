@@ -5,11 +5,20 @@ export const PUSH_DEBOUNCE_MS = 250
 export class KeyedDebounce {
   private readonly timers = new Map<string, ReturnType<typeof setTimeout>>()
 
-  constructor(private readonly ms: number, private readonly run: (key: string) => void) {}
+  constructor(
+    private readonly ms: number,
+    private readonly run: (key: string) => void,
+  ) {}
 
   schedule(key: string): void {
     if (this.timers.has(key)) return
-    this.timers.set(key, setTimeout(() => { this.timers.delete(key); this.run(key) }, this.ms))
+    this.timers.set(
+      key,
+      setTimeout(() => {
+        this.timers.delete(key)
+        this.run(key)
+      }, this.ms),
+    )
   }
 
   /** Runs every pending key now. */
@@ -27,5 +36,7 @@ export class KeyedDebounce {
     this.timers.clear()
   }
 
-  pending(): number { return this.timers.size }
+  pending(): number {
+    return this.timers.size
+  }
 }
