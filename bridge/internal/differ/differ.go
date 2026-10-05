@@ -192,7 +192,7 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 	}
 	for i := 0; i < minLen; i++ {
 		c, p := cur.Throws[i], s.PrevThrows[i]
-		if c.Segment.Name != p.Segment.Name || c.Segment.Number != p.Segment.Number || c.Segment.Bed != p.Segment.Bed {
+		if c.Segment != p.Segment {
 			evs = append(evs, Event{Kind: "dart.corrected", Data: &schema.DartCorrectedData{
 				VisitId:   schema.VisitId(s.VisitID.String()),
 				Index:     i,
