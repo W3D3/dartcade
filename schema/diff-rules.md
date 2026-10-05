@@ -39,7 +39,7 @@ If `len(cur) > len(prev)`:
 
 For each index `i` in `[0, min(len(cur), len(prev)))`:
 
-- If `cur[i].segment.name != prev[i].segment.name` (or bed/number changed): emit `dart.corrected`.
+- If `cur[i].segment.name != prev[i].segment.name` (or its number, bed or multiplier changed): emit `dart.corrected`.
 - Else if both have coords and `dist(cur[i].coords, prev[i].coords) > 0.02`: emit `dart.moved`.
 
 Note: corrections are rare (BM auto-revision of a borderline dart). No manual correction
@@ -49,7 +49,8 @@ UI exists in BM 1.0.7. The backend refolds the open visit from `committedState` 
 ### 5. Partial takeout
 
 If `0 < len(cur) < len(prev)`: update `prev = cur`. The visit stays open. Do not emit
-any event — the backend will see the full takeout when `len(cur)` reaches 0.
+any event for the removed darts — the backend will see the full takeout when `len(cur)`
+reaches 0. (Rule 4 still applies to the darts left on the board.)
 
 ### 6. Full takeout / visit cleared
 
