@@ -1,7 +1,7 @@
 import type { GameModule, BoardEvent, Player, Dart } from '../session/types.js'
 import type { ConfigFieldMeta, AtcDetail, SeatResult } from '../session/types.js'
 import type { AtcView } from '../session/views.js'
-import type { Rng } from '../session/rng.js'
+import { shuffle, type Rng } from '../session/rng.js'
 import { rankSeats } from './ranking.js'
 
 export type ATCConfig = {
@@ -20,15 +20,6 @@ export type ATCState = {
   cfg: ATCConfig
   playerCount: number
   currentVisitHits: boolean[] // per-dart hit flags for the open visit
-}
-
-function shuffle(arr: number[], rng: Rng): number[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
 }
 
 export function buildSequence(cfg: ATCConfig, rng: Rng = Math.random): number[] {

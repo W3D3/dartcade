@@ -1,6 +1,7 @@
 import { games } from '../games/index.js'
 import type { GameConfig } from '../session/types.js'
 import type { LobbyPerson, LobbyState, NextGame, TeamId, ThrowOrder } from './types.js'
+import { shuffle } from '../session/rng.js'
 
 /** A board someone picks for a person: its id and owner. */
 export type BoardTarget = { boardId: string; ownerUserId: string }
@@ -191,12 +192,9 @@ export function assignTeams(lobby: { people: readonly TeamPerson[] }): Map<strin
  * alternating. Sitting out keeps their team. `random` in [0, 1), as Math.random.
  */
 export function shuffleTeams(lobby: { people: readonly TeamPerson[] }, random: () => number = Math.random): Map<string, TeamId> {
-  const ids = lobby.people.filter(p => p.plays).map(p => p.id)
-  for (let i = ids.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1))
-    const swap = ids[i]
-    ids[i] = ids[j]
-    ids[j] = swap
-  }
+  const ids = shuffle(
+    lobby.people.filter(p => p.plays).map(p => p.id),
+    random,
+  )
   return new Map(ids.map((id, i) => [id, i % 2 === 0 ? 'A' : 'B']))
 }

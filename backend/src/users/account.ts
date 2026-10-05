@@ -1,11 +1,10 @@
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { ApiError } from '../api/errors.js'
-import { pgErrorCode } from '../db/errors.js'
+import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { isNameTaken, setName } from '../db/users.js'
 import { NAME_RULE, cleanName, isValidName, normalizeName, numbered } from './names.js'
 
-const UNIQUE_VIOLATION = '23505'
 const SUGGESTION_TRIES = 50
 
 export const NAME_TAKEN = 'That name is taken'
