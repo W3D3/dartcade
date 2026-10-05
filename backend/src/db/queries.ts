@@ -5,6 +5,7 @@ import { sql } from 'kysely'
 import type { Kysely, Selectable } from 'kysely'
 import type { Database, GamePlayersTable } from './schema.js'
 import { normalizeName } from '../users/names.js'
+import { PairingCodeClaimedError } from './errors.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -393,7 +394,7 @@ export async function claimPairingCode(db: Kysely<Database>, p: { code: string; 
     .where('claimed_at', 'is', null)
     .executeTakeFirst()
   if (result.numUpdatedRows === 0n) {
-    throw new Error('pairing code already claimed')
+    throw new PairingCodeClaimedError(p.code)
   }
 }
 

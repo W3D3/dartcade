@@ -11,3 +11,10 @@ export function pgErrorCode(err: unknown): string | undefined {
 /** Postgres error codes we act on. */
 export const UNIQUE_VIOLATION = '23505'
 export const FK_VIOLATION = '23503'
+
+/** A pairing code was claimed by someone else between reading and claiming it. */
+export class PairingCodeClaimedError extends Error {
+  constructor(readonly code: string) {
+    super('pairing code already claimed')
+  }
+}

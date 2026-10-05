@@ -8,6 +8,7 @@ import { insertPairingCode, getPairingCode, claimPairingCode, consumePairingToke
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import { normalizeCode } from '../lobby/code.js'
+import { PairingCodeClaimedError } from '../db/errors.js'
 
 const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_TTL_MS = 10 * 60 * 1000
@@ -17,8 +18,6 @@ function generateCode(): string {
   return Array.from(bytes, b => CODE_CHARSET[b % CODE_CHARSET.length]).join('')
 }
 
-// Uppercase and strip separators (dashes, spaces) so a code entered as
-// "7kq4-m2xd" or pasted with surrounding whitespace resolves to "7KQ4M2XD".
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
 export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
@@ -89,7 +88,7 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
           await claimPairingCode(trx, { code: row.code, rawToken, boardId })
         })
       } catch (err) {
-        if (err instanceof Error && err.message === 'pairing code already claimed') {
+        if (err instanceof PairingCodeClaimedError) {
           return reply.code(409).send({ error: 'already claimed' })
         }
         throw err

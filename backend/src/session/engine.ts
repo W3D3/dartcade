@@ -8,6 +8,7 @@ import { newSeed, seededRng, shuffle } from './rng.js'
 import { StoredConfigSchema, dartRows, newSession, replay, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
 import { KeyedQueue } from '../util/keyedQueue.js'
+import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameError } from './errors.js'
 import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
@@ -92,24 +93,6 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
   }
 }
 
-/** Thrown when a player already has a game running; carries that game's id and who it is. */
-export class ActiveSessionError extends Error {
-  constructor(
-    message: string,
-    readonly sessionId: string,
-    readonly userId: string,
-  ) {
-    super(message)
-  }
-}
-
-/** Thrown when a board is in another running game. */
-export class BoardBusyError extends Error {
-  constructor(readonly boardId: string) {
-    super(`active session already exists for board ${boardId}`)
-  }
-}
-
 export type NewSessionSpec = {
   ownerUserId: string
   gameId: string
@@ -183,7 +166,7 @@ export class SessionEngine {
 
   private async start(spec: NewSessionSpec, sessionBoardId: string | null): Promise<{ sessionId: string }> {
     const mod = games[spec.gameId]
-    if (!mod) throw new Error(`unknown game: ${spec.gameId}`)
+    if (!mod) throw new UnknownGameError(spec.gameId)
     for (const userId of distinct([spec.ownerUserId, ...spec.seats.map(s => s.controllerUserId)])) {
       const running = this.byUser.get(userId)
       if (running) throw new ActiveSessionError('active session already exists for user', running.id, userId)
@@ -193,7 +176,7 @@ export class SessionEngine {
     }
     const players = spec.seats.map(s => ({ name: s.name }))
     const invalid = mod.validate?.(spec.config, players)
-    if (invalid) throw new Error(`invalid config: ${invalid}`)
+    if (invalid) throw new InvalidConfigError(invalid)
 
     const sessionId = ulid()
     const seed = newSeed()

@@ -22,6 +22,7 @@ import {
   searchUsers,
   getUsersByIds,
 } from './queries.js'
+import { PairingCodeClaimedError } from './errors.js'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 
@@ -336,6 +337,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       expect(row!.claimed_at).not.toBeNull()
       expect(row!.raw_token).toBe('secret-token')
       expect(row!.board_id).toBe('board-pair-1')
+      // A second claim lost the race
+      await expect(claimPairingCode(db, { code, rawToken: 'other', boardId: 'board-pair-1' })).rejects.toBeInstanceOf(
+        PairingCodeClaimedError,
+      )
     })
 
     it('consumePairingToken returns the token once, then null, and nulls raw_token', async () => {

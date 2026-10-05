@@ -1,12 +1,13 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { ActiveSessionError, BoardBusyError, type SessionEngine } from '../session/engine.js'
+import type { SessionEngine } from '../session/engine.js'
 import type { Session } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
 import { canAccessSession, canWatchSession, isHost, noLobbies, type IsLobbyMember } from '../session/access.js'
 import { getBoardById } from '../db/queries.js'
 import { fromSpec } from './spec.js'
+import { engineApiError } from './engineErrors.js'
 import type { Route } from './route.js'
 
 type Opts = FastifyPluginOptions & { engine: SessionEngine; db: Kysely<Database>; isLobbyMember?: IsLobbyMember }
@@ -46,17 +47,8 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       try {
         ;({ sessionId } = await engine.create(req.userId, resolvedBoardId, gameId, config, players, boardName))
       } catch (err) {
-        // One running game per user (the engine enforces it, also for concurrent creates):
-        // point the client at the one they have
-        if (err instanceof ActiveSessionError) {
-          return reply.code(409).send({ error: 'You already have a game running', sessionId: err.sessionId })
-        }
-        const message = err instanceof Error ? err.message : undefined
-        if (message?.includes('unknown game')) return reply.code(400).send({ error: message })
-        if (message?.startsWith('invalid config')) return reply.code(400).send({ error: message })
-        if (err instanceof BoardBusyError) return reply.code(409).send({ error: err.message })
-        if (message?.includes('active session')) return reply.code(409).send({ error: message })
-        throw err
+        // One running game per user and per board (the engine enforces it, also for concurrent creates)
+        throw engineApiError(err)
       }
       return reply.code(201).send({ sessionId })
     },
