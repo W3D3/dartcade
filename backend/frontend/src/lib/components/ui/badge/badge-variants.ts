@@ -5,8 +5,6 @@ export const badgeVariants = tv({
   variants: {
     variant: {
       live: 'h-[30px] px-3 rounded-full bg-live-soft text-live-text text-[13px] font-bold tracking-widest',
-      throwing: 'h-7 px-3 rounded-full bg-accent text-accent-fg text-[13px] tracking-[0.08em] uppercase',
-      'up-next': 'h-7 px-3 rounded-full border border-line text-text-dim text-[13px] tracking-[0.08em] uppercase',
       paired: 'h-6 px-2 rounded-full bg-accent text-accent-fg text-[11px] font-bold tracking-wide uppercase',
       // Marks a field whose data the API doesn't provide yet
       soon: 'h-5 px-2 rounded-full border border-dashed border-line-3 text-text-dim text-[10px] font-medium tracking-[0.08em] uppercase',
@@ -20,7 +18,6 @@ export const badgeVariants = tv({
       pending: 'h-8 px-[10px] rounded-full bg-surface-2 text-text-dim text-[12px] font-medium',
     },
   },
-  defaultVariants: { variant: 'throwing' },
 })
 
 export type BadgeVariant = VariantProps<typeof badgeVariants>['variant']
