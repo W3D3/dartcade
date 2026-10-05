@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { ActiveSessionError, BoardBusyError, SessionEngine, type SnapshotView } from './engine.js'
+import { SessionEngine, type SnapshotView } from './engine.js'
+import { ActiveSessionError, BoardBusyError } from './errors.js'
 import type { EngineStore } from './engine.js'
 import type { StoredGameSession } from '../db/queries.js'
 import type { X01Game } from '../schema/game-ws.js'

@@ -53,7 +53,7 @@ describe('ApiError', () => {
   it('answers with its status and body', async () => {
     const a = createFastify()
     a.get('/boom', () => {
-      throw new ApiError(409, { error: 'taken', code: 'in_lobby' } as { error: string })
+      throw new ApiError(409, { error: 'taken', code: 'in_lobby' })
     })
     const res = await a.inject({ method: 'GET', url: '/boom' })
     expect(res.statusCode).toBe(409)

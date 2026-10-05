@@ -11,7 +11,7 @@ const ParamsSchema = z.object({ additionalProperty: z.string() })
 export class ApiError extends Error {
   constructor(
     readonly statusCode: number,
-    readonly body: { error: string },
+    readonly body: { error: string; [field: string]: unknown },
   ) {
     super(body.error)
   }

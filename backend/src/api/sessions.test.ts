@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import rateLimit from '@fastify/rate-limit'
 import { createFastify } from './fastify.js'
 import { sessionsApiPlugin } from './sessions.js'
-import { ActiveSessionError } from '../session/engine.js'
+import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameError } from '../session/errors.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -91,7 +91,7 @@ describe('POST /api/sessions', () => {
 
   it('returns 400 for unknown game', async () => {
     const { app, engine } = makeApp()
-    engine.create.mockRejectedValue(new Error('unknown game: xyz'))
+    engine.create.mockRejectedValue(new UnknownGameError('xyz'))
     const res = await app.inject({
       method: 'POST',
       url: '/api/sessions',
@@ -102,7 +102,7 @@ describe('POST /api/sessions', () => {
 
   it('returns 409 when board already has active session', async () => {
     const { app, engine } = makeApp()
-    engine.create.mockRejectedValue(new Error('active session already exists for board b1'))
+    engine.create.mockRejectedValue(new BoardBusyError('b1'))
     const res = await app.inject({
       method: 'POST',
       url: '/api/sessions',
@@ -113,7 +113,7 @@ describe('POST /api/sessions', () => {
 
   it('returns 400 with the reason for an invalid config', async () => {
     const { app, engine } = makeApp()
-    engine.create.mockRejectedValue(new Error('invalid config: bull off needs at least two players'))
+    engine.create.mockRejectedValue(new InvalidConfigError('bull off needs at least two players'))
     const res = await app.inject({
       method: 'POST',
       url: '/api/sessions',

@@ -5,7 +5,9 @@ import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { areFriends } from '../db/friends.js'
 import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
-import { ActiveSessionError, BoardBusyError, type GameEnded, type GameStarted, type SessionEngine } from '../session/engine.js'
+import type { GameEnded, GameStarted, SessionEngine } from '../session/engine.js'
+import { ActiveSessionError, BoardBusyError } from '../session/errors.js'
+import { engineApiError } from '../api/engineErrors.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { Lobby, LobbyServerMessage, MeMessage, PendingInvite } from '../schema/lobby-ws.js'
 import { games } from '../games/index.js'
@@ -752,7 +754,7 @@ export class LobbyService {
       })
     }
     if (err instanceof BoardBusyError) return LobbyError.conflict({ error: 'a board is in another game', code: 'board_busy' })
-    return err
+    return engineApiError(err)
   }
 
   /**

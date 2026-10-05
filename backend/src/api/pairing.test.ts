@@ -19,6 +19,7 @@ vi.mock('../db/queries.js', () => ({
 }))
 
 import * as queries from '../db/queries.js'
+import { PairingCodeClaimedError } from '../db/errors.js'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -244,7 +245,7 @@ describe('POST /api/pairing/claim', () => {
       board_id: null,
       created_at: new Date(),
     })
-    vi.mocked(queries.claimPairingCode).mockRejectedValueOnce(new Error('pairing code already claimed'))
+    vi.mocked(queries.claimPairingCode).mockRejectedValueOnce(new PairingCodeClaimedError('ABCD1234'))
     const app = makeApp()
     const res = await app.inject({
       method: 'POST',
