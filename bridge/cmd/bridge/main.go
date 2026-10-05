@@ -142,16 +142,10 @@ func main() {
 		con.pairedOK()
 	}
 
-	exec := func(ctx context.Context, name string) (int, error) {
-		switch name {
-		case "reset":
-			return client.Reset(ctx)
-		case "start":
-			return client.StartDetection(ctx)
-		case "stop":
-			return client.StopDetection(ctx)
-		}
-		return 0, nil
+	commands := transport.Commands{
+		"reset": client.Reset,
+		"start": client.StartDetection,
+		"stop":  client.StopDetection,
 	}
 
 	tr := transport.New(transport.Config{
@@ -163,7 +157,7 @@ func main() {
 		BMVersion:     client.BMVersion(),
 		BMUrl:         cfg.BoardURL,
 		BridgeVersion: buildVersion(),
-	}, exec)
+	}, commands)
 
 	// After a dart, a correction, a takeout or a resync: a new still from each camera,
 	// sent on the backend connection (only while it is up)

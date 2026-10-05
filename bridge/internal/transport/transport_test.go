@@ -39,6 +39,15 @@ func wsURL(s *httptest.Server) string {
 	return "ws" + strings.TrimPrefix(s.URL, "http")
 }
 
+// commands routes the commands the bridge knows to fn.
+func commands(fn func(ctx context.Context, name string) (int, error)) transport.Commands {
+	cmds := transport.Commands{}
+	for _, name := range []string{"reset", "start", "stop"} {
+		cmds[name] = func(ctx context.Context) (int, error) { return fn(ctx, name) }
+	}
+	return cmds
+}
+
 // readSkipHello reads from conn until it gets a non-bridge.hello envelope.
 func readSkipHello(ctx context.Context, conn *websocket.Conn) (transport.Envelope, error) {
 	for {
@@ -194,7 +203,7 @@ func TestCommandAllowlist_RejectsUnknown(t *testing.T) {
 		executed = true
 		return 200, nil
 	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, execFn)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, commands(execFn))
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -236,7 +245,7 @@ func TestCommandAllowlist_ExecutesAllowed(t *testing.T) {
 		executed <- name
 		return 200, nil
 	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, execFn)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, commands(execFn))
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -658,7 +667,7 @@ func TestHungCommandDoesNotBlockTheSendLoop(t *testing.T) {
 			return 0, ctx.Err()
 		}
 	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, execFn)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, commands(execFn))
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -725,7 +734,7 @@ func TestEveryCommandInABurstGetsAResult(t *testing.T) {
 			return 0, ctx.Err()
 		}
 	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, execFn)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, commands(execFn))
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
