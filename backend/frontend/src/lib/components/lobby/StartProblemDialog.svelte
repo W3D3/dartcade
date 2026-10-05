@@ -3,6 +3,7 @@
   // rules). board_offline and not_ready are skippable (Start anyway); anything else just
   // sends you back.
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import { Button } from '$lib/components/ui/button/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
   import { describeConflict } from '$lib/lobby/input'
   import type { StartOutcome } from '$lib/lobby/start'
@@ -62,22 +63,9 @@
     zClass="z-[200]"
   >
     {#snippet footer()}
-      <button
-        type="button"
-        onclick={onback}
-        class="flex-1 h-12 rounded-[10px] border border-line-3 bg-transparent text-text
-               text-[15px] font-medium cursor-pointer"
-      >
-        Back to lobby
-      </button>
+      <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={onback}>Back to lobby</Button>
       {#if returnSessionId}
-        <a
-          href="#/session/{returnSessionId}"
-          class="flex-1 h-12 rounded-[10px] border-0 bg-accent text-accent-fg text-[15px] font-bold
-                 cursor-pointer flex items-center justify-center no-underline"
-        >
-          Return to game
-        </a>
+        <Button variant="accent" size="lg" class="flex-1" href="#/session/{returnSessionId}">Return to game</Button>
       {/if}
     {/snippet}
   </Modal>
