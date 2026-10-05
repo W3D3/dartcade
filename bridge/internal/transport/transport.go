@@ -346,6 +346,8 @@ func (t *Transport) enqueue(evs []differ.Event) {
 
 	var bmFrameSeq uint64
 	for _, ev := range evs {
+		// A seq is never reused, even for an event that is dropped below: source_seq
+		// must keep pointing at its bm.frame (gaps are fine, the backend only dedupes)
 		t.seq++
 		seq := t.seq
 		if ev.Kind == "bm.frame" {
@@ -355,7 +357,6 @@ func (t *Transport) enqueue(evs []differ.Event) {
 		data, err := marshalData(ev, bmFrameSeq)
 		if err != nil {
 			log.Error("marshal event data", "kind", ev.Kind, "err", err)
-			t.seq--
 			continue
 		}
 
@@ -390,7 +391,6 @@ func (t *Transport) enqueue(evs []differ.Event) {
 				}
 			}
 			// No collapsible entry found; drop to stay within bound.
-			t.seq--
 			goto next
 		}
 
