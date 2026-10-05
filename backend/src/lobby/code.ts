@@ -1,8 +1,8 @@
 import { randomInt } from 'crypto'
 
 /** No I, L, O, 0 or 1: nothing to mix up when reading a code aloud or off a screen. */
-export const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
-export const CODE_LENGTH = 6
+const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+const CODE_LENGTH = 6
 
 /** A new lobby code, shown as K7Q4-MD (the client adds the dash). */
 export function newLobbyCode(): string {

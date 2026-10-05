@@ -61,10 +61,6 @@ export class BridgeConnections {
     return this.byBoard.has(boardDbId)
   }
 
-  connectedBoardIds(): string[] {
-    return Array.from(this.byBoard.keys())
-  }
-
   recordEvent(boardDbId: string, ev: BoardEvent): void {
     const { at, kind, data } = ev
     // Data that doesn't match the feed's schema (a malformed dart) is left out too
@@ -78,11 +74,6 @@ export class BridgeConnections {
 
   recentEvents(boardDbId: string): FeedEvent[] {
     return this.feeds.get(boardDbId) ?? []
-  }
-
-  send(boardDbId: string, msg: unknown): void {
-    const conn = this.byBoard.get(boardDbId)
-    if (conn?.ws.readyState === 1) conn.ws.send(JSON.stringify(msg))
   }
 }
 

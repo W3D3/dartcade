@@ -11,7 +11,7 @@
 import { readPack, keyFromName, packName, isCallerKey, type Clip, type ParsedPack } from './pack.js'
 
 /** The hosts packs may be imported from: darts-caller's downloads and Tools for Autodarts' sound hosts. */
-export const ALLOWED_HOSTS: readonly string[] = ['darts-downloads.peschi.org', 'autodarts.x10.mx', 'adt-socket.tobias-thiele.de']
+const ALLOWED_HOSTS: readonly string[] = ['darts-downloads.peschi.org', 'autodarts.x10.mx', 'adt-socket.tobias-thiele.de']
 
 /** A link that can't be imported; the message is shown to the user. */
 export class LinkError extends Error {}

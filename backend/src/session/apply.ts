@@ -21,12 +21,12 @@ const isDart = (e: BoardEvent): e is DartEvent => e.kind === 'dart.detected'
 const dartEvents = (session: Session): DartEvent[] => session.openVisitEvents.filter(isDart)
 
 /** Darts and visits of a bull off (see withBullOff) don't count towards game stats. */
-export function inBullOff(session: Session, state: unknown): boolean {
+function inBullOff(session: Session, state: unknown): boolean {
   const view = session.module.view(state, session.players)
   return 'phase' in view && view.phase === 'bulloff'
 }
 
-export function hasWinner(session: Session, state: unknown): boolean {
+function hasWinner(session: Session, state: unknown): boolean {
   return session.module.view(state, session.players).winner !== null
 }
 

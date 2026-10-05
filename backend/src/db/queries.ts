@@ -2,8 +2,8 @@ import { readFileSync, readdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { sql } from 'kysely'
-import type { Kysely, Selectable } from 'kysely'
-import type { Database, GamePlayersTable } from './schema.js'
+import type { Kysely } from 'kysely'
+import type { Database } from './schema.js'
 import { normalizeName } from '../users/names.js'
 import { PairingCodeClaimedError } from './errors.js'
 
@@ -95,7 +95,6 @@ export type StoredGameSession = {
   lobby_id: string | null
   lobby_name: string | null
 }
-export type GamePlayerRow = Selectable<GamePlayersTable>
 export type NewSessionEvent = {
   session_id: string
   seq: number
@@ -154,21 +153,6 @@ export async function insertGameSession(db: Kysely<Database>, s: NewGameSession)
   })
 }
 
-/** Seats of these games in seat order, by game id. */
-export async function getSeats(db: Kysely<Database>, sessionIds: string[]): Promise<Map<string, GamePlayerRow[]>> {
-  const bySession = new Map<string, GamePlayerRow[]>()
-  if (sessionIds.length === 0) return bySession
-  const rows = await db
-    .selectFrom('game_players')
-    .selectAll()
-    .where('session_id', 'in', sessionIds)
-    .orderBy('session_id')
-    .orderBy('seat')
-    .execute()
-  for (const r of rows) bySession.set(r.session_id, [...(bySession.get(r.session_id) ?? []), r])
-  return bySession
-}
-
 export async function getActiveGameSessions(db: Kysely<Database>): Promise<StoredGameSession[]> {
   const rows = await db
     .selectFrom('game_sessions as gs')
@@ -212,10 +196,6 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
         board_name: s.board_name,
       })),
   }))
-}
-
-export async function getGameSessionById(db: Kysely<Database>, id: string) {
-  return db.selectFrom('game_sessions').selectAll().where('id', '=', id).executeTakeFirst()
 }
 
 export async function appendSessionEvent(db: Kysely<Database>, e: NewSessionEvent): Promise<void> {
