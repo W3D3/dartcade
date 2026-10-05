@@ -56,12 +56,13 @@ type ExecuteFunc func(name string) (httpStatus int, err error)
 
 // Transport manages the WSS connection to the backend.
 type Transport struct {
-	cfg      Config
-	execute  ExecuteFunc
-	mu       sync.Mutex
-	outbox   []outboxEntry
-	seq      uint64
-	incoming chan []differ.Event
+	cfg     Config
+	execute ExecuteFunc
+	mu      sync.Mutex
+	outbox  []outboxEntry
+	seq     uint64
+	// Signalled after Send adds to the outbox, so the live connection flushes it
+	wake chan struct{}
 	// Camera stills to send on the live connection (never queued for a later one)
 	stills    chan any
 	connected atomic.Bool
@@ -76,10 +77,10 @@ type outboxEntry struct {
 // New creates a Transport.
 func New(cfg Config, execute ExecuteFunc) *Transport {
 	return &Transport{
-		cfg:      cfg,
-		execute:  execute,
-		incoming: make(chan []differ.Event, 256),
-		stills:   make(chan any, 2*camera.MaxCameras),
+		cfg:     cfg,
+		execute: execute,
+		wake:    make(chan struct{}, 1),
+		stills:  make(chan any, 2*camera.MaxCameras),
 	}
 }
 
@@ -117,12 +118,13 @@ func (t *Transport) SendStill(st camera.Still) {
 	}
 }
 
-// Send enqueues a batch of events for delivery to the backend.
+// Send adds a batch of events to the outbox for delivery to the backend. It works whether
+// or not the backend is connected: the outbox is replayed on the next connection.
 func (t *Transport) Send(evs []differ.Event) {
+	t.enqueue(evs)
 	select {
-	case t.incoming <- evs:
+	case t.wake <- struct{}{}:
 	default:
-		log.Warn("transport incoming channel full, dropping batch")
 	}
 }
 
@@ -152,25 +154,6 @@ func (t *Transport) Start(ctx context.Context) error {
 }
 
 func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
-	// Start ingesting events into outbox concurrently with the send loop.
-	ingest := make(chan struct{}, 1)
-	ingestCtx, ingestCancel := context.WithCancel(ctx)
-	defer ingestCancel()
-	go func() {
-		for {
-			select {
-			case <-ingestCtx.Done():
-				return
-			case evs := <-t.incoming:
-				t.enqueue(evs)
-				select {
-				case ingest <- struct{}{}:
-				default:
-				}
-			}
-		}
-	}()
-
 	// Send bridge.hello on every connect (not seq-numbered, not in outbox).
 	hello := map[string]any{
 		"kind": "bridge.hello",
@@ -200,7 +183,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		t.onConnect()
 	}
 
-	// Replay unacknowledged outbox entries. Advance sentUpTo so the first ingest
+	// Replay unacknowledged outbox entries. Advance sentUpTo so the first wake
 	// signal after replay doesn't re-deliver the whole outbox.
 	t.mu.Lock()
 	snapshot := make([]Envelope, len(t.outbox))
@@ -284,7 +267,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 			if err := wsjson.Write(ctx, conn, st); err != nil {
 				return
 			}
-		case <-ingest:
+		case <-t.wake:
 			if !flush() {
 				return
 			}
