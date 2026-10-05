@@ -178,7 +178,7 @@ describe('WS auth', () => {
     const store = {
       insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
@@ -222,7 +222,7 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -269,7 +269,7 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -316,7 +316,7 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -368,7 +368,7 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -418,7 +418,7 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -467,7 +467,7 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -507,7 +507,7 @@ describe('WS camera stills', () => {
     const store = {
       insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())

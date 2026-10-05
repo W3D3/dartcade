@@ -56,6 +56,9 @@ export type HistoryDart = components['schemas']['HistoryDart']
 export type DartSource = HistoryDart['source']
 
 /** What the engine knows about a dart of the open visit (in dart order). */
+/** A committed visit as Undo restores it: the state before it, and its open darts. */
+export type UndoableVisit = { committedState: unknown; openVisitEvents: BoardEvent[]; openDarts: DartMeta[]; seat: number }
+
 export type DartMeta = { source: DartSource; corrected: boolean; thrownAt: Date }
 export type X01Detail = components['schemas']['X01Detail']
 export type AtcDetail = components['schemas']['AtcDetail']
@@ -158,6 +161,9 @@ export interface Session {
   totalVisits: number[]
   /** Seat indices that have forfeited, ascending. */
   forfeited: number[]
+  /** The game's committed visits since the bull off, newest last, as they were before each was
+   *  committed: Undo with no darts open puts the last one back (see applyInput). */
+  undoable: UndoableVisit[]
   /** Latest board.status per board id. */
   boardStatus: Map<string, BmStatus>
 }

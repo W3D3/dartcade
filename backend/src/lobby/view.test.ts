@@ -8,7 +8,7 @@ import { checkLobbyMessage } from './validation.js'
 const store = (): EngineStore => ({
   insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
   getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
-  insertDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+  insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
   abortSession: vi.fn().mockResolvedValue(undefined),
 })
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({

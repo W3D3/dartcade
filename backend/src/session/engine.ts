@@ -63,6 +63,7 @@ export interface EngineStore {
   getSessionEvents(sessionId: string): Promise<StoredSessionEvent[]>
   appendEvent(event: NewSessionEvent): Promise<void>
   insertDarts(rows: NewGameDart[]): Promise<void>
+  deleteDarts(sessionId: string, visit: number): Promise<void>
   finishSession(id: string, finishedAt: Date, results: FinishedSeat[]): Promise<void>
   abortSession(id: string, finishedAt: Date, abortedByUserId: string | null): Promise<void>
 }
@@ -74,6 +75,7 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
     getSessionEvents: (id) => queries.getSessionEvents(db, id),
     appendEvent: (e) => queries.appendSessionEvent(db, e),
     insertDarts: (rows) => queries.insertGameDarts(db, rows),
+    deleteDarts: (id, visit) => queries.deleteGameDarts(db, id, visit),
     finishSession: (id, at, r) => queries.finishGameSession(db, id, at, r),
     abortSession: (id, at, by) => queries.abortGameSession(db, id, at, by),
   }
@@ -269,6 +271,7 @@ export class SessionEngine {
     })
     session.nextSeq++
     const outcome = applyInput(session, input, at)
+    if (outcome.reopened !== undefined) await this.store.deleteDarts(session.id, outcome.reopened)
     if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
     // finish() pushes the final snapshot itself (before notifying), so the caller doesn't
     // push it a second time
@@ -386,6 +389,7 @@ export class SessionEngine {
       players: session.players,
       status: session.status,
       finishPending: session.status === 'active' && awaitsFinish(session),
+      canUndoVisit: session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
       seats: session.seats.map((s, i) => {
         const connected = view.connectedUserIds.has(s.controllerUserId)

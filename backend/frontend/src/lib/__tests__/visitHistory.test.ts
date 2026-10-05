@@ -10,6 +10,21 @@ const x01 = (o: { scores: number[]; totalVisits: number[]; legs?: number[]; cp: 
 const run = (games: G[]) => games.reduce<VisitHistory>((h, g) => trackVisits(h, g as any), emptyHistory())
 
 describe('trackVisits (X01)', () => {
+  it('Undo reopening a visit takes it back, and the corrected visit counts once', () => {
+    const h = run([
+      x01({ scores: [501, 501], totalVisits: [0, 0], cp: 0 }),
+      x01({ scores: [441, 501], totalVisits: [0, 0], cp: 0, darts: [60] }),
+      x01({ scores: [441, 501], totalVisits: [1, 0], cp: 1 }),
+      // Undo: seat 0 is up again with its dart open
+      x01({ scores: [441, 501], totalVisits: [0, 0], cp: 0, darts: [60] }),
+      x01({ scores: [481, 501], totalVisits: [0, 0], cp: 0, darts: [20] }),
+      x01({ scores: [481, 501], totalVisits: [1, 0], cp: 1 }),
+    ])
+    expect(h.all[0]).toEqual([{ scored: 20, left: 481, darts: 1, bust: false }])
+    expect(h.leg[0]).toEqual(h.all[0])
+    expect(h.legSeats).toEqual([0])
+  })
+
   it('records scored and left when a visit is taken out', () => {
     const h = run([
       x01({ scores: [501, 501], totalVisits: [0, 0], cp: 0 }),

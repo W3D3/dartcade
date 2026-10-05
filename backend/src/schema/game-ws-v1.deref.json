@@ -978,6 +978,7 @@
         "bmStatus",
         "status",
         "finishPending",
+        "canUndoVisit",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -1455,6 +1456,10 @@
           "type": "boolean",
           "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
         },
+        "canUndoVisit": {
+          "type": "boolean",
+          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
+        },
         "ownerUserId": {
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
@@ -1552,6 +1557,7 @@
         "bmStatus",
         "status",
         "finishPending",
+        "canUndoVisit",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -1849,6 +1855,10 @@
           "type": "boolean",
           "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
         },
+        "canUndoVisit": {
+          "type": "boolean",
+          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
+        },
         "ownerUserId": {
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
@@ -1950,6 +1960,7 @@
             "bmStatus",
             "status",
             "finishPending",
+            "canUndoVisit",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -2427,6 +2438,10 @@
               "type": "boolean",
               "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
             },
+            "canUndoVisit": {
+              "type": "boolean",
+              "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
+            },
             "ownerUserId": {
               "type": "string",
               "description": "The host: starts the bull off, aborts the game."
@@ -2524,6 +2539,7 @@
             "bmStatus",
             "status",
             "finishPending",
+            "canUndoVisit",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -2820,6 +2836,10 @@
             "finishPending": {
               "type": "boolean",
               "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+            },
+            "canUndoVisit": {
+              "type": "boolean",
+              "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
             },
             "ownerUserId": {
               "type": "string",

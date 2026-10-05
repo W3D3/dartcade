@@ -42,7 +42,7 @@ export function newSession(a: {
     status: 'active', createdAt: a.createdAt, seed: a.seed, visitCount: 0, nextSeq: 0,
     totalDarts: Array<number>(players.length).fill(0),
     totalVisits: Array<number>(players.length).fill(0),
-    boardStatus: new Map(), forfeited: [],
+    boardStatus: new Map(), forfeited: [], undoable: [],
     lobbyId: a.lobbyId ?? null, lobbyName: a.lobbyName ?? null,
   }
 }
@@ -58,6 +58,7 @@ export function replay(session: Session, rows: LoggedInput[], warn: WarnFn): { v
       continue
     }
     const outcome = applyInput(session, input, row.created_at)
+    if (outcome.reopened !== undefined) visits.pop()
     if (outcome.committed) visits.push(outcome.committed)
     if (outcome.won) won = true
   }

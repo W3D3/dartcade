@@ -20,7 +20,8 @@ export type VisitHistory = {
 
 export const emptyHistory = (): VisitHistory => ({ leg: [], all: [], legSeats: [], start: [], prev: null })
 
-/** Fold one snapshot's game state into the history. A visit is finished when totalVisits goes up. */
+/** Fold one snapshot's game state into the history. A visit is finished when totalVisits goes up,
+ *  and taken back when it goes down (Undo reopened it). */
 export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHistory {
   const isX01 = 'scores' in game
   const progress = isX01 ? game.scores : game.hitCounts
@@ -41,7 +42,14 @@ export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHist
     const finished = totalVisits.flatMap((t, i) => (t > (p.totalVisits[i] ?? 0) ? [i] : []))
     const added = finished.reduce((a, i) => a + totalVisits[i] - (p.totalVisits[i] ?? 0), 0)
     const legOver = legs.some((l, i) => l > (p.legs.at(i) ?? 0))
-    if (added === 1 && finished[0] === p.cp) {
+    const undone = totalVisits.flatMap((t, i) => (t < (p.totalVisits[i] ?? 0) ? [i] : []))
+    if (undone.length === 1 && undone[0] === cp) {
+      // Undo reopened the thrower's last visit: it's open again, and starts where it did
+      const v = all[cp].at(-1)
+      all[cp] = all[cp].slice(0, -1)
+      if (legSeats.at(-1) === cp) { leg[cp] = leg[cp].slice(0, -1); legSeats = legSeats.slice(0, -1) }
+      start[cp] = v ? (isX01 ? v.left + v.scored : (progress.at(cp) ?? 0) - v.scored) : null
+    } else if (added === 1 && finished[0] === p.cp) {
       const i = p.cp
       const wonLeg = (legs.at(i) ?? 0) > (p.legs.at(i) ?? 0)
       const s = start[i]

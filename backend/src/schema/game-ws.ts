@@ -285,6 +285,10 @@ export interface X01Snapshot {
    */
   finishPending: boolean
   /**
+   * No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it).
+   */
+  canUndoVisit: boolean
+  /**
    * The host: starts the bull off, aborts the game.
    */
   ownerUserId: string
@@ -328,6 +332,10 @@ export interface AtcSnapshot {
    * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
    */
   finishPending: boolean
+  /**
+   * No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it).
+   */
+  canUndoVisit: boolean
   /**
    * The host: starts the bull off, aborts the game.
    */
