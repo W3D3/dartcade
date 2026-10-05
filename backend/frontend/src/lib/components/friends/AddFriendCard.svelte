@@ -22,10 +22,7 @@
   }
 </script>
 
-<section
-  aria-label="Add a friend"
-  class="flex flex-col gap-[10px] md:box-border md:p-[18px] md:rounded-[14px] md:bg-surface-panel md:border md:border-line-2"
->
+<section aria-label="Add a friend" class="flex flex-col gap-[10px] md:box-border md:p-[18px] md:card">
   <h2 class="hidden md:block m-0 text-[15px] font-semibold">Add a friend</h2>
   <form
     class="flex gap-2"

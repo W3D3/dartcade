@@ -46,7 +46,7 @@
   {#if pill === 'winner' || pill === 'leading' || (active && pill)}<PlayerPill kind={pill} small />{/if}
   {#if legs && legs.total > 1}<LegPips total={legs.total} won={legs.won} active={false} />{/if}
   <span class="ml-auto flex flex-col items-end shrink-0">
-    <span class="text-[10px] tracking-[0.1em] uppercase text-text-dim">{valueLabel}</span>
+    <span class="text-[10px] label-caps text-text-dim">{valueLabel}</span>
     <span class="font-display font-bold text-[32px] leading-[0.9] tabular-nums {active ? 'text-text' : 'text-ink-3'}"
       ><RollingNumber {value} {...roll} /></span
     >

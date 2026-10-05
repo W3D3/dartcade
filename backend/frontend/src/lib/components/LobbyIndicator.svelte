@@ -35,7 +35,7 @@
       class="flex flex-col gap-2 text-text no-underline"
     >
       <span class="flex items-center justify-between">
-        <span class="inline-flex items-center gap-[7px] text-[11px] font-bold tracking-[0.1em] uppercase text-accent">
+        <span class="inline-flex items-center gap-[7px] text-[11px] font-bold label-caps text-accent">
           <span class="w-2 h-2 rounded-full bg-accent animate-pulse motion-reduce:animate-none"></span>{view.tag}
         </span>
         <ChevronRight size={16} class="text-text-muted" />

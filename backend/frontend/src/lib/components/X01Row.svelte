@@ -47,9 +47,7 @@
   >
     {#if p.showFinish}
       <span class="flex flex-col gap-1 min-w-0 {stacked}">
-        <span class="text-[12px] uppercase tracking-[0.1em] whitespace-nowrap truncate {active ? 'text-text-muted' : 'text-text-dim'}"
-          >Can finish</span
-        >
+        <span class="text-[12px] label-caps whitespace-nowrap truncate {active ? 'text-text-muted' : 'text-text-dim'}">Can finish</span>
         {#if !p.opened}
           <span class="text-[14px] text-text-dim truncate">Needs to open</span>
         {:else if p.canFinish}
@@ -66,7 +64,7 @@
     {/if}
     {#each [{ label: 'Last', value: p.last }, { label: 'Avg', value: p.avg }] as s (s.label)}
       <span class="flex flex-col gap-1 {stacked} {s.label === 'Last' ? 'max-xl:@lg:@max-2xl:hidden' : ''}">
-        <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
+        <span class="text-[12px] label-caps {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
         <span
           class="font-display font-bold leading-none tabular-nums {active
             ? 'text-[26px] xl:text-[34px] text-text'

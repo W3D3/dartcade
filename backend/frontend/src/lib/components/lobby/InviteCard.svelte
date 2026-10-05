@@ -21,7 +21,7 @@
   } = $props()
 </script>
 
-<li class="flex flex-col gap-3 p-[14px] rounded-[14px] bg-surface-panel border border-line-2">
+<li class="flex flex-col gap-3 p-[14px] card">
   <div class="flex items-center gap-3">
     <Avatar name={invite.inviterName ?? invite.lobbyName} size={40} />
     <div class="flex flex-col gap-[2px] flex-grow min-w-0">

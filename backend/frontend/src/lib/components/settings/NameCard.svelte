@@ -34,7 +34,7 @@
   }
 </script>
 
-<section aria-label="Name" class="flex flex-col gap-4 p-4 md:p-6 rounded-[14px] bg-surface-panel border border-line-2">
+<section aria-label="Name" class="flex flex-col gap-4 p-4 md:p-6 card">
   <h2 class="m-0 text-[17px] font-semibold">Name</h2>
   <form
     class="flex flex-col gap-3"

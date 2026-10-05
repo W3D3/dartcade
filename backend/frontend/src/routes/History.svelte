@@ -129,7 +129,7 @@
       >
         {#each tiles as t (t.label)}
           <div class="flex flex-col gap-1.5 bg-surface-panel px-[22px] py-[18px]">
-            <dt class="text-[12px] uppercase tracking-[0.1em] text-text-dim">{t.label}</dt>
+            <dt class="text-[12px] label-caps text-text-dim">{t.label}</dt>
             <dd class="m-0 flex items-baseline gap-2.5">
               <span class="font-display text-[40px] font-bold leading-none">{t.value}</span>
               {#if t.note}<span class="whitespace-nowrap text-[15px] {t.trend === 'up' ? 'text-accent' : 'text-text-muted'}">{t.note}</span
@@ -140,10 +140,10 @@
       </dl>
     {/if}
 
-    <section aria-label="Matches" class="flex min-h-0 flex-col overflow-hidden rounded-[14px] border border-line-2 bg-surface-panel">
+    <section aria-label="Matches" class="flex min-h-0 flex-col overflow-hidden card">
       <!-- Desktops only: the column headings, and the Board column -->
       <div
-        class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] text-[12px] uppercase tracking-[0.1em] text-text-dim xl:grid xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]"
+        class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] text-[12px] label-caps text-text-dim xl:grid xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]"
       >
         <span>When</span><span>Game</span><span>Players</span><span>Result</span><span>Key stat</span><span>Board</span>
       </div>

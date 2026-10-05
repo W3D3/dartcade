@@ -123,11 +123,7 @@
   }
 </script>
 
-<section
-  id="caller-voices"
-  aria-labelledby="cv-title"
-  class="box-border p-4 md:p-[22px] rounded-[14px] bg-surface-panel border border-line-2 flex flex-col gap-[14px]"
->
+<section id="caller-voices" aria-labelledby="cv-title" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
   <div class="flex flex-col gap-1">
     <h2 id="cv-title" class="m-0 font-display font-bold text-[26px] md:text-[28px] leading-none uppercase">Caller voices</h2>
     <p class="m-0 text-[13px] md:text-[14px] leading-normal text-text-muted">
@@ -164,7 +160,7 @@
     {/if}
 
     <div class="flex flex-col gap-2">
-      <span class="text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Your packs · {lib.packs.length}</span>
+      <span class="text-[12px] font-semibold label-caps text-text-dim">Your packs · {lib.packs.length}</span>
       {#if lib.packs.length}
         <ul class="m-0 p-0 list-none flex flex-col gap-[6px]">
           {#each lib.packs as p (p.id)}

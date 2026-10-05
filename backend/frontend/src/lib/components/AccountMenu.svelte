@@ -109,7 +109,7 @@
       role="menu"
       aria-label="Account"
       class="{MENU_POSITION[placement]} z-50 box-border p-3 rounded-[14px]
-                bg-surface-2 border border-line-3 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)] flex flex-col gap-2"
+                bg-surface-2 border border-line-3 shadow-popover flex flex-col gap-2"
     >
       <div class="flex items-center gap-3 min-w-0 px-1">
         {@render avatar(40)}
@@ -118,7 +118,7 @@
           <span class="font-mono text-[12px] text-text-dim truncate">{`@${name}`}{email ? ` · ${email}` : ''}</span>
         </span>
       </div>
-      <span class="px-1 pt-1 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-muted">Your status</span>
+      <span class="px-1 pt-1 text-[12px] font-semibold label-caps text-text-muted">Your status</span>
       <div role="radiogroup" aria-label="Your status" class="flex flex-col gap-1">
         <StatusOption title="Online" text={STATUS_COPY.menu.online} kind="online" checked={!invisible} onpick={() => void pick(false)} />
         <StatusOption

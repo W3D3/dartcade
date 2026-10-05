@@ -26,7 +26,7 @@
          xl:grid-cols-[210px_150px_minmax(0,1fr)] @max-lg:grid-cols-1 @max-lg:gap-3"
 >
   <span class="flex flex-col gap-1">
-    <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
+    <span class="text-[12px] label-caps {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
     <span class="font-display font-bold text-[min(104px,11vh)] leading-[0.85] {active ? 'text-accent' : 'text-ink-3'}"
       ><RollingNumber value={p.target} normal="up" progress={p.done} /></span
     >

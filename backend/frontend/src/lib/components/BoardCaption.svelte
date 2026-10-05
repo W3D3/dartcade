@@ -13,7 +13,7 @@
 </script>
 
 <span
-  class="self-center shrink-0 flex items-center font-semibold uppercase tracking-[0.1em] whitespace-nowrap
+  class="self-center shrink-0 flex items-center font-semibold label-caps whitespace-nowrap
              {compact ? 'h-[14px] gap-[6px] text-[11px]' : 'h-5 gap-2 text-[13px]'} {caption.tone === 'warn'
     ? 'text-warn'
     : 'text-text-muted'}"

@@ -88,7 +88,7 @@
     class="relative grid grid-cols-[1fr_auto_1fr] items-center gap-3 md:gap-5 px-[14px] md:px-[18px] py-1 md:py-[10px] rounded-[12px] md:rounded-[14px] {box}"
   >
     <span class="flex flex-col items-end gap-[2px] text-right">
-      <span class="text-[12px] uppercase tracking-[0.1em] {eyebrowColor}">{band.eyebrow}</span>
+      <span class="text-[12px] label-caps {eyebrowColor}">{band.eyebrow}</span>
       <span class="hidden md:inline text-[13px] {quiet}">{band.progress}</span>
     </span>
     <span
@@ -96,7 +96,7 @@
       class:fx-tick={band.bigDart}>{@render sum()}</span
     >
     <span class="flex flex-col gap-[2px]">
-      <span class="text-[12px] uppercase tracking-[0.1em] {quiet}">{band.afterLabel}</span>
+      <span class="text-[12px] label-caps {quiet}">{band.afterLabel}</span>
       <span class="font-display font-bold text-[22px] md:text-[30px] leading-none {afterColor}">{band.after}</span>
     </span>
     {#if tone === 'max'}{@render burst()}{/if}

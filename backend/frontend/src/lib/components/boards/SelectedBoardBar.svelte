@@ -23,9 +23,9 @@
   let open = $state(false)
 </script>
 
-<section aria-label="Selected board" class="shrink-0 rounded-[14px] bg-surface-panel border border-line-2">
+<section aria-label="Selected board" class="shrink-0 card">
   <div class="flex flex-wrap items-center gap-x-4 gap-y-3 px-[18px] py-[14px]">
-    <span class="text-[12px] uppercase tracking-[0.1em] text-text-dim">Selected</span>
+    <span class="text-[12px] label-caps text-text-dim">Selected</span>
     <div class="flex flex-col gap-[2px] min-w-0">
       {@render name()}
       <span class="text-[14px] text-text-muted truncate">{selectedLine(board)}</span>

@@ -132,7 +132,7 @@
       class="{popoverAbove
         ? 'absolute left-0 right-0 bottom-full mb-2 z-30'
         : 'w-full'} box-border px-3 pt-2 pb-3 rounded-[14px] bg-surface-inset border border-line-popover
-             flex flex-col gap-2 [box-shadow:0_16px_40px_rgba(0,0,0,0.5)]"
+             flex flex-col gap-2 shadow-popover"
     >
       <div class="flex items-center gap-2 min-w-0">
         {#if mode === 'full'}

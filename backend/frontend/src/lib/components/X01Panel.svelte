@@ -36,7 +36,7 @@
   {/snippet}
 
   <div class="flex flex-col gap-[6px]">
-    {#if solo}<span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Left</span>{/if}
+    {#if solo}<span class="text-[12px] label-caps text-text-muted">Left</span>{/if}
     <span
       class="font-display font-bold {solo
         ? 'text-[min(220px,24vh)]'
@@ -46,10 +46,10 @@
   </div>
 
   {#if !p.opened}
-    <span class="text-[13px] uppercase tracking-[0.1em] text-text-muted">Needs to open</span>
+    <span class="text-[13px] label-caps text-text-muted">Needs to open</span>
   {:else if !active && p.canFinish}
     <span class="flex items-baseline gap-[10px]">
-      <span class="text-[12px] uppercase tracking-[0.1em] text-text-dim">Can finish</span>
+      <span class="text-[12px] label-caps text-text-dim">Can finish</span>
       <span class="font-display font-bold text-[28px] leading-none text-ink-3">{p.canFinish}</span>
     </span>
   {/if}
@@ -57,10 +57,8 @@
   <div class="flex {solo ? 'gap-9' : 'gap-[18px] xl:gap-9'}">
     {#each [{ label: solo ? 'Leg avg' : 'Avg', value: solo ? p.legAvg : p.avg }, { label: 'Darts', value: String(p.darts) }] as s (s.label)}
       <span class="flex flex-col gap-1">
-        <span
-          class="{solo ? 'text-[13px]' : 'text-[11px] xl:text-[13px]'} uppercase tracking-[0.1em] {active
-            ? 'text-text-muted'
-            : 'text-text-dim'}">{s.label}</span
+        <span class="{solo ? 'text-[13px]' : 'text-[11px] xl:text-[13px]'} label-caps {active ? 'text-text-muted' : 'text-text-dim'}"
+          >{s.label}</span
         >
         <span
           class="font-display font-bold {solo ? 'text-[44px]' : 'text-[30px] xl:text-[44px]'} leading-none tabular-nums {active

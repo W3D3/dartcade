@@ -180,9 +180,7 @@
         <AddFriendCard />
         <section
           aria-label="Friend requests"
-          class="flex flex-col gap-[6px] md:gap-[10px] md:box-border md:p-[18px] md:rounded-[14px] md:bg-surface-panel md:border md:border-line-2 {noRequests
-            ? 'max-md:hidden'
-            : ''}"
+          class="flex flex-col gap-[6px] md:gap-[10px] md:box-border md:p-[18px] md:card {noRequests ? 'max-md:hidden' : ''}"
         >
           <div class="flex items-baseline justify-between gap-3">
             <h2

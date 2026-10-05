@@ -69,10 +69,10 @@
     >
 
     {#if !team.opened}
-      <span class="text-[13px] uppercase tracking-[0.1em] text-text-muted">Needs to open</span>
+      <span class="text-[13px] label-caps text-text-muted">Needs to open</span>
     {:else if !team.active && team.canFinish}
       <span class="flex items-baseline gap-[10px]">
-        <span class="text-[12px] uppercase tracking-[0.1em] text-text-dim">Can finish</span>
+        <span class="text-[12px] label-caps text-text-dim">Can finish</span>
         <span class="font-display font-bold leading-none text-ink-3 {compact ? 'text-[22px]' : 'text-[28px]'}">{team.canFinish}</span>
       </span>
     {/if}

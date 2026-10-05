@@ -40,7 +40,7 @@
       <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[104px] leading-[0.8] tracking-[-0.02em] tabular-nums"
         ><RollingNumber {...x01Roll(p)} /></span
       >
-      {#if !p.opened}<span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Needs to open</span>{/if}
+      {#if !p.opened}<span class="text-[12px] label-caps text-text-muted">Needs to open</span>{/if}
       <div class="hidden [@media(min-height:600px)]:flex gap-[14px]">
         {#each stats as s (s.label)}
           <span class="flex flex-col gap-[1px]">
