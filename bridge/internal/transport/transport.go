@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"runtime"
+	"slices"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -336,10 +337,11 @@ func (t *Transport) enqueue(evs []differ.Event) {
 		isTelemetry := ev.Kind == "motion" || ev.Kind == "bm.frame"
 
 		if len(t.outbox) >= outboxMax && isTelemetry {
-			// Collapse: replace last entry of same kind to bound telemetry.
+			// Collapse: drop the last entry of the same kind and append this one, to bound
+			// telemetry. The outbox must stay sorted by seq: flush and replay rely on it.
 			for i := len(t.outbox) - 1; i >= 0; i-- {
 				if t.outbox[i].telemetry && t.outbox[i].env.Kind == ev.Kind {
-					t.outbox[i].env = env
+					t.outbox = append(slices.Delete(t.outbox, i, i+1), outboxEntry{env: env, telemetry: true})
 					goto next
 				}
 			}
