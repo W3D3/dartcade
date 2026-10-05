@@ -7,7 +7,8 @@
   // Svelte types an input's value as any; narrow it to what an input actually holds
   type Props = WithElementRef<
     Omit<HTMLInputAttributes, 'type' | 'value'> & { value?: string | number | null } & (
-        { type: 'file'; files?: FileList } | { type?: InputType; files?: undefined }
+        | { type: 'file'; files?: FileList }
+        | { type?: InputType; files?: undefined }
       )
   >
 
