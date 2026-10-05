@@ -3,6 +3,7 @@ package transport_test
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -625,6 +626,54 @@ func TestOnConnectRunsOnEveryConnect(t *testing.T) {
 			}
 		case <-time.After(2 * time.Second):
 			t.Fatalf("OnConnect ran %d times, want 2", i)
+		}
+	}
+}
+
+// Events sent while the backend is unreachable stay in the outbox and are all delivered,
+// in order, once it connects, however many batches piled up.
+func TestEventsSentWhileDisconnectedAreDelivered(t *testing.T) {
+	const batches = 600
+	received := make(chan transport.Envelope, batches)
+	var up atomic.Bool
+	s := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !up.Load() {
+			http.Error(w, "down", http.StatusServiceUnavailable)
+			return
+		}
+		c, err := websocket.Accept(w, r, nil)
+		if err != nil {
+			return
+		}
+		defer c.Close(websocket.StatusNormalClosure, "")
+		for {
+			e, err := readSkipHello(context.Background(), c)
+			if err != nil {
+				return
+			}
+			received <- e
+		}
+	}))
+	t.Cleanup(s.Close)
+
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	go tr.Start(ctx) //nolint
+
+	for i := range batches {
+		tr.Send([]differ.Event{{Kind: "visit.opened", Data: &schema.VisitOpenedData{VisitId: schema.VisitId(fmt.Sprint(i))}}})
+	}
+	up.Store(true)
+
+	for want := uint64(1); want <= batches; want++ {
+		select {
+		case e := <-received:
+			if e.Seq != want {
+				t.Fatalf("got seq %d, want %d", e.Seq, want)
+			}
+		case <-ctx.Done():
+			t.Fatalf("only %d of %d events delivered", want-1, batches)
 		}
 	}
 }

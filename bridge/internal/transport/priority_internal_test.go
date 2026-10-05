@@ -47,7 +47,7 @@ func TestEventsGoBeforeStills(t *testing.T) {
 		time.Sleep(5 * time.Millisecond)
 	}
 
-	// Both ready together: the event is in the outbox (no ingest signal yet), the still queued
+	// Both ready together: the event is in the outbox (no wake signal yet), the still queued
 	tr.enqueue([]differ.Event{{Kind: "dart.detected", Data: &schema.DartDetectedData{VisitId: "v", Dart: schema.Dart{Segment: schema.Segment{Name: "S20", Number: 20, Bed: "SingleOuter", Multiplier: 1}, Score: 20}}}})
 	tr.stills <- StillMessage(camera.Still{Cam: 0, CapturedAt: time.Now(), JPEG: []byte{1}})
 
