@@ -18,6 +18,10 @@ After any reconnect to Board Manager (WS drop + reconnect, or bridge restart), e
 `board.resync` with `cur` as-is. Set `prev = cur`. Do **not** apply any of the rules
 below for this frame.
 
+If `cur` is not empty, a visit is in progress: give it a new ULID `visit_id` (without
+emitting `visit.opened`) so the darts, takeout and clear that follow carry one. If `cur`
+is empty, no visit is open.
+
 ### 2. Spurious takeout guard
 
 If `len(cur) == 0` and `len(prev) == 0`, ignore the frame (no state change that matters).
