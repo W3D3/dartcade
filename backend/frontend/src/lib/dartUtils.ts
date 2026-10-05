@@ -61,27 +61,18 @@ export function checkoutHint(remaining: number, outMode: OutMode = 'double', dar
   if (remaining < 1 || remaining > 170) return null
   const n = Math.min(dartsLeft, 3)
 
-  // Valid finishing darts
+  // Valid finishing darts; the easiest dart wins a total (a single before a double before a triple)
   const finishMap = new Map<number, string>()
-  if (outMode === 'straight') {
-    for (let k = 20; k >= 1; k--) {
-      finishMap.set(3 * k, `T${k}`)
-      finishMap.set(2 * k, `D${k}`)
-      finishMap.set(k, `S${k}`)
-    }
-    finishMap.set(50, 'Bull')
-    finishMap.set(25, '25')
-  } else if (outMode === 'master') {
-    for (let k = 20; k >= 1; k--) {
-      finishMap.set(3 * k, `T${k}`)
-      finishMap.set(2 * k, `D${k}`)
-    }
-    finishMap.set(50, 'Bull')
-  } else {
-    // double out
-    for (let k = 20; k >= 1; k--) finishMap.set(2 * k, `D${k}`)
-    finishMap.set(50, 'Bull')
+  const add = (v: number, l: string) => {
+    if (!finishMap.has(v)) finishMap.set(v, l)
   }
+  if (outMode === 'straight') {
+    for (let k = 20; k >= 1; k--) add(k, `S${k}`)
+    add(25, '25')
+  }
+  for (let k = 20; k >= 1; k--) add(2 * k, `D${k}`)
+  add(50, 'Bull')
+  if (outMode !== 'double') for (let k = 20; k >= 1; k--) add(3 * k, `T${k}`)
 
   // 1-dart finish
   const one = finishMap.get(remaining)
