@@ -69,6 +69,9 @@ export class LobbyService {
   private readonly queues = new KeyedQueue()
   // Open lobbies as last loaded; every change reloads its lobby
   private readonly cache = new Map<string, LobbyState>()
+  // Per lobby with a game running, what its members' indicators showed of it at the last
+  // snapshot push (see onSessionPush)
+  private readonly lastGameIndicators = new Map<string, string>()
 
   constructor(private readonly deps: LobbyDeps) {}
 
@@ -782,6 +785,7 @@ export class LobbyService {
    * two queues. Tests wait for it with `whenIdle`.
    */
   async onGameEnded(e: GameEnded): Promise<void> {
+    if (e.lobbyId !== null) this.lastGameIndicators.delete(e.lobbyId)
     this.statusChanged(e.userIds)
     await Promise.all(
       e.userIds.map(userId =>
@@ -822,14 +826,28 @@ export class LobbyService {
   /**
    * A lobby game changed (every snapshot push): members' indicators follow whose turn it
    * is. Only lobbies loaded in this process are pushed; /ws/me loads its user's lobby when
-   * it opens.
+   * it opens. Most snapshots (a dart, a board going offline) change nothing an indicator
+   * shows: then nobody's /ws/me is rebuilt, which saves its queries on every dart. Whatever
+   * else /ws/me shows (invites, the lobby itself, the game starting or ending) is pushed by
+   * the change that makes it.
    */
   async onSessionPush(sessionId: string): Promise<void> {
     const lobbyId = this.deps.engine.getSession(sessionId)?.lobbyId ?? null
     if (lobbyId === null) return
     const lobby = this.cache.get(lobbyId)
     if (!lobby) return
-    await Promise.all(memberIds(lobby).map(u => this.pushMe(u)))
+    const members = memberIds(lobby)
+    const running = this.deps.engine.getLobbySession(lobbyId)
+    const indicators = JSON.stringify(members.map(u => [u, lobbySummary(lobby, u, running)]))
+    if (this.lastGameIndicators.get(lobbyId) === indicators) return
+    this.lastGameIndicators.set(lobbyId, indicators)
+    try {
+      await Promise.all(members.map(u => this.pushMe(u)))
+    } catch (err) {
+      // Not everyone got it: the next snapshot tries again
+      if (this.lastGameIndicators.get(lobbyId) === indicators) this.lastGameIndicators.delete(lobbyId)
+      throw err
+    }
   }
 
   // ---- boards -----------------------------------------------------------------------
