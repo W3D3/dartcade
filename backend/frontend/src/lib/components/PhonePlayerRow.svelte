@@ -2,10 +2,12 @@
   // A waiting player on a phone: avatar, name, a short line (up next, can finish), leg pips, the number that matters.
   import Avatar from './Avatar.svelte'
   import LegPips from './LegPips.svelte'
+  import PlayerName from './PlayerName.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import RollingNumber from './RollingNumber.svelte'
   import type { RollOptions } from '$lib/rollingNumber'
   import type { PillKind } from './pills.js'
+  import { playerCard } from '$lib/playerCard'
 
   let {
     name,
@@ -35,17 +37,12 @@
 
 <section
   aria-label="{name}, {sub}, {valueLabel} {value}"
-  class="shrink-0 h-[58px] box-border px-[14px] flex items-center gap-[10px] rounded-[12px] {active
-    ? 'bg-surface-active border-2 border-accent'
-    : 'bg-surface-panel border border-line-2'}"
+  class="shrink-0 h-[58px] box-border px-[14px] flex items-center gap-[10px] rounded-[12px] {playerCard(active)}"
 >
   <Avatar {name} tone={active ? 'accent' : 'default'} size={32} />
-  <span class="flex flex-col gap-[2px] min-w-0">
-    <span class="text-[15px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}"
-      >{name}{#if you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span
-    >
-    <span class="text-[12px] text-text-dim truncate">{sub}</span>
-  </span>
+  <PlayerName {name} {you} nameClass="text-[15px] {active ? 'text-text' : 'text-ink-2'}" youClass="text-[12px]" gap="gap-[2px]" leading="">
+    {#snippet below()}<span class="text-[12px] text-text-dim truncate">{sub}</span>{/snippet}
+  </PlayerName>
   {#if pill === 'winner' || pill === 'leading' || (active && pill)}<PlayerPill kind={pill} small />{/if}
   {#if legs && legs.total > 1}<LegPips total={legs.total} won={legs.won} active={false} />{/if}
   <span class="ml-auto flex flex-col items-end shrink-0">

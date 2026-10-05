@@ -4,9 +4,7 @@
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
   import { x01Roll } from '$lib/playerStats'
-  import Avatar from './Avatar.svelte'
-  import PlayerPill from './PlayerPill.svelte'
-  import SeatBoardLine from './SeatBoardLine.svelte'
+  import PhoneCardShell from './PhoneCardShell.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats'
   import type { SeatLine } from '$lib/remote'
@@ -32,21 +30,10 @@
   ])
 </script>
 
-<section
-  aria-label="{name}, throwing, {p.remaining} left"
-  class="shrink-0 box-border px-[14px] pt-3 pb-[14px] rounded-[16px] bg-surface-active border-2 border-accent flex flex-col gap-2"
->
-  <div class="flex items-center gap-2 min-w-0">
-    <Avatar {name} tone="accent" size={30} />
-    <span class="flex flex-col gap-[1px] min-w-0">
-      <span class="text-[16px] font-semibold leading-[1.1] truncate"
-        >{name}{#if seat?.you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span
-      >
-      {#if seat}<SeatBoardLine line={seat} size="sm" />{/if}
-    </span>
-    {#if pill}<PlayerPill kind={pill} small />{/if}
+<PhoneCardShell {name} label="{name}, throwing, {p.remaining} left" {pill} {seat} class="gap-2">
+  {#snippet aside()}
     {#if p.firstTo > 1}<span class="ml-auto"><LegPips total={p.firstTo} won={p.legsWon} active /></span>{/if}
-  </div>
+  {/snippet}
   <!-- Short screens (≤ 740 px tall) drop the chalkboard and shrink the score so the board keeps its room -->
   <div class="grid gap-3 items-end grid-cols-1 {chalkboard ? '[@media(min-height:741px)]:grid-cols-[minmax(0,1fr)_150px]' : ''}">
     <div class="flex flex-col gap-[10px] min-w-0">
@@ -69,4 +56,4 @@
         <Chalkboard visits={p.visits} current={p.current} active />
       </div>{/if}
   </div>
-</section>
+</PhoneCardShell>

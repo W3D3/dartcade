@@ -10,6 +10,7 @@
   import TeamMemberRow from './TeamMemberRow.svelte'
   import type { X01TeamView } from '$lib/teams'
   import type { SeatLine } from '$lib/remote'
+  import { playerCard } from '$lib/playerCard'
 
   let {
     team,
@@ -41,7 +42,7 @@
   aria-label="{team.name}, {status}, {team.remaining} left"
   class="flex-1 min-w-0 min-h-0 box-border rounded-[18px] flex flex-col overflow-hidden
          {compact ? 'px-[14px] py-3 gap-2' : 'px-[26px] py-6 gap-[14px]'}
-         {team.active ? 'bg-surface-active border-2 border-accent' : 'bg-surface-panel border border-line-2'}"
+         {playerCard(team.active)}"
 >
   <div class="flex items-center justify-between gap-3">
     <span
