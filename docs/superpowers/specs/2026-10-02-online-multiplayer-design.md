@@ -298,7 +298,7 @@ targets.
   `bulloff_start`/`bulloff_rethrow`. `bulloff_skip` skips the current thrower, so it's
   per seat like the other turn actions.
 - **Rejections:** a rejected action is answered with `{ type: 'error', code: 'forbidden'
-}` and isn't logged.
+  }` and isn't logged.
 - **Local games:** the owner controls every seat, so nothing changes for them.
 - **Abort** isn't a WS action: it's the existing `DELETE /api/sessions/:id` (host only,
   as today). See [Ending early](#ending-early).

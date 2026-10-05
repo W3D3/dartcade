@@ -29,10 +29,10 @@ straightened by the Board Manager's own calibration, under dartcade's markers an
    30–50 KB each; cameras the Board Manager reports as missing are skipped), with a short timeout and
    at most one fetch per camera in flight (a newer event replaces a pending one). It sends each as a
    new `camera.still` message up its existing connection: `{ type: 'camera.still', cam: 0|1|2,
-capturedAt, contentType: 'image/jpeg', data: <base64> }` (schema `schema/adbridge-v1.json`; not an
+   capturedAt, contentType: 'image/jpeg', data: <base64> }` (schema `schema/adbridge-v1.json`; not an
    event, no seq/ack, not stored).
 2. **Backend** (`backend/src/bridge-gw/`, a small `camera/` store): keeps `{ version, bytes,
-contentType, capturedAt }` per board and camera (version increments), drops stills bigger than
+   contentType, capturedAt }` per board and camera (version increments), drops stills bigger than
    1 MiB, and tells the open game pages of any active session on that board, on the game socket:
    `{ type: 'camera', boardId, cam, version }` (schema `schema/game-ws-v1.json`).
 3. **API**: `GET /api/boards/{id}/camera/{i}` returns the latest still (`?v=<version>` for caching;

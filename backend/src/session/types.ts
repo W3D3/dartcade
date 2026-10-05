@@ -139,7 +139,8 @@ export interface GameModule<
 
 /** A registered game with its state type erased; `id` tells which view (and snapshot) it produces. */
 export type AnyGameModule =
-  GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail> | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
+  | GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail>
+  | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
 
 /** A game's config as the API and the database carry it (a JSON object). */
 export type GameConfig = Record<string, unknown>

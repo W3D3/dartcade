@@ -99,7 +99,8 @@ const bullOffModeOf = (g: NextGame | null): 'off' | 'wdc' | 'pdc' => {
 }
 
 export type BullOffCoupling =
-  { throwOrder: ThrowOrder; nextGame: NextGame | null; throwOrderChanged: boolean; nextGameChanged: boolean } | { error: string }
+  | { throwOrder: ThrowOrder; nextGame: NextGame | null; throwOrderChanged: boolean; nextGameChanged: boolean }
+  | { error: string }
 
 /**
  * Keeps the lobby's throw order and the next game's bull off setting in sync (the user's

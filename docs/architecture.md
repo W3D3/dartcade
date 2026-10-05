@@ -107,10 +107,10 @@ Observed on Board Manager **1.0.7** (Raspberry Pi 4), from slopdarts' `API_STATE
 
 - `status` values (from the Board Manager frontend's switch statements, not all seen live):
   `Offline, Starting, Running, Stopping, Stopped, Throw, Takeout, Takeout in progress,
-Calibrating, Setup, Error`.
+  Calibrating, Setup, Error`.
 - `event` values seen in client code (ESP32 client 2023, darts-caller 2026): `Started,
-Stopped, Starting, Stopping, Throw detected, Takeout started, Takeout finished,
-Manual reset, Calibration started, Calibration finished`. Treat `event` as **free text**.
+  Stopped, Starting, Stopping, Throw detected, Takeout started, Takeout finished,
+  Manual reset, Calibration started, Calibration finished`. Treat `event` as **free text**.
 - `bed` enum: `Single, SingleInner, SingleOuter, Double, Triple, Outside`.
 - **`connected` is unreliable.** It has been seen as `false` while `running: true` and a dart
   was being detected. Use `running` and `status` to tell whether detection is live.
@@ -503,7 +503,7 @@ sequenceDiagram
    Autodarts' own updater service). The backend can require a minimum bridge version per
    schema major.
 4. A Docker image (`ghcr.io/…/autodarts-bridge`) for homelab users, with `network_mode:
-host` or an explicit `BM_URL`.
+   host` or an explicit `BM_URL`.
 
 ### Backend and frontend (hades)
 

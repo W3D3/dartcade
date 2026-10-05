@@ -205,7 +205,7 @@ last dart; `after`: once committed), collected while replaying the log. `History
   0 points), `dartsThrown`, `legsWon`, `pointsScored`. This needs a running per-player
   `pointsScored` in the X01 state (the state only keeps remaining scores today).
 - `detail`: `{ mode: 'x01', legs: [{ leg, starter, winner, visits: [{ visit, seat,
-committedAt, darts, scored, remaining, bust }] }] }`. Bull off visits are left out of
+  committedAt, darts, scored, remaining, bust }] }] }`. Bull off visits are left out of
   the detail (their darts stay in `game_darts`).
 
 ### Around the Clock
@@ -214,7 +214,7 @@ committedAt, darts, scored, remaining, bust }] }] }`. Bull off visits are left o
   darts thrown (ascending).
 - `summarize` stats: `dartsThrown`, `targetsHit`.
 - `detail`: `{ mode: 'atc', visits: [{ visit, seat, committedAt, darts, hits, targetBefore,
-targetAfter }] }`.
+  targetAfter }] }`.
 
 Solo games get placement 1.
 

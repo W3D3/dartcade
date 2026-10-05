@@ -1,7 +1,14 @@
 import { ApiError } from '../api/errors.js'
 
 export type ConflictCode =
-  'in_lobby' | 'not_ready' | 'board_offline' | 'board_busy' | 'active_session' | 'game_running' | 'already_member' | 'already_invited'
+  | 'in_lobby'
+  | 'not_ready'
+  | 'board_offline'
+  | 'board_busy'
+  | 'active_session'
+  | 'game_running'
+  | 'already_member'
+  | 'already_invited'
 
 /** A lobby error's body (LobbyConflict in schema/api-v1.yaml); only 409s carry more than `error`. */
 export type LobbyErrorBody = {
