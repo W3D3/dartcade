@@ -5,11 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"math/rand"
 	"net/http"
 	"strings"
 	"sync/atomic"
 	"time"
+
+	"dartcade/bridge/internal/backoff"
 
 	"github.com/charmbracelet/log"
 	"github.com/coder/websocket"
@@ -119,7 +120,7 @@ func (c *Client) fetchConfig(ctx context.Context) error {
 }
 
 func (c *Client) wsLoop(ctx context.Context) {
-	backoff := 500 * time.Millisecond
+	delay := 500 * time.Millisecond
 	var disconnectedAt time.Time
 	first := true
 	for {
@@ -128,13 +129,13 @@ func (c *Client) wsLoop(ctx context.Context) {
 		}
 		conn, _, err := websocket.Dial(ctx, c.boardURL+"/api/events", nil)
 		if err != nil {
-			log.Warn("BM WS connect failed", "err", err, "retry_in", backoff)
+			log.Warn("BM WS connect failed", "err", err, "retry_in", delay)
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(backoff):
+			case <-time.After(delay):
 			}
-			backoff = jitter(minDur(backoff*2, 30*time.Second))
+			delay = backoff.Next(delay, 30*time.Second)
 			continue
 		}
 		if first {
@@ -152,18 +153,18 @@ func (c *Client) wsLoop(ctx context.Context) {
 				break
 			}
 			if time.Now().After(stableAt) {
-				backoff = 500 * time.Millisecond
+				delay = 500 * time.Millisecond
 			}
 			c.emitRawWS(msg)
 		}
 		conn.Close(websocket.StatusNormalClosure, "")
 		disconnectedAt = time.Now()
 		c.emit(BMFrame{Kind: "bm_disconnect", RecvWall: time.Now(), RecvMonoNs: c.mono()})
-		backoff = jitter(minDur(backoff*2, 30*time.Second))
+		delay = backoff.Next(delay, 30*time.Second)
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(backoff):
+		case <-time.After(delay):
 		}
 	}
 }
@@ -262,17 +263,6 @@ func httpGet(ctx context.Context, url string) (*http.Response, error) {
 		return nil, err
 	}
 	return http.DefaultClient.Do(req)
-}
-
-func jitter(d time.Duration) time.Duration {
-	return d + time.Duration(rand.Int63n(int64(d/4)+1))
-}
-
-func minDur(a, b time.Duration) time.Duration {
-	if a < b {
-		return a
-	}
-	return b
 }
 
 // redactSecrets replaces values of sensitive keys at any depth in a JSON object.
