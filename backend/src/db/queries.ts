@@ -6,6 +6,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { normalizeName } from '../users/names.js'
 import { PairingCodeClaimedError } from './errors.js'
+import { groupBy } from '../util/groupBy.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -184,17 +185,16 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
     .orderBy('gp.session_id')
     .orderBy('gp.seat')
     .execute()
+  const seatsBySession = groupBy(seats, s => s.session_id)
   return rows.map(r => ({
     ...r,
-    players: seats
-      .filter(s => s.session_id === r.id)
-      .map(s => ({
-        name: s.name,
-        user_id: s.user_id,
-        controller_user_id: s.controller_user_id,
-        board_db_id: s.board_db_id,
-        board_name: s.board_name,
-      })),
+    players: (seatsBySession.get(r.id) ?? []).map(s => ({
+      name: s.name,
+      user_id: s.user_id,
+      controller_user_id: s.controller_user_id,
+      board_db_id: s.board_db_id,
+      board_name: s.board_name,
+    })),
   }))
 }
 

@@ -3,6 +3,7 @@ import { z } from 'zod'
 import type { Database } from './schema.js'
 import type { Cursor } from '../history/cursor.js'
 import type { StatRow } from '../history/stats.js'
+import { groupBy } from '../util/groupBy.js'
 
 export type HistorySeat = {
   seat: number
@@ -32,8 +33,7 @@ const ConfigSchema = z.record(z.string(), z.unknown()).catch({})
 
 /** Placed seats (finished games only have those) of these games, in seat order. */
 async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<string, HistorySeat[]>> {
-  const by = new Map<string, HistorySeat[]>()
-  if (ids.length === 0) return by
+  if (ids.length === 0) return new Map()
   const rows = await db
     .selectFrom('game_players')
     .select(['session_id', 'seat', 'name', 'user_id', 'placement', 'throw_position', 'stats', 'forfeited'])
@@ -43,17 +43,20 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
     .orderBy('session_id')
     .orderBy('seat')
     .execute()
-  for (const r of rows) {
-    const seat = {
-      seat: r.seat,
-      name: r.name,
-      user_id: r.user_id,
-      placement: r.placement,
-      throw_position: r.throw_position,
-      stats: StatsSchema.parse(r.stats),
-      forfeited: r.forfeited,
-    }
-    by.set(r.session_id, [...(by.get(r.session_id) ?? []), seat])
+  const by = new Map<string, HistorySeat[]>()
+  for (const [sessionId, seats] of groupBy(rows, r => r.session_id)) {
+    by.set(
+      sessionId,
+      seats.map(r => ({
+        seat: r.seat,
+        name: r.name,
+        user_id: r.user_id,
+        placement: r.placement,
+        throw_position: r.throw_position,
+        stats: StatsSchema.parse(r.stats),
+        forfeited: r.forfeited,
+      })),
+    )
   }
   return by
 }
