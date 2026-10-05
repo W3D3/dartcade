@@ -12,6 +12,7 @@ import { FriendError } from './errors.js'
 import { KeyedDebounce, PUSH_DEBOUNCE_MS } from './debounce.js'
 import { OFFLINE_GRACE_MS, Presence } from './presence.js'
 import { friendStatus } from './status.js'
+import { KeyedQueue } from '../util/keyedQueue.js'
 
 type FriendList = components['schemas']['FriendList']
 export type RequestOutcome = { id: string; status: 'pending' | 'accepted' }
@@ -39,7 +40,7 @@ export class FriendsService {
   private readonly pushes: KeyedDebounce
   private readonly inflight = new Set<Promise<void>>()
   // Per user, the last push: the next one waits for it, so an older list never lands last
-  private readonly pushChains = new Map<string, Promise<void>>()
+  private readonly pushChains = new KeyedQueue()
   private closed = false
 
   constructor(private readonly deps: FriendsDeps) {
@@ -101,18 +102,12 @@ export class FriendsService {
   }
 
   private push(userId: string): void {
-    const previous = this.pushChains.get(userId) ?? Promise.resolve()
-    const next = this.track(
-      previous
-        .then(() => this.message(userId))
-        .then(msg => {
-          if (!this.closed) this.deps.hub.sendFriends(userId, msg)
-        }),
+    void this.track(
+      this.pushChains.run(userId, async () => {
+        const msg = await this.message(userId)
+        if (!this.closed) this.deps.hub.sendFriends(userId, msg)
+      }),
     )
-    this.pushChains.set(userId, next)
-    void next.then(() => {
-      if (this.pushChains.get(userId) === next) this.pushChains.delete(userId)
-    })
   }
 
   private track(p: Promise<void>): Promise<void> {

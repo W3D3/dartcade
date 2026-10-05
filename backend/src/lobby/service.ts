@@ -9,6 +9,7 @@ import { ActiveSessionError, BoardBusyError, type GameEnded, type GameStarted, t
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { Lobby, LobbyServerMessage, MeMessage, PendingInvite } from '../schema/lobby-ws.js'
 import { games } from '../games/index.js'
+import { KeyedQueue } from '../util/keyedQueue.js'
 import { LobbyError, inLobby } from './errors.js'
 import type { LobbyHub } from './hub.js'
 import * as rules from './rules.js'
@@ -65,7 +66,7 @@ function defaultLobbyName(hostName: string): string {
 }
 
 export class LobbyService {
-  private readonly queues = new Map<string, Promise<unknown>>()
+  private readonly queues = new KeyedQueue()
   // Open lobbies as last loaded; every change reloads its lobby
   private readonly cache = new Map<string, LobbyState>()
 
@@ -81,12 +82,7 @@ export class LobbyService {
   }
 
   private enqueue<T>(lobbyId: string, task: () => Promise<T>): Promise<T> {
-    const run = (this.queues.get(lobbyId) ?? Promise.resolve()).then(task)
-    this.queues.set(
-      lobbyId,
-      run.catch(() => undefined),
-    )
-    return run
+    return this.queues.run(lobbyId, task)
   }
 
   /**
@@ -101,7 +97,7 @@ export class LobbyService {
 
   /** Resolves once the lobby's queued changes are done. */
   async whenIdle(lobbyId: string): Promise<void> {
-    await this.queues.get(lobbyId)
+    await this.queues.idle(lobbyId)
   }
 
   private async reload(lobbyId: string): Promise<LobbyState | undefined> {
