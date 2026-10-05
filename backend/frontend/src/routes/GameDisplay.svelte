@@ -34,7 +34,7 @@
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Segment, type UserAction } from '$lib/api'
   import { isNarrowMatch, isPhone, isWide } from '$lib/viewport'
-  import { winnerName, x01Teams } from '$lib/teams'
+  import { x01Teams } from '$lib/teams'
   import { matchLayout } from '$lib/matchLayout'
   import { isMyTurn } from '$lib/turn'
   import PhonePlayerRow from '../lib/components/PhonePlayerRow.svelte'
@@ -52,6 +52,9 @@
   import { createToast } from '$lib/toast'
   import { cameraStillUrl, type CameraVersions } from '$lib/camera'
   import BoardViewToggle from '../lib/components/BoardViewToggle.svelte'
+  import WinScreen from '../lib/components/WinScreen.svelte'
+  import { sharedBoard, winMeta, winView } from '$lib/winScreen'
+  import type { GameDetail } from '$lib/api'
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
@@ -344,9 +347,24 @@
     send({ type: 'forfeit', seats: snapshot.mySeats })
   }
 
-  /** The winner overlay's own button (unchanged; a designed win state is out of scope): the
-   * session is already finished and released, so a refused DELETE here blocks nothing. Only
-   * the host sends it (anyone else's always 403s). */
+  // ── Win screen ────────────────────────────────────────────────────────────
+  // The saved game (X01 averages, checkouts, legs): it's in History by the time the won snapshot
+  // arrives. Only the players can read it; everyone else sees what the snapshot has.
+  let savedGame = $state.raw<GameDetail | null>(null)
+  let savedFor = ''
+  $effect(() => {
+    if (snapshot?.status !== 'finished' || winner === null || !isX01 || snapshot.mySeats.length === 0) return
+    const id = snapshot.sessionId
+    if (savedFor === id) return
+    savedFor = id
+    void api.GET('/api/games/{id}', { params: { path: { id } } })
+      .then(({ data }) => { if (data && snapshot?.sessionId === id) savedGame = data })
+      .catch(() => undefined)
+  })
+  const win = $derived(winView(snapshot, savedGame?.game.id === snapshot?.sessionId ? savedGame : null))
+
+  /** The win screen's button: the session is already finished and released, so a refused
+   * DELETE here blocks nothing. Only the host sends it (anyone else's always 403s). */
   async function backToLobbyAfterWin() {
     if (!sessionId) return
     const route = afterGameRoute(snapshot)
@@ -488,6 +506,11 @@
       <span class="text-text-muted text-lg">Connecting…</span>
     </div>
   {:else}
+    {#if win}
+      <WinScreen view={win} title={view.title} meta={winMeta(snapshot)} lobbyName={snapshot.lobbyName} board={sharedBoard(snapshot)}
+        saved={snapshot.mySeats.length > 0} doneLabel={afterGameRoute(snapshot) === '/lobby' ? 'Back to lobby' : 'Back to Play'}
+        ondone={backToLobbyAfterWin} onhistory={() => push('/history')} />
+    {:else}
     <GameHeader
       title={bullOff ? 'Bull-off' : view.title}
       meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
@@ -596,22 +619,6 @@
         <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
       </main>
     {/if}
-
-    <!-- Winner overlay (unchanged; a designed win state is out of scope) -->
-    {#if snapshot.status === 'finished' && winner !== null}
-      <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div class="rounded-[18px] mx-4 px-6 py-6 md:mx-0 md:px-10 md:py-8 text-center pointer-events-auto
-                    border border-line bg-[rgba(15,16,14,0.92)] [box-shadow:0_24px_60px_rgba(0,0,0,0.7)]">
-          <p class="m-0 font-display font-bold text-[32px] md:text-[48px] text-accent uppercase mb-1">
-            {game ? winnerName(game, players) : ''} wins!
-          </p>
-          <button onclick={backToLobbyAfterWin}
-            class="mt-6 h-[54px] px-6 md:px-8 rounded-[10px] bg-accent text-accent-fg font-display
-                   font-bold text-xl uppercase tracking-widest border-0 cursor-pointer">
-            Back to lobby
-          </button>
-        </div>
-      </div>
     {/if}
   {/if}
 </div>
