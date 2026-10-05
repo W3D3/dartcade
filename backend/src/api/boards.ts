@@ -14,6 +14,9 @@ import type { Route } from './route.js'
 import { z } from 'zod'
 
 // Board Manager's /api/state, as far as we pass it on: each field falls back on its own
+/** How long a call to a board's Board Manager may take before the board counts as unreachable. */
+const BM_TIMEOUT_MS = 10_000
+
 const BmStateSchema = z
   .object({
     status: z.string().nullable().catch(null).default(null),
@@ -193,7 +196,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       let res: Response
       let body: unknown
       try {
-        res = await fetch(`${conn.bmUrl}/api/state`)
+        res = await fetch(`${conn.bmUrl}/api/state`, { signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
         if (res.ok) body = await res.json()
       } catch {
         return reply.code(503).send({ error: 'board unreachable' })
@@ -214,7 +217,8 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
         const conn = bridgeConnections.get(id)
         if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
         const bmUrl = conn.bmUrl
-        const tryFetch = (url: string) => fetch(url, { method, headers: { 'Content-Length': '0' } })
+        const tryFetch = (url: string) =>
+          fetch(url, { method, headers: { 'Content-Length': '0' }, signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
         let res: Response
         try {
           res = await tryFetch(bmUrl + path)
