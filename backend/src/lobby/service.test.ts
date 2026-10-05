@@ -78,15 +78,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       .values({ id: `${a}-${b}`, requester_id: a, addressee_id: b, status: 'accepted' })
       .execute()
 
-  it('tells friends even when a /ws/me push fails', async () => {
+  it('a failed /ws/me push is logged; the change stands and friends are still told', async () => {
     const statusChanged = vi.fn()
-    lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b), onStatusChange: statusChanged })
+    const warn = vi.fn()
+    lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b), onStatusChange: statusChanged, warn })
     const { id } = await lobbies.create('chris')
     const pushMe = vi.spyOn(lobbies, 'pushMe').mockRejectedValue(new Error('boom'))
-    await expect(lobbies.update('chris', id, { access: 'invite' })).rejects.toThrow('boom')
+    await lobbies.update('chris', id, { access: 'invite' })
+    expect((await lobbies.view(id))?.access).toBe('invite')
     expect(statusChanged).toHaveBeenCalledTimes(2)
+    expect(warn).toHaveBeenCalledWith('/ws/me push failed', expect.objectContaining({ userId: 'chris', error: 'Error: boom' }))
     statusChanged.mockClear()
-    await expect(lobbies.close('chris', id)).rejects.toThrow('boom')
+    await lobbies.close('chris', id)
+    expect(await lobbies.view(id)).toBeNull()
     expect(statusChanged).toHaveBeenLastCalledWith(['chris'])
     pushMe.mockRestore()
   })
