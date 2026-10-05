@@ -1,5 +1,6 @@
 // Text for the Boards page: versions, hosts, dates, and the tablet's Selected bar.
 import type { Board } from './api'
+import { dayMonth } from './fmt.js'
 
 /** "0.4.2" / "v0.4.2" → "v0.4.2"; non-semver builds (e.g. "dev") as-is. */
 export function fmtVersion(v?: string | null): string | null {
@@ -21,7 +22,7 @@ export function bmHost(b: Board): string {
 export function fmtDate(iso?: string | null): string {
   if (!iso) return '—'
   const d = new Date(iso)
-  return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  return isNaN(d.getTime()) ? '—' : `${dayMonth(d)} ${d.getFullYear()}`
 }
 
 /** Under the selected board's name on tablets: "Bridge v0.4.2 · connected · paired 12 Aug 2026". */

@@ -5,6 +5,7 @@
   import DartBoard from './DartBoard.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import type { Segment, UserAction, BullOffView } from '$lib/api'
+  import { initial as nameInitial, ordinal } from '$lib/fmt'
 
   type Throw = NonNullable<BullOffView['throws'][number]>
 
@@ -30,7 +31,7 @@
   const current = $derived(bullOff.currentPlayer)
   const currentThrow = $derived(bullOff.throws[current] ?? null)
   const name = (i: number) => players[i]?.name ?? `Player ${i + 1}`
-  const initial = (i: number) => name(i).trim().charAt(0).toUpperCase() || '?'
+  const initial = (i: number) => nameInitial(name(i))
 
   // Rows: this round's throwing order, or the ranking once decided
   const rows = $derived(result && !result.rethrow ? result.order : bullOff.sequence)
@@ -81,7 +82,6 @@
   const fmtMm = (t: Throw | null) => (!t ? '—' : t.mm === null ? 'Miss' : `${t.estimated ? '≈' : ''}${t.mm.toFixed(1)}`)
   const bedLabel = (t: Throw) =>
     t.mm === null ? 'Off the board' : t.mm <= BULLSEYE_MM ? 'Bullseye' : t.mm <= OUTER_BULL_MM ? 'Outer bull' : t.segment
-  const ordinal = (n: number) => `${n}${['th', 'st', 'nd', 'rd'][n % 100 > 10 && n % 100 < 14 ? 0 : n % 10] ?? 'th'}`
 
   const RETHROW_REASON: Record<string, string> = {
     tie: 'The two closest darts are within 0.5 mm.',

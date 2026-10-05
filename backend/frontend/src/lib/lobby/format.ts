@@ -2,6 +2,7 @@
 import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
 import { x01Rules, type Mode } from '../gameViews/meta.js'
 import { teamSizesLabel } from '../teams.js'
+import { dayMonth, pad2, startOfDay } from '../fmt.js'
 
 const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock' }
 
@@ -105,12 +106,10 @@ export function activityLine(a: LobbyActivity, viewerId: string | null): Part[] 
   }
 }
 
-const pad = (n: number) => String(n).padStart(2, '0')
-
 /** When it happened, as the time of day here: "21:06". */
 export function feedTime(at: string): string {
   const d = new Date(at)
-  return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+  return `${pad2(d.getHours())}:${pad2(d.getMinutes())}`
 }
 
 /**
@@ -133,9 +132,6 @@ export function indicatorView(s: LobbySummary): IndicatorView {
   return { tag, name: s.name, line: `${first} · ${next}`, next, back }
 }
 
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-const dayStart = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-
 /** When an invite came: "just now", "2 min ago", "Today, 18:05", "Yesterday, 18:40", "28 Sep, 09:00". */
 export function inviteTime(at: string, now: Date): string {
   const d = new Date(at)
@@ -143,10 +139,10 @@ export function inviteTime(at: string, now: Date): string {
   if (mins < 1) return 'just now'
   if (mins < 60) return `${mins} min ago`
   const time = feedTime(at)
-  const days = Math.round((dayStart(now) - dayStart(d)) / 86_400_000)
+  const days = Math.round((startOfDay(now) - startOfDay(d)) / 86_400_000)
   if (days === 0) return `Today, ${time}`
   if (days === 1) return `Yesterday, ${time}`
-  return `${d.getDate()} ${MONTHS[d.getMonth()]}, ${time}`
+  return `${dayMonth(d)}, ${time}`
 }
 
 /** Under a person's name: whose guest they are, who put them on their board, where they usually play. */

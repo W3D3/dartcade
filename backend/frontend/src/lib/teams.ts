@@ -4,10 +4,9 @@ import { fmtAvg, x01Player } from './playerStats.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
 import type { ScoreUpdates } from './heldScore.js'
 import type { X01Game } from './api/game-ws'
+import { initial } from './fmt.js'
 
 export type Team = NonNullable<X01Game['teams']>[number]
-
-const initial = (name: string) => name.trim().charAt(0).toUpperCase() || '?'
 
 /** "Teams 2v2", "Teams 1v2": the team sizes, Team A's first. */
 export const teamSizesLabel = (sizes: number[]): string => `Teams ${sizes.join('v')}`

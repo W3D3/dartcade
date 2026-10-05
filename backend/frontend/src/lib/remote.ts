@@ -5,6 +5,7 @@
 // Design: docs/superpowers/specs/2026-10-02-online-multiplayer-design.md ("Update after the lobby designs")
 import type { NoticeMessage, SeatInfo, Snapshot } from './api/game-ws'
 import { upSeat } from './turn'
+import { pad2 } from './fmt.js'
 
 /** Seats with more than one controller or input (board, or by hand): a lobby game, or `@` account players. */
 export function isRemoteGame(snap: Snapshot): boolean {
@@ -128,8 +129,7 @@ export function formatElapsed(fromIso: string, nowMs: number): string {
   const h = Math.floor(total / 3600)
   const m = Math.floor((total % 3600) / 60)
   const s = total % 60
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return h > 0 ? `${h}:${pad(m)}:${pad(s)}` : `${m}:${pad(s)}`
+  return h > 0 ? `${h}:${pad2(m)}:${pad2(s)}` : `${m}:${pad2(s)}`
 }
 
 export type NoticeLines = { title: string; body: string; detail: string }

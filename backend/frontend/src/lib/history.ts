@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
 import { atcRules, x01Rules } from './gameViews/meta.js'
+import { dayMonth, ordinal, startOfDay } from './fmt.js'
 
 const DAY_MS = 86_400_000
 const ModeSchema = z.enum(['straight', 'double', 'master'])
@@ -12,16 +13,12 @@ const AtcConfigSchema = z.object({
   multiplierAdvances: z.boolean(),
 })
 
-const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
-// Fixed 3-letter abbreviations: Intl's "short" month can render "Sept" depending on ICU data/locale.
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
 /** "Today" / "Yesterday" / "24 Sep", and the time, in the viewer's time zone. */
 export function formatWhen(iso: string, now: Date): { day: string; time: string } {
   const d = new Date(iso)
   const time = d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false })
   const ago = Math.round((startOfDay(now) - startOfDay(d)) / DAY_MS)
-  const day = ago === 0 ? 'Today' : ago === 1 ? 'Yesterday' : `${d.getDate()} ${MONTHS[d.getMonth()]}`
+  const day = ago === 0 ? 'Today' : ago === 1 ? 'Yesterday' : dayMonth(d)
   return { day, time }
 }
 
@@ -48,14 +45,6 @@ export function playerBadges(game: GameSummary): { n: number; name: string; me: 
   return [...game.players]
     .sort((a, b) => (a.throwPosition ?? a.seat) - (b.throwPosition ?? b.seat))
     .map((p, i) => ({ n: i + 1, name: p.name, me: p.seat === game.mySeat }))
-}
-
-/** "1st", "2nd", "3rd", "4th". */
-export const ordinal = (n: number) => {
-  const tens = n % 100,
-    ones = n % 10
-  const suffix = tens >= 11 && tens <= 13 ? 'th' : ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'
-  return `${n}${suffix}`
 }
 
 /** "Won 3–1" / "Lost" for two players, "2nd of 4" for more, "Finished" solo. */
