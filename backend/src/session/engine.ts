@@ -38,6 +38,16 @@ export type GameEnded = {
 }
 export type EndedFn = (e: GameEnded) => void | Promise<void>
 
+/** How long a won game stays after it ends, so late watchers still get its final snapshot. */
+export const KEEP_FINISHED_MS = 10 * 60_000
+
+export type EngineOptions = {
+  /** How long a won game stays after it ends (default KEEP_FINISHED_MS). */
+  keepFinishedMs?: number
+  /** A game is gone from the engine (aborted, or a won game's keepFinishedMs passed). */
+  forgotten?: (sessionId: string) => void
+}
+
 /** A game started: who to push /ws/me to (see LobbyService.onGameStarted). */
 export type GameStarted = { sessionId: string; userIds: string[] }
 export type StartedFn = (e: GameStarted) => void | Promise<void>
@@ -130,6 +140,10 @@ export class SessionEngine {
   private byBoard: Map<string, Session> = new Map()
   private byId: Map<string, Session> = new Map()
   private byUser: Map<string, Session> = new Map()
+  // Running lobby games, by lobby
+  private readonly byLobby = new Map<string, Session>()
+  // Won games waiting to be forgotten
+  private readonly evictions = new Map<string, ReturnType<typeof setTimeout>>()
   // Inputs of one session are logged and applied strictly one after another, so the
   // log's order is the order they were applied in
   private readonly queues = new KeyedQueue()
@@ -141,6 +155,7 @@ export class SessionEngine {
     private readonly notify: NotifyFn = () => undefined,
     private readonly ended: EndedFn = () => undefined,
     private readonly started: StartedFn = () => undefined,
+    private readonly opts: EngineOptions = {},
   ) {}
 
   async create(
@@ -214,7 +229,7 @@ export class SessionEngine {
       })
     } catch (err) {
       this.release(session)
-      this.byId.delete(sessionId)
+      this.forget(session)
       throw err
     }
     await this.notifyStarted({ sessionId, userIds: seatedUserIds(session) })
@@ -224,6 +239,7 @@ export class SessionEngine {
   private index(session: Session): void {
     for (const b of seatBoards(session)) this.byBoard.set(b, session)
     for (const u of distinct([session.ownerUserId, ...controllers(session)])) this.byUser.set(u, session)
+    if (session.lobbyId !== null) this.byLobby.set(session.lobbyId, session)
     this.byId.set(session.id, session)
   }
 
@@ -369,6 +385,7 @@ export class SessionEngine {
       await this.store.finishSession(session.id, at, seatResults)
     } finally {
       this.release(session)
+      this.scheduleEviction(session)
     }
     // Everyone still watching sees the game end before the game-end listeners run (the
     // lobby reset, the /ws/me pushes) — same as deleteSession, below
@@ -520,8 +537,8 @@ export class SessionEngine {
 
   /** The lobby's running game, if any. */
   getLobbySession(lobbyId: string): Session | undefined {
-    for (const s of this.byId.values()) if (s.lobbyId === lobbyId && s.status === 'active') return s
-    return undefined
+    const s = this.byLobby.get(lobbyId)
+    return s?.status === 'active' ? s : undefined
   }
 
   getAllSessions(): Session[] {
@@ -540,16 +557,35 @@ export class SessionEngine {
       this.release(session)
       // Everyone still watching sees the game end before it goes away
       this.push(sessionId)
-      this.byId.delete(sessionId)
+      this.forget(session)
       if (wasActive) await this.notifyEnded(this.endedOf(session, 'aborted', abortedByUserId, []))
     })
     return true
   }
 
-  // A finished session no longer holds its boards or its players' one active slot.
-  // It stays in byId so its final snapshot can still be shown.
+  // A finished session no longer holds its boards, its players' one active slot or its lobby.
+  // It stays in byId (until scheduleEviction's timer) so its final snapshot can still be shown.
   private release(session: Session): void {
     for (const b of seatBoards(session)) if (this.byBoard.get(b) === session) this.byBoard.delete(b)
     for (const u of distinct([session.ownerUserId, ...controllers(session)])) if (this.byUser.get(u) === session) this.byUser.delete(u)
+    if (session.lobbyId !== null && this.byLobby.get(session.lobbyId) === session) this.byLobby.delete(session.lobbyId)
+  }
+
+  // A won game is forgotten once late watchers have had keepFinishedMs to see how it ended
+  private scheduleEviction(session: Session): void {
+    const timer = setTimeout(() => {
+      this.forget(session)
+    }, this.opts.keepFinishedMs ?? KEEP_FINISHED_MS)
+    // A pending eviction never keeps the process alive
+    timer.unref()
+    this.evictions.set(session.id, timer)
+  }
+
+  private forget(session: Session): void {
+    clearTimeout(this.evictions.get(session.id))
+    this.evictions.delete(session.id)
+    if (this.byId.get(session.id) !== session) return
+    this.byId.delete(session.id)
+    this.opts.forgotten?.(session.id)
   }
 }

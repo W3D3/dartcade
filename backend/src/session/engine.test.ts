@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ActiveSessionError, BoardBusyError, SessionEngine, type SnapshotView } from './engine.js'
 import type { EngineStore } from './engine.js'
 import type { StoredGameSession } from '../db/queries.js'
@@ -1269,5 +1269,95 @@ describe('lobby games', () => {
       'game-end listener failed',
       expect.objectContaining({ sessionId, error: expect.stringContaining('push failed') }),
     )
+  })
+})
+
+describe('forgetting ended games', () => {
+  const lobbyGame = {
+    ownerUserId: 'chris',
+    gameId: 'x01',
+    config: x01Module.defaultConfig,
+    lobbyId: 'l1',
+    lobbyName: "Christoph's lobby",
+    seats: [seat('Christoph', 'chris', 'living'), seat('Lena', 'lena', 'lenas')],
+  }
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('keeps a won game for keepFinishedMs, then forgets it', async () => {
+    const forgotten = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, undefined, undefined, { keepFinishedMs: 60_000, forgotten })
+    const { sessionId } = await engine.createWithSeats(lobbyGame)
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+    vi.advanceTimersByTime(59_999)
+    // Late watchers still get the final snapshot
+    expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+    expect(engine.getAllSessions()).toHaveLength(1)
+    expect(forgotten).not.toHaveBeenCalled()
+    vi.advanceTimersByTime(1)
+    expect(engine.getSession(sessionId)).toBeUndefined()
+    expect(engine.getSnapshot(sessionId)).toBeUndefined()
+    expect(engine.getAllSessions()).toHaveLength(0)
+    expect(forgotten).toHaveBeenCalledWith(sessionId)
+  })
+
+  it('keeps a won game for 10 minutes by default', async () => {
+    const engine = new SessionEngine(makeStore(), push)
+    const { sessionId } = await engine.createWithSeats(lobbyGame)
+    await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+    vi.advanceTimersByTime(10 * 60_000 - 1)
+    expect(engine.getSession(sessionId)).toBeDefined()
+    vi.advanceTimersByTime(1)
+    expect(engine.getSession(sessionId)).toBeUndefined()
+  })
+
+  it('forgets an aborted game right away, and a won game deleted before its time', async () => {
+    const forgotten = vi.fn()
+    const engine = new SessionEngine(makeStore(), push, undefined, undefined, undefined, undefined, { forgotten })
+    const { sessionId } = await engine.createWithSeats(lobbyGame)
+    await engine.deleteSession(sessionId)
+    expect(forgotten).toHaveBeenCalledWith(sessionId)
+    expect(engine.getSession(sessionId)).toBeUndefined()
+
+    const won = await engine.createWithSeats(lobbyGame)
+    await engine.onUserAction(won.sessionId, 'lena', { type: 'forfeit' })
+    await engine.deleteSession(won.sessionId)
+    expect(engine.getSession(won.sessionId)).toBeUndefined()
+    expect(forgotten).toHaveBeenCalledTimes(2)
+    // Its eviction timer went with it
+    expect(vi.getTimerCount()).toBe(0)
+  })
+
+  it("finds a lobby's running game until it ends, and the lobby's next one after", async () => {
+    const engine = makeEngine()
+    const first = await engine.createWithSeats(lobbyGame)
+    expect(engine.getLobbySession('l1')?.id).toBe(first.sessionId)
+    expect(engine.getLobbySession('l2')).toBeUndefined()
+    await engine.onUserAction(first.sessionId, 'lena', { type: 'forfeit' })
+    // Won, but still kept for late watchers: no longer the lobby's game
+    expect(engine.getSession(first.sessionId)?.status).toBe('finished')
+    expect(engine.getLobbySession('l1')).toBeUndefined()
+    const second = await engine.createWithSeats(lobbyGame)
+    expect(engine.getLobbySession('l1')?.id).toBe(second.sessionId)
+    // Forgetting the first game leaves the second one alone
+    vi.runAllTimers()
+    expect(engine.getSession(first.sessionId)).toBeUndefined()
+    expect(engine.getLobbySession('l1')?.id).toBe(second.sessionId)
+    await engine.deleteSession(second.sessionId)
+    expect(engine.getLobbySession('l1')).toBeUndefined()
+  })
+
+  it("frees a lobby when its game can't be stored", async () => {
+    const store = makeStore()
+    store.insertSession.mockRejectedValueOnce(new Error('db down'))
+    const engine = new SessionEngine(store, push)
+    await expect(engine.createWithSeats(lobbyGame)).rejects.toThrow('db down')
+    expect(engine.getLobbySession('l1')).toBeUndefined()
+    await expect(engine.createWithSeats(lobbyGame)).resolves.toBeDefined()
   })
 })
