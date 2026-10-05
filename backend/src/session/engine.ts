@@ -7,6 +7,7 @@ import { authorizeAction, currentSeat } from './access.js'
 import { newSeed, seededRng, shuffle } from './rng.js'
 import { StoredConfigSchema, dartRows, newSession, replay, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
+import { KeyedQueue } from '../util/keyedQueue.js'
 import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
@@ -131,7 +132,7 @@ export class SessionEngine {
   private byUser: Map<string, Session> = new Map()
   // Inputs of one session are logged and applied strictly one after another, so the
   // log's order is the order they were applied in
-  private queues = new Map<string, Promise<unknown>>()
+  private readonly queues = new KeyedQueue()
 
   constructor(
     private readonly store: EngineStore,
@@ -227,12 +228,7 @@ export class SessionEngine {
   }
 
   private enqueue<T>(sessionId: string, task: () => Promise<T>): Promise<T> {
-    const run = (this.queues.get(sessionId) ?? Promise.resolve()).then(task)
-    this.queues.set(
-      sessionId,
-      run.catch(() => undefined),
-    )
-    return run
+    return this.queues.run(sessionId, task)
   }
 
   async onBridgeEvent(boardId: string, kind: string, data: unknown, bridgeEventId: string | null = null): Promise<void> {
