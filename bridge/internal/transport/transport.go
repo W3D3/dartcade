@@ -4,12 +4,12 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"math/rand"
 	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"dartcade/bridge/internal/backoff"
 	"dartcade/bridge/internal/camera"
 	"dartcade/bridge/internal/differ"
 	"dartcade/bridge/internal/schema"
@@ -127,23 +127,23 @@ func (t *Transport) Send(evs []differ.Event) {
 
 // Start connects to the backend and runs the send loop. Blocks until ctx is cancelled.
 func (t *Transport) Start(ctx context.Context) error {
-	backoff := 500 * time.Millisecond
+	delay := 500 * time.Millisecond
 	for {
 		if ctx.Err() != nil {
 			return ctx.Err()
 		}
 		conn, _, err := websocket.Dial(ctx, t.cfg.BackendURL, nil)
 		if err != nil {
-			log.Warn("backend connect failed", "err", err, "retry_in", backoff)
+			log.Warn("backend connect failed", "err", err, "retry_in", delay)
 			select {
 			case <-ctx.Done():
 				return ctx.Err()
-			case <-time.After(backoff):
+			case <-time.After(delay):
 			}
-			backoff = jitter(minDur(backoff*2, 30*time.Second))
+			delay = backoff.Next(delay, 30*time.Second)
 			continue
 		}
-		backoff = 500 * time.Millisecond
+		delay = 500 * time.Millisecond
 		log.Info("connected to backend")
 		t.runConn(ctx, conn)
 		conn.Close(websocket.StatusNormalClosure, "")
@@ -426,15 +426,4 @@ func (t *Transport) handleMessage(ctx context.Context, msg json.RawMessage) {
 		Ok:         ok,
 		HttpStatus: &status,
 	}}})
-}
-
-func jitter(d time.Duration) time.Duration {
-	return d + time.Duration(rand.Int63n(int64(d/4)+1))
-}
-
-func minDur(a, b time.Duration) time.Duration {
-	if a < b {
-		return a
-	}
-	return b
 }
