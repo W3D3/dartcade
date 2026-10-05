@@ -7,6 +7,8 @@ afterEach(() => vi.unstubAllEnvs())
 // the payload and the hook sees exactly what the handler returned.
 function app(handler: (reply: any) => unknown, operationId = 'health') {
   const a = createFastify()
+  // An async handler, so whatever it returns is sent as the reply
+  // oxlint-disable-next-line typescript/require-await
   a.get('/x', { schema: { operationId } as any }, async (_req, reply) => handler(reply))
   return a
 }
