@@ -92,6 +92,7 @@ corrected dart replays the open visit cleanly.
   Postgres, see `DEVELOPMENT.md`), `cd backend/frontend && npm test`,
   `cd bridge && go test ./...`.
 - Type checks: `cd backend && npm run typecheck`, `cd backend/frontend && npm run typecheck`.
+- Formatting: Prettier for TS, Svelte, JSON, YAML and Markdown, run from the repo root: `npm run format` (CI runs `npm run format:check`); `gofmt -w .` in `bridge/`.
 
 ## Commits and merging
 

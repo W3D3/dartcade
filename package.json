@@ -5,13 +5,17 @@
   "type": "module",
   "scripts": {
     "gen:api": "node scripts/gen-api.mjs",
-    "lint:api": "redocly lint schema/api-v1.yaml"
+    "lint:api": "redocly lint schema/api-v1.yaml",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
   },
   "devDependencies": {
     "@apidevtools/json-schema-ref-parser": "11.9.3",
     "@redocly/cli": "1.34.20",
     "json-schema-to-typescript": "14.1.0",
     "json-schema-to-zod": "2.8.1",
-    "openapi-typescript": "7.13.0"
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.9.9",
+    "prettier-plugin-svelte": "4.1.1"
   }
 }
