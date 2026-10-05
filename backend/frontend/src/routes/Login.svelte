@@ -53,13 +53,13 @@
 
       <div class="flex flex-col gap-[18px]">
         <div class="flex flex-col gap-2">
-          <label for="login-email" class="text-[14px] font-medium text-ink-soft">Email</label>
+          <label for="login-email" class="field-label">Email</label>
           <Input id="login-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
         </div>
 
         <div class="flex flex-col gap-2">
           <div class="flex justify-between items-baseline">
-            <label for="login-password" class="text-[14px] font-medium text-ink-soft">Password</label>
+            <label for="login-password" class="field-label">Password</label>
             <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
           </div>
           <Input

@@ -6,6 +6,6 @@
 </script>
 
 <div class="flex flex-col gap-[6px]">
-  <span class="text-[13px] md:text-[14px] font-medium text-ink-soft">{label}</span>
+  <span class="field-label max-md:text-[13px]">{label}</span>
   {@render children()}
 </div>

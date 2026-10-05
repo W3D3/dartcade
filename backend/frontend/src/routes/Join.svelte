@@ -110,7 +110,7 @@
       <p class="m-0 text-[15px] leading-[1.45] text-text-muted">The host sees it at the top of their lobby screen.</p>
     </div>
     <div class="flex flex-col gap-2">
-      <label for="lobby-code" class="text-[14px] font-medium text-ink-soft">Lobby code</label>
+      <label for="lobby-code" class="field-label">Lobby code</label>
       <input
         id="lobby-code"
         bind:value={text}

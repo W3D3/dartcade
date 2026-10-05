@@ -101,7 +101,7 @@
 
 <div class="flex flex-col gap-2">
   <span class="flex items-center justify-between gap-2">
-    <span class="text-[13px] md:text-[14px] font-medium text-ink-soft">Teams</span>
+    <span class="field-label max-md:text-[13px]">Teams</span>
     {#if editable}
       <Button variant="outline" size="sm" onclick={() => onshuffle?.()}>
         <Shuffle size={15} strokeWidth={2.2} />Shuffle

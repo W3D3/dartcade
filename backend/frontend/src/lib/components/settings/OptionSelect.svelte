@@ -64,8 +64,7 @@
           {#if group.options.length}
             <Select.Group>
               {#if group.heading}
-                <Select.GroupHeading
-                  class="px-[10px] {g === 0 ? 'pt-[6px]' : 'pt-2'} pb-[2px] text-[11px] uppercase tracking-[0.1em] text-text-dim"
+                <Select.GroupHeading class="px-[10px] {g === 0 ? 'pt-[6px]' : 'pt-2'} pb-[2px] text-[11px] label-caps text-text-dim"
                   >{group.heading}</Select.GroupHeading
                 >
               {/if}

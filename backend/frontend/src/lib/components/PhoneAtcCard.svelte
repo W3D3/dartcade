@@ -13,7 +13,7 @@
 <PhoneCardShell {name} label="{name}, throwing, target {p.target}" {pill} {seat} class="gap-[10px]">
   <div class="flex items-end justify-between gap-3">
     <span class="flex flex-col gap-1">
-      <span class="text-[10px] uppercase tracking-[0.1em] text-text-muted">Target</span>
+      <span class="text-[10px] label-caps text-text-muted">Target</span>
       <span class="font-display font-bold text-[64px] [@media(min-height:741px)]:text-[96px] leading-[0.8] text-accent"
         ><RollingNumber value={p.target} normal="up" progress={p.done} /></span
       >

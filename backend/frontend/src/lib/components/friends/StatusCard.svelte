@@ -26,7 +26,7 @@
   }
 </script>
 
-<section aria-label="Your status" class="flex flex-col gap-3 p-4 md:p-5 rounded-[14px] bg-surface-panel border border-line-2">
+<section aria-label="Your status" class="flex flex-col gap-3 p-4 md:p-5 card">
   <h2 class="m-0 text-[15px] md:text-[17px] font-semibold">Your status</h2>
   {#key attempt}
     <SegmentedControl {options} value={invisible} onchange={pick} />

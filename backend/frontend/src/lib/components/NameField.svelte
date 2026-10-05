@@ -37,7 +37,7 @@
 </script>
 
 <div class="flex flex-col gap-2">
-  <label for={id} class="text-[14px] font-medium text-ink-soft">{label}</label>
+  <label for={id} class="field-label">{label}</label>
   <div class="flex items-center gap-2 min-w-0">
     <span aria-hidden="true" class="font-mono text-text-dim">@</span>
     <Input

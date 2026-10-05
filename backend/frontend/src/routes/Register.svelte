@@ -75,11 +75,11 @@
       <div class="flex flex-col gap-[18px]">
         <NameField id="reg-name" label="Name" bind:value={name} bind:status={nameStatus} />
         <div class="flex flex-col gap-2">
-          <label for="reg-email" class="text-[14px] font-medium text-ink-soft">Email</label>
+          <label for="reg-email" class="field-label">Email</label>
           <Input id="reg-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
         </div>
         <div class="flex flex-col gap-2">
-          <label for="reg-password" class="text-[14px] font-medium text-ink-soft">Password</label>
+          <label for="reg-password" class="field-label">Password</label>
           <Input
             id="reg-password"
             type="password"

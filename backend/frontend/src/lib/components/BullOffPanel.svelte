@@ -216,7 +216,7 @@
   {:else if result}
     <div role="status" class="flex items-center justify-between gap-3 px-5 py-4 rounded-[14px] bg-surface-2 border border-line-2">
       <span class="flex flex-col gap-1 min-w-0">
-        <span class="text-[12px] tracking-[0.1em] uppercase text-text-muted">{name(result.order[0])} throws first</span>
+        <span class="text-[12px] label-caps text-text-muted">{name(result.order[0])} throws first</span>
         <span class="text-[14px] text-text truncate">Order: {result.order.map(name).join(', ')}</span>
       </span>
       {#if countdown !== null}
@@ -230,7 +230,7 @@
   {:else}
     <div role="status" class="flex items-center justify-between gap-4 px-5 py-3 rounded-[14px] bg-surface-2 border border-line-2">
       <span class="flex flex-col gap-[2px]">
-        <span class="text-[12px] tracking-[0.1em] uppercase text-text-muted">To beat</span>
+        <span class="text-[12px] label-caps text-text-muted">To beat</span>
         <span class="text-[13px] text-text-dim">{best ? `set by ${name(best.player)}` : 'No dart on the board yet'}</span>
       </span>
       <span class="flex items-baseline gap-1 font-display font-bold leading-none text-accent">

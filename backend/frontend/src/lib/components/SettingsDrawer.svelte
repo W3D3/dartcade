@@ -93,7 +93,7 @@
   </div>
 
   <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-    <h3 class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Display</h3>
+    <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Display</h3>
     {#each rows as row (row.key)}
       <SettingSwitch id="setting-{row.key}" label={row.label} sub={row.sub} bind:checked={settings[row.key]} />
     {/each}
@@ -153,7 +153,7 @@
   </section>
 
   <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-    <h3 class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Sound effects</h3>
+    <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Sound effects</h3>
     <label class="flex items-center gap-3">
       <span class="text-[15px] w-20">Volume</span>
       <input
@@ -179,7 +179,7 @@
 
   {#if gameId === 'x01'}
     <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
-      <h3 class="m-0 text-[12px] font-semibold uppercase tracking-[0.1em] text-text-dim">Caller</h3>
+      <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Caller</h3>
       <SettingSwitch
         id="setting-callerOn"
         label="Caller"

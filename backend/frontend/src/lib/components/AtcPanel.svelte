@@ -28,7 +28,7 @@
 
 <PanelShell {name} {active} {solo} {pill} {seat} {waiting} pillInRow>
   <div class="flex flex-col gap-[6px]">
-    <span class="text-[12px] uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
+    <span class="text-[12px] label-caps {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
     <span
       class="font-display font-bold {solo
         ? 'text-[min(220px,24vh)]'

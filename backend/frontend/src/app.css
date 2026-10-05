@@ -76,6 +76,10 @@
     }
   }
 
+  /* Menus and pickers that float over the page (shadow-popover), and tooltips (shadow-tooltip) */
+  --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.5);
+  --shadow-tooltip: 0 4px 16px rgba(0, 0, 0, 0.5);
+
   --font-sans: 'Instrument Sans', system-ui, sans-serif;
   --font-display: 'Barlow Condensed', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
@@ -102,6 +106,21 @@
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
   }
+}
+
+/* A panel card: the panel surface with a hairline and 14 px corners (md:card for one that's flat on phones) */
+@utility card {
+  @apply rounded-[14px] bg-surface-panel border border-line-2;
+}
+
+/* The small uppercase label over a value or a section (size and colour vary) */
+@utility label-caps {
+  @apply uppercase tracking-[0.1em];
+}
+
+/* The label above a form control */
+@utility field-label {
+  @apply text-[14px] font-medium text-ink-soft;
 }
 
 @layer utilities {

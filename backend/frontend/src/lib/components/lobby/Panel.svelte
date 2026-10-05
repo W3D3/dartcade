@@ -22,9 +22,7 @@
 <section
   aria-label={label ?? title}
   class="flex flex-col gap-[10px] md:gap-[14px] min-h-0 box-border
-         {flat
-    ? 'md:p-5 md:rounded-[14px] md:bg-surface-panel md:border md:border-line-2'
-    : 'p-4 md:p-5 rounded-[14px] bg-surface-panel border border-line-2'}"
+         {flat ? 'md:p-5 md:card' : 'p-4 md:p-5 card'}"
 >
   <div class="flex justify-between items-baseline gap-3">
     <h2 class="m-0 text-[15px] md:text-[17px] font-semibold">{title}</h2>

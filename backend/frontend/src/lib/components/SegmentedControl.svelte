@@ -65,7 +65,7 @@
                 side="top"
                 sideOffset={8}
                 class="z-[9999] w-[220px] px-3 py-2 rounded-[8px] text-[13px] leading-[1.45] text-text
-                       bg-[#1e211b] border border-line-3 [box-shadow:0_4px_16px_rgba(0,0,0,0.5)]
+                       bg-[#1e211b] border border-line-3 shadow-tooltip
                        pointer-events-none whitespace-normal"
               >
                 {opt.tooltip}

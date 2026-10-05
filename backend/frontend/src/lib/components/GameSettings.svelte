@@ -70,7 +70,7 @@
   <div class="flex flex-col gap-[18px]">
     {#if teams && meta.format}
       <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-        <legend class="flex items-center gap-2 text-[14px] font-medium text-ink-soft mb-2">
+        <legend class="flex items-center gap-2 field-label mb-2">
           {meta.format.label}
           {#if meta.format.tooltip}
             <Tooltip text={meta.format.tooltip} />
@@ -87,7 +87,7 @@
     {/if}
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-      <legend class="text-[14px] font-medium text-ink-soft mb-2">Start score</legend>
+      <legend class="field-label mb-2">Start score</legend>
       <SegmentedControl
         options={startScoreOptions}
         value={config.startScore}
@@ -98,7 +98,7 @@
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-      <legend class="text-[14px] font-medium text-ink-soft mb-2">Check-in</legend>
+      <legend class="field-label mb-2">Check-in</legend>
       <SegmentedControl
         options={inOutOptions}
         value={config.inMode}
@@ -109,7 +109,7 @@
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-      <legend class="text-[14px] font-medium text-ink-soft mb-2">Check-out</legend>
+      <legend class="field-label mb-2">Check-out</legend>
       <SegmentedControl
         options={inOutOptions}
         value={config.outMode}
@@ -120,7 +120,7 @@
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-      <legend class="flex items-center gap-2 text-[14px] font-medium text-ink-soft mb-2">
+      <legend class="flex items-center gap-2 field-label mb-2">
         Bull off
         <Tooltip text="Throw one dart each to decide who goes first. Closest to bull wins." />
       </legend>
@@ -134,7 +134,7 @@
     </fieldset>
 
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-      <legend class="text-[14px] font-medium text-ink-soft mb-2">Bull value</legend>
+      <legend class="field-label mb-2">Bull value</legend>
       <SegmentedControl
         options={bullValueOptions}
         value={config.bullValue}
@@ -145,7 +145,7 @@
     </fieldset>
 
     <div class="flex justify-between items-center">
-      <span class="flex items-center gap-2 text-[14px] font-medium text-ink-soft"
+      <span class="flex items-center gap-2 field-label"
         >Max rounds <Tooltip
           text="Maximum number of rounds before the game ends. The player with the lowest score wins if nobody checks out. Set higher for longer games."
         /></span
@@ -160,7 +160,7 @@
     </div>
 
     <div class="flex justify-between items-center">
-      <span class="text-[14px] font-medium text-ink-soft">First to</span>
+      <span class="field-label">First to</span>
       <Stepper
         value={num(config.firstTo, 3)}
         label="legs"
@@ -177,7 +177,7 @@
       {@const field = meta[fieldKey]}
       {#if field?.options}
         <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
-          <legend class="flex items-center gap-2 text-[14px] font-medium text-ink-soft mb-2">
+          <legend class="flex items-center gap-2 field-label mb-2">
             {field.label}
             {#if field.tooltip}
               <Tooltip text={field.tooltip} />

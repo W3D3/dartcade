@@ -33,7 +33,7 @@
   aria-label={label}
 >
   <span class="absolute left-1/2 top-[10px] bottom-[10px] w-px bg-line-chip" aria-hidden="true"></span>
-  <div class="grid grid-cols-2 h-7 shrink-0 items-center text-[13px] uppercase tracking-[0.1em] text-text-dim">
+  <div class="grid grid-cols-2 h-7 shrink-0 items-center text-[13px] label-caps text-text-dim">
     <span class="text-right pr-[14px]">Scored</span><span class="pl-[14px]">Left</span>
   </div>
   <!-- Newest at the bottom; older rows scroll out of view at the top -->

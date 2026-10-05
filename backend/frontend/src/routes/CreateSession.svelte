@@ -173,14 +173,11 @@
       <GameModeTiles selected={displayMode} disabled={!canEditGame} onselect={selectMode} />
 
       <!-- Setup aside -->
-      <aside
-        class="w-full lg:w-[440px] xl:w-[400px] lg:flex-shrink-0 box-border border border-line-2 rounded-[14px]
-                    bg-surface-panel flex flex-col lg:overflow-hidden"
-      >
+      <aside class="w-full lg:w-[440px] xl:w-[400px] lg:flex-shrink-0 box-border card flex flex-col lg:overflow-hidden">
         <!-- Scrollable body: title + config -->
         <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-themed p-4 md:p-6 pb-4 md:pb-4 flex flex-col gap-[22px]">
           <div class="flex flex-col gap-1">
-            <span class="text-[12px] tracking-[0.1em] uppercase text-text-dim">Setup</span>
+            <span class="text-[12px] label-caps text-text-dim">Setup</span>
             <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
               {setupName}
             </h2>

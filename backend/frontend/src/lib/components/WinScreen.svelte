@@ -144,7 +144,7 @@
           <div class="flex items-center justify-center md:justify-end gap-4 md:gap-5">
             <div class="flex flex-col items-end gap-2 min-w-0">
               <span
-                class="h-[30px] px-3 inline-flex items-center gap-[6px] rounded-full bg-accent text-accent-fg text-[13px] font-bold tracking-[0.1em] uppercase"
+                class="h-[30px] px-3 inline-flex items-center gap-[6px] rounded-full bg-accent text-accent-fg text-[13px] font-bold label-caps"
                 ><Trophy size={16} />Winner</span
               >
               <span class="font-display font-bold text-[40px] md:text-[50px] xl:text-[64px] leading-[0.9] uppercase text-right break-words"
@@ -181,7 +181,7 @@
               <Avatar name={second.name} guest={second.guest} class="size-[64px] md:size-[96px] text-[27px] md:text-[40px]" />
               <div class="flex flex-col gap-2 min-w-0">
                 <span
-                  class="self-start h-[30px] px-3 inline-flex items-center rounded-full border border-line-chip text-text-muted text-[13px] font-bold tracking-[0.1em] uppercase"
+                  class="self-start h-[30px] px-3 inline-flex items-center rounded-full border border-line-chip text-text-muted text-[13px] font-bold label-caps"
                   >{ordinal(second.placement)}</span
                 >
                 <span
@@ -226,7 +226,7 @@
             class="rise r4 flex flex-col gap-[6px] px-4 md:px-7 py-[18px] rounded-[16px] bg-[rgba(21,23,19,0.88)] border border-line-2"
           >
             <div class="w-full max-w-[760px] mx-auto flex justify-between mb-[6px] text-[13px] text-text-dim">
-              <span>{winner.name}</span><span class="tracking-[0.1em] uppercase">Match stats</span><span>{second.name}</span>
+              <span>{winner.name}</span><span class="label-caps">Match stats</span><span>{second.name}</span>
             </div>
             {#each view.stats as row (row.label)}
               <div
@@ -319,7 +319,7 @@
 
           {#if view.highlights.length}
             <section aria-label="Highlights" class="flex flex-col gap-2">
-              <span class="text-[12px] tracking-[0.1em] uppercase text-text-muted">Highlights</span>
+              <span class="text-[12px] label-caps text-text-muted">Highlights</span>
               {#each view.highlights as h (h.label)}
                 <div class="flex items-center gap-3 px-[14px] py-3 rounded-[12px] bg-surface-panel border border-line-2">
                   <Avatar name={h.name} guest={h.guest} class="size-9 text-[15px]" />
