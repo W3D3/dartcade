@@ -9,7 +9,9 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"os/signal"
 	"strings"
+	"syscall"
 	"time"
 
 	"dartcade/bridge/internal/bm"
@@ -18,6 +20,13 @@ import (
 	"github.com/coder/websocket"
 	"github.com/coder/websocket/wsjson"
 	"github.com/oklog/ulid/v2"
+)
+
+const (
+	// How long connecting to the backend may take in replay mode
+	replayDialTimeout = 30 * time.Second
+	// How long one write to the backend may take in replay mode
+	replayWriteTimeout = 10 * time.Second
 )
 
 func runReplay(args []string) {
@@ -38,43 +47,35 @@ func runReplay(args []string) {
 
 	// Default: print events as JSON to stdout.
 	s := differ.State{}
-	scanner := replayScanner(files[0])
-	for scanner.Scan() {
-		line := bytes.TrimSpace(scanner.Bytes())
-		if len(line) == 0 {
-			continue
-		}
-		frame, err := bm.ParseFrame(line)
-		if err != nil {
-			log.Warn("parse error", "err", err)
-			continue
-		}
-		if frame == nil {
-			continue
-		}
+	err := forEachFrame(files[0], func(frame bm.BMFrame) error {
 		var evs []differ.Event
-		s, evs = differ.Process(s, *frame)
+		s, evs = differ.Process(s, frame)
 		for _, ev := range evs {
 			out, _ := json.Marshal(map[string]any{"kind": ev.Kind, "data": ev.Data})
 			fmt.Println(string(out))
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "scan error: %v\n", err)
+		return nil
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "replay: %v\n", err)
 		os.Exit(1)
 	}
 }
 
 // runReplayToBackend processes a JSONL recording and sends each event as an
 // adbridge/v1 Envelope to the given WS backend (e.g. the visualiser in
-// bridge mode). It throttles at roughly real-time using frame timestamps.
+// bridge mode). It throttles at roughly real-time using frame timestamps, so
+// it runs as long as the recording does (until interrupted); only connecting
+// and each write have a timeout.
 func runReplayToBackend(backendURL, path string) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	conn, _, err := websocket.Dial(ctx, backendURL, &websocket.DialOptions{
+	dialCtx, dialCancel := context.WithTimeout(ctx, replayDialTimeout)
+	conn, _, err := websocket.Dial(dialCtx, backendURL, &websocket.DialOptions{
 		CompressionMode: websocket.CompressionDisabled,
 	})
+	dialCancel()
 	if err != nil {
 		// The URL may carry a token: keep its query out of the output
 		fmt.Fprintf(os.Stderr, "dial %s: %s\n", hostOf(backendURL), withoutQuery(err.Error(), backendURL))
@@ -94,6 +95,12 @@ func runReplayToBackend(backendURL, path string) {
 		}
 	}()
 
+	write := func(v any) error {
+		wctx, wcancel := context.WithTimeout(ctx, replayWriteTimeout)
+		defer wcancel()
+		return wsjson.Write(wctx, conn, v)
+	}
+
 	bootID := ulid.Make().String()
 
 	// Send bridge.hello (not seq-numbered).
@@ -104,26 +111,16 @@ func runReplayToBackend(backendURL, path string) {
 			"schema":         "adbridge/1.0",
 		},
 	}
-	if err := wsjson.Write(ctx, conn, hello); err != nil {
+	if err := write(hello); err != nil {
 		fmt.Fprintf(os.Stderr, "write hello: %v\n", err)
 		os.Exit(1)
 	}
 
 	s := differ.State{}
 	seq := uint64(0)
-	scanner := replayScanner(path)
 	var firstWall, firstMono time.Time
 
-	for scanner.Scan() {
-		line := bytes.TrimSpace(scanner.Bytes())
-		if len(line) == 0 {
-			continue
-		}
-		frame, err := bm.ParseFrame(line)
-		if err != nil || frame == nil {
-			continue
-		}
-
+	err = forEachFrame(path, func(frame bm.BMFrame) error {
 		// Throttle to match original recording tempo.
 		if firstWall.IsZero() && !frame.RecvWall.IsZero() {
 			firstWall = frame.RecvWall
@@ -131,14 +128,17 @@ func runReplayToBackend(backendURL, path string) {
 		}
 		if !firstWall.IsZero() && !frame.RecvWall.IsZero() {
 			elapsed := frame.RecvWall.Sub(firstWall)
-			sinceStart := time.Since(firstMono)
-			if elapsed > sinceStart {
-				time.Sleep(elapsed - sinceStart)
+			if wait := elapsed - time.Since(firstMono); wait > 0 {
+				select {
+				case <-ctx.Done():
+					return ctx.Err()
+				case <-time.After(wait):
+				}
 			}
 		}
 
 		var evs []differ.Event
-		s, evs = differ.Process(s, *frame)
+		s, evs = differ.Process(s, frame)
 		for _, ev := range evs {
 			seq++
 			data, _ := json.Marshal(ev.Data)
@@ -155,14 +155,15 @@ func runReplayToBackend(backendURL, path string) {
 				"kind":         ev.Kind,
 				"data":         json.RawMessage(data),
 			}
-			if err := wsjson.Write(ctx, conn, env); err != nil {
-				fmt.Fprintf(os.Stderr, "write event: %v\n", err)
-				return
+			if err := write(env); err != nil {
+				return fmt.Errorf("write event: %w", err)
 			}
 		}
-	}
-	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "scan error: %v\n", err)
+		return nil
+	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "replay: %v\n", err)
+		return
 	}
 	log.Info("replay complete", "events", seq)
 }
@@ -176,13 +177,36 @@ func withoutQuery(msg, rawURL string) string {
 	return strings.ReplaceAll(msg, u.RawQuery, "REDACTED")
 }
 
-func replayScanner(path string) *bufio.Scanner {
+// forEachFrame calls fn with each Board Manager frame of a JSONL recording, in order,
+// skipping blank lines and lines that don't parse. It stops at fn's first error, and
+// closes the recording when done.
+func forEachFrame(path string, fn func(bm.BMFrame) error) error {
 	f, err := os.Open(path)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "open %s: %v\n", path, err)
-		os.Exit(1)
+		return err
 	}
-	s := bufio.NewScanner(f)
-	s.Buffer(make([]byte, 4*1024*1024), 4*1024*1024)
-	return s
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	scanner.Buffer(make([]byte, 4*1024*1024), 4*1024*1024)
+	for scanner.Scan() {
+		line := bytes.TrimSpace(scanner.Bytes())
+		if len(line) == 0 {
+			continue
+		}
+		frame, err := bm.ParseFrame(line)
+		if err != nil {
+			log.Warn("parse error", "err", err)
+			continue
+		}
+		if frame == nil {
+			continue
+		}
+		if err := fn(*frame); err != nil {
+			return err
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return fmt.Errorf("scan %s: %w", path, err)
+	}
+	return nil
 }
