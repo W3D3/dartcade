@@ -26,6 +26,8 @@ const (
 	commandTimeout = 15 * time.Second
 	// Backend commands waiting to run; more are refused
 	commandQueue = 16
+	// How long one write to the backend may take before the connection is dropped
+	writeTimeout = 10 * time.Second
 )
 
 // Envelope wraps every outbound adbridge/v1 message.
@@ -177,7 +179,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 			BmUrl:         t.cfg.BMUrl,
 		},
 	}
-	if err := wsjson.Write(ctx, conn, hello); err != nil {
+	if err := write(ctx, conn, hello); err != nil {
 		return
 	}
 	// Stills queued for the previous connection are stale now
@@ -205,7 +207,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 
 	var sentUpTo uint64
 	for _, e := range snapshot {
-		if err := wsjson.Write(ctx, conn, e); err != nil {
+		if err := write(ctx, conn, e); err != nil {
 			return
 		}
 		sentUpTo = e.Seq
@@ -216,8 +218,9 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 	defer heartbeat.Stop()
 	defer deadline.Stop()
 
+	// The reader handles each message itself: acks and command queueing never block, so
+	// nothing the backend sends is dropped and the send loop never waits on it
 	readErr := make(chan error, 1)
-	readMsg := make(chan json.RawMessage, 32)
 	go func() {
 		for {
 			_, msg, err := conn.Read(ctx)
@@ -226,10 +229,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 				return
 			}
 			deadline.Reset(45 * time.Second)
-			select {
-			case readMsg <- msg:
-			default:
-			}
+			t.handleMessage(msg)
 		}
 	}()
 
@@ -247,7 +247,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		}
 		t.mu.Unlock()
 		for _, e := range toSend {
-			if err := wsjson.Write(ctx, conn, e); err != nil {
+			if err := write(ctx, conn, e); err != nil {
 				return false
 			}
 		}
@@ -265,17 +265,15 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 			log.Warn("backend heartbeat timeout")
 			return
 		case <-heartbeat.C:
-			if err := wsjson.Write(ctx, conn, map[string]string{"ping": "1"}); err != nil {
+			if err := write(ctx, conn, map[string]string{"ping": "1"}); err != nil {
 				return
 			}
-		case msg := <-readMsg:
-			t.handleMessage(ctx, msg)
 		case st := <-t.stills:
 			// Events first: a dart waiting in the outbox never queues behind a picture
 			if !flush() {
 				return
 			}
-			if err := wsjson.Write(ctx, conn, st); err != nil {
+			if err := write(ctx, conn, st); err != nil {
 				return
 			}
 		case <-t.wake:
@@ -284,6 +282,14 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 			}
 		}
 	}
+}
+
+// write sends v on conn, giving up after writeTimeout so a stalled backend can't hang the
+// send loop.
+func write(ctx context.Context, conn *websocket.Conn, v any) error {
+	ctx, cancel := context.WithTimeout(ctx, writeTimeout)
+	defer cancel()
+	return wsjson.Write(ctx, conn, v)
 }
 
 func (t *Transport) enqueue(evs []differ.Event) {
@@ -370,7 +376,8 @@ func marshalData(ev differ.Event, bmFrameSeq uint64) (json.RawMessage, error) {
 	return json.Marshal(ev.Data)
 }
 
-func (t *Transport) handleMessage(ctx context.Context, msg json.RawMessage) {
+// handleMessage handles a message from the backend: an ack or a command. It must not block.
+func (t *Transport) handleMessage(msg []byte) {
 	var ack struct {
 		Ack *uint64 `json:"ack"`
 	}

@@ -693,6 +693,63 @@ func TestHungCommandDoesNotBlockTheSendLoop(t *testing.T) {
 	}
 }
 
+// A burst of commands while one hangs is never silently dropped: each one gets a
+// command.result, refused ones with ok false.
+func TestEveryCommandInABurstGetsAResult(t *testing.T) {
+	const burst = 60
+	results := make(chan string, burst)
+	s := newTestServer(t, func(conn *websocket.Conn) {
+		ctx := context.Background()
+		for i := range burst {
+			wsjson.Write(ctx, conn, map[string]any{"command_id": fmt.Sprint(i), "name": "reset"})
+		}
+		for {
+			e, err := readSkipHello(ctx, conn)
+			if err != nil {
+				return
+			}
+			if e.Kind == "command.result" {
+				var d schema.CommandResultData
+				json.Unmarshal(e.Data, &d)
+				results <- d.CommandId
+			}
+		}
+	})
+
+	release := make(chan struct{})
+	execFn := func(ctx context.Context, name string) (int, error) {
+		select {
+		case <-release:
+			return 200, nil
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		}
+	}
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, execFn)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	go tr.Start(ctx) //nolint
+
+	seen := map[string]bool{}
+	timeout := time.After(2 * time.Second)
+	for len(seen) < burst {
+		select {
+		case id := <-results:
+			seen[id] = true
+			// At most commandsInFlight are running or queued, the rest are refused at once;
+			// once those are in, let the hung and queued ones finish
+			if len(seen) == burst-commandsInFlight {
+				close(release)
+			}
+		case <-timeout:
+			t.Fatalf("%d of %d commands got a result", len(seen), burst)
+		}
+	}
+}
+
+// One running plus the queue (transport.commandQueue).
+const commandsInFlight = 1 + 16
+
 // Events sent while the backend is unreachable stay in the outbox and are all delivered,
 // in order, once it connects, however many batches piled up.
 func TestEventsSentWhileDisconnectedAreDelivered(t *testing.T) {
