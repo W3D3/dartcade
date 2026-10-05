@@ -11,6 +11,7 @@ import {
 import { CameraMessageSchema, ErrorMessageSchema, NoticeMessageSchema, SnapshotSchema } from './api/zod'
 import { cameraKey, type CameraVersions } from './camera'
 import { afterGameRoute } from './endControl'
+import { reconnectingSocket } from './reconnectingSocket'
 
 export type { Snapshot }
 
@@ -54,78 +55,59 @@ export function createSessionStore(sessionId: string) {
   const cameras = writable<CameraVersions>({})
   // The game socket is open (false while it reconnects)
   const connected = writable(false)
-  let ws: WebSocket | null = null
-  let closed = false
-  let backoff = 500
-
-  function connect() {
-    if (closed) return
-    ws = new WebSocket(`/ws?sessionId=${encodeURIComponent(sessionId)}`)
-    ws.onopen = () => {
-      connected.set(true)
-    }
-    ws.onmessage = e => {
-      try {
-        if (typeof e.data !== 'string') return
-        const data: unknown = JSON.parse(e.data)
-        const snap = parseSnapshot(data)
-        if (snap) {
-          snapshot.set(snap)
-          backoff = 500
-          return
-        }
-        // Each notice is a new object, so subscribers hear the same notice twice in a row too
-        const n = parseNotice(data)
-        if (n) {
-          notice.set(n)
-          return
-        }
-        const err = parseError(data)
-        if (err) {
-          error.set(err)
-          return
-        }
-        const cam = parseCamera(data)
-        if (cam) {
-          const key = cameraKey(cam.boardId, cam.cam)
-          cameras.update(v => ((v[key] ?? 0) >= cam.version ? v : { ...v, [key]: cam.version }))
-        }
-      } catch {}
-    }
-    ws.onclose = e => {
+  const socket = reconnectingSocket(`/ws?sessionId=${encodeURIComponent(sessionId)}`, {
+    onOpen: () => connected.set(true),
+    onMessage: data => {
+      const snap = parseSnapshot(data)
+      if (snap) {
+        snapshot.set(snap)
+        return
+      }
+      // Each notice is a new object, so subscribers hear the same notice twice in a row too
+      const n = parseNotice(data)
+      if (n) {
+        notice.set(n)
+        return
+      }
+      const err = parseError(data)
+      if (err) {
+        error.set(err)
+        return
+      }
+      const cam = parseCamera(data)
+      if (cam) {
+        const key = cameraKey(cam.boardId, cam.cam)
+        cameras.update(v => ((v[key] ?? 0) >= cam.version ? v : { ...v, [key]: cam.version }))
+      }
+    },
+    onClose: closeCode => {
       connected.set(false)
       // The close code's name, when it is one of ours
-      const code: string | undefined = WsCloseCode[e.code]
+      const code: string | undefined = WsCloseCode[closeCode]
       if (code === 'Unauthorized') {
         window.location.hash = '#/login'
-        return
+        return 'stop'
       }
       // Not this user's session, or it no longer exists: retrying won't help. A successful
       // Leave or End already navigated away by the time this fires (a reconnect racing the
       // session's deletion): only follow it while this session's page is still showing.
       if (code === 'Forbidden' || code === 'NotFound') {
-        closed = true
         if (/^#\/session\/([^/?]+)/.exec(window.location.hash)?.[1] === sessionId) {
           window.location.hash = `#${afterGameRoute(get(snapshot))}`
         }
-        return
+        return 'stop'
       }
-      if (!closed) setTimeout(connect, backoff)
-      backoff = Math.min(backoff * 2, 30_000)
-    }
-    ws.onerror = () => ws?.close()
-  }
-
-  connect()
+    },
+  })
 
   function send(action: UserAction) {
     const msg: ClientMessage = { type: 'user_action', action }
-    ws?.send(JSON.stringify(msg))
+    socket.send(JSON.stringify(msg))
   }
 
   function destroy() {
-    closed = true
-    ws?.close()
+    socket.stop()
+    connected.set(false)
   }
 
   const noticeStore: Readable<NoticeMessage | null> = { subscribe: notice.subscribe }
