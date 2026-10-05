@@ -126,6 +126,22 @@ describe('BrowserConnections: when a player left', () => {
     bc.remove('s1', sock(), at)
     expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
   })
+
+  it("forget drops a game's times, not its open sockets or other games", () => {
+    const bc = new BrowserConnections()
+    const lena = sock()
+    const max = sock()
+    const other = sock()
+    bc.add('s1', lena, 'lena')
+    bc.add('s1', max, 'max')
+    bc.add('s2', other, 'lena')
+    bc.remove('s1', lena, at)
+    bc.remove('s2', other, at)
+    bc.forget('s1')
+    expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
+    expect(bc.connectedUsers('s1')).toEqual(new Set(['max']))
+    expect(bc.disconnectedAt('s2', 'lena')).toEqual(at)
+  })
 })
 
 describe('WS auth', () => {
@@ -538,6 +554,55 @@ describe('WS client messages', () => {
     await new Promise(r => setTimeout(r, 100))
 
     expect(browserConnections.connectedUsers(sessionId)).toEqual(new Set())
+  })
+
+  it('remembers nobody leaving a game the engine has forgotten', async () => {
+    const { getAuthUser } = await import('../auth/session.js')
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    const { SessionEngine } = await import('../session/engine.js')
+    const { atcModule } = await import('../games/atc.js')
+    const { browserGwPlugin, browserConnections, forgetSession } = await import('./handler.js')
+    const store = {
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
+      abortSession: vi.fn().mockResolvedValue(undefined),
+    }
+    const engine = new SessionEngine(store, vi.fn(), undefined, undefined, undefined, undefined, { forgotten: forgetSession })
+    const opened = async (sessionId: string) => {
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
+      await new Promise<void>((resolve, reject) => {
+        ws.addEventListener('message', () => resolve(), { once: true }) // initial snapshot
+        setTimeout(() => reject(new Error('no snapshot')), 2000)
+      })
+      return ws
+    }
+    testApp = Fastify()
+    await testApp.register(fastifyWebsocket)
+    await testApp.register(browserGwPlugin, { engine })
+    await testApp.listen({ port: 0, host: '127.0.0.1' })
+    const port = (testApp.server.address() as AddressInfo).port
+
+    // Closed while the game runs, then the game is aborted: its time goes with it
+    const first = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
+    const ws1 = await opened(first.sessionId)
+    ws1.close()
+    await new Promise(r => setTimeout(r, 100))
+    expect(browserConnections.disconnectedAt(first.sessionId, 'user-1')).not.toBeNull()
+    await engine.deleteSession(first.sessionId)
+    expect(browserConnections.disconnectedAt(first.sessionId, 'user-1')).toBeNull()
+
+    // Still open when the game is aborted, closed after: nothing is remembered either
+    const second = await engine.create('user-1', null, 'atc', atcModule.defaultConfig, [{ name: 'A' }])
+    const ws2 = await opened(second.sessionId)
+    await engine.deleteSession(second.sessionId)
+    ws2.close()
+    await new Promise(r => setTimeout(r, 100))
+    expect(browserConnections.disconnectedAt(second.sessionId, 'user-1')).toBeNull()
   })
 })
 

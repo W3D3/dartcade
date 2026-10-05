@@ -13,8 +13,10 @@ export class LobbyHub {
   addLobbySocket(lobbyId: string, ws: WebSocket, userId: string): void {
     this.lobbies.add(lobbyId, ws, userId)
   }
+  // Lobbies and /ws/me never ask when someone left: forget it right away
   removeLobbySocket(lobbyId: string, ws: WebSocket): void {
     this.lobbies.remove(lobbyId, ws)
+    this.lobbies.forget(lobbyId)
   }
 
   /** Members with the lobby open: shown online, the others away. */
@@ -51,6 +53,7 @@ export class LobbyHub {
 
   removeMeSocket(userId: string, ws: WebSocket): void {
     this.users.remove(userId, ws)
+    this.users.forget(userId)
     if (!this.users.has(userId)) {
       this.lastMe.delete(userId)
       this.lastFriends.delete(userId)

@@ -3,7 +3,7 @@ import { fileURLToPath } from 'url'
 import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
-import { pushNotice, pushSnapshot } from './browser-gw/handler.js'
+import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
 import { buildApp } from './app.js'
 import { LobbyHub } from './lobby/hub.js'
@@ -49,6 +49,7 @@ const engine: SessionEngine = new SessionEngine(
   },
   ended => lobbies.onGameEnded(ended),
   started => lobbies.onGameStarted(started),
+  { forgotten: forgetSession },
 )
 const friends = new FriendsService({
   db,
