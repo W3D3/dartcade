@@ -16,6 +16,12 @@ import (
 	"github.com/coder/websocket"
 )
 
+// httpTimeout bounds every HTTP call to the Board Manager, so a board that stops answering
+// can't hang a poll or a command.
+const httpTimeout = 10 * time.Second
+
+var httpClient = &http.Client{Timeout: httpTimeout}
+
 // Client connects to Board Manager, emits BMFrames, and provides HTTP command methods.
 type Client struct {
 	boardURL  string
@@ -210,7 +216,12 @@ func (c *Client) pollLoop(ctx context.Context) {
 
 // Reset calls POST /api/reset on the board.
 func (c *Client) Reset(ctx context.Context) (int, error) {
-	resp, err := http.Post(c.boardURL+"/api/reset", "application/json", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.boardURL+"/api/reset", nil)
+	if err != nil {
+		return 0, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
@@ -230,14 +241,14 @@ func (c *Client) StopDetection(ctx context.Context) (int, error) {
 
 func (c *Client) putWithFallback(ctx context.Context, path, fallback string) (int, error) {
 	req, _ := http.NewRequestWithContext(ctx, http.MethodPut, c.boardURL+path, nil)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
 	resp.Body.Close()
 	if resp.StatusCode == 404 || resp.StatusCode == 405 {
 		req2, _ := http.NewRequestWithContext(ctx, http.MethodPut, c.boardURL+fallback, nil)
-		resp2, err := http.DefaultClient.Do(req2)
+		resp2, err := httpClient.Do(req2)
 		if err != nil {
 			return 0, err
 		}
@@ -262,7 +273,7 @@ func httpGet(ctx context.Context, url string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	return http.DefaultClient.Do(req)
+	return httpClient.Do(req)
 }
 
 // redactSecrets replaces values of sensitive keys at any depth in a JSON object.
