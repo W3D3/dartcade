@@ -57,61 +57,6 @@ export function nearbyPicks(label: string): string[] {
   return [...out.slice(0, 6), 'Miss']
 }
 
-type OutMode = 'straight' | 'double' | 'master'
-
-export function checkoutHint(remaining: number, outMode: OutMode = 'double', dartsLeft = 3): string[] | null {
-  if (remaining < 1 || remaining > 170) return null
-  const n = Math.min(dartsLeft, 3)
-
-  // Valid finishing darts; the easiest dart wins a total (a single before a double before a triple)
-  const finishMap = new Map<number, string>()
-  const add = (v: number, l: string) => {
-    if (!finishMap.has(v)) finishMap.set(v, l)
-  }
-  if (outMode === 'straight') {
-    for (let k = 20; k >= 1; k--) add(k, `S${k}`)
-    add(25, '25')
-  }
-  for (let k = 20; k >= 1; k--) add(2 * k, `D${k}`)
-  add(50, 'Bull')
-  if (outMode !== 'double') for (let k = 20; k >= 1; k--) add(3 * k, `T${k}`)
-
-  // 1-dart finish
-  const one = finishMap.get(remaining)
-  if (n >= 1 && one) return [one]
-
-  // Scoring darts (preferred order: triples high→low skipping T1, then singles, then bull)
-  // T1 omitted: S3 scores the same and is always the saner suggestion
-  const scoring: { l: string; v: number }[] = []
-  for (let k = 20; k >= 2; k--) scoring.push({ l: `T${k}`, v: 3 * k })
-  for (let k = 20; k >= 1; k--) scoring.push({ l: `S${k}`, v: k })
-  scoring.push({ l: '25', v: 25 }, { l: 'Bull', v: 50 })
-
-  // 2-dart finish
-  if (n >= 2) {
-    for (const d of scoring) {
-      const rest = remaining - d.v
-      const fin = finishMap.get(rest)
-      if (rest >= 1 && fin) return [d.l, fin]
-    }
-  }
-
-  // 3-dart finish
-  if (n >= 3) {
-    for (const d1 of scoring) {
-      const r1 = remaining - d1.v
-      if (r1 < 2) continue
-      for (const d2 of scoring) {
-        const r2 = r1 - d2.v
-        const fin = finishMap.get(r2)
-        if (r2 >= 1 && fin) return [d1.l, d2.l, fin]
-      }
-    }
-  }
-
-  return null
-}
-
 /** A picker label (T20, D5, S3, 25, Bull, Miss) as the segment Board Manager would report. */
 export function labelToSegment(label: string): Segment {
   if (label === 'Bull') return { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }

@@ -3,6 +3,7 @@
 import { fmtAvg, x01Player } from './playerStats.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
 import type { ScoreUpdates } from './heldScore.js'
+import type { CheckoutPrefs } from './checkout.js'
 import type { X01Game } from './api/game-ws'
 import { initial } from './fmt.js'
 
@@ -69,7 +70,7 @@ export function x01Teams(
   game: X01Game,
   players: { name: string }[],
   history: VisitHistory,
-  o: { suggest: boolean; scoreUpdates?: ScoreUpdates },
+  o: { suggest: boolean; checkout?: CheckoutPrefs; scoreUpdates?: ScoreUpdates },
 ): X01TeamView[] {
   const teams = game.teams
   if (!teams) return []
@@ -87,6 +88,7 @@ export function x01Teams(
     const p = x01Player(game, seat, history, {
       active,
       suggest: o.suggest,
+      checkout: o.checkout,
       bust: active && game.bustThisVisit,
       scoreUpdates: o.scoreUpdates,
     })

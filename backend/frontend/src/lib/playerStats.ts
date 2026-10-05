@@ -1,5 +1,5 @@
 // What a player panel or row shows, computed from the game snapshot and the visit history.
-import { checkoutHint } from './dartUtils.js'
+import { checkoutHint, type CheckoutPrefs } from './checkout.js'
 import { atcCells, atcDone, atcTargetLabel, type AtcCell } from './atc.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
 import { shownScore, type ScoreUpdates } from './heldScore.js'
@@ -38,14 +38,16 @@ export function x01Player(
   game: X01Game,
   i: number,
   history: VisitHistory,
-  o: { active: boolean; suggest: boolean; bust?: boolean; scoreUpdates?: ScoreUpdates },
+  o: { active: boolean; suggest: boolean; checkout?: CheckoutPrefs; bust?: boolean; scoreUpdates?: ScoreUpdates },
 ): X01PlayerView {
   const remaining = game.scores.at(i) ?? 0
   const opened = game.opened.at(i) ?? true
   const running = o.active ? game.currentVisitDarts : []
   const dartsLeft = 3 - running.length
   const hint =
-    o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, game.config.outMode, dartsLeft) : null
+    o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0
+      ? checkoutHint(remaining, game.config.outMode, dartsLeft, o.checkout)
+      : null
   const all = history.all.at(i) ?? []
   const leg = history.leg.at(i) ?? []
   const last = all.at(-1)

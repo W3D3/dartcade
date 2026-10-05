@@ -20,6 +20,12 @@ describe('loadSettings', () => {
     expect(s).not.toHaveProperty('bogus')
   })
 
+  it('keeps a favourite double of 1–20 or the bull (25), and drops anything else', () => {
+    const fav = (v: unknown) => loadSettings(store(JSON.stringify({ favouriteDouble: v }))).favouriteDouble
+    expect([fav(16), fav(25), fav(null)]).toEqual([16, 25, null])
+    expect([fav(0), fav(21), fav(16.5), fav('16')]).toEqual([null, null, null, null])
+  })
+
   it("keeps the setting for other players' targets on the board", () => {
     expect(defaultSettings.showMarkers).toBe(false)
     expect(loadSettings(store(JSON.stringify({ showMarkers: true }))).showMarkers).toBe(true)

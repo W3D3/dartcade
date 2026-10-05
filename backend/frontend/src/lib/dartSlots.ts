@@ -1,5 +1,6 @@
 // The three dart slots under the board: thrown darts, then what to aim at next.
-import { checkoutHint, parseLabel } from './dartUtils.js'
+import { parseLabel } from './dartUtils.js'
+import { checkoutHint, type CheckoutPrefs } from './checkout.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'bust' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
 export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string }
@@ -50,6 +51,8 @@ export function x01Slots(o: {
   opened: boolean
   bust: boolean
   suggest: boolean
+  /** The player's checkout preferences (favourite double). */
+  checkout?: CheckoutPrefs
 }): Slot[] {
   const done = o.darts.slice(0, 3).map((d, i) => {
     const score = d.score ?? 0
@@ -68,7 +71,8 @@ export function x01Slots(o: {
     ]
   }
   const dartsLeft = 3 - done.length
-  const hint = o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0 ? checkoutHint(o.remaining, o.outMode, dartsLeft) : null
+  const hint =
+    o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0 ? checkoutHint(o.remaining, o.outMode, dartsLeft, o.checkout) : null
   let rest = o.remaining
   const suggestions = (hint ?? []).map((label, k, all) => {
     rest -= parseLabel(label).score
