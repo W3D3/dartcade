@@ -101,9 +101,12 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
   const left = seatsOf.map(s => g.scores[s[0]] ?? 0)
   // The saved game's placements once it loads (they know who forfeited); a side shares its best seat's
   const saved = detail?.game.players
-  const places = saved
-    ? seatsOf.map(s => Math.min(...s.map(i => saved.find(p => p.seat === i)?.placement ?? Infinity)))
-    : rank(seatsOf.length, winnerSide, (a, b) => legs[b] - legs[a] || left[a] - left[b])
+  const ranked = rank(seatsOf.length, winnerSide, (a, b) => legs[b] - legs[a] || left[a] - left[b])
+  const savedPlace = (seats: number[]) => {
+    const found = seats.flatMap(i => saved?.find(p => p.seat === i)?.placement ?? [])
+    return found.length ? Math.min(...found) : null
+  }
+  const places = seatsOf.map((s, i) => savedPlace(s) ?? ranked[i])
 
   const sum = (seats: number[], key: string) => seats.reduce((a, s) => a + (stat(detail, s, key) ?? 0), 0)
   const darts = seatsOf.map(s => s.reduce((a, i) => a + (g.totalDarts[i] ?? 0), 0))
@@ -234,7 +237,9 @@ export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
   const w = ranked[0]
   const r = ranked.at(1)
   const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
-  const pct = (s: string) => Number.parseInt(s, 10) || 0
+  // Hits per dart, for the hit rate's bar
+  const rate = (seat: number) => (g.totalDarts[seat] ? (g.hitCounts[seat] ?? 0) / g.totalDarts[seat] : 0)
+  const [ws, rs] = competitors.map(c => c.seats[0])
   return {
     mode: 'atc',
     layout: views.length > 2 ? 'party' : 'duel',
@@ -250,7 +255,7 @@ export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
         : [
             { label: 'Targets done', values: pair(String(w.done), String(r.done)), share: share(w.done, r.done) },
             { label: 'Darts thrown', values: pair(String(w.darts), String(r.darts)), share: share(w.darts, r.darts) },
-            { label: 'Hit rate', values: pair(w.hitRate, r.hitRate), share: share(pct(w.hitRate), pct(r.hitRate)) },
+            { label: 'Hit rate', values: pair(w.hitRate, r.hitRate), share: share(rate(ws), rate(rs)) },
           ],
     columns: ['Targets', 'Darts', 'Hit rate'],
     highlights: [],
