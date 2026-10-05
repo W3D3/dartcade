@@ -43,8 +43,8 @@
              {isSelected
         ? isNonDefault
           ? 'bg-accent/15 text-accent font-semibold ring-1 ring-accent/40 ring-inset'
-          : 'bg-[#2a2d27] text-text font-semibold'
-        : 'bg-transparent text-[#c9c9bf] font-medium'}"
+          : 'bg-line text-text font-semibold'
+        : 'bg-transparent text-ink-2 font-medium'}"
     >
       {#if opt.tooltip}
         <span class="flex items-center justify-center gap-1">

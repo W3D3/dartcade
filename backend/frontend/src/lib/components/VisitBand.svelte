@@ -147,7 +147,7 @@
       box-shadow:
         0 0 0 8px rgba(198, 242, 78, 0.16),
         0 0 36px rgba(198, 242, 78, 0.25);
-      border-color: #dcff7a;
+      border-color: var(--color-accent-hover);
     }
   }
   @keyframes dc-num {

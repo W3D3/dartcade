@@ -53,13 +53,13 @@
 
       <div class="flex flex-col gap-[18px]">
         <div class="flex flex-col gap-2">
-          <label for="login-email" class="text-[14px] font-medium text-[#d8d8ce]">Email</label>
+          <label for="login-email" class="text-[14px] font-medium text-ink-soft">Email</label>
           <Input id="login-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
         </div>
 
         <div class="flex flex-col gap-2">
           <div class="flex justify-between items-baseline">
-            <label for="login-password" class="text-[14px] font-medium text-[#d8d8ce]">Password</label>
+            <label for="login-password" class="text-[14px] font-medium text-ink-soft">Password</label>
             <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
           </div>
           <Input
@@ -72,7 +72,7 @@
           />
         </div>
 
-        <label class="flex items-center gap-[10px] text-[15px] text-[#c9c9bf] min-h-[44px] cursor-pointer">
+        <label class="flex items-center gap-[10px] text-[15px] text-ink-2 min-h-[44px] cursor-pointer">
           <input type="checkbox" bind:checked={keepSignedIn} class="w-[18px] h-[18px] m-0 accent-accent" />
           Keep me signed in on this device
         </label>

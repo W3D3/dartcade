@@ -87,7 +87,7 @@
           aria-label={slot.aria}
           class="{slotBox} cursor-pointer
                  {slot.kind === 'thrown' ? 'bg-accent text-accent-fg border-0' : 'bg-surface-chip text-text border border-line-key'}
-                 {openDart === i ? '[box-shadow:0_0_0_3px_#0f100e,0_0_0_5px_#c6f24e]' : ''}"
+                 {openDart === i ? '[box-shadow:0_0_0_3px_var(--color-bg),0_0_0_5px_var(--color-accent)]' : ''}"
           class:fx-pop={popIndex === i}
         >
           <span class={slotLabel}>{slot.label}</span>

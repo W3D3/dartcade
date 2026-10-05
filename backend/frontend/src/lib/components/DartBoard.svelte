@@ -310,8 +310,8 @@
   // Markers on the same segment are spread so none hides another
   const otherMarkerPos = $derived(markerPositions(playerMarkers.filter(m => !m.isActive).map(m => m.segment)))
 
-  const DOT_COLORS = ['#c6f24e', '#c6f24e', '#c6f24e']
-  const DOT_STROKE = '#0f100e'
+  const DOT_COLORS = ['var(--color-accent)', 'var(--color-accent)', 'var(--color-accent)']
+  const DOT_STROKE = 'var(--color-bg)'
   // Zoomed content is clipped to the board's round background
   const uid = $props.id()
   const clipId = `board-clip-${uid}`
@@ -348,7 +348,12 @@
     >
     <clipPath id={photoClipId}><circle cx="0" cy="0" r="1.12" /></clipPath>
   </defs>
-  {#if zoomBox}<rect x="-5" y="-5" width="10" height="10" fill="#0a0b09" />{:else}<circle cx="0" cy="0" r="1.12" fill="#0a0b09" />{/if}
+  {#if zoomBox}<rect x="-5" y="-5" width="10" height="10" fill="var(--color-bg-deep)" />{:else}<circle
+      cx="0"
+      cy="0"
+      r="1.12"
+      fill="var(--color-bg-deep)"
+    />{/if}
 
   <g clip-path="url(#{clipId})">
     <g style="transform: {zoom === 1 ? 'none' : `scale(${zoom})`}; transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
@@ -437,7 +442,7 @@
       />
 
       {#if dim}
-        <circle cx="0" cy="0" r="1.12" fill="#0a0b09" fill-opacity="0.45" style="pointer-events:none" />
+        <circle cx="0" cy="0" r="1.12" fill="var(--color-bg-deep)" fill-opacity="0.45" style="pointer-events:none" />
       {/if}
 
       <!-- ATC targets: thrower's in lime, next player's dashed white -->
@@ -445,8 +450,14 @@
         {#if t.seg}
           {@const sector = sectors.find(s => s.num === t.seg)}
           {@const style = t.next
-            ? { fill: 'none', 'fill-opacity': '0', stroke: '#efeee6', 'stroke-width': '0.012', 'stroke-dasharray': '0.035 0.024' }
-            : { fill: '#c6f24e', 'fill-opacity': '0.38', stroke: '#c6f24e', 'stroke-width': '0.018', 'stroke-dasharray': 'none' }}
+            ? { fill: 'none', 'fill-opacity': '0', stroke: 'var(--color-text)', 'stroke-width': '0.012', 'stroke-dasharray': '0.035 0.024' }
+            : {
+                fill: 'var(--color-accent)',
+                'fill-opacity': '0.38',
+                stroke: 'var(--color-accent)',
+                'stroke-width': '0.018',
+                'stroke-dasharray': 'none',
+              }}
           {#if sector}
             <path d={sectorPath(R.bull25, R.db, sector.a1, sector.a2)} {...style} stroke-linejoin="round" style="pointer-events:none" />
           {:else if t.seg === 25 || t.seg === 50}
@@ -462,7 +473,7 @@
           y={ty}
           text-anchor="middle"
           dy="0.35em"
-          fill={num === target ? '#c6f24e' : dim ? '#8f9085' : '#efeee6'}
+          fill={num === target ? 'var(--color-accent)' : dim ? 'var(--color-text-dim)' : 'var(--color-text)'}
           font-size={num === target ? '0.123' : '0.09'}
           font-family="Barlow Condensed, sans-serif"
           font-weight={num === target ? '700' : '600'}
@@ -476,13 +487,21 @@
       {#each playerMarkers.filter(m => !m.isActive) as marker, k (k)}
         {@const pos = otherMarkerPos[k]}
         {#if pos}
-          <circle cx={pos.x} cy={pos.y} r="0.085" fill="white" stroke="#0a0b09" stroke-width="0.01" style="pointer-events:none" />
+          <circle
+            cx={pos.x}
+            cy={pos.y}
+            r="0.085"
+            fill="white"
+            stroke="var(--color-bg-deep)"
+            stroke-width="0.01"
+            style="pointer-events:none"
+          />
           <text
             x={pos.x}
             y={pos.y}
             text-anchor="middle"
             dy="0.35em"
-            fill="#0a0b09"
+            fill="var(--color-bg-deep)"
             font-size="0.072"
             font-family="Barlow Condensed, sans-serif"
             font-weight="bold"
@@ -513,9 +532,9 @@
                 cx={pos.x}
                 cy={-pos.y}
                 r="0.075"
-                fill="#c6f24e"
+                fill="var(--color-accent)"
                 fill-opacity="0.18"
-                stroke="#c6f24e"
+                stroke="var(--color-accent)"
                 stroke-width="0.012"
                 stroke-dasharray="0.02 0.015"
               />
@@ -552,7 +571,7 @@
             y="1.05"
             text-anchor="middle"
             dy="0.35em"
-            fill="#c6f24e"
+            fill="var(--color-accent)"
             font-size="0.1"
             font-family="Barlow Condensed, sans-serif"
             style="pointer-events:none">✕</text
@@ -570,7 +589,7 @@
             cy={pos.y}
             r="0.076"
             fill="none"
-            stroke="#c6f24e"
+            stroke="var(--color-accent)"
             stroke-width="0.015"
             stroke-dasharray="0.024 0.018"
             style="pointer-events:none"
@@ -588,7 +607,7 @@
        black/cream segments and the red/green rings. -->
   {#if zoomBox && shown && aimed}
     {@const at = shown}
-    {@const tone = aimOff ? '#ff8a80' : '#c6f24e'}
+    {@const tone = aimOff ? 'var(--color-live-text)' : 'var(--color-accent)'}
     {@const outline = 'rgba(8,9,7,0.8)'}
     <svg x={zoomBox.x} y={zoomBox.y} width={zoomBox.w} height={zoomBox.w} viewBox="-1.15 -1.15 2.3 2.3" style="pointer-events:none">
       <circle cx={at.x} cy={at.y} r="0.045" fill="none" stroke={outline} stroke-width="0.026" />
@@ -613,7 +632,7 @@
         width="0.52"
         height="0.16"
         rx="0.08"
-        fill="#0f100e"
+        fill="var(--color-bg)"
         fill-opacity="0.85"
         stroke={tone}
         stroke-width="0.008"

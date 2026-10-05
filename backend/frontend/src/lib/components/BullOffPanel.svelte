@@ -130,7 +130,7 @@
     <circle
       r={mm / BOARD_MM}
       fill="none"
-      stroke="#efeee6"
+      stroke="var(--color-text)"
       stroke-opacity="0.22"
       stroke-width={1.2 / z / 170}
       stroke-dasharray="{4 / z / 170} {4 / z / 170}"
@@ -139,7 +139,7 @@
       <text
         x={(mm + 0.6) / BOARD_MM}
         y={-1 / z / 170}
-        fill="#efeee6"
+        fill="var(--color-text)"
         fill-opacity="0.55"
         font-size={10 / z / 170}
         font-family="JetBrains Mono, monospace">{mm} mm</text
@@ -151,9 +151,9 @@
   {#if best && !result}
     <circle
       r={best.mm / BOARD_MM}
-      fill="#c6f24e"
+      fill="var(--color-accent)"
       fill-opacity="0.10"
-      stroke="#c6f24e"
+      stroke="var(--color-accent)"
       stroke-width={2 / z / 170}
       stroke-dasharray="{6 / z / 170} {4 / z / 170}"
     />
@@ -164,12 +164,12 @@
     {#if t && t.mm !== null}
       {@const p = markerPos(t, i)}
       {@const lead = best?.player === i}
-      {@const color = lead ? '#c6f24e' : '#efeee6'}
+      {@const color = lead ? 'var(--color-accent)' : 'var(--color-text)'}
       <!-- Labels point away from the centre, or inwards for darts near the edge of the view -->
       {@const nearEdge = t.mm / viewMm > 0.4}
       {@const left = nearEdge ? p.x >= 0 : p.x < 0}
       <line x1="0" y1="0" x2={p.x} y2={p.y} stroke={color} stroke-width={1.5 / z / 170} />
-      <circle cx={p.x} cy={p.y} r={7 / z / 170} fill={color} stroke="#0f100e" stroke-width={2.5 / z / 170} />
+      <circle cx={p.x} cy={p.y} r={7 / z / 170} fill={color} stroke="var(--color-bg)" stroke-width={2.5 / z / 170} />
       <text
         x={p.x + (left ? -12 : 12) / z / 170}
         y={p.y}
@@ -180,7 +180,7 @@
         font-weight="700"
         font-family="Instrument Sans, sans-serif"
         paint-order="stroke"
-        stroke="#0f100e"
+        stroke="var(--color-bg)"
         stroke-width={4 / z / 170}
         stroke-linejoin="round"
       >

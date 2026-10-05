@@ -24,7 +24,7 @@ describe('DartBoard camera still', () => {
     expect(image).toContain('width="3"')
     expect(image).toContain('height="3"')
     // Under the dart marker and the numbers
-    expect(out.indexOf('<image')).toBeLessThan(out.indexOf('fill="#c6f24e"'))
+    expect(out.indexOf('<image')).toBeLessThan(out.indexOf('fill="var(--color-accent)"'))
     expect(out.indexOf('<image')).toBeLessThan(out.indexOf('>20<'))
     // The real board shows instead of the segment fills
     expect(out).not.toContain('fill="#d23b36"')

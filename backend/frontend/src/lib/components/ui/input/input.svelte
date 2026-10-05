@@ -28,7 +28,7 @@
     bind:this={ref}
     data-slot={dataSlot}
     class={cn(
-      'h-[52px] w-full min-w-0 rounded-[10px] border border-line-3 bg-surface-2 px-4 text-base text-text outline-none placeholder:text-[#7d7f74] focus-visible:[outline:2px_solid_#c6f24e] focus-visible:[outline-offset:2px] disabled:pointer-events-none disabled:opacity-50',
+      'h-[52px] w-full min-w-0 rounded-[10px] border border-line-3 bg-surface-2 px-4 text-base text-text outline-none placeholder:text-[#7d7f74] focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px] disabled:pointer-events-none disabled:opacity-50',
       className,
     )}
     type="file"
@@ -41,7 +41,7 @@
     bind:this={ref}
     data-slot={dataSlot}
     class={cn(
-      'h-[52px] w-full min-w-0 rounded-[10px] border border-line-3 bg-surface-2 px-4 text-base text-text outline-none placeholder:text-[#7d7f74] focus-visible:[outline:2px_solid_#c6f24e] focus-visible:[outline-offset:2px] disabled:pointer-events-none disabled:opacity-50',
+      'h-[52px] w-full min-w-0 rounded-[10px] border border-line-3 bg-surface-2 px-4 text-base text-text outline-none placeholder:text-[#7d7f74] focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px] disabled:pointer-events-none disabled:opacity-50',
       className,
     )}
     {type}

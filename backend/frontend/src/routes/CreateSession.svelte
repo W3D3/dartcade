@@ -175,7 +175,7 @@
       <!-- Setup aside -->
       <aside
         class="w-full lg:w-[440px] xl:w-[400px] lg:flex-shrink-0 box-border border border-line-2 rounded-[14px]
-                    bg-[#151713] flex flex-col lg:overflow-hidden"
+                    bg-surface-panel flex flex-col lg:overflow-hidden"
       >
         <!-- Scrollable body: title + config -->
         <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-themed p-4 md:p-6 pb-4 md:pb-4 flex flex-col gap-[22px]">
