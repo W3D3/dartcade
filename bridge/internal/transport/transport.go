@@ -22,6 +22,10 @@ import (
 const (
 	outboxMax     = 1000
 	schemaVersion = "adbridge/1.0"
+	// How long a backend command may take on the Board Manager
+	commandTimeout = 15 * time.Second
+	// Backend commands waiting to run; more are refused
+	commandQueue = 16
 )
 
 // Envelope wraps every outbound adbridge/v1 message.
@@ -51,8 +55,9 @@ type Config struct {
 	BridgeVersion string
 }
 
-// ExecuteFunc is called when the backend sends a valid command.
-type ExecuteFunc func(name string) (httpStatus int, err error)
+// ExecuteFunc is called when the backend sends a valid command. It runs off the send loop,
+// one command at a time, and ctx ends after commandTimeout.
+type ExecuteFunc func(ctx context.Context, name string) (httpStatus int, err error)
 
 // Transport manages the WSS connection to the backend.
 type Transport struct {
@@ -63,11 +68,15 @@ type Transport struct {
 	seq     uint64
 	// Signalled after Send adds to the outbox, so the live connection flushes it
 	wake chan struct{}
+	// Allowed backend commands waiting for runCommands
+	commands chan command
 	// Camera stills to send on the live connection (never queued for a later one)
 	stills    chan any
 	connected atomic.Bool
 	onConnect func()
 }
+
+type command struct{ id, name string }
 
 type outboxEntry struct {
 	env       Envelope
@@ -77,10 +86,11 @@ type outboxEntry struct {
 // New creates a Transport.
 func New(cfg Config, execute ExecuteFunc) *Transport {
 	return &Transport{
-		cfg:     cfg,
-		execute: execute,
-		wake:    make(chan struct{}, 1),
-		stills:  make(chan any, 2*camera.MaxCameras),
+		cfg:      cfg,
+		execute:  execute,
+		wake:     make(chan struct{}, 1),
+		commands: make(chan command, commandQueue),
+		stills:   make(chan any, 2*camera.MaxCameras),
 	}
 }
 
@@ -130,6 +140,7 @@ func (t *Transport) Send(evs []differ.Event) {
 
 // Start connects to the backend and runs the send loop. Blocks until ctx is cancelled.
 func (t *Transport) Start(ctx context.Context) error {
+	go t.runCommands(ctx)
 	delay := 500 * time.Millisecond
 	for {
 		if ctx.Err() != nil {
@@ -404,11 +415,37 @@ func (t *Transport) handleMessage(ctx context.Context, msg json.RawMessage) {
 		return
 	}
 
-	status, err := t.execute(cmd.Name)
-	ok := err == nil && status < 300
-	t.Send([]differ.Event{{Kind: "command.result", Data: &schema.CommandResultData{
-		CommandId:  cmd.CommandID,
-		Ok:         ok,
-		HttpStatus: &status,
-	}}})
+	// Run it off the send loop: a Board Manager that doesn't answer must not stall
+	// heartbeats, acks and events. The result goes out through the outbox.
+	select {
+	case t.commands <- command{id: cmd.CommandID, name: cmd.Name}:
+	default:
+		log.Error("too many backend commands waiting, rejecting", "name", cmd.Name)
+		t.Send([]differ.Event{{Kind: "command.result", Data: &schema.CommandResultData{
+			CommandId: cmd.CommandID,
+			Ok:        false,
+		}}})
+	}
+}
+
+// runCommands runs backend commands in the order they came, until ctx ends.
+func (t *Transport) runCommands(ctx context.Context) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case cmd := <-t.commands:
+			execCtx, cancel := context.WithTimeout(ctx, commandTimeout)
+			status, err := t.execute(execCtx, cmd.name)
+			cancel()
+			if err != nil {
+				log.Warn("backend command failed", "name", cmd.name, "err", err)
+			}
+			t.Send([]differ.Event{{Kind: "command.result", Data: &schema.CommandResultData{
+				CommandId:  cmd.id,
+				Ok:         err == nil && status < 300,
+				HttpStatus: &status,
+			}}})
+		}
+	}
 }

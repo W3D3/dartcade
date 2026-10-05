@@ -190,7 +190,7 @@ func TestCommandAllowlist_RejectsUnknown(t *testing.T) {
 	})
 
 	executed := false
-	execFn := func(name string) (int, error) {
+	execFn := func(_ context.Context, name string) (int, error) {
 		executed = true
 		return 200, nil
 	}
@@ -232,7 +232,7 @@ func TestCommandAllowlist_ExecutesAllowed(t *testing.T) {
 	})
 
 	executed := make(chan string, 1)
-	execFn := func(name string) (int, error) {
+	execFn := func(_ context.Context, name string) (int, error) {
 		executed <- name
 		return 200, nil
 	}
@@ -627,6 +627,69 @@ func TestOnConnectRunsOnEveryConnect(t *testing.T) {
 		case <-time.After(2 * time.Second):
 			t.Fatalf("OnConnect ran %d times, want 2", i)
 		}
+	}
+}
+
+// A command the Board Manager doesn't answer runs off the send loop: events keep flowing
+// while it hangs, it gets a deadline, and its result follows once it returns.
+func TestHungCommandDoesNotBlockTheSendLoop(t *testing.T) {
+	kinds := make(chan string, 10)
+	s := newTestServer(t, func(conn *websocket.Conn) {
+		ctx := context.Background()
+		wsjson.Write(ctx, conn, map[string]any{"command_id": "cmd3", "name": "reset"})
+		for {
+			e, err := readSkipHello(ctx, conn)
+			if err != nil {
+				return
+			}
+			kinds <- e.Kind
+		}
+	})
+
+	release := make(chan struct{})
+	started := make(chan bool, 1)
+	execFn := func(ctx context.Context, name string) (int, error) {
+		_, hasDeadline := ctx.Deadline()
+		started <- hasDeadline
+		select {
+		case <-release:
+			return 200, nil
+		case <-ctx.Done():
+			return 0, ctx.Err()
+		}
+	}
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, execFn)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	go tr.Start(ctx) //nolint
+
+	select {
+	case hasDeadline := <-started:
+		if !hasDeadline {
+			t.Error("command ctx has no deadline")
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("command never ran")
+	}
+
+	tr.Send([]differ.Event{{Kind: "visit.opened", Data: &schema.VisitOpenedData{VisitId: "v"}}})
+	select {
+	case k := <-kinds:
+		if k != "visit.opened" {
+			t.Fatalf("got %s while the command hung, want visit.opened", k)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("event not sent while the command hung")
+	}
+
+	close(release)
+	select {
+	case k := <-kinds:
+		if k != "command.result" {
+			t.Fatalf("got %s, want command.result", k)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("no command.result after the command returned")
 	}
 }
 
