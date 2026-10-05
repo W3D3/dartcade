@@ -58,6 +58,13 @@
   /* Settings: the drop zone for a voice pack's zip */
   --color-surface-drop: #171a13;
 
+  /* The Board Manager's status dot (lib/boardStatus.ts) */
+  --color-bm-green: #84cc16;
+  --color-bm-yellow: #facc15;
+  --color-bm-purple: #a78bfa;
+  --color-bm-red: #f87171;
+  --color-bm-gray: #4a4e45;
+
   /* The not-your-turn toast's bar runs out with it (6 s, lib/toast.ts) */
   --animate-drain: drain 6s linear forwards;
   @keyframes drain {

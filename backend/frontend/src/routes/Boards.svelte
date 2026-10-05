@@ -11,6 +11,7 @@
   import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
   import SelectedBoardBar from '$lib/components/boards/SelectedBoardBar.svelte'
   import { bmHost, fmtDate, fmtVersion } from '$lib/boards'
+  import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
   import { isTablet } from '$lib/viewport'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
@@ -206,46 +207,8 @@
   const onlineCount = $derived(boards.filter(b => b.online).length)
   const isRunning = $derived(bmStatus?.running === true)
 
-  const SPINNING = new Set(['Starting', 'Stopping', 'Calibrating'])
   const isSpinning = $derived(selected?.online && SPINNING.has(bmStatus?.status ?? ''))
 
-  type DotColor = 'green' | 'yellow' | 'purple' | 'red' | 'gray'
-  function bmDotColor(status: string | null, online: boolean): DotColor {
-    if (!online) return 'gray'
-    switch (status) {
-      case 'Running':
-      case 'Throw':
-      case 'Starting':
-        return 'green'
-      case 'Takeout':
-      case 'Takeout in progress':
-      case 'Stopping':
-        return 'yellow'
-      case 'Calibrating':
-      case 'Setup':
-        return 'purple'
-      case 'Stopped':
-      case 'Error':
-      case 'Offline':
-        return 'red'
-      default:
-        return 'gray'
-    }
-  }
-  const DOT_BG: Record<DotColor, string> = {
-    green: 'bg-[#84cc16]',
-    yellow: 'bg-[#facc15]',
-    purple: 'bg-[#a78bfa]',
-    red: 'bg-[#f87171]',
-    gray: 'bg-[#4a4e45]',
-  }
-  const DOT_TEXT: Record<DotColor, string> = {
-    green: 'text-[#84cc16]',
-    yellow: 'text-[#facc15]',
-    purple: 'text-[#a78bfa]',
-    red: 'text-[#f87171]',
-    gray: 'text-[#4a4e45]',
-  }
   const dotColor = $derived(bmDotColor(bmStatus?.status ?? null, selected?.online ?? false))
   const dotBg = $derived(DOT_BG[dotColor])
   const dotText = $derived(DOT_TEXT[dotColor])
