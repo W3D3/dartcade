@@ -7,6 +7,9 @@ export interface GameSettings {
   showMarkers: boolean
   /** Suggested checkout darts in the empty slots, rings on the board, "Can finish". */
   checkoutSuggestions: boolean
+  /** The double the player likes to finish on (1–20, 25 for the bull); null: the table's first
+   *  route. Not in the settings drawer yet. */
+  favouriteDouble: number | null
   visitSum: boolean
   chalkboard: boolean
   /** When the big score left counts down: after every dart, or once the visit is over. */
@@ -50,6 +53,7 @@ export const BOARD_VIEW_LABELS: Record<BoardView, string> = {
 export const defaultSettings: GameSettings = {
   showMarkers: false,
   checkoutSuggestions: true,
+  favouriteDouble: null,
   visitSum: true,
   chalkboard: true,
   scoreUpdates: 'dart',
@@ -77,6 +81,13 @@ const SettingsSchema = z
   .object({
     showMarkers: flag(d.showMarkers),
     checkoutSuggestions: flag(d.checkoutSuggestions),
+    favouriteDouble: z
+      .number()
+      .int()
+      .refine(v => (v >= 1 && v <= 20) || v === 25)
+      .nullable()
+      .catch(null)
+      .default(null),
     visitSum: flag(d.visitSum),
     chalkboard: flag(d.chalkboard),
     scoreUpdates: z.enum(['dart', 'visit']).catch(d.scoreUpdates).default(d.scoreUpdates),

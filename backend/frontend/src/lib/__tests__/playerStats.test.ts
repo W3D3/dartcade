@@ -57,7 +57,7 @@ describe('x01Player', () => {
     const p = x01Player(game(), 1, history([[], [visit(45, 87)]]), { active: false, suggest: true })
     expect(p.current).toBeNull()
     // First two-dart finish the finder meets (it prefers trebles high to low), not the design's sample T17 · D18
-    expect(p.canFinish).toBe('T19 · D15')
+    expect(p.canFinish).toBe('T17 · D18')
   })
 
   it('averages show a dash without visits', () => {

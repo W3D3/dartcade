@@ -141,7 +141,7 @@ describe('x01Teams', () => {
   it('the waiting team can finish with three darts', () => {
     const [, b] = x01Teams(game(), players, history(), opts)
     expect(b.active).toBe(false)
-    expect(b.canFinish).toBe('T19 · D15')
+    expect(b.canFinish).toBe('T17 · D18')
   })
 
   it('without a history the averages are dashes and the visit list is empty', () => {

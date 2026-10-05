@@ -249,9 +249,12 @@
   // The visit is over (bust, checkout, win): no more darts until the next player
   const locked = $derived(x01?.visitLocked === true || winner !== null)
   const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
+  // Checkout preferences: this device's for now; per player (from each seat's account) once they
+  // can be set in Settings
+  const checkout = $derived({ favouriteDouble: settings.favouriteDouble })
   // A team game (X01): one panel per team, sharing a score
   const teams = $derived(
-    x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions, scoreUpdates: settings.scoreUpdates }) : [],
+    x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions, checkout, scoreUpdates: settings.scoreUpdates }) : [],
   )
   const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch))
   // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
@@ -271,6 +274,7 @@
           x01Player(x01, i, history, {
             active: i === currentPlayer && isActive,
             suggest: settings.checkoutSuggestions,
+            checkout,
             bust: i === currentPlayer && bust,
             scoreUpdates: settings.scoreUpdates,
           }),
@@ -291,6 +295,7 @@
           remaining: x01Players[currentPlayer]?.remaining ?? 0,
           opened: x01Players[currentPlayer]?.opened ?? true,
           suggest: settings.checkoutSuggestions && isActive,
+          checkout,
         })
       : atcSlots({
           darts,
