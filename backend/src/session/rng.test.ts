@@ -3,7 +3,8 @@ import { seededRng, newSeed, shuffle } from './rng.js'
 
 describe('seededRng', () => {
   it('gives the same numbers for the same seed', () => {
-    const a = seededRng(42), b = seededRng(42)
+    const a = seededRng(42),
+      b = seededRng(42)
     const xs = [a(), a(), a()]
     expect([b(), b(), b()]).toEqual(xs)
   })
@@ -32,6 +33,6 @@ describe('shuffle', () => {
     const once = shuffle(xs, seededRng(9))
     expect(shuffle(xs, seededRng(9))).toEqual(once)
     expect([...once].sort()).toEqual(xs)
-    expect(xs).toEqual(['a', 'b', 'c', 'd', 'e', 'f'])   // the input is left alone
+    expect(xs).toEqual(['a', 'b', 'c', 'd', 'e', 'f']) // the input is left alone
   })
 })

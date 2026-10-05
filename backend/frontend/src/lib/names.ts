@@ -30,7 +30,7 @@ export type NameStatus =
 
 export type NameLookup = (name: string) => Promise<{ available: boolean; reason?: 'taken' | 'invalid' } | null>
 
-export const lookupName: NameLookup = async (name) => {
+export const lookupName: NameLookup = async name => {
   const { data } = await api.GET('/api/users/name-available', { params: { query: { name } } })
   return data ?? null
 }
@@ -45,38 +45,61 @@ export function createNameCheck(lookup: NameLookup, own: () => string | null, de
     clearTimeout(timer)
     const ask = ++latest
     const name = normalizeName(raw)
-    if (name === '') { status.set({ kind: 'empty' }); return }
+    if (name === '') {
+      status.set({ kind: 'empty' })
+      return
+    }
     const hint = nameHint(name)
-    if (hint) { status.set({ kind: 'invalid', hint }); return }
-    if (own() === name) { status.set({ kind: 'available', name, own: true }); return }
+    if (hint) {
+      status.set({ kind: 'invalid', hint })
+      return
+    }
+    if (own() === name) {
+      status.set({ kind: 'available', name, own: true })
+      return
+    }
     status.set({ kind: 'checking' })
     timer = setTimeout(() => {
-      lookup(name).then(r => {
-        if (ask !== latest) return
-        if (!r) status.set({ kind: 'unknown' })
-        else if (r.available) status.set({ kind: 'available', name, own: false })
-        else if (r.reason === 'taken') status.set({ kind: 'taken', name })
-        else status.set({ kind: 'invalid', hint: NAME_RULE })
-      }, () => { if (ask === latest) status.set({ kind: 'unknown' }) })
+      lookup(name).then(
+        r => {
+          if (ask !== latest) return
+          if (!r) status.set({ kind: 'unknown' })
+          else if (r.available) status.set({ kind: 'available', name, own: false })
+          else if (r.reason === 'taken') status.set({ kind: 'taken', name })
+          else status.set({ kind: 'invalid', hint: NAME_RULE })
+        },
+        () => {
+          if (ask === latest) status.set({ kind: 'unknown' })
+        },
+      )
     }, delay)
   }
 
   return {
     status: { subscribe: status.subscribe } satisfies Readable<NameStatus>,
     check,
-    stop() { clearTimeout(timer); latest++ },
+    stop() {
+      clearTimeout(timer)
+      latest++
+    },
   }
 }
 
 /** The line under the name field. */
 export function nameStatusText(s: NameStatus): string {
   switch (s.kind) {
-    case 'empty': return NAME_RULE
-    case 'invalid': return s.hint
-    case 'checking': return 'Checking…'
-    case 'available': return s.own ? "That's your name" : `@${s.name} is free`
-    case 'taken': return `@${s.name} is taken`
-    case 'unknown': return "Couldn't check the name right now"
+    case 'empty':
+      return NAME_RULE
+    case 'invalid':
+      return s.hint
+    case 'checking':
+      return 'Checking…'
+    case 'available':
+      return s.own ? "That's your name" : `@${s.name} is free`
+    case 'taken':
+      return `@${s.name} is taken`
+    case 'unknown':
+      return "Couldn't check the name right now"
   }
 }
 

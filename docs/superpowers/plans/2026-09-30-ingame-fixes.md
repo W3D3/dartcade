@@ -42,6 +42,7 @@
 ### Task 1: X01 rules — Bull is a double, leaving 1 busts
 
 **Files:**
+
 - Modify: `backend/src/games/x01.ts` (`opensPlayer`, `validFinish`, the two bust conditions in `dart.detected`)
 - Test: `backend/src/games/x01.test.ts`
 
@@ -142,10 +143,12 @@ if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !vali
 ### Task 2: Engine — finished visits take no darts, an empty turn is three misses
 
 **Files:**
+
 - Modify: `backend/src/session/engine.ts` (`onUserAction`: `takeout` and `add_dart` branches)
 - Test: `backend/src/session/engine.test.ts`
 
 **Interfaces:**
+
 - Produces: `add_dart` is ignored while the current view has `visitLocked === true` or a `winner`; `takeout` with no open events records `visit.opened` plus three `Miss` darts (via `manualDart`) and counts 3 darts, then commits as usual.
 
 - [ ] **Step 1: Failing tests** — append inside `describe('onUserAction', …)` in `backend/src/session/engine.test.ts`:
@@ -261,11 +264,13 @@ Note: during the bull off `withBullOff.view` sets `visitLocked` once the current
 ### Task 3: Frontend rules
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/playerStats.ts`, `gameViews/meta.ts`, `visitBand.ts`, `dartSlots.ts`, `dartUtils.ts`
 - Create: `backend/frontend/src/lib/controls.ts`
 - Test: add to `__tests__/playerStats.test.ts`, `meta.test.ts`, `visitBand.test.ts`, `dartSlots.test.ts`, `dartUtils.test.ts`; create `__tests__/controls.test.ts`
 
 **Interfaces (produces):**
+
 - `x01Player(game, i, history, o: { active: boolean; suggest: boolean; bust?: boolean })` — `canFinish` is null during a bust; `current` becomes `{ scored: number; left: number; bust: boolean } | null`; new field `showFinish: boolean` (= `o.suggest`).
 - `x01Meta`: after a win, "Leg N" is the leg being played when the match ended (`legs[winner] >= firstTo` → played legs; otherwise played + 1).
 - `atcAdvanced(hitCount: number, start: number | null, hits: boolean[]): number`
@@ -484,9 +489,11 @@ export function markerPositions(segments: number[]): { x: number; y: number }[] 
 ### Task 4: Wire the rules into the screen
 
 **Files:**
+
 - Modify: `routes/GameDisplay.svelte`, `components/ControlBar.svelte`, `DartEntryPanel.svelte`, `VisitBand.svelte`, `Chalkboard.svelte`, `X01Row.svelte`, `DartBoard.svelte`, `GameHeader.svelte`, `SettingsDrawer.svelte`
 
 **Interfaces:**
+
 - `ControlBar` props become `{ canUndo: boolean; label: string; prominent: boolean; enabled: boolean; onUndo: () => void; onNext: () => void }`.
 - `DartEntryPanel` gains `locked?: boolean`.
 - `GameHeader` and `SettingsDrawer` gain `gameId: string`.
@@ -552,7 +559,7 @@ with, in the script, `import { labelPos, markerPositions } from '$lib/dartUtils.
 `const otherMarkerPos = $derived(markerPositions(playerMarkers.filter(m => !m.isActive).map(m => m.segment)))`; delete the old `markerPos` function if nothing else uses it (BullOffPanel has its own).
 
 - [ ] **Step 7b: ATC-only setting** — `SettingsDrawer` gets a `gameId: string` prop and renders the Display rows from
-  `const rows = $derived(display.filter(r => r.key !== 'showMarkers' || gameId === 'atc'))`; `GameHeader` gets `gameId: string` and passes it on (`<SettingsDrawer bind:settings {gameId} …/>`); `GameDisplay` passes `{gameId}` to `GameHeader`. In an X01 game the drawer shows Checkout suggestions, Visit sum and Chalkboard only.
+      `const rows = $derived(display.filter(r => r.key !== 'showMarkers' || gameId === 'atc'))`; `GameHeader` gets `gameId: string` and passes it on (`<SettingsDrawer bind:settings {gameId} …/>`); `GameDisplay` passes `{gameId}` to `GameHeader`. In an X01 game the drawer shows Checkout suggestions, Visit sum and Chalkboard only.
 
 - [ ] **Step 8: Verify** `npx vitest run && npx tsc --noEmit && npx svelte-check --tsconfig ./tsconfig.json --threshold error` → all pass, 0 errors.
 

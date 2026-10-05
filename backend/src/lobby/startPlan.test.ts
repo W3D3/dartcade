@@ -3,16 +3,66 @@ import type { LobbyPerson, LobbyState } from './types.js'
 import { planGame } from './startPlan.js'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
-  id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
-  position: 0, plays: true, ready: true, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, team: null, ...over,
+  id: 'p',
+  userId: null,
+  addedByUserId: 'chris',
+  name: 'X',
+  boardId: null,
+  boardName: null,
+  boardOwnerUserId: null,
+  position: 0,
+  plays: true,
+  ready: true,
+  boardMovedBy: null,
+  joinedAt: new Date(0),
+  usualBoardName: null,
+  team: null,
+  ...over,
 })
-const chris = person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', boardId: 'living', boardName: 'Living room', boardOwnerUserId: 'chris' })
-const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', position: 1 })
-const guest = person({ id: 'g', userId: null, addedByUserId: 'lena', name: 'Guest 1', boardId: 'lenas', boardName: "Lena's place", boardOwnerUserId: 'lena', position: 2 })
-const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', position: 3 })   // Manual
+const chris = person({
+  id: 'c',
+  userId: 'chris',
+  addedByUserId: 'chris',
+  name: 'Christoph',
+  boardId: 'living',
+  boardName: 'Living room',
+  boardOwnerUserId: 'chris',
+})
+const lena = person({
+  id: 'l',
+  userId: 'lena',
+  addedByUserId: 'lena',
+  name: 'Lena',
+  boardId: 'lenas',
+  boardName: "Lena's place",
+  boardOwnerUserId: 'lena',
+  position: 1,
+})
+const guest = person({
+  id: 'g',
+  userId: null,
+  addedByUserId: 'lena',
+  name: 'Guest 1',
+  boardId: 'lenas',
+  boardName: "Lena's place",
+  boardOwnerUserId: 'lena',
+  position: 2,
+})
+const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', position: 3 }) // Manual
 const lobby = (over: Partial<LobbyState> = {}): LobbyState => ({
-  id: 'l1', name: 'L', hostUserId: 'chris', code: 'AAAAAA', throwOrder: 'lobby', access: 'friends', nextGame: null,
-  createdAt: new Date(0), closedAt: null, people: [chris, lena, guest, max], invites: [], activity: [], ...over,
+  id: 'l1',
+  name: 'L',
+  hostUserId: 'chris',
+  code: 'AAAAAA',
+  throwOrder: 'lobby',
+  access: 'friends',
+  nextGame: null,
+  createdAt: new Date(0),
+  closedAt: null,
+  people: [chris, lena, guest, max],
+  invites: [],
+  activity: [],
+  ...over,
 })
 const all = { gameId: 'x01', config: { startScore: 301 }, personIds: ['c', 'l', 'g', 'm'] }
 const online = { force: false, isBoardOnline: () => true, starterUserId: 'chris' }
@@ -29,12 +79,12 @@ describe('planGame', () => {
     expect(r.ok && r.plan.shuffleSeats).toBe(false)
   })
 
-  it('merges the settings over the game\'s defaults', () => {
+  it("merges the settings over the game's defaults", () => {
     const r = planGame(lobby(), all, online)
     expect(r.ok && r.plan.config).toMatchObject({ startScore: 301, outMode: 'double', bullOff: 'off' })
   })
 
-  it('throw order: bull off turns the game\'s bull off on (keeping PDC), random shuffles, lobby order turns it off', () => {
+  it("throw order: bull off turns the game's bull off on (keeping PDC), random shuffles, lobby order turns it off", () => {
     const bull = planGame(lobby({ throwOrder: 'bulloff' }), all, online)
     expect(bull.ok && bull.plan.config.bullOff).toBe('wdc')
     const pdc = planGame(lobby({ throwOrder: 'bulloff' }), { ...all, config: { bullOff: 'pdc' } }, online)
@@ -44,17 +94,30 @@ describe('planGame', () => {
   })
 
   it('refuses a bull off for a game without one, an unknown game, nobody playing, and an invalid config', () => {
-    expect(planGame(lobby({ throwOrder: 'bulloff' }), { ...all, gameId: 'atc', config: {} }, online)).toMatchObject({ ok: false, problem: { status: 400 } })
-    expect(planGame(lobby(), { ...all, gameId: 'nope' }, online)).toMatchObject({ ok: false, problem: { status: 400, error: 'unknown game: nope' } })
-    expect(planGame(lobby(), { ...all, personIds: [] }, online)).toMatchObject({ ok: false, problem: { status: 400, error: 'nobody plays' } })
+    expect(planGame(lobby({ throwOrder: 'bulloff' }), { ...all, gameId: 'atc', config: {} }, online)).toMatchObject({
+      ok: false,
+      problem: { status: 400 },
+    })
+    expect(planGame(lobby(), { ...all, gameId: 'nope' }, online)).toMatchObject({
+      ok: false,
+      problem: { status: 400, error: 'unknown game: nope' },
+    })
+    expect(planGame(lobby(), { ...all, personIds: [] }, online)).toMatchObject({
+      ok: false,
+      problem: { status: 400, error: 'nobody plays' },
+    })
     // X01's bull off needs two players
-    expect(planGame(lobby({ throwOrder: 'bulloff' }), { ...all, personIds: ['c'] }, online)).toMatchObject({ ok: false, problem: { status: 400 } })
+    expect(planGame(lobby({ throwOrder: 'bulloff' }), { ...all, personIds: ['c'] }, online)).toMatchObject({
+      ok: false,
+      problem: { status: 400 },
+    })
   })
 
   it('refuses offline boards by name without force; Manual seats are always fine', () => {
     const opts = { force: false, isBoardOnline: (b: string) => b !== 'lenas', starterUserId: 'chris' }
     expect(planGame(lobby(), all, opts)).toEqual({
-      ok: false, problem: { status: 409, code: 'board_offline', error: "offline: Lena's place", offlineBoards: ["Lena's place"] },
+      ok: false,
+      problem: { status: 409, code: 'board_offline', error: "offline: Lena's place", offlineBoards: ["Lena's place"] },
     })
     expect(planGame(lobby(), { ...all, personIds: ['c', 'm'] }, opts).ok).toBe(true)
   })
@@ -62,7 +125,13 @@ describe('planGame', () => {
   it('force gets past an offline board: the seat keeps it', () => {
     const opts = { force: true, isBoardOnline: (b: string) => b !== 'lenas', starterUserId: 'chris' }
     const r = planGame(lobby(), all, opts)
-    expect(r.ok && r.plan.seats.find(s => s.name === 'Lena')).toEqual({ name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" })
+    expect(r.ok && r.plan.seats.find(s => s.name === 'Lena')).toEqual({
+      name: 'Lena',
+      userId: 'lena',
+      controllerUserId: 'lena',
+      boardId: 'lenas',
+      boardName: "Lena's place",
+    })
   })
 
   it('force gets past an offline board and people not ready at the same time', () => {
@@ -71,17 +140,26 @@ describe('planGame', () => {
     expect(planGame(notReady, all, opts).ok).toBe(true)
   })
 
-  it('names who isn\'t ready, and starts anyway once the host confirms', () => {
+  it("names who isn't ready, and starts anyway once the host confirms", () => {
     // lena starts here, so chris and max (not the starter, nor their guest) still show as not ready
     const notReady = lobby({ people: [{ ...chris, ready: false }, lena, { ...max, ready: false }] })
     const startedByLena = { ...online, starterUserId: 'lena' }
     expect(planGame(notReady, all, startedByLena)).toEqual({
-      ok: false, problem: { status: 409, code: 'not_ready', error: 'not everyone is ready', notReady: [{ personId: 'c', name: 'Christoph' }, { personId: 'm', name: 'Max' }] },
+      ok: false,
+      problem: {
+        status: 409,
+        code: 'not_ready',
+        error: 'not everyone is ready',
+        notReady: [
+          { personId: 'c', name: 'Christoph' },
+          { personId: 'm', name: 'Max' },
+        ],
+      },
     })
     expect(planGame(notReady, all, { ...startedByLena, force: true }).ok).toBe(true)
   })
 
-  it('names a not-ready member\'s guests together with them; a ready member\'s guests never show', () => {
+  it("names a not-ready member's guests together with them; a ready member's guests never show", () => {
     const sam = person({ id: 's', userId: 'sam', addedByUserId: 'sam', name: 'Sam', position: 4, ready: false })
     // Sam's guest own flag says ready, but follows Sam (not ready) instead
     const samsGuest = person({ id: 'sg', userId: null, addedByUserId: 'sam', name: "Sam's guest", position: 5, ready: true })
@@ -89,24 +167,50 @@ describe('planGame', () => {
     const r = planGame(l, { ...all, personIds: ['c', 'l', 'g', 'm', 's', 'sg'] }, online)
     expect(!r.ok && r.problem).toMatchObject({
       code: 'not_ready',
-      notReady: [{ personId: 's', name: 'Sam' }, { personId: 'sg', name: "Sam's guest" }],
+      notReady: [
+        { personId: 's', name: 'Sam' },
+        { personId: 'sg', name: "Sam's guest" },
+      ],
     })
   })
 
   it('counts the starter and the rows they control as ready', () => {
-    const notReady = lobby({ people: [{ ...chris, ready: false }, { ...guest, addedByUserId: 'chris', ready: false }, { ...lena, ready: false }] })
+    const notReady = lobby({
+      people: [
+        { ...chris, ready: false },
+        { ...guest, addedByUserId: 'chris', ready: false },
+        { ...lena, ready: false },
+      ],
+    })
     const r = planGame(notReady, { ...all, personIds: ['c', 'g', 'l'] }, { ...online, starterUserId: 'chris' })
     expect(!r.ok && r.problem).toMatchObject({ code: 'not_ready', notReady: [{ personId: 'l', name: 'Lena' }] })
-    const solo = planGame(lobby({ people: [{ ...chris, ready: false }, { ...guest, addedByUserId: 'chris', ready: false }] }), { ...all, personIds: ['c', 'g'] }, { ...online, starterUserId: 'chris' })
+    const solo = planGame(
+      lobby({
+        people: [
+          { ...chris, ready: false },
+          { ...guest, addedByUserId: 'chris', ready: false },
+        ],
+      }),
+      { ...all, personIds: ['c', 'g'] },
+      { ...online, starterUserId: 'chris' },
+    )
     expect(solo.ok).toBe(true)
   })
 
   describe('teams', () => {
     const sam = person({ id: 's', userId: 'sam', addedByUserId: 'sam', name: 'Sam', position: 4 })
     // Lobby order: Christoph A, Lena B, Guest 1 A, Max B, Sam A
-    const teamLobby = (over: Partial<LobbyState> = {}) => lobby({
-      people: [{ ...chris, team: 'A' }, { ...lena, team: 'B' }, { ...guest, team: 'A' }, { ...max, team: 'B' }, { ...sam, team: 'A' }], ...over,
-    })
+    const teamLobby = (over: Partial<LobbyState> = {}) =>
+      lobby({
+        people: [
+          { ...chris, team: 'A' },
+          { ...lena, team: 'B' },
+          { ...guest, team: 'A' },
+          { ...max, team: 'B' },
+          { ...sam, team: 'A' },
+        ],
+        ...over,
+      })
     const teams = { gameId: 'x01', config: { format: 'teams' }, personIds: ['c', 'l', 'g', 'm', 's'] }
 
     it('seats the teams alternating, A1 B1 A2 B2, each in lobby order; leftovers of the larger team last', () => {
@@ -116,13 +220,20 @@ describe('planGame', () => {
       expect(r.ok && r.plan.config).toMatchObject({ format: 'teams', teams: [0, 1, 0, 1, 0] })
       expect(r.ok && r.plan.shuffleSeats).toBe(false)
       // Team A has three in a row in lobby order: still interleaved, Sam last
-      const ordered = teamLobby({ people: [{ ...chris, team: 'A' }, { ...guest, team: 'A' }, { ...sam, team: 'A' }, { ...lena, team: 'B' }] })
+      const ordered = teamLobby({
+        people: [
+          { ...chris, team: 'A' },
+          { ...guest, team: 'A' },
+          { ...sam, team: 'A' },
+          { ...lena, team: 'B' },
+        ],
+      })
       const r2 = planGame(ordered, { ...teams, personIds: ['c', 'g', 's', 'l'] }, online)
       expect(r2.ok && r2.plan.seats.map(s => s.name)).toEqual(['Christoph', 'Lena', 'Guest 1', 'Sam'])
       expect(r2.ok && r2.plan.config.teams).toEqual([0, 1, 0, 0])
     })
 
-    it('random throw order: a random team starts, seats aren\'t shuffled', () => {
+    it("random throw order: a random team starts, seats aren't shuffled", () => {
       const r = planGame(teamLobby({ throwOrder: 'random' }), teams, online)
       expect(r.ok && r.plan).toMatchObject({ shuffleSeats: false, config: { teamStart: 'random', teams: [0, 1, 0, 1, 0] } })
       const inOrder = planGame(teamLobby(), teams, online)
@@ -135,10 +246,21 @@ describe('planGame', () => {
     })
 
     it('refuses an empty team', () => {
-      const allA = teamLobby({ people: [{ ...chris, team: 'A' }, { ...lena, team: 'A' }] })
-      expect(planGame(allA, { ...teams, personIds: ['c', 'l'] }, online)).toEqual({ ok: false, problem: { status: 400, error: 'Both teams need a player' } })
+      const allA = teamLobby({
+        people: [
+          { ...chris, team: 'A' },
+          { ...lena, team: 'A' },
+        ],
+      })
+      expect(planGame(allA, { ...teams, personIds: ['c', 'l'] }, online)).toEqual({
+        ok: false,
+        problem: { status: 400, error: 'Both teams need a player' },
+      })
       // Only the people who play count
-      expect(planGame(teamLobby(), { ...teams, personIds: ['c', 'g'] }, online)).toMatchObject({ ok: false, problem: { status: 400, error: 'Both teams need a player' } })
+      expect(planGame(teamLobby(), { ...teams, personIds: ['c', 'g'] }, online)).toMatchObject({
+        ok: false,
+        problem: { status: 400, error: 'Both teams need a player' },
+      })
     })
 
     it('singles ignores the teams', () => {

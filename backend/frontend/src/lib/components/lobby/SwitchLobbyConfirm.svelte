@@ -5,6 +5,11 @@
   let { from, to, onconfirm, oncancel }: { from: string; to: string; onconfirm: () => void; oncancel: () => void } = $props()
 </script>
 
-<ConfirmModal title="Leave {from} to join {to}?"
+<ConfirmModal
+  title="Leave {from} to join {to}?"
   body="You can only be in one lobby at a time. Leaving takes you out of its next game, and your guests leave with you."
-  confirmLabel="Leave and join" cancelLabel="Stay in {from}" {onconfirm} {oncancel} />
+  confirmLabel="Leave and join"
+  cancelLabel="Stay in {from}"
+  {onconfirm}
+  {oncancel}
+/>

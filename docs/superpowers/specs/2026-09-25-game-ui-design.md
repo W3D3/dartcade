@@ -11,6 +11,7 @@
 Replace the placeholder `GameDisplay.svelte` with a professional, game-type-aware UI modelled on the Autodarts app aesthetic. The UI must be extensible: adding a new game requires only a backend game module + a single frontend stats component, with zero changes to the core display shell.
 
 Success criteria:
+
 - ATC game is fully playable with the new UI end-to-end
 - Adding a future game (e.g., 501, Cricket) only requires `games/<id>.ts` + `gameViews/<id>.svelte`
 - Layout matches the 3-column dark-navy reference design
@@ -24,14 +25,14 @@ Success criteria:
 
 ### Colour palette
 
-| Token | Value | Usage |
-|---|---|---|
-| `bg-base` | `#0b1628` | Page background |
-| `bg-card-inactive` | `#1a2638` | Inactive player card |
-| `bg-footer` | `#111d2e` | Footer / header bars |
-| `text-primary` | `#f1f5f9` | Names, scores |
-| `text-muted` | `#64748b` | Secondary labels |
-| `accent-blue` | `#3b82f6` | Next button, active border |
+| Token              | Value     | Usage                      |
+| ------------------ | --------- | -------------------------- |
+| `bg-base`          | `#0b1628` | Page background            |
+| `bg-card-inactive` | `#1a2638` | Inactive player card       |
+| `bg-footer`        | `#111d2e` | Footer / header bars       |
+| `text-primary`     | `#f1f5f9` | Names, scores              |
+| `text-muted`       | `#64748b` | Secondary labels           |
+| `accent-blue`      | `#3b82f6` | Next button, active border |
 
 Player colour palette (index → gradient pair, used for active card and as the player's identity colour throughout). Lives in `frontend/src/lib/constants.ts`:
 
@@ -136,6 +137,7 @@ export function getGameView(gameId: string): GameView {
 Props: `game: Record<string, unknown>`, `playerIndex: number`, `isActive: boolean`
 
 Renders:
+
 - Target number (large, `text-7xl font-bold`)
 - Leg badge (`[0]`)
 - `Hit% —` as placeholder (styled as `text-muted italic`, tooltip: "stat tracking coming soon")
@@ -151,6 +153,7 @@ Renders the raw `game` object as a `<pre>` block. Useful during development of n
 ### `GameDisplay.svelte` (route)
 
 Responsibilities:
+
 - Reads `sessionId` from URL hash (`/session/:id`)
 - Creates and manages `sessionStore` (WS connection)
 - Looks up `getGameView(snapshot.gameId)`
@@ -178,6 +181,7 @@ Responsibilities:
 Props: `darts: Dart[]` (0–3 items)
 
 Renders a row of 3 dart slots:
+
 - Empty slot: dart silhouette icon, greyed out
 - Filled slot: dart icon + segment name (`T20`, `D5`, `1`, `Miss`)
 - Right side: current visit total score (sum of `dart.score`)
@@ -187,6 +191,7 @@ Renders a row of 3 dart slots:
 Props: `player`, `playerIndex`, `gameState`, `view: GameView`, `isActive`, `isWinner`
 
 Structure:
+
 ```
 [avatar initial] [name] [flag placeholder]    ← header
 ─────────────────────────────────────────
@@ -208,6 +213,7 @@ Score history: stored as a `previousVisits: number[][]` array in `GameDisplay` s
 New prop: `highlightedSegments: number[]` (default `[]`)
 
 When non-empty:
+
 - Segments in the list render at full opacity/colour
 - All other single/triple/double sectors rendered at 25% opacity (multiply filter or `fill-opacity`)
 - Bull always remains at full opacity
@@ -237,6 +243,7 @@ npx shadcn-svelte@latest add button badge card separator
 Requires Svelte 5 + Tailwind v4 — both present. shadcn-svelte ≥ 0.14 supports this stack.
 
 Components used:
+
 - `Button` — Undo, Next, BM controls
 - `Badge` — leg count, player indicators
 - `Separator` — card dividers
@@ -261,6 +268,7 @@ WS → Snapshot { gameId, players, game: { ...gameView, currentVisitDarts } }
 ```
 
 User actions sent over WS:
+
 - `{ type: 'undo_dart' }` — already implemented in engine
 - `{ type: 'next_turn' }` — future: manual turn advance (no-op in engine for now)
 
@@ -268,20 +276,20 @@ User actions sent over WS:
 
 ## File Manifest
 
-| Path | Action |
-|---|---|
-| `src/session/types.ts` | Add `gameId: string` to `Snapshot` |
-| `src/session/engine.ts` | Include `gameId` in `getSnapshot()` |
-| `frontend/src/lib/ws.ts` | Add `gameId` to `Snapshot` type |
-| `frontend/src/routes/GameDisplay.svelte` | Full redesign |
-| `frontend/src/lib/components/TopBar.svelte` | New |
-| `frontend/src/lib/components/ThrowTracker.svelte` | New |
-| `frontend/src/lib/components/PlayerCard.svelte` | Redesign |
-| `frontend/src/lib/components/DartBoard.svelte` | Add `highlightedSegments` prop |
-| `frontend/src/lib/components/GameFooter.svelte` | New |
-| `frontend/src/lib/gameViews/index.ts` | New — registry + `GameView` interface |
-| `frontend/src/lib/gameViews/atc.svelte` | New — ATC `PlayerStats` component |
-| `frontend/src/lib/gameViews/fallback.svelte` | New — dev fallback |
+| Path                                              | Action                                |
+| ------------------------------------------------- | ------------------------------------- |
+| `src/session/types.ts`                            | Add `gameId: string` to `Snapshot`    |
+| `src/session/engine.ts`                           | Include `gameId` in `getSnapshot()`   |
+| `frontend/src/lib/ws.ts`                          | Add `gameId` to `Snapshot` type       |
+| `frontend/src/routes/GameDisplay.svelte`          | Full redesign                         |
+| `frontend/src/lib/components/TopBar.svelte`       | New                                   |
+| `frontend/src/lib/components/ThrowTracker.svelte` | New                                   |
+| `frontend/src/lib/components/PlayerCard.svelte`   | Redesign                              |
+| `frontend/src/lib/components/DartBoard.svelte`    | Add `highlightedSegments` prop        |
+| `frontend/src/lib/components/GameFooter.svelte`   | New                                   |
+| `frontend/src/lib/gameViews/index.ts`             | New — registry + `GameView` interface |
+| `frontend/src/lib/gameViews/atc.svelte`           | New — ATC `PlayerStats` component     |
+| `frontend/src/lib/gameViews/fallback.svelte`      | New — dev fallback                    |
 
 shadcn-svelte components added under `frontend/src/lib/components/ui/` (managed by the CLI).
 
@@ -310,9 +318,9 @@ shadcn-svelte components added under `frontend/src/lib/components/ui/` (managed 
 
 ### File manifest additions
 
-| Path | Action |
-|---|---|
-| `frontend/src/routes/Login.svelte` | Retheme (no logic change) |
+| Path                                | Action                    |
+| ----------------------------------- | ------------------------- |
+| `frontend/src/routes/Login.svelte`  | Retheme (no logic change) |
 | `frontend/src/routes/Boards.svelte` | Retheme (no logic change) |
 
 ---

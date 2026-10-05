@@ -4,11 +4,12 @@ const POST = vi.fn()
 vi.mock('$lib/api', () => ({ api: { POST: (...args: unknown[]) => POST(...args) } }))
 const { joinFriend, sendRequest } = await import('../friends/actions.js')
 
-const reply = (status: number, body?: object) => status < 300
-  ? { data: body ?? {}, error: undefined, response: { status } }
-  : { data: undefined, error: body, response: { status } }
+const reply = (status: number, body?: object) =>
+  status < 300 ? { data: body ?? {}, error: undefined, response: { status } } : { data: undefined, error: body, response: { status } }
 
-beforeEach(() => { POST.mockReset() })
+beforeEach(() => {
+  POST.mockReset()
+})
 
 describe('joinFriend', () => {
   it('joins without a code', async () => {

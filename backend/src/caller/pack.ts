@@ -4,8 +4,16 @@
 
 import { listEntries, readEntry, ZipError, type ZipEntry } from './zip.js'
 
-export interface Clip { bytes: Uint8Array; mime: string }
-export interface ParsedPack { name: string; lang: string | null; total: number; clips: Record<string, Clip[]> }
+export interface Clip {
+  bytes: Uint8Array
+  mime: string
+}
+export interface ParsedPack {
+  name: string
+  lang: string | null
+  total: number
+  clips: Record<string, Clip[]>
+}
 
 const SHOTS = new Set(['busted', 'gameshot', 'matchshot', 'gameon', 'bulling_start'])
 const SOUND = /\.(mp3|wav|ogg)$/i
@@ -29,7 +37,10 @@ export function parseTemplate(csv: string): string[][] {
   const rows = csv.replace(/^﻿/, '').split(/\r?\n/)
   if (rows.at(-1) === '') rows.pop()
   return rows.map(row => {
-    const cells = row.split(';').map(c => c.trim()).filter(c => c !== '')
+    const cells = row
+      .split(';')
+      .map(c => c.trim())
+      .filter(c => c !== '')
     if (cells.length === 0) return []
     return cells.length === 1 ? [cells[0].toLowerCase()] : cells.slice(1)
   })
@@ -54,7 +65,11 @@ const SPELLED = /^(game|match)[_ ](shot|on)$/
  * underscores, a trailing "+N" variant marker dropped, spelled-out shots folded ("game shot",
  * "game_on", "match_shot" → "gameshot", "gameon", "matchshot"). */
 export function keyFromName(fileName: string): string {
-  const key = base(fileName).replace(SOUND, '').toLowerCase().replace(/\+\d+$/, '').replace(/-/g, '_')
+  const key = base(fileName)
+    .replace(SOUND, '')
+    .toLowerCase()
+    .replace(/\+\d+$/, '')
+    .replace(/-/g, '_')
   return SPELLED.test(key) ? key.replace(/[_ ]/, '') : key
 }
 

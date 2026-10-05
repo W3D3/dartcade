@@ -53,7 +53,11 @@ export function teamPlacement(people: LobbyPerson[], id: string, team: TeamId, b
 /** The people in their new order, with the new team: what the screen shows until the server answers. */
 export function placed(people: LobbyPerson[], id: string, placement: Placement): LobbyPerson[] {
   const byId = new Map(people.map(p => [p.id, p]))
-  return reorder(people.map(p => p.id), id, placement.position).flatMap(x => {
+  return reorder(
+    people.map(p => p.id),
+    id,
+    placement.position,
+  ).flatMap(x => {
     const p = byId.get(x)
     if (!p) return []
     return x === id && placement.team !== undefined ? [{ ...p, team: placement.team }] : [p]

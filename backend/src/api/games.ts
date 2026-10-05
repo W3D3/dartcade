@@ -20,10 +20,22 @@ const DAY_MS = 86_400_000
 /** The API shape of a game; account ids only for someone who holds a seat. */
 export function toSummary(g: HistoryGame): GameSummary {
   return {
-    id: g.id, mode: g.game_id, config: g.config,
-    createdAt: g.created_at.toISOString(), finishedAt: g.finished_at.toISOString(),
-    board: g.board, mySeat: g.mySeat,
-    players: g.seats.map(s => ({ seat: s.seat, name: s.name, userId: g.mySeat === null ? null : s.user_id, placement: s.placement, throwPosition: s.throw_position, stats: s.stats, forfeited: s.forfeited })),
+    id: g.id,
+    mode: g.game_id,
+    config: g.config,
+    createdAt: g.created_at.toISOString(),
+    finishedAt: g.finished_at.toISOString(),
+    board: g.board,
+    mySeat: g.mySeat,
+    players: g.seats.map(s => ({
+      seat: s.seat,
+      name: s.name,
+      userId: g.mySeat === null ? null : s.user_id,
+      placement: s.placement,
+      throwPosition: s.throw_position,
+      stats: s.stats,
+      forfeited: s.forfeited,
+    })),
   }
 }
 
@@ -42,7 +54,7 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     return reply.send({ games: page.games.map(toSummary), nextCursor: page.next ? encodeCursor(page.next) : null })
   })
 
-  app.get<Route<'getGameStats'>>('/api/games/stats', { preValidation: requireAuth, schema: fromSpec('getGameStats') }, async (req) => {
+  app.get<Route<'getGameStats'>>('/api/games/stats', { preValidation: requireAuth, schema: fromSpec('getGameStats') }, async req => {
     const days = req.query.days ?? 30
     const now = new Date()
     // Twice the period: the earlier half is the comparison (previousAvg)
@@ -53,7 +65,9 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   app.get<Route<'getGame'>>('/api/games/:id', { preValidation: requireAuth, schema: fromSpec('getGame') }, async (req, reply) => {
     const game = await getViewableGame(db, req.params.id, req.userId)
     if (!game) return reply.code(404).send({ error: 'not found' })
-    const detail = buildDetail(game, await getSessionEvents(db, game.id), (message, details) => { req.log.warn({ details }, message) })
+    const detail = buildDetail(game, await getSessionEvents(db, game.id), (message, details) => {
+      req.log.warn({ details }, message)
+    })
     if (!detail) return reply.code(404).send({ error: 'not found' })
     return reply.send({ game: toSummary(game), detail })
   })

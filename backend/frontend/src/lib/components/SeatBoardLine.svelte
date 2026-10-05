@@ -11,6 +11,14 @@
 </script>
 
 <span class="flex items-center gap-[5px] min-w-0 whitespace-nowrap {text} {line.offline ? 'text-warn' : 'text-text-muted'}">
-  {#if line.byHand}<Keyboard size={icon} strokeWidth={1.8} class="shrink-0" />{:else}<Target size={icon} strokeWidth={1.8} class="shrink-0" />{/if}
-  <span class="truncate">{line.board ?? 'Manual entry'}{#if line.board && line.byHand}<span class="text-text-dim"> · manual entry</span>{/if}{#if line.disconnected}<span class="text-text-dim"> · connection lost</span>{/if}</span>
+  {#if line.byHand}<Keyboard size={icon} strokeWidth={1.8} class="shrink-0" />{:else}<Target
+      size={icon}
+      strokeWidth={1.8}
+      class="shrink-0"
+    />{/if}
+  <span class="truncate"
+    >{line.board ?? 'Manual entry'}{#if line.board && line.byHand}<span class="text-text-dim">
+        · manual entry</span
+      >{/if}{#if line.disconnected}<span class="text-text-dim"> · connection lost</span>{/if}</span
+  >
 </span>

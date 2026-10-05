@@ -6,8 +6,19 @@
   import IncomingRequest from './IncomingRequest.svelte'
   import OutgoingRequest from './OutgoingRequest.svelte'
 
-  let { incoming, outgoing, now, emptyText, headings = true, busy, onanswer, oncancel }: {
-    incoming: IncomingFriendRequest[]; outgoing: OutgoingFriendRequest[]; now: Date
+  let {
+    incoming,
+    outgoing,
+    now,
+    emptyText,
+    headings = true,
+    busy,
+    onanswer,
+    oncancel,
+  }: {
+    incoming: IncomingFriendRequest[]
+    outgoing: OutgoingFriendRequest[]
+    now: Date
     /** "No open requests." on the tab, "No requests for you right now." in the card. */
     emptyText: string
     headings?: boolean

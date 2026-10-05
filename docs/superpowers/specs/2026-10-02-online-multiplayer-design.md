@@ -26,7 +26,7 @@ person who owns a seat can act for it.
   in #54.
 - **Seat control is strict.** Only a seat's controller can add, correct or undo darts or
   trigger a takeout for it. There is no host override.
-- **Boards:** a board menu only ever lists *your own* boards (plus Manual where you may
+- **Boards:** a board menu only ever lists _your own_ boards (plus Manual where you may
   choose it).
   - **No board yet** (Manual): anyone can put that person on one of their own boards. This
     covers joining while you're at someone else's place: whoever owns the board there
@@ -80,38 +80,39 @@ log.
 
 ### `lobbies`
 
-| Column | Notes |
-|---|---|
-| `id UUID PK` | |
-| `name TEXT` | Defaults to "<host name>'s lobby"; the host can rename it. |
-| `host_user_id NULL` | FK user (null after the host's account is deleted; the next change hands over) |
-| `code TEXT` | Unique among open lobbies. 6 characters from an unambiguous alphabet, shown as `K7Q4-MD`. The host can regenerate it. |
-| `throw_order TEXT` | `lobby \| random \| bulloff`, default `lobby` |
-| `next_game JSONB NULL` | `{ gameId, config }` as the host last set it |
-| `last_game JSONB NULL` | `{ gameId, config, personIds }` of the last game started here; Rematch repeats it |
-| `created_at` | |
-| `closed_at NULL` | |
+| Column                 | Notes                                                                                                                 |
+| ---------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `id UUID PK`           |                                                                                                                       |
+| `name TEXT`            | Defaults to "<host name>'s lobby"; the host can rename it.                                                            |
+| `host_user_id NULL`    | FK user (null after the host's account is deleted; the next change hands over)                                        |
+| `code TEXT`            | Unique among open lobbies. 6 characters from an unambiguous alphabet, shown as `K7Q4-MD`. The host can regenerate it. |
+| `throw_order TEXT`     | `lobby \| random \| bulloff`, default `lobby`                                                                         |
+| `next_game JSONB NULL` | `{ gameId, config }` as the host last set it                                                                          |
+| `last_game JSONB NULL` | `{ gameId, config, personIds }` of the last game started here; Rematch repeats it                                     |
+| `created_at`           |                                                                                                                       |
+| `closed_at NULL`       |                                                                                                                       |
 
 ### `lobby_people`
 
 One row per person in the lobby, member or guest, in lobby order.
 
-| Column | Notes |
-|---|---|
-| `id UUID PK` | |
-| `lobby_id` | FK lobbies |
-| `user_id NULL` | Set for members. Null for a guest. |
-| `added_by_user_id` | The member themselves; for a guest, the member who added them. This member becomes the seat's controller. |
-| `name TEXT` | Account name for members, free text for guests |
-| `board_id NULL` | FK boards. Null means manual entry. |
-| `position INT` | Lobby order, which is the default throw order |
-| `plays BOOL` | False means sitting out the next game. It resets to true after every game. |
-| `ready BOOL` | Soft ready. It resets after every game: to false for members, to true for guests. |
-| `board_moved_by NULL` | Who put them on the current board when it wasn't their own pick, for the "Moved by you" hint |
-| `joined_at` | |
+| Column                | Notes                                                                                                     |
+| --------------------- | --------------------------------------------------------------------------------------------------------- |
+| `id UUID PK`          |                                                                                                           |
+| `lobby_id`            | FK lobbies                                                                                                |
+| `user_id NULL`        | Set for members. Null for a guest.                                                                        |
+| `added_by_user_id`    | The member themselves; for a guest, the member who added them. This member becomes the seat's controller. |
+| `name TEXT`           | Account name for members, free text for guests                                                            |
+| `board_id NULL`       | FK boards. Null means manual entry.                                                                       |
+| `position INT`        | Lobby order, which is the default throw order                                                             |
+| `plays BOOL`          | False means sitting out the next game. It resets to true after every game.                                |
+| `ready BOOL`          | Soft ready. It resets after every game: to false for members, to true for guests.                         |
+| `board_moved_by NULL` | Who put them on the current board when it wasn't their own pick, for the "Moved by you" hint              |
+| `joined_at`           |                                                                                                           |
 
 A unique index on `user_id` (where it isn't null) enforces **one open lobby per user**.
 That works because rows only exist for open lobbies:
+
 - When a member leaves, their row and their guests' rows are deleted.
 - When a lobby closes, all its rows are deleted.
 
@@ -121,6 +122,7 @@ Games played in a lobby stay linked through `game_sessions.lobby_id`.
 
 The feed in the lobby's "Lobby history" panel, newest first. Columns: `lobby_id`, `at`,
 `kind`, `actor_user_id`, `data JSONB`. Kinds:
+
 - `opened`
 - `joined`
 - `left`
@@ -284,19 +286,19 @@ mixes board and manual darts already works.
 The engine takes the sender's user id with every action and resolves which seat it
 targets.
 
-| Action | Targets | Who may send it |
-|---|---|---|
-| `add_dart`, `undo_dart`, `takeout`, `correct_dart`, `bulloff_skip` | the current seat | its controller |
-| `bulloff_start`, `bulloff_rethrow` | the match | the host (owner) |
-| `forfeit` | all seats the sender controls | any controller in the game |
-| game-specific actions | the match | the host (owner) |
+| Action                                                             | Targets                       | Who may send it            |
+| ------------------------------------------------------------------ | ----------------------------- | -------------------------- |
+| `add_dart`, `undo_dart`, `takeout`, `correct_dart`, `bulloff_skip` | the current seat              | its controller             |
+| `bulloff_start`, `bulloff_rethrow`                                 | the match                     | the host (owner)           |
+| `forfeit`                                                          | all seats the sender controls | any controller in the game |
+| game-specific actions                                              | the match                     | the host (owner)           |
 
 - **Game-specific actions:** there's no `actionScope` hook; no current game action is
   per-seat, so unknown and game-specific actions are host only, same as the bull off's
   `bulloff_start`/`bulloff_rethrow`. `bulloff_skip` skips the current thrower, so it's
   per seat like the other turn actions.
 - **Rejections:** a rejected action is answered with `{ type: 'error', code: 'forbidden'
-  }` and isn't logged.
+}` and isn't logged.
 - **Local games:** the owner controls every seat, so nothing changes for them.
 - **Abort** isn't a WS action: it's the existing `DELETE /api/sessions/:id` (host only,
   as today). See [Ending early](#ending-early).
@@ -341,6 +343,7 @@ targets.
 New fields on the session snapshot (`schema/game-ws-v1.json`, then `npm run gen:api`).
 
 **Per seat:**
+
 - `controllerUserId`
 - `boardId`, `boardName`
 - `boardOnline`
@@ -350,6 +353,7 @@ New fields on the session snapshot (`schema/game-ws-v1.json`, then `npm run gen:
 - `forfeited`
 
 **Top level:**
+
 - `ownerUserId` (the host)
 - `lobbyName` (null for a local game; set by the lobbies plan)
 - `lobbyId` (comes with lobbies, plans 2/3)
@@ -357,6 +361,7 @@ New fields on the session snapshot (`schema/game-ws-v1.json`, then `npm run gen:
   broadcast byte-for-byte.
 
 **New server messages:**
+
 - `notice` (`not_your_turn`, with `throwerName` and `throwerBoard`, the up seat's board
   name or null when they enter by hand; `board_offline` comes with lobbies and the
   frontend, plans 2/3)
@@ -367,6 +372,7 @@ New fields on the session snapshot (`schema/game-ws-v1.json`, then `npm run gen:
 A new lobby channel, `GET /ws/lobby?lobbyId=…`, follows the session channel's pattern
 in `browser-gw/` with its own `LobbyConnections`. It pushes a full lobby snapshot on
 every change:
+
 - name, code
 - host
 - people, with presence and board
@@ -383,24 +389,24 @@ commands.
 
 All under `requireAuth`. The schemas go in `schema/api-v1.yaml`.
 
-| Endpoint | Purpose |
-|---|---|
-| `POST /api/lobbies` | create (host = me) |
-| `GET /api/lobbies/current` | my open lobby, or 404 |
-| `GET /api/lobby-codes/:code` | preview for the Join page: name, host, board names, people count |
-| `POST /api/lobbies/:id/join` | body `{ code }` (invites are accepted with `POST /api/invites/:id/accept`) |
-| `POST /api/lobbies/:id/leave` | |
-| `PATCH /api/lobbies/:id` | host: name, throw order, next game, regenerate code |
-| `POST /api/lobbies/:id/people` | add a guest `{ name, boardId? }` |
-| `PATCH /api/lobbies/:id/people/:pid` | board, plays, ready, position (by permission, see Lifecycle) |
-| `DELETE /api/lobbies/:id/people/:pid` | host removes anyone; a member removes their own guests |
-| `POST /api/lobbies/:id/start` | host: creates the session and returns its id |
-| `POST /api/lobbies/:id/rematch` | host: the last game again, same people and settings |
-| `POST /api/lobbies/:id/close` | host |
-| `GET /api/users?q=` | username search for invites (existing endpoint; removed by #54) |
-| `POST /api/lobbies/:id/invites` | `{ userId }` |
-| `GET /api/invites` | my pending invites |
-| `POST /api/invites/:id/accept`, `/decline` | |
+| Endpoint                                   | Purpose                                                                    |
+| ------------------------------------------ | -------------------------------------------------------------------------- |
+| `POST /api/lobbies`                        | create (host = me)                                                         |
+| `GET /api/lobbies/current`                 | my open lobby, or 404                                                      |
+| `GET /api/lobby-codes/:code`               | preview for the Join page: name, host, board names, people count           |
+| `POST /api/lobbies/:id/join`               | body `{ code }` (invites are accepted with `POST /api/invites/:id/accept`) |
+| `POST /api/lobbies/:id/leave`              |                                                                            |
+| `PATCH /api/lobbies/:id`                   | host: name, throw order, next game, regenerate code                        |
+| `POST /api/lobbies/:id/people`             | add a guest `{ name, boardId? }`                                           |
+| `PATCH /api/lobbies/:id/people/:pid`       | board, plays, ready, position (by permission, see Lifecycle)               |
+| `DELETE /api/lobbies/:id/people/:pid`      | host removes anyone; a member removes their own guests                     |
+| `POST /api/lobbies/:id/start`              | host: creates the session and returns its id                               |
+| `POST /api/lobbies/:id/rematch`            | host: the last game again, same people and settings                        |
+| `POST /api/lobbies/:id/close`              | host                                                                       |
+| `GET /api/users?q=`                        | username search for invites (existing endpoint; removed by #54)            |
+| `POST /api/lobbies/:id/invites`            | `{ userId }`                                                               |
+| `GET /api/invites`                         | my pending invites                                                         |
+| `POST /api/invites/:id/accept`, `/decline` |                                                                            |
 
 Live state: `GET /ws/lobby?lobbyId=` and `GET /ws/me`, messages in `schema/lobby-ws-v1.json`.
 
@@ -408,13 +414,13 @@ Live state: `GET /ws/lobby?lobbyId=` and `GET /ws/me`, messages in `schema/lobby
 
 Screens follow the **Dartcade Platform Design** canvas:
 
-| Screen | Canvas | Route / place |
-|---|---|---|
-| Lobby, host view | `Lobby.dc.html` | `#/lobby` |
-| Lobby, member view (phone) | `Lobby-Phone.dc.html` | `#/lobby` |
-| Join lobby | `Lobby-Join.dc.html` | `#/join`, `#/join/:code` |
-| Lobby indicator | `Lobby-Indicator.dc.html` | sidebar, tablet rail, phone strip |
-| Play page with lobby entry | `Play-InProgress`, `Play-Abandon` | `#/` (CreateSession.svelte) |
+| Screen                     | Canvas                            | Route / place                     |
+| -------------------------- | --------------------------------- | --------------------------------- |
+| Lobby, host view           | `Lobby.dc.html`                   | `#/lobby`                         |
+| Lobby, member view (phone) | `Lobby-Phone.dc.html`             | `#/lobby`                         |
+| Join lobby                 | `Lobby-Join.dc.html`              | `#/join`, `#/join/:code`          |
+| Lobby indicator            | `Lobby-Indicator.dc.html`         | sidebar, tablet rail, phone strip |
+| Play page with lobby entry | `Play-InProgress`, `Play-Abandon` | `#/` (CreateSession.svelte)       |
 
 - **Lobby screen:**
   - a people table (Player, Board, Status) with board chips and "Moved by you · usually
@@ -583,7 +589,7 @@ they differ from the sections above, this decides:
 ## Decided while planning the lobby backend (2026-10-02)
 
 1. **Migration number.** `008` is taken (`008_multiplayer_seats.sql`), so this is `009_lobbies.sql`.
-2. **Codes.** 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no I, L, O, 0, 1). They're unique among *open* lobbies only (partial unique index), so closed lobbies keep theirs. Input is normalized: case and any non-alphanumeric characters (`K7Q4-MD`, `k7q4 md`) are ignored. The API returns the raw code; the client formats it.
+2. **Codes.** 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no I, L, O, 0, 1). They're unique among _open_ lobbies only (partial unique index), so closed lobbies keep theirs. Input is normalized: case and any non-alphanumeric characters (`K7Q4-MD`, `k7q4 md`) are ignored. The API returns the raw code; the client formats it.
 3. **Rematch.** `lobbies.last_game` (JSONB `{ gameId, config, personIds }`) records each lobby game at start. A rematch repeats exactly that: the same people (minus anyone who left the lobby), mode and settings. It ignores the current "Who plays" flags and the next-game card. It works after a finished or an aborted game, with the same soft ready gate as Start.
 4. **Soft ready gate.** Start and rematch answer `409 { code: 'not_ready', notReady: [{ personId, name }] }`. The client confirms by sending the same request with `{ "force": true }`. `force` only skips the ready check. Hard problems (unknown game, nobody plays, an offline board, a busy board, someone already in a game) are checked first and always refuse.
 5. **Throw order.**
@@ -616,6 +622,7 @@ they differ from the sections above, this decides:
     - The full lobby needs nullable fields (`type: [string, null]`), which `common-v1.json` can't hold (it must stay valid OpenAPI 3.0).
 
     REST answers with small shapes (`LobbyRef`, `LobbyPreview`, `Invite`) in `api-v1.yaml`, the same way `SessionDetail.game` points at `game-ws-v1.json`. The full lobby only comes over the socket. `PendingInvite` (socket) and `Invite` (REST) are the same shape, built by one function (`inviteView`).
+
 14. **`/ws/me` summary.**
     - `youThrowNext`: the viewer controls the seat that's up now in the lobby's running game.
     - `leg`: 0-based, from the module's `getLeg`; null for games without legs.
@@ -671,7 +678,7 @@ stays out of the way until a second account joins.
   turns the setting on (WDC). The server keeps the two in sync (`coupleBullOff` in
   `backend/src/lobby/rules.ts`; it also turns the setting off for any other order), so a stray
   setting can't contradict the throw order on refresh.
-- **Solo:** a lobby is *solo* while you are its only member (guests don't count). The server
+- **Solo:** a lobby is _solo_ while you are its only member (guests don't count). The server
   decides it and says so: the lobby state and `LobbySummary` carry `solo: boolean`, and the
   screens only read that flag (no counting players in the browser).
   - The lobby indicator (desktop side nav card, phone strip) shows only when the lobby isn't

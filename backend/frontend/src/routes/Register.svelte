@@ -32,8 +32,12 @@
   const strengthColors = ['', '#ff5a4f', '#f59e0b', '#84cc16', '#c6f24e']
 
   async function submit() {
-    if (!acceptTerms) { error = 'Please accept the terms'; return }
-    loading = true; error = ''
+    if (!acceptTerms) {
+      error = 'Please accept the terms'
+      return
+    }
+    loading = true
+    error = ''
     try {
       const { error: err } = await authClient.signUp.email({ name, email, password })
       if (err) {
@@ -53,8 +57,13 @@
   <AuthHero />
 
   <main class="flex flex-grow md:items-center md:justify-center">
-    <form onsubmit={(e) => { e.preventDefault(); void submit() }} class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
-
+    <form
+      onsubmit={e => {
+        e.preventDefault()
+        void submit()
+      }}
+      class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0"
+    >
       <div class="flex flex-col gap-2">
         <p class="m-0 font-mono text-[13px] tracking-[0.08em] text-accent">Step 1 of 2</p>
         <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
@@ -67,19 +76,25 @@
         <NameField id="reg-name" label="Name" bind:value={name} bind:status={nameStatus} />
         <div class="flex flex-col gap-2">
           <label for="reg-email" class="text-[14px] font-medium text-[#d8d8ce]">Email</label>
-          <Input id="reg-email" type="email" bind:value={email} autocomplete="email"
-            placeholder="you@example.com" required />
+          <Input id="reg-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
         </div>
         <div class="flex flex-col gap-2">
           <label for="reg-password" class="text-[14px] font-medium text-[#d8d8ce]">Password</label>
-          <Input id="reg-password" type="password" bind:value={password}
-            autocomplete="new-password" placeholder="At least 8 characters" required />
+          <Input
+            id="reg-password"
+            type="password"
+            bind:value={password}
+            autocomplete="new-password"
+            placeholder="At least 8 characters"
+            required
+          />
           {#if password}
             <div class="flex gap-1 mt-1">
-              {#each [1,2,3,4] as lvl (lvl)}
-                <div class="h-1 flex-1 rounded-full transition-colors"
-                  style:background={lvl <= strength ? strengthColors[strength] : '#2e322b'}>
-                </div>
+              {#each [1, 2, 3, 4] as lvl (lvl)}
+                <div
+                  class="h-1 flex-1 rounded-full transition-colors"
+                  style:background={lvl <= strength ? strengthColors[strength] : '#2e322b'}
+                ></div>
               {/each}
             </div>
             <p class="m-0 text-[13px]" style:color={strengthColors[strength]}>
@@ -88,8 +103,7 @@
           {/if}
         </div>
         <label class="flex items-center gap-[10px] text-[15px] text-[#c9c9bf] min-h-[44px] cursor-pointer">
-          <input type="checkbox" bind:checked={acceptTerms}
-            class="w-[18px] h-[18px] m-0 accent-accent" />
+          <input type="checkbox" bind:checked={acceptTerms} class="w-[18px] h-[18px] m-0 accent-accent" />
           I agree to the <a href="#/terms" class="font-semibold">terms of service</a>
         </label>
       </div>
@@ -98,7 +112,12 @@
         <ErrorText>{error}</ErrorText>
       {/if}
 
-      <Button type="submit" variant="primary" disabled={loading || !acceptTerms || !nameSendable(nameStatus)} class="w-full mt-auto md:mt-0">
+      <Button
+        type="submit"
+        variant="primary"
+        disabled={loading || !acceptTerms || !nameSendable(nameStatus)}
+        class="w-full mt-auto md:mt-0"
+      >
         {loading ? '…' : 'Create account'}
       </Button>
 

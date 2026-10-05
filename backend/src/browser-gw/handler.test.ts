@@ -23,7 +23,8 @@ describe('BrowserConnections', () => {
     const bc = new BrowserConnections()
     const a = { readyState: 1, send: vi.fn() } as any
     const b = { readyState: 1, send: vi.fn() } as any
-    bc.add('s1', a, 'host'); bc.add('s1', b, 'lena')
+    bc.add('s1', a, 'host')
+    bc.add('s1', b, 'lena')
     bc.pushEach('s1', userId => ({ for: userId }))
     expect(a.send).toHaveBeenCalledWith(JSON.stringify({ for: 'host' }))
     expect(b.send).toHaveBeenCalledWith(JSON.stringify({ for: 'lena' }))
@@ -34,7 +35,8 @@ describe('BrowserConnections', () => {
     const bc = new BrowserConnections()
     const a = { readyState: 1, send: vi.fn() } as any
     const b = { readyState: 1, send: vi.fn() } as any
-    bc.add('s1', a, 'host'); bc.add('s1', b, 'lena')
+    bc.add('s1', a, 'host')
+    bc.add('s1', b, 'lena')
     bc.sendTo('s1', ['lena'], { type: 'notice' })
     expect(a.send).not.toHaveBeenCalled()
     expect(b.send).toHaveBeenCalledOnce()
@@ -72,7 +74,7 @@ describe('BrowserConnections: when a player left', () => {
   const at = new Date('2026-10-02T18:00:00.000Z')
   const sock = () => ({ readyState: 1, send: vi.fn() }) as any
 
-  it('records when a user\'s last socket of the game closed', () => {
+  it("records when a user's last socket of the game closed", () => {
     const bc = new BrowserConnections()
     const ws = sock()
     bc.add('s1', ws, 'lena')
@@ -83,8 +85,10 @@ describe('BrowserConnections: when a player left', () => {
 
   it('a user with another socket still open is not disconnected', () => {
     const bc = new BrowserConnections()
-    const a = sock(); const b = sock()
-    bc.add('s1', a, 'lena'); bc.add('s1', b, 'lena')
+    const a = sock()
+    const b = sock()
+    bc.add('s1', a, 'lena')
+    bc.add('s1', b, 'lena')
     bc.remove('s1', a, at)
     expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
     expect(bc.connectedUsers('s1')).toEqual(new Set(['lena']))
@@ -108,14 +112,16 @@ describe('BrowserConnections: when a player left', () => {
 
   it('keeps the time per game', () => {
     const bc = new BrowserConnections()
-    const one = sock(); const two = sock()
-    bc.add('s1', one, 'lena'); bc.add('s2', two, 'lena')
+    const one = sock()
+    const two = sock()
+    bc.add('s1', one, 'lena')
+    bc.add('s2', two, 'lena')
     bc.remove('s1', one, at)
     expect(bc.disconnectedAt('s1', 'lena')).toEqual(at)
     expect(bc.disconnectedAt('s2', 'lena')).toBeNull()
   })
 
-  it('ignores a socket it doesn\'t know', () => {
+  it("ignores a socket it doesn't know", () => {
     const bc = new BrowserConnections()
     bc.remove('s1', sock(), at)
     expect(bc.disconnectedAt('s1', 'lena')).toBeNull()
@@ -124,7 +130,10 @@ describe('BrowserConnections: when a player left', () => {
 
 describe('WS auth', () => {
   let testApp: FastifyInstance | null = null
-  afterEach(async () => { await testApp?.close(); testApp = null })
+  afterEach(async () => {
+    await testApp?.close()
+    testApp = null
+  })
 
   it('closes with 4401 when not authenticated', async () => {
     const engine = { getSnapshot: vi.fn().mockReturnValue(undefined), onUserAction: vi.fn() } as any
@@ -137,7 +146,7 @@ describe('WS auth', () => {
 
     const code = await new Promise<number>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
-      ws.addEventListener('close', (e) => resolve((e as any).code))
+      ws.addEventListener('close', e => resolve((e as any).code))
       ws.addEventListener('error', () => reject(new Error('ws error')))
       setTimeout(() => reject(new Error('timeout')), 2000)
     })
@@ -162,7 +171,7 @@ describe('WS auth', () => {
 
     const code = await new Promise<number>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=s1`)
-      ws.addEventListener('close', (e) => resolve((e as any).code))
+      ws.addEventListener('close', e => resolve((e as any).code))
       ws.addEventListener('error', () => reject(new Error('ws error')))
       setTimeout(() => reject(new Error('timeout')), 2000)
     })
@@ -170,20 +179,28 @@ describe('WS auth', () => {
     expect(code).toBe(WsCloseCode.Forbidden)
   })
 
-  it('lets a member of the game\'s lobby open it, without seats', async () => {
+  it("lets a member of the game's lobby open it, without seats", async () => {
     const { getAuthUser } = await import('../auth/session.js')
     vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'lena' })
     const { SessionEngine } = await import('../session/engine.js')
     const { x01Module } = await import('../games/x01.js')
     const store = {
-      insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
-      getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.createWithSeats({
-      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig, lobbyId: 'l1', lobbyName: 'L',
+      ownerUserId: 'host',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
+      lobbyId: 'l1',
+      lobbyName: 'L',
       seats: [
         { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null },
         { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null },
@@ -199,8 +216,13 @@ describe('WS auth', () => {
 
     const first = await new Promise<any>((resolve, reject) => {
       const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
-      ws.addEventListener('message', e => { resolve(JSON.parse(String(e.data))); ws.close() })
-      ws.addEventListener('close', e => { reject(new Error(`closed ${(e as any).code}`)) })
+      ws.addEventListener('message', e => {
+        resolve(JSON.parse(String(e.data)))
+        ws.close()
+      })
+      ws.addEventListener('close', e => {
+        reject(new Error(`closed ${(e as any).code}`))
+      })
       setTimeout(() => reject(new Error('timeout')), 2000)
     })
     expect(first).toMatchObject({ type: 'snapshot', lobbyId: 'l1', mySeats: [] })
@@ -210,7 +232,10 @@ describe('WS auth', () => {
 
 describe('WS client messages', () => {
   let testApp: FastifyInstance | null = null
-  afterEach(async () => { await testApp?.close(); testApp = null })
+  afterEach(async () => {
+    await testApp?.close()
+    testApp = null
+  })
 
   it('answers a refused action with an error', async () => {
     const { getAuthUser } = await import('../auth/session.js')
@@ -222,14 +247,17 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     // The host's seat is up: Lena may watch, not take out
     const { sessionId } = await engine.createWithSeats({
-      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      ownerUserId: 'host',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
       seats: [
         { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: null },
         { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null },
@@ -245,9 +273,11 @@ describe('WS client messages', () => {
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     const messages: unknown[] = []
-    ws.addEventListener('message', e => { messages.push(JSON.parse(String(e.data))) })
+    ws.addEventListener('message', e => {
+      messages.push(JSON.parse(String(e.data)))
+    })
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      ws.addEventListener('message', () => resolve(), { once: true }) // initial snapshot
       setTimeout(() => reject(new Error('no snapshot')), 2000)
     })
     ws.send(JSON.stringify({ type: 'user_action', action: { type: 'takeout' } }))
@@ -269,7 +299,8 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -286,15 +317,17 @@ describe('WS client messages', () => {
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     let closed = false
-    ws.addEventListener('close', () => { closed = true })
+    ws.addEventListener('close', () => {
+      closed = true
+    })
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      ws.addEventListener('message', () => resolve(), { once: true }) // initial snapshot
       setTimeout(() => reject(new Error('no snapshot')), 2000)
     })
 
     ws.send('not json')
     ws.send(JSON.stringify({ type: 'user_action', action: { type: 'nuke' } }))
-    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart' } }))   // missing segment
+    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart' } })) // missing segment
     // a newer client adding fields is still understood
     ws.send(JSON.stringify({ type: 'user_action', action: { type: 'undo_dart', clientVersion: 2 }, sentAt: 1 }))
     await new Promise(r => setTimeout(r, 200))
@@ -316,7 +349,8 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -333,18 +367,20 @@ describe('WS client messages', () => {
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      ws.addEventListener('message', () => resolve(), { once: true }) // initial snapshot
       setTimeout(() => reject(new Error('no snapshot')), 2000)
     })
 
-    ws.send(JSON.stringify({
-      type: 'user_action',
-      action: {
-        type: 'add_dart',
-        segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1, extra: 1 },
-        clientVersion: 2,
-      },
-    }))
+    ws.send(
+      JSON.stringify({
+        type: 'user_action',
+        action: {
+          type: 'add_dart',
+          segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1, extra: 1 },
+          clientVersion: 2,
+        },
+      }),
+    )
     await new Promise(r => setTimeout(r, 200))
 
     expect(onUserAction).toHaveBeenCalledTimes(1)
@@ -368,7 +404,8 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -385,18 +422,20 @@ describe('WS client messages', () => {
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      ws.addEventListener('message', () => resolve(), { once: true }) // initial snapshot
       setTimeout(() => reject(new Error('no snapshot')), 2000)
     })
 
-    ws.send(JSON.stringify({
-      type: 'user_action',
-      action: {
-        type: 'add_dart',
-        segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 },
-        coords: { x: 0.1, y: -0.2, source: 'touch' },
-      },
-    }))
+    ws.send(
+      JSON.stringify({
+        type: 'user_action',
+        action: {
+          type: 'add_dart',
+          segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 },
+          coords: { x: 0.1, y: -0.2, source: 'touch' },
+        },
+      }),
+    )
     await new Promise(r => setTimeout(r, 200))
 
     expect(onUserAction).toHaveBeenCalledTimes(1)
@@ -418,7 +457,8 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -437,15 +477,17 @@ describe('WS client messages', () => {
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     let closed = false
-    ws.addEventListener('close', () => { closed = true })
+    ws.addEventListener('close', () => {
+      closed = true
+    })
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener('message', () => resolve(), { once: true })   // initial snapshot
+      ws.addEventListener('message', () => resolve(), { once: true }) // initial snapshot
       setTimeout(() => reject(new Error('no snapshot')), 2000)
     })
 
     const s1 = { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }
-    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart', segment: s1 } }))   // append fails
-    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart', segment: s1 } }))   // applied
+    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart', segment: s1 } })) // append fails
+    ws.send(JSON.stringify({ type: 'user_action', action: { type: 'add_dart', segment: s1 } })) // applied
     await new Promise(r => setTimeout(r, 200))
     process.off('unhandledRejection', unhandled)
 
@@ -459,7 +501,11 @@ describe('WS client messages', () => {
   it('does not count a viewer whose socket closed before sign-in was checked', async () => {
     const { getAuthUser } = await import('../auth/session.js')
     let signIn!: (u: { userId: string }) => void
-    vi.mocked(getAuthUser).mockReturnValueOnce(new Promise(r => { signIn = r }) as any)
+    vi.mocked(getAuthUser).mockReturnValueOnce(
+      new Promise(r => {
+        signIn = r
+      }) as any,
+    )
     const { SessionEngine } = await import('../session/engine.js')
     const { atcModule } = await import('../games/atc.js')
     const store = {
@@ -467,7 +513,8 @@ describe('WS client messages', () => {
       getActiveSessions: vi.fn().mockResolvedValue([]),
       getSessionEvents: vi.fn().mockResolvedValue([]),
       appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
       finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
@@ -496,23 +543,32 @@ describe('WS client messages', () => {
 
 describe('WS camera stills', () => {
   let testApp: FastifyInstance | null = null
-  afterEach(async () => { await testApp?.close(); testApp = null })
+  afterEach(async () => {
+    await testApp?.close()
+    testApp = null
+  })
 
-  it('sends the stored stills of the game\'s boards after the snapshot, and each new one', async () => {
+  it("sends the stored stills of the game's boards after the snapshot, and each new one", async () => {
     const { getAuthUser } = await import('../auth/session.js')
     vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
     const { SessionEngine } = await import('../session/engine.js')
     const { x01Module } = await import('../games/x01.js')
     const { CameraStills } = await import('../camera/store.js')
     const store = {
-      insertSession: vi.fn().mockResolvedValue(undefined), getActiveSessions: vi.fn().mockResolvedValue([]),
-      getSessionEvents: vi.fn().mockResolvedValue([]), appendEvent: vi.fn().mockResolvedValue(undefined),
-      insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined), finishSession: vi.fn().mockResolvedValue(undefined),
+      insertSession: vi.fn().mockResolvedValue(undefined),
+      getActiveSessions: vi.fn().mockResolvedValue([]),
+      getSessionEvents: vi.fn().mockResolvedValue([]),
+      appendEvent: vi.fn().mockResolvedValue(undefined),
+      insertDarts: vi.fn().mockResolvedValue(undefined),
+      deleteDarts: vi.fn().mockResolvedValue(undefined),
+      finishSession: vi.fn().mockResolvedValue(undefined),
       abortSession: vi.fn().mockResolvedValue(undefined),
     }
     const engine = new SessionEngine(store, vi.fn())
     const { sessionId } = await engine.createWithSeats({
-      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      ownerUserId: 'host',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
       seats: [
         { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'cam-board-a', boardName: null },
         { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'cam-board-b', boardName: null },
@@ -531,7 +587,9 @@ describe('WS camera stills', () => {
 
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws?sessionId=${sessionId}`)
     const messages: any[] = []
-    ws.addEventListener('message', e => { messages.push(JSON.parse(String(e.data))) })
+    ws.addEventListener('message', e => {
+      messages.push(JSON.parse(String(e.data)))
+    })
     await new Promise<void>((resolve, reject) => {
       ws.addEventListener('message', () => resolve(), { once: true })
       setTimeout(() => reject(new Error('no snapshot')), 2000)

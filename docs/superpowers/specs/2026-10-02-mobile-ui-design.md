@@ -69,6 +69,7 @@ One codebase.
 ### Sign in and Register
 
 Per `Mobile-SignIn`:
+
 - A 250 px hero strip with the dartboard graphic cropped at the right, the
   wordmark, and "Step up to the oche."
 - Below it, the form with 52 px inputs.
@@ -80,6 +81,7 @@ Register uses the same layout. The desktop split layout stays from `md` up.
 ### Play (`CreateSession`)
 
 Per `Mobile-Play`:
+
 - **Header:** the board selector moves into the phone header as a chip (a status dot
   and the board name).
 - **Mode picker:** a 2-column grid of mode tiles, 92 px tall.
@@ -93,6 +95,7 @@ Per `Mobile-Match` and `Mobile-ATC`. The phone layout has no tab bar: the match 
 full screen, like on desktop.
 
 **Header:**
+
 - the back button, which leaves the game the way the desktop does today
 - the game title with the LIVE badge
 - the meta line, e.g. "501 · Double out · First to 3 · Leg 3"
@@ -100,19 +103,21 @@ full screen, like on desktop.
 
 **Players:**
 
-| Player count | What shows |
-|---|---|
-| 2 | The other player as a compact row on top (name, "Up next" or a checkout hint, leg pips, points left). Below it, the active player's card. |
-| 3 or more | Compact rows for every player who isn't up, in throwing order, scrolling if needed. Below them, the active player's card. |
-| 1 | Only the active card, which carries the session stats. |
+| Player count | What shows                                                                                                                                |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 2            | The other player as a compact row on top (name, "Up next" or a checkout hint, leg pips, points left). Below it, the active player's card. |
+| 3 or more    | Compact rows for every player who isn't up, in throwing order, scrolling if needed. Below them, the active player's card.                 |
+| 1            | Only the active card, which carries the session stats.                                                                                    |
 
 The **active player's card** shows:
+
 - the name, the board name, a "Throwing" pill, and leg pips
 - the big score (ATC: the current target and progress)
 - leg avg, match avg and darts
 - the chalkboard at 150 px, when the chalkboard setting is on
 
 **Dart entry and controls**, pinned to the bottom of the screen:
+
 - the board's name, and the board itself
   - it takes the height that's left: at least 180 px, at most the screen width
   - tap it to enter a dart; tap a dart to correct it, as today
@@ -121,6 +126,7 @@ The **active player's card** shows:
 - the control bar: Undo, and Skip to next or the next-player button
 
 **Other states:**
+
 - **Manual entry:** the existing entry-panel view switch keeps working; the entry
   panel is full width.
 - **Overlays:** the bull off panel and the win overlay reuse the existing components.

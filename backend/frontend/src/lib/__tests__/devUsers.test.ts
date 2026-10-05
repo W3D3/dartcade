@@ -3,17 +3,33 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 const calls: string[] = []
 vi.mock('../auth.js', () => ({
   authClient: {
-    signOut: vi.fn(() => { calls.push('signOut'); return Promise.resolve({}) }),
-    signIn: { email: vi.fn((c: { email: string }) => { calls.push(`signIn ${c.email}`); return Promise.resolve({ error: null }) }) },
+    signOut: vi.fn(() => {
+      calls.push('signOut')
+      return Promise.resolve({})
+    }),
+    signIn: {
+      email: vi.fn((c: { email: string }) => {
+        calls.push(`signIn ${c.email}`)
+        return Promise.resolve({ error: null })
+      }),
+    },
   },
-  currentUser: { refresh: vi.fn(() => { calls.push('refresh user'); return Promise.resolve() }) },
+  currentUser: {
+    refresh: vi.fn(() => {
+      calls.push('refresh user')
+      return Promise.resolve()
+    }),
+  },
 }))
 
 const { DEV_USERS, signInAs } = await import('../devUsers.js')
 
 describe('dev users', () => {
   const win = { location: { hash: '#/login' } }
-  beforeEach(() => { calls.length = 0; vi.stubGlobal('window', win) })
+  beforeEach(() => {
+    calls.length = 0
+    vi.stubGlobal('window', win)
+  })
 
   it('lists Admin and the darters, each with a distinct email', () => {
     expect(DEV_USERS.map(u => u.name)).toEqual(['Admin', 'Luke', 'Phil', 'Michael', 'Gerwyn'])

@@ -5,13 +5,19 @@ import type { Database } from './schema.js'
 export type Account = { id: string; name: string; email: string; nameNeedsChange: boolean; invisible: boolean }
 
 export async function getAccount(db: Kysely<Database>, userId: string): Promise<Account | undefined> {
-  const row = await db.selectFrom('user').select(['id', 'name', 'email', 'name_needs_change', 'invisible']).where('id', '=', userId).executeTakeFirst()
+  const row = await db
+    .selectFrom('user')
+    .select(['id', 'name', 'email', 'name_needs_change', 'invisible'])
+    .where('id', '=', userId)
+    .executeTakeFirst()
   return row && { id: row.id, name: row.name, email: row.email, nameNeedsChange: row.name_needs_change, invisible: row.invisible }
 }
 
 /** Someone else holds this (normalized) name, ignoring case. Flagged names hold nothing (migration 013). */
 export async function isNameTaken(db: Kysely<Database>, name: string, exceptUserId: string | null): Promise<boolean> {
-  let q = db.selectFrom('user').select('id')
+  let q = db
+    .selectFrom('user')
+    .select('id')
     .where(sql<boolean>`lower(name) = lower(${name})`)
     .where('name_needs_change', '=', false)
   if (exceptUserId !== null) q = q.where('id', '!=', exceptUserId)

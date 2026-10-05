@@ -7,7 +7,8 @@ import { ApiError } from './errors.js'
 function app() {
   const a = createFastify()
   a.post('/api/boards', { schema: fromSpec('createBoard') }, async (req, reply) =>
-    reply.code(201).send({ id: 'b1', name: 'Home', token: Object.keys(req.body as object).join(',') }))
+    reply.code(201).send({ id: 'b1', name: 'Home', token: Object.keys(req.body as object).join(',') }),
+  )
   return a
 }
 
@@ -35,8 +36,12 @@ describe('request validation and error format', () => {
 
   it('maps thrown errors to { error } with their status, and hides 500 messages', async () => {
     const a = createFastify()
-    a.get('/boom', () => { throw Object.assign(new Error('secret db detail'), { statusCode: 500 }) })
-    a.get('/teapot', () => { throw Object.assign(new Error('short and stout'), { statusCode: 418 }) })
+    a.get('/boom', () => {
+      throw Object.assign(new Error('secret db detail'), { statusCode: 500 })
+    })
+    a.get('/teapot', () => {
+      throw Object.assign(new Error('short and stout'), { statusCode: 418 })
+    })
     expect(JSON.parse((await a.inject('/boom')).body)).toEqual({ error: 'internal error' })
     const tea = await a.inject('/teapot')
     expect(tea.statusCode).toBe(418)
@@ -47,7 +52,9 @@ describe('request validation and error format', () => {
 describe('ApiError', () => {
   it('answers with its status and body', async () => {
     const a = createFastify()
-    a.get('/boom', () => { throw new ApiError(409, { error: 'taken', code: 'in_lobby' } as { error: string }) })
+    a.get('/boom', () => {
+      throw new ApiError(409, { error: 'taken', code: 'in_lobby' } as { error: string })
+    })
     const res = await a.inject({ method: 'GET', url: '/boom' })
     expect(res.statusCode).toBe(409)
     expect(JSON.parse(res.body)).toEqual({ error: 'taken', code: 'in_lobby' })

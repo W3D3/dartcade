@@ -7,14 +7,27 @@ class FakeContext {
   state = 'running'
   currentTime = 0
   destination = {}
-  createGain() { return { gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() } }
+  createGain() {
+    return { gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() }
+  }
   createBufferSource() {
-    const src = { buffer: null as { tag: string; duration: number } | null, connect: vi.fn(), disconnect: vi.fn(), stop: vi.fn(),
-      start: () => { if (src.buffer) started.push(src.buffer.tag) } }
+    const src = {
+      buffer: null as { tag: string; duration: number } | null,
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+      stop: vi.fn(),
+      start: () => {
+        if (src.buffer) started.push(src.buffer.tag)
+      },
+    }
     return src
   }
-  decodeAudioData(data: { tag: string }) { return Promise.resolve({ tag: data.tag, duration: 1 }) }
-  resume() { return Promise.resolve() }
+  decodeAudioData(data: { tag: string }) {
+    return Promise.resolve({ tag: data.tag, duration: 1 })
+  }
+  resume() {
+    return Promise.resolve()
+  }
 }
 
 const ok = (tag: string) => ({ ok: true, status: 200, arrayBuffer: () => Promise.resolve({ tag }) })
@@ -25,12 +38,12 @@ describe('createCaller', () => {
     started.length = 0
     vi.stubGlobal('AudioContext', FakeContext)
   })
-  afterEach(() => { vi.unstubAllGlobals() })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
 
   it('tries a clip again after the server failed to send it', async () => {
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce({ ok: false, status: 500 })
-      .mockResolvedValueOnce(ok('180'))
+    const fetchMock = vi.fn().mockResolvedValueOnce({ ok: false, status: 500 }).mockResolvedValueOnce(ok('180'))
     vi.stubGlobal('fetch', fetchMock)
     const { createCaller } = await import('../caller/player.js')
     const caller = createCaller(() => 1)
@@ -43,8 +56,13 @@ describe('createCaller', () => {
 
   it('drops a call still loading when the next one comes', async () => {
     let release: (v: unknown) => void = () => undefined
-    const slow = new Promise(r => { release = r })
-    vi.stubGlobal('fetch', vi.fn((url: string) => url === '/c/slow' ? slow : Promise.resolve(ok('fast'))))
+    const slow = new Promise(r => {
+      release = r
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => (url === '/c/slow' ? slow : Promise.resolve(ok('fast')))),
+    )
     const { createCaller } = await import('../caller/player.js')
     const caller = createCaller(() => 1)
     const first = caller.say([['a']], { a: ['/c/slow'] })

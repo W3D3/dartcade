@@ -36,7 +36,7 @@ function teamSeating(players: LobbyPerson[]): { players: LobbyPerson[]; teams: n
   const b = players.filter(p => teamOf(p) === 'B')
   if (a.length === 0 || b.length === 0) return null
   const seated = interleave(a, b)
-  return { players: seated, teams: seated.map(p => teamOf(p) === 'A' ? 0 : 1) }
+  return { players: seated, teams: seated.map(p => (teamOf(p) === 'A' ? 0 : 1)) }
 }
 
 /**
@@ -81,16 +81,22 @@ export function planGame(
     config.teamStart = shuffleSeats ? 'random' : 'first'
     shuffleSeats = false
   }
-  const invalid = mod.validate?.(config, players.map(p => ({ name: p.name })))
+  const invalid = mod.validate?.(
+    config,
+    players.map(p => ({ name: p.name })),
+  )
   if (invalid) return { ok: false, problem: { status: 400, error: `invalid config: ${invalid}` } }
 
-  const offlineBoards = [...new Set(players.flatMap(p =>
-    p.boardId !== null && !opts.isBoardOnline(p.boardId) ? [p.boardName ?? p.boardId] : []))]
+  const offlineBoards = [
+    ...new Set(players.flatMap(p => (p.boardId !== null && !opts.isBoardOnline(p.boardId) ? [p.boardName ?? p.boardId] : []))),
+  ]
   if (offlineBoards.length > 0 && !opts.force) {
     return { ok: false, problem: { status: 409, code: 'board_offline', error: `offline: ${offlineBoards.join(', ')}`, offlineBoards } }
   }
 
-  const notReady = players.filter(p => !effectiveReady(lobby, p) && controllerOf(p) !== opts.starterUserId).map(p => ({ personId: p.id, name: p.name }))
+  const notReady = players
+    .filter(p => !effectiveReady(lobby, p) && controllerOf(p) !== opts.starterUserId)
+    .map(p => ({ personId: p.id, name: p.name }))
   if (notReady.length > 0 && !opts.force) {
     return { ok: false, problem: { status: 409, code: 'not_ready', error: 'not everyone is ready', notReady } }
   }
@@ -102,7 +108,13 @@ export function planGame(
       config,
       shuffleSeats,
       personIds: players.map(p => p.id),
-      seats: players.map(p => ({ name: p.name, userId: p.userId, controllerUserId: controllerOf(p), boardId: p.boardId, boardName: p.boardName })),
+      seats: players.map(p => ({
+        name: p.name,
+        userId: p.userId,
+        controllerUserId: controllerOf(p),
+        boardId: p.boardId,
+        boardName: p.boardName,
+      })),
     },
   }
 }

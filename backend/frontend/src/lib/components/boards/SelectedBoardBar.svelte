@@ -6,7 +6,12 @@
   import type { Board } from '$lib/api'
   import { selectedLine } from '$lib/boards'
 
-  let { board, name, actions, details }: {
+  let {
+    board,
+    name,
+    actions,
+    details,
+  }: {
     board: Board
     /** The name, renamable. */
     name: Snippet
@@ -26,8 +31,13 @@
       <span class="text-[14px] text-text-muted truncate">{selectedLine(board)}</span>
     </div>
     <div class="ml-auto flex items-center gap-3">
-      <button type="button" onclick={() => open = !open} aria-expanded={open} aria-controls="board-details"
-        class="h-[46px] px-3 inline-flex items-center gap-[6px] rounded-[10px] border border-line-3 bg-transparent text-text text-[15px] font-medium cursor-pointer font-[inherit]">
+      <button
+        type="button"
+        onclick={() => (open = !open)}
+        aria-expanded={open}
+        aria-controls="board-details"
+        class="h-[46px] px-3 inline-flex items-center gap-[6px] rounded-[10px] border border-line-3 bg-transparent text-text text-[15px] font-medium cursor-pointer font-[inherit]"
+      >
         Cameras &amp; events
         <ChevronDown size={16} class="transition-transform {open ? 'rotate-180' : ''}" />
       </button>

@@ -19,7 +19,7 @@ export function teamOfSeats(cfg: TeamsConfig, seatCount: number): number[] {
 }
 
 /** The team index of every seat; without teams each seat is its own team. */
-export const teamCount = (teamOf: number[]): number => teamOf.length === 0 ? 0 : Math.max(...teamOf) + 1
+export const teamCount = (teamOf: number[]): number => (teamOf.length === 0 ? 0 : Math.max(...teamOf) + 1)
 
 /** Seats of each team, in seat order. */
 export function seatsByTeam(teamOf: number[]): number[][] {

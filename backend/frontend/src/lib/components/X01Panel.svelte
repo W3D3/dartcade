@@ -9,7 +9,16 @@
   import type { SeatLine } from '$lib/remote'
   import type { Snippet } from 'svelte'
 
-  let { name, p, active, solo = false, pill, seat = null, chalkboard, waiting }: {
+  let {
+    name,
+    p,
+    active,
+    solo = false,
+    pill,
+    seat = null,
+    chalkboard,
+    waiting,
+  }: {
     name: string
     p: X01PlayerView
     active: boolean
@@ -28,8 +37,12 @@
 
   <div class="flex flex-col gap-[6px]">
     {#if solo}<span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Left</span>{/if}
-    <span class="font-display font-bold {solo ? 'text-[min(220px,24vh)]' : 'text-[min(150px,24vh,56cqi)] xl:text-[min(220px,24vh)]'} leading-[0.8] tracking-[-0.02em] tabular-nums
-                 {active ? 'text-text' : 'text-ink-3'}"><RollingNumber {...x01Roll(p)} /></span>
+    <span
+      class="font-display font-bold {solo
+        ? 'text-[min(220px,24vh)]'
+        : 'text-[min(150px,24vh,56cqi)] xl:text-[min(220px,24vh)]'} leading-[0.8] tracking-[-0.02em] tabular-nums
+                 {active ? 'text-text' : 'text-ink-3'}"><RollingNumber {...x01Roll(p)} /></span
+    >
   </div>
 
   {#if !p.opened}
@@ -44,8 +57,16 @@
   <div class="flex {solo ? 'gap-9' : 'gap-[18px] xl:gap-9'}">
     {#each [{ label: solo ? 'Leg avg' : 'Avg', value: solo ? p.legAvg : p.avg }, { label: 'Darts', value: String(p.darts) }] as s (s.label)}
       <span class="flex flex-col gap-1">
-        <span class="{solo ? 'text-[13px]' : 'text-[11px] xl:text-[13px]'} uppercase tracking-[0.1em] {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
-        <span class="font-display font-bold {solo ? 'text-[44px]' : 'text-[30px] xl:text-[44px]'} leading-none tabular-nums {active ? 'text-text' : 'text-ink-2'}">{s.value}</span>
+        <span
+          class="{solo ? 'text-[13px]' : 'text-[11px] xl:text-[13px]'} uppercase tracking-[0.1em] {active
+            ? 'text-text-muted'
+            : 'text-text-dim'}">{s.label}</span
+        >
+        <span
+          class="font-display font-bold {solo ? 'text-[44px]' : 'text-[30px] xl:text-[44px]'} leading-none tabular-nums {active
+            ? 'text-text'
+            : 'text-ink-2'}">{s.value}</span
+        >
       </span>
     {/each}
   </div>

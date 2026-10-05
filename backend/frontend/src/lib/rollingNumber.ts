@@ -56,7 +56,8 @@ export function planChange(o: {
   let tone: Tone
   if (busted) tone = 'bust'
   else if (o.wasBust && !o.bust) tone = 'back'
-  else if (o.progress !== undefined && o.prevProgress !== undefined && o.progress !== o.prevProgress) tone = o.progress < o.prevProgress ? 'back' : 'plain'
+  else if (o.progress !== undefined && o.prevProgress !== undefined && o.progress !== o.prevProgress)
+    tone = o.progress < o.prevProgress ? 'back' : 'plain'
   else tone = dir === o.normal ? 'plain' : 'back'
   return { kind: o.reducedMotion ? 'jump' : 'roll', dir, tone }
 }

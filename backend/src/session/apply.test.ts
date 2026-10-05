@@ -8,19 +8,40 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
   const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}` }))
   const s = module.init(config, players)
   return {
-    id: 's1', ownerUserId: 'u1', boardId: 'b1', lobbyId: null, lobbyName: null, players, module,
+    id: 's1',
+    ownerUserId: 'u1',
+    boardId: 'b1',
+    lobbyId: null,
+    lobbyName: null,
+    players,
+    module,
     seats: players.map(p => ({ name: p.name, userId: null, controllerUserId: 'u1', boardId: 'b1', boardName: null })),
-    committedState: s, currentState: s, openVisitEvents: [], openDarts: [],
-    status: 'active', createdAt: new Date(0), seed: 0, visitCount: 0, nextSeq: 0,
-    totalDarts: Array<number>(n).fill(0), totalVisits: Array<number>(n).fill(0),
-    boardStatus: new Map(), forfeited: [], undoable: [],
+    committedState: s,
+    currentState: s,
+    openVisitEvents: [],
+    openDarts: [],
+    status: 'active',
+    createdAt: new Date(0),
+    seed: 0,
+    visitCount: 0,
+    nextSeq: 0,
+    totalDarts: Array<number>(n).fill(0),
+    totalVisits: Array<number>(n).fill(0),
+    boardStatus: new Map(),
+    forfeited: [],
+    undoable: [],
   }
 }
 const S1: Segment = { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }
 const S2: Segment = { name: 'S2', number: 2, bed: 'Single', multiplier: 1 }
 const board = (kind: string, data: unknown = {}): GameInput => ({ source: 'board', event: { kind, data } as never })
-const dart = (s: Segment, index: number, coords?: { x: number; y: number }): GameInput =>
-  ({ source: 'board', event: { kind: 'dart.detected', data: { visit_id: 'v', index, source_seq: 1, dart: { segment: s, score: s.number, ...(coords && { coords }) } } } })
+const dart = (s: Segment, index: number, coords?: { x: number; y: number }): GameInput => ({
+  source: 'board',
+  event: {
+    kind: 'dart.detected',
+    data: { visit_id: 'v', index, source_seq: 1, dart: { segment: s, score: s.number, ...(coords && { coords }) } },
+  },
+})
 const t = (ms: number) => new Date(Date.UTC(2026, 9, 1, 10, 0, 0, ms))
 
 describe('applyInput', () => {
@@ -31,7 +52,9 @@ describe('applyInput', () => {
     const out = applyInput(s, board('takeout.finished'), t(2))
     expect(out.won).toBe(false)
     expect(out.committed).toMatchObject({ visit: 0, seat: 0, leg: 0, phase: 'game', committedAt: t(2).toISOString() })
-    expect(out.committed?.darts).toEqual([{ index: 0, segment: S1, coords: { x: 0.1, y: 0.2 }, source: 'camera', corrected: false, thrownAt: t(1).toISOString() }])
+    expect(out.committed?.darts).toEqual([
+      { index: 0, segment: S1, coords: { x: 0.1, y: 0.2 }, source: 'camera', corrected: false, thrownAt: t(1).toISOString() },
+    ])
     expect(s.visitCount).toBe(1)
     expect(s.openDarts).toEqual([])
   })
@@ -40,18 +63,35 @@ describe('applyInput', () => {
     const s = session(atcModule, atcModule.defaultConfig)
     applyInput(s, board('visit.opened'), t(0))
     applyInput(s, dart(S1, 0), t(1))
-    applyInput(s, { source: 'board', event: { kind: 'dart.corrected', data: { visit_id: 'v', index: 0, source_seq: 2, dart: { segment: S2, score: 2 }, previous: { segment: S1, score: 1 } } } }, t(2))
+    applyInput(
+      s,
+      {
+        source: 'board',
+        event: {
+          kind: 'dart.corrected',
+          data: { visit_id: 'v', index: 0, source_seq: 2, dart: { segment: S2, score: 2 }, previous: { segment: S1, score: 1 } },
+        },
+      },
+      t(2),
+    )
     applyInput(s, { source: 'user', action: { type: 'add_dart', segment: S1 } }, t(3))
     applyInput(s, { source: 'user', action: { type: 'add_dart', segment: S2 } }, t(4))
     applyInput(s, { source: 'user', action: { type: 'undo_dart' } }, t(5))
     const out = applyInput(s, { source: 'user', action: { type: 'takeout' } }, t(6))
-    expect(out.committed?.darts.map(d => [d.segment.name, d.source, d.corrected])).toEqual([['S2', 'camera', true], ['S1', 'manual', false]])
+    expect(out.committed?.darts.map(d => [d.segment.name, d.source, d.corrected])).toEqual([
+      ['S2', 'camera', true],
+      ['S1', 'manual', false],
+    ])
   })
 
   it('an empty takeout commits three manual misses', () => {
     const s = session(atcModule, atcModule.defaultConfig)
     const out = applyInput(s, { source: 'user', action: { type: 'takeout' } }, t(0))
-    expect(out.committed?.darts.map(d => [d.segment.name, d.source])).toEqual([['Miss', 'manual'], ['Miss', 'manual'], ['Miss', 'manual']])
+    expect(out.committed?.darts.map(d => [d.segment.name, d.source])).toEqual([
+      ['Miss', 'manual'],
+      ['Miss', 'manual'],
+      ['Miss', 'manual'],
+    ])
   })
 
   it('a resync drops the open darts', () => {
@@ -65,7 +105,7 @@ describe('applyInput', () => {
 
   it('reports the win', () => {
     const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 301, outMode: 'straight', firstTo: 1 })
-    s.committedState = { ...s.committedState as object, game: { ...(s.committedState as any).game, scores: [1] } }
+    s.committedState = { ...(s.committedState as object), game: { ...(s.committedState as any).game, scores: [1] } }
     s.currentState = s.committedState
     applyInput(s, board('visit.opened'), t(0))
     applyInput(s, dart(S1, 0), t(1))
@@ -83,7 +123,11 @@ describe('applyInput', () => {
 
   it('a forfeit drops the open visit and decides the game', () => {
     const s = session(x01Module, x01Module.defaultConfig, 2)
-    applyInput(s, { source: 'user', action: { type: 'add_dart', segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 } } }, new Date())
+    applyInput(
+      s,
+      { source: 'user', action: { type: 'add_dart', segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 } } },
+      new Date(),
+    )
     const out = applyInput(s, { source: 'user', action: { type: 'forfeit', seats: [0] } }, new Date())
     expect(out).toEqual({ committed: null, won: true })
     expect(s.forfeited).toEqual([0])
@@ -96,7 +140,7 @@ describe('applyInput', () => {
     expect(applyInput(s, { source: 'user', action: { type: 'forfeit' } }, new Date())).toEqual({ committed: null, won: false })
   })
 
-  it('a forfeit rolls back the open visit\'s darts from whoever is up, not the forfeiter', () => {
+  it("a forfeit rolls back the open visit's darts from whoever is up, not the forfeiter", () => {
     const s = session(x01Module, x01Module.defaultConfig, 2)
     // seat 0 commits a visit of three misses, handing the turn to seat 1
     applyInput(s, { source: 'user', action: { type: 'takeout' } }, new Date())
@@ -151,7 +195,8 @@ describe('applyInput', () => {
     const D20: Segment = { name: 'D20', number: 20, bed: 'Double', multiplier: 2 }
     const add = (segment: Segment): GameInput => ({ source: 'user', action: { type: 'add_dart', segment } })
     const user = (type: 'takeout' | 'undo_dart'): GameInput => ({ source: 'user', action: { type } })
-    const game = (s: Session) => s.module.view(s.currentState, s.players) as unknown as { currentPlayer: number; scores: number[]; legs: number[] }
+    const game = (s: Session) =>
+      s.module.view(s.currentState, s.players) as unknown as { currentPlayer: number; scores: number[]; legs: number[] }
 
     it('reopens the last visit for its thrower, to correct and commit again', () => {
       const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 301 }, 2)

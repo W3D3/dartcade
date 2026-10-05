@@ -1,8 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import type { SeatInfo, Snapshot } from '$lib/api/game-ws'
 import {
-  boardCaption, centerState, formatElapsed, isManualTurn, isRemoteGame, myBoard, noticeLines,
-  rowSub, seatLines, startsOnKeypad, turnStatus,
+  boardCaption,
+  centerState,
+  formatElapsed,
+  isManualTurn,
+  isRemoteGame,
+  myBoard,
+  noticeLines,
+  rowSub,
+  seatLines,
+  startsOnKeypad,
+  turnStatus,
 } from '../remote.js'
 import fixture from './fixtures/x01-snapshot.json'
 
@@ -14,20 +23,46 @@ const local = (patch: { boardId?: string | null; boardOnline?: boolean; currentP
     ...(patch.boardId !== undefined && { boardId: patch.boardId, boardName: patch.boardId === null ? null : s.boardName }),
     ...(patch.boardOnline !== undefined && { boardOnline: patch.boardOnline }),
   }))
-  return { ...base, boardId: patch.boardId === undefined ? base.boardId : patch.boardId, seats,
-    game: { ...base.game, currentPlayer: patch.currentPlayer ?? 0 } } as Snapshot
+  return {
+    ...base,
+    boardId: patch.boardId === undefined ? base.boardId : patch.boardId,
+    seats,
+    game: { ...base.game, currentPlayer: patch.currentPlayer ?? 0 },
+  } as Snapshot
 }
 
 // A remote game: Christoph (host) on Living room, Lena on Lena's place; the viewer controls `mySeats`
-const remote = (o: { mySeats?: number[]; currentPlayer?: number; seats?: Partial<SeatInfo>[]; status?: Snapshot['status'] } = {}): Snapshot => {
+const remote = (
+  o: { mySeats?: number[]; currentPlayer?: number; seats?: Partial<SeatInfo>[]; status?: Snapshot['status'] } = {},
+): Snapshot => {
   const base = structuredClone(fixture) as unknown as Snapshot
   const seat = (s: SeatInfo, over: Partial<SeatInfo>): SeatInfo => ({ ...s, ...over })
   return {
-    ...base, boardId: null, ownerUserId: 'host', status: o.status ?? 'active', mySeats: o.mySeats ?? [0],
+    ...base,
+    boardId: null,
+    ownerUserId: 'host',
+    status: o.status ?? 'active',
+    mySeats: o.mySeats ?? [0],
     players: [{ name: 'Christoph' }, { name: 'Lena' }],
     seats: [
-      seat(base.seats[0], { controllerUserId: 'host', userId: 'host', boardId: 'board-a', boardName: 'Living room', boardOnline: true, controllerConnected: true, ...o.seats?.[0] }),
-      seat(base.seats[1], { controllerUserId: 'lena', userId: 'lena', boardId: 'board-b', boardName: "Lena's place", boardOnline: true, controllerConnected: true, ...o.seats?.[1] }),
+      seat(base.seats[0], {
+        controllerUserId: 'host',
+        userId: 'host',
+        boardId: 'board-a',
+        boardName: 'Living room',
+        boardOnline: true,
+        controllerConnected: true,
+        ...o.seats?.[0],
+      }),
+      seat(base.seats[1], {
+        controllerUserId: 'lena',
+        userId: 'lena',
+        boardId: 'board-b',
+        boardName: "Lena's place",
+        boardOnline: true,
+        controllerConnected: true,
+        ...o.seats?.[1],
+      }),
     ],
     game: { ...base.game, currentPlayer: o.currentPlayer ?? 0 },
   } as Snapshot
@@ -50,7 +85,7 @@ describe('seatLines', () => {
     expect(seatLines(local())).toEqual([null, null])
     expect(seatLines(null)).toEqual([])
   })
-  it('each seat\'s board, and which one is yours', () => {
+  it("each seat's board, and which one is yours", () => {
     expect(seatLines(remote())).toEqual([
       { board: 'Living room', byHand: false, offline: false, disconnected: false, you: true },
       { board: "Lena's place", byHand: false, offline: false, disconnected: false, you: false },
@@ -69,15 +104,19 @@ describe('seatLines', () => {
 })
 
 describe('rowSub', () => {
-  it('puts the seat\'s board in front of a phone row\'s line', () => {
+  it("puts the seat's board in front of a phone row's line", () => {
     expect(rowSub('Up next · can finish T17 D18', null)).toBe('Up next · can finish T17 D18')
-    expect(rowSub('Up next', { board: "Lena's place", byHand: false, offline: false, disconnected: false, you: false })).toBe("Lena's place · up next")
-    expect(rowSub('Avg 45.0', { board: null, byHand: true, offline: false, disconnected: false, you: false })).toBe('Manual entry · avg 45.0')
+    expect(rowSub('Up next', { board: "Lena's place", byHand: false, offline: false, disconnected: false, you: false })).toBe(
+      "Lena's place · up next",
+    )
+    expect(rowSub('Avg 45.0', { board: null, byHand: true, offline: false, disconnected: false, you: false })).toBe(
+      'Manual entry · avg 45.0',
+    )
   })
 })
 
 describe('myBoard', () => {
-  it('the viewer\'s own board in a remote game', () => {
+  it("the viewer's own board in a remote game", () => {
     expect(myBoard(remote())).toEqual({ name: 'Living room', online: true })
     expect(myBoard(remote({ seats: [{ boardOnline: false }] }))).toEqual({ name: 'Living room', online: false })
   })
@@ -98,17 +137,28 @@ describe('centerState', () => {
     expect(centerState(remote({ seats: [{ boardOnline: false }] }), 'host')).toEqual({ kind: 'play-offline', board: 'Living room' })
     expect(centerState(remote({ seats: [{ boardId: null, boardName: null, boardOnline: false }] }), 'host')).toEqual({ kind: 'play' })
   })
-  it('someone else\'s turn: watch their board, or their darts entered by hand', () => {
+  it("someone else's turn: watch their board, or their darts entered by hand", () => {
     expect(centerState(remote({ currentPlayer: 1 }), 'host')).toEqual({ kind: 'watch', name: 'Lena', board: "Lena's place" })
-    expect(centerState(remote({ currentPlayer: 1, seats: [{}, { boardId: null, boardName: null, boardOnline: false }] }), 'host'))
-      .toEqual({ kind: 'watch', name: 'Lena', board: null })
-    expect(centerState(remote({ currentPlayer: 1, seats: [{}, { boardOnline: false }] }), 'host'))
-      .toEqual({ kind: 'watch-offline', name: 'Lena', board: "Lena's place" })
+    expect(centerState(remote({ currentPlayer: 1, seats: [{}, { boardId: null, boardName: null, boardOnline: false }] }), 'host')).toEqual({
+      kind: 'watch',
+      name: 'Lena',
+      board: null,
+    })
+    expect(centerState(remote({ currentPlayer: 1, seats: [{}, { boardOnline: false }] }), 'host')).toEqual({
+      kind: 'watch-offline',
+      name: 'Lena',
+      board: "Lena's place",
+    })
   })
   it('the thrower has the game closed: everyone waits, only the host may abort', () => {
     const gone = remote({ currentPlayer: 1, seats: [{}, { controllerConnected: false, disconnectedAt: '2026-10-02T18:00:00.000Z' }] })
     expect(centerState(gone, 'host')).toEqual({
-      kind: 'waiting', seat: 1, name: 'Lena', board: "Lena's place", disconnectedAt: '2026-10-02T18:00:00.000Z', canAbort: true,
+      kind: 'waiting',
+      seat: 1,
+      name: 'Lena',
+      board: "Lena's place",
+      disconnectedAt: '2026-10-02T18:00:00.000Z',
+      canAbort: true,
     })
     expect(centerState({ ...gone, mySeats: [] }, 'max')).toMatchObject({ kind: 'waiting', canAbort: false })
     expect(centerState(gone, null)).toMatchObject({ kind: 'waiting', canAbort: false })
@@ -166,11 +216,16 @@ describe('formatElapsed', () => {
 
 describe('noticeLines', () => {
   it('names who is throwing where', () => {
-    expect(noticeLines({ type: 'notice', code: 'not_your_turn', boardId: 'b', throwerName: 'Lena', throwerBoard: "Lena's place" })).toEqual({
-      title: 'Not your turn.', body: "That dart wasn't counted.", detail: "Lena is throwing at Lena's place.",
-    })
-    expect(noticeLines({ type: 'notice', code: 'not_your_turn', boardId: 'b', throwerName: 'Lena', throwerBoard: null }).detail)
-      .toBe('Lena is on manual entry.')
+    expect(noticeLines({ type: 'notice', code: 'not_your_turn', boardId: 'b', throwerName: 'Lena', throwerBoard: "Lena's place" })).toEqual(
+      {
+        title: 'Not your turn.',
+        body: "That dart wasn't counted.",
+        detail: "Lena is throwing at Lena's place.",
+      },
+    )
+    expect(noticeLines({ type: 'notice', code: 'not_your_turn', boardId: 'b', throwerName: 'Lena', throwerBoard: null }).detail).toBe(
+      'Lena is on manual entry.',
+    )
   })
 })
 

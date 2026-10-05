@@ -4,7 +4,15 @@ import { dropTarget, edgeSpeed, type ZoneBox } from '../actions/sortable.js'
 const box = (top: number, bottom: number, left = 0, right = 100) => ({ top, bottom, left, right })
 // Two columns side by side, rows 40px tall
 const zones: ZoneBox[] = [
-  { zone: 'A', box: box(0, 200, 0, 100), items: [{ id: 'a1', box: box(10, 50) }, { id: 'a2', box: box(60, 100) }, { id: 'a3', box: box(110, 150) }] },
+  {
+    zone: 'A',
+    box: box(0, 200, 0, 100),
+    items: [
+      { id: 'a1', box: box(10, 50) },
+      { id: 'a2', box: box(60, 100) },
+      { id: 'a3', box: box(110, 150) },
+    ],
+  },
   { zone: 'B', box: box(0, 200, 120, 220), items: [{ id: 'b1', box: box(10, 50, 120, 220) }] },
 ]
 

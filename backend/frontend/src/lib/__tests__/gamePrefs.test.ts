@@ -16,13 +16,14 @@ describe('loadPrefs', () => {
   })
 
   it('drops a broken field instead of the whole prefs', () => {
-    expect(loadPrefs(storage(JSON.stringify({ mode: 'atc', configs: 'nope', boardId: 7 }))))
-      .toEqual({ mode: 'atc', configs: {} })
+    expect(loadPrefs(storage(JSON.stringify({ mode: 'atc', configs: 'nope', boardId: 7 })))).toEqual({ mode: 'atc', configs: {} })
   })
 
   it('drops one broken game config, keeping the others', () => {
-    expect(loadPrefs(storage(JSON.stringify({ mode: 'atc', configs: { x01: 'bad', atc: { order: 'asc' } } }))))
-      .toEqual({ mode: 'atc', configs: { atc: { order: 'asc' } } })
+    expect(loadPrefs(storage(JSON.stringify({ mode: 'atc', configs: { x01: 'bad', atc: { order: 'asc' } } })))).toEqual({
+      mode: 'atc',
+      configs: { atc: { order: 'asc' } },
+    })
   })
 
   it('is null without a mode', () => {
@@ -33,7 +34,14 @@ describe('loadPrefs', () => {
 describe('savePrefs', () => {
   it('writes JSON under the prefs key', () => {
     let written: [string, string] | null = null
-    savePrefs({ setItem: (k, v) => { written = [k, v] } }, { mode: 'atc', configs: {} })
+    savePrefs(
+      {
+        setItem: (k, v) => {
+          written = [k, v]
+        },
+      },
+      { mode: 'atc', configs: {} },
+    )
     expect(written).toEqual([PREFS_KEY, JSON.stringify({ mode: 'atc', configs: {} })])
   })
 })

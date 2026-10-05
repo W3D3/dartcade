@@ -52,7 +52,12 @@ export function edgeSpeed(y: number, top: number, bottom: number): number {
   return 0
 }
 
-const KEYS = new Map<string, Direction>([['ArrowUp', 'up'], ['ArrowDown', 'down'], ['ArrowLeft', 'left'], ['ArrowRight', 'right']])
+const KEYS = new Map<string, Direction>([
+  ['ArrowUp', 'up'],
+  ['ArrowDown', 'down'],
+  ['ArrowLeft', 'left'],
+  ['ArrowRight', 'right'],
+])
 
 function scrollerOf(el: HTMLElement): Element | null {
   for (let p = el.parentElement; p; p = p.parentElement) {
@@ -70,14 +75,25 @@ const elements = (root: HTMLElement, selector: string): HTMLElement[] => {
 export const sortable: Action<HTMLElement, SortableOptions> = (root, initial) => {
   let opts = initial
   type Drag = {
-    id: string; item: HTMLElement; handle: HTMLElement; pointerId: number
-    startX: number; startY: number; x: number; y: number
-    started: boolean; scroller: Element | null; startScroll: number
-    target: SortableDrop | null; frame: number
+    id: string
+    item: HTMLElement
+    handle: HTMLElement
+    pointerId: number
+    startX: number
+    startY: number
+    x: number
+    y: number
+    started: boolean
+    scroller: Element | null
+    startScroll: number
+    target: SortableDrop | null
+    frame: number
   }
   let drag: Drag | null = null
 
-  const clearMarks = () => { for (const el of elements(root, '[data-drop]')) delete el.dataset.drop }
+  const clearMarks = () => {
+    for (const el of elements(root, '[data-drop]')) delete el.dataset.drop
+  }
 
   function mark(target: { zone: string; beforeId: string | null } | null, d: Drag) {
     clearMarks()
@@ -174,7 +190,9 @@ export const sortable: Action<HTMLElement, SortableOptions> = (root, initial) =>
     }
     render(d)
   }
-  const onup = (e: PointerEvent) => { if (drag && e.pointerId === drag.pointerId) finish('drop') }
+  const onup = (e: PointerEvent) => {
+    if (drag && e.pointerId === drag.pointerId) finish('drop')
+  }
   const oncancelled = () => finish('cancel')
   function onescape(e: KeyboardEvent) {
     if (e.key !== 'Escape') return
@@ -193,8 +211,19 @@ export const sortable: Action<HTMLElement, SortableOptions> = (root, initial) =>
     handle.setPointerCapture(e.pointerId)
     const scroller = scrollerOf(root)
     drag = {
-      id, item, handle, pointerId: e.pointerId, startX: e.clientX, startY: e.clientY, x: e.clientX, y: e.clientY,
-      started: false, scroller, startScroll: scroller?.scrollTop ?? 0, target: null, frame: 0,
+      id,
+      item,
+      handle,
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      x: e.clientX,
+      y: e.clientY,
+      started: false,
+      scroller,
+      startScroll: scroller?.scrollTop ?? 0,
+      target: null,
+      frame: 0,
     }
     handle.addEventListener('pointermove', onmove)
     handle.addEventListener('pointerup', onup)
@@ -221,7 +250,9 @@ export const sortable: Action<HTMLElement, SortableOptions> = (root, initial) =>
   root.addEventListener('pointerdown', onpointerdown)
   root.addEventListener('keydown', onkeydown)
   return {
-    update(next: SortableOptions) { opts = next },
+    update(next: SortableOptions) {
+      opts = next
+    },
     destroy() {
       finish('quiet')
       root.removeEventListener('pointerdown', onpointerdown)

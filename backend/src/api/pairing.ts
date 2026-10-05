@@ -4,13 +4,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import {
-  insertPairingCode,
-  getPairingCode,
-  claimPairingCode,
-  consumePairingToken,
-  insertBoard,
-} from '../db/queries.js'
+import { insertPairingCode, getPairingCode, claimPairingCode, consumePairingToken, insertBoard } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -33,68 +27,80 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
-  app.post<Route<'requestPairing'>>('/api/pairing/request', {
-    config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
-    schema: fromSpec('requestPairing'),
-  }, async (_req, reply) => {
-    const code = generateCode()
-    const expiresAt = new Date(Date.now() + CODE_TTL_MS)
-    await insertPairingCode(db, { code, expiresAt })
-    return reply.code(201).send({ code, expiresAt: expiresAt.toISOString() })
-  })
+  app.post<Route<'requestPairing'>>(
+    '/api/pairing/request',
+    {
+      config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
+      schema: fromSpec('requestPairing'),
+    },
+    async (_req, reply) => {
+      const code = generateCode()
+      const expiresAt = new Date(Date.now() + CODE_TTL_MS)
+      await insertPairingCode(db, { code, expiresAt })
+      return reply.code(201).send({ code, expiresAt: expiresAt.toISOString() })
+    },
+  )
 
-  app.get<Route<'getPairingToken'>>('/api/pairing/:code/token', {
-    // A paired bridge polls this every 2s (~30/min), so the cap has to sit
-    // above that. Brute-forcing is still futile: the code space is 32^8 and
-    // the token is consumed on first delivery.
-    config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
-    schema: fromSpec('getPairingToken'),
-  }, async (req, reply) => {
-    const { code } = req.params
-    const row = await getPairingCode(db, normalizeCode(code))
+  app.get<Route<'getPairingToken'>>(
+    '/api/pairing/:code/token',
+    {
+      // A paired bridge polls this every 2s (~30/min), so the cap has to sit
+      // above that. Brute-forcing is still futile: the code space is 32^8 and
+      // the token is consumed on first delivery.
+      config: { rateLimit: { max: 60, timeWindow: '1 minute' } },
+      schema: fromSpec('getPairingToken'),
+    },
+    async (req, reply) => {
+      const { code } = req.params
+      const row = await getPairingCode(db, normalizeCode(code))
 
-    if (!row) return reply.code(404).send({ error: 'not found' })
+      if (!row) return reply.code(404).send({ error: 'not found' })
 
-    if (!row.claimed_at) {
-      // Expiry only bounds unclaimed codes (the brute-force window). A claimed
-      // code must still deliver its one token even if it expired between the
-      // claim and this poll.
-      if (row.expires_at < new Date()) return reply.code(404).send({ error: 'not found' })
-      return reply.send({ status: 'pending' })
-    }
-
-    // Atomically grab the one-time token; null means it was already delivered.
-    const token = await consumePairingToken(db, row.code)
-    if (token) return reply.send({ status: 'claimed', token })
-    return reply.send({ status: 'consumed' })
-  })
-
-  app.post<Route<'claimPairing'>>('/api/pairing/claim', { preValidation: requireAuth, schema: fromSpec('claimPairing') }, async (req, reply) => {
-    const code = req.body.code
-    const name = req.body.name.trim()
-    const row = await getPairingCode(db, normalizeCode(code))
-    if (!row) return reply.code(404).send({ error: 'not found' })
-    if (row.expires_at < new Date()) return reply.code(410).send({ error: 'expired' })
-    if (row.claimed_at) return reply.code(409).send({ error: 'already claimed' })
-
-    const rawToken = randomBytes(32).toString('hex')
-    const tokenHash = createHash('sha256').update(rawToken).digest('hex')
-    const boardId = ulid()
-
-    try {
-      await db.transaction().execute(async (trx) => {
-        await insertBoard(trx, { id: boardId, owner_user_id: req.userId, name, token_hash: tokenHash })
-        await claimPairingCode(trx, { code: row.code, rawToken, boardId })
-      })
-    } catch (err) {
-      if (err instanceof Error && err.message === 'pairing code already claimed') {
-        return reply.code(409).send({ error: 'already claimed' })
+      if (!row.claimed_at) {
+        // Expiry only bounds unclaimed codes (the brute-force window). A claimed
+        // code must still deliver its one token even if it expired between the
+        // claim and this poll.
+        if (row.expires_at < new Date()) return reply.code(404).send({ error: 'not found' })
+        return reply.send({ status: 'pending' })
       }
-      throw err
-    }
 
-    return reply.code(201).send({ boardId, name })
-  })
+      // Atomically grab the one-time token; null means it was already delivered.
+      const token = await consumePairingToken(db, row.code)
+      if (token) return reply.send({ status: 'claimed', token })
+      return reply.send({ status: 'consumed' })
+    },
+  )
+
+  app.post<Route<'claimPairing'>>(
+    '/api/pairing/claim',
+    { preValidation: requireAuth, schema: fromSpec('claimPairing') },
+    async (req, reply) => {
+      const code = req.body.code
+      const name = req.body.name.trim()
+      const row = await getPairingCode(db, normalizeCode(code))
+      if (!row) return reply.code(404).send({ error: 'not found' })
+      if (row.expires_at < new Date()) return reply.code(410).send({ error: 'expired' })
+      if (row.claimed_at) return reply.code(409).send({ error: 'already claimed' })
+
+      const rawToken = randomBytes(32).toString('hex')
+      const tokenHash = createHash('sha256').update(rawToken).digest('hex')
+      const boardId = ulid()
+
+      try {
+        await db.transaction().execute(async trx => {
+          await insertBoard(trx, { id: boardId, owner_user_id: req.userId, name, token_hash: tokenHash })
+          await claimPairingCode(trx, { code: row.code, rawToken, boardId })
+        })
+      } catch (err) {
+        if (err instanceof Error && err.message === 'pairing code already claimed') {
+          return reply.code(409).send({ error: 'already claimed' })
+        }
+        throw err
+      }
+
+      return reply.code(201).send({ boardId, name })
+    },
+  )
 
   done()
 }

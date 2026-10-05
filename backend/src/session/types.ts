@@ -17,7 +17,15 @@ import type { components } from '../schema/api.js'
 // Aliases for shorter names throughout the backend
 export type Dart = ADetectedDart
 export type Segment = BoardManagerSegment
-export type { DartDetectedData, DartCorrectedData, TakeoutFinishedData, VisitOpenedData, VisitClearedData, BoardResyncData, BoardStatusData }
+export type {
+  DartDetectedData,
+  DartCorrectedData,
+  TakeoutFinishedData,
+  VisitOpenedData,
+  VisitClearedData,
+  BoardResyncData,
+  BoardStatusData,
+}
 
 export type Player = { name: string }
 
@@ -37,13 +45,13 @@ export type { UserAction }
  * visit and their data is kept as received, unread.
  */
 export type BoardEvent =
-  | { kind: 'dart.detected';    data: DartDetectedData }
-  | { kind: 'dart.corrected';   data: DartCorrectedData }
-  | { kind: 'visit.opened';     data: unknown }
+  | { kind: 'dart.detected'; data: DartDetectedData }
+  | { kind: 'dart.corrected'; data: DartCorrectedData }
+  | { kind: 'visit.opened'; data: unknown }
   | { kind: 'takeout.finished'; data: unknown }
-  | { kind: 'visit.cleared';    data: unknown }
-  | { kind: 'board.resync';     data: unknown }
-  | { kind: 'board.status';     data: unknown }
+  | { kind: 'visit.cleared'; data: unknown }
+  | { kind: 'board.resync'; data: unknown }
+  | { kind: 'board.status'; data: unknown }
 
 export type ConfigFieldMeta = {
   label: string
@@ -95,7 +103,13 @@ export type SummaryContext = { totalDarts: number[]; totalVisits: number[] }
  * games, so a session's module tells which snapshot shape it produces), `D` what
  * detail() returns.
  */
-export interface GameModule<S, Cfg = Record<string, never>, V extends object = Record<string, unknown>, Id extends string = string, D = unknown> {
+export interface GameModule<
+  S,
+  Cfg = Record<string, never>,
+  V extends object = Record<string, unknown>,
+  Id extends string = string,
+  D = unknown,
+> {
   id: Id
   /** Bumped when a rule change would replay old games' logs differently. */
   version: number
@@ -125,8 +139,7 @@ export interface GameModule<S, Cfg = Record<string, never>, V extends object = R
 
 /** A registered game with its state type erased; `id` tells which view (and snapshot) it produces. */
 export type AnyGameModule =
-  | GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail>
-  | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
+  GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail> | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
 
 /** A game's config as the API and the database carry it (a JSON object). */
 export type GameConfig = Record<string, unknown>

@@ -30,20 +30,42 @@ export function parseLoggedInput(row: LoggedInput): GameInput | null {
 
 /** A session at its start, set up exactly like create() set it up. */
 export function newSession(a: {
-  id: string; ownerUserId: string; boardId: string | null; module: AnyGameModule
-  config: GameConfig; seats: Seat[]; seed: number; createdAt: Date
-  lobbyId?: string | null; lobbyName?: string | null
+  id: string
+  ownerUserId: string
+  boardId: string | null
+  module: AnyGameModule
+  config: GameConfig
+  seats: Seat[]
+  seed: number
+  createdAt: Date
+  lobbyId?: string | null
+  lobbyName?: string | null
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const initial = a.module.init(a.config, players, seededRng(a.seed))
   return {
-    id: a.id, ownerUserId: a.ownerUserId, boardId: a.boardId, seats: a.seats, players, module: a.module,
-    committedState: initial, currentState: initial, openVisitEvents: [], openDarts: [],
-    status: 'active', createdAt: a.createdAt, seed: a.seed, visitCount: 0, nextSeq: 0,
+    id: a.id,
+    ownerUserId: a.ownerUserId,
+    boardId: a.boardId,
+    seats: a.seats,
+    players,
+    module: a.module,
+    committedState: initial,
+    currentState: initial,
+    openVisitEvents: [],
+    openDarts: [],
+    status: 'active',
+    createdAt: a.createdAt,
+    seed: a.seed,
+    visitCount: 0,
+    nextSeq: 0,
     totalDarts: Array<number>(players.length).fill(0),
     totalVisits: Array<number>(players.length).fill(0),
-    boardStatus: new Map(), forfeited: [], undoable: [],
-    lobbyId: a.lobbyId ?? null, lobbyName: a.lobbyName ?? null,
+    boardStatus: new Map(),
+    forfeited: [],
+    undoable: [],
+    lobbyId: a.lobbyId ?? null,
+    lobbyName: a.lobbyName ?? null,
   }
 }
 
@@ -69,8 +91,17 @@ export function replay(session: Session, rows: LoggedInput[], warn: WarnFn): { v
 /** game_darts rows for a committed visit. */
 export function dartRows(sessionId: string, v: CommittedVisit<unknown>): NewGameDart[] {
   return v.darts.map(d => ({
-    session_id: sessionId, visit: v.visit, dart_index: d.index, seat: v.seat, leg: v.leg, phase: v.phase,
-    segment: d.segment, coords: d.coords, source: d.source, corrected: d.corrected, thrown_at: new Date(d.thrownAt),
+    session_id: sessionId,
+    visit: v.visit,
+    dart_index: d.index,
+    seat: v.seat,
+    leg: v.leg,
+    phase: v.phase,
+    segment: d.segment,
+    coords: d.coords,
+    source: d.source,
+    corrected: d.corrected,
+    thrown_at: new Date(d.thrownAt),
   }))
 }
 
@@ -81,9 +112,21 @@ export function results(session: Session): FinishedSeat[] {
   const forfeited = new Set(session.forfeited)
   const teamOf = session.module.teamsOf?.(state) ?? seats.map((_, i) => i)
   // Without a winner, summarize ranks by standing; a forfeit puts its (whole team's) seats last
-  const placements = forfeited.size > 0 ? teamForfeitPlacements(teamOf, seats.map(r => r.placement), forfeited) : seats.map(r => r.placement)
+  const placements =
+    forfeited.size > 0
+      ? teamForfeitPlacements(
+          teamOf,
+          seats.map(r => r.placement),
+          forfeited,
+        )
+      : seats.map(r => r.placement)
   const order = session.module.throwOrder?.(state) ?? []
   // A throw order that doesn't name every seat once falls back to seat order
   const valid = order.length === seats.length && seats.every((_, seat) => order.includes(seat))
-  return seats.map((r, seat) => ({ ...r, placement: placements[seat], throwPosition: valid ? order.indexOf(seat) : seat, forfeited: forfeited.has(seat) }))
+  return seats.map((r, seat) => ({
+    ...r,
+    placement: placements[seat],
+    throwPosition: valid ? order.indexOf(seat) : seat,
+    forfeited: forfeited.has(seat),
+  }))
 }

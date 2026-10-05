@@ -32,26 +32,29 @@ const MAX_REDIRECTS = 3
 const PARALLEL = 6
 
 /** The names a folder is probed for (it has no listing), each as .mp3 then .wav. */
-const FOLDER_NAMES = [
-  ...Array.from({ length: 181 }, (_, i) => String(i)),
-  'gameshot', 'game on', 'gameon', 'busted', 'matchshot',
-]
+const FOLDER_NAMES = [...Array.from({ length: 181 }, (_, i) => String(i)), 'gameshot', 'game on', 'gameon', 'busted', 'matchshot']
 const MIME = { mp3: 'audio/mpeg', wav: 'audio/wav' }
 
 const UNSUPPORTED = "Links from this site aren't supported"
 
 function allowed(url: URL): boolean {
-  return url.protocol === 'https:' && ALLOWED_HOSTS.includes(url.hostname)
-    && url.port === '' && url.username === '' && url.password === ''
+  return url.protocol === 'https:' && ALLOWED_HOSTS.includes(url.hostname) && url.port === '' && url.username === '' && url.password === ''
 }
 
 /** Reads the pack a link points at. Throws a LinkError (or a ZipError for a broken zip). */
 export async function fetchPack(link: string, fetchImpl: typeof fetch = fetch, opts: FetchPackOptions = {}): Promise<ParsedPack> {
   let url: URL
-  try { url = new URL(link) } catch { throw new LinkError(UNSUPPORTED) }
+  try {
+    url = new URL(link)
+  } catch {
+    throw new LinkError(UNSUPPORTED)
+  }
   if (!allowed(url)) throw new LinkError(UNSUPPORTED)
 
-  const segments = url.pathname.split('/').filter(s => s !== '').map(safeDecode)
+  const segments = url.pathname
+    .split('/')
+    .filter(s => s !== '')
+    .map(safeDecode)
   const last = segments.at(-1) ?? url.hostname
 
   if (/\.zip$/i.test(last)) {
@@ -80,14 +83,24 @@ async function probeFolder(client: Client, url: URL, name: string, deadlineMs: n
       for (const ext of ['mp3', 'wav'] as const) {
         const file = `${FOLDER_NAMES[i]}.${ext}`
         let bytes: Uint8Array | null
-        try { bytes = await client.get(new URL(encodeURIComponent(file), base), { skipHtml: true, signal: stop.signal }) }
-        catch (err) { stop.abort(err); throw err }
-        if (bytes !== null) { found[i].push({ file, clip: { bytes, mime: MIME[ext] } }); break }
+        try {
+          bytes = await client.get(new URL(encodeURIComponent(file), base), { skipHtml: true, signal: stop.signal })
+        } catch (err) {
+          stop.abort(err)
+          throw err
+        }
+        if (bytes !== null) {
+          found[i].push({ file, clip: { bytes, mime: MIME[ext] } })
+          break
+        }
       }
     }
   }
-  try { await Promise.all(Array.from({ length: PARALLEL }, worker)) }
-  finally { clearTimeout(deadline) }
+  try {
+    await Promise.all(Array.from({ length: PARALLEL }, worker))
+  } finally {
+    clearTimeout(deadline)
+  }
 
   const clips: Record<string, Clip[]> = {}
   let total = 0
@@ -105,13 +118,19 @@ class Client {
   private bytes = 0
   lastStatus = 0
 
-  constructor(private readonly fetchImpl: typeof fetch, private readonly timeoutMs: number) {}
+  constructor(
+    private readonly fetchImpl: typeof fetch,
+    private readonly timeoutMs: number,
+  ) {}
 
   /**
    * The body, or null when there's nothing there (any status but 2xx and 3xx; an HTML page with
    * skipHtml). Gives up after the timeout, or when `signal` aborts (with its reason if a LinkError).
    */
-  async get(start: URL, { skipHtml = false, signal: outer }: { skipHtml?: boolean; signal?: AbortSignal } = {}): Promise<Uint8Array | null> {
+  async get(
+    start: URL,
+    { skipHtml = false, signal: outer }: { skipHtml?: boolean; signal?: AbortSignal } = {},
+  ): Promise<Uint8Array | null> {
     const own = new AbortController()
     const timer = setTimeout(() => own.abort(new LinkError("That site didn't answer")), this.timeoutMs)
     const signal = outer ? AbortSignal.any([outer, own.signal]) : own.signal
@@ -120,7 +139,7 @@ class Client {
       if (signal.aborted) fail()
       else signal.addEventListener('abort', fail, { once: true })
     })
-    aborted.catch(() => {})  // Rejects only after the request is done with when it isn't raced
+    aborted.catch(() => {}) // Rejects only after the request is done with when it isn't raced
     try {
       let url = start
       for (let hop = 0; ; hop++) {
@@ -131,7 +150,11 @@ class Client {
           if (location === null) throw new LinkError(`That link redirects without saying where (HTTP ${res.status})`)
           if (hop === MAX_REDIRECTS) throw new LinkError('That link redirects too often')
           let to: URL
-          try { to = new URL(location, url) } catch { throw new LinkError("That link leads somewhere we can't follow") }
+          try {
+            to = new URL(location, url)
+          } catch {
+            throw new LinkError("That link leads somewhere we can't follow")
+          }
           if (!allowed(to) || to.hostname !== url.hostname) throw new LinkError("That link leads to another site, which isn't supported")
           url = to
           continue
@@ -168,7 +191,13 @@ class Client {
     if (!res.body) return new Uint8Array(0)
     const reader = res.body.getReader()
     // A body that stops coming is dropped when the time is up (the race has already given up on it)
-    signal.addEventListener('abort', () => { reader.cancel().catch(() => {}) }, { once: true })
+    signal.addEventListener(
+      'abort',
+      () => {
+        reader.cancel().catch(() => {})
+      },
+      { once: true },
+    )
     const chunks: Uint8Array[] = []
     let size = 0
     try {
@@ -187,7 +216,10 @@ class Client {
     }
     const out = new Uint8Array(size)
     let at = 0
-    for (const c of chunks) { out.set(c, at); at += c.length }
+    for (const c of chunks) {
+      out.set(c, at)
+      at += c.length
+    }
     return out
   }
 }
@@ -198,5 +230,9 @@ function abortError(signal: AbortSignal): LinkError {
 }
 
 function safeDecode(segment: string): string {
-  try { return decodeURIComponent(segment) } catch { return segment }
+  try {
+    return decodeURIComponent(segment)
+  } catch {
+    return segment
+  }
 }

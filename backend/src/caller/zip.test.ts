@@ -7,7 +7,10 @@ const MiB = 1024 * 1024
 
 describe('zip reader', () => {
   it('lists entries and reads deflated and stored ones', async () => {
-    const zip = makeZip([{ name: 'a.txt', data: 'hello hello hello' }, { name: 'dir/b.txt', data: 'stored', method: 0 }])
+    const zip = makeZip([
+      { name: 'a.txt', data: 'hello hello hello' },
+      { name: 'dir/b.txt', data: 'stored', method: 0 },
+    ])
     const entries = listEntries(zip)
     expect(entries.map(e => e.name)).toEqual(['a.txt', 'dir/b.txt'])
     expect(text(await readEntry(zip, entries[0]))).toBe('hello hello hello')
@@ -21,7 +24,7 @@ describe('zip reader', () => {
     expect(text(await readEntry(innerBytes, listEntries(innerBytes)[0]))).toBe('clip')
   })
 
-  it('refuses what it can\'t read', async () => {
+  it("refuses what it can't read", async () => {
     expect(() => listEntries(new TextEncoder().encode('not a zip at all, sorry'))).toThrow(new ZipError('Not a zip file'))
     const zip64 = makeZip([{ name: 'a', data: 'a' }])
     new DataView(zip64.buffer).setUint16(zip64.length - 22 + 10, 0xffff, true)
@@ -84,7 +87,10 @@ describe('zip reader', () => {
     }, 30_000)
 
     it('takes a smaller limit', async () => {
-      const zip = makeZip([{ name: 'a.txt', data: 'x'.repeat(2000) }, { name: 'b.txt', data: 'y'.repeat(2000), method: 0 }])
+      const zip = makeZip([
+        { name: 'a.txt', data: 'x'.repeat(2000) },
+        { name: 'b.txt', data: 'y'.repeat(2000), method: 0 },
+      ])
       const [a, b] = listEntries(zip)
       expect(text(await readEntry(zip, a, 2000))).toBe('x'.repeat(2000))
       await expect(readEntry(zip, a, 1999)).rejects.toThrow(new ZipError('That pack unpacks too big'))

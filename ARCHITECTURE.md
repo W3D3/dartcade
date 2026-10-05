@@ -15,12 +15,12 @@ flowchart LR
 
 ## Components
 
-| Component | Path | What it does |
-|---|---|---|
-| **Bridge** | [`bridge/`](bridge) | A single Go binary that runs next to the board. It connects to Board Manager, diffs its state snapshots into typed `adbridge/v1` events (`dart.detected`, `takeout.finished`, …) and streams them to the backend over WSS with seq/ack delivery. It pairs with a backend through a short code. |
-| **Backend** | [`backend/`](backend) | A Fastify server with an event-sourced session engine, the game modules, a gateway for bridges, a WebSocket gateway for browsers and a REST API. It serves the SPA from the same process. |
-| **Frontend** | [`backend/frontend/`](backend/frontend) | A Svelte 5 SPA: sign in, pair and manage boards, set up games, play, look back at history. One codebase for desktop and phone. |
-| **Schema** | [`schema/`](schema) | Hand-written contracts, generated into TypeScript, zod and Go. See [Contracts](#contracts). |
+| Component    | Path                                    | What it does                                                                                                                                                                                                                                                                                   |
+| ------------ | --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Bridge**   | [`bridge/`](bridge)                     | A single Go binary that runs next to the board. It connects to Board Manager, diffs its state snapshots into typed `adbridge/v1` events (`dart.detected`, `takeout.finished`, …) and streams them to the backend over WSS with seq/ack delivery. It pairs with a backend through a short code. |
+| **Backend**  | [`backend/`](backend)                   | A Fastify server with an event-sourced session engine, the game modules, a gateway for bridges, a WebSocket gateway for browsers and a REST API. It serves the SPA from the same process.                                                                                                      |
+| **Frontend** | [`backend/frontend/`](backend/frontend) | A Svelte 5 SPA: sign in, pair and manage boards, set up games, play, look back at history. One codebase for desktop and phone.                                                                                                                                                                 |
+| **Schema**   | [`schema/`](schema)                     | Hand-written contracts, generated into TypeScript, zod and Go. See [Contracts](#contracts).                                                                                                                                                                                                    |
 
 ## Games are reducers over an event log
 
@@ -103,12 +103,12 @@ no combined still and the match screen shows the drawn board.
 `schema/` holds the contracts. Generated files are committed and never edited by hand
 (`npm run gen:api` at the repo root; see [`DEVELOPMENT.md`](DEVELOPMENT.md)).
 
-| File | Between | Generated into |
-|---|---|---|
-| `adbridge-v1.json` | bridge → backend events and camera stills | TypeScript types (`backend/src/schema/types.ts`), zod schemas, Go types (`bridge/internal/schema`) |
-| `api-v1.yaml` (OpenAPI 3.0.3) | HTTP API for the frontend and the bridge | TypeScript types and client, Go client for the bridge |
-| `game-ws-v1.json` | game WebSocket: snapshots, notices, camera stills, user actions | TypeScript types and zod schemas (backend and frontend) |
-| `common-v1.json` | shared definitions | — |
+| File                          | Between                                                         | Generated into                                                                                     |
+| ----------------------------- | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `adbridge-v1.json`            | bridge → backend events and camera stills                       | TypeScript types (`backend/src/schema/types.ts`), zod schemas, Go types (`bridge/internal/schema`) |
+| `api-v1.yaml` (OpenAPI 3.0.3) | HTTP API for the frontend and the bridge                        | TypeScript types and client, Go client for the bridge                                              |
+| `game-ws-v1.json`             | game WebSocket: snapshots, notices, camera stills, user actions | TypeScript types and zod schemas (backend and frontend)                                            |
+| `common-v1.json`              | shared definitions                                              | —                                                                                                  |
 
 [`schema/diff-rules.md`](schema/diff-rules.md) describes how the bridge turns Board Manager
 snapshots into events.

@@ -6,12 +6,21 @@ import AddFriendCard from '../components/friends/AddFriendCard.svelte'
 import StatusDot from '../components/friends/StatusDot.svelte'
 import FriendsTabs from '../components/friends/FriendsTabs.svelte'
 
-const lena = { id: 'lena', name: 'Lena', friendsSince: '2026-10-01T10:00:00.000Z', status: { kind: 'lobby' as const, lobbyId: 'l1', lobbyName: 'Friday darts', joinable: true }, inYourLobby: false, invited: false }
+const lena = {
+  id: 'lena',
+  name: 'Lena',
+  friendsSince: '2026-10-01T10:00:00.000Z',
+  status: { kind: 'lobby' as const, lobbyId: 'l1', lobbyName: 'Friday darts', joinable: true },
+  inYourLobby: false,
+  invited: false,
+}
 const noop = () => {}
 
 describe('FriendRow', () => {
   it('shows name, @handle, the status line and Join for a joinable lobby', () => {
-    const out = render(FriendRow, { props: { friend: lena, action: 'join', busy: false, oninvite: noop, onjoin: noop, onremove: noop } }).body
+    const out = render(FriendRow, {
+      props: { friend: lena, action: 'join', busy: false, oninvite: noop, onjoin: noop, onremove: noop },
+    }).body
     expect(out).toContain('>Lena<')
     expect(out).toContain('@Lena')
     expect(out).toContain('In Friday darts')
@@ -21,7 +30,8 @@ describe('FriendRow', () => {
   })
 
   it('Invite to lobby, then Invited; the pill when they are in your lobby', () => {
-    const row = (action: 'invite' | 'invited' | 'in-lobby') => render(FriendRow, { props: { friend: lena, action, busy: false, oninvite: noop, onjoin: noop, onremove: noop } }).body
+    const row = (action: 'invite' | 'invited' | 'in-lobby') =>
+      render(FriendRow, { props: { friend: lena, action, busy: false, oninvite: noop, onjoin: noop, onremove: noop } }).body
     expect(row('invite')).toContain('Invite to lobby')
     expect(row('invited')).toContain('Invited')
     expect(row('in-lobby')).toContain('In your lobby')
@@ -30,13 +40,21 @@ describe('FriendRow', () => {
 
 describe('RequestsPanel', () => {
   it('lists requests for you and sent by you, or says there are none', () => {
-    const empty = render(RequestsPanel, { props: { incoming: [], outgoing: [], now: new Date(), emptyText: 'No open requests.', busy: false, onanswer: noop, oncancel: noop } }).body
+    const empty = render(RequestsPanel, {
+      props: { incoming: [], outgoing: [], now: new Date(), emptyText: 'No open requests.', busy: false, onanswer: noop, oncancel: noop },
+    }).body
     expect(empty).toContain('No open requests.')
-    const out = render(RequestsPanel, { props: {
-      incoming: [{ id: 'f1', from: { id: 'felix', name: 'Felix' }, mutualFriends: 3, createdAt: new Date().toISOString() }],
-      outgoing: [{ id: 'f2', to: { id: 'nina', name: 'nina_darts' }, createdAt: new Date().toISOString() }],
-      now: new Date(), emptyText: 'No open requests.', busy: false, onanswer: noop, oncancel: noop,
-    } }).body
+    const out = render(RequestsPanel, {
+      props: {
+        incoming: [{ id: 'f1', from: { id: 'felix', name: 'Felix' }, mutualFriends: 3, createdAt: new Date().toISOString() }],
+        outgoing: [{ id: 'f2', to: { id: 'nina', name: 'nina_darts' }, createdAt: new Date().toISOString() }],
+        now: new Date(),
+        emptyText: 'No open requests.',
+        busy: false,
+        onanswer: noop,
+        oncancel: noop,
+      },
+    }).body
     expect(out).toContain('Requests for you · 1')
     expect(out).toContain('3 friends in common')
     expect(out).toContain('Accept')

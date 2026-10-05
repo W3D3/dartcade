@@ -1,11 +1,34 @@
 <script lang="ts">
-  import { AIM_EDGE_SPEED, AIM_HOLD_MS, AIM_OFFSET_PX, AIM_ZOOM, aimOffsetFor, edgePush, moveAim, shownAt, viewBoxFor, type Pt } from '$lib/boardAim'
+  import {
+    AIM_EDGE_SPEED,
+    AIM_HOLD_MS,
+    AIM_OFFSET_PX,
+    AIM_ZOOM,
+    aimOffsetFor,
+    edgePush,
+    moveAim,
+    shownAt,
+    viewBoxFor,
+    type Pt,
+  } from '$lib/boardAim'
   import { untrack, type Snippet } from 'svelte'
   import { labelPos, markerPositions } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
 
-  let { darts = [], target = null, nextTarget = null, dim = false, playerMarkers = [], checkoutTargets = [],
-        onBoardClick, selectedDart = null, onDartMove, zoom = 1, overlay, cameraSrc = null }: {
+  let {
+    darts = [],
+    target = null,
+    nextTarget = null,
+    dim = false,
+    playerMarkers = [],
+    checkoutTargets = [],
+    onBoardClick,
+    selectedDart = null,
+    onDartMove,
+    zoom = 1,
+    overlay,
+    cameraSrc = null,
+  }: {
     darts?: Array<{
       segment: Segment
       score: number
@@ -47,29 +70,33 @@
     prevSrc = cameraSrc === null ? null : lastSrc
     lastSrc = cameraSrc
   })
-  const stills = $derived(cameraSrc === null ? [] : [prevSrc, cameraSrc].filter((s, i, all): s is string => s !== null && all.indexOf(s) === i))
+  const stills = $derived(
+    cameraSrc === null ? [] : [prevSrc, cameraSrc].filter((s, i, all): s is string => s !== null && all.indexOf(s) === i),
+  )
   // A still that didn't load (e.g. forgotten after its board reconnected): the drawn board shows
   let failedSrc = $state<string | null>(null)
   const photo = $derived(cameraSrc !== null && cameraSrc !== failedSrc)
   // On the photo the wires are only a hint, so they don't hide the real board
   const wireOpacity = $derived(photo ? 0.35 : 1)
 
-  const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.000 }
-  const SEGS = [20,1,18,4,13,6,10,15,2,17,3,19,7,16,8,11,14,9,12,5]
+  const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.0 }
+  const SEGS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
   const HALF = Math.PI / 20
 
   const RING_BED: Record<string, { bed: Segment['bed']; multiplier: Segment['multiplier'] }> = {
     si: { bed: 'SingleOuter', multiplier: 1 },
-    tr: { bed: 'Triple',      multiplier: 3 },
+    tr: { bed: 'Triple', multiplier: 3 },
     so: { bed: 'SingleOuter', multiplier: 1 },
-    db: { bed: 'Double',      multiplier: 2 },
+    db: { bed: 'Double', multiplier: 2 },
   }
 
-  function segAngle(i: number) { return Math.PI / 2 - i * 2 * HALF }
+  function segAngle(i: number) {
+    return Math.PI / 2 - i * 2 * HALF
+  }
 
   function sectorPath(r1: number, r2: number, a1: number, a2: number) {
-    const [c1,s1,c2,s2] = [Math.cos(a1),Math.sin(a1),Math.cos(a2),Math.sin(a2)]
-    return `M${r1*c1} ${-r1*s1} L${r2*c1} ${-r2*s1} A${r2} ${r2} 0 0 1 ${r2*c2} ${-r2*s2} L${r1*c2} ${-r1*s2} A${r1} ${r1} 0 0 0 ${r1*c1} ${-r1*s1}Z`
+    const [c1, s1, c2, s2] = [Math.cos(a1), Math.sin(a1), Math.cos(a2), Math.sin(a2)]
+    return `M${r1 * c1} ${-r1 * s1} L${r2 * c1} ${-r2 * s1} A${r2} ${r2} 0 0 1 ${r2 * c2} ${-r2 * s2} L${r1 * c2} ${-r1 * s2} A${r1} ${r1} 0 0 0 ${r1 * c1} ${-r1 * s1}Z`
   }
 
   function ringColor(i: number, ring: string) {
@@ -79,9 +106,14 @@
   }
 
   const sectors = SEGS.map((num, i) => {
-    const c = segAngle(i), a1 = c + HALF, a2 = c - HALF
+    const c = segAngle(i),
+      a1 = c + HALF,
+      a2 = c - HALF
     return {
-      num, i, a1, a2,
+      num,
+      i,
+      a1,
+      a2,
       paths: [
         { ring: 'si', d: sectorPath(R.bull25, R.si, a1, a2) },
         { ring: 'tr', d: sectorPath(R.si, R.tr, a1, a2) },
@@ -94,7 +126,7 @@
     }
   })
 
-  function dartPos(dart: typeof darts[0]): { x: number; y: number } | null {
+  function dartPos(dart: (typeof darts)[0]): { x: number; y: number } | null {
     if (dart.coords) return dart.coords
     const { bed, number } = dart.segment
     if (bed === 'Outside') return null
@@ -103,10 +135,14 @@
     const si = SEGS.indexOf(number)
     if (si < 0) return null
     const a = segAngle(si)
-    const r = bed === 'SingleInner' ? (R.bull25 + R.si) / 2
-            : bed === 'Triple'      ? (R.si + R.tr) / 2
-            : bed === 'Double'      ? (R.so + R.db) / 2
-            :                         (R.tr + R.so) / 2
+    const r =
+      bed === 'SingleInner'
+        ? (R.bull25 + R.si) / 2
+        : bed === 'Triple'
+          ? (R.si + R.tr) / 2
+          : bed === 'Double'
+            ? (R.so + R.db) / 2
+            : (R.tr + R.so) / 2
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
 
@@ -138,7 +174,10 @@
 
   function boardClick(e: MouseEvent) {
     // The click that ends a drag or a long-press aim is not a new dart
-    if (!onBoardClick || justDragged) { justDragged = false; return }
+    if (!onBoardClick || justDragged) {
+      justDragged = false
+      return
+    }
     const c = toBoard(e)
     if (c) onBoardClick({ segment: segmentAt(c.x, c.y), coords: c })
   }
@@ -169,7 +208,9 @@
     // A tap without moving is an ordinary click (it may place a new dart)
     if (Math.hypot(c.x - from.x, c.y - from.y) < 0.01) return
     justDragged = true
-    setTimeout(() => { justDragged = false })
+    setTimeout(() => {
+      justDragged = false
+    })
     onDartMove?.(index, { segment: segmentAt(c.x, c.y), coords: c })
   }
 
@@ -224,16 +265,22 @@
     // Only a touch needs the aim lifted off the finger; a mouse or pen points right at the spot
     const offset = aimOffsetFor(e.pointerType, AIM_OFFSET_PX)
     cancelHold()
-    hold = { start, timer: setTimeout(() => {
-      hold = null
-      aim = { at: start, finger: start, offset: offset / pxPerUnit(), dart }
-      edgeTimer = setInterval(edgeTick, 16)
-    }, AIM_HOLD_MS) }
+    hold = {
+      start,
+      timer: setTimeout(() => {
+        hold = null
+        aim = { at: start, finger: start, offset: offset / pxPerUnit(), dart }
+        edgeTimer = setInterval(edgeTick, 16)
+      }, AIM_HOLD_MS),
+    }
   }
   function pressMove(e: PointerEvent) {
     const p = viewPt(e)
     if (!p) return
-    if (aim) { aim = { ...aim, at: clampAt(moveAim(aim.at, aim.finger, p)), finger: p }; return }
+    if (aim) {
+      aim = { ...aim, at: clampAt(moveAim(aim.at, aim.finger, p)), finger: p }
+      return
+    }
     // Moving before the hold is up is a drag or a scroll, not a long press
     if (hold && Math.hypot(p.x - hold.start.x, p.y - hold.start.y) * pxPerUnit() > 8) cancelHold()
   }
@@ -247,7 +294,9 @@
     drag = null
     // The click that follows is not another dart
     justDragged = true
-    setTimeout(() => { justDragged = false })
+    setTimeout(() => {
+      justDragged = false
+    })
     if (!at || off) return
     const hit = { segment: segmentAt(at.x, at.y), coords: at }
     if (dart !== null) onDartMove?.(dart, hit)
@@ -275,145 +324,263 @@
 </script>
 
 <!-- Pointer-only: tapping where the dart landed; the keypad is the keyboard way to enter darts -->
-<svg bind:this={svgEl} role={precise || onDartMove ? 'application' : 'img'} aria-label="Dartboard" viewBox={zoomBox ? `${zoomBox.x} ${zoomBox.y} ${zoomBox.w} ${zoomBox.w}` : '-1.15 -1.15 2.3 2.3'} class="w-full select-none {hoverable ? 'cursor-crosshair' : ''}"
-  xmlns="http://www.w3.org/2000/svg" onclick={precise ? boardClick : undefined}
+<svg
+  bind:this={svgEl}
+  role={precise || onDartMove ? 'application' : 'img'}
+  aria-label="Dartboard"
+  viewBox={zoomBox ? `${zoomBox.x} ${zoomBox.y} ${zoomBox.w} ${zoomBox.w}` : '-1.15 -1.15 2.3 2.3'}
+  class="w-full select-none {hoverable ? 'cursor-crosshair' : ''}"
+  xmlns="http://www.w3.org/2000/svg"
+  onclick={precise ? boardClick : undefined}
   style={precise || onDartMove ? 'touch-action:none;-webkit-touch-callout:none' : undefined}
-  onpointerdown={precise || onDartMove ? pressStart : undefined} onpointermove={pressMove}
-  onpointerup={pressEnd} onpointercancel={pressCancel} oncontextmenu={e => { if (precise) e.preventDefault() }}>
+  onpointerdown={precise || onDartMove ? pressStart : undefined}
+  onpointermove={pressMove}
+  onpointerup={pressEnd}
+  onpointercancel={pressCancel}
+  oncontextmenu={e => {
+    if (precise) e.preventDefault()
+  }}
+>
   <!-- Round normally; zoomed in, the whole square shows the board -->
   <defs>
-    <clipPath id={clipId}>{#if zoomBox}<rect x="-5" y="-5" width="10" height="10" />{:else}<circle cx="0" cy="0" r="1.12" />{/if}</clipPath>
+    <clipPath id={clipId}
+      >{#if zoomBox}<rect x="-5" y="-5" width="10" height="10" />{:else}<circle cx="0" cy="0" r="1.12" />{/if}</clipPath
+    >
     <clipPath id={photoClipId}><circle cx="0" cy="0" r="1.12" /></clipPath>
   </defs>
   {#if zoomBox}<rect x="-5" y="-5" width="10" height="10" fill="#0a0b09" />{:else}<circle cx="0" cy="0" r="1.12" fill="#0a0b09" />{/if}
 
   <g clip-path="url(#{clipId})">
-  <g style="transform: {zoom === 1 ? 'none' : `scale(${zoom})`}; transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
-  <!-- Camera still: the image's edge is at r = 1.5 -->
-  {#if stills.length}
-    <g clip-path="url(#{photoClipId})">
-      {#each stills as src (src)}
-        <image href={src} x="-1.5" y="-1.5" width="3" height="3" preserveAspectRatio="none" aria-hidden="true"
-          style="pointer-events:none" onerror={() => { if (src === cameraSrc) failedSrc = src }} />
-      {/each}
-    </g>
-  {/if}
-
-  <!-- Sector fills and wire dividers (on a camera still: wires only) -->
-  {#each sectors as { num, i, paths, wa } (num)}
-    {#each paths as { ring, d } (ring)}
-      <path {d} fill={photo ? 'transparent' : ringColor(i, ring)} stroke="#8d8e84" stroke-width="1" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
-        class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
-    {/each}
-    <line
-      x1={R.bull25 * Math.cos(wa)} y1={-R.bull25 * Math.sin(wa)}
-      x2={R.db * Math.cos(wa)} y2={-R.db * Math.sin(wa)}
-      stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
-    />
-  {/each}
-
-  <!-- Ring wire circles -->
-  {#each [R.bull25, R.si, R.tr, R.so, R.db] as r (r)}
-    <circle cx="0" cy="0" {r} fill="none" stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke" />
-  {/each}
-
-  <!-- Bull fills -->
-  <circle cx="0" cy="0" r={R.bull25} fill={photo ? 'transparent' : '#1e7a4f'} stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
-    class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
-  <circle cx="0" cy="0" r={R.bull50} fill={photo ? 'transparent' : '#d23b36'} stroke="#8d8e84" stroke-width="1.2" stroke-opacity={wireOpacity} vector-effect="non-scaling-stroke"
-    class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''} />
-
-  {#if dim}
-    <circle cx="0" cy="0" r="1.12" fill="#0a0b09" fill-opacity="0.45" style="pointer-events:none" />
-  {/if}
-
-  <!-- ATC targets: thrower's in lime, next player's dashed white -->
-  {#each [{ seg: target, next: false }, { seg: nextTarget, next: true }] as t (t.next)}
-    {#if t.seg}
-      {@const sector = sectors.find(s => s.num === t.seg)}
-      {@const style = t.next
-        ? { fill: 'none', 'fill-opacity': '0', stroke: '#efeee6', 'stroke-width': '0.012', 'stroke-dasharray': '0.035 0.024' }
-        : { fill: '#c6f24e', 'fill-opacity': '0.38', stroke: '#c6f24e', 'stroke-width': '0.018', 'stroke-dasharray': 'none' }}
-      {#if sector}
-        <path d={sectorPath(R.bull25, R.db, sector.a1, sector.a2)} {...style} stroke-linejoin="round" style="pointer-events:none" />
-      {:else if t.seg === 25 || t.seg === 50}
-        <circle cx="0" cy="0" r={t.seg === 25 ? R.bull25 : R.bull50} {...style} style="pointer-events:none" />
+    <g style="transform: {zoom === 1 ? 'none' : `scale(${zoom})`}; transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
+      <!-- Camera still: the image's edge is at r = 1.5 -->
+      {#if stills.length}
+        <g clip-path="url(#{photoClipId})">
+          {#each stills as src (src)}
+            <image
+              href={src}
+              x="-1.5"
+              y="-1.5"
+              width="3"
+              height="3"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+              style="pointer-events:none"
+              onerror={() => {
+                if (src === cameraSrc) failedSrc = src
+              }}
+            />
+          {/each}
+        </g>
       {/if}
-    {/if}
-  {/each}
 
-  <!-- Number labels — pointer-events:none so clicks go through to paths -->
-  {#each sectors as { num, tx, ty } (num)}
-    <text x={tx} y={ty} text-anchor="middle" dy="0.35em"
-      fill={num === target ? '#c6f24e' : dim ? '#8f9085' : '#efeee6'}
-      font-size={num === target ? '0.123' : '0.09'}
-      font-family="Barlow Condensed, sans-serif" font-weight={num === target ? '700' : '600'}
-      style="pointer-events:none">
-      {num}
-    </text>
-  {/each}
+      <!-- Sector fills and wire dividers (on a camera still: wires only) -->
+      {#each sectors as { num, i, paths, wa } (num)}
+        {#each paths as { ring, d } (ring)}
+          <path
+            {d}
+            fill={photo ? 'transparent' : ringColor(i, ring)}
+            stroke="#8d8e84"
+            stroke-width="1"
+            stroke-opacity={wireOpacity}
+            vector-effect="non-scaling-stroke"
+            class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
+          />
+        {/each}
+        <line
+          x1={R.bull25 * Math.cos(wa)}
+          y1={-R.bull25 * Math.sin(wa)}
+          x2={R.db * Math.cos(wa)}
+          y2={-R.db * Math.sin(wa)}
+          stroke="#8d8e84"
+          stroke-width="1.2"
+          stroke-opacity={wireOpacity}
+          vector-effect="non-scaling-stroke"
+        />
+      {/each}
 
+      <!-- Ring wire circles -->
+      {#each [R.bull25, R.si, R.tr, R.so, R.db] as r (r)}
+        <circle
+          cx="0"
+          cy="0"
+          {r}
+          fill="none"
+          stroke="#8d8e84"
+          stroke-width="1.2"
+          stroke-opacity={wireOpacity}
+          vector-effect="non-scaling-stroke"
+        />
+      {/each}
 
-  <!-- Other-player markers: white circle with initial -->
-  {#each playerMarkers.filter(m => !m.isActive) as marker, k (k)}
-    {@const pos = otherMarkerPos[k]}
-    {#if pos}
-      <circle cx={pos.x} cy={pos.y} r="0.085"
-        fill="white" stroke="#0a0b09" stroke-width="0.01"
-        style="pointer-events:none" />
-      <text x={pos.x} y={pos.y} text-anchor="middle" dy="0.35em"
-        fill="#0a0b09" font-size="0.072" font-family="Barlow Condensed, sans-serif" font-weight="bold"
-        style="pointer-events:none">
-        {marker.initial}
-      </text>
-    {/if}
-  {/each}
+      <!-- Bull fills -->
+      <circle
+        cx="0"
+        cy="0"
+        r={R.bull25}
+        fill={photo ? 'transparent' : '#1e7a4f'}
+        stroke="#8d8e84"
+        stroke-width="1.2"
+        stroke-opacity={wireOpacity}
+        vector-effect="non-scaling-stroke"
+        class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
+      />
+      <circle
+        cx="0"
+        cy="0"
+        r={R.bull50}
+        fill={photo ? 'transparent' : '#d23b36'}
+        stroke="#8d8e84"
+        stroke-width="1.2"
+        stroke-opacity={wireOpacity}
+        vector-effect="non-scaling-stroke"
+        class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
+      />
 
-  <!-- Darts -->
-  {#each darts as dart, i (i)}
-    {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
-    {@const selected = selectedDart === i}
-    {#if pos}
-      <!-- The segment label only shows while the dart is hovered, selected or dragged -->
-      <!-- svelte-ignore a11y_no_static_element_interactions -->
-      <g class="group {canDrag(i) ? (drag ? 'cursor-grabbing' : 'cursor-grab') : ''}"
-        style="touch-action:none"
-        onpointerdown={e => dragStart(e, i)} onpointermove={dragMove}
-        onpointerup={dragEnd} onpointercancel={() => drag = null}>
-        {#if selected}
-          <circle cx={pos.x} cy={-pos.y} r="0.075" fill="#c6f24e" fill-opacity="0.18"
-            stroke="#c6f24e" stroke-width="0.012" stroke-dasharray="0.02 0.015" />
+      {#if dim}
+        <circle cx="0" cy="0" r="1.12" fill="#0a0b09" fill-opacity="0.45" style="pointer-events:none" />
+      {/if}
+
+      <!-- ATC targets: thrower's in lime, next player's dashed white -->
+      {#each [{ seg: target, next: false }, { seg: nextTarget, next: true }] as t (t.next)}
+        {#if t.seg}
+          {@const sector = sectors.find(s => s.num === t.seg)}
+          {@const style = t.next
+            ? { fill: 'none', 'fill-opacity': '0', stroke: '#efeee6', 'stroke-width': '0.012', 'stroke-dasharray': '0.035 0.024' }
+            : { fill: '#c6f24e', 'fill-opacity': '0.38', stroke: '#c6f24e', 'stroke-width': '0.018', 'stroke-dasharray': 'none' }}
+          {#if sector}
+            <path d={sectorPath(R.bull25, R.db, sector.a1, sector.a2)} {...style} stroke-linejoin="round" style="pointer-events:none" />
+          {:else if t.seg === 25 || t.seg === 50}
+            <circle cx="0" cy="0" r={t.seg === 25 ? R.bull25 : R.bull50} {...style} style="pointer-events:none" />
+          {/if}
         {/if}
-        <circle cx={pos.x} cy={-pos.y} r={selected ? 0.05 : 0.04}
-          fill={DOT_COLORS[i % DOT_COLORS.length]} stroke={DOT_STROKE} stroke-width="0.008" />
-        <text x={pos.x + 0.06} y={-pos.y} dy="0.35em"
-          fill="#ffffff" stroke="#000000" stroke-width="0.016" stroke-linejoin="round" paint-order="stroke"
-          font-size="0.065" font-family="system-ui,sans-serif" font-weight="bold"
-          class="{selected ? '' : 'opacity-0'} group-hover:opacity-100 transition-opacity" style="pointer-events:none">
-          {drag?.index === i ? segmentAt(drag.at.x, drag.at.y).name : dart.segment.name}
+      {/each}
+
+      <!-- Number labels — pointer-events:none so clicks go through to paths -->
+      {#each sectors as { num, tx, ty } (num)}
+        <text
+          x={tx}
+          y={ty}
+          text-anchor="middle"
+          dy="0.35em"
+          fill={num === target ? '#c6f24e' : dim ? '#8f9085' : '#efeee6'}
+          font-size={num === target ? '0.123' : '0.09'}
+          font-family="Barlow Condensed, sans-serif"
+          font-weight={num === target ? '700' : '600'}
+          style="pointer-events:none"
+        >
+          {num}
         </text>
-      </g>
-    {:else}
-      <text x={-0.15 + i * 0.14} y="1.05" text-anchor="middle" dy="0.35em"
-        fill="#c6f24e" font-size="0.1" font-family="Barlow Condensed, sans-serif"
-        style="pointer-events:none">✕</text>
-    {/if}
-  {/each}
+      {/each}
 
-  <!-- Checkout target dashed circles (x01) -->
-  <!-- Keyed by position: a checkout can repeat a target (T20 · T20 · D20) -->
-  {#each checkoutTargets as label, i (i)}
-    {@const pos = labelPos(label)}
-    {#if pos}
-      <circle cx={pos.x} cy={pos.y} r="0.076"
-        fill="none" stroke="#c6f24e" stroke-width="0.015" stroke-dasharray="0.024 0.018"
-        style="pointer-events:none" />
-    {/if}
-  {/each}
+      <!-- Other-player markers: white circle with initial -->
+      {#each playerMarkers.filter(m => !m.isActive) as marker, k (k)}
+        {@const pos = otherMarkerPos[k]}
+        {#if pos}
+          <circle cx={pos.x} cy={pos.y} r="0.085" fill="white" stroke="#0a0b09" stroke-width="0.01" style="pointer-events:none" />
+          <text
+            x={pos.x}
+            y={pos.y}
+            text-anchor="middle"
+            dy="0.35em"
+            fill="#0a0b09"
+            font-size="0.072"
+            font-family="Barlow Condensed, sans-serif"
+            font-weight="bold"
+            style="pointer-events:none"
+          >
+            {marker.initial}
+          </text>
+        {/if}
+      {/each}
 
-  <!-- Overlay marks are informational: clicks go through to the segments -->
-  <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
-  </g>
+      <!-- Darts -->
+      {#each darts as dart, i (i)}
+        {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
+        {@const selected = selectedDart === i}
+        {#if pos}
+          <!-- The segment label only shows while the dart is hovered, selected or dragged -->
+          <!-- svelte-ignore a11y_no_static_element_interactions -->
+          <g
+            class="group {canDrag(i) ? (drag ? 'cursor-grabbing' : 'cursor-grab') : ''}"
+            style="touch-action:none"
+            onpointerdown={e => dragStart(e, i)}
+            onpointermove={dragMove}
+            onpointerup={dragEnd}
+            onpointercancel={() => (drag = null)}
+          >
+            {#if selected}
+              <circle
+                cx={pos.x}
+                cy={-pos.y}
+                r="0.075"
+                fill="#c6f24e"
+                fill-opacity="0.18"
+                stroke="#c6f24e"
+                stroke-width="0.012"
+                stroke-dasharray="0.02 0.015"
+              />
+            {/if}
+            <circle
+              cx={pos.x}
+              cy={-pos.y}
+              r={selected ? 0.05 : 0.04}
+              fill={DOT_COLORS[i % DOT_COLORS.length]}
+              stroke={DOT_STROKE}
+              stroke-width="0.008"
+            />
+            <text
+              x={pos.x + 0.06}
+              y={-pos.y}
+              dy="0.35em"
+              fill="#ffffff"
+              stroke="#000000"
+              stroke-width="0.016"
+              stroke-linejoin="round"
+              paint-order="stroke"
+              font-size="0.065"
+              font-family="system-ui,sans-serif"
+              font-weight="bold"
+              class="{selected ? '' : 'opacity-0'} group-hover:opacity-100 transition-opacity"
+              style="pointer-events:none"
+            >
+              {drag?.index === i ? segmentAt(drag.at.x, drag.at.y).name : dart.segment.name}
+            </text>
+          </g>
+        {:else}
+          <text
+            x={-0.15 + i * 0.14}
+            y="1.05"
+            text-anchor="middle"
+            dy="0.35em"
+            fill="#c6f24e"
+            font-size="0.1"
+            font-family="Barlow Condensed, sans-serif"
+            style="pointer-events:none">✕</text
+          >
+        {/if}
+      {/each}
+
+      <!-- Checkout target dashed circles (x01) -->
+      <!-- Keyed by position: a checkout can repeat a target (T20 · T20 · D20) -->
+      {#each checkoutTargets as label, i (i)}
+        {@const pos = labelPos(label)}
+        {#if pos}
+          <circle
+            cx={pos.x}
+            cy={pos.y}
+            r="0.076"
+            fill="none"
+            stroke="#c6f24e"
+            stroke-width="0.015"
+            stroke-dasharray="0.024 0.018"
+            style="pointer-events:none"
+          />
+        {/if}
+      {/each}
+
+      <!-- Overlay marks are informational: clicks go through to the segments -->
+      <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
+    </g>
   </g>
 
   <!-- Long-press aim: crosshair above the finger and the segment it's on, drawn unzoomed.
@@ -425,16 +592,42 @@
     {@const outline = 'rgba(8,9,7,0.8)'}
     <svg x={zoomBox.x} y={zoomBox.y} width={zoomBox.w} height={zoomBox.w} viewBox="-1.15 -1.15 2.3 2.3" style="pointer-events:none">
       <circle cx={at.x} cy={at.y} r="0.045" fill="none" stroke={outline} stroke-width="0.026" />
-      <path d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
-        stroke={outline} stroke-width="0.026" stroke-linecap="round" />
+      <path
+        d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
+        stroke={outline}
+        stroke-width="0.026"
+        stroke-linecap="round"
+      />
       <circle cx={at.x} cy={at.y} r="0.012" fill={outline} />
       <circle cx={at.x} cy={at.y} r="0.045" fill="none" stroke={tone} stroke-width="0.012" />
-      <path d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
-        stroke={tone} stroke-width="0.012" stroke-linecap="round" />
+      <path
+        d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
+        stroke={tone}
+        stroke-width="0.012"
+        stroke-linecap="round"
+      />
       <circle cx={at.x} cy={at.y} r="0.008" fill={tone} />
-      <rect x="-0.26" y="-1.12" width="0.52" height="0.16" rx="0.08" fill="#0f100e" fill-opacity="0.85" stroke={tone} stroke-width="0.008" />
-      <text x="0" y="-1.04" text-anchor="middle" dy="0.35em" fill={tone}
-        font-size="0.1" font-family="Barlow Condensed, sans-serif" font-weight="700">{aimOff ? 'Cancel' : segmentAt(aimed.x, aimed.y).name}</text>
+      <rect
+        x="-0.26"
+        y="-1.12"
+        width="0.52"
+        height="0.16"
+        rx="0.08"
+        fill="#0f100e"
+        fill-opacity="0.85"
+        stroke={tone}
+        stroke-width="0.008"
+      />
+      <text
+        x="0"
+        y="-1.04"
+        text-anchor="middle"
+        dy="0.35em"
+        fill={tone}
+        font-size="0.1"
+        font-family="Barlow Condensed, sans-serif"
+        font-weight="700">{aimOff ? 'Cancel' : segmentAt(aimed.x, aimed.y).name}</text
+      >
     </svg>
   {/if}
 </svg>

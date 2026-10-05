@@ -13,7 +13,11 @@
   import { me } from '$lib/lobby/sockets'
 
   type Account = { id: string; name: string }
-  let { exclude = [], onguest, oninvite }: {
+  let {
+    exclude = [],
+    onguest,
+    oninvite,
+  }: {
     /** Accounts not to suggest: already in the lobby or invited. */
     exclude?: string[]
     onguest: (name: string) => Promise<boolean>
@@ -42,11 +46,17 @@
 
   function lookup(q: string): Promise<Account[]> {
     clearTimeout(timer)
-    const result = api.GET('/api/users', { params: { query: { q } } })
+    const result = api
+      .GET('/api/users', { params: { query: { q } } })
       .then(({ data }) => (data?.users ?? []).filter(u => !exclude.includes(u.id)))
       .catch(() => [])
     pending = { q, result }
-    void result.then(users => { if (q === query) { matches = users; open = true } })
+    void result.then(users => {
+      if (q === query) {
+        matches = users
+        open = true
+      }
+    })
     return result
   }
 
@@ -61,12 +71,18 @@
   })
 
   async function invite(u: Account) {
-    if (await oninvite(u.id)) { text = ''; matches = [] }
+    if (await oninvite(u.id)) {
+      text = ''
+      matches = []
+    }
   }
 
   async function submit() {
     hint = ''
-    if (parsed.kind === 'invalid') { hint = parsed.hint; return }
+    if (parsed.kind === 'invalid') {
+      hint = parsed.hint
+      return
+    }
     if (parsed.kind === 'invite') {
       const q = parsed.query
       // Enter within the debounce: look up now rather than use the previous query's match
@@ -91,12 +107,30 @@
 <svelte:window onpointerdown={outside} />
 
 <div class="flex flex-col gap-2">
-  <form bind:this={form} class="relative flex gap-2" onsubmit={(e) => { e.preventDefault(); void submit() }}>
+  <form
+    bind:this={form}
+    class="relative flex gap-2"
+    onsubmit={e => {
+      e.preventDefault()
+      void submit()
+    }}
+  >
     <label for="add-person" class="sr-only">Add someone: name or @username</label>
-    <input id="add-person" bind:value={text} placeholder="Name or @username" autocomplete="off" autocapitalize="off"
-      oninput={() => { hint = ''; open = true }}
-      onkeydown={(e) => { if (e.key === 'Escape') open = false }}
-      class="flex-grow min-w-0 h-11 box-border px-3 md:px-[14px] bg-bg border border-line-chip rounded-[9px] text-text text-[15px] font-[inherit]" />
+    <input
+      id="add-person"
+      bind:value={text}
+      placeholder="Name or @username"
+      autocomplete="off"
+      autocapitalize="off"
+      oninput={() => {
+        hint = ''
+        open = true
+      }}
+      onkeydown={e => {
+        if (e.key === 'Escape') open = false
+      }}
+      class="flex-grow min-w-0 h-11 box-border px-3 md:px-[14px] bg-bg border border-line-chip rounded-[9px] text-text text-[15px] font-[inherit]"
+    />
     <Button variant="outline" size="md" type="submit" class="bg-surface-key border-0 font-semibold">
       <Plus size={16} />{parsed.kind === 'invite' ? 'Invite' : 'Add guest'}
     </Button>

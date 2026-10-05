@@ -40,7 +40,15 @@ export type LobbyPerson = {
 export type LobbyInvitee = { id: string; userId: string; name: string; invitedByUserId: string | null; createdAt: Date }
 
 export const ACTIVITY_KINDS = [
-  'opened', 'joined', 'left', 'removed', 'guest_added', 'board_moved', 'game_played', 'game_aborted', 'host_changed',
+  'opened',
+  'joined',
+  'left',
+  'removed',
+  'guest_added',
+  'board_moved',
+  'game_played',
+  'game_aborted',
+  'host_changed',
 ] as const
 export type ActivityKind = (typeof ACTIVITY_KINDS)[number]
 
@@ -64,7 +72,12 @@ export type ActivityData = {
 }
 
 export type LobbyActivityEntry = {
-  id: string; at: Date; kind: ActivityKind; actorUserId: string | null; actorName: string | null; data: ActivityData
+  id: string
+  at: Date
+  kind: ActivityKind
+  actorUserId: string | null
+  actorName: string | null
+  data: ActivityData
 }
 
 /** A lobby as loaded from the database. */
@@ -88,5 +101,10 @@ export type LobbyState = {
 
 /** A pending invite as its invitee sees it. */
 export type InviteRow = {
-  id: string; lobbyId: string; lobbyName: string; inviterUserId: string | null; inviterName: string | null; createdAt: Date
+  id: string
+  lobbyId: string
+  lobbyName: string
+  inviterUserId: string | null
+  inviterName: string | null
+  createdAt: Date
 }

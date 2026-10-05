@@ -19,9 +19,7 @@ export function isActiveRoute(location: string, href: string): boolean {
 }
 
 /** The tablet rail's Lobby item: create one, your solo lobby, or the lobby you're in by name. */
-export type RailLobby =
-  | { kind: 'create'; label: string; aria: string }
-  | { kind: 'solo' | 'in'; href: string; label: string; aria: string }
+export type RailLobby = { kind: 'create'; label: string; aria: string } | { kind: 'solo' | 'in'; href: string; label: string; aria: string }
 
 /** Null until we know who you are (`signedIn`: the per-user socket has spoken). */
 export function railLobby(summary: LobbySummary | null, signedIn: boolean): RailLobby | null {

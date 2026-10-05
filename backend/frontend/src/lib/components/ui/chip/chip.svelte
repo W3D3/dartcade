@@ -17,9 +17,7 @@
   {onclick}
   aria-pressed={selected}
   class="px-3 py-1 rounded-full text-[13px] border transition-colors
-         {selected
-           ? 'border-accent text-accent bg-accent/10'
-           : 'border-line-2 text-text-muted hover:border-line-3'}"
+         {selected ? 'border-accent text-accent bg-accent/10' : 'border-line-2 text-text-muted hover:border-line-3'}"
 >
   {@render children()}
 </button>

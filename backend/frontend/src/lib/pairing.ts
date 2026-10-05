@@ -10,7 +10,10 @@ const CHARSET_CLASS = `[${CODE_CHARSET}]`
 // Uppercase and drop everything that is not a code character, then cap at
 // CODE_LENGTH. Used while typing into the segmented input.
 export function normalizePairingCode(raw: string): string {
-  const chars = raw.toUpperCase().split('').filter(c => CODE_CHARSET.includes(c))
+  const chars = raw
+    .toUpperCase()
+    .split('')
+    .filter(c => CODE_CHARSET.includes(c))
   return chars.slice(0, CODE_LENGTH).join('')
 }
 

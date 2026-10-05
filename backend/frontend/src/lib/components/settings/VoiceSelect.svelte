@@ -6,7 +6,12 @@
   import { audioContext } from '$lib/sounds.js'
   import OptionSelect from './OptionSelect.svelte'
 
-  let { value = $bindable(), packs, builtins, labelledby }: {
+  let {
+    value = $bindable(),
+    packs,
+    builtins,
+    labelledby,
+  }: {
     /** A pack id or `builtin:<id>`; null for the default built-in voice. */
     value: string | null
     packs: VoicePackSummary[]
@@ -24,4 +29,13 @@
 </script>
 
 <!-- Picking a voice is a tap: it wakes the page's audio for the caller -->
-<OptionSelect value={shown} {groups} {labelledby} empty="No voices yet" onchange={(v: string) => { value = v; audioContext() }} />
+<OptionSelect
+  value={shown}
+  {groups}
+  {labelledby}
+  empty="No voices yet"
+  onchange={(v: string) => {
+    value = v
+    audioContext()
+  }}
+/>

@@ -10,7 +10,11 @@ vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(nu
 import { getAuthUser } from '../auth/session.js'
 
 let app: FastifyInstance | null = null
-afterEach(async () => { await app?.close(); app = null; vi.mocked(getAuthUser).mockReset().mockResolvedValue(null) })
+afterEach(async () => {
+  await app?.close()
+  app = null
+  vi.mocked(getAuthUser).mockReset().mockResolvedValue(null)
+})
 
 async function serve(lobbies: unknown, hub: LobbyHub, friends: unknown = {}): Promise<number> {
   app = Fastify()
@@ -20,11 +24,14 @@ async function serve(lobbies: unknown, hub: LobbyHub, friends: unknown = {}): Pr
   return (app.server.address() as AddressInfo).port
 }
 
-const closeCode = (url: string) => new Promise<number>((resolve, reject) => {
-  const ws = new WebSocket(url)
-  ws.addEventListener('close', e => { resolve((e as any).code) })
-  setTimeout(() => reject(new Error('timeout')), 2000)
-})
+const closeCode = (url: string) =>
+  new Promise<number>((resolve, reject) => {
+    const ws = new WebSocket(url)
+    ws.addEventListener('close', e => {
+      resolve((e as any).code)
+    })
+    setTimeout(() => reject(new Error('timeout')), 2000)
+  })
 const until = async (cond: () => boolean) => {
   for (let i = 0; i < 100 && !cond(); i++) await new Promise(r => setTimeout(r, 10))
 }
@@ -44,13 +51,19 @@ describe('/ws/lobby', () => {
     vi.mocked(getAuthUser).mockResolvedValue({ userId: 'chris' })
     const hub = new LobbyHub()
     const refreshPresence = vi.fn((lobbyId: string) => {
-      hub.sendLobby(lobbyId, { type: 'lobby_closed', lobbyId })   // any message: the service builds the real one
+      hub.sendLobby(lobbyId, { type: 'lobby_closed', lobbyId }) // any message: the service builds the real one
       return Promise.resolve()
     })
     const port = await serve({ lobbyAccess: vi.fn().mockResolvedValue('ok'), refreshPresence }, hub)
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/lobby?lobbyId=l1`)
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener('message', () => { resolve() }, { once: true })
+      ws.addEventListener(
+        'message',
+        () => {
+          resolve()
+        },
+        { once: true },
+      )
       setTimeout(() => reject(new Error('no message')), 2000)
     })
     expect(hub.online('l1')).toEqual(new Set(['chris']))
@@ -63,13 +76,17 @@ describe('/ws/lobby', () => {
 describe('/ws/me', () => {
   const friendsMsg = { type: 'friends', friends: [], incoming: [], outgoing: [] }
   const fakeFriends = () => ({ message: vi.fn().mockResolvedValue(friendsMsg), connected: vi.fn(), disconnected: vi.fn() })
-  const messages = (ws: WebSocket, n: number) => new Promise<unknown[]>((resolve, reject) => {
-    const got: unknown[] = []
-    ws.addEventListener('message', e => { got.push(JSON.parse(String(e.data))); if (got.length === n) resolve(got) })
-    setTimeout(() => reject(new Error('no message')), 2000)
-  })
+  const messages = (ws: WebSocket, n: number) =>
+    new Promise<unknown[]>((resolve, reject) => {
+      const got: unknown[] = []
+      ws.addEventListener('message', e => {
+        got.push(JSON.parse(String(e.data)))
+        if (got.length === n) resolve(got)
+      })
+      setTimeout(() => reject(new Error('no message')), 2000)
+    })
 
-  it('closes for the signed out; sends the user\'s state and friends when it opens', async () => {
+  it("closes for the signed out; sends the user's state and friends when it opens", async () => {
     const hub = new LobbyHub()
     const me = { type: 'me', invites: [], lobby: null }
     const friends = fakeFriends()

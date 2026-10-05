@@ -18,7 +18,14 @@
   import { createReorder } from '$lib/lobby/reorder.svelte'
   import { gameModes } from '$lib/gameModes'
 
-  let { lobby, viewerId, boardOf, controlsOf, onplace, footer }: {
+  let {
+    lobby,
+    viewerId,
+    boardOf,
+    controlsOf,
+    onplace,
+    footer,
+  }: {
     lobby: Lobby
     viewerId: string | null
     /** What a row shows as the board (default: a read-only label). */
@@ -34,7 +41,10 @@
   const order = $derived(nextGameInTeams(lobby, $gameModes) ? 'teams take turns' : 'list order = throw order')
 
   const hintId = $props.id()
-  const moves = createReorder(() => lobby.people, (personId, placement) => onplace?.(personId, placement) ?? Promise.resolve(false))
+  const moves = createReorder(
+    () => lobby.people,
+    (personId, placement) => onplace?.(personId, placement) ?? Promise.resolve(false),
+  )
   const place = (personId: string, placement: Placement) =>
     void moves.place(personId, placement, (people, p) => `${p.name} moved to place ${people.indexOf(p) + 1} of ${people.length}.`)
   const ondrop = ({ id, beforeId }: SortableDrop) => place(id, listPlacement(moves.people, id, beforeId))
@@ -49,8 +59,11 @@
   {#if onplace}
     <ReorderStatus id={hintId} hint="Arrow up or down moves them one place." announcement={moves.announcement} />
   {/if}
-  <ol class="m-0 p-0 list-none flex flex-col gap-[6px]" data-sortable-zone="people"
-    use:sortable={{ ondrop, onkey, oncancel: () => moves.cancelled() }}>
+  <ol
+    class="m-0 p-0 list-none flex flex-col gap-[6px]"
+    data-sortable-zone="people"
+    use:sortable={{ ondrop, onkey, oncancel: () => moves.cancelled() }}
+  >
     {#each moves.people as p, i (p.id)}
       {#snippet grip()}<DragHandle name={p.name} describedby={hintId} />{/snippet}
       <PersonRow person={p} index={i} {lobby} {viewerId} handle={onplace ? grip : undefined}>

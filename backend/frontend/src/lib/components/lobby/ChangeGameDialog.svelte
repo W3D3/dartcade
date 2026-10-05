@@ -8,7 +8,12 @@
   import { canSwitchTo } from '$lib/gameModes'
   import { gameName } from '$lib/lobby/format'
 
-  let { current, games, onpick, oncancel }: {
+  let {
+    current,
+    games,
+    onpick,
+    oncancel,
+  }: {
     /** The lobby's next game now, if any. */
     current: string | null
     /** The backend's modes: only those can be picked. */
@@ -29,7 +34,7 @@
 </script>
 
 <Modal title={current ? 'Change game' : 'Pick a game'} onclose={oncancel} dismissOnBackdrop widthClass="max-w-[440px]" zClass="z-[200]">
-  <GameModeTiles selected={picked} compact onselect={(id: string) => picked = id} />
+  <GameModeTiles selected={picked} compact onselect={(id: string) => (picked = id)} />
   {#snippet footer()}
     <Button variant="outline" size="lg" class="flex-1" onclick={oncancel}>Cancel</Button>
     <Button variant="accent" size="lg" class="flex-1" disabled={!ok} onclick={confirm}>

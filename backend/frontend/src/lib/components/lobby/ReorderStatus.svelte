@@ -1,6 +1,10 @@
 <script lang="ts">
   // For screen readers: the keys a list's drag handles take, and where the last move put someone.
-  let { id, hint, announcement }: {
+  let {
+    id,
+    hint,
+    announcement,
+  }: {
     /** The handles' aria-describedby. */
     id: string
     hint: string

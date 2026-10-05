@@ -8,8 +8,7 @@ export type BoardTarget = { boardId: string; ownerUserId: string }
 /** Who acts for a person: a member for themselves, a guest's adder for the guest. */
 export const controllerOf = (p: LobbyPerson): string => p.userId ?? p.addedByUserId
 
-export const memberOf = (lobby: LobbyState, userId: string): LobbyPerson | undefined =>
-  lobby.people.find(p => p.userId === userId)
+export const memberOf = (lobby: LobbyState, userId: string): LobbyPerson | undefined => lobby.people.find(p => p.userId === userId)
 
 export const isMember = (lobby: LobbyState, userId: string): boolean => memberOf(lobby, userId) !== undefined
 
@@ -27,8 +26,7 @@ export function effectiveReady(lobby: LobbyState, person: LobbyPerson): boolean 
 export const isSolo = (lobby: LobbyState): boolean => lobby.people.filter(p => p.userId !== null).length <= 1
 
 /** The host has host rights only while they're in the lobby. */
-export const isHost = (lobby: LobbyState, userId: string): boolean =>
-  lobby.hostUserId === userId && isMember(lobby, userId)
+export const isHost = (lobby: LobbyState, userId: string): boolean => lobby.hostUserId === userId && isMember(lobby, userId)
 
 /** Joining without the code: only a friend of the host, while the lobby is open to friends. */
 export const friendsMayJoin = (lobby: Pick<LobbyState, 'access' | 'hostUserId'>, hostIsFriend: boolean): boolean =>
@@ -101,8 +99,7 @@ const bullOffModeOf = (g: NextGame | null): 'off' | 'wdc' | 'pdc' => {
 }
 
 export type BullOffCoupling =
-  | { throwOrder: ThrowOrder; nextGame: NextGame | null; throwOrderChanged: boolean; nextGameChanged: boolean }
-  | { error: string }
+  { throwOrder: ThrowOrder; nextGame: NextGame | null; throwOrderChanged: boolean; nextGameChanged: boolean } | { error: string }
 
 /**
  * Keeps the lobby's throw order and the next game's bull off setting in sync (the user's
@@ -124,7 +121,10 @@ export function coupleBullOff(
 
   if (patch.nextGame !== undefined && patch.throwOrder === undefined) {
     if (bullOffModeOf(nextGame) !== 'off') {
-      if (throwOrder !== 'bulloff') { throwOrder = 'bulloff'; throwOrderChanged = true }
+      if (throwOrder !== 'bulloff') {
+        throwOrder = 'bulloff'
+        throwOrderChanged = true
+      }
     } else if (throwOrder === 'bulloff') {
       throwOrder = 'lobby'
       throwOrderChanged = true
@@ -153,8 +153,7 @@ export function coupleBullOff(
 // ---- teams ------------------------------------------------------------------------
 
 /** A game played in teams: its game does teams and its format is `teams`. */
-export const isTeamFormat = (gameId: string, config: GameConfig): boolean =>
-  games[gameId]?.teams === true && config.format === 'teams'
+export const isTeamFormat = (gameId: string, config: GameConfig): boolean => games[gameId]?.teams === true && config.format === 'teams'
 
 /** The lobby's next game is played in teams. */
 export const isTeamGame = (lobby: { nextGame: NextGame | null }): boolean =>

@@ -38,13 +38,17 @@ export type BullOffState = {
 }
 
 // Standard board geometry in mm from the centre.
-const DOUBLE_OUTER_MM = 170   // normalised coords use r = 1 at the outer double wire
+const DOUBLE_OUTER_MM = 170 // normalised coords use r = 1 at the outer double wire
 const BULLSEYE_MM = 6.35
 const TIE_MM = 0.5
 
 // Distance estimates for darts without camera coordinates: the middle of each bed.
 const BED_ESTIMATE_MM: Record<string, number> = {
-  SingleInner: 57, Triple: 103, SingleOuter: 135, Single: 100, Double: 166,
+  SingleInner: 57,
+  Triple: 103,
+  SingleOuter: 135,
+  Single: 100,
+  Double: 166,
 }
 
 export function initBullOff(cfg: BullOffConfig): BullOffState {
@@ -68,21 +72,19 @@ export function throwFromDart(dart: Dart): BullOffThrow {
     return {
       mm: Math.round(r * DOUBLE_OUTER_MM * 10) / 10,
       segment: segment.name,
-      thetaDeg: dart.polar?.theta_deg ?? (dart.coords ? Math.atan2(dart.coords.y, dart.coords.x) * 180 / Math.PI : null),
+      thetaDeg: dart.polar?.theta_deg ?? (dart.coords ? (Math.atan2(dart.coords.y, dart.coords.x) * 180) / Math.PI : null),
       estimated: false,
     }
   }
   if (!onBoard) return { mm: null, segment: segment.name || 'Miss', thetaDeg: null, estimated: false }
-  const mm = segment.number === 50 ? BULLSEYE_MM / 2
-    : segment.number === 25 ? 11.1
-    : BED_ESTIMATE_MM[segment.bed] ?? 100
+  const mm = segment.number === 50 ? BULLSEYE_MM / 2 : segment.number === 25 ? 11.1 : (BED_ESTIMATE_MM[segment.bed] ?? 100)
   return { mm, segment: segment.name, thetaDeg: null, estimated: true }
 }
 
 /** Call on dart.detected during the bull off. Only a player's first dart counts. */
 export function onBullOffDart(s: BullOffState, dart: Dart): BullOffState {
   if (s.result || s.throws[s.currentPlayer] !== null) return s
-  const throws = s.throws.map((t, i) => i === s.currentPlayer ? throwFromDart(dart) : t)
+  const throws = s.throws.map((t, i) => (i === s.currentPlayer ? throwFromDart(dart) : t))
   return { ...s, throws }
 }
 
@@ -100,14 +102,15 @@ export function onBullOffTakeout(s: BullOffState): BullOffState {
 export function skipBullOffThrow(s: BullOffState): BullOffState {
   if (s.result) return s
   const throws = s.throws.map((t, i) =>
-    i === s.currentPlayer && t === null ? { mm: null, segment: 'Miss', thetaDeg: null, estimated: false } : t)
+    i === s.currentPlayer && t === null ? { mm: null, segment: 'Miss', thetaDeg: null, estimated: false } : t,
+  )
   return onBullOffTakeout({ ...s, throws })
 }
 
 /** Clears the current player's dart so they throw again (e.g. the board was reset). */
 export function clearCurrentBullOffThrow(s: BullOffState): BullOffState {
   if (s.result) return s
-  return { ...s, throws: s.throws.map((t, i) => i === s.currentPlayer ? null : t) }
+  return { ...s, throws: s.throws.map((t, i) => (i === s.currentPlayer ? null : t)) }
 }
 
 /** Everyone throws again, in reverse order: whoever threw last now throws first. */

@@ -2,9 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { x01Meta, atcMeta } from '../gameViews/meta.js'
 import type { AtcGame, X01Game } from '../api/game-ws'
 
-const x01 = (o: Record<string, unknown> = {}): X01Game => ({
-  config: { startScore: 501, outMode: 'double', inMode: 'straight' }, legs: [1, 1], firstTo: 3, winner: null, ...o,
-}) as unknown as X01Game
+const x01 = (o: Record<string, unknown> = {}): X01Game =>
+  ({
+    config: { startScore: 501, outMode: 'double', inMode: 'straight' },
+    legs: [1, 1],
+    firstTo: 3,
+    winner: null,
+    ...o,
+  }) as unknown as X01Game
 
 describe('x01Meta', () => {
   it('two players', () => {
@@ -15,8 +20,9 @@ describe('x01Meta', () => {
     expect(x01Meta(x01({ legs: [3] }), 1)).toBe('501 · Double out · Practice · Leg 4')
   })
   it('names a non-straight in mode and a single leg', () => {
-    expect(x01Meta(x01({ config: { startScore: 301, outMode: 'master', inMode: 'double' }, legs: [0, 0], firstTo: 1 }), 2))
-      .toBe('301 · Double in · Master out · First to 1 leg · Leg 1')
+    expect(x01Meta(x01({ config: { startScore: 301, outMode: 'master', inMode: 'double' }, legs: [0, 0], firstTo: 1 }), 2)).toBe(
+      '301 · Double in · Master out · First to 1 leg · Leg 1',
+    )
   })
   it('does not count past the last leg once the match is won', () => {
     expect(x01Meta(x01({ legs: [3, 1], winner: 0 }), 2)).toBe('501 · Double out · First to 3 legs · Leg 4')
@@ -41,9 +47,13 @@ describe('x01Meta with teams', () => {
 })
 
 describe('atcMeta', () => {
-  const atc = (o: Record<string, unknown> = {}): AtcGame => ({
-    cfg: { order: 'asc', multiplierAdvances: false, finishOn: 'bull' }, sequence: [1, 2, 22], totalVisits: [11, 11], ...o,
-  }) as unknown as AtcGame
+  const atc = (o: Record<string, unknown> = {}): AtcGame =>
+    ({
+      cfg: { order: 'asc', multiplierAdvances: false, finishOn: 'bull' },
+      sequence: [1, 2, 22],
+      totalVisits: [11, 11],
+      ...o,
+    }) as unknown as AtcGame
   it('two players', () => {
     expect(atcMeta(atc(), 2)).toBe('1–20, then Bull · any segment counts · Round 12')
   })
@@ -52,8 +62,9 @@ describe('atcMeta', () => {
     expect(atcMeta(atc({ totalVisits: [11] }), 1)).toBe('1–20, then Bull · Practice · Round 12')
   })
   it('names the order and the outer bull', () => {
-    expect(atcMeta(atc({ cfg: { order: 'desc', multiplierAdvances: true, finishOn: 'single_bull' }, sequence: [20, 21] }), 2))
-      .toBe('20–1, then 25 · multiplier advances · Round 12')
+    expect(atcMeta(atc({ cfg: { order: 'desc', multiplierAdvances: true, finishOn: 'single_bull' }, sequence: [20, 21] }), 2)).toBe(
+      '20–1, then 25 · multiplier advances · Round 12',
+    )
   })
 })
 
@@ -62,7 +73,9 @@ import { x01Rules, atcRules } from '../gameViews/meta.js'
 describe('rules lines (config only)', () => {
   it('x01', () => {
     expect(x01Rules({ startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3 }, 2)).toBe('501 · Double out · First to 3 legs')
-    expect(x01Rules({ startScore: 301, inMode: 'double', outMode: 'master', firstTo: 1 }, 4)).toBe('4 players · 301 · Double in · Master out · First to 1 leg')
+    expect(x01Rules({ startScore: 301, inMode: 'double', outMode: 'master', firstTo: 1 }, 4)).toBe(
+      '4 players · 301 · Double in · Master out · First to 1 leg',
+    )
     expect(x01Rules({ startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3 }, 1)).toBe('501 · Double out · Practice')
   })
   it('atc', () => {

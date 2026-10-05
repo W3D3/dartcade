@@ -7,11 +7,19 @@ describe('createOutcome', () => {
   })
 
   it('a refusal, in words for the screen', () => {
-    expect(createOutcome(undefined, { error: 'x', code: 'game_running' })).toEqual({ ok: false, message: 'A game is running in this lobby', inLobby: false })
+    expect(createOutcome(undefined, { error: 'x', code: 'game_running' })).toEqual({
+      ok: false,
+      message: 'A game is running in this lobby',
+      inLobby: false,
+    })
     expect(createOutcome(undefined, undefined)).toEqual({ ok: false, message: 'Could not create the lobby', inLobby: false })
   })
 
   it('tells "you already have a lobby" apart, so a second tab opening one at the same time can ignore it', () => {
-    expect(createOutcome(undefined, { error: 'x', code: 'in_lobby' })).toEqual({ ok: false, message: "You're in another lobby. Leave it first.", inLobby: true })
+    expect(createOutcome(undefined, { error: 'x', code: 'in_lobby' })).toEqual({
+      ok: false,
+      message: "You're in another lobby. Leave it first.",
+      inLobby: true,
+    })
   })
 })

@@ -34,7 +34,7 @@ describe('BoardViewToggle', () => {
     expect(out).toMatch(/aria-label="Drawn board"[^>]*aria-checked="true"|aria-checked="true"[^>]*aria-label="Drawn board"/)
   })
 
-  it('shows the camera\'s own name instead of Combined when a single camera is picked', () => {
+  it("shows the camera's own name instead of Combined when a single camera is picked", () => {
     const out = html({ boardView: 'cam2', lastCameraView: 'combined' })
     expect(out).toContain('>Cam 2<')
     expect(out).not.toContain('>Combined<')

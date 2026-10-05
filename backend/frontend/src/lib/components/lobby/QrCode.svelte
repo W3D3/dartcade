@@ -10,8 +10,15 @@
   const qr = $derived(encode(text, { border: 2 }))
 </script>
 
-<svg viewBox="0 0 {qr.size} {qr.size}" width={size} height={size} role="img" aria-label="QR code of the join link"
-  shape-rendering="crispEdges" class="block shrink-0 rounded-[8px] bg-[#efeee6] {className}">
+<svg
+  viewBox="0 0 {qr.size} {qr.size}"
+  width={size}
+  height={size}
+  role="img"
+  aria-label="QR code of the join link"
+  shape-rendering="crispEdges"
+  class="block shrink-0 rounded-[8px] bg-[#efeee6] {className}"
+>
   {#each qr.data as row, y (y)}
     {#each row as on, x (x)}
       {#if on}<rect {x} {y} width="1" height="1" fill="#0f100e" />{/if}

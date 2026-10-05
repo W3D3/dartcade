@@ -27,7 +27,19 @@ describe('isActiveRoute', () => {
 })
 
 describe('railLobby', () => {
-  const s = { id: 'l1', name: 'Friday darts', hostName: 'Christoph', peopleCount: 6, nextGame: { gameId: 'x01', config: {} }, sessionId: null, gameId: null, youThrowNext: false, leg: null, youHost: true, solo: false }
+  const s = {
+    id: 'l1',
+    name: 'Friday darts',
+    hostName: 'Christoph',
+    peopleCount: 6,
+    nextGame: { gameId: 'x01', config: {} },
+    sessionId: null,
+    gameId: null,
+    youThrowNext: false,
+    leg: null,
+    youHost: true,
+    solo: false,
+  }
 
   it('nothing before we know who you are', () => {
     expect(railLobby(null, false)).toBeNull()
@@ -37,13 +49,18 @@ describe('railLobby', () => {
   })
   it('your lobby by name, with what is next', () => {
     expect(railLobby(s, true)).toEqual({
-      kind: 'in', href: '/lobby', label: 'Friday darts',
+      kind: 'in',
+      href: '/lobby',
+      label: 'Friday darts',
       aria: "You're in the lobby Friday darts. 6 people · Next: X01. Open the lobby",
     })
   })
   it('a solo lobby is a quiet way to invite friends', () => {
     expect(railLobby({ ...s, solo: true }, true)).toEqual({
-      kind: 'solo', href: '/lobby', label: 'Lobby', aria: 'Play with friends: open the lobby',
+      kind: 'solo',
+      href: '/lobby',
+      label: 'Lobby',
+      aria: 'Play with friends: open the lobby',
     })
   })
 })

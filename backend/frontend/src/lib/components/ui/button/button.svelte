@@ -1,47 +1,47 @@
 <script lang="ts" module>
-	export { buttonVariants, type ButtonVariant, type ButtonSize, type ButtonProps } from "./button-variants.js";
+  export { buttonVariants, type ButtonVariant, type ButtonSize, type ButtonProps } from './button-variants.js'
 </script>
 
 <script lang="ts">
-	import { cn } from "$lib/utils.js";
-	import { buttonVariants, type ButtonProps } from "./button-variants.js";
+  import { cn } from '$lib/utils.js'
+  import { buttonVariants, type ButtonProps } from './button-variants.js'
 
-	let {
-		class: className,
-		variant = "primary",
-		size,
-		pressed = false,
-		ref = $bindable(null),
-		href,
-		type = "button",
-		disabled,
-		children,
-		...restProps
-	}: ButtonProps = $props();
+  let {
+    class: className,
+    variant = 'primary',
+    size,
+    pressed = false,
+    ref = $bindable(null),
+    href,
+    type = 'button',
+    disabled,
+    children,
+    ...restProps
+  }: ButtonProps = $props()
 </script>
 
 {#if href}
-	<a
-		bind:this={ref}
-		data-slot="button"
-		class={cn(buttonVariants({ variant, size, pressed }), className)}
-		href={disabled ? undefined : href}
-		aria-disabled={disabled}
-		role={disabled ? "link" : undefined}
-		tabindex={disabled ? -1 : undefined}
-		{...restProps}
-	>
-		{@render children?.()}
-	</a>
+  <a
+    bind:this={ref}
+    data-slot="button"
+    class={cn(buttonVariants({ variant, size, pressed }), className)}
+    href={disabled ? undefined : href}
+    aria-disabled={disabled}
+    role={disabled ? 'link' : undefined}
+    tabindex={disabled ? -1 : undefined}
+    {...restProps}
+  >
+    {@render children?.()}
+  </a>
 {:else}
-	<button
-		bind:this={ref}
-		data-slot="button"
-		class={cn(buttonVariants({ variant, size, pressed }), className)}
-		{type}
-		{disabled}
-		{...restProps}
-	>
-		{@render children?.()}
-	</button>
+  <button
+    bind:this={ref}
+    data-slot="button"
+    class={cn(buttonVariants({ variant, size, pressed }), className)}
+    {type}
+    {disabled}
+    {...restProps}
+  >
+    {@render children?.()}
+  </button>
 {/if}

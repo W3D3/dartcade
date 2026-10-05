@@ -1,73 +1,77 @@
-@import "tailwindcss";
-@import "./assets/fonts.css";
+@import 'tailwindcss';
+@import './assets/fonts.css';
 
 @theme {
-  --color-bg:             #0f100e;
-  --color-surface-1:      #131511;
-  --color-surface-2:      #181a16;
+  --color-bg: #0f100e;
+  --color-surface-1: #131511;
+  --color-surface-2: #181a16;
   --color-surface-active: #1b1e17;
-  --color-line:           #2a2d27;
-  --color-line-2:         #2e322b;
-  --color-line-3:         #353930;
-  --color-text:           #efeee6;
-  --color-text-muted:     #a3a498;
-  --color-text-dim:       #8f9085;
-  --color-accent:         #c6f24e;
-  --color-accent-fg:      #0f100e;
-  --color-live:           #ff5a4f;
-  --color-live-text:      #ff8a80;
+  --color-line: #2a2d27;
+  --color-line-2: #2e322b;
+  --color-line-3: #353930;
+  --color-text: #efeee6;
+  --color-text-muted: #a3a498;
+  --color-text-dim: #8f9085;
+  --color-accent: #c6f24e;
+  --color-accent-fg: #0f100e;
+  --color-live: #ff5a4f;
+  --color-live-text: #ff8a80;
 
   /* Design system (Dartcade Platform Design tokens.json) */
-  --color-bg-deep:        #0a0b09;
-  --color-surface-panel:  #151713;
-  --color-surface-inset:  #1f221c;
-  --color-surface-chip:   #242820;
-  --color-surface-key:    #2a2e26;
-  --color-line-strong:    #65685f;
-  --color-line-chip:      #3a3e36;
-  --color-line-key:       #3a3f35;
-  --color-line-dashed:    #3e4239;
-  --color-line-popover:   #454a3f;
-  --color-line-pip:       #6a6e63;
-  --color-line-next:      #6a6f62;
-  --color-ink-soft:       #d8d8ce;
-  --color-ink-2:          #c9c9bf;
-  --color-ink-3:          #b4b5aa;
-  --color-ink-faint:      #828379;
-  --color-accent-hover:   #dcff7a;
-  --color-live-soft:      #3a1a17;
-  --color-danger-text:    #ff7a70;
-  --color-danger-line:    #4a2e2b;
+  --color-bg-deep: #0a0b09;
+  --color-surface-panel: #151713;
+  --color-surface-inset: #1f221c;
+  --color-surface-chip: #242820;
+  --color-surface-key: #2a2e26;
+  --color-line-strong: #65685f;
+  --color-line-chip: #3a3e36;
+  --color-line-key: #3a3f35;
+  --color-line-dashed: #3e4239;
+  --color-line-popover: #454a3f;
+  --color-line-pip: #6a6e63;
+  --color-line-next: #6a6f62;
+  --color-ink-soft: #d8d8ce;
+  --color-ink-2: #c9c9bf;
+  --color-ink-3: #b4b5aa;
+  --color-ink-faint: #828379;
+  --color-accent-hover: #dcff7a;
+  --color-live-soft: #3a1a17;
+  --color-danger-text: #ff7a70;
+  --color-danger-line: #4a2e2b;
 
   /* Remote match states (board offline, not your turn, paused) */
-  --color-warn:            #e6cf7a;
-  --color-warn-soft:       #24210f;
-  --color-warn-line:       #8a7a3a;
-  --color-warn-panel:      #1d1c12;
+  --color-warn: #e6cf7a;
+  --color-warn-soft: #24210f;
+  --color-warn-line: #8a7a3a;
+  --color-warn-panel: #1d1c12;
   --color-warn-panel-line: #5a5128;
-  --color-warn-icon:       #2a2714;
-  --color-accent-line:     #44521f;
-  --color-surface-paused:  #22251f;
+  --color-warn-icon: #2a2714;
+  --color-accent-line: #44521f;
+  --color-surface-paused: #22251f;
 
   /* Lobby: rows, toggles that are on, chips someone moved */
-  --color-surface-row:        #1b1d18;
-  --color-surface-hover:      #262a22;
-  --color-accent-tint:        #2b3417;
+  --color-surface-row: #1b1d18;
+  --color-surface-hover: #262a22;
+  --color-accent-tint: #2b3417;
   --color-accent-line-strong: #5c7323;
 
   /* Settings: the drop zone for a voice pack's zip */
-  --color-surface-drop:       #171a13;
+  --color-surface-drop: #171a13;
 
   /* The not-your-turn toast's bar runs out with it (6 s, lib/toast.ts) */
   --animate-drain: drain 6s linear forwards;
   @keyframes drain {
-    from { transform: scaleX(1); }
-    to { transform: scaleX(0); }
+    from {
+      transform: scaleX(1);
+    }
+    to {
+      transform: scaleX(0);
+    }
   }
 
-  --font-sans:    'Instrument Sans', system-ui, sans-serif;
+  --font-sans: 'Instrument Sans', system-ui, sans-serif;
   --font-display: 'Barlow Condensed', sans-serif;
-  --font-mono:    'JetBrains Mono', monospace;
+  --font-mono: 'JetBrains Mono', monospace;
 }
 
 @layer base {
@@ -78,10 +82,19 @@
     font-family: 'Instrument Sans', system-ui, sans-serif;
   }
 
-  a { color: #c6f24e; }
-  a:hover { color: #dcff7a; }
-  input::placeholder { color: #7d7f74; }
-  :focus-visible { outline: 2px solid #c6f24e; outline-offset: 2px; }
+  a {
+    color: #c6f24e;
+  }
+  a:hover {
+    color: #dcff7a;
+  }
+  input::placeholder {
+    color: #7d7f74;
+  }
+  :focus-visible {
+    outline: 2px solid #c6f24e;
+    outline-offset: 2px;
+  }
 }
 
 @layer utilities {
@@ -106,13 +119,19 @@
 
 /* Drag to reorder (lib/actions/sortable.ts): the item being dragged, and a line where it lands */
 @layer components {
-  :root[data-sorting], :root[data-sorting] * { cursor: grabbing !important; user-select: none; }
+  :root[data-sorting],
+  :root[data-sorting] * {
+    cursor: grabbing !important;
+    user-select: none;
+  }
   [data-sortable-id][data-dragging] {
     position: relative;
     box-shadow: 0 10px 28px rgb(0 0 0 / 0.5);
     outline: 1px solid var(--color-line-popover);
   }
-  [data-drop] { position: relative; }
+  [data-drop] {
+    position: relative;
+  }
   [data-drop]::after {
     content: '';
     position: absolute;
@@ -123,7 +142,15 @@
     background: var(--color-accent);
     pointer-events: none;
   }
-  [data-drop="before"]::after { top: -4px; }
-  [data-drop="after"]::after { bottom: -4px; }
-  [data-drop="end"]::after { bottom: 8px; left: 12px; right: 12px; }
+  [data-drop='before']::after {
+    top: -4px;
+  }
+  [data-drop='after']::after {
+    bottom: -4px;
+  }
+  [data-drop='end']::after {
+    bottom: 8px;
+    left: 12px;
+    right: 12px;
+  }
 }

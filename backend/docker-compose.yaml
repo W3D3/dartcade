@@ -2,7 +2,7 @@ services:
   backend:
     build: .
     ports:
-      - "3000:3000"
+      - '3000:3000'
     environment:
       DATABASE_URL: postgres://dartgames:${POSTGRES_PASSWORD}@postgres:5432/dartgames
       BRIDGE_SECRET: ${BRIDGE_SECRET}
@@ -18,7 +18,7 @@ services:
       POSTGRES_USER: dartgames
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dartgames"]
+      test: ['CMD-SHELL', 'pg_isready -U dartgames']
       interval: 5s
       timeout: 5s
       retries: 5

@@ -3,7 +3,13 @@
   // (the lobby QR code). An outside click or Escape closes it and returns focus to the button.
   import type { Snippet } from 'svelte'
 
-  let { triggerLabel, triggerClass = '', haspopup = 'menu', trigger, panel }: {
+  let {
+    triggerLabel,
+    triggerClass = '',
+    haspopup = 'menu',
+    trigger,
+    panel,
+  }: {
     /** The trigger button's accessible name. */
     triggerLabel?: string
     triggerClass?: string
@@ -17,7 +23,9 @@
   let open = $state(false)
   let triggerButton: HTMLButtonElement | undefined = $state()
 
-  const close = () => { open = false }
+  const close = () => {
+    open = false
+  }
 
   const handleKeydown = (e: KeyboardEvent) => {
     if (open && e.key === 'Escape') {
@@ -30,8 +38,15 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <span class="relative inline-block min-w-0 max-w-full">
-  <button bind:this={triggerButton} type="button" onclick={() => open = !open} aria-haspopup={haspopup} aria-expanded={open} aria-label={triggerLabel}
-    class="cursor-pointer font-[inherit] {triggerClass}">
+  <button
+    bind:this={triggerButton}
+    type="button"
+    onclick={() => (open = !open)}
+    aria-haspopup={haspopup}
+    aria-expanded={open}
+    aria-label={triggerLabel}
+    class="cursor-pointer font-[inherit] {triggerClass}"
+  >
     {@render trigger(open)}
   </button>
   {#if open}

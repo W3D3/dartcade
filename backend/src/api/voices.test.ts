@@ -13,20 +13,26 @@ import { voicesApiPlugin } from './voices.js'
 // Signed in as whoever the x-user header names; without it, not signed in
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, reply: any, done: () => void) => {
-    if (!req.headers['x-user']) { reply.code(401).send({ error: 'unauthorized' }); return }
-    req.userId = req.headers['x-user']; done()
+    if (!req.headers['x-user']) {
+      reply.code(401).send({ error: 'unauthorized' })
+      return
+    }
+    req.userId = req.headers['x-user']
+    done()
   }),
 }))
 
 const sha = (s: string) => createHash('sha256').update(s).digest('hex')
 // Three clips of 1000 bytes each, named by key; "murmel" isn't a caller key and is dropped
 const [ONE80, GS, GS2] = ['1', '2', '3'].map(c => c.repeat(1000))
-const zip = Buffer.from(makeZip([
-  { name: '180.mp3', data: ONE80 },
-  { name: 'gameshot.mp3', data: GS },
-  { name: 'gameshot+1.wav', data: GS2 },
-  { name: 'murmel.mp3', data: 'murmel' },
-]))
+const zip = Buffer.from(
+  makeZip([
+    { name: '180.mp3', data: ONE80 },
+    { name: 'gameshot.mp3', data: GS },
+    { name: 'gameshot+1.wav', data: GS2 },
+    { name: 'murmel.mp3', data: 'murmel' },
+  ]),
+)
 const KEPT = 3000
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
@@ -34,31 +40,48 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
   let close: () => Promise<void>
 
   beforeAll(async () => {
-    ({ db, close } = await openTestSchema('voices_api_test'))
-    await db.insertInto('user').values([
-      { id: 'a', name: 'Anna', email: 'a@example.com', emailVerified: false, image: null },
-      { id: 'b', name: 'Ben', email: 'b@example.com', emailVerified: false, image: null },
-    ]).execute()
+    ;({ db, close } = await openTestSchema('voices_api_test'))
+    await db
+      .insertInto('user')
+      .values([
+        { id: 'a', name: 'Anna', email: 'a@example.com', emailVerified: false, image: null },
+        { id: 'b', name: 'Ben', email: 'b@example.com', emailVerified: false, image: null },
+      ])
+      .execute()
   })
-  afterAll(async () => { await close() })
-  afterEach(async () => { await db.deleteFrom('voice_packs').execute(); await db.deleteFrom('voice_clips').execute() })
+  afterAll(async () => {
+    await close()
+  })
+  afterEach(async () => {
+    await db.deleteFrom('voice_packs').execute()
+    await db.deleteFrom('voice_clips').execute()
+  })
 
   // Link imports answer from this instead of the internet: the zip above for any URL
   const fetchImpl = vi.fn((_url: string | URL | Request, _init?: RequestInit) => Promise.resolve(new Response(zip)))
-  afterEach(() => { fetchImpl.mockClear() })
+  afterEach(() => {
+    fetchImpl.mockClear()
+  })
 
   function makeApp(limitBytes = 1024 * 1024, uploadLimit?: number) {
     const app = createFastify()
     app.register(voicesApiPlugin, { db, limitBytes, fetchImpl, uploadLimit })
     return app
   }
-  const importLink = (app: ReturnType<typeof makeApp>, url: string, user = 'a') => app.inject({
-    method: 'POST', url: '/api/voice-packs/import', headers: { 'x-user': user }, payload: { url },
-  })
-  const upload = (app: ReturnType<typeof makeApp>, body: Buffer = zip, user: string | null = 'a') => app.inject({
-    method: 'POST', url: '/api/voice-packs?name=en-GB-Arthur-Male-v4.zip',
-    headers: { 'content-type': 'application/zip', ...(user && { 'x-user': user }) }, payload: body,
-  })
+  const importLink = (app: ReturnType<typeof makeApp>, url: string, user = 'a') =>
+    app.inject({
+      method: 'POST',
+      url: '/api/voice-packs/import',
+      headers: { 'x-user': user },
+      payload: { url },
+    })
+  const upload = (app: ReturnType<typeof makeApp>, body: Buffer = zip, user: string | null = 'a') =>
+    app.inject({
+      method: 'POST',
+      url: '/api/voice-packs?name=en-GB-Arthur-Male-v4.zip',
+      headers: { 'content-type': 'application/zip', ...(user && { 'x-user': user }) },
+      payload: body,
+    })
   const get = (app: ReturnType<typeof makeApp>, url: string, user = 'a') => app.inject({ method: 'GET', url, headers: { 'x-user': user } })
 
   it('imports an upload, lists it, serves its manifest and clips', async () => {
@@ -74,7 +97,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
 
     const manifest = await get(app, `/api/voice-packs/${pack.id}`)
     expect(manifest.json()).toEqual({
-      id: pack.id, name: 'en-GB Arthur (Male)',
+      id: pack.id,
+      name: 'en-GB Arthur (Male)',
       clips: { '180': [sha(ONE80)], gameshot: [sha(GS), sha(GS2)] },
     })
 
@@ -102,7 +126,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
 
   it('refuses another content type', async () => {
     const res = await makeApp().inject({
-      method: 'POST', url: '/api/voice-packs?name=x.zip', headers: { 'content-type': 'application/json', 'x-user': 'a' }, payload: '{}',
+      method: 'POST',
+      url: '/api/voice-packs?name=x.zip',
+      headers: { 'content-type': 'application/json', 'x-user': 'a' },
+      payload: '{}',
     })
     expect(res.statusCode).toBe(415)
     expect(res.json()).toEqual({ error: 'Unsupported Media Type: application/json' })
@@ -155,12 +182,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     const held: { release: () => void; res: ReturnType<typeof importLink> }[] = []
     afterEach(async () => {
       const all = held.splice(0)
-      all.forEach(h => { h.release() })
+      all.forEach(h => {
+        h.release()
+      })
       await Promise.all(all.map(h => h.res))
     })
     async function holdImport(app: ReturnType<typeof makeApp>, user: string) {
       let release = () => {}
-      fetchImpl.mockImplementationOnce(() => new Promise<Response>(resolve => { release = () => resolve(new Response(zip)) }))
+      fetchImpl.mockImplementationOnce(
+        () =>
+          new Promise<Response>(resolve => {
+            release = () => resolve(new Response(zip))
+          }),
+      )
       const calls = fetchImpl.mock.calls.length
       const res = importLink(app, link, user)
       held.push({ release: () => release(), res })
@@ -180,8 +214,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     })
 
     it('runs two imports at once across all users', async () => {
-      await db.insertInto('user').values({ id: 'c', name: 'Cleo', email: 'c@example.com', emailVerified: false, image: null })
-        .onConflict(oc => oc.doNothing()).execute()
+      await db
+        .insertInto('user')
+        .values({ id: 'c', name: 'Cleo', email: 'c@example.com', emailVerified: false, image: null })
+        .onConflict(oc => oc.doNothing())
+        .execute()
       const app = makeApp()
       const running = [await holdImport(app, 'a'), await holdImport(app, 'b')]
       for (const res of [await upload(app, zip, 'c'), await importLink(app, link, 'c')]) {
@@ -189,7 +226,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
         expect(res.json()).toEqual({ error: 'The server is busy importing voices, try again in a minute' })
       }
       expect(fetchImpl).toHaveBeenCalledTimes(2)
-      running.forEach(r => { r.release() })
+      running.forEach(r => {
+        r.release()
+      })
       for (const r of running) expect((await r.res).statusCode).toBe(201)
       expect((await upload(app, zip, 'c')).statusCode).toBe(201)
     })
@@ -199,16 +238,32 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     function slowUpload(app: ReturnType<typeof makeApp>, user: string) {
       const { port } = app.server.address() as AddressInfo
       const req = request({
-        host: '127.0.0.1', port, method: 'POST', path: '/api/voice-packs?name=x.zip',
+        host: '127.0.0.1',
+        port,
+        method: 'POST',
+        path: '/api/voice-packs?name=x.zip',
         headers: { 'content-type': 'application/zip', 'content-length': String(zip.length), 'x-user': user },
       })
       const status = new Promise<number | undefined>((resolve, reject) => {
-        req.on('response', res => { res.resume(); res.on('end', () => { resolve(res.statusCode) }) })
+        req.on('response', res => {
+          res.resume()
+          res.on('end', () => {
+            resolve(res.statusCode)
+          })
+        })
         req.on('error', reject)
       })
       status.catch(() => {})
       req.write(zip.subarray(0, 10))
-      return { status, finish: () => { req.end(zip.subarray(10)) }, drop: () => { req.destroy() } }
+      return {
+        status,
+        finish: () => {
+          req.end(zip.subarray(10))
+        },
+        drop: () => {
+          req.destroy()
+        },
+      }
     }
     async function listening(app: ReturnType<typeof makeApp>) {
       await app.listen({ port: 0, host: '127.0.0.1' })
@@ -216,8 +271,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     }
 
     it('counts uploads still receiving their body against the two at once', async () => {
-      await db.insertInto('user').values({ id: 'c', name: 'Cleo', email: 'c@example.com', emailVerified: false, image: null })
-        .onConflict(oc => oc.doNothing()).execute()
+      await db
+        .insertInto('user')
+        .values({ id: 'c', name: 'Cleo', email: 'c@example.com', emailVerified: false, image: null })
+        .onConflict(oc => oc.doNothing())
+        .execute()
       const app = await listening(makeApp(undefined, 1000))
       try {
         const slow = [slowUpload(app, 'a'), slowUpload(app, 'b')]
@@ -231,7 +289,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
           })
           expect((await upload(app, Buffer.alloc(5000), 'a')).json()).toEqual({ error: 'An import is already running' })
         } finally {
-          slow.forEach(s => { s.finish() })
+          slow.forEach(s => {
+            s.finish()
+          })
           done = await Promise.all(slow.map(s => s.status))
         }
         expect(done).toEqual([201, 201])
@@ -253,9 +313,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
       try {
         const slow = slowUpload(app, 'a')
         // The slot is taken while the body comes in
-        await vi.waitFor(async () => { expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(429) })
+        await vi.waitFor(async () => {
+          expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(429)
+        })
         slow.drop()
-        await vi.waitFor(async () => { expect((await upload(app, zip)).statusCode).toBe(201) })
+        await vi.waitFor(async () => {
+          expect((await upload(app, zip)).statusCode).toBe(201)
+        })
       } finally {
         await app.close()
       }

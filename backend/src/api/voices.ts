@@ -7,8 +7,17 @@ import { fetchPack, LinkError } from '../caller/fetchPack.js'
 import { ZipError } from '../caller/zip.js'
 import { voiceConfig } from '../caller/config.js'
 import {
-  importPack, listPacks, packManifest, clipFor, deletePack, usage, reserveImport, VoiceLimitError, VoiceBusyError,
-  type ImportSlot, type PackSource,
+  importPack,
+  listPacks,
+  packManifest,
+  clipFor,
+  deletePack,
+  usage,
+  reserveImport,
+  VoiceLimitError,
+  VoiceBusyError,
+  type ImportSlot,
+  type PackSource,
 } from '../caller/service.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -37,17 +46,26 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   const slots = new WeakMap<FastifyRequest, ImportSlot>()
   // Requests whose handler is importing: the handler frees their slot when it's done
   const importing = new WeakSet<FastifyRequest>()
-  const free = (req: FastifyRequest) => { slots.get(req)?.release(); slots.delete(req) }
+  const free = (req: FastifyRequest) => {
+    slots.get(req)?.release()
+    slots.delete(req)
+  }
 
   /**
    * Import routes refuse at once when imports are off, or while the user's import (or as many as
    * the server takes) runs, before a body is read; otherwise the request takes the user's slot.
    */
   function reserve(req: FastifyRequest, reply: FastifyReply, done: HookHandlerDoneFunction): void {
-    if (limitBytes === 0) { reply.code(413).send({ error: new VoiceLimitError(0, 0).message }); return }
-    try { slots.set(req, reserveImport(req.userId)) } catch (err) {
+    if (limitBytes === 0) {
+      reply.code(413).send({ error: new VoiceLimitError(0, 0).message })
+      return
+    }
+    try {
+      slots.set(req, reserveImport(req.userId))
+    } catch (err) {
       if (!(err instanceof VoiceBusyError)) throw err
-      reply.code(429).send({ error: err.message }); return
+      reply.code(429).send({ error: err.message })
+      return
     }
     done()
   }
@@ -61,8 +79,12 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   const importHooks = () => ({
     onRequest: [requireAuth, reserve],
     onResponse: freeUnlessImporting,
-    onError: (req: FastifyRequest, reply: FastifyReply, _err: Error, done: HookHandlerDoneFunction) => { freeUnlessImporting(req, reply, done) },
-    onRequestAbort: (req: FastifyRequest, done: HookHandlerDoneFunction) => { freeUnlessImporting(req, null, done) },
+    onError: (req: FastifyRequest, reply: FastifyReply, _err: Error, done: HookHandlerDoneFunction) => {
+      freeUnlessImporting(req, reply, done)
+    },
+    onRequestAbort: (req: FastifyRequest, done: HookHandlerDoneFunction) => {
+      freeUnlessImporting(req, null, done)
+    },
     config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
   })
 
@@ -72,7 +94,7 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     importing.add(req)
     try {
       const parsed = await read()
-      return { ...await importPack(db, req.userId, parsed, source, limitBytes), total: parsed.total }
+      return { ...(await importPack(db, req.userId, parsed, source, limitBytes)), total: parsed.total }
     } finally {
       importing.delete(req)
       free(req)
@@ -86,7 +108,7 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     throw err
   }
 
-  app.get<Route<'listVoicePacks'>>('/api/voice-packs', { preValidation: requireAuth, schema: fromSpec('listVoicePacks') }, async (req) => {
+  app.get<Route<'listVoicePacks'>>('/api/voice-packs', { preValidation: requireAuth, schema: fromSpec('listVoicePacks') }, async req => {
     const [packs, bytes] = await Promise.all([listPacks(db, req.userId), usage(db, req.userId)])
     return { packs, usage: { bytes, limitBytes } }
   })
@@ -94,57 +116,84 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   // Uploads in a scope of their own that takes zips only (as one Buffer); other bodies get a 415
   app.register((scope, _opts, registered) => {
     scope.removeAllContentTypeParsers()
-    scope.addContentTypeParser('application/zip', { parseAs: 'buffer', bodyLimit: uploadLimit }, (_req, body, parsed) => { parsed(null, body) })
+    scope.addContentTypeParser('application/zip', { parseAs: 'buffer', bodyLimit: uploadLimit }, (_req, body, parsed) => {
+      parsed(null, body)
+    })
 
-    scope.post<Route<'uploadVoicePack'>>('/api/voice-packs', {
-      ...importHooks(), schema: fromSpec('uploadVoicePack'), bodyLimit: uploadLimit,
-    }, async (req, reply) => {
+    scope.post<Route<'uploadVoicePack'>>(
+      '/api/voice-packs',
+      {
+        ...importHooks(),
+        schema: fromSpec('uploadVoicePack'),
+        bodyLimit: uploadLimit,
+      },
+      async (req, reply) => {
+        try {
+          const pack = await runImport(req, () => readPack(orEmpty(req.body), req.query.name), { kind: 'upload' })
+          return await reply.code(201).send(pack)
+        } catch (err) {
+          const { status, error } = importError(err)
+          return reply.code(status).send({ error })
+        }
+      },
+    )
+    registered()
+  })
+
+  app.post<Route<'importVoicePack'>>(
+    '/api/voice-packs/import',
+    {
+      ...importHooks(),
+      schema: fromSpec('importVoicePack'),
+    },
+    async (req, reply) => {
+      const { url } = req.body
       try {
-        const pack = await runImport(req, () => readPack(orEmpty(req.body), req.query.name), { kind: 'upload' })
+        const pack = await runImport(req, () => fetchPack(url, fetchImpl), { kind: 'url', url })
         return await reply.code(201).send(pack)
       } catch (err) {
         const { status, error } = importError(err)
         return reply.code(status).send({ error })
       }
-    })
-    registered()
-  })
+    },
+  )
 
-  app.post<Route<'importVoicePack'>>('/api/voice-packs/import', {
-    ...importHooks(), schema: fromSpec('importVoicePack'),
-  }, async (req, reply) => {
-    const { url } = req.body
-    try {
-      const pack = await runImport(req, () => fetchPack(url, fetchImpl), { kind: 'url', url })
-      return await reply.code(201).send(pack)
-    } catch (err) {
-      const { status, error } = importError(err)
-      return reply.code(status).send({ error })
-    }
-  })
+  app.get<Route<'getVoicePack'>>(
+    '/api/voice-packs/:id',
+    { preValidation: requireAuth, schema: fromSpec('getVoicePack') },
+    async (req, reply) => {
+      const manifest = await packManifest(db, req.userId, req.params.id)
+      if (!manifest) return reply.code(404).send({ error: 'not found' })
+      return reply.send(manifest)
+    },
+  )
 
-  app.get<Route<'getVoicePack'>>('/api/voice-packs/:id', { preValidation: requireAuth, schema: fromSpec('getVoicePack') }, async (req, reply) => {
-    const manifest = await packManifest(db, req.userId, req.params.id)
-    if (!manifest) return reply.code(404).send({ error: 'not found' })
-    return reply.send(manifest)
-  })
-
-  app.delete<Route<'deleteVoicePack'>>('/api/voice-packs/:id', { preValidation: requireAuth, schema: fromSpec('deleteVoicePack') }, async (req, reply) => {
-    if (!await deletePack(db, req.userId, req.params.id)) return reply.code(404).send({ error: 'not found' })
-    return reply.code(204).send()
-  })
+  app.delete<Route<'deleteVoicePack'>>(
+    '/api/voice-packs/:id',
+    { preValidation: requireAuth, schema: fromSpec('deleteVoicePack') },
+    async (req, reply) => {
+      if (!(await deletePack(db, req.userId, req.params.id))) return reply.code(404).send({ error: 'not found' })
+      return reply.code(204).send()
+    },
+  )
 
   // Out of the rate limit: a pack's clips (a few hundred) are fetched as they're needed
-  app.get<Route<'getVoiceClip'>>('/api/voice-clips/:sha256', {
-    preValidation: requireAuth, schema: fromSpec('getVoiceClip'), config: { rateLimit: false },
-  }, async (req, reply) => {
-    const clip = await clipFor(db, req.userId, req.params.sha256)
-    if (!clip) return reply.code(404).send({ error: 'not found' })
-    reply.header('content-type', clip.mime)
-    // A hash names one content for good; private: only this user may fetch it
-    reply.header('cache-control', 'private, max-age=31536000, immutable')
-    return reply.send(clip.bytes)
-  })
+  app.get<Route<'getVoiceClip'>>(
+    '/api/voice-clips/:sha256',
+    {
+      preValidation: requireAuth,
+      schema: fromSpec('getVoiceClip'),
+      config: { rateLimit: false },
+    },
+    async (req, reply) => {
+      const clip = await clipFor(db, req.userId, req.params.sha256)
+      if (!clip) return reply.code(404).send({ error: 'not found' })
+      reply.header('content-type', clip.mime)
+      // A hash names one content for good; private: only this user may fetch it
+      reply.header('cache-control', 'private, max-age=31536000, immutable')
+      return reply.send(clip.bytes)
+    },
+  )
 
   done()
 }

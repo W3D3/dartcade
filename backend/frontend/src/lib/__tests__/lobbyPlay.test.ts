@@ -23,7 +23,10 @@ describe('lobbyPath', () => {
 })
 
 describe('boardToApply', () => {
-  const boards = [{ id: 'b1', name: 'Garage' }, { id: 'b2', name: 'Kitchen' }]
+  const boards = [
+    { id: 'b1', name: 'Garage' },
+    { id: 'b2', name: 'Kitchen' },
+  ]
 
   it('moves you to one of your boards', () => {
     expect(boardToApply('b2', 'b1', boards)).toBe('b2')

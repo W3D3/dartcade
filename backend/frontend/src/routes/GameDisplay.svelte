@@ -58,7 +58,9 @@
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
-  $effect(() => { saveSettings(localStorage, settings) })
+  $effect(() => {
+    saveSettings(localStorage, settings)
+  })
   const sounds = createSounds(() => settings.volume)
 
   // The caller (X01): the voice's clips start loading as soon as the caller is on (before the
@@ -69,7 +71,11 @@
   $effect(() => {
     const on = settings.callerOn
     const voice = settings.callerVoice
-    if (!on) { caller.stop(); callerClips = Promise.resolve(null); return }
+    if (!on) {
+      caller.stop()
+      callerClips = Promise.resolve(null)
+      return
+    }
     callerClips = voiceClips(voice).catch(() => null)
   })
   // Browsers keep audio asleep until the page is tapped or typed on: wake it on the first one
@@ -119,9 +125,15 @@
     if (!sessionId) return
     sessionStore = createSessionStore(sessionId)
     unsubSnap = sessionStore.snapshot.subscribe(snap => {
-      if (!snap) { snapshot = null; return }
+      if (!snap) {
+        snapshot = null
+        return
+      }
       // Without a board of your own you start on the keypad (once)
-      if (!viewModeSetByUser && startsOnKeypad(snap)) { viewMode = 'entry'; viewModeSetByUser = true }
+      if (!viewModeSetByUser && startsOnKeypad(snap)) {
+        viewMode = 'entry'
+        viewModeSetByUser = true
+      }
       const next = gameState(snap)
       // A new session starts the caller afresh (the previous game isn't this one's "before")
       const before = snapshot?.sessionId === snap.sessionId ? gameState(snapshot) : gameState(null)
@@ -138,15 +150,39 @@
       }
       snapshot = snap
     })
-    unsubNotice = sessionStore.notice.subscribe(n => { if (n) toast.show(n) })
-    unsubError = sessionStore.error.subscribe(e => {
-      if (e?.action === 'forfeit' && leavePending) { leavePending = false; endError = leaveRefused(snapshot) }
+    unsubNotice = sessionStore.notice.subscribe(n => {
+      if (n) toast.show(n)
     })
-    unsubConnected = sessionStore.connected.subscribe(up => { if (!up) leavePending = false })
-    unsubCameras = sessionStore.cameras.subscribe(v => { cameraVersions = v })
-    authClient.getSession().then(r => { viewerId = r.data?.user.id ?? null }).catch(() => undefined)
+    unsubError = sessionStore.error.subscribe(e => {
+      if (e?.action === 'forfeit' && leavePending) {
+        leavePending = false
+        endError = leaveRefused(snapshot)
+      }
+    })
+    unsubConnected = sessionStore.connected.subscribe(up => {
+      if (!up) leavePending = false
+    })
+    unsubCameras = sessionStore.cameras.subscribe(v => {
+      cameraVersions = v
+    })
+    authClient
+      .getSession()
+      .then(r => {
+        viewerId = r.data?.user.id ?? null
+      })
+      .catch(() => undefined)
   })
-  onDestroy(() => { unsubSnap?.(); unsubNotice?.(); unsubError?.(); unsubConnected?.(); unsubCameras?.(); toast.dismiss(); sessionStore?.destroy(); caller.stop(); stopWaking() })
+  onDestroy(() => {
+    unsubSnap?.()
+    unsubNotice?.()
+    unsubError?.()
+    unsubConnected?.()
+    unsubCameras?.()
+    toast.dismiss()
+    sessionStore?.destroy()
+    caller.stop()
+    stopWaking()
+  })
 
   function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
     const oldCount = before.currentVisitDarts.length
@@ -189,7 +225,10 @@
   $effect(() => {
     if (!snapshot || snapshot.status === 'active') return
     // A successful Leave: the forfeit ended the session; go to the lobby, or home for a local game
-    if (leavePending) { leavePending = false; void push(afterGameRoute(snapshot)) }
+    if (leavePending) {
+      leavePending = false
+      void push(afterGameRoute(snapshot))
+    }
   })
   // Online: only the seat's controller enters its darts (a local game's owner controls every seat)
   const myTurn = $derived(isMyTurn(snapshot))
@@ -211,7 +250,9 @@
   const locked = $derived(x01?.visitLocked === true || winner !== null)
   const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
   // A team game (X01): one panel per team, sharing a score
-  const teams = $derived(x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions, scoreUpdates: settings.scoreUpdates }) : [])
+  const teams = $derived(
+    x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions, scoreUpdates: settings.scoreUpdates }) : [],
+  )
   const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch))
   // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
   const atcNext = $derived((currentPlayer + 1) % Math.max(players.length, 1))
@@ -224,40 +265,58 @@
     phonePlayers?.querySelector(`[data-up="${upKey}"]`)?.scrollIntoView({ block: 'nearest' })
   })
 
-  const x01Players = $derived(x01
-    ? players.map((_, i) => x01Player(x01, i, history, { active: i === currentPlayer && isActive, suggest: settings.checkoutSuggestions, bust: i === currentPlayer && bust, scoreUpdates: settings.scoreUpdates }))
-    : [])
+  const x01Players = $derived(
+    x01
+      ? players.map((_, i) =>
+          x01Player(x01, i, history, {
+            active: i === currentPlayer && isActive,
+            suggest: settings.checkoutSuggestions,
+            bust: i === currentPlayer && bust,
+            scoreUpdates: settings.scoreUpdates,
+          }),
+        )
+      : [],
+  )
   const atcPlayers = $derived(atc ? players.map((_, i) => atcPlayer(atc, i)) : [])
   const leaders = $derived(atcLeaders(atc?.hitCounts ?? []))
 
   // ── Center column ─────────────────────────────────────────────────────────
   const outMode = $derived(x01?.config.outMode ?? 'double')
-  const slots = $derived(isX01
-    ? x01Slots({
-        darts, outMode, bust,
-        remaining: x01Players[currentPlayer]?.remaining ?? 0,
-        opened: x01Players[currentPlayer]?.opened ?? true,
-        suggest: settings.checkoutSuggestions && isActive,
-      })
-    : atcSlots({
-        darts, hits, target: isActive ? atcPlayers[currentPlayer]?.target ?? null : null,
-        multiplierAdvances: atc?.cfg.multiplierAdvances === true,
-      }))
+  const slots = $derived(
+    isX01
+      ? x01Slots({
+          darts,
+          outMode,
+          bust,
+          remaining: x01Players[currentPlayer]?.remaining ?? 0,
+          opened: x01Players[currentPlayer]?.opened ?? true,
+          suggest: settings.checkoutSuggestions && isActive,
+        })
+      : atcSlots({
+          darts,
+          hits,
+          target: isActive ? (atcPlayers[currentPlayer]?.target ?? null) : null,
+          multiplierAdvances: atc?.cfg.multiplierAdvances === true,
+        }),
+  )
 
   const hitCount = $derived(atc?.hitCounts.at(currentPlayer) ?? 0)
   const visitStart = $derived(history.start.at(currentPlayer) ?? null)
-  const band = $derived(isX01
-    ? x01Band({
-        darts, bust,
-        left: x01Players[currentPlayer]?.remaining ?? 0,
-        // What the engine actually took off, when the visit's start is known
-        scored: !bust && visitStart !== null ? visitStart - (x01Players[currentPlayer]?.remaining ?? 0) : undefined,
-      })
-    : atcBand({
-        dartCount: darts.length,
-        advanced: atcAdvanced(hitCount, visitStart, hits),
-        target: atcPlayers[currentPlayer]?.target ?? '',
-      }))
+  const band = $derived(
+    isX01
+      ? x01Band({
+          darts,
+          bust,
+          left: x01Players[currentPlayer]?.remaining ?? 0,
+          // What the engine actually took off, when the visit's start is known
+          scored: !bust && visitStart !== null ? visitStart - (x01Players[currentPlayer]?.remaining ?? 0) : undefined,
+        })
+      : atcBand({
+          dartCount: darts.length,
+          advanced: atcAdvanced(hitCount, visitStart, hits),
+          target: atcPlayers[currentPlayer]?.target ?? '',
+        }),
+  )
   // Every finished visit: the visit sum starts over at 0 without rolling
   const visitKey = $derived((game?.totalVisits ?? []).reduce((a, v) => a + v, 0))
   const popIndex = $derived(isX01 ? bigDartIndex(darts, { opened: x01Players[currentPlayer]?.opened ?? true, bust }) : null)
@@ -270,18 +329,26 @@
   const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next' || s.kind === 'suggested-later').map(s => s.label))
   const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets.at(currentPlayer)) : null)
   const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(atcNext)) : null)
-  const markers = $derived(!isX01 && isActive && players.length > 2 && settings.showMarkers
-    ? players.map((p, i) => ({
-        initial: p.name.trim().charAt(0).toUpperCase() || '?',
-        segment: atcTargetSegment(sequence, targets.at(i)) ?? 0,
-        isActive: i === currentPlayer,
-      })).filter(m => m.segment > 0)
-    : [])
+  const markers = $derived(
+    !isX01 && isActive && players.length > 2 && settings.showMarkers
+      ? players
+          .map((p, i) => ({
+            initial: p.name.trim().charAt(0).toUpperCase() || '?',
+            segment: atcTargetSegment(sequence, targets.at(i)) ?? 0,
+            isActive: i === currentPlayer,
+          }))
+          .filter(m => m.segment > 0)
+      : [],
+  )
   const legend = $derived.by((): { label: string; kind: 'current' | 'next' | 'others' }[] => {
     if (isX01 || !isActive || players.length === 1) return []
-    if (players.length > 2) return settings.showMarkers
-      ? [{ label: 'Current target', kind: 'current' }, { label: "Others' targets", kind: 'others' }]
-      : [{ label: 'Current target', kind: 'current' }]
+    if (players.length > 2)
+      return settings.showMarkers
+        ? [
+            { label: 'Current target', kind: 'current' },
+            { label: "Others' targets", kind: 'others' },
+          ]
+        : [{ label: 'Current target', kind: 'current' }]
     return [
       { label: `${players[currentPlayer]?.name} · ${atcPlayers[currentPlayer]?.target}`, kind: 'current' },
       { label: `${players[atcNext]?.name} · ${atcPlayers[atcNext]?.target}`, kind: 'next' },
@@ -298,9 +365,11 @@
   }
 
   // Party rows: the X01 thrower's row is taller; rows keep a minimum height and scroll
-  const rowTemplate = $derived(players
-    .map((_, i) => (!isX01 ? 'minmax(110px, 1fr)' : isActive && i === currentPlayer ? 'minmax(150px, 1.55fr)' : 'minmax(96px, 1fr)'))
-    .join(' '))
+  const rowTemplate = $derived(
+    players
+      .map((_, i) => (!isX01 ? 'minmax(110px, 1fr)' : isActive && i === currentPlayer ? 'minmax(150px, 1.55fr)' : 'minmax(96px, 1fr)'))
+      .join(' '),
+  )
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const send = (action: UserAction) => sessionStore?.send(action)
@@ -308,19 +377,24 @@
   const advance = () => send({ type: 'takeout' })
   // Undo takes back the last dart, or with none open reopens the last visit (its thrower is up again)
   const canUndo = $derived(canThrow && (darts.length > 0 || snapshot?.canUndoVisit === true))
-  const next = $derived(nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending }))
+  const next = $derived(
+    nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending }),
+  )
   const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
   const addBoardDart = (hit: { segment: Segment; coords: { x: number; y: number } }) =>
     send({ type: 'add_dart', segment: hit.segment, coords: hit.coords })
   // Phone keypad: with a thrown dart selected, the key replaces it; otherwise it adds a dart
   function keypadDart(segment: Segment) {
-    if (correcting === null) { addManualDart(segment); return }
+    if (correcting === null) {
+      addManualDart(segment)
+      return
+    }
     send({ type: 'correct_dart', visitIndex: correcting, segment })
     correcting = null
   }
-  const correct = (dartIndex: number, label: string) => canThrow &&
-    send({ type: 'correct_dart', visitIndex: dartIndex, segment: labelToSegment(label) })
+  const correct = (dartIndex: number, label: string) =>
+    canThrow && send({ type: 'correct_dart', visitIndex: dartIndex, segment: labelToSegment(label) })
   // Any dart of the open visit can be dragged on the board to correct it
   const moveDart = (dartIndex: number, hit: { segment: Segment; coords: { x: number; y: number } }) =>
     send({ type: 'correct_dart', visitIndex: dartIndex, segment: hit.segment, coords: hit.coords })
@@ -336,7 +410,10 @@
     if (!sessionId) return
     endError = null
     const { error } = await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
-    if (error) { endError = 'Could not end the game.'; return }
+    if (error) {
+      endError = 'Could not end the game.'
+      return
+    }
     void push(afterGameRoute(snapshot))
   }
 
@@ -359,8 +436,11 @@
     const id = snapshot.sessionId
     if (savedFor === id) return
     savedFor = id
-    void api.GET('/api/games/{id}', { params: { path: { id } } })
-      .then(({ data }) => { if (data && snapshot?.sessionId === id) savedGame = data })
+    void api
+      .GET('/api/games/{id}', { params: { path: { id } } })
+      .then(({ data }) => {
+        if (data && snapshot?.sessionId === id) savedGame = data
+      })
       .catch(() => undefined)
   })
   const win = $derived(winView(snapshot, savedGame?.game.id === snapshot?.sessionId ? savedGame : null))
@@ -377,8 +457,13 @@
 
 {#snippet waitingCard(compact: boolean)}
   {#if remote.kind === 'waiting'}
-    <WaitingCard name={remote.name} disconnectedAt={remote.disconnectedAt} canAbort={remote.canAbort}
-      onabort={() => showEndConfirm = true} {compact} />
+    <WaitingCard
+      name={remote.name}
+      disconnectedAt={remote.disconnectedAt}
+      canAbort={remote.canAbort}
+      onabort={() => (showEndConfirm = true)}
+      {compact}
+    />
   {/if}
 {/snippet}
 
@@ -391,10 +476,18 @@
     {#if caption}<BoardCaption {caption} compact />{/if}
     <div class="flex-1 min-h-[160px] w-full [container-type:size] flex items-center justify-center">
       <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
-        <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
+        <DartBoard
+          {darts}
+          dim={!isX01}
+          target={boardTarget}
+          nextTarget={boardNext}
+          playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
           onBoardClick={canThrow && !locked ? addBoardDart : undefined}
-          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} {cameraSrc} />
+          selectedDart={correcting}
+          onDartMove={canThrow ? moveDart : undefined}
+          {cameraSrc}
+        />
         <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
       </div>
     </div>
@@ -406,15 +499,24 @@
   </div>
   {#if keypad}
     <div class="flex-1 min-h-[220px]">
-      <DartKeypad onDart={canThrow ? keypadDart : () => {}} dartCount={darts.length} {locked} replacing={correcting} disabled={!canThrow}
-        canUndo={canUndo} onUndo={undo}
-        nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
+      <DartKeypad
+        onDart={canThrow ? keypadDart : () => {}}
+        dartCount={darts.length}
+        {locked}
+        replacing={correcting}
+        disabled={!canThrow}
+        {canUndo}
+        onUndo={undo}
+        nextLabel={next.label}
+        nextEnabled={next.enabled}
+        nextProminent={next.prominent}
+        onNext={advance}
+      />
     </div>
   {:else if turn}
     <TurnStatusBar status={turn} compact />
   {:else}
-    <ControlBar compact canUndo={canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled}
-      onUndo={undo} onNext={advance} />
+    <ControlBar compact {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} onUndo={undo} onNext={advance} />
   {/if}
 {/snippet}
 
@@ -422,9 +524,18 @@
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
   {#if keypad}
     <div class="flex-1 min-h-0">
-      <DartKeypad onDart={canThrow ? addManualDart : () => {}} dartCount={darts.length} {locked} disabled={!canThrow}
-        canUndo={canUndo} onUndo={undo}
-        nextLabel={next.label} nextEnabled={next.enabled} nextProminent={next.prominent} onNext={advance} />
+      <DartKeypad
+        onDart={canThrow ? addManualDart : () => {}}
+        dartCount={darts.length}
+        {locked}
+        disabled={!canThrow}
+        {canUndo}
+        onUndo={undo}
+        nextLabel={next.label}
+        nextEnabled={next.enabled}
+        nextProminent={next.prominent}
+        onNext={advance}
+      />
     </div>
   {:else if remote.kind === 'waiting' && variant === 'party'}
     <!-- Rows have no room for an overlay: the waiting card takes the board's place -->
@@ -434,10 +545,18 @@
     <!-- The board takes the height the column has left (capped by its width) -->
     <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
       <div class="relative aspect-square {variant === 'duel' ? 'max-w-[400px] xl:max-w-none' : ''}" style="width: min(100cqw, 100cqh)">
-        <DartBoard {darts} dim={!isX01} target={boardTarget} nextTarget={boardNext} playerMarkers={markers}
+        <DartBoard
+          {darts}
+          dim={!isX01}
+          target={boardTarget}
+          nextTarget={boardNext}
+          playerMarkers={markers}
           checkoutTargets={isActive ? checkoutTargets : []}
           onBoardClick={canThrow && !locked ? addBoardDart : undefined}
-          selectedDart={correcting} onDartMove={canThrow ? moveDart : undefined} {cameraSrc} />
+          selectedDart={correcting}
+          onDartMove={canThrow ? moveDart : undefined}
+          {cameraSrc}
+        />
         <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
       </div>
     </div>
@@ -458,8 +577,7 @@
     {#if turn}
       <TurnStatusBar status={turn} />
     {:else}
-      <ControlBar canUndo={canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled}
-        onUndo={undo} onNext={advance} />
+      <ControlBar {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} onUndo={undo} onNext={advance} />
     {/if}
   {/if}
 {/snippet}
@@ -472,13 +590,26 @@
 {#snippet panel(i: number)}
   {@const isWaiting = remote.kind === 'waiting' && remote.seat === i}
   {#if isX01}
-    <X01Panel name={players[i]?.name ?? ''} p={x01Players[i]} active={i === currentPlayer && isActive}
-      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null} chalkboard={settings.chalkboard}
-      waiting={isWaiting ? seatWaiting : undefined} />
+    <X01Panel
+      name={players[i]?.name ?? ''}
+      p={x01Players[i]}
+      active={i === currentPlayer && isActive}
+      solo={layout === 'solo'}
+      pill={pillFor(i, false)}
+      seat={lines[i] ?? null}
+      chalkboard={settings.chalkboard}
+      waiting={isWaiting ? seatWaiting : undefined}
+    />
   {:else}
-    <AtcPanel name={players[i]?.name ?? ''} p={atcPlayers[i]} active={i === currentPlayer && isActive}
-      solo={layout === 'solo'} pill={pillFor(i, false)} seat={lines[i] ?? null}
-      waiting={isWaiting ? seatWaiting : undefined} />
+    <AtcPanel
+      name={players[i]?.name ?? ''}
+      p={atcPlayers[i]}
+      active={i === currentPlayer && isActive}
+      solo={layout === 'solo'}
+      pill={pillFor(i, false)}
+      seat={lines[i] ?? null}
+      waiting={isWaiting ? seatWaiting : undefined}
+    />
   {/if}
 {/snippet}
 
@@ -498,7 +629,13 @@
          (compact panels have no room: the board's place shows it instead) -->
     {@const awaySeat = remote.kind === 'waiting' ? remote.seat : null}
     {@const away = team.members.some(m => m.seat === awaySeat)}
-    <TeamPanel {team} seats={lines} chalkboard={settings.chalkboard && !compact} {compact} overlay={away && !compact ? teamWaiting : undefined} />
+    <TeamPanel
+      {team}
+      seats={lines}
+      chalkboard={settings.chalkboard && !compact}
+      {compact}
+      overlay={away && !compact ? teamWaiting : undefined}
+    />
   {/if}
 {/snippet}
 
@@ -509,118 +646,185 @@
     </div>
   {:else}
     {#if win}
-      <WinScreen view={win} title={view.title} meta={winMeta(snapshot)} lobbyName={snapshot.lobbyName} board={sharedBoard(snapshot)}
-        saved={snapshot.mySeats.length > 0} doneLabel={afterGameRoute(snapshot) === '/lobby' ? 'Back to lobby' : 'Back to Play'}
-        ondone={backToLobbyAfterWin} onhistory={() => push('/history')} />
+      <WinScreen
+        view={win}
+        title={view.title}
+        meta={winMeta(snapshot)}
+        lobbyName={snapshot.lobbyName}
+        board={sharedBoard(snapshot)}
+        saved={snapshot.mySeats.length > 0}
+        doneLabel={afterGameRoute(snapshot) === '/lobby' ? 'Back to lobby' : 'Back to Play'}
+        ondone={backToLobbyAfterWin}
+        onhistory={() => push('/history')}
+      />
     {:else}
-    <GameHeader
-      title={bullOff ? 'Bull-off' : view.title}
-      meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-      showViewToggle={!bullOff && remote.kind === 'play'}
-      {sessionId} {boardId} {gameId} bmStatus={snapshot.bmStatus} {viewMode} compact={$isPhone}
-      lobbyName={snapshot.lobbyName} paused={remote.kind === 'waiting'} myBoard={myBoard(snapshot)}
-      {canEnd}
-      endMode={control ?? 'end'}
-      bind:settings
-      onleave={() => push(afterGameRoute(snapshot))}
-      onend={() => showEndConfirm = true}
-      onviewmode={setViewMode}
-    />
+      <GameHeader
+        title={bullOff ? 'Bull-off' : view.title}
+        meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
+        showViewToggle={!bullOff && remote.kind === 'play'}
+        {sessionId}
+        {boardId}
+        {gameId}
+        bmStatus={snapshot.bmStatus}
+        {viewMode}
+        compact={$isPhone}
+        lobbyName={snapshot.lobbyName}
+        paused={remote.kind === 'waiting'}
+        myBoard={myBoard(snapshot)}
+        {canEnd}
+        endMode={control ?? 'end'}
+        bind:settings
+        onleave={() => push(afterGameRoute(snapshot))}
+        onend={() => (showEndConfirm = true)}
+        onviewmode={setViewMode}
+      />
 
-    {#if endError}
-      <div class="shrink-0 box-border px-7 py-2 border-b border-line bg-surface-1">
-        <ErrorText>{endError}</ErrorText>
-      </div>
-    {/if}
+      {#if endError}
+        <div class="shrink-0 box-border px-7 py-2 border-b border-line bg-surface-1">
+          <ErrorText>{endError}</ErrorText>
+        </div>
+      {/if}
 
-    {#if bullOff}
-      <BullOffPanel {players} {bullOff} manual={boardId === null} {send} />
-
-    {:else if !game}
-      <main class="flex-grow flex items-center justify-center">
-        <p class="text-text-muted">Unsupported game</p>
-      </main>
-
-    {:else if layout === 'phone'}
-      <main class="flex-grow min-h-0 overflow-hidden box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2">
-        <!-- Everyone in seat order; the thrower's entry is the active one (card on the board, a row with the keypad).
+      {#if bullOff}
+        <BullOffPanel {players} {bullOff} manual={boardId === null} {send} />
+      {:else if !game}
+        <main class="flex-grow flex items-center justify-center">
+          <p class="text-text-muted">Unsupported game</p>
+        </main>
+      {:else if layout === 'phone'}
+        <main
+          class="flex-grow min-h-0 overflow-hidden box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2"
+        >
+          <!-- Everyone in seat order; the thrower's entry is the active one (card on the board, a row with the keypad).
              Many players scroll, and the thrower is kept in view. -->
-        <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
-          {#if teams.length}
-            <!-- Teams: both panels stacked; with the keypad on a short screen only the throwing team's -->
-            {#each teams as team, t (team.id)}
-              <div data-up={team.active ? upKey : undefined} class="flex {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}">
-                {@render teamPanel(t, true)}
-              </div>
-            {/each}
-          {:else}
-          {#each players as player, i (i)}
-            {@const up = i === currentPlayer}
-            {@const line = lines[i] ?? null}
-            <div data-up={up ? upKey : undefined}
-              class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
-              {#if up && !keypad}
-                {#if isX01}
-                  <PhoneX01Card name={player.name} p={x01Players[i]} pill={pillFor(i, false)} seat={line} chalkboard={settings.chalkboard} />
-                {:else}
-                  <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
-                {/if}
-              {:else if isX01}
-                <PhonePlayerRow active={up} name={player.name} you={line?.you ?? false} pill={up ? null : pillFor(i, true)}
-                  sub={rowSub(up ? (x01Players[i]?.canFinish ? `Throwing · can finish ${x01Players[i]?.canFinish}` : 'Throwing')
-                    : i === nextPlayer ? (x01Players[i]?.canFinish ? `Up next · can finish ${x01Players[i]?.canFinish}` : 'Up next') : `Avg ${x01Players[i]?.avg ?? '0.0'}`, line)}
-                  valueLabel="Left" value={String(x01Players[i]?.shown ?? '')}
-                  roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
-                  legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }} />
-              {:else}
-                <PhonePlayerRow active={up} name={player.name} you={line?.you ?? false} pill={up ? null : pillFor(i, true)}
-                  sub={rowSub(up ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done` : i === nextPlayer ? 'Up next' : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`, line)}
-                  valueLabel="Target" value={atcPlayers[i]?.target ?? ''} roll={{ normal: 'up', progress: atcPlayers[i]?.done }} />
-              {/if}
-            </div>
-          {/each}
-          {/if}
-        </div>
-        <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
-      </main>
-
-    {:else if layout === 'solo'}
-      <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-        {@render panel(0)}
-        <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
-      </main>
-
-    {:else if layout === 'teams'}
-      <!-- A panel per team either side of the board; narrower screens stack them left of it, compact,
-           and a waiting card takes the board's place (as in the party layout) -->
-      <main class="flex-grow min-h-0 box-border px-7 py-6 grid gap-6
-                   {$isWide ? 'grid-cols-[minmax(0,1fr)_560px_minmax(0,1fr)] grid-rows-1' : 'grid-cols-[minmax(0,1fr)_480px] grid-rows-2'}">
-        <div class="col-start-1 row-start-1 min-w-0 min-h-0 flex">{@render teamPanel(0, !$isWide)}</div>
-        <div class="col-start-2 row-start-1 min-h-0 flex flex-col gap-3 {$isWide ? '' : 'row-span-2'}">{@render center($isWide ? 'duel' : 'party')}</div>
-        <div class="min-w-0 min-h-0 flex {$isWide ? 'col-start-3 row-start-1' : 'col-start-1 row-start-2'}">{@render teamPanel(1, !$isWide)}</div>
-      </main>
-
-    {:else if layout === 'duel'}
-      <main class="flex-grow min-h-0 box-border {mainPad} flex">
-        {@render duelPanel(0)}
-        <div class="flex-1 min-w-0 xl:w-[560px] xl:flex-none min-h-0 flex flex-col gap-[10px] xl:gap-3">{@render center('duel')}</div>
-        {@render duelPanel(1)}
-      </main>
-
-    {:else}
-      <main class="flex-grow min-h-0 box-border {mainPad} flex">
-        <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
-          {#each players as player, i (i)}
-            {#if isX01}
-              <X01Row name={player.name} p={x01Players[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
+          <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
+            {#if teams.length}
+              <!-- Teams: both panels stacked; with the keypad on a short screen only the throwing team's -->
+              {#each teams as team, t (team.id)}
+                <div
+                  data-up={team.active ? upKey : undefined}
+                  class="flex {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}"
+                >
+                  {@render teamPanel(t, true)}
+                </div>
+              {/each}
             {:else}
-              <AtcRow name={player.name} p={atcPlayers[i]} active={i === currentPlayer && isActive} pill={pillFor(i, true)} seat={lines[i] ?? null} />
+              {#each players as player, i (i)}
+                {@const up = i === currentPlayer}
+                {@const line = lines[i] ?? null}
+                <div data-up={up ? upKey : undefined} class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
+                  {#if up && !keypad}
+                    {#if isX01}
+                      <PhoneX01Card
+                        name={player.name}
+                        p={x01Players[i]}
+                        pill={pillFor(i, false)}
+                        seat={line}
+                        chalkboard={settings.chalkboard}
+                      />
+                    {:else}
+                      <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
+                    {/if}
+                  {:else if isX01}
+                    <PhonePlayerRow
+                      active={up}
+                      name={player.name}
+                      you={line?.you ?? false}
+                      pill={up ? null : pillFor(i, true)}
+                      sub={rowSub(
+                        up
+                          ? x01Players[i]?.canFinish
+                            ? `Throwing · can finish ${x01Players[i]?.canFinish}`
+                            : 'Throwing'
+                          : i === nextPlayer
+                            ? x01Players[i]?.canFinish
+                              ? `Up next · can finish ${x01Players[i]?.canFinish}`
+                              : 'Up next'
+                            : `Avg ${x01Players[i]?.avg ?? '0.0'}`,
+                        line,
+                      )}
+                      valueLabel="Left"
+                      value={String(x01Players[i]?.shown ?? '')}
+                      roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
+                      legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }}
+                    />
+                  {:else}
+                    <PhonePlayerRow
+                      active={up}
+                      name={player.name}
+                      you={line?.you ?? false}
+                      pill={up ? null : pillFor(i, true)}
+                      sub={rowSub(
+                        up
+                          ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`
+                          : i === nextPlayer
+                            ? 'Up next'
+                            : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`,
+                        line,
+                      )}
+                      valueLabel="Target"
+                      value={atcPlayers[i]?.target ?? ''}
+                      roll={{ normal: 'up', progress: atcPlayers[i]?.done }}
+                    />
+                  {/if}
+                </div>
+              {/each}
             {/if}
-          {/each}
-        </div>
-        <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
-      </main>
-    {/if}
+          </div>
+          <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
+        </main>
+      {:else if layout === 'solo'}
+        <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
+          {@render panel(0)}
+          <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
+        </main>
+      {:else if layout === 'teams'}
+        <!-- A panel per team either side of the board; narrower screens stack them left of it, compact,
+           and a waiting card takes the board's place (as in the party layout) -->
+        <main
+          class="flex-grow min-h-0 box-border px-7 py-6 grid gap-6
+                   {$isWide ? 'grid-cols-[minmax(0,1fr)_560px_minmax(0,1fr)] grid-rows-1' : 'grid-cols-[minmax(0,1fr)_480px] grid-rows-2'}"
+        >
+          <div class="col-start-1 row-start-1 min-w-0 min-h-0 flex">{@render teamPanel(0, !$isWide)}</div>
+          <div class="col-start-2 row-start-1 min-h-0 flex flex-col gap-3 {$isWide ? '' : 'row-span-2'}">
+            {@render center($isWide ? 'duel' : 'party')}
+          </div>
+          <div class="min-w-0 min-h-0 flex {$isWide ? 'col-start-3 row-start-1' : 'col-start-1 row-start-2'}">
+            {@render teamPanel(1, !$isWide)}
+          </div>
+        </main>
+      {:else if layout === 'duel'}
+        <main class="flex-grow min-h-0 box-border {mainPad} flex">
+          {@render duelPanel(0)}
+          <div class="flex-1 min-w-0 xl:w-[560px] xl:flex-none min-h-0 flex flex-col gap-[10px] xl:gap-3">{@render center('duel')}</div>
+          {@render duelPanel(1)}
+        </main>
+      {:else}
+        <main class="flex-grow min-h-0 box-border {mainPad} flex">
+          <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
+            {#each players as player, i (i)}
+              {#if isX01}
+                <X01Row
+                  name={player.name}
+                  p={x01Players[i]}
+                  active={i === currentPlayer && isActive}
+                  pill={pillFor(i, true)}
+                  seat={lines[i] ?? null}
+                />
+              {:else}
+                <AtcRow
+                  name={player.name}
+                  p={atcPlayers[i]}
+                  active={i === currentPlayer && isActive}
+                  pill={pillFor(i, true)}
+                  seat={lines[i] ?? null}
+                />
+              {/if}
+            {/each}
+          </div>
+          <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
+        </main>
+      {/if}
     {/if}
   {/if}
 </div>
@@ -633,8 +837,13 @@
       : 'The current game will be cancelled and all progress will be lost.'}
     confirmLabel={control === 'leave' ? 'Leave game' : 'End game'}
     danger
-    onconfirm={() => { showEndConfirm = false; if (control === 'leave') leaveGame(); else void endSession() }}
-    oncancel={() => showEndConfirm = false} />
+    onconfirm={() => {
+      showEndConfirm = false
+      if (control === 'leave') leaveGame()
+      else void endSession()
+    }}
+    oncancel={() => (showEndConfirm = false)}
+  />
 {/if}
 
 {#if $toast}

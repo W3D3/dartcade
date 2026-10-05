@@ -3,8 +3,16 @@ import { bmHost, fmtDate, fmtVersion, selectedLine } from '../boards.js'
 import type { Board } from '../api'
 
 const board = (over: Partial<Board> = {}): Board => ({
-  id: 'b1', name: 'Living room', hardwareId: null, online: true, bridgeVersion: '0.4.2', bmVersion: null,
-  createdAt: '2026-08-12T10:00:00.000Z', ip: '192.168.1.42', bmUrl: 'http://192.168.1.42:3180', ...over,
+  id: 'b1',
+  name: 'Living room',
+  hardwareId: null,
+  online: true,
+  bridgeVersion: '0.4.2',
+  bmVersion: null,
+  createdAt: '2026-08-12T10:00:00.000Z',
+  ip: '192.168.1.42',
+  bmUrl: 'http://192.168.1.42:3180',
+  ...over,
 })
 
 describe('board text', () => {

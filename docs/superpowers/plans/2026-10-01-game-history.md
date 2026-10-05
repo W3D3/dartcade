@@ -36,30 +36,30 @@
 
 Backend (`backend/src/`):
 
-| File | Responsibility |
-|---|---|
-| `session/rng.ts` (new) | Seeded PRNG for a game's random setup |
-| `session/types.ts` | `GameModule` hooks (`version`, `getLeg`, `summarize`, `detail`), history types, `Session` fields |
-| `games/ranking.ts` (new) | `rankSeats()` placement helper |
-| `games/x01.ts`, `games/atc.ts`, `session/withBullOff.ts` | Hook implementations, `pointsScored`, seeded shuffle |
-| `session/apply.ts` (new) | `applyInput()`: pure state transition per input, reports committed visits and wins |
-| `session/replay.ts` (new) | `newSession()`, `parseLoggedInput()`, `replay()`, `dartRows()`, `results()` |
-| `session/engine.ts` | Append-then-apply, per-session queue, persistence, rebuild from the log |
-| `db/migrations/006_game_history.sql` (new) | Schema changes |
-| `db/schema.ts`, `db/queries.ts` | Tables, engine store queries, board guard |
-| `db/history.ts` (new) | History list, stats rows, viewable game |
-| `history/cursor.ts`, `history/stats.ts`, `history/detail.ts` (new) | Cursor codec, stats aggregation, detail by replay |
-| `api/games.ts` (new) | `/api/gamemodes`, `/api/games`, `/api/games/stats`, `/api/games/:id` |
-| `api/sessions.ts` | Loses `/api/games` |
+| File                                                               | Responsibility                                                                                   |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
+| `session/rng.ts` (new)                                             | Seeded PRNG for a game's random setup                                                            |
+| `session/types.ts`                                                 | `GameModule` hooks (`version`, `getLeg`, `summarize`, `detail`), history types, `Session` fields |
+| `games/ranking.ts` (new)                                           | `rankSeats()` placement helper                                                                   |
+| `games/x01.ts`, `games/atc.ts`, `session/withBullOff.ts`           | Hook implementations, `pointsScored`, seeded shuffle                                             |
+| `session/apply.ts` (new)                                           | `applyInput()`: pure state transition per input, reports committed visits and wins               |
+| `session/replay.ts` (new)                                          | `newSession()`, `parseLoggedInput()`, `replay()`, `dartRows()`, `results()`                      |
+| `session/engine.ts`                                                | Append-then-apply, per-session queue, persistence, rebuild from the log                          |
+| `db/migrations/006_game_history.sql` (new)                         | Schema changes                                                                                   |
+| `db/schema.ts`, `db/queries.ts`                                    | Tables, engine store queries, board guard                                                        |
+| `db/history.ts` (new)                                              | History list, stats rows, viewable game                                                          |
+| `history/cursor.ts`, `history/stats.ts`, `history/detail.ts` (new) | Cursor codec, stats aggregation, detail by replay                                                |
+| `api/games.ts` (new)                                               | `/api/gamemodes`, `/api/games`, `/api/games/stats`, `/api/games/:id`                             |
+| `api/sessions.ts`                                                  | Loses `/api/games`                                                                               |
 
 Frontend (`backend/frontend/src/`):
 
-| File | Responsibility |
-|---|---|
-| `lib/gameViews/meta.ts` | Config-only `x01Rules` / `atcRules`, reused by the live meta line |
-| `lib/history.ts` (new) | Row and tile formatting for the History page |
-| `routes/History.svelte` (new) | The page |
-| `routes/CreateSession.svelte`, `App.svelte`, `lib/api/index.ts` | `/api/gamemodes`, route, type exports |
+| File                                                            | Responsibility                                                    |
+| --------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `lib/gameViews/meta.ts`                                         | Config-only `x01Rules` / `atcRules`, reused by the live meta line |
+| `lib/history.ts` (new)                                          | Row and tile formatting for the History page                      |
+| `routes/History.svelte` (new)                                   | The page                                                          |
+| `routes/CreateSession.svelte`, `App.svelte`, `lib/api/index.ts` | `/api/gamemodes`, route, type exports                             |
 
 ---
 
@@ -68,11 +68,13 @@ Frontend (`backend/frontend/src/`):
 ATC's random order is shuffled with `Math.random()` inside `init()`, so replaying a game (and today's restart) gets a different sequence. `init()` gets an optional generator; the engine passes a seeded one and keeps the seed on the session.
 
 **Files:**
+
 - Create: `backend/src/session/rng.ts`, `backend/src/session/rng.test.ts`
 - Modify: `backend/src/session/types.ts` (GameModule.init, Session), `backend/src/games/atc.ts`, `backend/src/session/withBullOff.ts`, `backend/src/session/engine.ts`
 - Test: `backend/src/games/atc.test.ts`
 
 **Interfaces:**
+
 - Produces: `type Rng = () => number`, `seededRng(seed: number): Rng`, `newSeed(): number` (in `session/rng.ts`); `GameModule.init(cfg, players, rng?: Rng)`; `buildSequence(cfg, rng?: Rng)`; `Session.seed: number`.
 
 - [ ] **Step 1: Write the failing tests**
@@ -226,14 +228,17 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 Adds the detail schemas to the API contract (components only; the paths come in Task 6), the new `GameModule` hooks, `rankSeats()`, X01's running `pointsScored`, and the hook implementations for X01, ATC and the bull off wrapper.
 
 **Files:**
+
 - Modify: `schema/api-v1.yaml` (components), then regenerate
 - Modify: `backend/src/session/types.ts`, `backend/src/session/withBullOff.ts`, `backend/src/games/x01.ts`, `backend/src/games/atc.ts`
 - Create: `backend/src/games/ranking.ts`, `backend/src/games/ranking.test.ts`, `backend/src/games/history.test.ts`, `backend/src/games/detail.contract.test.ts`
 - Modify tests that define fake `GameModule`s (search: `grep -rln "getCurrentPlayer" backend/src --include=*.test.ts`)
 
 **Interfaces:**
+
 - Consumes: `Rng` (Task 1).
 - Produces (all in `session/types.ts`):
+
   ```ts
   export type HistoryDart = components['schemas']['HistoryDart']   // { index, segment, coords: {x,y}|null, source: 'camera'|'manual', corrected, thrownAt: string }
   export type X01Detail = components['schemas']['X01Detail']
@@ -246,6 +251,7 @@ Adds the detail schemas to the API contract (components only; the paths come in 
   // GameModule<S, Cfg, V, Id, D = unknown> gains: version: number; getLeg?(s): number; summarize(s, ctx): SeatResult[]; detail(visits: CommittedVisit<S>[], final: S): D
   // AnyGameModule = GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail> | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
   ```
+
   `rankSeats(n: number, winner: number | null, compare: (a: number, b: number) => number): number[]` in `games/ranking.ts`. `X01State.pointsScored: number[]`. `hitCounts(s: ATCState): number[]` exported from `games/atc.ts`.
 
 - [ ] **Step 1: Add the detail schemas to the contract**
@@ -621,6 +627,7 @@ In `backend/src/session/withBullOff.ts`, add the `D` parameter (`withBullOff<S, 
 ```
 
 In `backend/src/games/x01.ts`:
+
 - Add `pointsScored: number[]` to `X01State` (comment: `/** Points each player scored, busts counting 0; for the 3-dart average. */`), and `pointsScored: Array<number>(n).fill(0),` in `init`.
 - Add a helper above `x01Game`:
 
@@ -684,6 +691,7 @@ function withVisitScored(s: X01State): number[] {
 Type the `x01Game` constant as `GameModule<X01State, X01Config, X01View, 'x01', X01Detail>`.
 
 In `backend/src/games/atc.ts`:
+
 - Extract the hit count from `view()` into an exported function and use it in `view()`:
 
 ```ts
@@ -742,12 +750,15 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 3: Database: migration, engine store queries, board guard
 
 **Files:**
+
 - Create: `backend/src/db/migrations/006_game_history.sql`, `backend/src/db/migrations.test.ts`
 - Modify: `backend/src/db/schema.ts`, `backend/src/db/queries.ts`, `backend/src/db/queries.test.ts`, `backend/src/session/engine.ts` (create/rebuild only), `backend/src/api/boards.ts`, `backend/src/api/boards.test.ts`, `backend/src/bridge-gw/handler.ts`
 
 **Interfaces:**
+
 - Consumes: `SeatResult` (Task 2), `Session.seed` (Task 1).
 - Produces (in `db/queries.ts`):
+
   ```ts
   export type SeatRow = { name: string; user_id: string | null }
   export type NewGameSession = { id: string; owner_user_id: string; board_db_id: string | null; game_id: string; game_version: number; rng_seed: number; config: unknown; players: SeatRow[] }
@@ -1179,6 +1190,7 @@ Change `insertBridgeEvent` to return the id:
 In `backend/src/bridge-gw/handler.ts` take `{ inserted, id }` and call `engine.onBridgeEvent(boardDbId, kind, data, id)`. In `engine.ts` add the parameter now: `async onBridgeEvent(boardId: string, kind: string, data: unknown, _bridgeEventId: string | null = null)` (used in Task 5).
 
 In `backend/src/session/engine.ts`:
+
 - `EngineStore.insertSession(data: NewGameSession)` and `getActiveSessions(): Promise<StoredGameSession[]>` (import the types from `../db/queries.js`).
 - In `create()`:
 
@@ -1235,12 +1247,15 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 A pure refactor plus bookkeeping: the state-changing part of `onBridgeEvent`/`onUserAction` moves into `applyInput()`, which also tracks each open dart's source/correction/time and reports committed visits and wins. The engine keeps its I/O. Existing engine tests must pass unchanged.
 
 **Files:**
+
 - Create: `backend/src/session/apply.ts`, `backend/src/session/apply.test.ts`
 - Modify: `backend/src/session/types.ts` (Session fields), `backend/src/session/engine.ts`
 
 **Interfaces:**
+
 - Consumes: `CommittedVisit`, `HistoryDart`, `DartSource` (Task 2).
 - Produces:
+
   ```ts
   // session/types.ts
   export type DartMeta = { source: DartSource; corrected: boolean; thrownAt: Date }
@@ -1595,6 +1610,7 @@ function commit(session: Session, closing: BoardEvent, at: Date): ApplyOutcome {
 ```
 
 Notes for the implementer:
+
 - `refoldVisit` is typed `GameModule<S, unknown>`; `AnyGameModule` already passes to it today (see engine). If TypeScript complains about the union, pass `session.module` exactly as the engine does now.
 - If the lint rule `no-unnecessary-condition` flags `meta?.` / `?? 0` on array elements, it should not (index access is exempt); if it does, keep the guard and add `// eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- openDarts can be shorter after an old log is replayed`.
 
@@ -1652,12 +1668,15 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 5: Engine persistence and restore from the log
 
 **Files:**
+
 - Create: `backend/src/session/replay.ts`, `backend/src/session/replay.test.ts`
 - Modify: `backend/src/session/engine.ts`, `backend/src/session/engine.test.ts`, `backend/src/db/queries.ts` (remove `setGameSessionFinished`, `getBridgeEventsForBoardDbId`), `backend/src/db/queries.test.ts`, `backend/src/index.ts` if it references removed functions
 
 **Interfaces:**
+
 - Consumes: `applyInput`, `GameInput` (Task 4); store row types (Task 3); `seededRng` (Task 1).
 - Produces:
+
   ```ts
   // session/replay.ts
   export const StoredConfigSchema: z.ZodType<GameConfig>
@@ -2135,13 +2154,16 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 6: Games API: game modes, history list, stats, detail
 
 **Files:**
+
 - Modify: `schema/api-v1.yaml` (paths, tags, components), regenerate
 - Create: `backend/src/history/cursor.ts`, `backend/src/history/stats.ts`, `backend/src/history/detail.ts`, `backend/src/history/history.test.ts`, `backend/src/db/history.ts`, `backend/src/db/history.test.ts`, `backend/src/api/games.ts`, `backend/src/api/games.test.ts`
 - Modify: `backend/src/api/sessions.ts` (remove `/api/games`), `backend/src/api/sessions.test.ts` (move the `/api/games` test), `backend/src/app.ts` (register), `backend/frontend/src/routes/CreateSession.svelte`, `backend/frontend/src/lib/api/index.ts`
 
 **Interfaces:**
+
 - Consumes: `newSession`, `replay`, `StoredConfigSchema` (Task 5); `getSeats`, `getSessionEvents` (Task 3); `games` registry.
 - Produces:
+
   ```ts
   // history/cursor.ts
   export type Cursor = { finishedAt: Date; id: string }
@@ -2908,16 +2930,19 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
 Remove the `/api/games` route (and the `gameList` import) from `backend/src/api/sessions.ts`. Register in `backend/src/app.ts` next to `sessionsApiPlugin`: `await app.register(gamesApiPlugin, { db })` (match how the other plugins are registered there).
 
 Frontend in the same task (the old endpoint is gone):
+
 - `backend/frontend/src/lib/api/index.ts`: add `export type GameSummary = Schemas['GameSummary']`, `export type GameStats = Schemas['GameStats']`, `export type GameSeat = Schemas['GameSeat']`.
 - `backend/frontend/src/routes/CreateSession.svelte`: `api.GET('/api/gamemodes')` and `games = gr.data?.modes ?? []`.
 
 - [ ] **Step 5: Run everything**
 
 Run:
+
 ```bash
 cd backend && TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dartcade_test npm test && npm run typecheck && npm run lint
 cd frontend && npm test && npm run typecheck && npm run lint
 ```
+
 Expected: PASS, including `spec.test.ts` (every route in the spec and vice versa). If fast-json-stringify chokes on the `oneOf` + `discriminator` response, drop `discriminator` from the YAML (the two `mode` enums already discriminate) and regenerate.
 
 - [ ] **Step 6: Commit**
@@ -2936,12 +2961,15 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 7: Frontend history formatting
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/gameViews/meta.ts`, `backend/frontend/src/lib/__tests__/meta.test.ts`
 - Create: `backend/frontend/src/lib/history.ts`, `backend/frontend/src/lib/__tests__/history.test.ts`
 
 **Interfaces:**
+
 - Consumes: `GameSummary`, `GameStats` (Task 6), `getGameView` (`$lib/gameViews`).
 - Produces:
+
   ```ts
   // gameViews/meta.ts
   export type X01Rules = { startScore: number; inMode: 'straight' | 'double' | 'master'; outMode: 'straight' | 'double' | 'master'; firstTo: number }
@@ -3251,10 +3279,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 8: History page
 
 **Files:**
+
 - Create: `backend/frontend/src/routes/History.svelte`
 - Modify: `backend/frontend/src/App.svelte`
 
 **Interfaces:**
+
 - Consumes: everything from Task 7; `api` client; `getGameView(id).title`; `Layout`.
 
 Design reference: `project/History.dc.html` (desktop), `project/Tablet-History.dc.html`, `project/Mobile-History.dc.html` in the design canvas (read with the Artifact tool, see `AGENTS.md`). Match spacing, type and colours; the markup below already does for desktop.
@@ -3440,6 +3470,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 9: Docs and end-to-end check
 
 **Files:**
+
 - Modify: `AGENTS.md`, `docs/architecture.md` (only if it describes rebuild from `bridge_events`; check with `grep -n "rebuild\|bridge_events" docs/architecture.md`)
 
 - [ ] **Step 1: Update `AGENTS.md`**
@@ -3467,12 +3498,14 @@ If `docs/architecture.md` says running games are rebuilt from `bridge_events`, c
 - [ ] **Step 2: Full verification**
 
 Run:
+
 ```bash
 cd backend && TEST_DATABASE_URL=postgres://postgres:postgres@localhost:5432/dartcade_test npm test && npm run typecheck && npm run lint
 cd frontend && npm test && npm run typecheck && npm run lint && npm run build
 cd ../../bridge && go test ./...
 cd .. && npm run lint:api
 ```
+
 Expected: all PASS.
 
 - [ ] **Step 3: Manual check with a restart**

@@ -9,7 +9,12 @@ const ParamsSchema = z.object({ additionalProperty: z.string() })
  * richer body the spec gives that status (e.g. LobbyConflict).
  */
 export class ApiError extends Error {
-  constructor(readonly statusCode: number, readonly body: { error: string }) { super(body.error) }
+  constructor(
+    readonly statusCode: number,
+    readonly body: { error: string },
+  ) {
+    super(body.error)
+  }
 }
 
 /** All errors leave as ErrorResponse: { error, details? } (schema/common-v1.json). */

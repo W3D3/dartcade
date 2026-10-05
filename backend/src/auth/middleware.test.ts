@@ -10,8 +10,13 @@ beforeEach(() => vi.clearAllMocks())
 // Runs the callback-style hook until it calls done() or sends a reply
 function run(req: any, reply: any): Promise<void> {
   return new Promise(resolve => {
-    reply.send.mockImplementation(() => { resolve(); return reply })
-    requireAuth(req, reply, () => { resolve() })
+    reply.send.mockImplementation(() => {
+      resolve()
+      return reply
+    })
+    requireAuth(req, reply, () => {
+      resolve()
+    })
   })
 }
 

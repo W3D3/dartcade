@@ -6,7 +6,11 @@ import { atcRules, x01Rules } from './gameViews/meta.js'
 const DAY_MS = 86_400_000
 const ModeSchema = z.enum(['straight', 'double', 'master'])
 const X01ConfigSchema = z.object({ startScore: z.number(), inMode: ModeSchema, outMode: ModeSchema, firstTo: z.number() })
-const AtcConfigSchema = z.object({ order: z.enum(['asc', 'desc', 'random']), finishOn: z.enum(['twenty', 'single_bull', 'bull']), multiplierAdvances: z.boolean() })
+const AtcConfigSchema = z.object({
+  order: z.enum(['asc', 'desc', 'random']),
+  finishOn: z.enum(['twenty', 'single_bull', 'bull']),
+  multiplierAdvances: z.boolean(),
+})
 
 const startOfDay = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime()
 // Fixed 3-letter abbreviations: Intl's "short" month can render "Sept" depending on ICU data/locale.
@@ -37,7 +41,7 @@ export function rulesLine(game: GameSummary): string {
 
 const mine = (game: GameSummary): GameSeat | undefined => game.players.find(p => p.seat === game.mySeat)
 const others = (game: GameSummary): GameSeat[] => game.players.filter(p => p.seat !== game.mySeat)
-const stat = (p: GameSeat, key: string): number | undefined => Object.hasOwn(p.stats, key) ? p.stats[key] : undefined
+const stat = (p: GameSeat, key: string): number | undefined => (Object.hasOwn(p.stats, key) ? p.stats[key] : undefined)
 
 /** Everyone who played, in the order they threw (seat order for older games), numbered from 1. */
 export function playerBadges(game: GameSummary): { n: number; name: string; me: boolean }[] {
@@ -48,7 +52,8 @@ export function playerBadges(game: GameSummary): { n: number; name: string; me: 
 
 /** "1st", "2nd", "3rd", "4th". */
 export const ordinal = (n: number) => {
-  const tens = n % 100, ones = n % 10
+  const tens = n % 100,
+    ones = n % 10
   const suffix = tens >= 11 && tens <= 13 ? 'th' : ones === 1 ? 'st' : ones === 2 ? 'nd' : ones === 3 ? 'rd' : 'th'
   return `${n}${suffix}`
 }
@@ -84,15 +89,15 @@ export function historyStat(game: GameSummary): { value: string; label: string }
 export type Tile = { label: string; value: string; note: string | null; trend: 'up' | 'down' | null }
 
 const NONE = '–'
-const modeStats = (s: GameStats, mode: string) => Object.hasOwn(s.modes, mode) ? s.modes[mode] : undefined
+const modeStats = (s: GameStats, mode: string) => (Object.hasOwn(s.modes, mode) ? s.modes[mode] : undefined)
 const modeStat = (s: GameStats, mode: string, key: string) => {
   const m = modeStats(s, mode)
   return m && Object.hasOwn(m.stats, key) ? m.stats[key] : undefined
 }
 const plain = (label: string, value: string, note: string | null = null): Tile => ({ label, value, note, trend: null })
 const won = (wins: number, contested: number): Tile =>
-  contested > 0 ? plain('Won', String(wins), `${Math.round(wins / contested * 100)}%`) : plain('Won', NONE)
-const period = (days: number) => days === 30 ? 'last month' : `previous ${days} days`
+  contested > 0 ? plain('Won', String(wins), `${Math.round((wins / contested) * 100)}%`) : plain('Won', NONE)
+const period = (days: number) => (days === 30 ? 'last month' : `previous ${days} days`)
 
 /**
  * The tiles above the list (design: History). "All" shows your overall numbers; a game
@@ -102,12 +107,16 @@ const period = (days: number) => days === 30 ? 'last month' : `previous ${days} 
 export function statTiles(s: GameStats, mode: string | null, title: (mode: string) => string): Tile[] {
   if (mode === null) {
     const darts = Object.values(s.modes).reduce((sum, m) => sum + (Object.hasOwn(m.stats, 'dartsThrown') ? m.stats.dartsThrown.sum : 0), 0)
-    const most = Object.entries(s.modes).sort(([, a], [, b]) => b.matches - a.matches).at(0)
+    const most = Object.entries(s.modes)
+      .sort(([, a], [, b]) => b.matches - a.matches)
+      .at(0)
     return [
       plain(`Matches · ${s.days} days`, String(s.matches)),
       won(s.wins, s.contested),
       plain('Darts thrown', s.matches > 0 ? darts.toLocaleString('en-GB') : NONE),
-      most ? plain('Most played', title(most[0]), `${most[1].matches} ${most[1].matches === 1 ? 'match' : 'matches'}`) : plain('Most played', NONE),
+      most
+        ? plain('Most played', title(most[0]), `${most[1].matches} ${most[1].matches === 1 ? 'match' : 'matches'}`)
+        : plain('Most played', NONE),
     ]
   }
   const m = modeStats(s, mode)
@@ -116,18 +125,24 @@ export function statTiles(s: GameStats, mode: string | null, title: (mode: strin
     const avg = modeStat(s, 'x01', 'average')
     const checkout = modeStat(s, 'x01', 'bestCheckout')
     const delta = avg && avg.previousAvg !== null ? avg.avg - avg.previousAvg : null
-    return [...head, {
-      label: '3-dart average',
-      value: avg ? avg.avg.toFixed(1) : NONE,
-      note: delta === null ? null : `${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)} vs ${period(s.days)}`,
-      trend: delta === null ? null : delta >= 0 ? 'up' : 'down',
-    }, plain('Best checkout', checkout ? String(checkout.max) : NONE)]
+    return [
+      ...head,
+      {
+        label: '3-dart average',
+        value: avg ? avg.avg.toFixed(1) : NONE,
+        note: delta === null ? null : `${delta >= 0 ? '▲' : '▼'} ${Math.abs(delta).toFixed(1)} vs ${period(s.days)}`,
+        trend: delta === null ? null : delta >= 0 ? 'up' : 'down',
+      },
+      plain('Best checkout', checkout ? String(checkout.max) : NONE),
+    ]
   }
   if (mode === 'atc') {
     const finish = modeStat(s, 'atc', 'dartsToFinish')
-    return [...head,
+    return [
+      ...head,
       plain('Best finish', finish ? String(finish.min) : NONE, finish ? 'darts' : null),
-      plain('Average finish', finish ? String(Math.round(finish.avg)) : NONE, finish ? 'darts' : null)]
+      plain('Average finish', finish ? String(Math.round(finish.avg)) : NONE, finish ? 'darts' : null),
+    ]
   }
   return head
 }

@@ -260,7 +260,7 @@ paths:
           description: JPEG still
           headers:
             Cache-Control:
-              description: "`private, max-age=31536000, immutable` for the latest version asked for with `v`, otherwise `no-store`"
+              description: '`private, max-age=31536000, immutable` for the latest version asked for with `v`, otherwise `no-store`'
               schema: { type: string }
           content:
             image/jpeg:
@@ -437,7 +437,13 @@ paths:
       summary: Find the account with exactly this name, to invite it
       tags: [users]
       parameters:
-        - { name: q, in: query, required: true, schema: { type: string, minLength: 1, maxLength: 100 }, description: "Their name, any case (a leading @ is fine)" }
+        - {
+            name: q,
+            in: query,
+            required: true,
+            schema: { type: string, minLength: 1, maxLength: 100 },
+            description: 'Their name, any case (a leading @ is fine)',
+          }
       responses:
         '200':
           description: The account, if there is one (never yourself)
@@ -768,7 +774,7 @@ paths:
     post:
       operationId: startLobbyGame
       summary: 'Host: start the next game with everyone who plays'
-      description: 'Answers 409 board_offline (with the boards), then 409 not_ready (with the names), when the host hasn''t confirmed; send it again with force: true to start anyway (offline boards keep their seats, on manual entry until they''re back).'
+      description: "Answers 409 board_offline (with the boards), then 409 not_ready (with the names), when the host hasn't confirmed; send it again with force: true to start anyway (offline boards keep their seats, on manual entry until they're back)."
       tags: [lobbies]
       requestBody:
         required: true
@@ -1007,8 +1013,13 @@ paths:
         required: true
         content: { application/json: { schema: { $ref: '#/components/schemas/FriendRequest' } } }
       responses:
-        '200': { description: They had asked you first; you are friends now, content: { application/json: { schema: { $ref: '#/components/schemas/FriendRequestResult' } } } }
-        '201': { description: Request sent, content: { application/json: { schema: { $ref: '#/components/schemas/FriendRequestResult' } } } }
+        '200':
+          {
+            description: They had asked you first; you are friends now,
+            content: { application/json: { schema: { $ref: '#/components/schemas/FriendRequestResult' } } },
+          }
+        '201':
+          { description: Request sent, content: { application/json: { schema: { $ref: '#/components/schemas/FriendRequestResult' } } } }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -1354,9 +1365,20 @@ components:
       additionalProperties: false
       properties:
         seat: { type: integer, minimum: 0 }
-        throwPosition: { type: integer, minimum: 0, nullable: true, description: 'Where the seat threw in the game (0 = first; a bull off can change it from the seat order). null for games finished before it was recorded' }
+        throwPosition:
+          {
+            type: integer,
+            minimum: 0,
+            nullable: true,
+            description: 'Where the seat threw in the game (0 = first; a bull off can change it from the seat order). null for games finished before it was recorded',
+          }
         name: { type: string }
-        userId: { type: string, nullable: true, description: "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in" }
+        userId:
+          {
+            type: string,
+            nullable: true,
+            description: "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in",
+          }
         placement: { type: integer, minimum: 1 }
         stats:
           type: object
@@ -1639,7 +1661,11 @@ components:
         id: { type: string }
         name: { type: string, description: 'Your handle, shown as @name' }
         email: { type: string }
-        nameNeedsChange: { type: boolean, description: 'Your name broke the rules or duplicated an older one when names became unique: pick a new one first' }
+        nameNeedsChange:
+          {
+            type: boolean,
+            description: 'Your name broke the rules or duplicated an older one when names became unique: pick a new one first',
+          }
         suggestedName: { type: string, nullable: true, description: 'A free name close to yours, while nameNeedsChange' }
         invisible: { type: boolean, description: 'Friends see you as offline' }
     UpdateMeRequest:
@@ -1716,7 +1742,13 @@ components:
       additionalProperties: false
       properties:
         name: { type: string, pattern: '\S', maxLength: 32 }
-        boardId: { type: string, nullable: true, minLength: 1, description: "Absent: the adder's board. null: Manual. Otherwise one of the adder's own boards" }
+        boardId:
+          {
+            type: string,
+            nullable: true,
+            minLength: 1,
+            description: "Absent: the adder's board. null: Manual. Otherwise one of the adder's own boards",
+          }
     UpdatePersonRequest:
       type: object
       minProperties: 1
@@ -1750,7 +1782,11 @@ components:
       additionalProperties: false
       properties:
         error: { type: string }
-        code: { type: string, enum: [in_lobby, not_ready, board_offline, board_busy, active_session, game_running, already_member, already_invited] }
+        code:
+          {
+            type: string,
+            enum: [in_lobby, not_ready, board_offline, board_busy, active_session, game_running, already_member, already_invited],
+          }
         lobbyId: { type: string, description: 'in_lobby: the lobby you are in; leave it first' }
         sessionId: { type: string, description: "game_running: the lobby's game. active_session: your own running game" }
         notReady:

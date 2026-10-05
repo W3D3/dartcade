@@ -1,8 +1,14 @@
 import type { BoardEvent, Effect, GameModule, Player, UserAction } from './types.js'
 import type { BullOffViewField } from './views.js'
 import {
-  clearCurrentBullOffThrow, initBullOff, onBullOffDart, onBullOffTakeout, rethrowBullOff,
-  skipBullOffThrow, type BullOffMode, type BullOffState,
+  clearCurrentBullOffThrow,
+  initBullOff,
+  onBullOffDart,
+  onBullOffTakeout,
+  rethrowBullOff,
+  skipBullOffThrow,
+  type BullOffMode,
+  type BullOffState,
 } from './bullOff.js'
 
 /** Game state wrapped with an optional bull off that decides the throwing order first. */
@@ -55,10 +61,11 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
     // Empty when the game has no throw order of its own (results() then uses seat order)
     throwOrder: s => game.throwOrder?.(s.game) ?? [],
     // Bull off visits stay in the list (phase 'bulloff'); the game decides what to show
-    detail: (visits, final) => game.detail(
-      visits.map(v => ({ ...v, start: v.start.game, end: v.end.game, after: v.after.game })),
-      final.game,
-    ),
+    detail: (visits, final) =>
+      game.detail(
+        visits.map(v => ({ ...v, start: v.start.game, end: v.end.game, after: v.after.game })),
+        final.game,
+      ),
     defaultConfig: { bullOff: 'off', ...game.defaultConfig },
     configMeta: {
       ...game.configMeta,

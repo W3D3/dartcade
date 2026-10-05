@@ -7,7 +7,7 @@ import type { Snapshot } from '$lib/api'
 export function upSeat(snap: Snapshot): number {
   const g = snap.game
   const bullOff = 'bullOff' in g ? g.bullOff : null
-  if (bullOff) return bullOff.result && !bullOff.result.rethrow ? bullOff.result.order[0] ?? 0 : bullOff.currentPlayer
+  if (bullOff) return bullOff.result && !bullOff.result.rethrow ? (bullOff.result.order[0] ?? 0) : bullOff.currentPlayer
   return g.currentPlayer
 }
 

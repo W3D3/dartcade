@@ -36,7 +36,7 @@ Tracked as issue #54. Agreed with the user on 2026-10-04; breaking changes are f
   request to someone who already asked you **accepts** theirs.
 - `POST /api/friends/requests/{id}/accept`, `.../decline` (addressee only; decline deletes the row
   silently — the sender just sees it disappear from "Sent", and may ask again), `DELETE
-  /api/friends/requests/{id}` (requester cancels), `DELETE /api/friends/{userId}` (either side
+/api/friends/requests/{id}` (requester cancels), `DELETE /api/friends/{userId}` (either side
   removes the friendship).
 - `GET /api/friends`: friends (id, name, status, see below, `friendsSince`), incoming requests
   (id, from, `mutualFriends` count, `createdAt`), outgoing requests (id, to, `createdAt`).

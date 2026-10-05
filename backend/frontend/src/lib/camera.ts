@@ -13,12 +13,17 @@ export const cameraKey = (boardId: string, cam: number) => `${boardId}:${cam}`
 /** The camera (0-based) of a board view; null for the drawn board. */
 export function cameraIndex(view: BoardView): number | null {
   switch (view) {
-    case 'cam1': return 0
-    case 'cam2': return 1
-    case 'cam3': return 2
+    case 'cam1':
+      return 0
+    case 'cam2':
+      return 1
+    case 'cam3':
+      return 2
     // Made by the bridge from the three: each region from the camera that sees it sharpest
-    case 'combined': return 3
-    default: return null
+    case 'combined':
+      return 3
+    default:
+      return null
   }
 }
 
@@ -47,8 +52,11 @@ export function cameraSideView(boardView: BoardView, lastCameraView: CameraView)
 }
 
 /** The settings change for picking a side of the board-on-board toggle. */
-export function pickBoardView(boardView: BoardView, lastCameraView: CameraView, pick: 'drawn' | 'camera'):
-  { boardView: BoardView; lastCameraView: CameraView } {
+export function pickBoardView(
+  boardView: BoardView,
+  lastCameraView: CameraView,
+  pick: 'drawn' | 'camera',
+): { boardView: BoardView; lastCameraView: CameraView } {
   if (pick === 'camera') return { boardView: cameraSideView(boardView, lastCameraView), lastCameraView }
   // Picking Drawn from a camera remembers which one, so the camera side can restore it
   return boardView === 'svg' ? { boardView, lastCameraView } : { boardView: 'svg', lastCameraView: boardView }

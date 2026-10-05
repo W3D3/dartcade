@@ -73,23 +73,30 @@ export type BooleanSettingKey = { [K in keyof GameSettings]: GameSettings[K] ext
 const d = defaultSettings
 const flag = (def: boolean) => z.boolean().catch(def).default(def)
 // Each setting falls back to its default on its own; unknown keys are dropped
-const SettingsSchema = z.object({
-  showMarkers: flag(d.showMarkers),
-  checkoutSuggestions: flag(d.checkoutSuggestions),
-  visitSum: flag(d.visitSum),
-  chalkboard: flag(d.chalkboard),
-  scoreUpdates: z.enum(['dart', 'visit']).catch(d.scoreUpdates).default(d.scoreUpdates),
-  volume: z.number().refine(Number.isFinite).transform(v => Math.min(1, Math.max(0, v))).catch(d.volume).default(d.volume),
-  soundHit: flag(d.soundHit),
-  soundMiss: flag(d.soundMiss),
-  soundSwitch: flag(d.soundSwitch),
-  soundBust: flag(d.soundBust),
-  inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
-  callerOn: flag(d.callerOn),
-  callerVoice: z.string().min(1).nullable().catch(null).default(null),
-  boardView: z.enum(BOARD_VIEWS).catch(d.boardView).default(d.boardView),
-  lastCameraView: z.enum(CAMERA_VIEWS).catch(d.lastCameraView).default(d.lastCameraView),
-}).catch({ ...d })
+const SettingsSchema = z
+  .object({
+    showMarkers: flag(d.showMarkers),
+    checkoutSuggestions: flag(d.checkoutSuggestions),
+    visitSum: flag(d.visitSum),
+    chalkboard: flag(d.chalkboard),
+    scoreUpdates: z.enum(['dart', 'visit']).catch(d.scoreUpdates).default(d.scoreUpdates),
+    volume: z
+      .number()
+      .refine(Number.isFinite)
+      .transform(v => Math.min(1, Math.max(0, v)))
+      .catch(d.volume)
+      .default(d.volume),
+    soundHit: flag(d.soundHit),
+    soundMiss: flag(d.soundMiss),
+    soundSwitch: flag(d.soundSwitch),
+    soundBust: flag(d.soundBust),
+    inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
+    callerOn: flag(d.callerOn),
+    callerVoice: z.string().min(1).nullable().catch(null).default(null),
+    boardView: z.enum(BOARD_VIEWS).catch(d.boardView).default(d.boardView),
+    lastCameraView: z.enum(CAMERA_VIEWS).catch(d.lastCameraView).default(d.lastCameraView),
+  })
+  .catch({ ...d })
 
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */
 export function loadSettings(storage: Pick<Storage, 'getItem'> | null): GameSettings {

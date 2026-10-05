@@ -32,11 +32,13 @@ export function parseBoardEvent(kind: string, data: unknown): BoardEvent | null 
 }
 
 // board.status is display-only: each field falls back on its own
-const BoardStatusSchema = z.object({
-  status: z.string().catch(''),
-  running: z.boolean().catch(false),
-  event: z.string().catch(''),
-}).catch({ status: '', running: false, event: '' })
+const BoardStatusSchema = z
+  .object({
+    status: z.string().catch(''),
+    running: z.boolean().catch(false),
+    event: z.string().catch(''),
+  })
+  .catch({ status: '', running: false, event: '' })
 
 /** The board.status fields the session keeps; absent (or mistyped) fields get defaults. */
 export function readBoardStatus(data: unknown): { status: string; running: boolean; event: string } {

@@ -33,7 +33,7 @@
 ## Rulings on the spec (decided while planning; Task 14 writes them into the spec)
 
 1. **Migration number.** `008` is taken (`008_multiplayer_seats.sql`), so this is `009_lobbies.sql`.
-2. **Codes.** 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no I, L, O, 0, 1). They're unique among *open* lobbies only (partial unique index), so closed lobbies keep theirs. Input is normalized: case and any non-alphanumeric characters (`K7Q4-MD`, `k7q4 md`) are ignored. The API returns the raw code; the client formats it.
+2. **Codes.** 6 characters from `ABCDEFGHJKMNPQRSTUVWXYZ23456789` (no I, L, O, 0, 1). They're unique among _open_ lobbies only (partial unique index), so closed lobbies keep theirs. Input is normalized: case and any non-alphanumeric characters (`K7Q4-MD`, `k7q4 md`) are ignored. The API returns the raw code; the client formats it.
 3. **Rematch.** `lobbies.last_game` (JSONB `{ gameId, config, personIds }`) records each lobby game at start. A rematch repeats exactly that: the same people (minus anyone who left the lobby), mode and settings. It ignores the current "Who plays" flags and the next-game card. It works after a finished or an aborted game, with the same soft ready gate as Start.
 4. **Soft ready gate.** Start and rematch answer `409 { code: 'not_ready', notReady: [{ personId, name }] }`. The client confirms by sending the same request with `{ "force": true }`. `force` only skips the ready check. Hard problems (unknown game, nobody plays, an offline board, a busy board, someone already in a game) are checked first and always refuse.
 5. **Throw order.**
@@ -66,6 +66,7 @@
     - The full lobby needs nullable fields (`type: [string, null]`), which `common-v1.json` can't hold (it must stay valid OpenAPI 3.0).
 
     REST answers with small shapes (`LobbyRef`, `LobbyPreview`, `Invite`) in `api-v1.yaml`, the same way `SessionDetail.game` points at `game-ws-v1.json`. The full lobby only comes over the socket. `PendingInvite` (socket) and `Invite` (REST) are the same shape, built by one function (`inviteView`).
+
 14. **`/ws/me` summary.**
     - `youThrowNext`: the viewer controls the seat that's up now in the lobby's running game.
     - `leg`: 0-based, from the module's `getLeg`; null for games without legs.
@@ -88,31 +89,32 @@
 
 ## File structure
 
-| File | Responsibility |
-|---|---|
+| File                                        | Responsibility                                                                |
+| ------------------------------------------- | ----------------------------------------------------------------------------- |
 | `backend/src/db/migrations/009_lobbies.sql` | Tables, indexes, `game_sessions.lobby_id`, `game_sessions.aborted_by_user_id` |
-| `backend/src/db/schema.ts` | Kysely table types |
-| `backend/src/db/testSchema.ts` | A fresh migrated Postgres schema per DB test file |
-| `backend/src/db/lobbies.ts` | Lobby queries; reads JSON columns defensively |
-| `backend/src/lobby/types.ts` | `LobbyState` and friends (the loaded lobby) |
-| `backend/src/lobby/rules.ts` | Who may do what; host handover; reordering (pure) |
-| `backend/src/lobby/code.ts` | Lobby codes |
-| `backend/src/lobby/errors.ts` | `LobbyError` (status + body) |
-| `backend/src/lobby/startPlan.ts` | Roster + game → seats, config, problems (pure) |
-| `backend/src/lobby/view.ts` | Lobby, summary and invite views (pure) |
-| `backend/src/lobby/validation.ts` | Dev/test check of pushed messages against `schema/lobby-ws-v1.json` |
-| `backend/src/lobby/hub.ts` | Open lobby and `/ws/me` sockets; `/ws/me` dedupe |
-| `backend/src/lobby/service.ts` | All lobby operations, the per-lobby queue, pushes, game-end reset |
-| `backend/src/api/lobbies.ts` | REST routes for lobbies and invites |
-| `backend/src/browser-gw/lobby.ts` | `/ws/lobby` and `/ws/me` |
-| `schema/lobby-ws-v1.json` | Messages of both push sockets |
-| `schema/api-v1.yaml` | Lobby and invite operations |
+| `backend/src/db/schema.ts`                  | Kysely table types                                                            |
+| `backend/src/db/testSchema.ts`              | A fresh migrated Postgres schema per DB test file                             |
+| `backend/src/db/lobbies.ts`                 | Lobby queries; reads JSON columns defensively                                 |
+| `backend/src/lobby/types.ts`                | `LobbyState` and friends (the loaded lobby)                                   |
+| `backend/src/lobby/rules.ts`                | Who may do what; host handover; reordering (pure)                             |
+| `backend/src/lobby/code.ts`                 | Lobby codes                                                                   |
+| `backend/src/lobby/errors.ts`               | `LobbyError` (status + body)                                                  |
+| `backend/src/lobby/startPlan.ts`            | Roster + game → seats, config, problems (pure)                                |
+| `backend/src/lobby/view.ts`                 | Lobby, summary and invite views (pure)                                        |
+| `backend/src/lobby/validation.ts`           | Dev/test check of pushed messages against `schema/lobby-ws-v1.json`           |
+| `backend/src/lobby/hub.ts`                  | Open lobby and `/ws/me` sockets; `/ws/me` dedupe                              |
+| `backend/src/lobby/service.ts`              | All lobby operations, the per-lobby queue, pushes, game-end reset             |
+| `backend/src/api/lobbies.ts`                | REST routes for lobbies and invites                                           |
+| `backend/src/browser-gw/lobby.ts`           | `/ws/lobby` and `/ws/me`                                                      |
+| `schema/lobby-ws-v1.json`                   | Messages of both push sockets                                                 |
+| `schema/api-v1.yaml`                        | Lobby and invite operations                                                   |
 
 ---
 
 ### Task 1: DB: lobby tables, lobby games, who aborted
 
 **Files:**
+
 - Create: `backend/src/db/migrations/009_lobbies.sql`
 - Create: `backend/src/db/testSchema.ts`
 - Modify: `backend/src/db/schema.ts`
@@ -121,7 +123,9 @@
 - Test: `backend/src/db/lobbies.test.ts`
 
 **Interfaces:**
+
 - Produces:
+
   ```ts
   // db/testSchema.ts
   export async function openTestSchema(schema: string): Promise<{ db: Kysely<Database>; close: () => Promise<void> }>
@@ -472,13 +476,16 @@ git commit -m "feat(db): lobby tables, games linked to their lobby, who aborted"
 ### Task 2: Lobby queries
 
 **Files:**
+
 - Create: `backend/src/lobby/types.ts`
 - Create: `backend/src/db/lobbies.ts`
 - Test: `backend/src/db/lobbies.test.ts` (append)
 
 **Interfaces:**
+
 - Consumes: the Task 1 tables.
 - Produces:
+
   ```ts
   // lobby/types.ts
   export type ThrowOrder = 'lobby' | 'random' | 'bulloff'
@@ -1030,6 +1037,7 @@ git commit -m "feat(db): lobby queries: people, boards, feed, invites, close and
 ### Task 3: Engine: lobby games, shuffled seats, who aborted, game-end hook
 
 **Files:**
+
 - Modify: `backend/src/session/rng.ts` (`shuffle`)
 - Modify: `backend/src/session/types.ts` (`Session.lobbyId`, `Session.lobbyName` if missing)
 - Modify: `backend/src/session/replay.ts` (`newSession`)
@@ -1039,8 +1047,10 @@ git commit -m "feat(db): lobby queries: people, boards, feed, invites, close and
 - Test: `backend/src/session/rng.test.ts`, `backend/src/session/engine.test.ts`
 
 **Interfaces:**
+
 - Consumes: `StoredGameSession.lobby_id/lobby_name`, `NewGameSession.lobby_id`, `abortGameSession(..., abortedByUserId)` (Task 1).
 - Produces:
+
   ```ts
   // rng.ts
   export function shuffle<T>(xs: readonly T[], rng: Rng): T[]
@@ -1091,6 +1101,7 @@ describe('shuffle', () => {
 ```
 
 `backend/src/session/engine.test.ts`:
+
 - Add `import { seededRng, shuffle } from './rng.js'` at the top.
 - Update the two existing `toHaveBeenCalledWith(<id>, expect.any(Date))` assertions on `store.abortSession` (in "frees the slot once the session ends" and in `describe('rebuild')`) to `toHaveBeenCalledWith(<id>, expect.any(Date), null)`.
 - Add:
@@ -1206,6 +1217,7 @@ ATC keeps its own private shuffle in `games/atc.ts`. Don't replace it, because t
 ```
 
 `backend/src/session/replay.ts`, in `newSession`:
+
 - add `lobbyId?: string | null; lobbyName?: string | null` to the argument type;
 - add `lobbyId: a.lobbyId ?? null, lobbyName: a.lobbyName ?? null` to the returned object.
 
@@ -1363,6 +1375,7 @@ The `catch` stays as it is.
 - [ ] **Step 7: Add the snapshot fields to the WS schema**
 
 In `schema/game-ws-v1.json`, in both `X01Snapshot` and `AtcSnapshot`:
+
 - append `"lobbyId"` (and `"lobbyName"`, if Step 1 found it missing) to `required`;
 - add to `properties`:
 
@@ -1392,13 +1405,16 @@ git commit -m "feat(engine): lobby games: lobby on the session, shuffled seats, 
 ### Task 4: Lobby rules, codes and errors
 
 **Files:**
+
 - Create: `backend/src/lobby/rules.ts`, `backend/src/lobby/code.ts`, `backend/src/lobby/errors.ts`
 - Modify: `backend/src/api/errors.ts` (`ApiError` and its handling)
 - Test: `backend/src/lobby/rules.test.ts`, `backend/src/lobby/code.test.ts`, `backend/src/api/errors.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LobbyPerson`, `LobbyState` (Task 2).
 - Produces:
+
   ```ts
   // api/errors.ts
   export class ApiError extends Error { constructor(readonly statusCode: number, readonly body: { error: string }) }
@@ -1747,12 +1763,15 @@ git commit -m "feat(lobby): permission rules, lobby codes and errors"
 ### Task 5: A game from the lobby roster
 
 **Files:**
+
 - Create: `backend/src/lobby/startPlan.ts`
 - Test: `backend/src/lobby/startPlan.test.ts`
 
 **Interfaces:**
+
 - Consumes: `controllerOf` (Task 4), `LobbyState`, `LastGame` (Task 2), `games` (`backend/src/games/index.ts`).
 - Produces:
+
   ```ts
   export type GamePlan = { gameId: string; config: GameConfig; seats: Seat[]; shuffleSeats: boolean; personIds: string[] }
   export type PlanProblem =
@@ -1934,6 +1953,7 @@ git commit -m "feat(lobby): plan a game from the roster: seats, throw order, sof
 ### Task 6: Lobby socket schema and views
 
 **Files:**
+
 - Create: `schema/lobby-ws-v1.json`
 - Modify: `scripts/gen-api.mjs` (generate `lobby-ws.ts`, its deref JSON and two zod schemas)
 - Regenerate: `npm run gen:api` (writes `backend/src/schema/lobby-ws.ts`, `backend/src/schema/lobby-ws-v1.deref.json`, `backend/src/schema/zod.ts`, and their frontend copies)
@@ -1941,8 +1961,10 @@ git commit -m "feat(lobby): plan a game from the roster: seats, throw order, sof
 - Test: `backend/src/lobby/view.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LobbyState`, `InviteRow` (Task 2), `currentSeat` (`session/access.ts`), `Session.lobbyId` (Task 3).
 - Produces:
+
   ```ts
   // generated backend/src/schema/lobby-ws.ts
   export type ThrowOrder = 'lobby' | 'random' | 'bulloff'
@@ -2404,14 +2426,17 @@ git commit -m "feat(schema): lobby socket messages, lobby and summary views"
 ### Task 7: Lobby service: create, join, leave, host handover, settings, close, pushes
 
 **Files:**
+
 - Modify: `backend/src/browser-gw/connections.ts` (`has`, `closeAll`)
 - Create: `backend/src/lobby/hub.ts`
 - Create: `backend/src/lobby/service.ts`
 - Test: `backend/src/lobby/hub.test.ts`, `backend/src/lobby/service.test.ts`
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 2–6; `SessionEngine.getLobbySession` (Task 3); `getUsersByIds` (`db/queries.ts`); `pgErrorCode` (`db/errors.ts`).
 - Produces:
+
   ```ts
   // browser-gw/connections.ts — BrowserConnections gains
   has(key: string): boolean
@@ -2452,6 +2477,7 @@ git commit -m "feat(schema): lobby socket messages, lobby and summary views"
     whenIdle(lobbyId: string): Promise<void>
   }
   ```
+
   Every refused operation rejects with a `LobbyError` (status 400/403/404/409). A lobby you're not in reads as 404.
 
 - [ ] **Step 1: Write the failing hub tests**
@@ -3142,12 +3168,15 @@ git commit -m "feat(lobby): create, join by code, leave with host handover, sett
 ### Task 8: Lobby service: guests, boards, ready, who plays, order, removal
 
 **Files:**
+
 - Modify: `backend/src/lobby/service.ts`
 - Test: `backend/src/lobby/service.test.ts` (new `describe('people')`)
 
 **Interfaces:**
+
 - Consumes: `rules.canSetBoard/canSetReady/canSetPlays/canMove/canRemove/controllerOf/reorder` (Task 4); `getBoardById` (`db/queries.ts`); `SessionEngine.getSessionByBoard`.
 - Produces:
+
   ```ts
   export type PersonPatch = { boardId?: string | null; plays?: boolean; ready?: boolean; position?: number }
   LobbyService.addGuest(userId: string, lobbyId: string, guest: { name: string; boardId?: string | null }): Promise<{ id: string }>
@@ -3406,12 +3435,15 @@ git commit -m "feat(lobby): guests, the board rule, ready, who plays, order and 
 ### Task 9: Lobby service: invites
 
 **Files:**
+
 - Modify: `backend/src/lobby/service.ts`
 - Test: `backend/src/lobby/service.test.ts` (new `describe('invites')`)
 
 **Interfaces:**
+
 - Consumes: invite queries (Task 2), `addMember` (Task 7), `inviteView` (Task 6).
 - Produces:
+
   ```ts
   LobbyService.invite(userId: string, lobbyId: string, inviteeUserId: string): Promise<{ id: string }>
   LobbyService.listInvites(userId: string): Promise<PendingInvite[]>
@@ -3572,12 +3604,15 @@ git commit -m "feat(lobby): invites by account, accept, decline, expire with the
 ### Task 10: Lobby service: start, rematch, and the reset after each game
 
 **Files:**
+
 - Modify: `backend/src/lobby/service.ts`
 - Test: `backend/src/lobby/service.test.ts` (engine construction in `beforeEach`, new `describe('games')`)
 
 **Interfaces:**
+
 - Consumes: `planGame` (Task 5); `SessionEngine.createWithSeats` with `lobbyId`, `lobbyName`, `shuffleSeats`, plus `getLobbySession`, `ActiveSessionError`, `BoardBusyError`, `GameEnded` (Task 3); `q.setPlaying`, `q.resetAfterGame` (Task 2).
 - Produces:
+
   ```ts
   LobbyService.start(userId: string, lobbyId: string, force: boolean): Promise<{ sessionId: string }>
   LobbyService.rematch(userId: string, lobbyId: string, force: boolean): Promise<{ sessionId: string }>
@@ -3868,6 +3903,7 @@ git commit -m "feat(lobby): start and rematch with the soft ready gate, reset af
 ### Task 11: REST API for lobbies and invites
 
 **Files:**
+
 - Modify: `schema/api-v1.yaml` (tags, paths, parameters, responses, schemas), then `npm run gen:api`
 - Create: `backend/src/api/lobbies.ts`
 - Modify: `backend/src/app.ts` (`AppDeps.lobbies`, register the plugin)
@@ -3876,6 +3912,7 @@ git commit -m "feat(lobby): start and rematch with the soft ready gate, reset af
 - Test: `backend/src/api/lobbies.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LobbyService` (Tasks 7–10), `LobbyError` → `ApiError` handling (Task 4).
 - Produces: the operations `createLobby`, `getCurrentLobby`, `getLobbyByCode`, `updateLobby`, `joinLobby`, `leaveLobby`, `closeLobby`, `addLobbyGuest`, `updateLobbyPerson`, `removeLobbyPerson`, `startLobbyGame`, `rematchLobbyGame`, `inviteToLobby`, `listInvites`, `acceptInvite`, `declineInvite`; `export function lobbiesApiPlugin(app, opts: { lobbies: LobbyService }, done)`; `AppDeps.lobbies: LobbyService`.
 
@@ -4574,6 +4611,7 @@ export function lobbiesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
 - [ ] **Step 5: Wire the app and the server**
 
 `backend/src/app.ts`:
+
 - `import { lobbiesApiPlugin } from './api/lobbies.js'` and `import type { LobbyService } from './lobby/service.js'`;
 - add `lobbies: LobbyService` to `AppDeps` with the comment `/** Lobby rules and pushes (see lobby/service.ts). */`;
 - destructure it in `buildApp`, and register after `usersApiPlugin`: `await app.register(lobbiesApiPlugin, { lobbies })`.
@@ -4623,6 +4661,7 @@ git commit -m "feat(api): lobbies and invites"
 ### Task 12: Lobby members watch the game; aborts record who; boards going away or offline
 
 **Files:**
+
 - Modify: `backend/src/session/access.ts` (`IsLobbyMember`, `noLobbies`, `canWatchSession`)
 - Modify: `backend/src/api/sessions.ts` (GET uses `canWatchSession`; DELETE passes the user)
 - Modify: `backend/src/browser-gw/handler.ts` (socket access uses `canWatchSession`)
@@ -4633,8 +4672,10 @@ git commit -m "feat(api): lobbies and invites"
 - Test: `backend/src/session/access.test.ts`, `backend/src/api/sessions.test.ts`, `backend/src/browser-gw/handler.test.ts`, `backend/src/api/boards.test.ts`, `backend/src/bridge-gw/handler.test.ts`, `backend/src/lobby/service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Session.lobbyId`, `deleteSession(id, abortedByUserId)` (Task 3), `q.releaseBoard` (Task 2), `LobbyService.isMember` (Task 7).
 - Produces:
+
   ```ts
   // session/access.ts
   export type IsLobbyMember = (lobbyId: string, userId: string) => Promise<boolean>
@@ -4839,6 +4880,7 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 ```
 
 `backend/src/api/sessions.ts`:
+
 - `type Opts = FastifyPluginOptions & { engine: SessionEngine; db: Kysely<Database>; isLobbyMember?: IsLobbyMember }`;
 - `const { engine, db, isLobbyMember = noLobbies } = opts`;
 - in `getSession`: `if (!await canWatchSession(req.userId, session, isLobbyMember)) return reply.code(403).send({ error: 'forbidden' })`;
@@ -4847,6 +4889,7 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 `listSessions` keeps `canAccessSession`: it lists your own games.
 
 `backend/src/browser-gw/handler.ts`:
+
 - `type Opts = FastifyPluginOptions & { engine: SessionEngine; isLobbyMember?: IsLobbyMember }`;
 - `const { engine, isLobbyMember = noLobbies } = opts`;
 - make the `getAuthUser(req).then(...)` callback `async`, and replace the access line with:
@@ -4860,6 +4903,7 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 - [ ] **Step 4: Implement boards and bridge presence**
 
 `backend/src/api/boards.ts`:
+
 - `type Opts = FastifyPluginOptions & { db: Kysely<Database>; releaseBoard?: (boardId: string) => Promise<void> }`;
 - `const { db, releaseBoard = () => Promise.resolve() } = opts`;
 - in `deleteBoard`, just before `await deleteBoard(db, id)`:
@@ -4870,6 +4914,7 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 ```
 
 `backend/src/bridge-gw/handler.ts`:
+
 - `Opts` gains `onBoardPresence?: (boardId: string) => void`;
 - `handleBridgeConnection`'s `opts` type gains the same optional field;
 - in `handleBridgeConnection`, after `const { db, engine } = opts`:
@@ -4936,6 +4981,7 @@ git commit -m "feat: lobby members watch lobby games, aborts record who, boards 
 ### Task 13: Lobby socket and /ws/me
 
 **Files:**
+
 - Create: `backend/src/browser-gw/lobby.ts`
 - Modify: `backend/src/lobby/service.ts` (`onSessionPush`)
 - Modify: `backend/src/app.ts` (`AppDeps.hub`, register the plugin)
@@ -4944,8 +4990,10 @@ git commit -m "feat: lobby members watch lobby games, aborts record who, boards 
 - Test: `backend/src/browser-gw/lobby.test.ts`, `backend/src/lobby/service.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LobbyHub` (Task 7); `LobbyService.lobbyAccess/refreshPresence/meMessage` (Task 7).
 - Produces:
+
   ```ts
   export function lobbyGwPlugin(app: FastifyInstance, opts: { lobbies: LobbyService; hub: LobbyHub }, done): void
   // GET /ws/lobby?lobbyId=…  close codes: 4401 signed out, 4400 no lobbyId, 4404 unknown/closed, 4403 not a member
@@ -5168,6 +5216,7 @@ export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Err
 - [ ] **Step 5: Wire it**
 
 `backend/src/app.ts`:
+
 - `import { lobbyGwPlugin } from './browser-gw/lobby.js'` and `import type { LobbyHub } from './lobby/hub.js'`;
 - add `hub: LobbyHub` to `AppDeps` with the comment `/** Open lobby and /ws/me sockets. */`;
 - destructure it, and register after `browserGwPlugin`: `await app.register(lobbyGwPlugin, { lobbies, hub })`.
@@ -5175,6 +5224,7 @@ export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Err
 `backend/src/app.test.ts`, `backend/src/api/docs.test.ts`, `backend/src/api/spec.test.ts`: add `hub: {} as any` to every `buildApp({ ... })` call.
 
 `backend/src/index.ts`:
+
 - the engine's push callback becomes:
 
 ```ts
@@ -5203,6 +5253,7 @@ git commit -m "feat(browser-gw): lobby socket with presence, and /ws/me with inv
 ### Task 14: Bring the spec and agent notes up to date
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-10-02-online-multiplayer-design.md`
 - Modify: `AGENTS.md`
 
@@ -5246,32 +5297,33 @@ git commit -m "docs: lobby backend as built"
 
 **Spec coverage** (Work split item 2):
 
-| Requirement | Task |
-|---|---|
-| Migration: lobbies, lobby_people (ready, plays, board_moved_by), lobby_invites, lobby_activity, game_sessions.lobby_id, aborted_by_user_id | 1 |
-| Kysely types and queries | 1, 2 |
-| REST endpoints (spec "API" + rematch) | 11 |
-| One open lobby per user, join by code/link, host handover, close | 1 (index), 7 |
-| Permissions (Lifecycle → Open) and the board rule | 4, 8 |
-| Soft ready gate on start and rematch | 5, 10, 11 |
-| Resets after each game (plays → true; ready → false members, true guests) | 2, 10 |
-| Activity feed: opened, joined, left, removed, guest_added, board_moved, game_played, game_aborted, host_changed | 7, 8, 10 |
-| Start: roster → seats (members control themselves, guests their adder; board per person; lobby/random/bull-off order), lobby_id, lobbyName | 3, 5, 10 |
-| Engine hook when a lobby game ends (finished or aborted, also during rebuild) | 3, 10 |
-| Aborted games keep their row with aborted_by_user_id (DELETE /api/sessions/:id) | 1, 3, 12 |
-| Lobby members watch their lobby's game (socket and REST) | 12 |
-| Lobby socket with full snapshots and presence | 6, 7, 13 |
-| `/ws/me`: pending invites and lobby summary (name, people, next game, current session, you throw next, leg) | 6, 7, 13 |
-| Invites (create, list, accept, decline, expire on close) | 9, 11 |
-| Board busy at assignment and at start; board offline at start | 5, 8, 10 |
-| Deleting a board a lobby uses → Manual | 2, 12 |
-| Restart: lobbies from the DB, sessions with their lobby, presence fills as sockets reconnect | 3 (rebuild), 7 (cache loads on demand) |
-| Account deletion cascades lobby rows; host handover | 1 (FKs), 7 |
-| Tests per spec Testing (lifecycle, resets, soft gate, feed, code join and regenerate, invites, handover, one-lobby and one-game rules, board permissions, `board_busy`, start validation) | 5, 7, 8, 9, 10 |
+| Requirement                                                                                                                                                                               | Task                                   |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| Migration: lobbies, lobby_people (ready, plays, board_moved_by), lobby_invites, lobby_activity, game_sessions.lobby_id, aborted_by_user_id                                                | 1                                      |
+| Kysely types and queries                                                                                                                                                                  | 1, 2                                   |
+| REST endpoints (spec "API" + rematch)                                                                                                                                                     | 11                                     |
+| One open lobby per user, join by code/link, host handover, close                                                                                                                          | 1 (index), 7                           |
+| Permissions (Lifecycle → Open) and the board rule                                                                                                                                         | 4, 8                                   |
+| Soft ready gate on start and rematch                                                                                                                                                      | 5, 10, 11                              |
+| Resets after each game (plays → true; ready → false members, true guests)                                                                                                                 | 2, 10                                  |
+| Activity feed: opened, joined, left, removed, guest_added, board_moved, game_played, game_aborted, host_changed                                                                           | 7, 8, 10                               |
+| Start: roster → seats (members control themselves, guests their adder; board per person; lobby/random/bull-off order), lobby_id, lobbyName                                                | 3, 5, 10                               |
+| Engine hook when a lobby game ends (finished or aborted, also during rebuild)                                                                                                             | 3, 10                                  |
+| Aborted games keep their row with aborted_by_user_id (DELETE /api/sessions/:id)                                                                                                           | 1, 3, 12                               |
+| Lobby members watch their lobby's game (socket and REST)                                                                                                                                  | 12                                     |
+| Lobby socket with full snapshots and presence                                                                                                                                             | 6, 7, 13                               |
+| `/ws/me`: pending invites and lobby summary (name, people, next game, current session, you throw next, leg)                                                                               | 6, 7, 13                               |
+| Invites (create, list, accept, decline, expire on close)                                                                                                                                  | 9, 11                                  |
+| Board busy at assignment and at start; board offline at start                                                                                                                             | 5, 8, 10                               |
+| Deleting a board a lobby uses → Manual                                                                                                                                                    | 2, 12                                  |
+| Restart: lobbies from the DB, sessions with their lobby, presence fills as sockets reconnect                                                                                              | 3 (rebuild), 7 (cache loads on demand) |
+| Account deletion cascades lobby rows; host handover                                                                                                                                       | 1 (FKs), 7                             |
+| Tests per spec Testing (lifecycle, resets, soft gate, feed, code join and regenerate, invites, handover, one-lobby and one-game rules, board permissions, `board_busy`, start validation) | 5, 7, 8, 9, 10                         |
 
 **Out of scope here:** the frontend (plan 3), the match remote states (other plan), the leave and end-of-game UI and the abort standings/abandon preview (plan 4), and the e2e tests (they need the frontend).
 
 **Type consistency, checked across tasks:**
+
 - `LobbyState`, `LobbyPerson`, `LastGame`, `NextGame`, `InviteRow` come from `lobby/types.ts` everywhere.
 - The view types `Lobby`, `LobbySummary`, `PendingInvite`, `LobbyServerMessage` and `MeMessage` are generated in `schema/lobby-ws.ts`.
 - Errors are `LobbyError` (extends `ApiError`, read as `err.statusCode` / `err.body`).

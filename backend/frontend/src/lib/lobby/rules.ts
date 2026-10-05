@@ -23,8 +23,7 @@ export const myRow = (lobby: Lobby, viewerId: string | null): LobbyPerson | null
   lobby.people.find(p => p.userId !== null && p.userId === viewerId) ?? null
 
 /** You, or a guest you added. */
-export const isMine = (p: LobbyPerson, viewerId: string | null): boolean =>
-  viewerId !== null && controllerOf(p) === viewerId
+export const isMine = (p: LobbyPerson, viewerId: string | null): boolean => viewerId !== null && controllerOf(p) === viewerId
 
 /**
  * Nobody sets someone else's ready, not even the host. A guest has no ready of their own
@@ -60,7 +59,8 @@ export function boardChoices(p: LobbyPerson, viewerId: string | null, own: OwnBo
   const choices: BoardChoice[] = []
   if (controls || owner) {
     choices.push({
-      boardId: null, label: 'Manual entry',
+      boardId: null,
+      label: 'Manual entry',
       detail: controls ? 'Enter darts on the keypad' : `Take ${p.boardName ?? 'your board'} back`,
       current: p.boardId === null,
     })
@@ -87,8 +87,7 @@ export function boardSummary(lobby: Lobby): string {
 }
 
 /** You play the next game, yourself or through a guest of yours. */
-export const playsInGame = (lobby: Lobby, viewerId: string | null): boolean =>
-  lobby.people.some(p => p.plays && isMine(p, viewerId))
+export const playsInGame = (lobby: Lobby, viewerId: string | null): boolean => lobby.people.some(p => p.plays && isMine(p, viewerId))
 
 /**
  * The game has a bull off of its own (a `bullOff` setting in the server's defaults, as the
@@ -99,8 +98,10 @@ export const hasBullOff = (game: { defaultConfig: Record<string, unknown> } | un
   game !== undefined && 'bullOff' in game.defaultConfig
 
 /** Accounts the add field doesn't suggest: already in the lobby, or invited. */
-export const alreadyInOrInvited = (lobby: Lobby): string[] =>
-  [...lobby.people.flatMap(p => (p.userId ? [p.userId] : [])), ...lobby.invites.map(i => i.userId)]
+export const alreadyInOrInvited = (lobby: Lobby): string[] => [
+  ...lobby.people.flatMap(p => (p.userId ? [p.userId] : [])),
+  ...lobby.invites.map(i => i.userId),
+]
 
 // ---- teams ------------------------------------------------------------------------
 

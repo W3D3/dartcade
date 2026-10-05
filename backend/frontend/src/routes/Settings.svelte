@@ -10,7 +10,9 @@
   // The game settings on this device: which voice is "your voice", and the samples' volume
   const settings = loadSettings(typeof localStorage === 'undefined' ? null : localStorage)
 
-  onMount(() => { void loadVoiceLibrary() })
+  onMount(() => {
+    void loadVoiceLibrary()
+  })
 </script>
 
 <Layout title="Settings">

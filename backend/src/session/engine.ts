@@ -70,11 +70,11 @@ export interface EngineStore {
 
 export function createEngineStore(db: Kysely<Database>): EngineStore {
   return {
-    insertSession: (d) => queries.insertGameSession(db, d),
+    insertSession: d => queries.insertGameSession(db, d),
     getActiveSessions: () => queries.getActiveGameSessions(db),
-    getSessionEvents: (id) => queries.getSessionEvents(db, id),
-    appendEvent: (e) => queries.appendSessionEvent(db, e),
-    insertDarts: (rows) => queries.insertGameDarts(db, rows),
+    getSessionEvents: id => queries.getSessionEvents(db, id),
+    appendEvent: e => queries.appendSessionEvent(db, e),
+    insertDarts: rows => queries.insertGameDarts(db, rows),
     deleteDarts: (id, visit) => queries.deleteGameDarts(db, id, visit),
     finishSession: (id, at, r) => queries.finishGameSession(db, id, at, r),
     abortSession: (id, at, by) => queries.abortGameSession(db, id, at, by),
@@ -83,18 +83,30 @@ export function createEngineStore(db: Kysely<Database>): EngineStore {
 
 /** Thrown when a player already has a game running; carries that game's id and who it is. */
 export class ActiveSessionError extends Error {
-  constructor(message: string, readonly sessionId: string, readonly userId: string) { super(message) }
+  constructor(
+    message: string,
+    readonly sessionId: string,
+    readonly userId: string,
+  ) {
+    super(message)
+  }
 }
 
 /** Thrown when a board is in another running game. */
 export class BoardBusyError extends Error {
-  constructor(readonly boardId: string) { super(`active session already exists for board ${boardId}`) }
+  constructor(readonly boardId: string) {
+    super(`active session already exists for board ${boardId}`)
+  }
 }
 
 export type NewSessionSpec = {
-  ownerUserId: string; gameId: string; config: GameConfig; seats: Seat[]
+  ownerUserId: string
+  gameId: string
+  config: GameConfig
+  seats: Seat[]
   /** A lobby game: its lobby and that lobby's name (for the match header). */
-  lobbyId?: string | null; lobbyName?: string | null
+  lobbyId?: string | null
+  lobbyName?: string | null
   /** Random throw order: the seats are shuffled with the game's seed before they're stored. */
   shuffleSeats?: boolean
 }
@@ -139,7 +151,13 @@ export class SessionEngine {
     boardName: string | null = null,
   ): Promise<{ sessionId: string }> {
     // A local game: the owner throws for everyone, on one board; only the owner's seat is an account
-    const seats = players.map((p, i): Seat => ({ name: p.name, userId: i === 0 ? ownerUserId : null, controllerUserId: ownerUserId, boardId, boardName }))
+    const seats = players.map((p, i): Seat => ({
+      name: p.name,
+      userId: i === 0 ? ownerUserId : null,
+      controllerUserId: ownerUserId,
+      boardId,
+      boardName,
+    }))
     return this.start({ ownerUserId, gameId, config, seats }, boardId)
   }
 
@@ -167,16 +185,30 @@ export class SessionEngine {
     const seats = spec.shuffleSeats === true ? shuffle(spec.seats, seededRng(seed)) : spec.seats
     const lobbyId = spec.lobbyId ?? null
     const session = newSession({
-      id: sessionId, ownerUserId: spec.ownerUserId, boardId: sessionBoardId, module: mod, config: spec.config,
-      seats, seed, createdAt: new Date(), lobbyId, lobbyName: spec.lobbyName ?? null,
+      id: sessionId,
+      ownerUserId: spec.ownerUserId,
+      boardId: sessionBoardId,
+      module: mod,
+      config: spec.config,
+      seats,
+      seed,
+      createdAt: new Date(),
+      lobbyId,
+      lobbyName: spec.lobbyName ?? null,
     })
     // Claim the players and boards before the first await, so a second create running
     // at the same time sees them taken; give them back if the session can't be stored
     this.index(session)
     try {
       await this.store.insertSession({
-        id: sessionId, owner_user_id: spec.ownerUserId, board_db_id: sessionBoardId, game_id: spec.gameId,
-        game_version: mod.version, rng_seed: seed, config: spec.config, lobby_id: lobbyId,
+        id: sessionId,
+        owner_user_id: spec.ownerUserId,
+        board_db_id: sessionBoardId,
+        game_id: spec.gameId,
+        game_version: mod.version,
+        rng_seed: seed,
+        config: spec.config,
+        lobby_id: lobbyId,
         players: seats.map(s => ({ name: s.name, user_id: s.userId, controller_user_id: s.controllerUserId, board_db_id: s.boardId })),
       })
     } catch (err) {
@@ -196,7 +228,10 @@ export class SessionEngine {
 
   private enqueue<T>(sessionId: string, task: () => Promise<T>): Promise<T> {
     const run = (this.queues.get(sessionId) ?? Promise.resolve()).then(task)
-    this.queues.set(sessionId, run.catch(() => undefined))
+    this.queues.set(
+      sessionId,
+      run.catch(() => undefined),
+    )
     return run
   }
 
@@ -233,7 +268,12 @@ export class SessionEngine {
       // A game that's over takes no input anyway (apply drops it).
       const allowed = session.status === 'active' ? authorizeAction(session, userId, action) : action
       if (!allowed) return { result: { ok: false, code: 'forbidden' } satisfies ActionResult, changed: false }
-      const applied = await this.apply(session, { source: 'user', action: allowed }, { kind: allowed.type, data: allowed }, { bridgeEventId: null, boardId: null })
+      const applied = await this.apply(
+        session,
+        { source: 'user', action: allowed },
+        { kind: allowed.type, data: allowed },
+        { bridgeEventId: null, boardId: null },
+      )
       return { result: { ok: true } satisfies ActionResult, changed: applied }
     })
     // A refused or dropped action changes nothing: no snapshot for everyone
@@ -255,9 +295,14 @@ export class SessionEngine {
         const boardId = origin.boardId
         const up = session.seats[currentSeat(session)]
         const users = [...new Set(session.seats.filter(s => s.boardId === boardId).map(s => s.controllerUserId))]
-        this.notify(session.id, users, { type: 'notice', code: 'not_your_turn', boardId, throwerName: up.name,
+        this.notify(session.id, users, {
+          type: 'notice',
+          code: 'not_your_turn',
+          boardId,
+          throwerName: up.name,
           // a board whose name is gone (deleted) is still a board, not hand entry
-          throwerBoard: up.boardId === null ? null : up.boardName ?? 'Board' })
+          throwerBoard: up.boardId === null ? null : (up.boardName ?? 'Board'),
+        })
       }
       return false
     }
@@ -266,8 +311,14 @@ export class SessionEngine {
     if (input.source === 'board' && HELD.has(input.event.kind) && awaitsFinish(session)) return false
     const at = new Date()
     await this.store.appendEvent({
-      session_id: session.id, seq: session.nextSeq, source: input.source,
-      kind: raw.kind, data: raw.data, bridge_event_id: origin.bridgeEventId, board_db_id: origin.boardId, created_at: at,
+      session_id: session.id,
+      seq: session.nextSeq,
+      source: input.source,
+      kind: raw.kind,
+      data: raw.data,
+      bridge_event_id: origin.bridgeEventId,
+      board_db_id: origin.boardId,
+      created_at: at,
     })
     session.nextSeq++
     const outcome = applyInput(session, input, at)
@@ -275,7 +326,10 @@ export class SessionEngine {
     if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
     // finish() pushes the final snapshot itself (before notifying), so the caller doesn't
     // push it a second time
-    if (outcome.won) { await this.finish(session, at); return false }
+    if (outcome.won) {
+      await this.finish(session, at)
+      return false
+    }
     return true
   }
 
@@ -299,7 +353,11 @@ export class SessionEngine {
 
   private endedOf(session: Session, status: GameEnded['status'], abortedByUserId: string | null, seatResults: FinishedSeat[]): GameEnded {
     return {
-      sessionId: session.id, lobbyId: session.lobbyId, gameId: session.module.id, status, abortedByUserId,
+      sessionId: session.id,
+      lobbyId: session.lobbyId,
+      gameId: session.module.id,
+      status,
+      abortedByUserId,
       results: seatResults.map((r, i) => ({ name: session.players[i].name, placement: r.placement, forfeited: r.forfeited })),
       teamGame: isTeamGame(session),
       userIds: seatedUserIds(session),
@@ -329,7 +387,16 @@ export class SessionEngine {
         this.warn('failed to rebuild session, aborting it', { sessionId: row.id, error: String(err) })
         try {
           await this.store.abortSession(row.id, new Date(), null)
-          await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], teamGame: false, userIds: storedSeatedUserIds(row) })
+          await this.notifyEnded({
+            sessionId: row.id,
+            lobbyId: row.lobby_id,
+            gameId: row.game_id,
+            status: 'aborted',
+            abortedByUserId: null,
+            results: [],
+            teamGame: false,
+            userIds: storedSeatedUserIds(row),
+          })
         } catch (abortErr) {
           this.warn('failed to abort an unrebuildable session', { sessionId: row.id, error: String(abortErr) })
         }
@@ -343,21 +410,39 @@ export class SessionEngine {
     // Unknown game, no owner (account deleted) or unreadable setup: it can't be played on
     if (!mod || !row.owner_user_id || !config.success || row.players.length === 0) {
       await this.store.abortSession(row.id, new Date(), null)
-      await this.notifyEnded({ sessionId: row.id, lobbyId: row.lobby_id, gameId: row.game_id, status: 'aborted', abortedByUserId: null, results: [], teamGame: false, userIds: storedSeatedUserIds(row) })
+      await this.notifyEnded({
+        sessionId: row.id,
+        lobbyId: row.lobby_id,
+        gameId: row.game_id,
+        status: 'aborted',
+        abortedByUserId: null,
+        results: [],
+        teamGame: false,
+        userIds: storedSeatedUserIds(row),
+      })
       return
     }
     const owner = row.owner_user_id
     // A missing controller (account deleted) falls back to the host, so the seat can still
     // be played; a local game's seats already carry the session's board.
     const seats = row.players.map((p): Seat => ({
-      name: p.name, userId: p.user_id,
+      name: p.name,
+      userId: p.user_id,
       controllerUserId: p.controller_user_id ?? owner,
-      boardId: p.board_db_id, boardName: p.board_name,
+      boardId: p.board_db_id,
+      boardName: p.board_name,
     }))
     const session = newSession({
-      id: row.id, ownerUserId: owner, boardId: row.board_db_id, module: mod,
-      config: config.data, seats, seed: row.rng_seed, createdAt: row.created_at,
-      lobbyId: row.lobby_id, lobbyName: row.lobby_name,
+      id: row.id,
+      ownerUserId: owner,
+      boardId: row.board_db_id,
+      module: mod,
+      config: config.data,
+      seats,
+      seed: row.rng_seed,
+      createdAt: row.created_at,
+      lobbyId: row.lobby_id,
+      lobbyName: row.lobby_name,
     })
     const events = await this.store.getSessionEvents(row.id)
     const { visits, won } = replay(session, events, this.warn)
@@ -377,7 +462,7 @@ export class SessionEngine {
   getSnapshot(sessionId: string, view: SnapshotView = NO_VIEWER): Snapshot | undefined {
     const session = this.byId.get(sessionId)
     if (!session) return undefined
-    const currentVisitDarts = session.openVisitEvents.flatMap(e => e.kind === 'dart.detected' ? [e.data.dart] : [])
+    const currentVisitDarts = session.openVisitEvents.flatMap(e => (e.kind === 'dart.detected' ? [e.data.dart] : []))
     const engineFields = { currentVisitDarts, totalDarts: session.totalDarts, totalVisits: session.totalVisits }
     const upBoard = session.seats[currentSeat(session)].boardId
     const common = {
@@ -389,22 +474,26 @@ export class SessionEngine {
       players: session.players,
       status: session.status,
       finishPending: session.status === 'active' && awaitsFinish(session),
-      canUndoVisit: session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
+      canUndoVisit:
+        session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
       seats: session.seats.map((s, i) => {
         const connected = view.connectedUserIds.has(s.controllerUserId)
         return {
-          controllerUserId: s.controllerUserId, userId: s.userId, boardId: s.boardId, boardName: s.boardName,
+          controllerUserId: s.controllerUserId,
+          userId: s.userId,
+          boardId: s.boardId,
+          boardName: s.boardName,
           boardOnline: s.boardId !== null && view.isBoardOnline(s.boardId),
           controllerConnected: connected,
           // Only a controller without the game open has a time; it says how long the game waits
-          disconnectedAt: connected ? null : view.disconnectedAt(s.controllerUserId)?.toISOString() ?? null,
+          disconnectedAt: connected ? null : (view.disconnectedAt(s.controllerUserId)?.toISOString() ?? null),
           forfeited: session.forfeited.includes(i),
         }
       }),
-      mySeats: session.seats.flatMap((s, i) => s.controllerUserId === view.viewerUserId ? [i] : []),
+      mySeats: session.seats.flatMap((s, i) => (s.controllerUserId === view.viewerUserId ? [i] : [])),
       // The status pill follows the board of the seat that's up
-      bmStatus: upBoard === null ? null : session.boardStatus.get(upBoard) ?? null,
+      bmStatus: upBoard === null ? null : (session.boardStatus.get(upBoard) ?? null),
     }
     // The module's id tells which view (and snapshot shape) it produces; the shape per
     // game is also checked by snapshot.contract.test.ts and checkSnapshot()

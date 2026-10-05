@@ -5,7 +5,6 @@
   "description": "Every message the autodarts-bridge sends to the backend over WSS. The `kind` field is the discriminator; `data` shape depends on it. Raw BM frames are forwarded separately as bm.frame. See diff-rules.md for how the bridge derives dart/takeout/visit events from consecutive BM state snapshots.",
 
   "$defs": {
-
     "Segment": {
       "title": "Board Manager segment",
       "description": "Exactly as Board Manager sends it. For Outside throws, multiplier=0 and score will be 0. Bull 25: bed=Single, number=25. Bull 50: bed=Double, number=50 (unverified on hardware). Near-miss: name=M<n>, number=n, bed=Outside. Bounce-out: name=Miss, number=0, bed=Outside.",
@@ -13,9 +12,9 @@
       "required": ["name", "number", "bed", "multiplier"],
       "additionalProperties": false,
       "properties": {
-        "name":       { "type": "string",  "examples": ["T20", "D5", "S1", "25", "50", "Miss", "M17"] },
-        "number":     { "type": "integer", "minimum": 0, "maximum": 50 },
-        "bed":        { "type": "string",  "enum": ["SingleInner", "SingleOuter", "Single", "Double", "Triple", "Outside"] },
+        "name": { "type": "string", "examples": ["T20", "D5", "S1", "25", "50", "Miss", "M17"] },
+        "number": { "type": "integer", "minimum": 0, "maximum": 50 },
+        "bed": { "type": "string", "enum": ["SingleInner", "SingleOuter", "Single", "Double", "Triple", "Outside"] },
         "multiplier": { "type": "integer", "enum": [0, 1, 2, 3] }
       }
     },
@@ -39,7 +38,7 @@
       "required": ["r", "theta_deg"],
       "additionalProperties": false,
       "properties": {
-        "r":         { "type": "number", "minimum": 0 },
+        "r": { "type": "number", "minimum": 0 },
         "theta_deg": { "type": "number", "minimum": -180, "exclusiveMaximum": 180 }
       }
     },
@@ -52,12 +51,18 @@
       "additionalProperties": false,
       "properties": {
         "segment": { "$ref": "#/$defs/Segment" },
-        "score":   { "type": "integer", "minimum": 0, "maximum": 180,
-                     "description": "Bridge-computed: segment.number × segment.multiplier." },
-        "coords":  { "$ref": "#/$defs/Coords" },
-        "polar":   { "$ref": "#/$defs/Polar" },
-        "bouncer": { "type": "boolean",
-                     "description": "True when the dart hit a wire or the board and bounced off. Only present (and true) on bounce-outs." }
+        "score": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 180,
+          "description": "Bridge-computed: segment.number × segment.multiplier."
+        },
+        "coords": { "$ref": "#/$defs/Coords" },
+        "polar": { "$ref": "#/$defs/Polar" },
+        "bouncer": {
+          "type": "boolean",
+          "description": "True when the dart hit a wire or the board and bounced off. Only present (and true) on bounce-outs."
+        }
       }
     },
 
@@ -71,21 +76,32 @@
       "type": "object",
       "required": ["v", "schema", "bridge_id", "boot_id", "seq", "board_id", "bm_version", "recv_wall", "recv_mono_ns", "kind", "data"],
       "properties": {
-        "v":            { "type": "integer", "const": 1,
-                          "description": "Schema major version. Backend refuses an unknown major and tells the bridge to update." },
-        "schema":       { "type": "string",  "const": "adbridge/1.0" },
-        "bridge_id":    { "type": "string",  "description": "Stable per install (ULID)." },
-        "boot_id":      { "type": "string",  "description": "New UUID every time the bridge process starts." },
-        "seq":          { "type": "integer", "minimum": 1,
-                          "description": "Increases monotonically per boot_id. Backend dedupes on (bridge_id, boot_id, seq)." },
-        "board_id":     { "type": "string",  "description": "auth.board_id from /api/config. Bridge refuses to send if this changes." },
-        "bm_version":   { "type": "string",  "description": "Board Manager version string, e.g. '1.0.7'." },
-        "recv_wall":    { "type": "string",  "format": "date-time",
-                          "description": "UTC wall-clock timestamp when the BM frame arrived at the bridge." },
-        "recv_mono_ns": { "type": "integer",
-                          "description": "Nanoseconds since the bridge process started (monotonic). Use only for durations within one boot_id." },
-        "kind":         { "type": "string",  "description": "Event discriminator. See oneOf variants below." },
-        "data":         { "type": "object",  "description": "Kind-specific payload." }
+        "v": {
+          "type": "integer",
+          "const": 1,
+          "description": "Schema major version. Backend refuses an unknown major and tells the bridge to update."
+        },
+        "schema": { "type": "string", "const": "adbridge/1.0" },
+        "bridge_id": { "type": "string", "description": "Stable per install (ULID)." },
+        "boot_id": { "type": "string", "description": "New UUID every time the bridge process starts." },
+        "seq": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Increases monotonically per boot_id. Backend dedupes on (bridge_id, boot_id, seq)."
+        },
+        "board_id": { "type": "string", "description": "auth.board_id from /api/config. Bridge refuses to send if this changes." },
+        "bm_version": { "type": "string", "description": "Board Manager version string, e.g. '1.0.7'." },
+        "recv_wall": {
+          "type": "string",
+          "format": "date-time",
+          "description": "UTC wall-clock timestamp when the BM frame arrived at the bridge."
+        },
+        "recv_mono_ns": {
+          "type": "integer",
+          "description": "Nanoseconds since the bridge process started (monotonic). Use only for durations within one boot_id."
+        },
+        "kind": { "type": "string", "description": "Event discriminator. See oneOf variants below." },
+        "data": { "type": "object", "description": "Kind-specific payload." }
       }
     },
 
@@ -96,11 +112,11 @@
       "additionalProperties": false,
       "properties": {
         "bridge_version": { "type": "string" },
-        "schema":         { "type": "string", "const": "adbridge/1.0" },
-        "os":             { "type": "string" },
-        "arch":           { "type": "string" },
-        "bm_version":     { "type": "string" },
-        "bm_url":         { "type": "string", "format": "uri" }
+        "schema": { "type": "string", "const": "adbridge/1.0" },
+        "os": { "type": "string" },
+        "arch": { "type": "string" },
+        "bm_version": { "type": "string" },
+        "bm_url": { "type": "string", "format": "uri" }
       }
     },
 
@@ -110,7 +126,7 @@
       "required": ["up"],
       "additionalProperties": false,
       "properties": {
-        "up":     { "type": "boolean" },
+        "up": { "type": "boolean" },
         "reason": { "type": "string", "description": "Error message if up=false." }
       }
     },
@@ -121,8 +137,11 @@
       "required": ["source"],
       "additionalProperties": false,
       "properties": {
-        "source": { "type": "string", "enum": ["ws", "poll"],
-                    "description": "ws = arrived via WebSocket push; poll = arrived via GET /api/state." }
+        "source": {
+          "type": "string",
+          "enum": ["ws", "poll"],
+          "description": "ws = arrived via WebSocket push; poll = arrived via GET /api/state."
+        }
       }
     },
 
@@ -132,13 +151,19 @@
       "required": ["status", "event", "running", "connected"],
       "additionalProperties": false,
       "properties": {
-        "status":    { "type": "string",
-                       "description": "BM status string. Known values: Offline, Starting, Running, Stopping, Stopped, Throw, Takeout, Takeout in progress, Calibrating, Setup, Error. Treat as open enum." },
-        "event":     { "type": "string",
-                       "description": "BM event string, free text. Known values: Throw detected, Takeout started, Takeout finished, Manual reset, Started, Stopped, etc." },
-        "running":   { "type": "boolean" },
-        "connected": { "type": "boolean",
-                       "description": "Unreliable. Has been seen as false while detection is active. Ignore for liveness; use running and status instead." }
+        "status": {
+          "type": "string",
+          "description": "BM status string. Known values: Offline, Starting, Running, Stopping, Stopped, Throw, Takeout, Takeout in progress, Calibrating, Setup, Error. Treat as open enum."
+        },
+        "event": {
+          "type": "string",
+          "description": "BM event string, free text. Known values: Throw detected, Takeout started, Takeout finished, Manual reset, Started, Stopped, etc."
+        },
+        "running": { "type": "boolean" },
+        "connected": {
+          "type": "boolean",
+          "description": "Unreliable. Has been seen as false while detection is active. Ignore for liveness; use running and status instead."
+        }
       }
     },
 
@@ -172,11 +197,10 @@
       "required": ["visit_id", "index", "dart", "source_seq"],
       "additionalProperties": false,
       "properties": {
-        "visit_id":   { "$ref": "#/$defs/VisitId" },
-        "index":      { "type": "integer", "minimum": 0, "maximum": 2 },
-        "dart":       { "$ref": "#/$defs/Dart" },
-        "source_seq": { "type": "integer",
-                        "description": "seq of the bm.frame that triggered this event." }
+        "visit_id": { "$ref": "#/$defs/VisitId" },
+        "index": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "dart": { "$ref": "#/$defs/Dart" },
+        "source_seq": { "type": "integer", "description": "seq of the bm.frame that triggered this event." }
       }
     },
 
@@ -186,10 +210,10 @@
       "required": ["visit_id", "index", "dart", "previous", "source_seq"],
       "additionalProperties": false,
       "properties": {
-        "visit_id":   { "$ref": "#/$defs/VisitId" },
-        "index":      { "type": "integer", "minimum": 0, "maximum": 2 },
-        "dart":       { "$ref": "#/$defs/Dart" },
-        "previous":   { "$ref": "#/$defs/Dart" },
+        "visit_id": { "$ref": "#/$defs/VisitId" },
+        "index": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "dart": { "$ref": "#/$defs/Dart" },
+        "previous": { "$ref": "#/$defs/Dart" },
         "source_seq": { "type": "integer" }
       }
     },
@@ -200,11 +224,11 @@
       "required": ["visit_id", "index", "coords", "previous_coords", "source_seq"],
       "additionalProperties": false,
       "properties": {
-        "visit_id":       { "$ref": "#/$defs/VisitId" },
-        "index":          { "type": "integer", "minimum": 0, "maximum": 2 },
-        "coords":         { "$ref": "#/$defs/Coords" },
-        "previous_coords":{ "$ref": "#/$defs/Coords" },
-        "source_seq":     { "type": "integer" }
+        "visit_id": { "$ref": "#/$defs/VisitId" },
+        "index": { "type": "integer", "minimum": 0, "maximum": 2 },
+        "coords": { "$ref": "#/$defs/Coords" },
+        "previous_coords": { "$ref": "#/$defs/Coords" },
+        "source_seq": { "type": "integer" }
       }
     },
 
@@ -215,9 +239,11 @@
       "additionalProperties": false,
       "properties": {
         "visit_id": { "$ref": "#/$defs/VisitId" },
-        "trigger":  { "type": "string",
-                      "enum": ["motion.isHand", "status.Takeout in progress", "event.Takeout started"],
-                      "description": "Whichever signal arrived first." }
+        "trigger": {
+          "type": "string",
+          "enum": ["motion.isHand", "status.Takeout in progress", "event.Takeout started"],
+          "description": "Whichever signal arrived first."
+        }
       }
     },
 
@@ -227,9 +253,8 @@
       "required": ["visit_id", "trigger", "duration_ms"],
       "additionalProperties": false,
       "properties": {
-        "visit_id":    { "$ref": "#/$defs/VisitId" },
-        "trigger":     { "type": "string",
-                         "enum": ["numThrows.zero", "motion.isTakeoutFull", "event.Takeout finished"] },
+        "visit_id": { "$ref": "#/$defs/VisitId" },
+        "trigger": { "type": "string", "enum": ["numThrows.zero", "motion.isTakeoutFull", "event.Takeout finished"] },
         "duration_ms": { "type": "integer", "minimum": 0 }
       }
     },
@@ -241,8 +266,7 @@
       "additionalProperties": false,
       "properties": {
         "visit_id": { "$ref": "#/$defs/VisitId" },
-        "reason":   { "type": "string",
-                      "enum": ["manual_reset", "bridge_reset_command", "unknown"] }
+        "reason": { "type": "string", "enum": ["manual_reset", "bridge_reset_command", "unknown"] }
       }
     },
 
@@ -252,12 +276,12 @@
       "required": ["isDart", "isHand", "isStable", "isTakeoutPartial", "isTakeoutFull", "isWaiting"],
       "additionalProperties": true,
       "properties": {
-        "isDart":          { "type": "boolean" },
-        "isHand":          { "type": "boolean" },
-        "isStable":        { "type": "boolean" },
-        "isTakeoutPartial":{ "type": "boolean" },
-        "isTakeoutFull":   { "type": "boolean" },
-        "isWaiting":       { "type": "boolean" }
+        "isDart": { "type": "boolean" },
+        "isHand": { "type": "boolean" },
+        "isStable": { "type": "boolean" },
+        "isTakeoutPartial": { "type": "boolean" },
+        "isTakeoutFull": { "type": "boolean" },
+        "isWaiting": { "type": "boolean" }
       }
     },
 
@@ -267,10 +291,15 @@
       "required": ["cam", "captured_at", "content_type", "data"],
       "additionalProperties": false,
       "properties": {
-        "cam":          { "type": "integer", "minimum": 0, "maximum": 3, "description": "Camera number, 0-based; 3 is the combined still (the three blended, each region from the camera that sees it sharpest)." },
-        "captured_at":  { "type": "string", "format": "date-time", "description": "UTC wall-clock time the bridge fetched it." },
+        "cam": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 3,
+          "description": "Camera number, 0-based; 3 is the combined still (the three blended, each region from the camera that sees it sharpest)."
+        },
+        "captured_at": { "type": "string", "format": "date-time", "description": "UTC wall-clock time the bridge fetched it." },
         "content_type": { "type": "string", "const": "image/jpeg" },
-        "data":         { "type": "string", "contentEncoding": "base64", "description": "The image, base64-encoded." }
+        "data": { "type": "string", "contentEncoding": "base64", "description": "The image, base64-encoded." }
       }
     },
 
@@ -291,8 +320,8 @@
       "required": ["command_id", "ok"],
       "additionalProperties": false,
       "properties": {
-        "command_id":  { "type": "string" },
-        "ok":          { "type": "boolean" },
+        "command_id": { "type": "string" },
+        "ok": { "type": "boolean" },
         "http_status": { "type": "integer", "description": "HTTP status from the BM endpoint, if applicable." }
       }
     }
@@ -302,13 +331,13 @@
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "bridge.hello"  }, "data": { "$ref": "#/$defs/BridgeHelloData"  } } }
+        { "properties": { "kind": { "const": "bridge.hello" }, "data": { "$ref": "#/$defs/BridgeHelloData" } } }
       ]
     },
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "bm.link"       }, "data": { "$ref": "#/$defs/BmLinkData"       } } }
+        { "properties": { "kind": { "const": "bm.link" }, "data": { "$ref": "#/$defs/BmLinkData" } } }
       ]
     },
     {
@@ -318,7 +347,7 @@
           "properties": {
             "kind": { "const": "bm.frame" },
             "data": { "$ref": "#/$defs/BmFrameData" },
-            "raw":  { "type": "object", "description": "Exact BM JSON frame, verbatim. Secrets are redacted." }
+            "raw": { "type": "object", "description": "Exact BM JSON frame, verbatim. Secrets are redacted." }
           },
           "required": ["raw"]
         }
@@ -327,19 +356,19 @@
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "board.status"  }, "data": { "$ref": "#/$defs/BoardStatusData"  } } }
+        { "properties": { "kind": { "const": "board.status" }, "data": { "$ref": "#/$defs/BoardStatusData" } } }
       ]
     },
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "board.resync"  }, "data": { "$ref": "#/$defs/BoardResyncData"  } } }
+        { "properties": { "kind": { "const": "board.resync" }, "data": { "$ref": "#/$defs/BoardResyncData" } } }
       ]
     },
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "visit.opened"  }, "data": { "$ref": "#/$defs/VisitOpenedData"  } } }
+        { "properties": { "kind": { "const": "visit.opened" }, "data": { "$ref": "#/$defs/VisitOpenedData" } } }
       ]
     },
     {
@@ -351,19 +380,19 @@
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "dart.corrected"}, "data": { "$ref": "#/$defs/DartCorrectedData"} } }
+        { "properties": { "kind": { "const": "dart.corrected" }, "data": { "$ref": "#/$defs/DartCorrectedData" } } }
       ]
     },
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "dart.moved"    }, "data": { "$ref": "#/$defs/DartMovedData"    } } }
+        { "properties": { "kind": { "const": "dart.moved" }, "data": { "$ref": "#/$defs/DartMovedData" } } }
       ]
     },
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "takeout.started"  }, "data": { "$ref": "#/$defs/TakeoutStartedData"  } } }
+        { "properties": { "kind": { "const": "takeout.started" }, "data": { "$ref": "#/$defs/TakeoutStartedData" } } }
       ]
     },
     {
@@ -381,13 +410,13 @@
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "motion"        }, "data": { "$ref": "#/$defs/MotionData"        } } }
+        { "properties": { "kind": { "const": "motion" }, "data": { "$ref": "#/$defs/MotionData" } } }
       ]
     },
     {
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "command.result"}, "data": { "$ref": "#/$defs/CommandResultData" } } }
+        { "properties": { "kind": { "const": "command.result" }, "data": { "$ref": "#/$defs/CommandResultData" } } }
       ]
     }
   ]

@@ -20,7 +20,7 @@ describe('loadSettings', () => {
     expect(s).not.toHaveProperty('bogus')
   })
 
-  it('keeps the setting for other players\' targets on the board', () => {
+  it("keeps the setting for other players' targets on the board", () => {
     expect(defaultSettings.showMarkers).toBe(false)
     expect(loadSettings(store(JSON.stringify({ showMarkers: true }))).showMarkers).toBe(true)
   })
@@ -73,7 +73,14 @@ describe('loadSettings', () => {
 describe('saveSettings', () => {
   it('writes JSON under the settings key', () => {
     const written: Record<string, string> = {}
-    saveSettings({ setItem: (k, v) => { written[k] = v } }, defaultSettings)
+    saveSettings(
+      {
+        setItem: (k, v) => {
+          written[k] = v
+        },
+      },
+      defaultSettings,
+    )
     expect(JSON.parse(written[SETTINGS_KEY])).toEqual(defaultSettings)
   })
 })

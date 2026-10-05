@@ -6,7 +6,7 @@ services:
       POSTGRES_USER: dartgames
       POSTGRES_PASSWORD: dev
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U dartgames"]
+      test: ['CMD-SHELL', 'pg_isready -U dartgames']
       interval: 5s
       timeout: 5s
       retries: 5
@@ -21,16 +21,16 @@ services:
     environment:
       DATABASE_URL: postgres://dartgames:dev@postgres:5432/dartgames
       NODE_ENV: test
-      PORT: "3000"
+      PORT: '3000'
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5174
     ports:
-      - "3001:3000"
+      - '3001:3000'
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/health"]
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/health']
       interval: 5s
       timeout: 5s
       retries: 20
@@ -46,12 +46,12 @@ services:
     environment:
       BACKEND_HOST: backend
     ports:
-      - "5174:5173"
+      - '5174:5173'
     depends_on:
       backend:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:5173"]
+      test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:5173']
       interval: 5s
       timeout: 5s
       retries: 20

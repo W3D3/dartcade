@@ -5,11 +5,17 @@ function memory(): Storage {
   const m = new Map<string, string>()
   return {
     getItem: (k: string) => m.get(k) ?? null,
-    setItem: (k: string, v: string) => { m.set(k, v) },
-    removeItem: (k: string) => { m.delete(k) },
+    setItem: (k: string, v: string) => {
+      m.set(k, v)
+    },
+    removeItem: (k: string) => {
+      m.delete(k)
+    },
     clear: () => m.clear(),
     key: () => null,
-    get length() { return m.size },
+    get length() {
+      return m.size
+    },
   }
 }
 
@@ -35,7 +41,17 @@ describe('return after sign-in', () => {
   })
 
   it('only takes routes of this app, and not the sign-in pages themselves', () => {
-    for (const hash of ['', '#', '#/', 'https://evil.example/', '#//evil.example', '#https://evil.example', '#/login', '#/register', '#/login?x=1']) {
+    for (const hash of [
+      '',
+      '#',
+      '#/',
+      'https://evil.example/',
+      '#//evil.example',
+      '#https://evil.example',
+      '#/login',
+      '#/register',
+      '#/login?x=1',
+    ]) {
       const s = memory()
       rememberReturn(s, hash)
       expect(takeReturn(s), hash).toBe('/')

@@ -12,21 +12,21 @@ export type ATCConfig = {
 }
 
 export type ATCState = {
-  sequence: number[]        // ordered list of actual dart targets (1–20, 21=25, 22=bull)
-  targets: number[]         // current target per player (actual number from sequence)
+  sequence: number[] // ordered list of actual dart targets (1–20, 21=25, 22=bull)
+  targets: number[] // current target per player (actual number from sequence)
   currentPlayer: number
   allHitThisVisit: boolean
   winner: number | null
   cfg: ATCConfig
   playerCount: number
-  currentVisitHits: boolean[]  // per-dart hit flags for the open visit
+  currentVisitHits: boolean[] // per-dart hit flags for the open visit
 }
 
 function shuffle(arr: number[], rng: Rng): number[] {
   const a = [...arr]
   for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(rng() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]]
+    const j = Math.floor(rng() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
 }
@@ -72,7 +72,10 @@ function advanceInSequence(current: number, steps: number, sequence: number[]): 
   // Find first bull checkpoint after current position
   let bullIdx = -1
   for (let i = idx + 1; i < sequence.length; i++) {
-    if (sequence[i] === 21 || sequence[i] === 22) { bullIdx = i; break }
+    if (sequence[i] === 21 || sequence[i] === 22) {
+      bullIdx = i
+      break
+    }
   }
 
   if (bullIdx === -1) {
@@ -97,17 +100,17 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
     label: 'Finish on',
     tooltip: 'Which target ends the game after hitting all numbers.',
     options: [
-      { value: 'twenty',      label: '20' },
+      { value: 'twenty', label: '20' },
       { value: 'single_bull', label: '25' },
-      { value: 'bull',        label: 'Bull' },
+      { value: 'bull', label: 'Bull' },
     ],
   },
   order: {
     label: 'Order',
     tooltip: 'The sequence in which numbers must be hit.',
     options: [
-      { value: 'asc',    label: '1→20' },
-      { value: 'desc',   label: '20→1' },
+      { value: 'asc', label: '1→20' },
+      { value: 'desc', label: '20→1' },
       { value: 'random', label: 'Random' },
     ],
   },
@@ -116,7 +119,7 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
     tooltip: 'A double or triple on the current target skips 2 or 3 numbers ahead.',
     options: [
       { value: false, label: 'Off' },
-      { value: true,  label: 'On'  },
+      { value: true, label: 'On' },
     ],
   },
   throwAgainOnAllHit: {
@@ -124,7 +127,7 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
     tooltip: 'If all 3 darts hit their target in a visit, the same player throws again.',
     options: [
       { value: false, label: 'Off' },
-      { value: true,  label: 'On'  },
+      { value: true, label: 'On' },
     ],
   },
 }
@@ -169,12 +172,12 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
       case 'dart.detected': {
         const data = e.data
         const prev = s.targets[s.currentPlayer]
-        const steps = s.cfg.multiplierAdvances ? (data.dart).segment.multiplier : 1
+        const steps = s.cfg.multiplierAdvances ? data.dart.segment.multiplier : 1
         const hit = hitsTarget(prev, data.dart)
         const currentVisitHits = [...s.currentVisitHits, hit]
         if (!hit) return { state: { ...s, allHitThisVisit: false, currentVisitHits } }
         const next = advanceInSequence(prev, steps, s.sequence)
-        const targets = s.targets.map((t, i) => i === s.currentPlayer ? next : t)
+        const targets = s.targets.map((t, i) => (i === s.currentPlayer ? next : t))
         const winner = !s.sequence.includes(next) ? s.currentPlayer : s.winner
         return {
           state: { ...s, targets, allHitThisVisit: s.allHitThisVisit && true, winner, currentVisitHits },
@@ -216,8 +219,7 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
 
   summarize(s: ATCState, { totalDarts }): SeatResult[] {
     const hits = hitCounts(s)
-    const placements = rankSeats(s.playerCount, s.winner,
-      (a, b) => (hits[b] - hits[a]) || ((totalDarts[a] ?? 0) - (totalDarts[b] ?? 0)))
+    const placements = rankSeats(s.playerCount, s.winner, (a, b) => hits[b] - hits[a] || (totalDarts[a] ?? 0) - (totalDarts[b] ?? 0))
     return placements.map((placement, i) => {
       const darts = totalDarts[i] ?? 0
       // Only a player who completed the whole sequence "finished"
@@ -230,7 +232,10 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
     return {
       mode: 'atc',
       visits: visits.map(v => ({
-        visit: v.visit, seat: v.seat, committedAt: v.committedAt, darts: v.darts,
+        visit: v.visit,
+        seat: v.seat,
+        committedAt: v.committedAt,
+        darts: v.darts,
         hits: v.end.currentVisitHits.filter(Boolean).length,
         targetBefore: v.start.targets[v.seat],
         targetAfter: v.end.targets[v.seat],

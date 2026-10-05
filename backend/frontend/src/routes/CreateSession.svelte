@@ -18,8 +18,13 @@
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const X01_DEFAULTS: Record<string, unknown> = {
-    startScore: 501, inMode: 'straight', outMode: 'double',
-    bullOff: 'off', bullValue: '25_50', maxRounds: 50, firstTo: 3,
+    startScore: 501,
+    inMode: 'straight',
+    outMode: 'double',
+    bullOff: 'off',
+    bullValue: '25_50',
+    maxRounds: 50,
+    firstTo: 3,
   }
 
   type Config = Record<string, unknown>
@@ -32,7 +37,9 @@
   let busy = $state(false)
 
   const atcGame = $derived(games.find(g => g.id === 'atc'))
-  const gameDefaults = $derived<Partial<Record<string, Config>>>(atcGame ? { x01: X01_DEFAULTS, atc: atcGame.defaultConfig } : { x01: X01_DEFAULTS })
+  const gameDefaults = $derived<Partial<Record<string, Config>>>(
+    atcGame ? { x01: X01_DEFAULTS, atc: atcGame.defaultConfig } : { x01: X01_DEFAULTS },
+  )
   let savedConfigs = $state<Partial<Record<string, Config>>>(initPrefs?.configs ?? {})
   let config = $state<Record<string, unknown>>({
     ...X01_DEFAULTS,
@@ -60,7 +67,9 @@
   $effect(() => {
     if (!modesLoaded || defaultsApplied) return
     defaultsApplied = true
-    untrack(() => { config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) } })
+    untrack(() => {
+      config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) }
+    })
   })
 
   // Your lobby, as /ws/me sums it up: the server decides which button you get
@@ -78,7 +87,7 @@
     lobbyGameApplied = true
     const saved = lobbyGame
     untrack(() => {
-      const picked = initialGameSelection(saved, { mode: selectedMode, config }, (m) => gameDefaults[m])
+      const picked = initialGameSelection(saved, { mode: selectedMode, config }, m => gameDefaults[m])
       selectedMode = picked.mode
       config = picked.config
     })
@@ -86,8 +95,10 @@
 
   // A member of someone else's lobby can't edit: the mode grid shows the lobby's planned game
   const canEditGame = $derived(action !== 'open')
-  const displayMode = $derived(canEditGame ? selectedMode : lobbyGame?.gameId ?? null)
-  const setupName = $derived(canEditGame ? GAME_MODES.find(m => m.id === selectedMode)?.name : (displayMode ? gameName(displayMode) : 'No game yet'))
+  const displayMode = $derived(canEditGame ? selectedMode : (lobbyGame?.gameId ?? null))
+  const setupName = $derived(
+    canEditGame ? GAME_MODES.find(m => m.id === selectedMode)?.name : displayMode ? gameName(displayMode) : 'No game yet',
+  )
   const invites = $derived($me?.invites.length ?? 0)
 
   // "Play on this board" on the Boards page (#/?board=): the lobby page moves your row there
@@ -99,20 +110,38 @@
 
   /** The picked mode and settings as the API takes them; null (with the error shown) if the backend has no such game. */
   function chosenGame(): { gameId: string; config: Record<string, unknown> } | null {
-    const gameId = games.find(g => g.id === selectedMode)?.id
-      ?? games.find(g => g.id.includes('501'))?.id
-      ?? games[0]?.id
-    if (!gameId) { error = 'No game found. Is the backend running?'; return null }
-    const settings = selectedMode === 'atc'
-      ? { finishOn: config.finishOn, order: config.order, multiplierAdvances: config.multiplierAdvances, throwAgainOnAllHit: config.throwAgainOnAllHit }
-      : { startScore: config.startScore, inMode: config.inMode, outMode: config.outMode, bullOff: config.bullOff, bullValue: config.bullValue, maxRounds: config.maxRounds, firstTo: config.firstTo }
+    const gameId = games.find(g => g.id === selectedMode)?.id ?? games.find(g => g.id.includes('501'))?.id ?? games[0]?.id
+    if (!gameId) {
+      error = 'No game found. Is the backend running?'
+      return null
+    }
+    const settings =
+      selectedMode === 'atc'
+        ? {
+            finishOn: config.finishOn,
+            order: config.order,
+            multiplierAdvances: config.multiplierAdvances,
+            throwAgainOnAllHit: config.throwAgainOnAllHit,
+          }
+        : {
+            startScore: config.startScore,
+            inMode: config.inMode,
+            outMode: config.outMode,
+            bullOff: config.bullOff,
+            bullValue: config.bullValue,
+            maxRounds: config.maxRounds,
+            firstTo: config.firstTo,
+          }
     return { gameId, config: settings }
   }
 
   async function toLobby() {
     if (busy || loading) return
     error = ''
-    if (action === 'open') { void push(lobbyPath(boardFromLink)); return }
+    if (action === 'open') {
+      void push(lobbyPath(boardFromLink))
+      return
+    }
     const picked = chosenGame()
     if (!picked) return
     busy = true
@@ -120,21 +149,20 @@
       const failed = await saveNextGame($me?.lobby?.id ?? null, picked)
       if (failed) error = failed
       else void push(lobbyPath(boardFromLink))
-    } finally { busy = false }
+    } finally {
+      busy = false
+    }
   }
 </script>
 
 <Layout title="New game">
   <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_32px] xl:p-[40px_44px]">
-
     {#if invites > 0}<InvitesBanner count={invites} />{/if}
 
     <!-- Header (phones: the title is in the phone header) -->
     <header class="hidden md:flex items-end justify-between">
       <div class="flex flex-col gap-[6px]">
-        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">
-          New game
-        </h1>
+        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">New game</h1>
         <p class="m-0 text-[15px] text-text-muted">Choose a mode and set it up. Your players gather in the lobby.</p>
       </div>
     </header>
@@ -145,36 +173,52 @@
       <GameModeTiles selected={displayMode} disabled={!canEditGame} onselect={selectMode} />
 
       <!-- Setup aside -->
-      <aside class="w-full lg:w-[440px] xl:w-[400px] lg:flex-shrink-0 box-border border border-line-2 rounded-[14px]
-                    bg-[#151713] flex flex-col lg:overflow-hidden">
+      <aside
+        class="w-full lg:w-[440px] xl:w-[400px] lg:flex-shrink-0 box-border border border-line-2 rounded-[14px]
+                    bg-[#151713] flex flex-col lg:overflow-hidden"
+      >
         <!-- Scrollable body: title + config -->
         <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-themed p-4 md:p-6 pb-4 md:pb-4 flex flex-col gap-[22px]">
-        <div class="flex flex-col gap-1">
-          <span class="text-[12px] tracking-[0.1em] uppercase text-text-dim">Setup</span>
-          <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
-            {setupName}
-          </h2>
-        </div>
+          <div class="flex flex-col gap-1">
+            <span class="text-[12px] tracking-[0.1em] uppercase text-text-dim">Setup</span>
+            <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
+              {setupName}
+            </h2>
+          </div>
 
-        {#if !canEditGame}
-          {#if lobbyGame}
-            <GameSettings gameId={lobbyGame.gameId} config={withDefaults(lobbyGame.config, lobbyGameDefaults)}
-              defaults={lobbyGameDefaults} meta={lobbyGameInfo?.configMeta ?? {}} teams={lobbyGameInfo?.teams ?? false} readonly />
+          {#if !canEditGame}
+            {#if lobbyGame}
+              <GameSettings
+                gameId={lobbyGame.gameId}
+                config={withDefaults(lobbyGame.config, lobbyGameDefaults)}
+                defaults={lobbyGameDefaults}
+                meta={lobbyGameInfo?.configMeta ?? {}}
+                teams={lobbyGameInfo?.teams ?? false}
+                readonly
+              />
+            {:else}
+              <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
+                <span class="text-[14px] leading-[1.5] text-text-muted">{$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.</span
+                >
+              </div>
+            {/if}
           {:else}
-            <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
-              <span class="text-[14px] leading-[1.5] text-text-muted">{$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.</span>
-            </div>
+            <GameSettings
+              gameId={selectedMode}
+              {config}
+              defaults={gameDefaults[selectedMode] ?? {}}
+              meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}}
+              teams={games.find(g => g.id === selectedMode)?.teams ?? false}
+              onchange={(key: string, value: unknown) => (config = { ...config, [key]: value })}
+            />
           {/if}
-        {:else}
-          <GameSettings gameId={selectedMode} {config} defaults={gameDefaults[selectedMode] ?? {}}
-            meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}} teams={games.find(g => g.id === selectedMode)?.teams ?? false}
-            onchange={(key: string, value: unknown) => config = { ...config, [key]: value }} />
-        {/if}
-
-        </div><!-- end scrollable body -->
+        </div>
+        <!-- end scrollable body -->
 
         <!-- Sticky bottom: error + main button -->
-        <div class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[14px] px-4 pb-6 md:px-6 md:pb-6 pt-2 md:pt-3 flex flex-col gap-3 border-t border-line">
+        <div
+          class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[14px] px-4 pb-6 md:px-6 md:pb-6 pt-2 md:pt-3 flex flex-col gap-3 border-t border-line"
+        >
           {#if error}<p class="m-0 text-[14px] text-live-text">{error}</p>{/if}
           <PlayButton label={loading ? 'Loading…' : LABELS[action]} {busy} disabled={loading} onclick={() => void toLobby()} />
         </div>

@@ -45,7 +45,14 @@
     lobby = null
     ended = null
     socket = createLobbyStore(lobbyId)
-    unsubs = [socket.lobby.subscribe(l => { lobby = l }), socket.ended.subscribe(e => { ended = e })]
+    unsubs = [
+      socket.lobby.subscribe(l => {
+        lobby = l
+      }),
+      socket.ended.subscribe(e => {
+        ended = e
+      }),
+    ]
     phase = 'open'
   }
 
@@ -74,8 +81,10 @@
 
   async function create() {
     const created = await createLobby()
-    if (created.ok) { error = ''; open(created.lobbyId) }
-    else error = created.message
+    if (created.ok) {
+      error = ''
+      open(created.lobbyId)
+    } else error = created.message
   }
   const updateLobby = (patch: LobbyPatch) => withLobby(a => a.updateLobby(patch))
   const rename = (name: string) => updateLobby({ name })
@@ -116,9 +125,14 @@
     starting = true
     try {
       const outcome = await startGame(id, { force })
-      if (outcome.kind === 'started') { error = ''; startProblem = null; openGame(outcome.sessionId) }
-      else startProblem = outcome
-    } finally { starting = false }
+      if (outcome.kind === 'started') {
+        error = ''
+        startProblem = null
+        openGame(outcome.sessionId)
+      } else startProblem = outcome
+    } finally {
+      starting = false
+    }
   }
   const host = $derived(lobby !== null && isHost(lobby, viewerId))
   const mine = $derived(lobby ? myRow(lobby, viewerId) : null)
@@ -130,7 +144,8 @@
   const myRowId = $derived(mine?.id ?? null)
   const myBoardId = $derived(mine?.boardId ?? null)
   $effect(() => {
-    const personId = myRowId, current = myBoardId
+    const personId = myRowId,
+      current = myBoardId
     if (!boardFromLink || !personId) return
     const target = boardToApply(boardFromLink, current, ownBoards)
     boardFromLink = null
@@ -138,8 +153,14 @@
     if (target) void updatePerson(personId, { boardId: target })
   })
 
-  onMount(() => { void load() })
-  onDestroy(() => { destroyed = true; socket?.destroy(); unsubs.forEach(u => u()) })
+  onMount(() => {
+    void load()
+  })
+  onDestroy(() => {
+    destroyed = true
+    socket?.destroy()
+    unsubs.forEach(u => u())
+  })
 </script>
 
 {#snippet startOrJoin()}
@@ -156,38 +177,69 @@
 <Layout title="Lobby">
   <main class="flex flex-grow flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:px-8 xl:px-11 md:py-8">
     {#if ended}
-      <EmptyState title={ended === 'closed' ? 'The lobby was closed' : "You're no longer in the lobby"}
-        text="Start a new lobby, join one with a code, or play a game of your own." actions={startOrJoin} />
+      <EmptyState
+        title={ended === 'closed' ? 'The lobby was closed' : "You're no longer in the lobby"}
+        text="Start a new lobby, join one with a code, or play a game of your own."
+        actions={startOrJoin}
+      />
     {:else if phase === 'failed'}
       <div class="flex flex-col items-start gap-3">
         <ErrorText>Couldn't load the lobby.</ErrorText>
         <Button variant="outline" size="md" onclick={() => void load()}>Try again</Button>
       </div>
     {:else if phase === 'none'}
-      <EmptyState title="You're not in a lobby"
+      <EmptyState
+        title="You're not in a lobby"
         text="A lobby keeps your crew together between games: everyone joins once, on their own board or phone."
-        actions={startOrJoin} />
+        actions={startOrJoin}
+      />
       {@render errorBanner()}
     {:else if lobby}
       {@const l = lobby}
-      <LobbyHeader {lobby} {viewerId} onrename={rename} onnewcode={() => void newCode()} onclose={() => void close()} onleave={() => void leave()} />
+      <LobbyHeader
+        {lobby}
+        {viewerId}
+        onrename={rename}
+        onnewcode={() => void newCode()}
+        onclose={() => void close()}
+        onleave={() => void leave()}
+      />
       {@render errorBanner()}
       <!-- Solo: no history, and Invite friends leads; the people list (add field included) shows either way.
            Two columns from lg (tablets: the next game in a 420 px column); one below, as on phones -->
-      <div class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:flex-grow lg:min-h-0">
+      <div
+        class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:flex-grow lg:min-h-0"
+      >
         <div class="order-2 lg:order-none flex flex-col min-w-0 lg:min-h-0">
-          <LobbyPeople lobby={l} {viewerId} {ownBoards} onupdate={updatePerson} onremove={removePerson} onguest={addGuest} oninvite={invite} />
+          <LobbyPeople
+            lobby={l}
+            {viewerId}
+            {ownBoards}
+            onupdate={updatePerson}
+            onremove={removePerson}
+            onguest={addGuest}
+            oninvite={invite}
+          />
         </div>
         <div class="order-1 lg:order-none flex flex-col gap-4 md:gap-5 min-w-0 lg:min-h-0">
           {#if l.solo}<InviteFriendsPanel lobby={l} onnewcode={() => void newCode()} />{/if}
-          {#if host}<div class="shrink-0"><LobbyAccessPanel access={l.access} onchange={(access: LobbyAccess) => void updateLobby({ access })} /></div>{/if}
+          {#if host}<div class="shrink-0">
+              <LobbyAccessPanel access={l.access} onchange={(access: LobbyAccess) => void updateLobby({ access })} />
+            </div>{/if}
           {#if l.currentSessionId}
             <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
           {/if}
           {#if host}
-            <NextGameCard lobby={l} onupdate={updateLobby} onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
-              onteammove={setTeam} onteamplace={updatePerson} onteamshuffle={shuffleTeams}
-              busy={starting} onstart={() => void start()} />
+            <NextGameCard
+              lobby={l}
+              onupdate={updateLobby}
+              onplays={(personId: string, plays: boolean) => updatePerson(personId, { plays })}
+              onteammove={setTeam}
+              onteamplace={updatePerson}
+              onteamshuffle={shuffleTeams}
+              busy={starting}
+              onstart={() => void start()}
+            />
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
           {/if}
@@ -206,6 +258,12 @@
 </Layout>
 
 {#if startProblem}
-  <StartProblemDialog problem={startProblem}
-    onstartanyway={() => { startProblem = null; void start(true) }} onback={() => startProblem = null} />
+  <StartProblemDialog
+    problem={startProblem}
+    onstartanyway={() => {
+      startProblem = null
+      void start(true)
+    }}
+    onback={() => (startProblem = null)}
+  />
 {/if}

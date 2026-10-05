@@ -35,21 +35,30 @@ export type X01PlayerView = {
 }
 
 export function x01Player(
-  game: X01Game, i: number, history: VisitHistory, o: { active: boolean; suggest: boolean; bust?: boolean; scoreUpdates?: ScoreUpdates },
+  game: X01Game,
+  i: number,
+  history: VisitHistory,
+  o: { active: boolean; suggest: boolean; bust?: boolean; scoreUpdates?: ScoreUpdates },
 ): X01PlayerView {
   const remaining = game.scores.at(i) ?? 0
   const opened = game.opened.at(i) ?? true
   const running = o.active ? game.currentVisitDarts : []
   const dartsLeft = 3 - running.length
-  const hint = o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, game.config.outMode, dartsLeft) : null
+  const hint =
+    o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0 ? checkoutHint(remaining, game.config.outMode, dartsLeft) : null
   const all = history.all.at(i) ?? []
   const leg = history.leg.at(i) ?? []
   const last = all.at(-1)
   return {
-    remaining, opened,
+    remaining,
+    opened,
     shown: shownScore({
-      mode: o.scoreUpdates ?? 'dart', score: remaining, thrower: o.active, locked: game.visitLocked,
-      darts: running, start: history.start.at(i) ?? null,
+      mode: o.scoreUpdates ?? 'dart',
+      score: remaining,
+      thrower: o.active,
+      locked: game.visitLocked,
+      darts: running,
+      start: history.start.at(i) ?? null,
     }),
     canFinish: hint ? hint.join(' · ') : null,
     avg: fmtAvg(threeDartAvg(all)),
@@ -79,7 +88,11 @@ export function atcPlayer(game: AtcGame, i: number): AtcPlayerView {
   const darts = game.totalDarts.at(i) ?? 0
   const hits = game.hitCounts.at(i) ?? 0
   return {
-    target: atcTargetLabel(seq, target), done: atcDone(seq, target), total: seq.length,
-    cells: atcCells(seq, target), darts, hitRate: darts ? `${Math.round((hits / darts) * 100)}%` : '0%',
+    target: atcTargetLabel(seq, target),
+    done: atcDone(seq, target),
+    total: seq.length,
+    cells: atcCells(seq, target),
+    darts,
+    hitRate: darts ? `${Math.round((hits / darts) * 100)}%` : '0%',
   }
 }

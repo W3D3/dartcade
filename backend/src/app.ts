@@ -45,7 +45,11 @@ export type AppDeps = {
 
 // The JSON import types its enums as plain strings, which the OpenAPI types don't accept;
 // the document itself is our generated spec, checked here for its top-level shape
-const OpenApiShapeSchema = z.object({ openapi: z.string(), info: z.record(z.string(), z.unknown()), paths: z.record(z.string(), z.unknown()) })
+const OpenApiShapeSchema = z.object({
+  openapi: z.string(),
+  info: z.record(z.string(), z.unknown()),
+  paths: z.record(z.string(), z.unknown()),
+})
 function isOpenApiDocument(v: unknown): v is StaticDocumentSpec['document'] {
   return OpenApiShapeSchema.safeParse(v).success
 }
@@ -76,12 +80,15 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   // UI blank. Registering it with routePrefix: '/docs' inside an '/api'-prefixed scope keeps the
   // public URLs identical (/api/docs, /api/docs/json, /api/docs/static/*) while the generated
   // relative links become `./docs/static/...`, which resolves correctly to /api/docs/static/....
-  await app.register(async (api) => {
-    await api.register(fastifySwaggerUi, {
-      routePrefix: '/docs',
-      uiConfig: swaggerUiConfig,
-    })
-  }, { prefix: '/api' })
+  await app.register(
+    async api => {
+      await api.register(fastifySwaggerUi, {
+        routePrefix: '/docs',
+        uiConfig: swaggerUiConfig,
+      })
+    },
+    { prefix: '/api' },
+  )
 
   app.all('/api/auth/*', async (req, reply) => {
     // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
@@ -93,23 +100,36 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   if (frontendDist) {
     try {
       await app.register(fastifyStatic, { root: frontendDist, wildcard: false })
-    } catch { /* not built yet */ }
+    } catch {
+      /* not built yet */
+    }
   }
 
   await app.register(bridgeGwPlugin, {
-    engine, db,
-    onBoardPresence: boardId => { lobbies.onBoardPresence(boardId) },
-    onCameraStill: (boardId, cam, version) => { pushCamera(engine, boardId, cam, version) },
+    engine,
+    db,
+    onBoardPresence: boardId => {
+      lobbies.onBoardPresence(boardId)
+    },
+    onCameraStill: (boardId, cam, version) => {
+      pushCamera(engine, boardId, cam, version)
+    },
   })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
-  await app.register(meApiPlugin, { db, onChanged: userId => { friends.touch([userId]) } })
+  await app.register(meApiPlugin, {
+    db,
+    onChanged: userId => {
+      friends.touch([userId])
+    },
+  })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
   await app.register(boardsApiPlugin, {
-    db, releaseBoard: boardId => lobbies.releaseBoard(boardId),
+    db,
+    releaseBoard: boardId => lobbies.releaseBoard(boardId),
     getSessionByBoard: boardId => engine.getSessionByBoard(boardId),
     isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
   })
@@ -123,8 +143,11 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   app.setNotFoundHandler((req, reply) => {
     const reserved = req.url.startsWith('/api') || req.url.startsWith('/ws') || req.url.startsWith('/bridge')
     if (!reserved && req.method === 'GET') {
-      try { return reply.sendFile('index.html') }
-      catch { /* not built yet */ }
+      try {
+        return reply.sendFile('index.html')
+      } catch {
+        /* not built yet */
+      }
     }
     return reply.code(404).send({ error: 'not found' })
   })

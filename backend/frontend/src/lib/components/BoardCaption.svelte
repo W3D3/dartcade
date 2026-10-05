@@ -12,7 +12,11 @@
   }
 </script>
 
-<span class="self-center shrink-0 flex items-center font-semibold uppercase tracking-[0.1em] whitespace-nowrap
-             {compact ? 'h-[14px] gap-[6px] text-[11px]' : 'h-5 gap-2 text-[13px]'} {caption.tone === 'warn' ? 'text-warn' : 'text-text-muted'}">
+<span
+  class="self-center shrink-0 flex items-center font-semibold uppercase tracking-[0.1em] whitespace-nowrap
+             {compact ? 'h-[14px] gap-[6px] text-[11px]' : 'h-5 gap-2 text-[13px]'} {caption.tone === 'warn'
+    ? 'text-warn'
+    : 'text-text-muted'}"
+>
   <span class="{compact ? 'w-[7px] h-[7px]' : 'w-2 h-2'} {DOT[caption.tone]}" aria-hidden="true"></span>{caption.text}
 </span>

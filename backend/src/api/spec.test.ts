@@ -16,8 +16,8 @@ async function registeredRoutes() {
     friends: {} as any,
     onRoute: (r: RouteOptions) => {
       for (const method of ([] as string[]).concat(r.method)) {
-        if (method === 'HEAD') continue   // auto-added for every GET
-        routes.push({ method, path: r.url, operationId: (r.schema)?.operationId })
+        if (method === 'HEAD') continue // auto-added for every GET
+        routes.push({ method, path: r.url, operationId: r.schema?.operationId })
       }
     },
   })
@@ -34,7 +34,7 @@ describe('schema/api-v1.yaml', () => {
     expect(registered).toEqual(specRoutes.map(key).sort())
   })
 
-  it('attaches each operation\'s schema to its route', async () => {
+  it("attaches each operation's schema to its route", async () => {
     const byKey = new Map(specRoutes.map(r => [key(r), r.operation.operationId]))
     const missing = (await registeredRoutes())
       .filter(r => r.operationId !== byKey.get(key(r)))

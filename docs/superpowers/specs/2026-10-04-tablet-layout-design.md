@@ -34,6 +34,7 @@ events spill out of their panel, and a two-player match clips "501".
 
 The layout rule holds (2 players: board in the centre, a panel each side; 3+: board to the side,
 stacked rows); only the sizes change in the band.
+
 - **Header:** 60 px tall, 20 px side padding, 24 px title, 13 px meta.
 - **Two players:** panels a fixed 300 px, the centre takes the rest; board up to 400 px. The big
   score (and Around the Clock's target) scales with its panel, not only the viewport height (a

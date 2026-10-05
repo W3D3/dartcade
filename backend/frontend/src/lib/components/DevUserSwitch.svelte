@@ -25,10 +25,14 @@
   <div class="flex flex-wrap gap-2">
     {#each DEV_USERS as user (user.email)}
       {@const current = $currentUser?.email === user.email}
-      <button type="button" disabled={busy !== null || current} onclick={() => void pick(user)}
+      <button
+        type="button"
+        disabled={busy !== null || current}
+        onclick={() => void pick(user)}
         class="h-9 px-3 rounded-full border text-[14px] font-medium cursor-pointer disabled:cursor-default
                {current ? 'border-accent text-accent bg-transparent' : 'border-line-3 text-text bg-transparent'}
-               {busy === user.email ? 'opacity-60' : ''}">
+               {busy === user.email ? 'opacity-60' : ''}"
+      >
         {user.name}
       </button>
     {/each}

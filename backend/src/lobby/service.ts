@@ -23,7 +23,13 @@ const CODE_ATTEMPTS = 5
 
 export type LobbyRef = { id: string; name: string; code: string }
 export type LobbyPreview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
-export type LobbyPatch = { name?: string; throwOrder?: ThrowOrder; access?: LobbyAccess; nextGame?: NextGame | null; regenerateCode?: boolean }
+export type LobbyPatch = {
+  name?: string
+  throwOrder?: ThrowOrder
+  access?: LobbyAccess
+  nextGame?: NextGame | null
+  regenerateCode?: boolean
+}
 export type PersonPatch = { boardId?: string | null; plays?: boolean; ready?: boolean; position?: number; team?: TeamId }
 
 export type LobbyDeps = {
@@ -37,7 +43,7 @@ export type LobbyDeps = {
 }
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
-const memberIds = (l: LobbyState): string[] => l.people.flatMap(p => p.userId === null ? [] : [p.userId])
+const memberIds = (l: LobbyState): string[] => l.people.flatMap(p => (p.userId === null ? [] : [p.userId]))
 
 function planError(p: PlanProblem): LobbyError {
   if (p.status === 400) return LobbyError.badRequest(p.error)
@@ -66,7 +72,9 @@ export class LobbyService {
 
   constructor(private readonly deps: LobbyDeps) {}
 
-  private get db(): Kysely<Database> { return this.deps.db }
+  private get db(): Kysely<Database> {
+    return this.deps.db
+  }
 
   private warn(message: string, details: unknown = {}): void {
     if (this.deps.warn) this.deps.warn(message, details)
@@ -75,7 +83,10 @@ export class LobbyService {
 
   private enqueue<T>(lobbyId: string, task: () => Promise<T>): Promise<T> {
     const run = (this.queues.get(lobbyId) ?? Promise.resolve()).then(task)
-    this.queues.set(lobbyId, run.catch(() => undefined))
+    this.queues.set(
+      lobbyId,
+      run.catch(() => undefined),
+    )
     return run
   }
 
@@ -153,7 +164,9 @@ export class LobbyService {
 
   private send(lobby: LobbyState): void {
     const msg: LobbyServerMessage = { type: 'lobby', lobby: this.viewOf(lobby) }
-    checkLobbyMessage(msg, m => { this.warn(m) })
+    checkLobbyMessage(msg, m => {
+      this.warn(m)
+    })
     this.deps.hub.sendLobby(lobby.id, msg)
   }
 
@@ -185,11 +198,16 @@ export class LobbyService {
     const lobby = lobbyId === undefined ? undefined : await this.state(lobbyId)
     const session = this.deps.engine.getSessionByUser(userId)
     const msg: MeMessage = {
-      type: 'me', invites,
+      type: 'me',
+      invites,
       lobby: lobby ? lobbySummary(lobby, userId, this.deps.engine.getLobbySession(lobby.id)) : null,
-      game: session ? { sessionId: session.id, gameId: session.module.id, lobbyName: session.lobbyName, players: session.players.map(p => p.name) } : null,
+      game: session
+        ? { sessionId: session.id, gameId: session.module.id, lobbyName: session.lobbyName, players: session.players.map(p => p.name) }
+        : null,
     }
-    checkLobbyMessage(msg, m => { this.warn(m) })
+    checkLobbyMessage(msg, m => {
+      this.warn(m)
+    })
     return msg
   }
 
@@ -226,8 +244,11 @@ export class LobbyService {
     if (!lobby) return null
     const host = lobby.hostUserId === null ? undefined : rules.memberOf(lobby, lobby.hostUserId)
     return {
-      id: lobby.id, name: lobby.name, hostName: host?.name ?? null, peopleCount: lobby.people.length,
-      boardNames: [...new Set(lobby.people.flatMap(p => p.boardName === null ? [] : [p.boardName]))],
+      id: lobby.id,
+      name: lobby.name,
+      hostName: host?.name ?? null,
+      peopleCount: lobby.people.length,
+      boardNames: [...new Set(lobby.people.flatMap(p => (p.boardName === null ? [] : [p.boardName])))],
     }
   }
 
@@ -240,9 +261,13 @@ export class LobbyService {
     if (!user) throw LobbyError.notFound('account not found')
     const board = (await q.usualBoards(this.db, [userId])).get(userId) ?? null
     const id = ulid()
-    await this.withFreshCode(userId, code => q.insertLobby(this.db,
-      { id, name: defaultLobbyName(user.name), hostUserId: userId, code },
-      { id: ulid(), userId, addedByUserId: userId, name: user.name, boardId: board?.id ?? null, ready: false }))
+    await this.withFreshCode(userId, code =>
+      q.insertLobby(
+        this.db,
+        { id, name: defaultLobbyName(user.name), hostUserId: userId, code },
+        { id: ulid(), userId, addedByUserId: userId, name: user.name, boardId: board?.id ?? null, ready: false },
+      ),
+    )
     const lobby = await this.reload(id)
     if (!lobby) throw new Error(`lobby ${id} missing after insert`)
     await this.publish(id)
@@ -280,13 +305,14 @@ export class LobbyService {
   // The open lobby the user may join this way; 404 when closed or the code is wrong, 403 when a
   // code is needed
   private async mayJoin(lobby: LobbyState | undefined, userId: string, code: string | undefined): Promise<LobbyState> {
-    if (!lobby || lobby.closedAt !== null) throw LobbyError.notFound(code === undefined ? 'lobby not found' : 'no open lobby with this code')
+    if (!lobby || lobby.closedAt !== null)
+      throw LobbyError.notFound(code === undefined ? 'lobby not found' : 'no open lobby with this code')
     if (code !== undefined) {
       if (lobby.code !== normalizeCode(code)) throw LobbyError.notFound('no open lobby with this code')
       return lobby
     }
     if (rules.isMember(lobby, userId)) return lobby
-    const hostIsFriend = lobby.hostUserId !== null && await areFriends(this.db, lobby.hostUserId, userId)
+    const hostIsFriend = lobby.hostUserId !== null && (await areFriends(this.db, lobby.hostUserId, userId))
     if (!rules.friendsMayJoin(lobby, hostIsFriend)) throw LobbyError.forbidden("Only the host's friends can join without the code")
     return lobby
   }
@@ -318,9 +344,17 @@ export class LobbyService {
     try {
       // The lock (not just this app-level check) is the backstop against inserting into a
       // lobby that a concurrent close just slipped past us — see lobbyIsOpenForShare.
-      const inserted = await this.db.transaction().execute(async (trx) => {
+      const inserted = await this.db.transaction().execute(async trx => {
         if (!(await q.lobbyIsOpenForShare(trx, lobby.id))) return false
-        await q.insertPerson(trx, { id: ulid(), lobbyId: lobby.id, userId, addedByUserId: userId, name: user.name, boardId: board?.id ?? null, ready: false })
+        await q.insertPerson(trx, {
+          id: ulid(),
+          lobbyId: lobby.id,
+          userId,
+          addedByUserId: userId,
+          name: user.name,
+          boardId: board?.id ?? null,
+          ready: false,
+        })
         await q.acceptInvites(trx, lobby.id, userId)
         await q.addActivity(trx, lobby.id, 'joined', userId, { name: user.name })
         await this.fillTeams(trx, lobby.id, lobby.nextGame)
@@ -351,13 +385,21 @@ export class LobbyService {
   private async dropMember(lobby: LobbyState, memberUserId: string, kind: 'left' | 'removed', actorUserId: string): Promise<void> {
     const going = rules.leavingWith(lobby, memberUserId)
     const name = rules.memberOf(lobby, memberUserId)?.name ?? ''
-    await this.db.transaction().execute(async (trx) => {
-      await q.deletePeople(trx, going.map(p => p.id))
+    await this.db.transaction().execute(async trx => {
+      await q.deletePeople(
+        trx,
+        going.map(p => p.id),
+      )
       await q.clearBoardsOf(trx, lobby.id, memberUserId)
       await q.addActivity(trx, lobby.id, kind, actorUserId, { name })
     })
-    this.deps.hub.closeLobbyFor(lobby.id, memberUserId, WsCloseCode.Forbidden, kind === 'left' ? 'left the lobby' : 'removed from the lobby')
-    if (await this.settleHost(lobby.id) === 'open') await this.publish(lobby.id, [memberUserId])
+    this.deps.hub.closeLobbyFor(
+      lobby.id,
+      memberUserId,
+      WsCloseCode.Forbidden,
+      kind === 'left' ? 'left the lobby' : 'removed from the lobby',
+    )
+    if ((await this.settleHost(lobby.id)) === 'open') await this.publish(lobby.id, [memberUserId])
     else {
       try {
         await this.pushMe(memberUserId)
@@ -381,7 +423,7 @@ export class LobbyService {
     if (lobby.hostUserId !== null && rules.isMember(lobby, lobby.hostUserId)) return 'open'
     const next = rules.nextHost(lobby)
     if (next === null) return 'open'
-    await this.db.transaction().execute(async (trx) => {
+    await this.db.transaction().execute(async trx => {
       await q.updateLobby(trx, lobbyId, { host_user_id: next.userId })
       await q.addActivity(trx, lobbyId, 'host_changed', next.userId, { name: next.name })
     })
@@ -447,7 +489,7 @@ export class LobbyService {
         if (coupled.nextGameChanged) set.next_game = coupled.nextGame
       }
       if (Object.keys(set).length > 0) {
-        await this.db.transaction().execute(async (trx) => {
+        await this.db.transaction().execute(async trx => {
           await q.updateLobby(trx, lobbyId, set)
           if (set.next_game !== undefined) await this.fillTeams(trx, lobbyId, set.next_game)
         })
@@ -471,7 +513,7 @@ export class LobbyService {
       else if (guest.boardId === null) boardId = null
       else boardId = (await this.ownFreeBoard(lobbyId, userId, guest.boardId)).id
       const id = ulid()
-      await this.db.transaction().execute(async (trx) => {
+      await this.db.transaction().execute(async trx => {
         await q.insertPerson(trx, { id, lobbyId, userId: null, addedByUserId: userId, name, boardId, ready: true })
         await q.addActivity(trx, lobbyId, 'guest_added', userId, { name })
         await this.fillTeams(trx, lobbyId, lobby.nextGame)
@@ -504,7 +546,8 @@ export class LobbyService {
       if (!person) throw LobbyError.notFound('person not found')
       // Every field is checked before anything is written
       if (patch.ready !== undefined && !rules.canSetReady(userId, person)) throw LobbyError.forbidden('only they set their own ready')
-      if (patch.plays !== undefined && !rules.canSetPlays(lobby, userId, person)) throw LobbyError.forbidden('only they or the host decide whether they play')
+      if (patch.plays !== undefined && !rules.canSetPlays(lobby, userId, person))
+        throw LobbyError.forbidden('only they or the host decide whether they play')
       if (patch.position !== undefined && !rules.canMove(lobby, userId)) throw LobbyError.forbidden('only the host reorders people')
       if (patch.team !== undefined && !rules.canSetTeam(lobby, userId)) throw LobbyError.forbidden('only the host changes teams')
       const board = patch.boardId === undefined ? undefined : await this.boardChange(lobby, userId, person, patch.boardId)
@@ -517,11 +560,16 @@ export class LobbyService {
         set.board_id = board.boardId
         set.board_moved_by = board.movedBy
       }
-      await this.db.transaction().execute(async (trx) => {
+      await this.db.transaction().execute(async trx => {
         if (Object.keys(set).length > 0) await q.updatePerson(trx, personId, set)
         if (patch.position !== undefined) await q.setPositions(trx, lobbyId, rules.reorder(lobby.people, personId, patch.position))
         if (board) {
-          await q.addActivity(trx, lobbyId, 'board_moved', userId, { name: person.name, userId: person.userId, fromBoardName: person.boardName, toBoardName: board.boardName })
+          await q.addActivity(trx, lobbyId, 'board_moved', userId, {
+            name: person.name,
+            userId: person.userId,
+            fromBoardName: person.boardName,
+            toBoardName: board.boardName,
+          })
         }
         // Back in from sitting out: a team if they have none
         if (patch.plays === true) await this.fillTeams(trx, lobbyId, lobby.nextGame)
@@ -536,7 +584,7 @@ export class LobbyService {
     await this.enqueue(lobbyId, async () => {
       const lobby = await this.openFor(lobbyId, userId)
       if (!rules.canSetTeam(lobby, userId)) throw LobbyError.forbidden('only the host changes teams')
-      if (!rules.isTeamGame(lobby)) throw LobbyError.badRequest('the next game isn\'t played in teams')
+      if (!rules.isTeamGame(lobby)) throw LobbyError.badRequest("the next game isn't played in teams")
       const teams = rules.shuffleTeams(lobby)
       await this.db.transaction().execute(trx => q.setTeams(trx, teams))
       await this.reload(lobbyId)
@@ -545,12 +593,17 @@ export class LobbyService {
   }
 
   // The board rule (spec, Decisions → Boards); undefined when the board stays the same
-  private async boardChange(lobby: LobbyState, userId: string, person: LobbyPerson, boardId: string | null):
-    Promise<{ boardId: string | null; boardName: string | null; movedBy: string | null } | undefined> {
+  private async boardChange(
+    lobby: LobbyState,
+    userId: string,
+    person: LobbyPerson,
+    boardId: string | null,
+  ): Promise<{ boardId: string | null; boardName: string | null; movedBy: string | null } | undefined> {
     const target = boardId === null ? null : await getBoardById(this.db, boardId)
     if (target === undefined) throw LobbyError.badRequest('board not found')
     const allowed = rules.canSetBoard(userId, person, target === null ? null : { boardId: target.id, ownerUserId: target.owner_user_id })
-    if (!allowed) throw LobbyError.forbidden('you can give out your own boards to people on Manual, change your own rows, or take your board back')
+    if (!allowed)
+      throw LobbyError.forbidden('you can give out your own boards to people on Manual, change your own rows, or take your board back')
     if ((target?.id ?? null) === person.boardId) return undefined
     if (target !== null) this.assertBoardFree(lobby.id, target.id)
     // "Moved by you": someone put them on a board they (or their adder) didn't pick
@@ -568,7 +621,7 @@ export class LobbyService {
         await this.dropMember(lobby, person.userId, 'removed', userId)
         return
       }
-      await this.db.transaction().execute(async (trx) => {
+      await this.db.transaction().execute(async trx => {
         await q.deletePeople(trx, [person.id])
         await q.addActivity(trx, lobbyId, 'removed', userId, { name: person.name })
       })
@@ -586,7 +639,8 @@ export class LobbyService {
       if (inviteeUserId === userId) throw LobbyError.badRequest('you are in the lobby already')
       const invitee = (await getUsersByIds(this.db, [inviteeUserId])).at(0)
       if (!invitee) throw LobbyError.notFound('account not found')
-      if (rules.isMember(lobby, inviteeUserId)) throw LobbyError.conflict({ error: `${invitee.name} is in the lobby already`, code: 'already_member' })
+      if (rules.isMember(lobby, inviteeUserId))
+        throw LobbyError.conflict({ error: `${invitee.name} is in the lobby already`, code: 'already_member' })
       const invitedAlready = LobbyError.conflict({ error: `${invitee.name} is invited already`, code: 'already_invited' })
       if (lobby.invites.some(i => i.userId === inviteeUserId)) throw invitedAlready
       const id = ulid()
@@ -658,9 +712,14 @@ export class LobbyService {
     const { plan } = planned
     let sessionId: string
     try {
-      ({ sessionId } = await this.deps.engine.createWithSeats({
-        ownerUserId: hostUserId, gameId: plan.gameId, config: plan.config, seats: plan.seats,
-        shuffleSeats: plan.shuffleSeats, lobbyId: lobby.id, lobbyName: rules.isSolo(lobby) ? null : lobby.name,
+      ;({ sessionId } = await this.deps.engine.createWithSeats({
+        ownerUserId: hostUserId,
+        gameId: plan.gameId,
+        config: plan.config,
+        seats: plan.seats,
+        shuffleSeats: plan.shuffleSeats,
+        lobbyId: lobby.id,
+        lobbyName: rules.isSolo(lobby) ? null : lobby.name,
       }))
     } catch (err) {
       throw this.startError(lobby, hostUserId, err)
@@ -689,7 +748,8 @@ export class LobbyService {
     if (err instanceof ActiveSessionError) {
       const name = rules.memberOf(lobby, err.userId)?.name ?? 'A player'
       return LobbyError.conflict({
-        error: `${name} already has a game running`, code: 'active_session',
+        error: `${name} already has a game running`,
+        code: 'active_session',
         ...(err.userId === hostUserId ? { sessionId: err.sessionId } : {}),
       })
     }
@@ -703,8 +763,13 @@ export class LobbyService {
    * `publish`; this also covers a game started outside a lobby (POST /api/sessions).
    */
   async onGameStarted(e: GameStarted): Promise<void> {
-    await Promise.all(e.userIds.map(userId =>
-      this.pushMe(userId).catch((err: unknown) => { this.warn('game-start push failed', { userId, sessionId: e.sessionId, error: String(err) }) })))
+    await Promise.all(
+      e.userIds.map(userId =>
+        this.pushMe(userId).catch((err: unknown) => {
+          this.warn('game-start push failed', { userId, sessionId: e.sessionId, error: String(err) })
+        }),
+      ),
+    )
     this.statusChanged(e.userIds)
   }
 
@@ -723,14 +788,19 @@ export class LobbyService {
    */
   async onGameEnded(e: GameEnded): Promise<void> {
     this.statusChanged(e.userIds)
-    await Promise.all(e.userIds.map(userId =>
-      this.pushMe(userId).catch((err: unknown) => { this.warn('game-end push failed', { userId, sessionId: e.sessionId, error: String(err) }) })))
+    await Promise.all(
+      e.userIds.map(userId =>
+        this.pushMe(userId).catch((err: unknown) => {
+          this.warn('game-end push failed', { userId, sessionId: e.sessionId, error: String(err) })
+        }),
+      ),
+    )
     const lobbyId = e.lobbyId
     if (lobbyId === null) return
     this.enqueue(lobbyId, async () => {
       const lobby = await this.reload(lobbyId)
       if (!lobby || lobby.closedAt !== null) return
-      await this.db.transaction().execute(async (trx) => {
+      await this.db.transaction().execute(async trx => {
         await q.resetAfterGame(trx, lobbyId)
         // Everyone is back in: whoever sat out without a team gets one
         await this.fillTeams(trx, lobbyId, lobby.nextGame)
@@ -738,13 +808,20 @@ export class LobbyService {
           // A team win names the whole team ("Phil & Michael")
           const winners = e.results.filter(r => r.placement === 1 && !r.forfeited).map(r => r.name)
           const winnerName = (e.teamGame ? winners.join(' & ') : winners.at(0)) || null
-          await q.addActivity(trx, lobbyId, 'game_played', null, { sessionId: e.sessionId, gameId: e.gameId, winnerName, players: e.results })
+          await q.addActivity(trx, lobbyId, 'game_played', null, {
+            sessionId: e.sessionId,
+            gameId: e.gameId,
+            winnerName,
+            players: e.results,
+          })
         } else {
           await q.addActivity(trx, lobbyId, 'game_aborted', e.abortedByUserId, { sessionId: e.sessionId, gameId: e.gameId })
         }
       })
-      if (await this.settleHost(lobbyId) === 'open') await this.publish(lobbyId)
-    }).catch((err: unknown) => { this.warn('lobby reset after a game failed', { lobbyId, sessionId: e.sessionId, error: String(err) }) })
+      if ((await this.settleHost(lobbyId)) === 'open') await this.publish(lobbyId)
+    }).catch((err: unknown) => {
+      this.warn('lobby reset after a game failed', { lobbyId, sessionId: e.sessionId, error: String(err) })
+    })
   }
 
   /**

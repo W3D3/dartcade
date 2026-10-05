@@ -53,7 +53,10 @@ function rulesLine(game: NextGame | null, defaults: Record<string, unknown>): st
     const start = int(c.startScore)
     if (start === null) return ''
     const legs = int(c.firstTo) ?? 3
-    const rules = x01Rules({ startScore: start, inMode: mode(c.inMode, 'straight'), outMode: mode(c.outMode, 'straight'), firstTo: legs }, 2)
+    const rules = x01Rules(
+      { startScore: start, inMode: mode(c.inMode, 'straight'), outMode: mode(c.outMode, 'straight'), firstTo: legs },
+      2,
+    )
     const bullOff = BULL_OFF[str(c.bullOff)]
     return bullOff ? `${rules} · ${bullOff}` : rules
   }
@@ -72,19 +75,26 @@ export function activityLine(a: LobbyActivity, viewerId: string | null): Part[] 
   const game: Part = { text: gameName(a.data.gameId ?? ''), bold: true }
   const t = (text: string): Part => ({ text })
   switch (a.kind) {
-    case 'opened': return [actor, t(' opened the lobby')]
-    case 'joined': return you ? [t('You joined')] : [name, t(' joined')]
-    case 'left': return you ? [t('You left')] : [name, t(' left')]
-    case 'removed': return [actor, t(' removed '), name]
-    case 'guest_added': return [actor, t(' added guest '), name]
+    case 'opened':
+      return [actor, t(' opened the lobby')]
+    case 'joined':
+      return you ? [t('You joined')] : [name, t(' joined')]
+    case 'left':
+      return you ? [t('You left')] : [name, t(' left')]
+    case 'removed':
+      return [actor, t(' removed '), name]
+    case 'guest_added':
+      return [actor, t(' added guest '), name]
     case 'board_moved': {
       const to = t(` to ${a.data.toBoardName ?? 'manual entry'}`)
       // The moved person's own id: null for a guest, so they never match the actor
       const movedSelf = a.data.userId !== null && a.data.userId !== undefined && a.data.userId === a.actorUserId
       return movedSelf ? [actor, t(' moved'), to] : [actor, t(' moved '), name, to]
     }
-    case 'host_changed': return you ? [t("You're the host now")] : [name, t(' is the host now')]
-    case 'game_aborted': return a.actorUserId === null ? [game, t(' was aborted')] : [actor, t(' aborted '), game]
+    case 'host_changed':
+      return you ? [t("You're the host now")] : [name, t(' is the host now')]
+    case 'game_aborted':
+      return a.actorUserId === null ? [game, t(' was aborted')] : [actor, t(' aborted '), game]
     case 'game_played': {
       const parts: Part[] = [t('Played '), game]
       const n = a.data.players?.length ?? 0
@@ -112,12 +122,14 @@ export type IndicatorView = { tag: string; name: string; line: string; next: str
 export function indicatorView(s: LobbySummary): IndicatorView {
   const tag = s.sessionId ? 'In lobby · Playing' : s.youHost ? 'In lobby · Host' : 'In lobby'
   const next = s.sessionId
-    ? (s.youThrowNext ? 'you throw next' : 'game running')
-    : (s.nextGame ? `Next: ${gameName(s.nextGame.gameId)}` : 'no game picked')
+    ? s.youThrowNext
+      ? 'you throw next'
+      : 'game running'
+    : s.nextGame
+      ? `Next: ${gameName(s.nextGame.gameId)}`
+      : 'no game picked'
   const first = s.sessionId ? gameName(s.gameId ?? '') : `${s.peopleCount} ${s.peopleCount === 1 ? 'person' : 'people'}`
-  const back = s.sessionId
-    ? { sessionId: s.sessionId, label: s.leg === null ? 'Back to game' : `Back to game · Leg ${s.leg + 1}` }
-    : null
+  const back = s.sessionId ? { sessionId: s.sessionId, label: s.leg === null ? 'Back to game' : `Back to game · Leg ${s.leg + 1}` } : null
   return { tag, name: s.name, line: `${first} · ${next}`, next, back }
 }
 
@@ -139,7 +151,7 @@ export function inviteTime(at: string, now: Date): string {
 
 /** Under a person's name: whose guest they are, who put them on their board, where they usually play. */
 export function personLine(p: LobbyPerson, people: LobbyPerson[], viewerId: string | null): string {
-  const nameOf = (userId: string) => (userId === viewerId ? 'you' : people.find(q => q.userId === userId)?.name ?? 'someone')
+  const nameOf = (userId: string) => (userId === viewerId ? 'you' : (people.find(q => q.userId === userId)?.name ?? 'someone'))
   const parts: string[] = []
   if (p.userId === null) parts.push(p.addedByUserId === viewerId ? 'Your guest' : `${nameOf(p.addedByUserId)}'s guest`)
   if (p.boardMovedBy !== null) {

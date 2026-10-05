@@ -7,10 +7,13 @@
   let { board, active, justPaired, onselect }: { board: Board; active: boolean; justPaired: boolean; onselect: () => void } = $props()
 </script>
 
-<button type="button" onclick={onselect} aria-pressed={active}
+<button
+  type="button"
+  onclick={onselect}
+  aria-pressed={active}
   class="text-left box-border p-[22px] md:max-xl:p-5 rounded-[14px] flex flex-col gap-[18px] md:max-xl:gap-4 transition-colors
-         {justPaired || active ? 'bg-surface-2 border-2 border-accent' : 'bg-surface-2 border border-line-2 hover:border-line'}">
-
+         {justPaired || active ? 'bg-surface-2 border-2 border-accent' : 'bg-surface-2 border border-line-2 hover:border-line'}"
+>
   <div class="flex justify-between items-center">
     {#if justPaired && !board.online}
       <span class="flex items-center gap-2 text-[13px] font-semibold text-text-muted">
@@ -19,8 +22,10 @@
       </span>
       <Badge variant="paired">Just paired</Badge>
     {:else}
-      <span class="flex items-center gap-2 text-[13px] font-semibold
-                   {board.online ? 'text-accent' : 'text-text-dim'}">
+      <span
+        class="flex items-center gap-2 text-[13px] font-semibold
+                   {board.online ? 'text-accent' : 'text-text-dim'}"
+      >
         <span class="w-2 h-2 rounded-full {board.online ? 'bg-accent' : 'bg-text-dim'}"></span>
         {board.online ? 'Online' : 'Offline'}
       </span>

@@ -5,6 +5,7 @@
 **Goal:** The match screen shows what's going on in a game played from several places. Each seat shows its board. The header shows the lobby name. When someone else is up, the centre shows "Live from <board>". When the player who's up has the game closed, everyone sees "Waiting for X · disconnected m:ss" (and the host can abort). When the up seat's board is offline, its controller gets the keypad and the others see "<name>'s board is offline". A dart thrown on your board out of turn shows a "Not your turn" toast that names who is throwing where. All of this works on desktop and on the phone layout.
 
 **Architecture:**
+
 - **Backend (small):**
   - `BrowserConnections` remembers when each user's last socket of a game closed.
   - The engine puts that time in the snapshot as the seat's `disconnectedAt`, and adds a top-level `lobbyName` (a new `Session.lobbyName`, always `null` until the lobbies plan sets it).
@@ -75,6 +76,7 @@
    - the snapshot field
 
    The lobbies plan passes it in, through its start path and on rebuild. `NewSessionSpec` isn't touched here, to avoid colliding with that plan.
+
 8. **`throwerBoard`** is the up seat's board name, even when that board is offline. It's `null` for a seat that enters darts by hand. A seat whose board has no name left (board deleted) shows as "Board".
 9. **Not your turn → the centre always shows the board** ("Live from …"), whatever the Board/Enter toggle says. The toggle is hidden then, and while your own offline board forces the keypad.
 10. **Start view.** The match starts on the keypad when none of the viewer's seats has a board. This used to be "the session has no board", which is null for every multi-board game. For local games the two rules agree.
@@ -93,20 +95,24 @@
    - no keypad forcing
    - no seat lines
    - same start view and Next button
-   
+
    Test in Task 4 (`centerState`, `seatLines`, `startsOnKeypad`, `isManualTurn` on the local fixture).
-5. **The up seat's controller is gone *and* their board is offline.** Everyone sees "Waiting for …", not "board offline". Test in Task 4 ("waiting beats board offline").
+
+5. **The up seat's controller is gone _and_ their board is offline.** Everyone sees "Waiting for …", not "board offline". Test in Task 4 ("waiting beats board offline").
 
 ---
 
 ### Task 1: Remember when each player's game closed
 
 **Files:**
+
 - Modify: `backend/src/browser-gw/connections.ts`
 - Test: `backend/src/browser-gw/handler.test.ts`
 
 **Interfaces:**
+
 - Produces:
+
   ```ts
   class BrowserConnections {
     add(sessionId: string, ws: WebSocket, userId: string): void            // also clears the user's close time
@@ -271,6 +277,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 2: Snapshot gets `disconnectedAt` and `lobbyName`; the notice names the thrower
 
 **Files:**
+
 - Modify: `schema/game-ws-v1.json` (`SeatInfo`, `NoticeMessage`, `X01Snapshot`, `AtcSnapshot`)
 - Regenerate (via `npm run gen:api`): `backend/src/schema/{game-ws.ts,game-ws-v1.deref.json,zod.ts}`, `backend/frontend/src/lib/api/{game-ws.ts,zod.ts}`
 - Modify: `backend/src/session/types.ts` (`Session.lobbyName`)
@@ -281,8 +288,10 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 - Modify (frontend fixtures): `backend/frontend/src/lib/__tests__/fixtures/x01-snapshot.json`, `backend/frontend/src/lib/__tests__/gameState.test.ts`
 
 **Interfaces:**
+
 - Consumes: `BrowserConnections.disconnectedAt(sessionId, userId): Date | null` (Task 1).
 - Produces:
+
   ```ts
   // engine.ts
   export type Notice = { type: 'notice'; code: 'not_your_turn'; boardId: string; throwerName: string; throwerBoard: string | null }
@@ -384,6 +393,7 @@ In `backend/src/session/snapshot.contract.test.ts`, in "a game with a board per 
 (the existing `expectValid(snap)` and zod check after it stay; they now check the date-time format and `lobbyName`).
 
 In `backend/src/multiplayer.test.ts`:
+
 - In the existing test, after `expect(hostWs.send.mock.calls.map(…)).not.toContain('notice')`, add:
   ```ts
     const notice = lenaWs.send.mock.calls.map((c: unknown[]) => JSON.parse(String(c[0]))).find((m: { type: string }) => m.type === 'notice')
@@ -592,13 +602,16 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 3: Frontend receives notices; a toast store
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/ws.ts`
 - Create: `backend/frontend/src/lib/toast.ts`
 - Test: `backend/frontend/src/lib/__tests__/ws.test.ts`, `backend/frontend/src/lib/__tests__/toast.test.ts`
 
 **Interfaces:**
+
 - Consumes: `NoticeMessageSchema` (generated zod, Task 2), `NoticeMessage` (generated type).
 - Produces:
+
   ```ts
   // ws.ts
   export function parseNotice(m: unknown): NoticeMessage | null
@@ -784,12 +797,15 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 4: `lib/remote.ts`: what the match screen shows in a remote game
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/remote.ts`
 - Test: `backend/frontend/src/lib/__tests__/remote.test.ts`
 
 **Interfaces:**
+
 - Consumes: `upSeat(snap)` from `./turn`; `Snapshot`, `SeatInfo`, `NoticeMessage` from `./api/game-ws` (Task 2 shapes).
 - Produces (all used by Tasks 5–7):
+
   ```ts
   export function isRemoteGame(snap: Snapshot): boolean
   export function boardLabel(seat: SeatInfo): string | null
@@ -1193,12 +1209,14 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 5: Board names on every seat, lobby name and board pill in the header
 
 **Files:**
+
 - Modify: `backend/frontend/src/app.css` (warn, accent-line and paused tokens; drain animation)
 - Create: `backend/frontend/src/lib/components/SeatBoardLine.svelte`
 - Modify: `backend/frontend/src/lib/components/PanelShell.svelte`, `X01Panel.svelte`, `AtcPanel.svelte`, `X01Row.svelte`, `AtcRow.svelte`, `PhoneX01Card.svelte`, `PhoneAtcCard.svelte`, `PhonePlayerRow.svelte`, `GameHeader.svelte`
 - Modify: `backend/frontend/src/routes/GameDisplay.svelte`
 
 **Interfaces:**
+
 - Consumes: `seatLines`, `rowSub`, `myBoard`, `centerState`, `SeatLine`, `MyBoard` (Task 4); `snapshot.lobbyName` (Task 2); `authClient` from `$lib/auth`.
 - Produces:
   - `SeatBoardLine` props: `{ line: SeatLine; size?: 'sm' | 'md' | 'lg' }`
@@ -1310,6 +1328,7 @@ Replace the name span `<span class="text-[22px] font-semibold truncate {active ?
 - [ ] **Step 4: Phone card and row**
 
 `PhoneX01Card.svelte`:
+
 - Replace `import { Target } from '@lucide/svelte'` with `import SeatBoardLine from './SeatBoardLine.svelte'` and `import type { SeatLine } from '$lib/remote'`.
 - Props: `let { name, p, pill, seat, chalkboard }: { name: string; p: X01PlayerView; pill: PillKind | null; seat: SeatLine | null; chalkboard: boolean } = $props()`.
 - Replace the two lines inside the name column (the `name` span and the `{#if boardName}…{/if}` line) with:
@@ -1474,6 +1493,7 @@ After `const throwerName = …`:
 Party rows: pass `seat={lines[i] ?? null}` to both `X01Row` and `AtcRow`.
 
 Phone players list: inside `{#each players as player, i (i)}`, after `{@const up = i === currentPlayer}` add `{@const line = lines[i] ?? null}`. Then:
+
 - Replace `boardName={null}` with `seat={line}` on `PhoneX01Card` and `PhoneAtcCard`.
 - On both `PhonePlayerRow`s, add `you={line?.you ?? false}` and wrap the existing `sub` expression in `rowSub(…, line)`. The X01 one becomes:
 
@@ -1517,6 +1537,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 6: The centre column's remote states (live, board offline, waiting)
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/components/BoardCaption.svelte`
 - Create: `backend/frontend/src/lib/components/TurnStatusBar.svelte`
 - Create: `backend/frontend/src/lib/components/OfflineNotice.svelte`
@@ -1524,6 +1545,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 - Modify: `backend/frontend/src/routes/GameDisplay.svelte`
 
 **Interfaces:**
+
 - Consumes: `remote`, `lines`, `viewerId` in `GameDisplay` (Task 5); `turnStatus`, `boardCaption`, `formatElapsed`, `startsOnKeypad`, `isManualTurn`, `TurnStatus`, `Caption` (Task 4); tokens (Task 5).
 - Produces:
   - `BoardCaption` props: `{ caption: Caption; compact?: boolean }`
@@ -1819,6 +1841,7 @@ After the `{#snippet panel(i: number)} … {/snippet}` block add:
 `GameHeader`: change `showViewToggle={!bullOff}` to `showViewToggle={!bullOff && remote.kind === 'play'}`.
 
 Phone players list:
+
 - Change the wrapper's class to `class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}`.
 - Change `{#if up && viewMode === 'board'}` to `{#if up && !keypad}`.
 
@@ -1855,10 +1878,12 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 7: The not-your-turn toast
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/components/NotTurnToast.svelte`
 - Modify: `backend/frontend/src/routes/GameDisplay.svelte`
 
 **Interfaces:**
+
 - Consumes: `createSessionStore(…).notice` (Task 3), `createToast` (Task 3), `noticeLines`, `NoticeLines` (Task 4), `animate-drain`, `bg-warn-icon` (Task 5).
 - Produces: `NotTurnToast` props: `{ lines: NoticeLines; compact?: boolean; ondismiss: () => void }`.
 
@@ -1956,12 +1981,14 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 8: Spec and agent notes as built
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-10-02-online-multiplayer-design.md`
 - Modify: `AGENTS.md`
 
 - [ ] **Step 1: Update the spec**
 
 In "Snapshots":
+
 - Under **Per seat**, after `controllerConnected` add:
   ```
   - `disconnectedAt`: server time the controller's last socket of the game closed; null while
@@ -2025,6 +2052,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 This task is done by the controller, not an implementer subagent.
 
 **Setup:**
+
 - Full dev stack: `scripts/dev.sh` (Postgres, backend on :3000, Vite on :5173, bridge).
 - Two accounts in two browser profiles (or one normal and one private window):
   - **A** owns the paired board ("Living room").
@@ -2083,6 +2111,7 @@ This task is done by the controller, not an implementer subagent.
   - stopping the bridge changes nothing but the board status dot
 
   Compare with a `main` checkout if in doubt.
+
 - [ ] **Step 9:** Revert the temporary `lobbyName` default (`git diff backend/src/session/replay.ts` shows nothing). Send anything found back to the task that owns it, as a fix round.
 
 ---
@@ -2091,24 +2120,25 @@ This task is done by the controller, not an implementer subagent.
 
 **Spec coverage** (work-split item 1 and "Update after the lobby designs"):
 
-| Requirement | Where |
-|---|---|
-| Per-seat `disconnectedAt` from server time of the last socket close | Task 1 (tracking), Task 2 (snapshot, schema) |
-| `lobbyName` (null until lobbies), `Session.lobbyName` default null | Task 2 |
-| Notice with `throwerName`, `throwerBoard`, to the controllers on the dart's board | Task 2 (engine already routes to those controllers) |
-| Each seat's board name on rows, cards and panels | Tasks 4 (`seatLines`, `rowSub`), 5 |
-| Lobby name in the header | Task 5 |
-| "Live from <board>" panel | Tasks 4 (`centerState`, `boardCaption`, `turnStatus`), 6 |
-| Waiting "Waiting for X · disconnected m:ss" for everyone, Abort only for the host | Tasks 4, 6 (`WaitingCard`, `centerState.canAbort`) |
-| Manual entry when the up seat's board is offline (keypad + notice for its controller, "<name>'s board is offline" for the others) | Tasks 4, 6 |
-| Not-your-turn toast | Tasks 3, 4 (`noticeLines`), 7 |
-| Desktop and phone | Tasks 5–7 markup for both, Task 9 |
+| Requirement                                                                                                                       | Where                                                    |
+| --------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Per-seat `disconnectedAt` from server time of the last socket close                                                               | Task 1 (tracking), Task 2 (snapshot, schema)             |
+| `lobbyName` (null until lobbies), `Session.lobbyName` default null                                                                | Task 2                                                   |
+| Notice with `throwerName`, `throwerBoard`, to the controllers on the dart's board                                                 | Task 2 (engine already routes to those controllers)      |
+| Each seat's board name on rows, cards and panels                                                                                  | Tasks 4 (`seatLines`, `rowSub`), 5                       |
+| Lobby name in the header                                                                                                          | Task 5                                                   |
+| "Live from <board>" panel                                                                                                         | Tasks 4 (`centerState`, `boardCaption`, `turnStatus`), 6 |
+| Waiting "Waiting for X · disconnected m:ss" for everyone, Abort only for the host                                                 | Tasks 4, 6 (`WaitingCard`, `centerState.canAbort`)       |
+| Manual entry when the up seat's board is offline (keypad + notice for its controller, "<name>'s board is offline" for the others) | Tasks 4, 6                                               |
+| Not-your-turn toast                                                                                                               | Tasks 3, 4 (`noticeLines`), 7                            |
+| Desktop and phone                                                                                                                 | Tasks 5–7 markup for both, Task 9                        |
 
 Lobbies, `lobby_id` and the leave and end-of-game dialogs are out of scope (plans 2–4).
 
 **Placeholder scan:** every code step has full code. The only "temporary" change is Task 9's lobby-name default for the visual check, which is reverted in Step 9 by design.
 
 **Type consistency:**
+
 - `SnapshotView.disconnectedAt` is used in Task 2's tests, engine and handler.
 - `CenterState` kinds (`play`, `play-offline`, `watch`, `watch-offline`, `waiting` with `seat`) are the same in Tasks 4, 5 and 6.
 - `SeatLine` and `MyBoard` are the same in Tasks 4 and 5.
@@ -2119,6 +2149,7 @@ Lobbies, `lobby_id` and the leave and end-of-game dialogs are out of scope (plan
 - The phone cards' `boardName` prop is replaced by `seat` in Task 5, and the one call site is updated in the same task.
 
 **Review Focus:** each of the five items has its test:
+
 1. Task 1, "a user with another socket still open is not disconnected"
 2. Task 1, "opening the game again clears it", and Task 2, "has no time for a connected controller"
 3. Task 4, `formatElapsed` "never negative or broken"

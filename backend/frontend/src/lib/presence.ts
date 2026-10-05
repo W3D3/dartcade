@@ -21,7 +21,7 @@ export const STATUS_COPY = {
 }
 
 type Patch = (invisible: boolean) => Promise<{ error?: { error: string } }>
-const patchMe: Patch = (invisible) => api.PATCH('/api/me', { body: { invisible } })
+const patchMe: Patch = invisible => api.PATCH('/api/me', { body: { invisible } })
 
 /** Saves the choice; resolves with an error message, or null. */
 export async function setInvisible(invisible: boolean, patch: Patch = patchMe): Promise<string | null> {

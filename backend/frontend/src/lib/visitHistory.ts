@@ -47,14 +47,18 @@ export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHist
       // Undo reopened the thrower's last visit: it's open again, and starts where it did
       const v = all[cp].at(-1)
       all[cp] = all[cp].slice(0, -1)
-      if (legSeats.at(-1) === cp) { leg[cp] = leg[cp].slice(0, -1); legSeats = legSeats.slice(0, -1) }
+      if (legSeats.at(-1) === cp) {
+        leg[cp] = leg[cp].slice(0, -1)
+        legSeats = legSeats.slice(0, -1)
+      }
       start[cp] = v ? (isX01 ? v.left + v.scored : (progress.at(cp) ?? 0) - v.scored) : null
     } else if (added === 1 && finished[0] === p.cp) {
       const i = p.cp
       const wonLeg = (legs.at(i) ?? 0) > (p.legs.at(i) ?? 0)
       const s = start[i]
       const now = progress.at(i) ?? s
-      if (s !== null && now !== null) { // null: began before the page loaded
+      if (s !== null && now !== null) {
+        // null: began before the page loaded
         // Darts seen so far plus any the server counted since (missed snapshots, an empty turn's misses)
         const darts = Math.max(0, p.darts + (totalDarts.at(i) ?? 0) - (p.totalDarts.at(i) ?? 0))
         const visit: Visit = isX01
@@ -71,14 +75,20 @@ export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHist
       // Snapshots were missed (reconnect, restart): what happened in between is unknown
       start.fill(null)
     }
-    if (legOver) { leg = leg.map(() => []); legSeats = [] }
+    if (legOver) {
+      leg = leg.map(() => [])
+      legSeats = []
+    }
   }
 
   // A visit (re)starts whenever the thrower has no darts on the board
   if (darts === 0 && cp < n) start[cp] = progress.at(cp) ?? null
 
   return {
-    leg, all, legSeats, start,
+    leg,
+    all,
+    legSeats,
+    start,
     prev: { totalVisits: [...totalVisits], totalDarts: [...totalDarts], legs: [...legs], darts, bust, cp },
   }
 }

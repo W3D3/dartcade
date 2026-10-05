@@ -7,14 +7,19 @@
   import { isPhone } from '$lib/viewport'
 
   let { invisible, onchange }: { invisible: boolean; onchange: (invisible: boolean) => StatusPickResult } = $props()
-  const options = [{ value: false, label: 'Online' }, { value: true, label: 'Invisible' }]
+  const options = [
+    { value: false, label: 'Online' },
+    { value: true, label: 'Invisible' },
+  ]
   const copy = $derived($isPhone ? STATUS_COPY.phone : STATUS_COPY.page)
 
   // Re-keying SegmentedControl after a failed pick discards its locally-overridden `value`
   // (see presence.ts's applyStatusPick) and reinitializes it from the real `invisible` prop, so
   // a refused change shows the previous choice again instead of sticking on the clicked one.
   let attempt = $state(0)
-  const revert = () => { attempt += 1 }
+  const revert = () => {
+    attempt += 1
+  }
 
   function pick(v: unknown) {
     if (typeof v === 'boolean') void applyStatusPick(onchange, v, revert)

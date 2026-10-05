@@ -21,7 +21,10 @@ export class CameraStills {
   put(boardId: string, cam: number, still: Omit<Still, 'version'>): number | null {
     if (still.bytes.length > MAX_STILL_BYTES) return null
     let board = this.stills.get(boardId)
-    if (!board) { board = new Map(); this.stills.set(boardId, board) }
+    if (!board) {
+      board = new Map()
+      this.stills.set(boardId, board)
+    }
     const version = ++this.counter
     board.set(cam, { version, ...still })
     return version
@@ -38,9 +41,7 @@ export class CameraStills {
 
   /** The board's stills, by camera. */
   versions(boardId: string): { cam: number; version: number }[] {
-    return [...this.stills.get(boardId) ?? []]
-      .map(([cam, s]) => ({ cam, version: s.version }))
-      .sort((a, b) => a.cam - b.cam)
+    return [...(this.stills.get(boardId) ?? [])].map(([cam, s]) => ({ cam, version: s.version })).sort((a, b) => a.cam - b.cam)
   }
 }
 

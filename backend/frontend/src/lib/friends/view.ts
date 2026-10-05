@@ -20,11 +20,16 @@ export function tabAfterKey(key: string, current: FriendsTab): FriendsTab | null
   const i = FRIENDS_TABS.indexOf(current)
   const n = FRIENDS_TABS.length
   switch (key) {
-    case 'ArrowRight': return FRIENDS_TABS[(i + 1) % n] ?? null
-    case 'ArrowLeft': return FRIENDS_TABS[(i - 1 + n) % n] ?? null
-    case 'Home': return FRIENDS_TABS[0] ?? null
-    case 'End': return FRIENDS_TABS[n - 1] ?? null
-    default: return null
+    case 'ArrowRight':
+      return FRIENDS_TABS[(i + 1) % n] ?? null
+    case 'ArrowLeft':
+      return FRIENDS_TABS[(i - 1 + n) % n] ?? null
+    case 'Home':
+      return FRIENDS_TABS[0] ?? null
+    case 'End':
+      return FRIENDS_TABS[n - 1] ?? null
+    default:
+      return null
   }
 }
 
@@ -34,10 +39,14 @@ export const isOnline = (f: Friend): boolean => f.status.kind !== 'offline'
 export function statusLine(f: Friend): { text: string; tone: 'ink' | 'playing' | 'muted' } {
   const s = f.status
   switch (s.kind) {
-    case 'playing': return { text: `Playing ${gameName(s.gameId)}`, tone: 'playing' }
-    case 'lobby': return { text: f.inYourLobby ? `In your lobby · ${s.lobbyName}` : `In ${s.lobbyName}`, tone: 'ink' }
-    case 'online': return { text: 'Online', tone: 'ink' }
-    case 'offline': return { text: 'Offline', tone: 'muted' }
+    case 'playing':
+      return { text: `Playing ${gameName(s.gameId)}`, tone: 'playing' }
+    case 'lobby':
+      return { text: f.inYourLobby ? `In your lobby · ${s.lobbyName}` : `In ${s.lobbyName}`, tone: 'ink' }
+    case 'online':
+      return { text: 'Online', tone: 'ink' }
+    case 'offline':
+      return { text: 'Offline', tone: 'muted' }
   }
 }
 
@@ -75,7 +84,11 @@ export function outgoingMeta(r: OutgoingFriendRequest, now: Date): string {
 export const parseFriendName = (raw: string): string => normalizeName(raw).replace(/^@/, '')
 
 /** The result line under "Add a friend" (the ✓ is an icon in the card). */
-export function sendOutcome(status: number, body: { error?: string; code?: string } | undefined, name: string): { ok: boolean; text: string } {
+export function sendOutcome(
+  status: number,
+  body: { error?: string; code?: string } | undefined,
+  name: string,
+): { ok: boolean; text: string } {
   if (status === 201) return { ok: true, text: `Request sent to @${name}` }
   if (status === 200) return { ok: true, text: "They asked you first — you're friends now" }
   if (body?.code === 'already_friends') return { ok: false, text: "You're already friends" }

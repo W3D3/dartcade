@@ -1,22 +1,85 @@
 import { describe, it, expect } from 'vitest'
 import type { LobbyPerson, LobbyState } from './types.js'
 import {
-  assignTeams, canMove, canRemove, canSetBoard, canSetPlays, canSetReady, canSetTeam, effectiveReady, friendsMayJoin, isHost, isSolo, isTeamGame, leavingWith, nextHost, reorder, shuffleTeams,
+  assignTeams,
+  canMove,
+  canRemove,
+  canSetBoard,
+  canSetPlays,
+  canSetReady,
+  canSetTeam,
+  effectiveReady,
+  friendsMayJoin,
+  isHost,
+  isSolo,
+  isTeamGame,
+  leavingWith,
+  nextHost,
+  reorder,
+  shuffleTeams,
 } from './rules.js'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
-  id: 'p', userId: null, addedByUserId: 'chris', name: 'X', boardId: null, boardName: null, boardOwnerUserId: null,
-  position: 0, plays: true, ready: false, boardMovedBy: null, joinedAt: new Date(0), usualBoardName: null, team: null, ...over,
+  id: 'p',
+  userId: null,
+  addedByUserId: 'chris',
+  name: 'X',
+  boardId: null,
+  boardName: null,
+  boardOwnerUserId: null,
+  position: 0,
+  plays: true,
+  ready: false,
+  boardMovedBy: null,
+  joinedAt: new Date(0),
+  usualBoardName: null,
+  team: null,
+  ...over,
 })
 const lobbyOf = (people: LobbyPerson[], hostUserId: string | null = 'chris'): LobbyState => ({
-  id: 'l', name: 'L', hostUserId, code: 'AAAAAA', throwOrder: 'lobby', access: 'friends', nextGame: null,
-  createdAt: new Date(0), closedAt: null, people, invites: [], activity: [],
+  id: 'l',
+  name: 'L',
+  hostUserId,
+  code: 'AAAAAA',
+  throwOrder: 'lobby',
+  access: 'friends',
+  nextGame: null,
+  createdAt: new Date(0),
+  closedAt: null,
+  people,
+  invites: [],
+  activity: [],
 })
 
-const chris = person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph', boardId: 'living', boardOwnerUserId: 'chris', position: 0 })
-const lena = person({ id: 'l', userId: 'lena', addedByUserId: 'lena', name: 'Lena', boardId: 'lenas', boardOwnerUserId: 'lena', position: 1, joinedAt: new Date(1) })
+const chris = person({
+  id: 'c',
+  userId: 'chris',
+  addedByUserId: 'chris',
+  name: 'Christoph',
+  boardId: 'living',
+  boardOwnerUserId: 'chris',
+  position: 0,
+})
+const lena = person({
+  id: 'l',
+  userId: 'lena',
+  addedByUserId: 'lena',
+  name: 'Lena',
+  boardId: 'lenas',
+  boardOwnerUserId: 'lena',
+  position: 1,
+  joinedAt: new Date(1),
+})
 const max = person({ id: 'm', userId: 'max', addedByUserId: 'max', name: 'Max', position: 2, joinedAt: new Date(2) })
-const guest = person({ id: 'g', userId: null, addedByUserId: 'lena', name: 'Guest 1', boardId: 'lenas', boardOwnerUserId: 'lena', position: 3 })
+const guest = person({
+  id: 'g',
+  userId: null,
+  addedByUserId: 'lena',
+  name: 'Guest 1',
+  boardId: 'lenas',
+  boardOwnerUserId: 'lena',
+  position: 3,
+})
 const living = { boardId: 'living', ownerUserId: 'chris' }
 const garage = { boardId: 'garage', ownerUserId: 'chris' }
 const lenas = { boardId: 'lenas', ownerUserId: 'lena' }
@@ -28,19 +91,19 @@ describe('canSetBoard', () => {
     expect(canSetBoard('lena', max, lenas)).toBe(true)
   })
 
-  it('nobody gives out a board they don\'t own', () => {
+  it("nobody gives out a board they don't own", () => {
     expect(canSetBoard('chris', max, lenas)).toBe(false)
     expect(canSetBoard('max', max, living)).toBe(false)
   })
 
-  it('once someone has a board, only they (or a guest\'s adder) change it; the host has no extra rights', () => {
+  it("once someone has a board, only they (or a guest's adder) change it; the host has no extra rights", () => {
     expect(canSetBoard('chris', lena, living)).toBe(false)
     expect(canSetBoard('lena', lena, null)).toBe(true)
     expect(canSetBoard('lena', guest, lenas)).toBe(true)
     expect(canSetBoard('chris', guest, living)).toBe(false)
   })
 
-  it('the board\'s owner takes it back to Manual, from anyone, but can\'t swap it for another', () => {
+  it("the board's owner takes it back to Manual, from anyone, but can't swap it for another", () => {
     const maxOnLiving = person({ id: 'x', userId: 'max', addedByUserId: 'max', boardId: 'living', boardOwnerUserId: 'chris' })
     expect(canSetBoard('chris', maxOnLiving, null)).toBe(true)
     expect(canSetBoard('lena', maxOnLiving, null)).toBe(false)
@@ -60,7 +123,7 @@ describe('ready, plays, order, removal', () => {
     expect(canSetReady('chris', lena)).toBe(false)
   })
 
-  it('effectiveReady: a guest follows their adder\'s ready, ignoring their own stored flag', () => {
+  it("effectiveReady: a guest follows their adder's ready, ignoring their own stored flag", () => {
     // guest's adder is lena (ready: true); chris is not ready
     const readyLena = { ...lena, ready: true }
     const notReadyChris = { ...chris, ready: false }
@@ -73,7 +136,7 @@ describe('ready, plays, order, removal', () => {
     expect(effectiveReady(l, guestOfChris)).toBe(false) // chris isn't ready, so neither is his guest
   })
 
-  it('plays: the person, a guest\'s adder, or the host', () => {
+  it("plays: the person, a guest's adder, or the host", () => {
     expect(canSetPlays(lobby, 'max', max)).toBe(true)
     expect(canSetPlays(lobby, 'lena', guest)).toBe(true)
     expect(canSetPlays(lobby, 'chris', lena)).toBe(true)
@@ -94,7 +157,7 @@ describe('ready, plays, order, removal', () => {
     expect(canRemove(lobby, 'chris', chris)).toBe(false)
   })
 
-  it('a host who isn\'t in the lobby any more has no host rights', () => {
+  it("a host who isn't in the lobby any more has no host rights", () => {
     expect(isHost(lobbyOf([lena, max], 'chris'), 'chris')).toBe(false)
   })
 })
@@ -145,8 +208,12 @@ describe('teams', () => {
     expect(Object.fromEntries(assignTeams(lobbyOf([chris, lena, sitsOut, guest, sam])))).toEqual({ c: 'A', l: 'B', g: 'A', s: 'B' })
   })
 
-  it('newcomers go to the smaller team, Team A on a tie; sitting out doesn\'t count', () => {
-    const teams = [{ ...chris, team: 'A' as const }, { ...lena, team: 'A' as const }, { ...max, team: 'B' as const }]
+  it("newcomers go to the smaller team, Team A on a tie; sitting out doesn't count", () => {
+    const teams = [
+      { ...chris, team: 'A' as const },
+      { ...lena, team: 'A' as const },
+      { ...max, team: 'B' as const },
+    ]
     expect(Object.fromEntries(assignTeams(lobbyOf([...teams, guest])))).toEqual({ g: 'B' })
     const sam = person({ id: 's', userId: 'sam', addedByUserId: 'sam', name: 'Sam', position: 4 })
     // A 2, B 1: the guest evens it out, then Sam breaks the tie to A
@@ -157,7 +224,14 @@ describe('teams', () => {
   })
 
   it('nothing to assign when everyone who plays has a team', () => {
-    expect(assignTeams(lobbyOf([{ ...chris, team: 'B' }, { ...lena, team: 'B' }])).size).toBe(0)
+    expect(
+      assignTeams(
+        lobbyOf([
+          { ...chris, team: 'B' },
+          { ...lena, team: 'B' },
+        ]),
+      ).size,
+    ).toBe(0)
   })
 
   it('a shuffle splits the people who play 50/50; sitting out keeps their team', () => {

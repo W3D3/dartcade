@@ -8,7 +8,10 @@
   import { CODE_LENGTH } from '$lib/pairing'
   import { api } from '$lib/api'
 
-  let { onclose, onpaired }: {
+  let {
+    onclose,
+    onpaired,
+  }: {
     onclose: () => void
     onpaired: (info: { boardId: string; name: string }) => void
   } = $props()
@@ -24,9 +27,7 @@
 
   const complete = $derived(code.length === CODE_LENGTH)
   const canSubmit = $derived(complete && name.trim().length > 0 && !loading)
-  const cellsInvalid = $derived(
-    errorKind === 'expired' || errorKind === 'notfound' || errorKind === 'used',
-  )
+  const cellsInvalid = $derived(errorKind === 'expired' || errorKind === 'notfound' || errorKind === 'used')
   const fieldError = $derived(
     errorKind === 'expired'
       ? 'This code has expired. The bridge shows a new code every 10 minutes. Enter the newest one from its log.'
@@ -36,9 +37,7 @@
           ? 'This code was already used. Start the bridge again for a fresh code.'
           : null,
   )
-  const buttonLabel = $derived(
-    loading ? 'Pairing…' : errorKind === 'network' ? 'Try again' : 'Pair board',
-  )
+  const buttonLabel = $derived(loading ? 'Pairing…' : errorKind === 'network' ? 'Try again' : 'Pair board')
 
   function onCodeInput() {
     // Clear a field-level error as soon as the user edits the code again.
@@ -84,8 +83,10 @@
       <ol class="m-0 flex flex-col gap-2 list-none p-0">
         <li class="flex gap-2 text-[14px]">
           <span class="text-accent font-mono">1</span>
-          <span>Run <code class="font-mono bg-surface-2 px-1 rounded">dartcade-bridge</code>
-            on the machine next to your board.</span>
+          <span
+            >Run <code class="font-mono bg-surface-2 px-1 rounded">dartcade-bridge</code>
+            on the machine next to your board.</span
+          >
         </li>
         <li class="flex gap-2 text-[14px]">
           <span class="text-accent font-mono">2</span>
@@ -99,7 +100,9 @@
             {copied ? 'Copied' : 'Copy command'}
           </button>
         </div>
-        <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text-muted whitespace-pre-wrap"><span class="text-text">$ dartcade-bridge</span>
+        <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text-muted whitespace-pre-wrap"><span class="text-text"
+            >$ dartcade-bridge</span
+          >
 <span class="text-accent">✓</span> Board Manager found at 192.168.1.42
   Pairing code <span class="text-accent">7KQ4-M2XD</span> · new code every 10 min</pre>
       </div>
@@ -132,13 +135,7 @@
       <span class="text-[13px] text-text-dim">Pairing code</span>
       <span class="font-mono text-[12px] text-text-dim">{code.length} / {CODE_LENGTH}</span>
     </div>
-    <CodeInput
-      bind:value={code}
-      invalid={cellsInvalid}
-      onfocus={() => (helpExpanded = false)}
-      oninput={onCodeInput}
-      label="Pairing code"
-    />
+    <CodeInput bind:value={code} invalid={cellsInvalid} onfocus={() => (helpExpanded = false)} oninput={onCodeInput} label="Pairing code" />
     {#if fieldError}
       <p class="m-0 text-[13px]">
         <span class="text-live-text font-semibold">{fieldError.split('.')[0]}.</span>
@@ -146,8 +143,7 @@
       </p>
     {:else}
       <p class="m-0 text-[13px] text-text-dim">
-        Use the newest code in the log; it changes every 10 minutes. Not case-sensitive, and
-        pasting the whole line works.
+        Use the newest code in the log; it changes every 10 minutes. Not case-sensitive, and pasting the whole line works.
       </p>
     {/if}
   </div>

@@ -22,7 +22,9 @@ export const currentUser = loadOnce<CurrentUser | null>(async () => {
 
 /** Ends the session on the server, then shows the sign-in page. */
 export async function signOut(): Promise<void> {
-  try { await authClient.signOut() } finally {
+  try {
+    await authClient.signOut()
+  } finally {
     currentUser.set(null)
     window.location.hash = '#/login'
   }

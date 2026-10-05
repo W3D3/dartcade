@@ -35,37 +35,39 @@
 
 ## File Structure
 
-| Path | Responsibility |
-|---|---|
-| `package.json`, `package-lock.json` (root, new) | Codegen tool dependencies; `gen:api`, `lint:api` scripts |
-| `scripts/gen-api.mjs` (new) | Regenerates everything derived from `schema/` |
-| `redocly.yaml` (new) | Lint rules for `api-v1.yaml` |
-| `schema/common-v1.json` (new) | `Player`, `Segment`, `Coords`, `Polar`, `Dart`, `ErrorResponse` |
-| `schema/api-v1.yaml` (new) | OpenAPI 3.0.3 for all `/api` routes + `/health` |
-| `schema/game-ws-v1.json` (new) | Game WebSocket messages + close codes |
-| `backend/src/schema/api-v1.bundled.json`, `api-v1.deref.json`, `api.ts`, `game-ws.ts`, `game-ws-v1.deref.json` (generated) | Runtime specs + types for the backend |
-| `backend/frontend/src/lib/api/schema.ts`, `game-ws.ts` (generated copies) | Types for the frontend |
-| `bridge/internal/api/{generate.go,oapi-codegen.yaml,api.gen.go}` | Go client for `tag: bridge` operations |
-| `backend/src/api/spec.ts` | Loads the spec; `specRoutes`, `getOperation`, `fromSpec` |
-| `backend/src/api/route.ts` | `Route<'operationId'>` Fastify generic from generated types |
-| `backend/src/api/errors.ts` | Error handler producing `ErrorResponse` |
-| `backend/src/api/responseValidation.ts` | Dev/test `onSend` response check |
-| `backend/src/api/fastify.ts` | `createFastify()`: shared Fastify options + the two hooks above |
-| `backend/src/app.ts` | `buildApp()`: all plugins/routes (used by `index.ts` and tests) |
-| `backend/src/session/snapshotValidation.ts` | Dev/test check of outgoing snapshots |
-| `backend/frontend/src/lib/api/{client.ts,index.ts,boardActions.ts}` | Typed API client, readable type names, board actions |
-| `backend/frontend/src/lib/auth.ts` | better-auth client |
+| Path                                                                                                                       | Responsibility                                                  |
+| -------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------- |
+| `package.json`, `package-lock.json` (root, new)                                                                            | Codegen tool dependencies; `gen:api`, `lint:api` scripts        |
+| `scripts/gen-api.mjs` (new)                                                                                                | Regenerates everything derived from `schema/`                   |
+| `redocly.yaml` (new)                                                                                                       | Lint rules for `api-v1.yaml`                                    |
+| `schema/common-v1.json` (new)                                                                                              | `Player`, `Segment`, `Coords`, `Polar`, `Dart`, `ErrorResponse` |
+| `schema/api-v1.yaml` (new)                                                                                                 | OpenAPI 3.0.3 for all `/api` routes + `/health`                 |
+| `schema/game-ws-v1.json` (new)                                                                                             | Game WebSocket messages + close codes                           |
+| `backend/src/schema/api-v1.bundled.json`, `api-v1.deref.json`, `api.ts`, `game-ws.ts`, `game-ws-v1.deref.json` (generated) | Runtime specs + types for the backend                           |
+| `backend/frontend/src/lib/api/schema.ts`, `game-ws.ts` (generated copies)                                                  | Types for the frontend                                          |
+| `bridge/internal/api/{generate.go,oapi-codegen.yaml,api.gen.go}`                                                           | Go client for `tag: bridge` operations                          |
+| `backend/src/api/spec.ts`                                                                                                  | Loads the spec; `specRoutes`, `getOperation`, `fromSpec`        |
+| `backend/src/api/route.ts`                                                                                                 | `Route<'operationId'>` Fastify generic from generated types     |
+| `backend/src/api/errors.ts`                                                                                                | Error handler producing `ErrorResponse`                         |
+| `backend/src/api/responseValidation.ts`                                                                                    | Dev/test `onSend` response check                                |
+| `backend/src/api/fastify.ts`                                                                                               | `createFastify()`: shared Fastify options + the two hooks above |
+| `backend/src/app.ts`                                                                                                       | `buildApp()`: all plugins/routes (used by `index.ts` and tests) |
+| `backend/src/session/snapshotValidation.ts`                                                                                | Dev/test check of outgoing snapshots                            |
+| `backend/frontend/src/lib/api/{client.ts,index.ts,boardActions.ts}`                                                        | Typed API client, readable type names, board actions            |
+| `backend/frontend/src/lib/auth.ts`                                                                                         | better-auth client                                              |
 
 ---
 
 ### Task 1: Root codegen, OpenAPI spec and CI check
 
 **Files:**
+
 - Create: `package.json`, `scripts/gen-api.mjs`, `redocly.yaml`, `schema/common-v1.json`, `schema/api-v1.yaml`
 - Generated: `backend/src/schema/api-v1.bundled.json`, `backend/src/schema/api-v1.deref.json`, `backend/src/schema/api.ts`, `backend/frontend/src/lib/api/schema.ts`
 - Modify: `mise.toml`, `.github/workflows/ci.yml`
 
 **Interfaces:**
+
 - Produces: `schema/api-v1.yaml` with the operationIds `health, listGames, listBoards, createBoard, renameBoard, deleteBoard, getBoardStatus, getBoardEvents, getBoardCamera, startBoard, stopBoard, resetBoard, calibrateBoard, requestPairing, getPairingToken, claimPairing, listSessions, createSession, getSession, deleteSession`; component schema names listed in the YAML below; generated `paths`, `operations`, `components` types in `api.ts`.
 
 - [ ] **Step 1: Create the root `package.json`**
@@ -85,9 +87,11 @@
 - [ ] **Step 2: Install the codegen tools (exact versions)**
 
 Run (repo root):
+
 ```bash
 npm install --save-dev --save-exact @redocly/cli@1.34.20 openapi-typescript@7.13.0 json-schema-to-typescript@14.1.0 @apidevtools/json-schema-ref-parser@11
 ```
+
 Expected: `package-lock.json` created; `node_modules/` stays untracked (already covered by `.gitignore`'s `node_modules/`).
 
 - [ ] **Step 3: Create `redocly.yaml`**
@@ -935,10 +939,12 @@ await genHttp()
 
 Run: `npm run gen:api && git status --short backend/src/schema backend/frontend/src/lib/api`
 Expected: the four generated files listed under **Files** appear. Stage them and generate again; the second run must change nothing:
+
 ```bash
 git add backend/src/schema/api-v1.bundled.json backend/src/schema/api-v1.deref.json backend/src/schema/api.ts backend/frontend/src/lib/api/schema.ts
 npm run gen:api && git diff --exit-code
 ```
+
 Expected: exit code 0.
 
 - [ ] **Step 9: Check the generated types compile in both packages**
@@ -949,6 +955,7 @@ Expected: both pass (the generated files are only type declarations so far).
 - [ ] **Step 10: Add the mise task and CI job**
 
 In `mise.toml`, after the `[tasks."gen:types"]` block, add:
+
 ```toml
 [tasks."gen:api"]
 description = "Regenerate API types/clients from schema/ (HTTP spec, game WebSocket, Go bridge client)"
@@ -956,6 +963,7 @@ run = "npm run gen:api"
 ```
 
 In `.github/workflows/ci.yml`, add this job after `test-bridge`:
+
 ```yaml
   check-generated:
     runs-on: ubuntu-latest
@@ -984,11 +992,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 2: Game WebSocket schema and codegen
 
 **Files:**
+
 - Create: `schema/game-ws-v1.json`
 - Modify: `scripts/gen-api.mjs`
 - Generated: `backend/src/schema/game-ws.ts`, `backend/src/schema/game-ws-v1.deref.json`, `backend/frontend/src/lib/api/game-ws.ts`
 
 **Interfaces:**
+
 - Consumes: `schema/common-v1.json` (`Player`, `Segment`, `Dart`) from Task 1.
 - Produces (TS names in `game-ws.ts`): `WsCloseCode` (runtime `enum` with `MissingSession=4400, Unauthorized=4401, Forbidden=4403, NotFound=4404, InternalError=4500`), `BmStatus`, `BullOffThrow`, `BullOffResult`, `BullOffView`, `X01Game`, `AtcGame`, `X01Snapshot`, `AtcSnapshot`, `Snapshot` (union), `UserAction` (union), `ClientMessage`. In `game-ws-v1.deref.json`: `$defs.Snapshot`, `$defs.ClientMessage` fully dereferenced.
 
@@ -1187,12 +1197,14 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - [ ] **Step 2: Extend `scripts/gen-api.mjs` with the WebSocket stage**
 
 Add these imports next to the existing ones:
+
 ```js
 import { compileFromFile } from 'json-schema-to-typescript'
 import $RefParser from '@apidevtools/json-schema-ref-parser'
 ```
 
 Add this function after `genHttp`:
+
 ```js
 async function genWs() {
   const src = r('schema/game-ws-v1.json')
@@ -1212,6 +1224,7 @@ async function genWs() {
 ```
 
 Replace the last line `await genHttp()` with:
+
 ```js
 await genHttp()
 await genWs()
@@ -1229,6 +1242,7 @@ git add backend/src/schema/game-ws.ts backend/src/schema/game-ws-v1.deref.json b
 npm run gen:api && git diff --exit-code
 cd backend && npm run typecheck && cd frontend && npm run typecheck
 ```
+
 Expected: no diff; both typechecks pass.
 
 - [ ] **Step 5: Commit**
@@ -1245,10 +1259,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 3: Remove the legacy `/api/board/*` routes
 
 **Files:**
+
 - Delete: `backend/src/api/board.ts` (and `backend/src/api/board.test.ts` if it exists)
 - Modify: `backend/src/index.ts`, `docker-compose.dev.yaml`, `backend/frontend/src/lib/components/BoardStatusPanel.svelte`
 
 **Interfaces:**
+
 - Produces: `BoardStatusPanel` calls `POST /api/boards/{boardId}/{start|stop|reset|calibrate}` for the session's board.
 
 - [ ] **Step 1: Delete the legacy plugin and its registration**
@@ -1257,19 +1273,23 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 git rm backend/src/api/board.ts
 git rm --ignore-unmatch backend/src/api/board.test.ts
 ```
+
 In `backend/src/index.ts` remove the line `import { boardApiPlugin } from './api/board.js'` and the line `await app.register(boardApiPlugin)`.
 
 - [ ] **Step 2: Remove `DARTCADE_BOARD_URL` from the backend service**
 
 In `docker-compose.dev.yaml`, in the `backend:` service's `environment:` block, delete the line:
+
 ```yaml
       DARTCADE_BOARD_URL: ${DARTCADE_BOARD_URL:-}
 ```
+
 Leave the `bridge:` service's `DARTCADE_BOARD_URL` untouched.
 
 - [ ] **Step 3: Point `BoardStatusPanel` at the session's board**
 
 In `backend/frontend/src/lib/components/BoardStatusPanel.svelte` replace `runAction`:
+
 ```ts
   async function runAction(name: string, endpoint: string) {
     busy = name
@@ -1278,7 +1298,9 @@ In `backend/frontend/src/lib/components/BoardStatusPanel.svelte` replace `runAct
     finally { busy = null }
   }
 ```
+
 with:
+
 ```ts
   // Board Manager commands for this session's board
   async function runAction(name: string, endpoint: 'start' | 'stop' | 'reset' | 'calibrate') {
@@ -1293,10 +1315,12 @@ with:
 - [ ] **Step 4: Verify**
 
 Run:
+
 ```bash
 cd backend && npm run typecheck && npx vitest run && cd frontend && npm run typecheck && npx vitest run
 grep -rn "/api/board/\|DARTCADE_BOARD_URL" src frontend/src ../docker-compose.dev.yaml
 ```
+
 Expected: everything passes; the grep finds only the `bridge:` service line in `docker-compose.dev.yaml`.
 
 - [ ] **Step 5: Commit**
@@ -1316,11 +1340,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 4: Backend spec plumbing, error format, response validation, coverage test
 
 **Files:**
+
 - Create: `backend/src/api/spec.ts`, `backend/src/api/route.ts`, `backend/src/api/errors.ts`, `backend/src/api/responseValidation.ts`, `backend/src/api/fastify.ts`, `backend/src/app.ts`
 - Test: `backend/src/api/spec.test.ts`, `backend/src/api/errors.test.ts`, `backend/src/api/responseValidation.test.ts`
 - Modify: `backend/src/index.ts`, `backend/package.json` (+ lock)
 
 **Interfaces:**
+
 - Consumes: `backend/src/schema/api-v1.deref.json`, `backend/src/schema/api.ts` (`operations`) from Task 1.
 - Produces:
   - `specRoutes: { method: string; path: string; operation: Operation }[]` (path in Fastify form, e.g. `/api/boards/:id`)
@@ -1391,6 +1417,7 @@ Expected: FAIL — `Cannot find module './fastify.js'`.
 - [ ] **Step 4: Implement `spec.ts`**
 
 `backend/src/api/spec.ts`:
+
 ```ts
 import type { FastifySchema } from 'fastify'
 import spec from '../schema/api-v1.deref.json' with { type: 'json' }
@@ -1467,6 +1494,7 @@ export function fromSpec(operationId: string): FastifySchema & { operationId: st
 - [ ] **Step 5: Implement `route.ts`**
 
 `backend/src/api/route.ts`:
+
 ```ts
 import type { operations } from '../schema/api.js'
 
@@ -1491,6 +1519,7 @@ export type Route<K extends keyof operations> = {
 - [ ] **Step 6: Implement `errors.ts`**
 
 `backend/src/api/errors.ts`:
+
 ```ts
 import type { FastifyInstance } from 'fastify'
 
@@ -1519,6 +1548,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
 - [ ] **Step 7: Implement `responseValidation.ts`**
 
 `backend/src/api/responseValidation.ts`:
+
 ```ts
 import Ajv, { type ValidateFunction } from 'ajv'
 import addFormats from 'ajv-formats'
@@ -1562,6 +1592,7 @@ export function registerResponseValidation(app: FastifyInstance): void {
 - [ ] **Step 8: Implement `fastify.ts`**
 
 `backend/src/api/fastify.ts`:
+
 ```ts
 import Fastify, { type FastifyInstance } from 'fastify'
 import { registerErrorHandler } from './errors.js'
@@ -1711,11 +1742,14 @@ export async function buildApp({ engine, db, frontendDist, onRoute }: AppDeps): 
 ```
 
 Then replace everything in `backend/src/index.ts` from `const app = Fastify({ logger: true })` to the end of the file with:
+
 ```ts
 const app = await buildApp({ engine, db, frontendDist: join(__dirname, '../../frontend/dist') })
 await app.listen({ port: PORT, host: '0.0.0.0' })
 ```
+
 and reduce its imports to:
+
 ```ts
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
@@ -1790,28 +1824,34 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 5: Boards routes on the spec
 
 **Files:**
+
 - Modify: `backend/src/api/boards.ts`, `backend/src/api/boards.test.ts`
 
 **Interfaces:**
+
 - Consumes: `fromSpec`, `Route` (Task 4), `createFastify` (Task 4), `requireAuth` from `backend/src/auth/middleware.ts`.
 - Produces: boards routes carry `schema.operationId` = `listBoards, createBoard, renameBoard, deleteBoard, getBoardStatus, getBoardEvents, getBoardCamera, startBoard, stopBoard, resetBoard, calibrateBoard`.
 
 - [ ] **Step 1: Switch the test app to `createFastify` and make the auth mock controllable**
 
 In `backend/src/api/boards.test.ts`:
+
 - replace `import Fastify from 'fastify'` with `import { createFastify } from './fastify.js'`
 - replace `const app = Fastify()` with `const app = createFastify()`
 - replace the middleware mock with:
+
 ```ts
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn(async (req: any, _reply: any) => { req.userId = 'user-1' }),
 }))
 ```
+
 and add `import * as middleware from '../auth/middleware.js'` next to the other `import * as` lines.
 
 - [ ] **Step 2: Add failing tests for the review-focus behaviours**
 
 Append to `backend/src/api/boards.test.ts`:
+
 ```ts
 describe('boards: spec enforcement', () => {
   const board = { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date('2026-08-12T10:00:00Z') as any, owner_user_id: 'user-1', token_hash: 'hash' }
@@ -1861,6 +1901,7 @@ describe('boards: spec enforcement', () => {
   })
 })
 ```
+
 (`makeApp` is the file's existing helper; if it's named differently, use that name.)
 
 - [ ] **Step 3: Run to see failures**
@@ -2040,9 +2081,11 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 6: Sessions, games, health and pairing on the spec
 
 **Files:**
+
 - Modify: `backend/src/api/sessions.ts`, `backend/src/api/pairing.ts`, `backend/src/api/sessions.test.ts`, `backend/src/api/pairing.test.ts`, `backend/src/api/spec.test.ts`
 
 **Interfaces:**
+
 - Consumes: `fromSpec`, `Route`, `createFastify` (Task 4); `ActiveSessionError`, `SessionEngine` from `backend/src/session/engine.ts`; `canAccessSession(userId, session)` stays exported from `sessions.ts` (used by `browser-gw/handler.ts`).
 - Produces: every route in the spec has `schema.operationId`; `spec.test.ts` asserts it.
 
@@ -2061,6 +2104,7 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 - [ ] **Step 2: Add failing tests for pairing compatibility and auth order**
 
 Append to `backend/src/api/pairing.test.ts`:
+
 ```ts
 describe('pairing: bridge compatibility', () => {
   it('accepts the {} body older bridges send', async () => {
@@ -2075,7 +2119,9 @@ describe('pairing: bridge compatibility', () => {
   })
 })
 ```
+
 Append to `backend/src/api/sessions.test.ts` (and switch its `vi.mock('../auth/middleware.js', …)` to the `vi.fn(...)` form + `import * as middleware from '../auth/middleware.js'`, exactly as in Task 5 Step 1):
+
 ```ts
 describe('sessions: spec enforcement', () => {
   it('checks auth before the body: signed-out + invalid body is 401, not 400', async () => {
@@ -2095,6 +2141,7 @@ describe('sessions: spec enforcement', () => {
   })
 })
 ```
+
 In both test files replace `import Fastify from 'fastify'` with `import { createFastify } from './fastify.js'` and `Fastify()` with `createFastify()`.
 
 - [ ] **Step 3: Run to see failures**
@@ -2193,10 +2240,12 @@ Behaviour note: the old `catch` ended with `return reply.code(500).send({ error:
 - [ ] **Step 5: Attach the spec to the pairing routes**
 
 In `backend/src/api/pairing.ts` add imports:
+
 ```ts
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 ```
+
 Change the three route declarations (handler bodies stay, except where noted):
 
 ```ts
@@ -2205,6 +2254,7 @@ Change the three route declarations (handler bodies stay, except where noted):
     schema: fromSpec('requestPairing'),
   }, async (_req, reply) => {
 ```
+
 ```ts
   app.get<Route<'getPairingToken'>>('/api/pairing/:code/token', {
     // A paired bridge polls this every 2s (~30/min), so the cap has to sit
@@ -2215,17 +2265,21 @@ Change the three route declarations (handler bodies stay, except where noted):
   }, async (req, reply) => {
     const { code } = req.params
 ```
+
 ```ts
   app.post<Route<'claimPairing'>>('/api/pairing/claim', { preValidation: requireAuth, schema: fromSpec('claimPairing') }, async (req, reply) => {
     const code = req.body.code
     const name = req.body.name.trim()
 ```
+
 In `claimPairing`'s body, delete the now-unreachable block:
+
 ```ts
     if (!code?.trim() || !name?.trim()) {
       return reply.code(400).send({ error: 'code and name required' })
     }
 ```
+
 and replace the remaining `name.trim()` uses in that handler with `name`.
 
 `requestPairing` has no `requestBody` in the spec, so Fastify doesn't validate the body: `{}` from older bridges and an empty body are both accepted.
@@ -2251,11 +2305,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 7: Game WebSocket contract in the backend (and drop `$shared`)
 
 **Files:**
+
 - Create: `backend/src/session/views.ts`, `backend/src/session/snapshotValidation.ts`, `backend/src/session/snapshot.contract.test.ts`
 - Modify: `backend/src/session/types.ts`, `backend/src/session/engine.ts`, `backend/src/games/x01.ts`, `backend/src/games/atc.ts`, `backend/src/browser-gw/handler.ts`, `backend/src/browser-gw/handler.test.ts`, `backend/frontend/src/lib/ws.ts`
 - Delete: `backend/src/shared/wsClose.ts`; `$shared` wiring in `backend/frontend/vite.config.ts`, `backend/frontend/tsconfig.json`, `backend/Dockerfile`, `docker-compose.dev.yaml`
 
 **Interfaces:**
+
 - Consumes: generated `backend/src/schema/game-ws.ts` (`Snapshot`, `UserAction`, `ClientMessage`, `WsCloseCode`, `X01Game`, `AtcGame`) and `game-ws-v1.deref.json` (Task 2).
 - Produces: `session/types.ts` re-exports `Snapshot` and `UserAction` from the generated file; `X01View`, `AtcView` in `session/views.ts`; `checkSnapshot(snap: Snapshot, log: (msg: string) => void): void`.
 
@@ -2352,10 +2408,12 @@ In `backend/src/games/atc.ts`, change it to `view(s: ATCState, _players: Player[
 - [ ] **Step 4: Generated message types in `session/types.ts` and the engine**
 
 In `backend/src/session/types.ts`:
+
 - delete the hand-written `export type UserAction = …` union and the hand-written `export type Snapshot = { … }`
 - add: `export type { Snapshot, UserAction } from '../schema/game-ws.js'`
 
 In `backend/src/session/engine.ts`, in `getSnapshot`, cast the assembled object once (the contract test and `checkSnapshot` verify it at runtime):
+
 ```ts
     return {
       type: 'snapshot',
@@ -2400,6 +2458,7 @@ export function checkSnapshot(snap: Snapshot, log: (msg: string) => void): void 
 - [ ] **Step 6: Write the failing WebSocket message test**
 
 Append to `backend/src/browser-gw/handler.test.ts`:
+
 ```ts
 describe('WS client messages', () => {
   let testApp: ReturnType<typeof Fastify> | null = null
@@ -2458,13 +2517,16 @@ Expected: FAIL — `onUserAction` was called for the invalid messages too (curre
 - [ ] **Step 8: Validate client messages and use generated close codes** — `backend/src/browser-gw/handler.ts`
 
 Replace the imports block's `import { WS_CLOSE } from '../shared/wsClose.js'` with:
+
 ```ts
 import Ajv from 'ajv'
 import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
 import { WsCloseCode, type ClientMessage } from '../schema/game-ws.js'
 import { checkSnapshot } from '../session/snapshotValidation.js'
 ```
+
 Add below the imports:
+
 ```ts
 // Tolerant reader: newer clients may add fields; the engine only reads the known ones.
 // (Ajv's removeAdditional can't be used: it strips fields while trying each oneOf branch.)
@@ -2479,14 +2541,18 @@ function allowExtraFields(schema: unknown): unknown {
 const isClientMessage = new Ajv({ strict: false })
   .compile<ClientMessage>(allowExtraFields(wsSchema.$defs.ClientMessage) as object)
 ```
+
 Replace each `WS_CLOSE.<name>` with the enum member: `WS_CLOSE.unauthorized` → `WsCloseCode.Unauthorized`, `WS_CLOSE.missingSession` → `WsCloseCode.MissingSession`, `WS_CLOSE.notFound` → `WsCloseCode.NotFound`, `WS_CLOSE.forbidden` → `WsCloseCode.Forbidden`, `WS_CLOSE.internalError` → `WsCloseCode.InternalError`.
 
 Replace the initial send `socket.send(JSON.stringify(snap))` with:
+
 ```ts
       checkSnapshot(snap, msg => app.log.error(msg))
       socket.send(JSON.stringify(snap))
 ```
+
 Replace the message listener with:
+
 ```ts
       socket.on('message', async (raw) => {
         let msg: unknown
@@ -2502,7 +2568,9 @@ Replace the message listener with:
         await engine.onUserAction(sessionId, msg.action)
       })
 ```
+
 In `pushSnapshot`, check before pushing:
+
 ```ts
 export function pushSnapshot(sessionId: string, engine: SessionEngine): void {
   const snap = engine.getSnapshot(sessionId)
@@ -2511,6 +2579,7 @@ export function pushSnapshot(sessionId: string, engine: SessionEngine): void {
   browserConnections.push(sessionId, snap)
 }
 ```
+
 In `backend/src/browser-gw/handler.test.ts` replace `import { WS_CLOSE } from '../shared/wsClose.js'` with `import { WsCloseCode } from '../schema/game-ws.js'`, and `WS_CLOSE.unauthorized` / `WS_CLOSE.forbidden` with `WsCloseCode.Unauthorized` / `WsCloseCode.Forbidden`.
 
 - [ ] **Step 9: Frontend WebSocket client on the generated types** — replace `backend/frontend/src/lib/ws.ts` imports and types:
@@ -2521,7 +2590,9 @@ import { WsCloseCode, type ClientMessage, type Snapshot, type UserAction } from 
 
 export type { Snapshot }
 ```
+
 Delete the local `export type Snapshot = { … }` declaration. Replace the close handling with:
+
 ```ts
     ws.onclose = (e) => {
       if (e.code === WsCloseCode.Unauthorized) {
@@ -2538,7 +2609,9 @@ Delete the local `export type Snapshot = { … }` declaration. Replace the close
       backoff = Math.min(backoff * 2, 30_000)
     }
 ```
+
 and `send` with:
+
 ```ts
   function send(action: UserAction) {
     const msg: ClientMessage = { type: 'user_action', action }
@@ -2551,6 +2624,7 @@ and `send` with:
 ```bash
 git rm -r backend/src/shared
 ```
+
 - `backend/frontend/vite.config.ts`: delete the `$shared: path.resolve('../src/shared'),` line with its comment, and the `fs: { allow: ['.', '../src/shared'] },` line.
 - `backend/frontend/tsconfig.json`: delete `"$shared/*": ["../src/shared/*"]` (and the trailing comma on the previous line).
 - `backend/Dockerfile`: delete the comment and `COPY src/shared/ /app/src/shared/` lines in the frontend stage.
@@ -2562,20 +2636,25 @@ Recreate the dev frontend container so the mount is gone: `docker compose -f doc
 
 Run: `cd backend/frontend && npm run typecheck`
 Expected: errors where segments are built with `bed: string` / `multiplier: number`. Fix each by typing them as the generated `Segment`:
+
 - In `src/lib/components/DartBoard.svelte`, `src/lib/components/DartEntryPanel.svelte`, `src/lib/components/BullOffPanel.svelte` and `src/routes/GameDisplay.svelte`, replace local `type Segment = { name: string; number: number; bed: string; multiplier: number }` declarations and inline `{ name: string; number: number; bed: string; multiplier: number }` annotations with `import type { Segment } from '$lib/api/game-ws'`.
 - In `DartBoard.svelte`, type the ring map so its literals stay narrow:
+
 ```ts
   const RING_BED: Record<string, { bed: Segment['bed']; multiplier: Segment['multiplier'] }> = {
 ```
+
 Repeat `npm run typecheck` until it reports 0 errors.
 
 - [ ] **Step 12: Run everything**
 
 Run:
+
 ```bash
 cd backend && npm run typecheck && npx vitest run
 cd frontend && npm run typecheck && npx vitest run
 ```
+
 Expected: all pass (backend includes the contract test and the WS message test).
 
 - [ ] **Step 13: Commit**
@@ -2597,11 +2676,13 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 8: Frontend typed API client
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/api/client.ts`, `backend/frontend/src/lib/api/index.ts`, `backend/frontend/src/lib/api/boardActions.ts`
 - Test: `backend/frontend/src/lib/__tests__/apiClient.test.ts`
 - Modify: `backend/frontend/package.json` (+ lock), `src/routes/Boards.svelte`, `src/routes/CreateSession.svelte`, `src/routes/GameDisplay.svelte`, `src/lib/components/BoardStatusPanel.svelte`, `src/lib/components/SessionBanner.svelte`, `src/lib/components/PairBoardModal.svelte`, `src/lib/components/BoardSelector.svelte`, `src/lib/components/BullOffPanel.svelte`
 
 **Interfaces:**
+
 - Consumes: generated `src/lib/api/schema.ts` (`paths`, `components`) and `src/lib/api/game-ws.ts`.
 - Produces:
   - `createApi(opts?: { baseUrl?: string; fetch?: (req: Request) => Promise<Response>; onUnauthorized?: () => void })` and `api` (default instance)
@@ -2655,6 +2736,7 @@ Expected: FAIL — `Cannot find module '../api/client'`.
 - [ ] **Step 4: Implement the client and type exports**
 
 `src/lib/api/client.ts`:
+
 ```ts
 import createClient from 'openapi-fetch'
 import type { paths } from './schema'
@@ -2682,6 +2764,7 @@ export const api = createApi()
 ```
 
 `src/lib/api/index.ts`:
+
 ```ts
 import type { components } from './schema'
 
@@ -2701,6 +2784,7 @@ export { runBoardAction, type BoardAction } from './boardActions'
 ```
 
 `src/lib/api/boardActions.ts`:
+
 ```ts
 import { api } from './client'
 
@@ -2726,11 +2810,15 @@ Expected: PASS (3 tests).
 - [ ] **Step 6: Migrate `Boards.svelte`**
 
 - Replace the local `type Board = { … }`, `type BmStatus = …` and the local `BoardEvent`/`Segment` types with:
+
 ```ts
   import { api, runBoardAction, type Board, type BoardStatus, type BoardEvent, type BoardAction } from '$lib/api'
 ```
+
 and `let bmStatus = $state<BoardStatus | null>(null)`.
+
 - `loadBmStatus`:
+
 ```ts
   async function loadBmStatus(boardId: string) {
     try {
@@ -2739,19 +2827,26 @@ and `let bmStatus = $state<BoardStatus | null>(null)`.
     } catch { bmStatus = null }
   }
 ```
+
 - `runAction(action: string)` → `runAction(action: BoardAction)` and its `fetch` line → `try { await runBoardAction(selected.id, action) }`. In the `control` snippet signature, type `action` as `BoardAction`.
 - `loadEvents`:
+
 ```ts
       const { data } = await api.GET('/api/boards/{id}/events', { params: { path: { id: boardId } } })
       if (data && boardId === selectedId) events = data.events
 ```
+
 (remove the `if (!res.ok) return` / `res.json()` lines around it).
+
 - `saveName`:
+
 ```ts
     const { error } = await api.PATCH('/api/boards/{id}', { params: { path: { id } }, body: { name } }).catch(() => ({ error: true }))
     if (!error) boards = boards.map(b => b.id === id ? { ...b, name } : b)
 ```
+
 - `unpair`:
+
 ```ts
     const res = await api.DELETE('/api/boards/{id}', { params: { path: { id } } }).catch(() => null)
     if (!res || res.error) {
@@ -2759,20 +2854,25 @@ and `let bmStatus = $state<BoardStatus | null>(null)`.
       return
     }
 ```
+
 - `onPaired` refetch: `const { data } = await api.GET('/api/boards'); boards = data?.boards ?? []`
 - `onMount`:
+
 ```ts
     const { data } = await api.GET('/api/boards')
     if (!data) return   // 401 is redirected to login by the client
     boards = data.boards
 ```
+
 and remove `import { push } from 'svelte-spa-router'` if it is now unused.
+
 - The spec's `Board` has no `latencyMs`/`totalGames` (the API never sent them): in the card replace the `{#if board.latencyMs != null} … {:else} <Badge variant="soon">Latency · soon</Badge> {/if}` block with just `<Badge variant="soon">Latency · soon</Badge>`, in the detail panel replace the latency `{#if selected.latencyMs != null} … {:else}<Badge variant="soon">Soon</Badge>{/if}` with `<Badge variant="soon">Soon</Badge>`, and `{board.totalGames ?? '—'}` with `—`.
 
 - [ ] **Step 7: Migrate `CreateSession.svelte`**
 
 - Replace local `type Board`, `type FieldMeta`, `type GameDef` with `import { api, type Board, type ConfigFieldMeta, type GameInfo } from '$lib/api'`; rename uses: `FieldMeta` → `ConfigFieldMeta`, `GameDef` → `GameInfo`.
 - In `onMount`, replace the three-fetch block:
+
 ```ts
     const [gr, br, sr] = await Promise.all([
       api.GET('/api/games'),
@@ -2785,7 +2885,9 @@ and remove `import { push } from 'svelte-spa-router'` if it is now unused.
     boards = br.data.boards
     youName = sd.user?.name ?? sd.user?.email ?? 'You'
 ```
+
 - In `start()`, replace the `fetch('/api/sessions', …)` request and its response handling:
+
 ```ts
       const res = await api.POST('/api/sessions', {
         body: { boardId: boardId || null, gameId, config: resolvedConfig, players: allPlayers },
@@ -2802,6 +2904,7 @@ and remove `import { push } from 'svelte-spa-router'` if it is now unused.
 
 - `GameDisplay.svelte` `endSession`: `await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })` (add `import { api } from '$lib/api'`).
 - `GameDisplay.svelte` derived state — replace the cast-based lines with:
+
 ```ts
   const game          = $derived(snapshot?.game)
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
@@ -2814,11 +2917,14 @@ and remove `import { push } from 'svelte-spa-router'` if it is now unused.
   // The per-game view helpers (lib/gameViews) and player cards still take an untyped game
   const gameRecord    = $derived((game ?? {}) as Record<string, unknown>)
 ```
+
 and pass `game={gameRecord}` / `view.getBoardHighlights(gameRecord, …)` / `view.getSubtitle?.(gameRecord, …)` wherever the old `game` record was passed to `PlayerCard`, `PlayerListRow`, `DartBoard` markers and `lib/gameViews`. Every other read of a game-specific field in the script (`targets` in `atcTargets`, `hitCounts` in `leadingPlayerIndex`) goes through `gameRecord`; inside `playSoundEvents` and `updateVisitHistory`, start with `const g = snap.game as Record<string, unknown>` and read `g.currentVisitDarts`, `g.currentVisitHits`, `g.currentPlayer`, `g.totalVisits` from it. Run `npm run typecheck` until it reports 0 errors.
 
-  Scope note: this keeps one explicit boundary between the typed snapshot and the per-game view helpers (`lib/gameViews`, `PlayerCard`, `PlayerListRow`, `gameViews/x01.svelte`, `gameViews/atc.svelte`), which still take an untyped game. Typing those per game is a follow-up, not part of this plan. Remove the `import BullOffPanel, { type BullOffView } …` type import in favour of `import type { BullOffView } from '$lib/api'` if still needed.
+Scope note: this keeps one explicit boundary between the typed snapshot and the per-game view helpers (`lib/gameViews`, `PlayerCard`, `PlayerListRow`, `gameViews/x01.svelte`, `gameViews/atc.svelte`), which still take an untyped game. Typing those per game is a follow-up, not part of this plan. Remove the `import BullOffPanel, { type BullOffView } …` type import in favour of `import type { BullOffView } from '$lib/api'` if still needed.
+
 - `BullOffPanel.svelte`: delete the local `Throw`, `Result`, `BullOffView`, `Segment` types; `import type { BullOffView, Segment } from '$lib/api'`; derive `type Throw = NonNullable<BullOffView['throws'][number]>`. Its `send` prop type becomes `(action: UserAction) => void` (`import type { UserAction } from '$lib/api'`).
 - `BoardStatusPanel.svelte`:
+
 ```ts
   import { api, runBoardAction, type Board, type BoardAction } from '$lib/api'
   import type { Snapshot } from '$lib/api'
@@ -2845,8 +2951,11 @@ and pass `game={gameRecord}` / `view.getBoardHighlights(gameRecord, …)` / `vie
     finally { busy = null }
   }
 ```
+
 (delete the local `type Board` and `type BmStatus`).
+
 - `SessionBanner.svelte`:
+
 ```ts
   import { api, type SessionSummary } from '$lib/api'
   let session = $state<SessionSummary | null>(null)
@@ -2857,8 +2966,11 @@ and pass `game={gameRecord}` / `view.getBoardHighlights(gameRecord, …)` / `vie
     } catch { /* ignore */ }
   })
 ```
+
 (delete its local session type).
+
 - `PairBoardModal.svelte`:
+
 ```ts
       const { data, response } = await api.POST('/api/pairing/claim', { body: { code, name: name.trim() } })
       if (data) {
@@ -2869,7 +2981,9 @@ and pass `game={gameRecord}` / `view.getBoardHighlights(gameRecord, …)` / `vie
       else if (response.status === 404) errorKind = 'notfound'
       else if (response.status === 409) errorKind = 'used'
 ```
+
 keeping the existing final `else` branch; add `import { api } from '$lib/api'`.
+
 - `BoardSelector.svelte`: replace `type Board = { id: string; name: string; online: boolean }` with `import type { Board } from '$lib/api'`.
 
 - [ ] **Step 9: No raw fetch to our API remains**
@@ -2899,10 +3013,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 9: Frontend auth via better-auth's client
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/auth.ts`
 - Modify: `backend/frontend/package.json` (+ lock), `src/App.svelte`, `src/lib/components/SideNav.svelte`, `src/routes/Login.svelte`, `src/routes/Register.svelte`, `src/routes/CreateSession.svelte`
 
 **Interfaces:**
+
 - Produces: `authClient` (better-auth `createAuthClient()` from `better-auth/svelte`).
 
 - [ ] **Step 1: Install better-auth at the backend's version**
@@ -2922,6 +3038,7 @@ export const authClient = createAuthClient()
 - [ ] **Step 3: Replace the five auth fetches**
 
 - `App.svelte`:
+
 ```ts
     try {
       const { data } = await authClient.getSession()
@@ -2930,14 +3047,18 @@ export const authClient = createAuthClient()
       push('/login')
     }
 ```
+
 - `SideNav.svelte`:
+
 ```ts
     try {
       const { data } = await authClient.getSession()
       if (data) userName = data.user.name || data.user.email || 'User'
     } catch { /* leave as placeholder */ }
 ```
+
 - `Login.svelte`:
+
 ```ts
     try {
       const { error: err } = await authClient.signIn.email({ email, password })
@@ -2948,7 +3069,9 @@ export const authClient = createAuthClient()
       push('/')
     } finally {
 ```
+
 - `Register.svelte`:
+
 ```ts
     try {
       const { error: err } = await authClient.signUp.email({ name, email, password })
@@ -2959,7 +3082,9 @@ export const authClient = createAuthClient()
       push('/')
     } finally {
 ```
+
 - `CreateSession.svelte` (`onMount`, from Task 8):
+
 ```ts
     const [gr, br, sr] = await Promise.all([
       api.GET('/api/games'),
@@ -2971,15 +3096,18 @@ export const authClient = createAuthClient()
     boards = br.data.boards
     youName = sr.data?.user.name ?? sr.data?.user.email ?? 'You'
 ```
+
 Add `import { authClient } from '$lib/auth'` to each of these files.
 
 - [ ] **Step 4: Verify**
 
 Run:
+
 ```bash
 cd backend/frontend && npm run typecheck && npx vitest run
 grep -rn "fetch(" src | grep -v "__tests__"
 ```
+
 Expected: 0 errors, tests pass, and the grep finds no `fetch(` outside tests.
 Then in the browser: sign out, sign in with the dev account (`http://localhost:5173/#/login`), check the side nav shows the user's name, and that the new-game page shows "You" as the user's name.
 
@@ -2997,17 +3125,20 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 10: Go bridge pairing client
 
 **Files:**
+
 - Create: `bridge/internal/api/generate.go`, `bridge/internal/api/oapi-codegen.yaml`
 - Generated: `bridge/internal/api/api.gen.go`
 - Modify: `scripts/gen-api.mjs`, `bridge/cmd/bridge/config.go`, `bridge/go.mod`/`go.sum` (runtime deps of the generated code)
 
 **Interfaces:**
+
 - Consumes: `backend/src/schema/api-v1.bundled.json` (Task 1), operations tagged `bridge`: `requestPairing`, `getPairingToken`.
 - Produces (Go, package `api`): `NewClientWithResponses(server string, opts ...ClientOption) (*ClientWithResponses, error)`; `(*ClientWithResponses).RequestPairingWithResponse(ctx) (*RequestPairingResponse, error)` with `.JSON201 *PairingCode` (`Code string`, `ExpiresAt time.Time`); `(*ClientWithResponses).GetPairingTokenWithResponse(ctx, code string) (*GetPairingTokenResponse, error)` with `.JSON200 *PairingTokenStatus` (`Status PairingTokenStatusStatus`, `Token *string`) and `.StatusCode() int`.
 
 - [ ] **Step 1: Create the generator config**
 
 `bridge/internal/api/oapi-codegen.yaml`:
+
 ```yaml
 # Generates the client for the backend operations the bridge uses (tag: bridge in schema/api-v1.yaml).
 package: api
@@ -3020,6 +3151,7 @@ output-options:
 ```
 
 `bridge/internal/api/generate.go`:
+
 ```go
 // Package api is the generated HTTP client for the backend operations tagged
 // "bridge" in schema/api-v1.yaml. Regenerate with `npm run gen:api` at the repo root.
@@ -3037,11 +3169,13 @@ Check the names used below exist: `grep -n "func (c \*ClientWithResponses) \(Req
 - [ ] **Step 3: Add the Go stage to `scripts/gen-api.mjs`**
 
 Add after `genWs`:
+
 ```js
 function genGo() {
   run('go', ['generate', './internal/api'], r('bridge'))
 }
 ```
+
 and append `genGo()` after `await genWs()`.
 
 Run: `npm run gen:api && git diff --exit-code -- bridge/internal/api` (after `git add bridge/internal/api`)
@@ -3052,6 +3186,7 @@ Expected: deterministic (no diff).
 Add the import `"dartcade/bridge/internal/api"`.
 
 In `runPairingOnce`, replace everything from `pairReq, err := http.NewRequestWithContext(...)` through the `expiresAt, err := time.Parse(...)` error check with:
+
 ```go
 	client, err := api.NewClientWithResponses(httpBase)
 	if err != nil {
@@ -3067,9 +3202,11 @@ In `runPairingOnce`, replace everything from `pairReq, err := http.NewRequestWit
 	code := pairResp.JSON201.Code
 	expiresAt := pairResp.JSON201.ExpiresAt
 ```
+
 Then in the rest of `runPairingOnce` replace every `pairResp.Code` with `code`, and every `pollPairingToken(ctx, httpBase, pairResp.Code)` with `pollPairingToken(ctx, client, code)`.
 
 Replace `pollPairingToken` entirely with:
+
 ```go
 func pollPairingToken(ctx context.Context, client *api.ClientWithResponses, code string) (token string, done bool, err error) {
 	resp, err := client.GetPairingTokenWithResponse(ctx, code)
@@ -3098,6 +3235,7 @@ func pollPairingToken(ctx context.Context, client *api.ClientWithResponses, code
 	}
 }
 ```
+
 Remove imports that are now unused (`go build` names them; likely `encoding/json` and `strings` if nothing else in the file uses them).
 
 - [ ] **Step 5: Test**
@@ -3119,10 +3257,12 @@ Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 ### Task 11: Swagger UI and better-auth's OpenAPI document
 
 **Files:**
+
 - Modify: `backend/src/app.ts`, `backend/src/auth/index.ts`, `backend/package.json` (+ lock)
 - Test: `backend/src/api/docs.test.ts`
 
 **Interfaces:**
+
 - Consumes: `backend/src/schema/api-v1.bundled.json` (Task 1), `buildApp` (Task 4).
 - Produces: `GET /api/docs` (UI), `GET /api/docs/json` (our spec), better-auth's `GET /api/auth/open-api/generate-schema`.
 
@@ -3166,6 +3306,7 @@ Expected: FAIL — `/api/docs/json` is 404 and `generateOpenAPISchema` is undefi
 - [ ] **Step 4: Enable better-auth's OpenAPI plugin** — `backend/src/auth/index.ts`
 
 Add `import { openAPI } from 'better-auth/plugins'` and in the `betterAuth({ … })` options add:
+
 ```ts
   // Generates better-auth's own OpenAPI document (served at /api/auth/open-api/generate-schema);
   // Swagger UI at /api/docs shows it next to ours, so its built-in reference page is off.
@@ -3175,12 +3316,15 @@ Add `import { openAPI } from 'better-auth/plugins'` and in the `betterAuth({ …
 - [ ] **Step 5: Register Swagger in `buildApp`** — `backend/src/app.ts`
 
 Add imports:
+
 ```ts
 import fastifySwagger from '@fastify/swagger'
 import fastifySwaggerUi from '@fastify/swagger-ui'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 ```
+
 Right after `await app.register(rateLimit, …)` add:
+
 ```ts
   // API docs: our spec plus better-auth's generated one, in one Swagger UI
   await app.register(fastifySwagger, { mode: 'static', specification: { document: bundledSpec as any } })

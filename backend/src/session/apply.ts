@@ -3,9 +3,7 @@ import { manualDart } from './manualDart.js'
 import type { BoardEvent, CommittedVisit, HistoryDart, Session, UserAction } from './types.js'
 
 /** One input to a game: a board event or a user action. */
-export type GameInput =
-  | { source: 'board'; event: BoardEvent }
-  | { source: 'user'; action: UserAction }
+export type GameInput = { source: 'board'; event: BoardEvent } | { source: 'user'; action: UserAction }
 
 export type ApplyOutcome = {
   /** The visit this input committed, if any. */
@@ -51,7 +49,7 @@ function countDarts(session: Session, state: unknown, delta: number): void {
 }
 
 function markCorrected(session: Session, dartPos: number): void {
-  session.openDarts = session.openDarts.map((m, i) => i === dartPos ? { ...m, corrected: true } : m)
+  session.openDarts = session.openDarts.map((m, i) => (i === dartPos ? { ...m, corrected: true } : m))
 }
 
 /**
@@ -60,9 +58,7 @@ function markCorrected(session: Session, dartPos: number): void {
  * the input happened (now, or the log entry's time). No I/O.
  */
 export function applyInput(session: Session, input: GameInput, at: Date): ApplyOutcome {
-  const outcome = input.source === 'board'
-    ? applyBoardEvent(session, input.event, at)
-    : applyUserAction(session, input.action, at)
+  const outcome = input.source === 'board' ? applyBoardEvent(session, input.event, at) : applyUserAction(session, input.action, at)
   session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
   return outcome
 }
@@ -148,8 +144,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
 
     case 'takeout': {
       // An empty turn (nothing thrown or nothing detected) counts as three misses
-      if (session.openVisitEvents.length === 0 && !inBullOff(session, session.currentState)
-          && !hasWinner(session, session.currentState)) {
+      if (session.openVisitEvents.length === 0 && !inBullOff(session, session.currentState) && !hasWinner(session, session.currentState)) {
         const miss = { name: 'Miss', number: 0, bed: 'Outside', multiplier: 0 } as const
         session.openVisitEvents = [
           { kind: 'visit.opened', data: { visit_id: 'manual' } },
@@ -246,13 +241,20 @@ function commit(session: Session, closing: BoardEvent, at: Date): ApplyOutcome {
     leg: mod.getLeg?.(start) ?? 0,
     phase: inBullOff(session, start) ? 'bulloff' : 'game',
     committedAt: at.toISOString(),
-    darts, start, end, after,
+    darts,
+    start,
+    end,
+    after,
   }
 
   // Bull off visits can't be undone (its result is the game's start)
-  session.undoable = visit.phase === 'game'
-    ? [...session.undoable, { committedState: session.committedState, openVisitEvents: events, openDarts: session.openDarts, seat: visit.seat }]
-    : []
+  session.undoable =
+    visit.phase === 'game'
+      ? [
+          ...session.undoable,
+          { committedState: session.committedState, openVisitEvents: events, openDarts: session.openDarts, seat: visit.seat },
+        ]
+      : []
   session.visitCount++
   session.committedState = after
   session.openVisitEvents = []

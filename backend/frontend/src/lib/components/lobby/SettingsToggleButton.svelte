@@ -6,5 +6,6 @@
   let { open, ontoggle }: { open: boolean; ontoggle: () => void } = $props()
 </script>
 
-<Button variant="outline" size="md" pressed={open} class="font-semibold" aria-expanded={open}
-  onclick={ontoggle}><Settings size={16} />Settings</Button>
+<Button variant="outline" size="md" pressed={open} class="font-semibold" aria-expanded={open} onclick={ontoggle}
+  ><Settings size={16} />Settings</Button
+>

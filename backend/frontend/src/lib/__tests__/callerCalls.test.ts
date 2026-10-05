@@ -3,8 +3,16 @@ import { callsFor, pickClips, type CallGame } from '../caller/calls.js'
 
 const dart = (score: number) => ({ score }) as CallGame['currentVisitDarts'][number]
 const game = (o: Partial<CallGame> = {}): CallGame => ({
-  scores: [501, 501], legs: [0, 0], firstTo: 2, currentPlayer: 0, phase: 'game',
-  bustThisVisit: false, visitLocked: false, currentVisitDarts: [], totalVisits: [0, 0], ...o,
+  scores: [501, 501],
+  legs: [0, 0],
+  firstTo: 2,
+  currentPlayer: 0,
+  phase: 'game',
+  bustThisVisit: false,
+  visitLocked: false,
+  currentVisitDarts: [],
+  totalVisits: [0, 0],
+  ...o,
 })
 
 describe('callsFor', () => {
@@ -37,8 +45,18 @@ describe('callsFor', () => {
   })
 
   it('teams count legs per team', () => {
-    const teams = [{ id: 'A' as const, name: 'Team A', seats: [0, 2], score: 0, legs: 1 }, { id: 'B' as const, name: 'Team B', seats: [1, 3], score: 101, legs: 0 }]
-    const before = game({ scores: [40, 101, 40, 101], legs: [1, 0, 1, 0], currentPlayer: 2, currentVisitDarts: [], totalVisits: [3, 3, 2, 2], teams: teams.map(t => ({ ...t, score: t.id === 'A' ? 40 : 101 })) })
+    const teams = [
+      { id: 'A' as const, name: 'Team A', seats: [0, 2], score: 0, legs: 1 },
+      { id: 'B' as const, name: 'Team B', seats: [1, 3], score: 101, legs: 0 },
+    ]
+    const before = game({
+      scores: [40, 101, 40, 101],
+      legs: [1, 0, 1, 0],
+      currentPlayer: 2,
+      currentVisitDarts: [],
+      totalVisits: [3, 3, 2, 2],
+      teams: teams.map(t => ({ ...t, score: t.id === 'A' ? 40 : 101 })),
+    })
     const after = game({ ...before, scores: [0, 101, 0, 101], visitLocked: true, currentVisitDarts: [dart(40)], teams })
     expect(callsFor(before, after)).toEqual([['matchshot', 'gameshot']])
   })
@@ -79,7 +97,12 @@ describe('callsFor', () => {
 
     // (c) a locked bust corrected into a non-bust 3-dart visit → the new total
     const bust = game({ scores: [32, 501], currentVisitDarts: [dart(20), dart(13)], visitLocked: true, bustThisVisit: true })
-    const notBust = game({ scores: [448, 501], currentVisitDarts: [dart(20), dart(13), dart(20)], visitLocked: false, bustThisVisit: false })
+    const notBust = game({
+      scores: [448, 501],
+      currentVisitDarts: [dart(20), dart(13), dart(20)],
+      visitLocked: false,
+      bustThisVisit: false,
+    })
     expect(callsFor(bust, notBust)).toEqual([['53']])
 
     // (d) the existing "identical snapshots say nothing" still passes (re-check with correction context)

@@ -7,8 +7,14 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import {
-  insertVoicePack, listVoicePacks, voiceUsage, getVoicePackClips, getVoiceClipOf, deleteVoicePack,
-  type NewVoiceClip, type VoicePackRow,
+  insertVoicePack,
+  listVoicePacks,
+  voiceUsage,
+  getVoicePackClips,
+  getVoiceClipOf,
+  deleteVoicePack,
+  type NewVoiceClip,
+  type VoicePackRow,
 } from '../db/voices.js'
 import type { ParsedPack } from './pack.js'
 import { voiceConfig } from './config.js'
@@ -19,7 +25,11 @@ export type PackSource = { kind: 'upload' | 'url'; url?: string }
 
 /** An import that would take the user over their storage limit (or imports are off). */
 export class VoiceLimitError extends Error {
-  constructor(readonly used: number, readonly limit: number, readonly needed = 0) {
+  constructor(
+    readonly used: number,
+    readonly limit: number,
+    readonly needed = 0,
+  ) {
     super(limit === 0 ? 'Voice imports are turned off' : limitMessage(used, limit, needed))
   }
 }
@@ -44,7 +54,12 @@ function limitMessage(used: number, limit: number, needed: number): string {
 const asBuffer = (b: Uint8Array) => Buffer.from(b.buffer, b.byteOffset, b.byteLength)
 
 const summary = (r: VoicePackRow): VoicePackSummary => ({
-  id: r.id, name: r.name, lang: r.lang, clips: r.clips, bytes: r.bytes, createdAt: r.created_at.toISOString(),
+  id: r.id,
+  name: r.name,
+  lang: r.lang,
+  clips: r.clips,
+  bytes: r.bytes,
+  createdAt: r.created_at.toISOString(),
 })
 
 /** Imports running at once across all users: each holds a pack of up to 128 MB in memory. */
@@ -52,7 +67,9 @@ const MAX_RUNNING = 2
 const running = new Set<string>()
 
 /** A user's place among the imports running; release it once (more calls do nothing). */
-export interface ImportSlot { release(): void }
+export interface ImportSlot {
+  release(): void
+}
 
 /**
  * Takes the user's import slot: one import at a time per user, and at most two across all users.
@@ -63,12 +80,22 @@ export function reserveImport(userId: string): ImportSlot {
   if (running.size >= MAX_RUNNING) throw new VoiceBusyError(true)
   running.add(userId)
   let held = true
-  return { release() { if (held) { held = false; running.delete(userId) } } }
+  return {
+    release() {
+      if (held) {
+        held = false
+        running.delete(userId)
+      }
+    },
+  }
 }
 
 /** Stores a parsed pack for the user. Refused with a VoiceLimitError if it doesn't fit. */
 export async function importPack(
-  db: Kysely<Database>, userId: string, parsed: ParsedPack, source: PackSource,
+  db: Kysely<Database>,
+  userId: string,
+  parsed: ParsedPack,
+  source: PackSource,
   limitBytes: number = voiceConfig().limitBytes,
 ): Promise<VoicePackSummary> {
   const files = new Map<string, NewVoiceClip>()
@@ -87,9 +114,14 @@ export async function importPack(
 
   const id = ulid()
   await insertVoicePack(db, {
-    id, ownerId: userId, name: parsed.name, lang: parsed.lang,
-    source: source.kind, sourceUrl: source.url ?? null,
-    clips: [...files.values()], mappings,
+    id,
+    ownerId: userId,
+    name: parsed.name,
+    lang: parsed.lang,
+    source: source.kind,
+    sourceUrl: source.url ?? null,
+    clips: [...files.values()],
+    mappings,
   })
   const row = (await listVoicePacks(db, userId)).find(p => p.id === id)
   if (!row) throw new Error(`voice pack ${id} vanished after import`)

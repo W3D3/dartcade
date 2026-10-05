@@ -21,10 +21,15 @@
     error = ''
     try {
       const res = await api.PATCH('/api/me', { body: { name: value } })
-      if (res.error) { error = res.error.error; return }
+      if (res.error) {
+        error = res.error.error
+        return
+      }
       value = res.data.name
       await currentUser.refresh()
-    } finally { busy = false }
+    } finally {
+      busy = false
+    }
   }
 </script>
 
@@ -32,17 +37,28 @@
   <AuthPanel />
   <AuthHero />
   <main class="flex flex-grow md:items-center md:justify-center">
-    <form onsubmit={(e) => { e.preventDefault(); void save() }} class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0">
+    <form
+      onsubmit={e => {
+        e.preventDefault()
+        void save()
+      }}
+      class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0"
+    >
       <div class="flex flex-col gap-2">
         <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] uppercase tracking-[0.02em] leading-none">Pick your name</h1>
         <p class="m-0 text-[16px] text-text-muted">
-          Names are unique now, so friends can find you as @name. Yours ({$currentUser?.name}) is taken or uses characters names can't have. We suggested one; change it if you like.
+          Names are unique now, so friends can find you as @name. Yours ({$currentUser?.name}) is taken or uses characters names can't have.
+          We suggested one; change it if you like.
         </p>
       </div>
       <NameField id="pick-name" label="Name" bind:value bind:status own={null} />
       {#if error}<ErrorText>{error}</ErrorText>{/if}
       <Button type="submit" variant="primary" disabled={busy || !nameSendable(status)} class="w-full">{busy ? '…' : 'Save name'}</Button>
-      <button type="button" onclick={() => void signOut()} class="self-center bg-transparent border-0 text-[15px] text-text-muted cursor-pointer font-[inherit]">Sign out</button>
+      <button
+        type="button"
+        onclick={() => void signOut()}
+        class="self-center bg-transparent border-0 text-[15px] text-text-muted cursor-pointer font-[inherit]">Sign out</button
+      >
     </form>
   </main>
 </div>

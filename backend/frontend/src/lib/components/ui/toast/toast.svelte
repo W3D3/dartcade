@@ -31,22 +31,13 @@
   <span class="text-[14px] text-text-muted">{@render children()}</span>
 
   {#if actionLabel}
-    <button
-      type="button"
-      onclick={onaction}
-      class="flex-shrink-0 text-[14px] text-accent font-semibold hover:underline"
-    >
+    <button type="button" onclick={onaction} class="flex-shrink-0 text-[14px] text-accent font-semibold hover:underline">
       {actionLabel}
     </button>
   {/if}
 
   {#if onclose}
-    <button
-      type="button"
-      onclick={onclose}
-      aria-label="Dismiss"
-      class="flex-shrink-0 text-text-dim hover:text-text transition-colors"
-    >
+    <button type="button" onclick={onclose} aria-label="Dismiss" class="flex-shrink-0 text-text-dim hover:text-text transition-colors">
       <X size={16} />
     </button>
   {/if}

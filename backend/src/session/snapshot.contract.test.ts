@@ -22,15 +22,20 @@ function engine() {
     getActiveSessions: vi.fn().mockResolvedValue([]),
     getSessionEvents: vi.fn().mockResolvedValue([]),
     appendEvent: vi.fn().mockResolvedValue(undefined),
-    insertDarts: vi.fn().mockResolvedValue(undefined), deleteDarts: vi.fn().mockResolvedValue(undefined),
+    insertDarts: vi.fn().mockResolvedValue(undefined),
+    deleteDarts: vi.fn().mockResolvedValue(undefined),
     finishSession: vi.fn().mockResolvedValue(undefined),
     abortSession: vi.fn().mockResolvedValue(undefined),
   }
   return new SessionEngine(store, vi.fn())
 }
 const players = [{ name: 'Alice' }, { name: 'Bob' }]
-const dart = (r: number) => ({ visit_id: 'v', index: 0, source_seq: 1,
-  dart: { segment: { name: 'S20', number: 20, bed: 'SingleInner', multiplier: 1 }, score: 20, polar: { r, theta_deg: 90 } } })
+const dart = (r: number) => ({
+  visit_id: 'v',
+  index: 0,
+  source_seq: 1,
+  dart: { segment: { name: 'S20', number: 20, bed: 'SingleInner', multiplier: 1 }, score: 20, polar: { r, theta_deg: 90 } },
+})
 
 async function play(e: SessionEngine, ...events: [string, unknown][]) {
   for (const [kind, data] of events) await e.onBridgeEvent('board-1', kind, data)
@@ -67,18 +72,26 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     const e = engine()
     const { sessionId } = await e.create('u1', 'board-1', 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, players)
     expectValid(e.getSnapshot(sessionId))
-    await play(e,
-      ['visit.opened', { visit_id: 'a' }], ['dart.detected', dart(0.2)], ['takeout.finished', {}],
-      ['visit.opened', { visit_id: 'b' }], ['dart.detected', dart(0.05)], ['takeout.finished', {}])
+    await play(
+      e,
+      ['visit.opened', { visit_id: 'a' }],
+      ['dart.detected', dart(0.2)],
+      ['takeout.finished', {}],
+      ['visit.opened', { visit_id: 'b' }],
+      ['dart.detected', dart(0.05)],
+      ['takeout.finished', {}],
+    )
     const snap = e.getSnapshot(sessionId)!
     expect((snap.game as { bullOff: { result: unknown } }).bullOff.result).not.toBeNull()
     expectValid(snap)
   })
 
-  it('a game with a board per seat, as a seat\'s controller sees it', async () => {
+  it("a game with a board per seat, as a seat's controller sees it", async () => {
     const e = engine()
     const { sessionId } = await e.createWithSeats({
-      ownerUserId: 'host', gameId: 'x01', config: x01Module.defaultConfig,
+      ownerUserId: 'host',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
       seats: [
         { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: 'Kitchen' },
         { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null },
@@ -86,8 +99,10 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     })
     await e.onBridgeEvent('board-a', 'board.status', { status: 'Throw', running: true, event: 'x' })
     const snap = e.getSnapshot(sessionId, {
-      viewerUserId: 'lena', connectedUserIds: new Set(['lena']),
-      disconnectedAt: u => u === 'host' ? new Date('2026-10-02T18:00:00.000Z') : null, isBoardOnline: () => true,
+      viewerUserId: 'lena',
+      connectedUserIds: new Set(['lena']),
+      disconnectedAt: u => (u === 'host' ? new Date('2026-10-02T18:00:00.000Z') : null),
+      isBoardOnline: () => true,
     })
     expect(snap?.seats[0]?.disconnectedAt).toBe('2026-10-02T18:00:00.000Z')
     expectValid(snap)

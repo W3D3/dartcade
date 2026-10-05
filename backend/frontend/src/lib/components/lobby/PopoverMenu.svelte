@@ -6,7 +6,15 @@
   import Popover from './Popover.svelte'
   import PopoverPanel from './PopoverPanel.svelte'
 
-  let { label, triggerLabel, triggerClass = '', align = 'left', width = 250, trigger, children }: {
+  let {
+    label,
+    triggerLabel,
+    triggerClass = '',
+    align = 'left',
+    width = 250,
+    trigger,
+    children,
+  }: {
     /** The menu's accessible name. */
     label: string
     /** The trigger button's accessible name. */

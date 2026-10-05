@@ -8,10 +8,9 @@ const countModule: GameModule<CountState> = {
   version: 1,
   defaultConfig: {},
   init: () => ({ count: 0 }),
-  onBoardEvent: (s, e) =>
-    e.kind === 'dart.detected' ? { state: { count: s.count + 1 } } : { state: s },
-  onUserAction: (s) => ({ state: s }),
-  view: (s) => s,
+  onBoardEvent: (s, e) => (e.kind === 'dart.detected' ? { state: { count: s.count + 1 } } : { state: s }),
+  onUserAction: s => ({ state: s }),
+  view: s => s,
   getCurrentPlayer: () => 0,
   summarize: () => [],
   detail: () => ({}),
@@ -24,7 +23,12 @@ describe('refoldVisit', () => {
   })
 
   it('folds events in order', () => {
-    const data = { visit_id: 'v', index: 0, dart: { segment: { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }, score: 1 }, source_seq: 1 } as const
+    const data = {
+      visit_id: 'v',
+      index: 0,
+      dart: { segment: { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }, score: 1 },
+      source_seq: 1,
+    } as const
     const events: BoardEvent[] = [
       { kind: 'dart.detected', data },
       { kind: 'dart.detected', data: { ...data, index: 1 } },

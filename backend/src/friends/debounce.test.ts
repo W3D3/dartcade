@@ -1,14 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { KeyedDebounce } from './debounce.js'
 
-beforeEach(() => { vi.useFakeTimers() })
-afterEach(() => { vi.useRealTimers() })
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+afterEach(() => {
+  vi.useRealTimers()
+})
 
 describe('KeyedDebounce', () => {
   it('runs each key once per burst, 250 ms after its first change', () => {
     const run = vi.fn()
     const d = new KeyedDebounce(250, run)
-    d.schedule('chris'); d.schedule('chris'); d.schedule('lena')
+    d.schedule('chris')
+    d.schedule('chris')
+    d.schedule('lena')
     vi.advanceTimersByTime(249)
     expect(run).not.toHaveBeenCalled()
     vi.advanceTimersByTime(1)
@@ -33,7 +39,8 @@ describe('KeyedDebounce', () => {
   it('cancel drops what is pending without running it', () => {
     const run = vi.fn()
     const d = new KeyedDebounce(250, run)
-    d.schedule('chris'); d.schedule('lena')
+    d.schedule('chris')
+    d.schedule('lena')
     d.cancel()
     expect(d.pending()).toBe(0)
     expect(vi.getTimerCount()).toBe(0)

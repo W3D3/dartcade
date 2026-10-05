@@ -8,7 +8,11 @@
   import MenuItem from './MenuItem.svelte'
   import PopoverMenu from './PopoverMenu.svelte'
 
-  let { person, choices, onpick }: {
+  let {
+    person,
+    choices,
+    onpick,
+  }: {
     person: LobbyPerson
     choices: BoardChoice[]
     /** null: manual entry */
@@ -19,14 +23,24 @@
 {#if choices.length === 0}
   <BoardLabel {person} />
 {:else}
-  <PopoverMenu label="Choose a board for {person.name}"
+  <PopoverMenu
+    label="Choose a board for {person.name}"
     triggerLabel="Board for {person.name}: {person.boardName ?? 'manual entry'}. Change board"
     triggerClass="max-w-full h-[30px] md:h-[34px] box-border inline-flex items-center gap-[6px] pl-[10px] pr-2 rounded-[8px] border bg-surface-paused text-ink-soft text-[13px] font-semibold
-                  {person.boardMovedBy !== null ? 'border-accent-line-strong' : 'border-line-chip'}">
+                  {person.boardMovedBy !== null ? 'border-accent-line-strong' : 'border-line-chip'}"
+  >
     {#snippet trigger()}<BoardLabel {person} /><ChevronDown size={14} class="shrink-0" />{/snippet}
     {#snippet children(close: () => void)}
       {#each choices as c (c.boardId ?? 'manual')}
-        <MenuItem label={c.label} detail={c.detail} checked={c.current} onclick={() => { close(); if (!c.current) onpick(c.boardId) }} />
+        <MenuItem
+          label={c.label}
+          detail={c.detail}
+          checked={c.current}
+          onclick={() => {
+            close()
+            if (!c.current) onpick(c.boardId)
+          }}
+        />
       {/each}
       {#if person.usualBoardName}
         <span class="px-[10px] pt-[6px] pb-1 text-[12px] text-text-dim">{person.name} usually plays on {person.usualBoardName}</span>

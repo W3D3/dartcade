@@ -8,7 +8,9 @@ export function rankSeats(n: number, winner: number | null, compare: (a: number,
   const placements = Array<number>(n).fill(0)
   if (winner !== null) placements[winner] = 1
   const first = winner === null ? 1 : 2
-  const rest = Array.from({ length: n }, (_, i) => i).filter(i => i !== winner).sort(compare)
+  const rest = Array.from({ length: n }, (_, i) => i)
+    .filter(i => i !== winner)
+    .sort(compare)
   rest.forEach((seat, k) => {
     const prev = rest[k - 1]
     placements[seat] = k > 0 && compare(prev, seat) === 0 ? placements[prev] : first + k
@@ -21,8 +23,6 @@ export function rankSeats(n: number, winner: number | null, compare: (a: number,
  * order from `placements` (ties too), counted only among themselves.
  */
 export function forfeitPlacements(placements: number[], forfeited: ReadonlySet<number>): number[] {
-  const live = placements.flatMap((_, i) => forfeited.has(i) ? [] : [i])
-  return placements.map((p, i) => forfeited.has(i)
-    ? live.length + 1
-    : 1 + live.filter(j => placements[j] < p).length)
+  const live = placements.flatMap((_, i) => (forfeited.has(i) ? [] : [i]))
+  return placements.map((p, i) => (forfeited.has(i) ? live.length + 1 : 1 + live.filter(j => placements[j] < p).length))
 }

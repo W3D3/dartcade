@@ -35,15 +35,17 @@ describe('CameraStills', () => {
     expect(s.put('b1', 1, still(jpeg(MAX_STILL_BYTES)))).not.toBeNull()
   })
 
-  it('starts versions after a restart above the last run\'s (cached ?v= URLs stay unique)', () => {
+  it("starts versions after a restart above the last run's (cached ?v= URLs stay unique)", () => {
     const a = new CameraStills(() => 1_000)
     const b = new CameraStills(() => 2_000)
     expect(b.put('b1', 0, still())).toBeGreaterThan(a.put('b1', 0, still()) ?? Infinity)
   })
 
-  it('forgets a board\'s stills, and only that board\'s', () => {
+  it("forgets a board's stills, and only that board's", () => {
     const s = new CameraStills()
-    s.put('b1', 0, still()); s.put('b1', 1, still()); s.put('b2', 0, still())
+    s.put('b1', 0, still())
+    s.put('b1', 1, still())
+    s.put('b2', 0, still())
     s.clear('b1')
     expect(s.get('b1', 0)).toBeUndefined()
     expect(s.versions('b1')).toEqual([])

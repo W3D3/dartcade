@@ -5,7 +5,10 @@ import { sessionsApiPlugin } from './sessions.js'
 import { ActiveSessionError } from '../session/engine.js'
 
 vi.mock('../auth/middleware.js', () => ({
-  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => { req.userId = 'user-1'; done() }),
+  requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
+    req.userId = 'user-1'
+    done()
+  }),
 }))
 vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn().mockResolvedValue({ id: 'b1', owner_user_id: 'user-1', name: 'Living room' }),
@@ -64,7 +67,8 @@ describe('POST /api/sessions with a userId on a player', () => {
   it('ignores it like any unknown field: a named seat, no account linked', async () => {
     const { app, engine } = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/sessions',
+      method: 'POST',
+      url: '/api/sessions',
       payload: { boardId: 'b1', gameId: 'x01', config: {}, players: [{ name: 'Me' }, { name: 'whatever', userId: 'user-2' }] },
     })
     expect(res.statusCode).toBe(201)
@@ -77,7 +81,8 @@ describe('POST /api/sessions', () => {
   it('returns 201 with sessionId on success', async () => {
     const { app } = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/sessions',
+      method: 'POST',
+      url: '/api/sessions',
       payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
     })
     expect(res.statusCode).toBe(201)
@@ -88,7 +93,8 @@ describe('POST /api/sessions', () => {
     const { app, engine } = makeApp()
     engine.create.mockRejectedValue(new Error('unknown game: xyz'))
     const res = await app.inject({
-      method: 'POST', url: '/api/sessions',
+      method: 'POST',
+      url: '/api/sessions',
       payload: { boardId: 'b1', gameId: 'xyz', config: {}, players: [{ name: 'Alice' }] },
     })
     expect(res.statusCode).toBe(400)
@@ -98,7 +104,8 @@ describe('POST /api/sessions', () => {
     const { app, engine } = makeApp()
     engine.create.mockRejectedValue(new Error('active session already exists for board b1'))
     const res = await app.inject({
-      method: 'POST', url: '/api/sessions',
+      method: 'POST',
+      url: '/api/sessions',
       payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
     })
     expect(res.statusCode).toBe(409)
@@ -108,7 +115,8 @@ describe('POST /api/sessions', () => {
     const { app, engine } = makeApp()
     engine.create.mockRejectedValue(new Error('invalid config: bull off needs at least two players'))
     const res = await app.inject({
-      method: 'POST', url: '/api/sessions',
+      method: 'POST',
+      url: '/api/sessions',
       payload: { boardId: 'b1', gameId: 'x01', config: { bullOff: 'wdc' }, players: [{ name: 'Alice' }] },
     })
     expect(res.statusCode).toBe(400)
@@ -121,7 +129,8 @@ describe('POST /api/sessions ownership', () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'other-user' } as any)
     const { app } = makeApp()
     const res = await app.inject({
-      method: 'POST', url: '/api/sessions',
+      method: 'POST',
+      url: '/api/sessions',
       payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
     })
     expect(res.statusCode).toBe(403)
@@ -154,21 +163,35 @@ describe('DELETE /api/sessions/:id', () => {
 })
 
 describe('session ownership', () => {
-  const session = (id: string, ownerUserId: string, boardId: string | null = null) =>
-    ({ id, ownerUserId, boardId, module: { id: 'atc' }, status: 'active', players: [], seats: [], createdAt: new Date() })
+  const session = (id: string, ownerUserId: string, boardId: string | null = null) => ({
+    id,
+    ownerUserId,
+    boardId,
+    module: { id: 'atc' },
+    status: 'active',
+    players: [],
+    seats: [],
+    createdAt: new Date(),
+  })
 
   it('creates the session for the signed-in user', async () => {
     const { app, engine } = makeApp()
-    await app.inject({ method: 'POST', url: '/api/sessions',
-      payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
+    await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
+    })
     expect(engine.create).toHaveBeenCalledWith('user-1', null, 'atc', {}, [{ name: 'Alice' }], null)
   })
 
-  it('gives a board game the board\'s name, as a rebuild would', async () => {
+  it("gives a board game the board's name, as a rebuild would", async () => {
     vi.mocked(queries.getBoardById).mockResolvedValueOnce({ id: 'b1', owner_user_id: 'user-1', name: 'Living room' } as any)
     const { app, engine } = makeApp()
-    const res = await app.inject({ method: 'POST', url: '/api/sessions',
-      payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      payload: { boardId: 'b1', gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
+    })
     expect(res.statusCode).toBe(201)
     expect(JSON.parse(res.body)).toEqual({ sessionId: 'sess-1' })
     expect(engine.create).toHaveBeenCalledWith('user-1', 'b1', 'atc', {}, [{ name: 'Alice' }], 'Living room')
@@ -177,29 +200,42 @@ describe('session ownership', () => {
   it('returns 409 with the running session when the user already has one', async () => {
     const { app, engine } = makeApp()
     engine.create.mockRejectedValue(new ActiveSessionError('active session already exists for user', 'sess-running', 'user-1'))
-    const res = await app.inject({ method: 'POST', url: '/api/sessions',
-      payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] } })
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      payload: { boardId: null, gameId: 'atc', config: {}, players: [{ name: 'Alice' }] },
+    })
     expect(res.statusCode).toBe(409)
     expect(JSON.parse(res.body)).toEqual({ error: 'You already have a game running', sessionId: 'sess-running' })
   })
 
-  it('lists only the user\'s own sessions', async () => {
+  it("lists only the user's own sessions", async () => {
     const { app, engine } = makeApp()
     engine.getAllSessions.mockReturnValue([session('mine', 'user-1'), session('theirs', 'user-2')])
     const res = await app.inject({ method: 'GET', url: '/api/sessions' })
     expect(JSON.parse(res.body).sessions.map((s: any) => s.id)).toEqual(['mine'])
   })
 
-  it('forbids reading or ending another user\'s boardless session', async () => {
+  it("forbids reading or ending another user's boardless session", async () => {
     const { app, engine } = makeApp()
     engine.getSession.mockReturnValue(session('theirs', 'user-2'))
     expect((await app.inject({ method: 'GET', url: '/api/sessions/theirs' })).statusCode).toBe(403)
     expect((await app.inject({ method: 'DELETE', url: '/api/sessions/theirs' })).statusCode).toBe(403)
     expect(engine.deleteSession).not.toHaveBeenCalled()
-  })})
+  })
+})
 
 describe('a controller who is not the host', () => {
-  const lobbyGame = { id: 's1', ownerUserId: 'user-2', seats: [{ controllerUserId: 'user-1' }], status: 'active', module: { id: 'x01' }, players: [], boardId: null, createdAt: new Date() }
+  const lobbyGame = {
+    id: 's1',
+    ownerUserId: 'user-2',
+    seats: [{ controllerUserId: 'user-1' }],
+    status: 'active',
+    module: { id: 'x01' },
+    players: [],
+    boardId: null,
+    createdAt: new Date(),
+  }
 
   it('may read the game', async () => {
     const { app, engine } = makeApp()
@@ -229,20 +265,29 @@ describe('sessions: spec enforcement', () => {
 
   it('rejects a session without players with 400', async () => {
     const { app } = makeApp()
-    const res = await app.inject({ method: 'POST', url: '/api/sessions',
-      payload: { boardId: null, gameId: 'atc', config: {}, players: [] } })
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/sessions',
+      payload: { boardId: null, gameId: 'atc', config: {}, players: [] },
+    })
     expect(res.statusCode).toBe(400)
   })
 })
 
 describe('lobby games', () => {
   const lobbySession = {
-    id: 's1', ownerUserId: 'host', boardId: null, lobbyId: 'l1', status: 'active', createdAt: new Date(),
-    players: [{ name: 'Host' }], module: { id: 'x01' },
+    id: 's1',
+    ownerUserId: 'host',
+    boardId: null,
+    lobbyId: 'l1',
+    status: 'active',
+    createdAt: new Date(),
+    players: [{ name: 'Host' }],
+    module: { id: 'x01' },
     seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null }],
   }
 
-  it('lets a member of the game\'s lobby read it', async () => {
+  it("lets a member of the game's lobby read it", async () => {
     const engine = { getSession: vi.fn().mockReturnValue(lobbySession), getSnapshot: vi.fn().mockReturnValue(undefined) } as any
     const isLobbyMember = vi.fn().mockResolvedValue(true)
     const app = createFastify()
@@ -253,7 +298,10 @@ describe('lobby games', () => {
   })
 
   it('records who aborted', async () => {
-    const engine = { getSession: vi.fn().mockReturnValue({ ...lobbySession, ownerUserId: 'user-1' }), deleteSession: vi.fn().mockResolvedValue(true) } as any
+    const engine = {
+      getSession: vi.fn().mockReturnValue({ ...lobbySession, ownerUserId: 'user-1' }),
+      deleteSession: vi.fn().mockResolvedValue(true),
+    } as any
     const app = createFastify()
     app.register(sessionsApiPlugin, { engine, db: {} as any })
     expect((await app.inject({ method: 'DELETE', url: '/api/sessions/s1' })).statusCode).toBe(204)

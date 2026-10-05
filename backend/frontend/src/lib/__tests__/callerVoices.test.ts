@@ -11,13 +11,14 @@ describe('clip URLs', () => {
   })
 
   it('finds a built-in clip next to its manifest', () => {
-    expect(builtinClipUrls('en-adam', { gameshot: ['game shot.mp3', 'gs2.mp3'] }))
-      .toEqual({ gameshot: ['/voices/en-adam/game%20shot.mp3', '/voices/en-adam/gs2.mp3'] })
+    expect(builtinClipUrls('en-adam', { gameshot: ['game shot.mp3', 'gs2.mp3'] })).toEqual({
+      gameshot: ['/voices/en-adam/game%20shot.mp3', '/voices/en-adam/gs2.mp3'],
+    })
   })
 })
 
 describe('mergeClips', () => {
-  it('keeps the pack\'s clips and fills missing keys from the built-in voice', () => {
+  it("keeps the pack's clips and fills missing keys from the built-in voice", () => {
     const pack = { '180': ['/p/180'], gameshot: ['/p/gs'] }
     const base = { '180': ['/b/180'], busted: ['/b/bust'] }
     expect(mergeClips(pack, base)).toEqual({ '180': ['/p/180'], gameshot: ['/p/gs'], busted: ['/b/bust'] })
@@ -44,11 +45,11 @@ describe('storageUse', () => {
 })
 
 describe('import results', () => {
-  it('says how many of the source\'s clips were kept', () => {
+  it("says how many of the source's clips were kept", () => {
     expect(keptText({ clips: 385, total: 12422 })).toBe('Kept 385 of 12,422 clips')
   })
 
-  it('shows the server\'s error, or one for the status when it sent none', () => {
+  it("shows the server's error, or one for the status when it sent none", () => {
     expect(importErrorText(413, { error: 'Voice storage limit reached' })).toBe('Voice storage limit reached')
     expect(importErrorText(413, null)).toBe('The zip is too large.')
     expect(importErrorText(0, null)).toMatch(/connection/)

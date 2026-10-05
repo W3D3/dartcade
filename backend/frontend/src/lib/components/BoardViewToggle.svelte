@@ -6,7 +6,11 @@
   import { cameraSideView, cameraStillUrl, pickBoardView, type CameraVersions } from '$lib/camera.js'
   import { BOARD_VIEW_LABELS, type GameSettings } from '$lib/gameSettings.js'
 
-  let { settings = $bindable(), snapshot, cameraVersions }: {
+  let {
+    settings = $bindable(),
+    snapshot,
+    cameraVersions,
+  }: {
     settings: GameSettings
     snapshot: Snapshot | null
     cameraVersions: CameraVersions
@@ -29,13 +33,29 @@
 {#if available}
   <!-- The pill sits over the board; only it takes clicks, not the area around it -->
   <div class="absolute inset-0 flex items-start justify-end p-2 pointer-events-none">
-    <div role="radiogroup" aria-label="Board view" class="pointer-events-auto flex gap-0.5 p-0.5 rounded-full bg-[rgba(10,11,9,0.65)] backdrop-blur-sm">
-      <button type="button" role="radio" aria-checked={!onCamera} aria-label="Drawn board" onclick={() => pick('drawn')}
+    <div
+      role="radiogroup"
+      aria-label="Board view"
+      class="pointer-events-auto flex gap-0.5 p-0.5 rounded-full bg-[rgba(10,11,9,0.65)] backdrop-blur-sm"
+    >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={!onCamera}
+        aria-label="Drawn board"
+        onclick={() => pick('drawn')}
         class="px-2.5 h-6 rounded-full text-[11px] font-semibold leading-none border-0 cursor-pointer transition-colors whitespace-nowrap
-               {!onCamera ? 'bg-white/20 text-white' : 'bg-transparent text-white/60'}">Drawn</button>
-      <button type="button" role="radio" aria-checked={onCamera} aria-label="{BOARD_VIEW_LABELS[cameraView]} camera" onclick={() => pick('camera')}
+               {!onCamera ? 'bg-white/20 text-white' : 'bg-transparent text-white/60'}">Drawn</button
+      >
+      <button
+        type="button"
+        role="radio"
+        aria-checked={onCamera}
+        aria-label="{BOARD_VIEW_LABELS[cameraView]} camera"
+        onclick={() => pick('camera')}
         class="px-2.5 h-6 rounded-full text-[11px] font-semibold leading-none border-0 cursor-pointer transition-colors whitespace-nowrap
-               {onCamera ? 'bg-white/20 text-white' : 'bg-transparent text-white/60'}">{BOARD_VIEW_LABELS[cameraView]}</button>
+               {onCamera ? 'bg-white/20 text-white' : 'bg-transparent text-white/60'}">{BOARD_VIEW_LABELS[cameraView]}</button
+      >
     </div>
   </div>
 {/if}

@@ -5,6 +5,7 @@
 **Goal:** Make lobbies usable in the app: the lobby screen for hosts and members on desktop and phone, joining by code or link, invites with a badge, the lobby indicator, and starting lobby games from the Play page.
 
 **Architecture:**
+
 - The backend (PR #64) already does everything.
   - The browser changes a lobby through REST (`schema/api-v1.yaml`, typed `api` client).
   - It hears about every change on two push sockets: `/ws/lobby?lobbyId=`, a full lobby snapshot after each change, and `/ws/me`, your invites and lobby summary.
@@ -15,6 +16,7 @@
 **Tech Stack:** Svelte 5 (runes) + Tailwind v4 SPA (`backend/frontend`), svelte-spa-router hash routes, openapi-fetch client, zod schemas generated from `schema/lobby-ws-v1.json`, vitest. Backend: Fastify + TypeScript (one task).
 
 **Spec:** `docs/superpowers/specs/2026-10-02-online-multiplayer-design.md`. Read "Frontend", "Lobby lifecycle", "Update after the lobby designs" and "Decided while planning the lobby backend". Designs: the **Dartcade Platform Design** canvas (https://claude.ai/artifact/2ZyCCfSMhs3PKZzNLzsw23).
+
 - Lobby screens: `project/Lobby.dc.html`, `Lobby-Host-Phone`, `Lobby-Phone`, `Lobby-Join`, `Lobby-Indicator`, `Invites-Phone`.
 - Play page: `project/Play.dc.html`, `Mobile-Play`.
 
@@ -31,7 +33,7 @@ Read them with the Artifact tool (`read_file`), not a web fetch.
 - Tests: logic goes in `backend/frontend/src/lib/**` with vitest tests in `src/lib/__tests__/`. The repo has no Svelte component tests; components stay thin.
 - UI copy (spec, "Update after the lobby designs"): "manual entry", never "by hand". Codes show as `K7Q4-MD`.
 - Board rule (spec, Decisions → Boards):
-  - Menus only list *your own* boards, plus Manual.
+  - Menus only list _your own_ boards, plus Manual.
   - Anyone can give a person on Manual one of their own boards.
   - Once a person has a board, only the person, or a guest's adder, changes it.
   - The board's owner can take it back to Manual.
@@ -76,20 +78,20 @@ Inputs the spec implies but no task's tests cover, most likely to bite first:
 
 ## File structure
 
-| File | Responsibility |
-|---|---|
-| `schema/lobby-ws-v1.json`, `backend/src/lobby/view.ts` | `LobbySummary.youHost` (Task 1) |
-| `backend/frontend/src/lib/lobby/format.ts` | Codes, join link, game names, next-game summary, feed lines, feed times |
-| `backend/frontend/src/lib/lobby/rules.ts` | Which controls the viewer gets (mirrors `backend/src/lobby/rules.ts`), board menu choices, counts |
-| `backend/frontend/src/lib/lobby/input.ts` | "Name or @username" parsing, code normalizing, conflict messages |
-| `backend/frontend/src/lib/lobby/sockets.ts` | `parseLobbyMessage`, `parseMeMessage`, `createLobbyStore` (/ws/lobby), `meStore` (/ws/me, app-wide) |
-| `backend/frontend/src/lib/lobby/start.ts` | Start and rematch with the soft ready gate; `shouldOpenGame` |
-| `backend/frontend/src/lib/components/lobby/*.svelte` | Shared pieces (Task 7: Avatar, ToggleChip, MenuPanel, PopoverMenu, MenuItem, Panel, Field, ReadyCount, EmptyState, SwitchLobbyConfirm) and the screen parts built from them (header, people rows, board chip, next game, member panel, feed, cards) |
-| `backend/frontend/src/lib/components/Stepper.svelte` | −/+ number stepper, shared with the Play page |
-| `backend/frontend/src/lib/components/LobbyIndicator.svelte`, `LobbyStrip.svelte`, `NavBadge.svelte` | Side nav card, phone strip, the invite count |
-| `backend/frontend/src/routes/Lobby.svelte`, `Join.svelte`, `Invites.svelte` | The pages (`#/lobby`, `#/join`, `#/join/:code`, `#/invites`) |
-| `backend/frontend/src/routes/CreateSession.svelte` | Lobby players card; "Game on" starts the lobby game |
-| `backend/frontend/src/App.svelte`, `lib/nav.ts`, `TabBar.svelte`, `SideNav.svelte`, `Layout.svelte` | Routes, invite badge, indicator placement |
+| File                                                                                                | Responsibility                                                                                                                                                                                                                                      |
+| --------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `schema/lobby-ws-v1.json`, `backend/src/lobby/view.ts`                                              | `LobbySummary.youHost` (Task 1)                                                                                                                                                                                                                     |
+| `backend/frontend/src/lib/lobby/format.ts`                                                          | Codes, join link, game names, next-game summary, feed lines, feed times                                                                                                                                                                             |
+| `backend/frontend/src/lib/lobby/rules.ts`                                                           | Which controls the viewer gets (mirrors `backend/src/lobby/rules.ts`), board menu choices, counts                                                                                                                                                   |
+| `backend/frontend/src/lib/lobby/input.ts`                                                           | "Name or @username" parsing, code normalizing, conflict messages                                                                                                                                                                                    |
+| `backend/frontend/src/lib/lobby/sockets.ts`                                                         | `parseLobbyMessage`, `parseMeMessage`, `createLobbyStore` (/ws/lobby), `meStore` (/ws/me, app-wide)                                                                                                                                                 |
+| `backend/frontend/src/lib/lobby/start.ts`                                                           | Start and rematch with the soft ready gate; `shouldOpenGame`                                                                                                                                                                                        |
+| `backend/frontend/src/lib/components/lobby/*.svelte`                                                | Shared pieces (Task 7: Avatar, ToggleChip, MenuPanel, PopoverMenu, MenuItem, Panel, Field, ReadyCount, EmptyState, SwitchLobbyConfirm) and the screen parts built from them (header, people rows, board chip, next game, member panel, feed, cards) |
+| `backend/frontend/src/lib/components/Stepper.svelte`                                                | −/+ number stepper, shared with the Play page                                                                                                                                                                                                       |
+| `backend/frontend/src/lib/components/LobbyIndicator.svelte`, `LobbyStrip.svelte`, `NavBadge.svelte` | Side nav card, phone strip, the invite count                                                                                                                                                                                                        |
+| `backend/frontend/src/routes/Lobby.svelte`, `Join.svelte`, `Invites.svelte`                         | The pages (`#/lobby`, `#/join`, `#/join/:code`, `#/invites`)                                                                                                                                                                                        |
+| `backend/frontend/src/routes/CreateSession.svelte`                                                  | Lobby players card; "Game on" starts the lobby game                                                                                                                                                                                                 |
+| `backend/frontend/src/App.svelte`, `lib/nav.ts`, `TabBar.svelte`, `SideNav.svelte`, `Layout.svelte` | Routes, invite badge, indicator placement                                                                                                                                                                                                           |
 
 ---
 
@@ -98,12 +100,14 @@ Inputs the spec implies but no task's tests cover, most likely to bite first:
 The indicator says "In lobby · Host" (`Lobby-Indicator`), and the `/ws/me` summary has no such flag.
 
 **Files:**
+
 - Modify: `schema/lobby-ws-v1.json` (`LobbySummary`)
 - Modify: `backend/src/lobby/view.ts` (`lobbySummary`)
 - Test: `backend/src/lobby/view.test.ts`
 - Regenerate: `npm run gen:api` (writes `backend/src/schema/lobby-ws.ts`, `lobby-ws-v1.deref.json`, `zod.ts` and the frontend copies)
 
 **Interfaces:**
+
 - Produces: `LobbySummary.youHost: boolean` (generated type in `backend/frontend/src/lib/api/lobby-ws.ts`, zod in `lib/api/zod.ts` `MeMessageSchema`).
 
 - [ ] **Step 1: Write the failing test.** In `backend/src/lobby/view.test.ts`, in `describe('lobbySummary')`, change the first `toEqual` and add a line:
@@ -151,11 +155,14 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 2: Lobby text: codes, links, game summaries, the feed
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/lobby/format.ts`
 - Test: `backend/frontend/src/lib/__tests__/lobbyFormat.test.ts`
 
 **Interfaces:**
+
 - Produces:
+
   ```ts
   export function gameName(gameId: string): string
   export function formatCode(code: string): string            // 'K7Q4MD' → 'K7Q4-MD'
@@ -334,12 +341,15 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 The server decides everything (`backend/src/lobby/rules.ts`). This module mirrors it so the screens only show controls the server would accept.
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/lobby/rules.ts`
 - Test: `backend/frontend/src/lib/__tests__/lobbyRules.test.ts`
 
 **Interfaces:**
+
 - Consumes: `Lobby`, `LobbyPerson` from `lib/api/lobby-ws` (generated).
 - Produces:
+
   ```ts
   export type OwnBoard = { id: string; name: string }
   export const controllerOf: (p: LobbyPerson) => string
@@ -527,7 +537,6 @@ export const playsInGame = (lobby: Lobby, viewerId: string | null): boolean =>
   lobby.people.some(p => p.plays && isMine(p, viewerId))
 ```
 
-
 - [ ] **Step 4: Run it.** Expected: PASS (7 tests). `npm run typecheck`: 0 errors and 0 warnings. `npm run lint; echo $?`: 0.
 
 - [ ] **Step 5: Commit**
@@ -545,11 +554,14 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 4: What people type: names, @usernames, codes; what the server's refusals mean
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/lobby/input.ts`
 - Test: `backend/frontend/src/lib/__tests__/lobbyInput.test.ts`
 
 **Interfaces:**
+
 - Produces:
+
   ```ts
   export const GUEST_NAME_MAX = 32
   export type AddInput = { kind: 'guest'; name: string } | { kind: 'invite'; query: string } | { kind: 'invalid'; hint: string }
@@ -675,12 +687,15 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 5: The lobby sockets: /ws/lobby per page, /ws/me for the whole app
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/lobby/sockets.ts`
 - Test: `backend/frontend/src/lib/__tests__/lobbySockets.test.ts`
 
 **Interfaces:**
+
 - Consumes: `LobbyServerMessageSchema`, `MeMessageSchema` (`lib/api/zod.ts`, generated; `MeMessage.lobby.youHost` from Task 1), `WsCloseCode` (`lib/api/game-ws.ts`).
 - Produces:
+
   ```ts
   export function parseLobbyMessage(m: unknown): LobbyServerMessage | null
   export function parseMeMessage(m: unknown): MeMessage | null
@@ -952,12 +967,15 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 6: Starting a lobby game, and when to open it
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/lobby/start.ts`
 - Test: `backend/frontend/src/lib/__tests__/lobbyStart.test.ts`
 
 **Interfaces:**
+
 - Consumes: `describeConflict`, `Refusal` (Task 4); `api` (`$lib/api`).
 - Produces:
+
   ```ts
   export type StartOutcome =
     | { kind: 'started'; sessionId: string }
@@ -1044,7 +1062,6 @@ export function shouldOpenGame(prev: string | null | undefined, next: string | n
 }
 ```
 
-
 - [ ] **Step 4: Run it.** Expected: PASS (5 tests). `npm run typecheck` 0/0, `npm run lint; echo $?` 0.
 
 - [ ] **Step 5: Commit**
@@ -1059,18 +1076,19 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 
 ---
 
-
 ### Task 7: Shared pieces for the lobby screens
 
 The lobby screens repeat the same few patterns: avatars, status pills, toggles, popover menus, titled panels, empty states, a number stepper, and "leave your lobby to join this one?". Each gets one component here, plus kit variants for the pills and the smaller accent button. Later tasks compose them; none writes this markup inline.
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/components/ui/badge/badge-variants.ts` (variants `host`, `guest`, `ready`, `not-ready`, `sits-out`)
 - Modify: `backend/frontend/src/lib/components/ui/button/button-variants.ts` (variant `accent`)
 - Create in `backend/frontend/src/lib/components/lobby/`: `Avatar.svelte`, `ToggleChip.svelte`, `MenuPanel.svelte`, `PopoverMenu.svelte`, `MenuItem.svelte`, `Panel.svelte`, `Field.svelte`, `ReadyCount.svelte`, `EmptyState.svelte`, `SwitchLobbyConfirm.svelte`
 - Create: `backend/frontend/src/lib/components/Stepper.svelte`. It's app-wide; Task 14 uses it in `CreateSession.svelte` too.
 
 **Interfaces (produced, used by Tasks 8–14):**
+
 ```ts
 // ui/badge: <Badge variant="host" | "guest" | "ready" | "not-ready" | "sits-out">…</Badge>
 // ui/button: <Button variant="accent">…</Button>   (h-11, lime, bold; for actions inside pages)
@@ -1100,7 +1118,7 @@ SwitchLobbyConfirm { from: string; to: string; onconfirm: () => void; oncancel: 
 			"sits-out":  "h-8 px-[10px] rounded-full border border-dashed border-line-strong text-text-muted text-[12px] font-medium",
 ```
 
-  - In `ui/button/button-variants.ts`, add after `primary`:
+- In `ui/button/button-variants.ts`, add after `primary`:
 
 ```ts
 			accent:      "h-11 px-4 rounded-[10px] bg-accent text-accent-fg text-[15px] font-bold",
@@ -1389,6 +1407,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 8: The lobby page: header, people, history (read-only)
 
 The page at `#/lobby`, wired to the lobby socket:
+
 - **Header:** name, rename (host), code with copy or share link, QR code, Close (host) or Leave (others).
 - **People:** in throwing order, read-only.
 - **History.**
@@ -1396,6 +1415,7 @@ The page at `#/lobby`, wired to the lobby socket:
 Task 9 makes the people interactive; Task 10 adds the next game and Start. Designs: `Lobby` (desktop), `Lobby-Host-Phone`, `Lobby-Phone`.
 
 **Files:**
+
 - Modify: `backend/frontend/package.json`, `package-lock.json` (add `uqr`)
 - Modify: `backend/frontend/src/lib/lobby/format.ts` (`personLine`)
 - Test: `backend/frontend/src/lib/__tests__/lobbyFormat.test.ts`
@@ -1411,6 +1431,7 @@ Task 9 makes the people interactive; Task 10 adds the next game and Start. Desig
 - Modify: `backend/frontend/src/App.svelte` (route `/lobby`)
 
 **Interfaces:**
+
 - Consumes:
   - from Task 7: Avatar, Panel, EmptyState, Badge (`host`, `guest`, `ready`, `not-ready`, `sits-out`), Button (`accent`, `outline`, `destructive`)
   - Tasks 2–5
@@ -1472,7 +1493,7 @@ export function personLine(p: LobbyPerson, people: LobbyPerson[], viewerId: stri
 }
 ```
 
-  Run the test. Expected: PASS.
+Run the test. Expected: PASS.
 
 - [ ] **Step 4: Add the QR library.** Run `cd backend/frontend && mise exec -- npm install --save-exact uqr@0.1.2`. Then check `node_modules/uqr/dist/index.d.ts`:
   - `encode(text, options?)` returns `size: number` and `data: boolean[][]`.
@@ -1622,7 +1643,6 @@ export function personLine(p: LobbyPerson, people: LobbyPerson[], viewerId: stri
   {#if footer}<div class="md:mt-auto">{@render footer()}</div>{/if}
 </Panel>
 ```
-
 
 `lobby/ActivityFeed.svelte`:
 
@@ -1908,9 +1928,9 @@ export function personLine(p: LobbyPerson, people: LobbyPerson[], viewerId: stri
 </Layout>
 ```
 
-  - The layout: on phones it's header, next game (Task 10), people, history; on desktop, people on the left and the next game plus history on the right.
-  - In `App.svelte`, import `Lobby from './routes/Lobby.svelte'` and add `'/lobby': Lobby,`.
-  - `res.error` on a failed create is `ErrorResponse | LobbyConflict`. Both fit `Refusal` (Task 4), so `describeConflict(res.error)` typechecks.
+- The layout: on phones it's header, next game (Task 10), people, history; on desktop, people on the left and the next game plus history on the right.
+- In `App.svelte`, import `Lobby from './routes/Lobby.svelte'` and add `'/lobby': Lobby,`.
+- `res.error` on a failed create is `ErrorResponse | LobbyConflict`. Both fit `Refusal` (Task 4), so `describeConflict(res.error)` typechecks.
 
 - [ ] **Step 7: Verify.**
   - `npm test` passes. `npm run typecheck` reports 0 errors and 0 warnings. `npm run lint; echo $?` prints 0.
@@ -1932,11 +1952,13 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 9: Changing people: boards, in or out, ready, order, removing, adding
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/lobby/rules.ts` (`PersonPatch`)
 - Create in `lib/components/lobby/`: `BoardChip.svelte`, `RowMenu.svelte`, `PersonControls.svelte`, `AddSomeone.svelte`
 - Modify: `backend/frontend/src/routes/Lobby.svelte`
 
 **Interfaces:**
+
 - Consumes:
   - from Task 7: PopoverMenu, MenuItem, MenuPanel, ToggleChip, Button
   - from Task 8: BoardLabel, PersonStatus, PeopleList (`boardOf`, `controlsOf`, `footer`)
@@ -2177,7 +2199,7 @@ export type PersonPatch = components['schemas']['UpdatePersonRequest']
     withLobby(id => api.POST('/api/lobbies/{id}/invites', { params: { path: { id } }, body: { userId } }))
 ```
 
-  - Replace `<PeopleList {lobby} {viewerId} />` with:
+- Replace `<PeopleList {lobby} {viewerId} />` with:
 
 ```svelte
           <PeopleList {lobby} {viewerId}>
@@ -2191,7 +2213,7 @@ export type PersonPatch = components['schemas']['UpdatePersonRequest']
           </PeopleList>
 ```
 
-  `boardChoices` comes from `$lib/lobby/rules`. Snippets are closures, so TypeScript doesn't carry the `{:else if lobby}` narrowing into them. Add `{@const l = lobby}` as the first line inside the `{:else if lobby}` branch and use `l` in the snippets, as above.
+`boardChoices` comes from `$lib/lobby/rules`. Snippets are closures, so TypeScript doesn't carry the `{:else if lobby}` narrowing into them. Add `{@const l = lobby}` as the first line inside the `{:else if lobby}` branch and use `l` in the snippets, as above.
 
 - [ ] **Step 4: Verify.**
   - `npm test` passes. `npm run typecheck` reports 0 errors and 0 warnings. `npm run lint; echo $?` prints 0.
@@ -2218,6 +2240,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 10: The next game: the host's card, the member panel, Start and Rematch
 
 **The host** (`Lobby`, `Lobby-Host-Phone`) sees:
+
 - the next game and its X01 settings
 - "Who plays" chips and the throw order
 - **Start · N players**, and **Rematch** once a game was played
@@ -2228,11 +2251,13 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 **Everyone with a seat** goes to the game when it starts (decision 7). While it runs, a bar offers "Back to game" or "Watch".
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/lobby/rules.ts` (`LobbyPatch`)
 - Create in `lib/components/lobby/`: `NextGameSummary.svelte`, `X01Settings.svelte`, `WhoPlays.svelte`, `GameRunningBar.svelte`, `NextGameCard.svelte`, `MemberPanel.svelte`
 - Modify: `backend/frontend/src/routes/Lobby.svelte`
 
 **Interfaces:**
+
 - Consumes:
   - from Task 7: Button, Field, ReadyCount, ToggleChip, Avatar, Stepper; also SegmentedControl
   - from Task 6: `startGame`, `shouldOpenGame`
@@ -2515,7 +2540,7 @@ export type LobbyPatch = components['schemas']['UpdateLobbyRequest']
   const mine = $derived(lobby ? myRow(lobby, viewerId) : null)
 ```
 
-  - Replace the `<!-- Task 10: … -->` comment with:
+- Replace the `<!-- Task 10: … -->` comment with:
 
 ```svelte
           {#if l.currentSessionId}
@@ -2529,7 +2554,7 @@ export type LobbyPatch = components['schemas']['UpdateLobbyRequest']
           {/if}
 ```
 
-  - Append after `</Layout>`:
+- Append after `</Layout>`:
 
 ```svelte
 {#if confirmStart}
@@ -2567,14 +2592,17 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 Start the app's `/ws/me` once someone is signed in. Show the lobby indicator (`Lobby-Indicator`) as a card in the desktop side nav and as a strip above the phone tab bar. Put the number of pending invites as a badge on the phone's Play tab.
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/lobby/format.ts` (`indicatorView`), `lib/nav.ts` (`badge`)
 - Test: `lib/__tests__/lobbyFormat.test.ts`, `lib/__tests__/nav.test.ts`
 - Create: `backend/frontend/src/lib/components/LobbyIndicator.svelte`, `LobbyStrip.svelte`, `NavBadge.svelte`
 - Modify: `backend/frontend/src/App.svelte`, `lib/components/SideNav.svelte`, `lib/components/TabBar.svelte`, `lib/components/Layout.svelte`
 
 **Interfaces:**
+
 - Consumes: `me` (Task 5), `LobbySummary.youHost` (Task 1), `gameName` (Task 2), Button (Task 7).
 - Produces:
+
   ```ts
   export type IndicatorView = { tag: string; name: string; line: string; next: string; back: { sessionId: string; label: string } | null }
   export function indicatorView(s: LobbySummary): IndicatorView
@@ -2607,7 +2635,7 @@ describe('indicatorView', () => {
 })
 ```
 
-  In `nav.test.ts`, inside `describe('navTabs')`:
+In `nav.test.ts`, inside `describe('navTabs')`:
 
 ```ts
   it('puts the pending invites on the Play tab', () => {
@@ -2640,7 +2668,7 @@ export function indicatorView(s: LobbySummary): IndicatorView {
 }
 ```
 
-  In `lib/nav.ts`, add `badge?: number` to `NavTab`, and change `navTabs` to:
+In `lib/nav.ts`, add `badge?: number` to `NavTab`, and change `navTabs` to:
 
 ```ts
 /** The phone tab bar: Live only while a game is running; pending invites as a badge on Play. */
@@ -2654,7 +2682,7 @@ export function navTabs(liveSessionId: string | null, invites = 0): NavTab[] {
 }
 ```
 
-  Run the tests again. Expected: PASS.
+Run the tests again. Expected: PASS.
 
 - [ ] **Step 4: The components.**
 
@@ -2752,11 +2780,11 @@ export function navTabs(liveSessionId: string | null, invites = 0): NavTab[] {
   })
 ```
 
-  - **`SideNav.svelte`:** import `LobbyIndicator from './LobbyIndicator.svelte'` and put `<LobbyIndicator />` first inside the `mt-auto flex flex-col gap-4` group.
-  - **`TabBar.svelte`:**
-    - Import `{ me }` from `'$lib/lobby/sockets'` and `NavBadge from './NavBadge.svelte'`.
-    - Set `const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0))`.
-    - Inside the `<a>`, after the live dot:
+- **`SideNav.svelte`:** import `LobbyIndicator from './LobbyIndicator.svelte'` and put `<LobbyIndicator />` first inside the `mt-auto flex flex-col gap-4` group.
+- **`TabBar.svelte`:**
+  - Import `{ me }` from `'$lib/lobby/sockets'` and `NavBadge from './NavBadge.svelte'`.
+  - Set `const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0))`.
+  - Inside the `<a>`, after the live dot:
 
 ```svelte
       {#if tab.badge}
@@ -2765,7 +2793,7 @@ export function navTabs(liveSessionId: string | null, invites = 0): NavTab[] {
       {/if}
 ```
 
-  - **`Layout.svelte`:** import `LobbyStrip from './LobbyStrip.svelte'` and render `<LobbyStrip />` right before `<TabBar />`.
+- **`Layout.svelte`:** import `LobbyStrip from './LobbyStrip.svelte'` and render `<LobbyStrip />` right before `<TabBar />`.
 
 - [ ] **Step 6: Verify.**
   - `npm test` passes. `npm run typecheck` reports 0 errors and 0 warnings. `npm run lint; echo $?` prints 0.
@@ -2790,17 +2818,20 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 12: Joining by code or link
 
 The page at `#/join` and `#/join/:code` (`Lobby-Join`). The join link and the QR code open `#/join/<code>`.
+
 - The page shows which lobby the code opens.
 - Then "Join as <you>".
 - Someone already in another lobby can leave it first.
 - There's no in-app scanner.
 
 **Files:**
+
 - Create: `backend/frontend/src/lib/components/lobby/LobbyPreviewCard.svelte`
 - Create: `backend/frontend/src/routes/Join.svelte`
 - Modify: `backend/frontend/src/App.svelte` (routes `/join`, `/join/:code`)
 
 **Interfaces:**
+
 - Consumes:
   - from Task 4: `normalizeCode`, `describeConflict`, `Refusal` (it has `lobbyId`)
   - from Task 2: `formatCode`
@@ -2925,8 +2956,7 @@ The page at `#/join` and `#/join/:code` (`Lobby-Join`). The join link and the QR
 {/if}
 ```
 
-
-  In `App.svelte`, import `Join from './routes/Join.svelte'` and add `'/join': Join,` and `'/join/:code': Join,`.
+In `App.svelte`, import `Join from './routes/Join.svelte'` and add `'/join': Join,` and `'/join/:code': Join,`.
 
 - [ ] **Step 3: Verify.**
   - `npm test` passes. `npm run typecheck` reports 0 errors and 0 warnings. `npm run lint; echo $?` prints 0.
@@ -2950,17 +2980,20 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 13: Invites
 
 The page at `#/invites` (`Invites-Phone`), live from `/ws/me`.
+
 - Accepting while in another lobby asks to leave that one first; your guests leave with you.
 - Desktop: the side nav gets an "Invites" link with the count (decision 4).
 - Phones: the Play tab badge (Task 11) and the Play page banner (Task 14) lead here.
 
 **Files:**
+
 - Modify: `backend/frontend/src/lib/lobby/format.ts` (`inviteTime`)
 - Test: `backend/frontend/src/lib/__tests__/lobbyFormat.test.ts`
 - Create: `backend/frontend/src/lib/components/lobby/InviteCard.svelte`, `backend/frontend/src/routes/Invites.svelte`
 - Modify: `backend/frontend/src/App.svelte` (route `/invites`), `lib/components/SideNav.svelte`
 
 **Interfaces:**
+
 - Consumes: EmptyState, Avatar, Button, SwitchLobbyConfirm (Task 7); NavBadge (Task 11); `me`; `describeConflict`, `Refusal`.
 - Produces:
   - `inviteTime(at: string, now: Date): string`
@@ -3003,7 +3036,7 @@ export function inviteTime(at: string, now: Date): string {
 }
 ```
 
-  Run the test. Expected: PASS.
+Run the test. Expected: PASS.
 
 - [ ] **Step 4: The card and the page.**
 
@@ -3107,11 +3140,11 @@ export function inviteTime(at: string, now: Date): string {
 {/if}
 ```
 
-  - In `App.svelte`, import `Invites from './routes/Invites.svelte'` and add `'/invites': Invites`.
-  - In `SideNav.svelte`:
-    - Import `Mail` from `@lucide/svelte`, `{ me }` from `'$lib/lobby/sockets'` and `NavBadge from './NavBadge.svelte'`.
-    - Add `const inviteCount = $derived($me?.invites.length ?? 0)`.
-    - After the `{#each links …}` block (inside the links `div`), add:
+- In `App.svelte`, import `Invites from './routes/Invites.svelte'` and add `'/invites': Invites`.
+- In `SideNav.svelte`:
+  - Import `Mail` from `@lucide/svelte`, `{ me }` from `'$lib/lobby/sockets'` and `NavBadge from './NavBadge.svelte'`.
+  - Add `const inviteCount = $derived($me?.invites.length ?? 0)`.
+  - After the `{#each links …}` block (inside the links `div`), add:
 
 ```svelte
     {#if inviteCount > 0}
@@ -3150,6 +3183,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 14: The Play page inside a lobby
 
 Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
+
 - **The players card:** inside a lobby, the player list becomes "From your lobby · N playing · Manage", which opens the lobby. The board selector goes away (boards are per person in a lobby).
 - **The host's "Game on":** saves the picked mode and settings as the lobby's next game, then starts it with the soft ready gate.
 - **Members:** they see "<host> starts the game" (decision 5).
@@ -3158,10 +3192,12 @@ Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
 - **Steppers:** the page's two inline −/+ steppers (max rounds, first to) become the shared `Stepper`.
 
 **Files:**
+
 - Create in `lib/components/lobby/`: `LobbyPlayersCard.svelte`, `PlayWithFriends.svelte`, `InvitesBanner.svelte`
 - Modify: `backend/frontend/src/routes/CreateSession.svelte`
 
 **Interfaces:**
+
 - Consumes:
   - `me`, `createLobbyStore` (Task 5)
   - `startGame` (Task 6)
@@ -3293,13 +3329,13 @@ Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
   let confirmNames = $state<string[] | null>(null)
 ```
 
-  - Change `playerCount` so a lobby counts its players:
+- Change `playerCount` so a lobby counts its players:
 
 ```ts
   const playerCount = $derived(lobby ? counts(lobby).playing : 1 + guests.filter(g => g.account || g.name.trim()).length)
 ```
 
-  - Move the mode-to-API part of `start()` into a function both starts use, and make `start()` use it:
+- Move the mode-to-API part of `start()` into a function both starts use, and make `start()` use it:
 
 ```ts
   /** The picked mode and settings as the API takes them; null (with the error shown) if the backend has no such game. */
@@ -3315,8 +3351,8 @@ Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
   }
 ```
 
-  - Then in `start()`, replace the `gameId` and `resolvedConfig` lines with `const picked = chosenGame(); if (!picked) return` and send `body: { boardId: boardId || null, gameId: picked.gameId, config: picked.config, players: allPlayers }`.
-  - Add:
+- Then in `start()`, replace the `gameId` and `resolvedConfig` lines with `const picked = chosenGame(); if (!picked) return` and send `body: { boardId: boardId || null, gameId: picked.gameId, config: picked.config, players: allPlayers }`.
+- Add:
 
 ```ts
   async function startInLobby(force = false) {
@@ -3349,7 +3385,7 @@ Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
     {#if invites > 0}<InvitesBanner count={invites} />{/if}
 ```
 
-  - **Steppers:** replace the "Max rounds" `div` (the one with the −/+ buttons) with:
+- **Steppers:** replace the "Max rounds" `div` (the one with the −/+ buttons) with:
 
 ```svelte
             <div class="flex justify-between items-center">
@@ -3369,7 +3405,7 @@ Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
             </div>
 ```
 
-  - **Players:** wrap the Players block (from `<!-- Players -->` through the "Add player" button's closing `</div>`) like this:
+- **Players:** wrap the Players block (from `<!-- Players -->` through the "Add player" button's closing `</div>`) like this:
 
 ```svelte
         {#if lobby}
@@ -3380,7 +3416,7 @@ Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
         {/if}
 ```
 
-  - **Start:** replace the "Game on" `<button …>…</button>` with:
+- **Start:** replace the "Game on" `<button …>…</button>` with:
 
 ```svelte
           {#if lobby && !lobbyHost}
@@ -3397,7 +3433,7 @@ Spec ("New game inside a lobby") and `Play`, `Mobile-Play`:
           {/if}
 ```
 
-  - **Confirm dialog:** after `</Layout>`, add:
+- **Confirm dialog:** after `</Layout>`, add:
 
 ```svelte
 {#if confirmNames}
@@ -3433,6 +3469,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 ### Task 15: Spec and agent notes as built
 
 **Files:**
+
 - Modify: `docs/superpowers/specs/2026-10-02-online-multiplayer-design.md`
 - Modify: `AGENTS.md`
 
@@ -3485,6 +3522,7 @@ Claude-Session: https://claude.ai/code/session_017DTbMKdwEpojREDdyywo96"
 The controller does this task, not an implementer subagent. The user asked for a PR with screenshots.
 
 **Setup:**
+
 - Point the dev stack at the branch: `git -C ~/Dev/dartcade checkout --detach feat/lobby-ui`, then restart the backend container.
 - Dev logins: Admin as host, Luke as a member (the "Dev: switch to" buttons).
 - In a lobby, add a guest and set an X01 next game.
@@ -3530,30 +3568,32 @@ The controller does this task, not an implementer subagent. The user asked for a
 
 **Spec coverage** ("Frontend", the canvas list, and "Update after the lobby designs"):
 
-| Requirement | Task |
-|---|---|
+| Requirement                                                                                                                           | Task                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
 | People table: board chips, "Moved by you · usually X", ready for your own rows, read-only for others, row menu (Move up/down, Remove) | 8, 9 (`personLine`, BoardChip, PersonControls, RowMenu) |
-| "Add someone: name or @username" (guest or invite) | 4 (`parseAddInput`), 9 (AddSomeone) |
-| Next-game card with inline settings, Who plays chips, throw order, Start · N, the soft ready gate, Rematch | 6, 10 |
-| Lobby history | 2 (`activityLine`), 8 (ActivityFeed) |
-| Member view on a phone with a separate Ready, own board, guests and invites | 9, 10 (MemberPanel) |
-| Join by code or link (`#/join`, `#/join/:code`), preview, leave-first | 4, 12 |
-| Lobby indicator: side nav card, phone strip, live, "you throw next · Leg 2", host tag | 1, 11 |
-| Invites with a live badge, accept, decline, leave-first | 11, 13 |
-| Play page: "From your lobby · Manage", host's "Game on" | 14 |
-| QR code of the join link (no in-app scanner) | 8 |
-| The host regenerates the code | 8 |
-| Presence, board offline | 7 (Avatar dot), 8 (BoardLabel) |
-| Live per-user updates (`/ws/me`) | 5, 11 |
-| Desktop and phone | every screen task; Task 16 checks both sizes |
+| "Add someone: name or @username" (guest or invite)                                                                                    | 4 (`parseAddInput`), 9 (AddSomeone)                     |
+| Next-game card with inline settings, Who plays chips, throw order, Start · N, the soft ready gate, Rematch                            | 6, 10                                                   |
+| Lobby history                                                                                                                         | 2 (`activityLine`), 8 (ActivityFeed)                    |
+| Member view on a phone with a separate Ready, own board, guests and invites                                                           | 9, 10 (MemberPanel)                                     |
+| Join by code or link (`#/join`, `#/join/:code`), preview, leave-first                                                                 | 4, 12                                                   |
+| Lobby indicator: side nav card, phone strip, live, "you throw next · Leg 2", host tag                                                 | 1, 11                                                   |
+| Invites with a live badge, accept, decline, leave-first                                                                               | 11, 13                                                  |
+| Play page: "From your lobby · Manage", host's "Game on"                                                                               | 14                                                      |
+| QR code of the join link (no in-app scanner)                                                                                          | 8                                                       |
+| The host regenerates the code                                                                                                         | 8                                                       |
+| Presence, board offline                                                                                                               | 7 (Avatar dot), 8 (BoardLabel)                          |
+| Live per-user updates (`/ws/me`)                                                                                                      | 5, 11                                                   |
+| Desktop and phone                                                                                                                     | every screen task; Task 16 checks both sizes            |
 
 Out of scope: the leave and end-of-game flows (plan 4), friends (#54), the tablet rail.
 
 **Placeholder scan:** done.
+
 - Every code step has its code.
 - One instruction is conditional on purpose: Task 8's `uqr` version check. It names what to look for and what to do.
 
 **Type consistency, checked across tasks:**
+
 - `Refusal` (Task 4) includes `sessionId` and `lobbyId`; Tasks 6, 12 and 13 use both.
 - `PersonPatch` (Task 9) and `LobbyPatch` (Task 10) are generated request types re-exported from `lib/lobby/rules.ts`.
 - `PeopleList` snippets are `boardOf(p)` and `controlsOf(p, i)`. `PopoverMenu`'s children get `close`.
@@ -3562,4 +3602,3 @@ Out of scope: the leave and end-of-game flows (plan 4), friends (#54), the table
 - `shouldOpenGame(prev, next, playing)` is the same in Task 6 and Task 10.
 
 **Review Focus:** each of the five items has its test or verify step in the task named next to it.
-

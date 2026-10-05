@@ -36,7 +36,7 @@ describe('shownScore', () => {
     expect(shownScore({ ...visit, score: 36, darts: [d(60), d(45)], start: 141 })).toBe(141)
   })
 
-  it('only the thrower (or the thrower\'s team) is held; the others show their score', () => {
+  it("only the thrower (or the thrower's team) is held; the others show their score", () => {
     expect(shownScore({ ...visit, thrower: false, score: 87, darts: [d(60)], start: 141 })).toBe(87)
   })
 
