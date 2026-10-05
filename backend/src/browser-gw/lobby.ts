@@ -1,7 +1,8 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { SocketStream } from '@fastify/websocket'
 import { z } from 'zod'
-import { getAuthUser } from '../auth/session.js'
+import { withAuthedSocket, socketQuery } from './authedSocket.js'
+import { isOpen, onceGone } from '../util/socket.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { LobbyHub } from '../lobby/hub.js'
 import type { LobbyService } from '../lobby/service.js'
@@ -21,81 +22,44 @@ export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Err
   const { lobbies, hub, friends } = opts
 
   app.get('/ws/lobby', { websocket: true }, (connection: SocketStream, req) => {
-    const socket = connection.socket
-    getAuthUser(req)
-      .then(async user => {
-        // Closed while sign-in was checked: no close event will come to remove it again
-        if (socket.readyState !== socket.OPEN) return
-        if (!user) {
-          socket.close(WsCloseCode.Unauthorized, 'unauthorized')
-          return
-        }
-        const q = LobbyQuerySchema.safeParse(req.query)
-        if (!q.success) {
-          socket.close(WsCloseCode.MissingSession, 'missing lobbyId')
-          return
-        }
-        const { lobbyId } = q.data
-        const access = await lobbies.lobbyAccess(lobbyId, user.userId)
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- readyState can change across the await, though TS doesn't see it
-        if (socket.readyState !== socket.OPEN) return
-        if (access === 'not_found') {
-          socket.close(WsCloseCode.NotFound, 'lobby not found')
-          return
-        }
-        if (access === 'forbidden') {
-          socket.close(WsCloseCode.Forbidden, 'forbidden')
-          return
-        }
+    withAuthedSocket(connection, req, async (socket, userId) => {
+      const query = socketQuery(socket, req.query, LobbyQuerySchema, 'missing lobbyId')
+      if (!query) return
+      const { lobbyId } = query
+      const access = await lobbies.lobbyAccess(lobbyId, userId)
+      if (!isOpen(socket)) return
+      if (access === 'not_found') {
+        socket.close(WsCloseCode.NotFound, 'lobby not found')
+        return
+      }
+      if (access === 'forbidden') {
+        socket.close(WsCloseCode.Forbidden, 'forbidden')
+        return
+      }
 
-        hub.addLobbySocket(lobbyId, socket, user.userId)
-        // 'error' is followed by 'close': handle whichever comes first, once
-        let gone = false
-        const onGone = () => {
-          if (gone) return
-          gone = true
-          hub.removeLobbySocket(lobbyId, socket)
-          lobbies.refreshPresence(lobbyId).catch((err: unknown) => {
-            app.log.warn({ lobbyId, err }, 'lobby presence push failed')
-          })
-        }
-        socket.on('close', onGone)
-        socket.on('error', onGone)
-        // Everyone, this socket included, gets the lobby with this member online
-        await lobbies.refreshPresence(lobbyId)
+      hub.addLobbySocket(lobbyId, socket, userId)
+      onceGone(socket, () => {
+        hub.removeLobbySocket(lobbyId, socket)
+        lobbies.refreshPresence(lobbyId).catch((err: unknown) => {
+          app.log.warn({ lobbyId, err }, 'lobby presence push failed')
+        })
       })
-      .catch(() => {
-        socket.close(WsCloseCode.InternalError, 'internal error')
-      })
+      // Everyone, this socket included, gets the lobby with this member online
+      await lobbies.refreshPresence(lobbyId)
+    })
   })
 
   app.get('/ws/me', { websocket: true }, (connection: SocketStream, req) => {
-    const socket = connection.socket
-    getAuthUser(req)
-      .then(async user => {
-        if (socket.readyState !== socket.OPEN) return
-        if (!user) {
-          socket.close(WsCloseCode.Unauthorized, 'unauthorized')
-          return
-        }
-        const [first, friendsFirst] = await Promise.all([lobbies.meMessage(user.userId), friends.message(user.userId)])
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- readyState can change across the await, though TS doesn't see it
-        if (socket.readyState !== socket.OPEN) return
-        hub.addMeSocket(user.userId, socket, first, friendsFirst)
-        friends.connected(user.userId)
-        let gone = false
-        const onGone = () => {
-          if (gone) return
-          gone = true
-          hub.removeMeSocket(user.userId, socket)
-          friends.disconnected(user.userId)
-        }
-        socket.on('close', onGone)
-        socket.on('error', onGone)
+    withAuthedSocket(connection, req, async (socket, userId) => {
+      const [first, friendsFirst] = await Promise.all([lobbies.meMessage(userId), friends.message(userId)])
+      if (!isOpen(socket)) return
+      hub.addMeSocket(userId, socket, first, friendsFirst)
+      friends.connected(userId)
+      onceGone(socket, () => {
+        hub.removeMeSocket(userId, socket)
+        friends.disconnected(userId)
       })
-      .catch(() => {
-        socket.close(WsCloseCode.InternalError, 'internal error')
-      })
+    })
   })
 
   done()
