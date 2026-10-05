@@ -73,7 +73,7 @@
       {#if !compact}
         <span
           class="hidden md:block text-[13px] leading-[1.4] xl:text-[15px] xl:leading-[1.45] {active && !unavailable
-            ? 'text-[#b4b5aa]'
+            ? 'text-ink-3'
             : 'text-text-muted'}"
         >
           {mode.desc}

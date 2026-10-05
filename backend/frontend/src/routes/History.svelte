@@ -87,8 +87,8 @@
 {#snippet badge(p: { n: number; name: string; me: boolean })}
   <span
     class="inline-flex h-[26px] items-center gap-[5px] whitespace-nowrap rounded-md border py-0 pl-[7px] pr-[9px] text-[13px] {p.me
-      ? 'border-accent bg-[#2b3417] font-bold text-text'
-      : 'border-line-2 bg-surface-inset font-medium text-[#c9c9bf]'}"
+      ? 'border-accent bg-accent-tint font-bold text-text'
+      : 'border-line-2 bg-surface-inset font-medium text-ink-2'}"
   >
     <span class="font-mono text-[11px] {p.me ? 'font-medium text-accent' : 'text-text-dim'}">{p.n}</span>{p.name}
   </span>
@@ -113,7 +113,7 @@
             onclick={() => void pick(f.id)}
             class="h-10 whitespace-nowrap rounded-[7px] border-0 px-4 text-[15px] {f.id === mode
               ? 'bg-line font-semibold text-text'
-              : 'bg-transparent text-[#c9c9bf]'}"
+              : 'bg-transparent text-ink-2'}"
           >
             {f.name}
           </button>
@@ -177,7 +177,7 @@
                   <span
                     class="shrink-0 inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won
                       ? 'bg-accent text-accent-fg'
-                      : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span
+                      : 'border border-line-strong text-ink-2'}">{result.text}</span
                   >
                 </div>
                 <div class="flex items-baseline justify-between gap-3">
@@ -214,7 +214,7 @@
                   <span
                     class="inline-flex h-7 items-center rounded-full px-3 text-[13px] font-bold uppercase tracking-[0.06em] {result.won
                       ? 'bg-accent text-accent-fg'
-                      : 'border border-line-strong text-[#c9c9bf]'}">{result.text}</span
+                      : 'border border-line-strong text-ink-2'}">{result.text}</span
                   >
                 </span>
                 <span class="flex flex-col gap-0.5">

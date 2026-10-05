@@ -32,7 +32,7 @@
     </p>
     <div class="hidden xl:flex gap-2 flex-wrap">
       {#each ['501', 'Dart Soccer', 'Challenges', 'Tournaments'] as label (label)}
-        <span class="px-[14px] py-2 border border-[#3a3e36] rounded-full text-[14px] text-[#d8d8ce]">
+        <span class="px-[14px] py-2 border border-line-chip rounded-full text-[14px] text-ink-soft">
           {label}
         </span>
       {/each}
