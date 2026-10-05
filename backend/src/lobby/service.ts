@@ -229,12 +229,20 @@ export class LobbyService {
 
   /** Pushes /ws/me to each of these users, then tells their friends their status changed. */
   private async notifyUsers(userIds: string[]): Promise<void> {
+    await this.pushMeAll(userIds)
+    this.statusChanged(userIds)
+  }
+
+  /**
+   * Pushes /ws/me to each of these users. A failed push is logged, never thrown: the change it
+   * shows is already made, and the user's next /ws/me (a reconnect, the next push) catches up.
+   */
+  private async pushMeAll(userIds: string[], warning = '/ws/me push failed', details: Record<string, unknown> = {}): Promise<void> {
     const users = [...new Set(userIds)]
-    try {
-      await Promise.all(users.map(u => this.pushMe(u)))
-    } finally {
-      this.statusChanged(users)
-    }
+    const pushed = await Promise.allSettled(users.map(u => this.pushMe(u)))
+    pushed.forEach((r, i) => {
+      if (r.status === 'rejected') this.warn(warning, { userId: users[i], ...details, error: String(r.reason) })
+    })
   }
 
   private statusChanged(userIds: string[]): void {
@@ -793,13 +801,7 @@ export class LobbyService {
    * `publish`; this also covers a game started outside a lobby (POST /api/sessions).
    */
   async onGameStarted(e: GameStarted): Promise<void> {
-    await Promise.all(
-      e.userIds.map(userId =>
-        this.pushMe(userId).catch((err: unknown) => {
-          this.warn('game-start push failed', { userId, sessionId: e.sessionId, error: String(err) })
-        }),
-      ),
-    )
+    await this.pushMeAll(e.userIds, 'game-start push failed', { sessionId: e.sessionId })
     this.statusChanged(e.userIds)
   }
 
@@ -818,13 +820,7 @@ export class LobbyService {
   async onGameEnded(e: GameEnded): Promise<void> {
     if (e.lobbyId !== null) this.lastGameIndicators.delete(e.lobbyId)
     this.statusChanged(e.userIds)
-    await Promise.all(
-      e.userIds.map(userId =>
-        this.pushMe(userId).catch((err: unknown) => {
-          this.warn('game-end push failed', { userId, sessionId: e.sessionId, error: String(err) })
-        }),
-      ),
-    )
+    await this.pushMeAll(e.userIds, 'game-end push failed', { sessionId: e.sessionId })
     const lobbyId = e.lobbyId
     if (lobbyId === null) return
     this.enqueue(lobbyId, () => this.resetAfterGame(lobbyId, e)).catch((err: unknown) => {
