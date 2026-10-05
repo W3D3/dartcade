@@ -120,6 +120,8 @@ export function browserGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           if (gone) return
           gone = true
           browserConnections.remove(sessionId, socket)
+          // A game that's gone has nobody to wait for (forgetSession ran before this socket closed)
+          if (!engine.getSession(sessionId)) browserConnections.forget(sessionId)
           pushSnapshot(sessionId, engine)
         }
         socket.on('close', onGone)
@@ -139,6 +141,11 @@ function viewFor(sessionId: string, userId: string): SnapshotView {
     disconnectedAt: u => browserConnections.disconnectedAt(sessionId, u),
     isBoardOnline: b => bridgeConnections.isOnline(b),
   }
+}
+
+/** The engine forgot the game: nobody's leaving time for it is needed any more. */
+export function forgetSession(sessionId: string): void {
+  browserConnections.forget(sessionId)
 }
 
 /** Sends every viewer of the game their own snapshot. */

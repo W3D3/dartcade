@@ -4,7 +4,7 @@ export class BrowserConnections {
   // Socket → the user it belongs to, per game
   private sessions: Map<string, Map<WebSocket, string>> = new Map()
   // When each user's last socket of a game closed, per game. Cleared when they open it
-  // again; kept for the process's lifetime, like the engine's finished sessions.
+  // again, and for the whole game by forget (once the game is gone).
   private closed: Map<string, Map<string, Date>> = new Map()
 
   add(sessionId: string, ws: WebSocket, userId: string): void {
@@ -31,6 +31,11 @@ export class BrowserConnections {
       c.set(userId, at)
     }
     if (m.size === 0) this.sessions.delete(sessionId)
+  }
+
+  /** Drops what's remembered of when the key's users left (their open sockets stay). */
+  forget(key: string): void {
+    this.closed.delete(key)
   }
 
   /** Users with the game open (on at least one socket). */
