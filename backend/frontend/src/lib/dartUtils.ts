@@ -34,6 +34,8 @@ export function nearbyPicks(label: string): string[] {
   const add = (l: string) => {
     if (l !== label && !out.includes(l)) out.push(l)
   }
+  // A missed dart has no neighbours: offer the usual targets
+  if (num === 0) return ['S20', 'T20', 'D20', 'S19', 'T19', '25', 'Bull']
   if (num === 25) {
     add('Bull')
     add('25')

@@ -24,6 +24,9 @@ describe('labelPos', () => {
 })
 
 describe('nearbyPicks', () => {
+  it('a missed dart: the usual targets, not segment 0', () => {
+    expect(nearbyPicks('Miss')).toEqual(['S20', 'T20', 'D20', 'S19', 'T19', '25', 'Bull'])
+  })
   it('T20 → [S20, D20, T5, T1, S5, S1, Miss]', () => {
     expect(nearbyPicks('T20')).toEqual(['S20', 'D20', 'T5', 'T1', 'S5', 'S1', 'Miss'])
   })
