@@ -5,7 +5,7 @@
   import { LoaderCircle } from '@lucide/svelte'
   import type { LobbyInvitee } from '$lib/api/lobby-ws'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import Avatar from './Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
 
   let { invitee }: { invitee: LobbyInvitee } = $props()
 </script>

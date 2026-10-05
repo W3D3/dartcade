@@ -3,7 +3,7 @@
   // (In your lobby / Join / Invite to lobby / Invited) and the ⋯ menu. Phones say "Invite" and "In lobby".
   import { Check } from '@lucide/svelte'
   import type { Friend } from '$lib/api/lobby-ws'
-  import Avatar from '$lib/components/lobby/Avatar.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
   import { isPhone } from '$lib/viewport'
   import { Button } from '$lib/components/ui/button/index.js'
   import FriendMenu from './FriendMenu.svelte'

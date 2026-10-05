@@ -2,7 +2,8 @@
   // The match screen once a game is won: two sides face off around the score (a duel, or two
   // teams), three or more stand on a podium with the standings beside it. Confetti falls behind.
   import { Check, House, RotateCcwClock, Trophy } from '@lucide/svelte'
-  import { initial, ordinal } from '$lib/fmt'
+  import { ordinal } from '$lib/fmt'
+  import Avatar from './Avatar.svelte'
   import type { Competitor, WinView } from '$lib/winScreen'
 
   let {
@@ -94,14 +95,6 @@
   })
 </script>
 
-{#snippet avatar(c: { name: string; guest: boolean }, cls: string)}
-  <span
-    aria-hidden="true"
-    class="shrink-0 box-border rounded-full flex items-center justify-center font-bold {cls}
-           {c.guest ? 'border-[1.5px] border-dashed border-ink-faint text-ink-2' : 'bg-line-chip text-text'}">{initial(c.name)}</span
-  >
-{/snippet}
-
 {#snippet who(c: Competitor)}
   {#if c.members.length}<span class="text-[14px] text-ink-2">{c.members.join(' & ')}</span>{/if}
 {/snippet}
@@ -161,7 +154,7 @@
               <span class="text-[15px] text-text-muted">{winner.sub}</span>
             </div>
             <span class="glow flex rounded-full shadow-[0_0_0_4px_var(--color-bg),0_0_0_7px_var(--color-accent)]">
-              {@render avatar(winner, 'size-[84px] md:size-[120px] text-[36px] md:text-[50px]')}
+              <Avatar name={winner.name} guest={winner.guest} class="size-[84px] md:size-[120px] text-[36px] md:text-[50px]" />
             </span>
           </div>
 
@@ -185,7 +178,7 @@
 
           {#if second}
             <div class="flex items-center justify-center md:justify-start gap-4 md:gap-5 opacity-80">
-              {@render avatar(second, 'size-[64px] md:size-[96px] text-[27px] md:text-[40px]')}
+              <Avatar name={second.name} guest={second.guest} class="size-[64px] md:size-[96px] text-[27px] md:text-[40px]" />
               <div class="flex flex-col gap-2 min-w-0">
                 <span
                   class="self-start h-[30px] px-3 inline-flex items-center rounded-full border border-line-chip text-text-muted text-[13px] font-bold tracking-[0.1em] uppercase"
@@ -217,7 +210,7 @@
                 class="md:flex-1 min-w-0 flex items-center gap-[10px] px-[14px] py-[10px] rounded-[12px] border
                         {leg.byWinner ? 'bg-surface-active border-accent-line' : 'bg-surface-panel border-line-2'}"
               >
-                {@render avatar(leg, 'size-[30px] text-[13px]')}
+                <Avatar name={leg.name} guest={leg.guest} class="size-[30px] text-[13px]" />
                 <span class="flex flex-col gap-px min-w-0">
                   <span class="text-[12px] tracking-[0.08em] uppercase text-text-dim truncate">Leg {leg.n} · {leg.name}</span>
                   <span class="text-[14px] truncate {leg.byWinner ? 'text-text' : 'text-ink-2'}">{leg.text}</span>
@@ -271,7 +264,7 @@
             {#each podium as { c, step: s } (s)}
               <div class="rise {step[s].delay} flex-1 min-w-0 flex flex-col items-center gap-3">
                 <span class="flex rounded-full {step[s].ring} {s === 'first' ? 'glow' : ''}">
-                  {@render avatar(c, step[s].avatar)}
+                  <Avatar name={c.name} guest={c.guest} class={step[s].avatar} />
                 </span>
                 <span class="max-w-full font-display font-bold leading-[0.9] uppercase text-center break-words {step[s].name}"
                   >{c.name}</span
@@ -291,7 +284,7 @@
               {#each rest as c (c.seats[0])}
                 <div class="flex items-center gap-[14px] h-[60px] px-[18px]">
                   <span class="w-11 font-display font-bold text-[30px] text-text-dim">{ordinal(c.placement)}</span>
-                  {@render avatar(c, 'size-[34px] text-[14px]')}
+                  <Avatar name={c.name} guest={c.guest} class="size-[34px] text-[14px]" />
                   <span class="text-[17px] font-semibold text-ink-2 truncate">{c.name}</span>
                   <span class="ml-auto text-[14px] text-text-dim whitespace-nowrap">{c.sub}</span>
                 </div>
@@ -329,7 +322,7 @@
               <span class="text-[12px] tracking-[0.1em] uppercase text-text-muted">Highlights</span>
               {#each view.highlights as h (h.label)}
                 <div class="flex items-center gap-3 px-[14px] py-3 rounded-[12px] bg-surface-panel border border-line-2">
-                  {@render avatar(h, 'size-9 text-[15px]')}
+                  <Avatar name={h.name} guest={h.guest} class="size-9 text-[15px]" />
                   <span class="flex flex-col gap-[2px] min-w-0">
                     <span class="text-[12px] tracking-[0.08em] uppercase text-accent">{h.label}</span>
                     <span class="text-[14px] text-ink-2">{h.name}: {h.text}</span>

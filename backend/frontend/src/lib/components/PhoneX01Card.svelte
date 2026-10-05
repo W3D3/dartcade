@@ -4,6 +4,7 @@
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
   import { x01Roll } from '$lib/playerStats'
+  import Avatar from './Avatar.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { PillKind } from './pills.js'
@@ -24,7 +25,6 @@
     chalkboard: boolean
   } = $props()
 
-  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
   const stats = $derived([
     { label: 'Leg avg', value: p.legAvg, dim: false },
     { label: 'Match avg', value: p.avg, dim: true },
@@ -37,9 +37,7 @@
   class="shrink-0 box-border px-[14px] pt-3 pb-[14px] rounded-[16px] bg-surface-active border-2 border-accent flex flex-col gap-2"
 >
   <div class="flex items-center gap-2 min-w-0">
-    <span class="w-[30px] h-[30px] shrink-0 rounded-full flex items-center justify-center font-bold text-[13px] bg-accent text-accent-fg"
-      >{initial}</span
-    >
+    <Avatar {name} tone="accent" size={30} />
     <span class="flex flex-col gap-[1px] min-w-0">
       <span class="text-[16px] font-semibold leading-[1.1] truncate"
         >{name}{#if seat?.you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span

@@ -1,5 +1,6 @@
 <script lang="ts">
   // A waiting player on a phone: avatar, name, a short line (up next, can finish), leg pips, the number that matters.
+  import Avatar from './Avatar.svelte'
   import LegPips from './LegPips.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import RollingNumber from './RollingNumber.svelte'
@@ -30,8 +31,6 @@
     /** How the value rolls when it changes. */
     roll?: RollOptions
   } = $props()
-
-  const initial = $derived(name.trim().charAt(0).toUpperCase() || '?')
 </script>
 
 <section
@@ -40,11 +39,7 @@
     ? 'bg-surface-active border-2 border-accent'
     : 'bg-surface-panel border border-line-2'}"
 >
-  <span
-    class="w-8 h-8 shrink-0 rounded-full flex items-center justify-center font-bold text-[13px] {active
-      ? 'bg-accent text-accent-fg'
-      : 'bg-line-chip text-text'}">{initial}</span
-  >
+  <Avatar {name} tone={active ? 'accent' : 'default'} size={32} />
   <span class="flex flex-col gap-[2px] min-w-0">
     <span class="text-[15px] font-semibold truncate {active ? 'text-text' : 'text-ink-2'}"
       >{name}{#if you}<span class="text-[12px] font-medium text-accent"> · you</span>{/if}</span

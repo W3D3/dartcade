@@ -1,6 +1,7 @@
 <script lang="ts">
   // A player in a team panel: initial, name, their board (remote games) and average, and
   // Throwing / Up next / "after".
+  import Avatar from './Avatar.svelte'
   import PlayerPill from './PlayerPill.svelte'
   import SeatBoardLine from './SeatBoardLine.svelte'
   import type { TeamMember } from '$lib/teams'
@@ -17,7 +18,6 @@
     compact?: boolean
   } = $props()
 
-  const initial = $derived(member.name.trim().charAt(0).toUpperCase() || '?')
   const throwing = $derived(member.role === 'throwing')
 </script>
 
@@ -29,11 +29,7 @@
       ? 'bg-surface-row border-line-2'
       : 'border-line'}"
 >
-  <span
-    class="w-[30px] h-[30px] shrink-0 rounded-full flex items-center justify-center font-bold text-[13px]
-               {throwing ? 'bg-accent text-accent-fg' : 'bg-line-chip text-text'}"
-    aria-hidden="true">{initial}</span
-  >
+  <Avatar name={member.name} tone={throwing ? 'accent' : 'default'} size={30} />
   <span class="flex flex-col gap-[1px] min-w-0">
     <span
       class="font-semibold leading-[1.1] truncate {compact ? 'text-[15px]' : 'text-[17px]'}
