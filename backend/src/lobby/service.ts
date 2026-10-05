@@ -4,7 +4,7 @@ import type { Database } from '../db/schema.js'
 import * as q from '../db/lobbies.js'
 import { getBoardById, getUsersByIds } from '../db/queries.js'
 import { areFriends } from '../db/friends.js'
-import { pgErrorCode } from '../db/errors.js'
+import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import { ActiveSessionError, BoardBusyError, type GameEnded, type GameStarted, type SessionEngine } from '../session/engine.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { Lobby, LobbyServerMessage, MeMessage, PendingInvite } from '../schema/lobby-ws.js'
@@ -18,7 +18,6 @@ import { checkLobbyMessage } from './validation.js'
 import { planGame, type PlanProblem } from './startPlan.js'
 import type { LobbyAccess, LobbyPerson, LobbyState, NextGame, StartGame, TeamId, ThrowOrder } from './types.js'
 
-const UNIQUE_VIOLATION = '23505'
 const CODE_ATTEMPTS = 5
 
 export type LobbyRef = { id: string; name: string; code: string }

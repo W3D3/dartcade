@@ -2,7 +2,7 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/friends.js'
-import { pgErrorCode } from '../db/errors.js'
+import { pgErrorCode, UNIQUE_VIOLATION } from '../db/errors.js'
 import type { components } from '../schema/api.js'
 import { normalizeName } from '../users/names.js'
 import type { LobbyHub } from '../lobby/hub.js'
@@ -16,7 +16,6 @@ import { friendStatus } from './status.js'
 type FriendList = components['schemas']['FriendList']
 export type RequestOutcome = { id: string; status: 'pending' | 'accepted' }
 
-const UNIQUE_VIOLATION = '23505'
 const REQUEST_ATTEMPTS = 3
 
 export type FriendsDeps = {

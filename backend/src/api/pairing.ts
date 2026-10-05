@@ -7,6 +7,7 @@ import { requireAuth } from '../auth/middleware.js'
 import { insertPairingCode, getPairingCode, claimPairingCode, consumePairingToken, insertBoard } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
+import { normalizeCode } from '../lobby/code.js'
 
 const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_TTL_MS = 10 * 60 * 1000
@@ -18,10 +19,6 @@ function generateCode(): string {
 
 // Uppercase and strip separators (dashes, spaces) so a code entered as
 // "7kq4-m2xd" or pasted with surrounding whitespace resolves to "7KQ4M2XD".
-function normalizeCode(raw: string): string {
-  return raw.toUpperCase().replace(/[^A-Z0-9]/g, '')
-}
-
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
 export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {

@@ -73,15 +73,10 @@ function effectiveDartScore(dart: Dart, bullValue: '25_50' | '50_50'): number {
 // entry send number 50 with multiplier 1; its score is 50 either way).
 const isDouble = (dart: Dart) => dart.segment.multiplier === 2 || dart.segment.number === 50
 
-function opensPlayer(dart: Dart, inMode: 'straight' | 'double' | 'master'): boolean {
-  if (inMode === 'straight') return true
-  if (inMode === 'double') return isDouble(dart)
-  return isDouble(dart) || dart.segment.multiplier === 3
-}
-
-function validFinish(dart: Dart, outMode: 'straight' | 'double' | 'master'): boolean {
-  if (outMode === 'straight') return true
-  if (outMode === 'double') return isDouble(dart)
+/** The dart may open (check-in) or finish (check-out) a player under the mode. */
+function meetsMode(dart: Dart, mode: 'straight' | 'double' | 'master'): boolean {
+  if (mode === 'straight') return true
+  if (mode === 'double') return isDouble(dart)
   return isDouble(dart) || dart.segment.multiplier === 3
 }
 
@@ -283,12 +278,12 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         if (s.scores[t] === 0) return { state: s }
 
         if (!s.opened[t]) {
-          const opens = opensPlayer(dart, s.cfg.inMode)
+          const opens = meetsMode(dart, s.cfg.inMode)
           if (!opens) return { state: s }
           const opened = s.opened.map((o, i) => (i === t ? true : o))
           const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
           const newScore = s.scores[t] - dartScore
-          if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
+          if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !meetsMode(dart, s.cfg.outMode))) {
             return {
               state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)) },
             }
@@ -299,7 +294,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
         const newScore = s.scores[t] - dartScore
 
-        if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !validFinish(dart, s.cfg.outMode))) {
+        if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !meetsMode(dart, s.cfg.outMode))) {
           return { state: { ...s, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
         }
 

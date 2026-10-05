@@ -1,6 +1,6 @@
 import { sql, type Kysely, type Transaction } from 'kysely'
 import type { Database } from './schema.js'
-import { pgErrorCode } from './errors.js'
+import { pgErrorCode, FK_VIOLATION } from './errors.js'
 
 export type NewVoiceClip = { sha256: string; mime: string; bytes: Buffer }
 export type NewVoicePack = {
@@ -15,8 +15,6 @@ export type NewVoicePack = {
   mappings: { key: string; variant: number; sha256: string }[]
 }
 export type VoicePackRow = { id: string; name: string; lang: string | null; clips: number; bytes: number; created_at: Date }
-
-const FK_VIOLATION = '23503'
 
 // Keeps each INSERT well under Postgres' 65535 parameters
 const CHUNK = 1000
