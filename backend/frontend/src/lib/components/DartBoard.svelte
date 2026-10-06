@@ -92,7 +92,7 @@
     if (label === 'Bull') return { bull: R.bull50 }
     if (label === '25') return { bull: R.bull25 }
     const { mult, num } = parseLabel(label)
-    const si = (SEGS as readonly number[]).indexOf(num)
+    const si = SEGS.indexOf(num)
     if (si < 0) return null
     const a = segAngle(si)
     const [r1, r2] = mult === 3 ? [R.si, R.tr] : mult === 2 ? [R.so, R.db] : [R.tr, R.so]
@@ -132,7 +132,7 @@
     if (bed === 'Outside') return null
     if (number === 25) return { x: 0, y: (R.bull50 + R.bull25) / 2 }
     if (number === 50) return { x: 0, y: R.bull50 / 2 }
-    const si = (SEGS as readonly number[]).indexOf(number)
+    const si = SEGS.indexOf(number)
     if (si < 0) return null
     const a = segAngle(si)
     const r =
