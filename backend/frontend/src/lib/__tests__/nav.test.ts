@@ -39,6 +39,7 @@ describe('railLobby', () => {
     leg: null,
     youHost: true,
     solo: false,
+    hasBot: false,
   }
 
   it('nothing before we know who you are', () => {

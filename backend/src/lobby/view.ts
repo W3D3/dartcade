@@ -75,6 +75,7 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
     leg: session?.module.getLeg?.(session.currentState) ?? null,
     youHost: lobby.hostUserId === userId,
     solo: isSolo(lobby),
+    hasBot: lobby.people.some(p => p.bot !== null),
   }
 }
 

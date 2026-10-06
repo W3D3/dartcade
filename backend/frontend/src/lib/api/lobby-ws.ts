@@ -275,6 +275,10 @@ export interface LobbySummary {
    * Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo.
    */
   solo: boolean
+  /**
+   * At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed.
+   */
+  hasBot: boolean
 }
 /**
  * The viewer's running game, wherever it started (a lobby or not); LobbySummary carries that game's lobby-specific state.
