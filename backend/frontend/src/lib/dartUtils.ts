@@ -1,8 +1,7 @@
 import type { Segment } from './api/game-ws'
+import { R, SEGS } from '$shared/board.js'
 
 export type { Segment }
-const SEGS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
-const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.0 }
 
 const MULT: Record<string, 1 | 2 | 3> = { S: 1, D: 2, T: 3 }
 
@@ -21,7 +20,7 @@ export function labelPos(label: string): { x: number; y: number } | null {
   if (label === 'Bull') return { x: 0, y: 0 }
   if (label === '25') return { x: 0, y: -(R.bull50 + R.bull25) / 2 }
   const { mult, num } = parseLabel(label)
-  const si = SEGS.indexOf(num)
+  const si = (SEGS as readonly number[]).indexOf(num)
   if (si < 0) return null
   const angle = Math.PI / 2 - si * (Math.PI / 10)
   const r = mult === 3 ? (R.si + R.tr) / 2 : mult === 2 ? (R.so + R.db) / 2 : (R.tr + R.so) / 2
@@ -45,7 +44,7 @@ export function nearbyPicks(label: string): string[] {
     add('S11')
     return [...out.slice(0, 6), 'Miss']
   }
-  const i = SEGS.indexOf(num)
+  const i = (SEGS as readonly number[]).indexOf(num)
   const L = SEGS[(i + 19) % 20],
     Ri = SEGS[(i + 1) % 20]
   const ring = label[0]
@@ -83,7 +82,7 @@ export function markerPositions(segments: number[]): { x: number; y: number }[] 
     const off = centre + (k - (n - 1) / 2) * step
     if (s === 25 || s === 50) return { x: off, y: 0 }
     // Crowded: zigzag a few degrees across the wedge so neighbours overlap less
-    const a = Math.PI / 2 - SEGS.indexOf(s) * (Math.PI / 10) + (n > 1 && step < 0.17 ? (k % 2 ? 0.08 : -0.08) : 0)
+    const a = Math.PI / 2 - (SEGS as readonly number[]).indexOf(s) * (Math.PI / 10) + (n > 1 && step < 0.17 ? (k % 2 ? 0.08 : -0.08) : 0)
     return { x: off * Math.cos(a), y: -off * Math.sin(a) }
   })
 }
