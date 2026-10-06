@@ -1,9 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { checkoutHint } from './checkout.js'
 import { CHECKOUTS } from './checkoutTable.js'
-import { parseLabel } from '../../frontend/src/lib/dartUtils.js'
 
-const total = (route: string[]) => route.reduce((a, l) => a + parseLabel(l).score, 0)
+const scoreOf = (label: string): number => {
+  if (label === 'Bull') return 50
+  if (label === '25') return 25
+  const mult = label[0] === 'T' ? 3 : label[0] === 'D' ? 2 : 1
+  return mult * parseInt(label.slice(1), 10)
+}
+
+const total = (route: string[]) => route.reduce((a, l) => a + scoreOf(l), 0)
 const finishesOnADouble = (route: string[]) => route.at(-1) === 'Bull' || route.at(-1)?.startsWith('D') === true
 
 describe('the checkout table', () => {
