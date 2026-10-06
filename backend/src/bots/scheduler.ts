@@ -2,6 +2,7 @@
 // calling the same onUserAction a human's manual entry uses. See
 // docs/superpowers/specs/2026-10-06-dart-bots-design.md.
 import type { SessionEngine } from '../session/engine.js'
+import type { WarnFn } from '../session/replay.js'
 import type { Session } from '../session/types.js'
 import type { X01ModuleView } from '../session/views.js'
 import { BULL, pickTarget, throwAt } from './accuracy.js'
@@ -28,7 +29,7 @@ function x01View(session: Pick<Session, 'module' | 'currentState' | 'players'>):
   return session.module.view(session.currentState, session.players)
 }
 
-export function createBotScheduler(engine: SessionEngine): BotScheduler {
+export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => undefined): BotScheduler {
   const timers = new Map<string, ReturnType<typeof setTimeout>>()
 
   function clear(sessionId: string): void {
@@ -66,7 +67,22 @@ export function createBotScheduler(engine: SessionEngine): BotScheduler {
     const visitOver = bullOffDecided || view.visitLocked || dartsThrown >= 3 || view.winner !== null
     const speed = view.config.botSpeed
     const delay = visitOver ? takeoutDelay(speed, session.rng) : dartDelay(speed, session.rng)
-    schedule(session.id, delay, () => void act(session.id))
+    schedule(session.id, delay, () => {
+      act(session.id).catch((err: unknown) => {
+        // A rejection here (e.g. a transient DB error from appendEvent/insertDarts/deleteDarts
+        // inside engine.onUserAction) must never become an unhandled rejection: on this Node
+        // version that kills the whole process, taking down every live game, not just this
+        // bot's. Logged and swallowed, same discipline as the browser-gw handler applies to a
+        // human action that fails to apply.
+        warn('bot action failed', { sessionId: session.id, error: String(err) })
+        // Nothing else will retry this bot: a failed action produced no change, so no push
+        // follows to re-enter onChange naturally. Re-run it ourselves (if the session is still
+        // there and active) so the bot gets another attempt after one more normal pacing
+        // delay, rather than being stuck forever on a transient blip.
+        const current = engine.getSession(session.id)
+        if (current) onChange(current)
+      })
+    })
   }
 
   async function act(sessionId: string): Promise<void> {

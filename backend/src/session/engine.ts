@@ -178,7 +178,7 @@ export class SessionEngine {
   // getter, not eager construction in the constructor, so createBotScheduler (which takes
   // `this`) only ever sees a fully-constructed engine.
   private get botScheduler(): BotScheduler {
-    this.bots ??= createBotScheduler(this)
+    this.bots ??= createBotScheduler(this, this.warn)
     return this.bots
   }
 
