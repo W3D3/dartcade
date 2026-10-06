@@ -156,6 +156,32 @@ describe('bot scheduler', () => {
     expect(engine.getSnapshot(sessionId)?.status).toBe('active')
   })
 
+  it("a transient store failure during a bot's action never becomes an unhandled rejection, and the bot recovers", async () => {
+    const push = vi.fn()
+    const store = { ...makeStore(), appendEvent: vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(undefined) }
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'x01',
+      config: { ...x01Module.defaultConfig, startScore: 121, botSpeed: 'fast' },
+      seats: [seat('Bot Lvl 10', 'chris', null, { level: 10 })],
+    })
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      for (let i = 0; i < 500; i++) {
+        const snap = engine.getSnapshot(sessionId)
+        if (!snap || snap.status !== 'active') break
+        await vi.advanceTimersByTimeAsync(5000)
+      }
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
+    expect(unhandled).not.toHaveBeenCalled()
+    // The game still finished: the bot wasn't permanently stuck after the one failed attempt
+    expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+  })
+
   it('a game with two bots and no human plays to completion', async () => {
     const push = vi.fn()
     const engine = new SessionEngine(makeStore(), push)
