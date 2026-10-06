@@ -26,3 +26,7 @@ spike/visualiser/visualiser
 # Build outputs and caches
 .vite/
 bridge/bridge
+
+# Scratch worktrees for ad-hoc work or subagent sessions beside an active checkout
+.worktrees/
+.claude/worktrees/
