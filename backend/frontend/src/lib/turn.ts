@@ -15,3 +15,14 @@ export function upSeat(snap: Snapshot): number {
 export function isMyTurn(snap: Snapshot | null): boolean {
   return snap !== null && snap.mySeats.includes(upSeat(snap))
 }
+
+/**
+ * The viewer should get live entry controls (keypad, board-click-to-score) for the seat
+ * that's up: `isMyTurn`, but not while a bot — which the host controls but doesn't throw
+ * for — is the one up. The host still controls the bot's seat (so Undo stays reachable to
+ * fix a misdetected bot throw; see `isMyTurn`), but shouldn't be invited to throw its darts.
+ */
+export function canThrowNow(snap: Snapshot | null): boolean {
+  if (!isMyTurn(snap) || snap === null) return false
+  return snap.seats[upSeat(snap)]?.bot == null
+}

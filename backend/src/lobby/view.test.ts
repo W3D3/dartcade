@@ -213,6 +213,24 @@ describe('lobbySummary', () => {
     const withBot: LobbyState = { ...lobby, people: [...lobby.people, person({ id: 'b', name: 'Bot Lvl 5', bot: { level: 5 } })] }
     expect(lobbySummary(withBot, 'chris', undefined).hasBot).toBe(true)
   })
+
+  it("youThrowNext is false for the bot's own controller: they control the seat but don't throw for it", async () => {
+    const engine = new SessionEngine(store(), vi.fn())
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
+      lobbyId: 'l1',
+      lobbyName: lobby.name,
+      seats: [
+        { name: 'Bot Lvl 5', userId: null, controllerUserId: 'chris', boardId: null, boardName: null, bot: { level: 5 } },
+        { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null, bot: null },
+      ],
+    })
+    const session = engine.getSession(sessionId)
+    // Seat 0 (the bot) is up first; chris controls it, but it isn't chris's turn to throw
+    expect(lobbySummary(lobby, 'chris', session).youThrowNext).toBe(false)
+  })
 })
 
 describe('checkLobbyMessage', () => {

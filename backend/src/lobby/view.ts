@@ -71,7 +71,11 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
     nextGame: lobby.nextGame,
     sessionId: session?.id ?? null,
     gameId: session?.module.id ?? null,
-    youThrowNext: session !== undefined && session.seats[currentSeat(session)].controllerUserId === userId,
+    // A bot's seat is controlled by whoever added it, but they don't throw for it themselves
+    youThrowNext:
+      session !== undefined &&
+      session.seats[currentSeat(session)].controllerUserId === userId &&
+      session.seats[currentSeat(session)].bot === null,
     leg: session?.module.getLeg?.(session.currentState) ?? null,
     youHost: lobby.hostUserId === userId,
     solo: isSolo(lobby),

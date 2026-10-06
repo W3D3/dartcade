@@ -102,6 +102,11 @@ describe('seatLines', () => {
     expect(lines[0]?.board).toBe('Board')
     expect(lines[1]?.disconnected).toBe(true)
   })
+  it("the host's own bot seat isn't marked \"you\" — the host controls it but doesn't throw for it", () => {
+    const lines = seatLines(remote({ seats: [{ bot: { level: 5 } }, {}] }))
+    expect(lines[0]).toMatchObject({ you: false })
+    expect(lines[1]).toMatchObject({ you: false }) // unchanged: not the viewer's seat either way
+  })
 })
 
 describe('rowSub', () => {
