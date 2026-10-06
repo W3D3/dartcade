@@ -12,7 +12,7 @@
     type Pt,
   } from '$lib/boardAim'
   import { untrack, type Snippet } from 'svelte'
-  import { labelPos, markerPositions } from '$lib/dartUtils.js'
+  import { markerPositions, parseLabel } from '$lib/dartUtils.js'
   import type { Segment } from '$lib/api/game-ws'
 
   let {
@@ -97,6 +97,19 @@
   function sectorPath(r1: number, r2: number, a1: number, a2: number) {
     const [c1, s1, c2, s2] = [Math.cos(a1), Math.sin(a1), Math.cos(a2), Math.sin(a2)]
     return `M${r1 * c1} ${-r1 * s1} L${r2 * c1} ${-r2 * s1} A${r2} ${r2} 0 0 1 ${r2 * c2} ${-r2 * s2} L${r1 * c2} ${-r1 * s2} A${r1} ${r1} 0 0 0 ${r1 * c1} ${-r1 * s1}Z`
+  }
+
+  /** The wedge (or bull ring) a suggested checkout target highlights, in board units. */
+  function checkoutHighlight(label: string): { wedge: string } | { bull: number } | null {
+    if (label === 'Miss') return null
+    if (label === 'Bull') return { bull: R.bull50 }
+    if (label === '25') return { bull: R.bull25 }
+    const { mult, num } = parseLabel(label)
+    const si = SEGS.indexOf(num)
+    if (si < 0) return null
+    const a = segAngle(si)
+    const [r1, r2] = mult === 3 ? [R.si, R.tr] : mult === 2 ? [R.so, R.db] : [R.tr, R.so]
+    return { wedge: sectorPath(r1, r2, a + HALF, a - HALF) }
   }
 
   function ringColor(i: number, ring: string) {
@@ -321,7 +334,19 @@
   const precise = $derived(!!onBoardClick)
   // Light up the segment under the cursor
   const hoverable = $derived(precise)
+
+  // Suggested checkout target: a pulsing wedge outline (SMIL, not CSS — a <style> tag here
+  // breaks SSR under the current Vite/Tailwind setup). Static (no pulse) if reduced motion.
+  const noMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
 </script>
+
+{#snippet checkoutGlowAnim()}
+  <animate attributeName="stroke-opacity" values="0.12;0.75;0.12" dur="1.2s" repeatCount="indefinite" />
+  <animate attributeName="stroke-width" values="0.012;0.034;0.012" dur="1.2s" repeatCount="indefinite" />
+{/snippet}
+{#snippet checkoutLineAnim()}
+  <animate attributeName="stroke" values="#c6f24e;#dcff7a;#c6f24e" dur="1.2s" repeatCount="indefinite" />
+{/snippet}
 
 <!-- Pointer-only: tapping where the dart landed; the keypad is the keyboard way to enter darts -->
 <svg
@@ -512,6 +537,54 @@
         {/if}
       {/each}
 
+      <!-- Next suggested checkout target: the exact ring wedge, glowing (x01). Only the very
+           next dart — later darts in the chain show in the dart slots below, not on the board.
+           Drawn under the thrown darts so a dart marker always stays on top. -->
+      {#if checkoutTargets[0]}
+        {@const hl = checkoutHighlight(checkoutTargets[0])}
+        {#if hl}
+          {#if 'wedge' in hl}
+            <path
+              d={hl.wedge}
+              fill="none"
+              stroke="var(--color-accent)"
+              stroke-opacity={noMotion ? '0.4' : '0.12'}
+              stroke-width={noMotion ? '0.02' : '0.012'}
+              stroke-linejoin="round"
+              style="pointer-events:none"
+            >
+              {#if !noMotion}{@render checkoutGlowAnim()}{/if}
+            </path>
+            <path
+              d={hl.wedge}
+              fill="none"
+              stroke="var(--color-accent)"
+              stroke-width="0.02"
+              stroke-linejoin="round"
+              style="pointer-events:none"
+            >
+              {#if !noMotion}{@render checkoutLineAnim()}{/if}
+            </path>
+          {:else}
+            <circle
+              cx="0"
+              cy="0"
+              r={hl.bull}
+              fill="none"
+              stroke="var(--color-accent)"
+              stroke-opacity={noMotion ? '0.4' : '0.12'}
+              stroke-width={noMotion ? '0.02' : '0.012'}
+              style="pointer-events:none"
+            >
+              {#if !noMotion}{@render checkoutGlowAnim()}{/if}
+            </circle>
+            <circle cx="0" cy="0" r={hl.bull} fill="none" stroke="var(--color-accent)" stroke-width="0.02" style="pointer-events:none">
+              {#if !noMotion}{@render checkoutLineAnim()}{/if}
+            </circle>
+          {/if}
+        {/if}
+      {/if}
+
       <!-- Darts -->
       {#each darts as dart, i (i)}
         {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
@@ -576,24 +649,6 @@
             font-family="Barlow Condensed, sans-serif"
             style="pointer-events:none">✕</text
           >
-        {/if}
-      {/each}
-
-      <!-- Checkout target dashed circles (x01) -->
-      <!-- Keyed by position: a checkout can repeat a target (T20 · T20 · D20) -->
-      {#each checkoutTargets as label, i (i)}
-        {@const pos = labelPos(label)}
-        {#if pos}
-          <circle
-            cx={pos.x}
-            cy={pos.y}
-            r="0.076"
-            fill="none"
-            stroke="var(--color-accent)"
-            stroke-width="0.015"
-            stroke-dasharray="0.024 0.018"
-            style="pointer-events:none"
-          />
         {/if}
       {/each}
 

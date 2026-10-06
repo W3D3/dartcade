@@ -332,7 +332,9 @@
 
   const sequence = $derived(atc?.sequence ?? [])
   const targets = $derived(atc?.targets ?? [])
-  const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next' || s.kind === 'suggested-later').map(s => s.label))
+  // Only the very next dart's suggestion is highlighted on the board itself; later darts in
+  // the chain only show in the dart slots below it.
+  const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next').map(s => s.label))
   const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets.at(currentPlayer)) : null)
   const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(atcNext)) : null)
   const markers = $derived(
