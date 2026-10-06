@@ -43,7 +43,13 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   const { db } = opts
 
   app.get<Route<'listGameModes'>>('/api/gamemodes', { schema: fromSpec('listGameModes') }, () => ({
-    modes: gameList.map(m => ({ id: m.id, defaultConfig: m.defaultConfig, configMeta: m.configMeta ?? {}, teams: m.teams === true })),
+    modes: gameList.map(m => ({
+      id: m.id,
+      defaultConfig: m.defaultConfig,
+      configMeta: m.configMeta ?? {},
+      teams: m.teams === true,
+      supportsBots: m.botTarget !== undefined,
+    })),
   }))
 
   app.get<Route<'listGames'>>('/api/games', { preValidation: requireAuth, schema: fromSpec('listGames') }, async (req, reply) => {

@@ -1074,6 +1074,8 @@ export interface components {
             };
             /** @description The game can be played in teams (its config takes format and teams) */
             teams: boolean;
+            /** @description The game can seat a bot (its module defines botTarget) */
+            supportsBots: boolean;
         };
         GameModeList: {
             modes: components["schemas"]["GameInfo"][];

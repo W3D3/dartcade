@@ -3044,7 +3044,8 @@
           "id",
           "defaultConfig",
           "configMeta",
-          "teams"
+          "teams",
+          "supportsBots"
         ],
         "additionalProperties": false,
         "properties": {
@@ -3064,6 +3065,10 @@
           "teams": {
             "type": "boolean",
             "description": "The game can be played in teams (its config takes format and teams)"
+          },
+          "supportsBots": {
+            "type": "boolean",
+            "description": "The game can seat a bot (its module defines botTarget)"
           }
         }
       },
