@@ -20,8 +20,11 @@ export type BotScheduler = {
 // spec's scope). Reading through view() — not session.committedState — matters: X01 sessions
 // are always withBullOff-wrapped ({ stage, bullOff, game }), so committedState.cfg doesn't
 // exist; view() already flattens that away into one flat shape regardless of bull-off stage.
-function x01View(session: Pick<Session, 'module' | 'currentState' | 'players'>): X01ModuleView {
-  if (session.module.id !== 'x01') throw new Error(`bot scheduler only supports x01 sessions, got ${session.module.id}`)
+// A non-x01 session can only reach this scheduler if a bot seat somehow ends up in a game
+// that isn't x01 (the lobby guards against this at the source — see LobbyService — but this
+// is defense in depth: null, rather than throwing synchronously inside push()).
+function x01View(session: Pick<Session, 'module' | 'currentState' | 'players'>): X01ModuleView | null {
+  if (session.module.id !== 'x01') return null
   return session.module.view(session.currentState, session.players)
 }
 
@@ -55,6 +58,7 @@ export function createBotScheduler(engine: SessionEngine): BotScheduler {
     if (!seat.bot) return
     if (timers.has(session.id)) return // already scheduled
     const view = x01View(session)
+    if (!view) return // a bot seat in a non-x01 session: nothing this scheduler knows how to drive
     const dartsThrown = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
     // The bull off decided (or needs a rethrow) but hasn't flipped stage yet — see act() —
     // is also "nothing to throw right now", paced like the end of a visit.
@@ -73,6 +77,7 @@ export function createBotScheduler(engine: SessionEngine): BotScheduler {
     if (!seat.bot) return // the turn moved on, or something changed under us — stop quietly
 
     const view = x01View(current)
+    if (!view) return // defense in depth: see x01View
 
     // The bull off has a result (a final order, or a rethrow) but stage is still 'bulloff':
     // that flip only happens when the engine processes the *next* visit.opened, which a real
