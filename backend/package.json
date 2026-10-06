@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "gen:types": "json2ts ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties",
-    "lint": "oxlint"
+    "lint": "oxlint",
+    "calibrate:bots": "tsx src/bots/calibrate.ts"
   },
   "dependencies": {
     "@fastify/rate-limit": "^9.1.0",
