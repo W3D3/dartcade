@@ -1,7 +1,9 @@
 <script lang="ts">
-  // A person's round avatar: their initial. Tones: the default chip, `accent` for the thrower or
-  // yourself, `guest` dashed, `quiet` a darker chip (bull off). Size: `size` in px (the initial
-  // scales with it), or classes in `class` for responsive sizes. A dot while a member has the lobby open.
+  // A person's round avatar: their initial. Tones: the default chip (a colour from the name, so
+  // the same person is always the same colour), `accent` for the thrower or yourself, `guest`
+  // dashed, `quiet` a darker chip (bull off). Size: `size` in px (the initial scales with it), or
+  // classes in `class` for responsive sizes. A dot while a member has the lobby open.
+  import { avatarColor } from '$lib/avatarColor'
   import { initial } from '$lib/fmt'
 
   type Tone = 'default' | 'accent' | 'guest' | 'quiet'
@@ -24,21 +26,19 @@
     class?: string
   } = $props()
 
-  const TONE: Record<Tone, string> = {
-    default: 'bg-line-chip text-text',
+  const TONE: Record<Exclude<Tone, 'default'>, string> = {
     accent: 'bg-accent text-accent-fg',
     guest: 'border-[1.5px] border-dashed border-ink-faint text-ink-2',
     quiet: 'bg-line-3 text-text',
   }
+  const look = $derived(guest ? TONE.guest : tone === 'default' ? `${avatarColor(name)} text-text` : TONE[tone])
   const px = $derived(size ?? (className ? null : 36))
 </script>
 
 <span
   aria-hidden="true"
   style={px == null ? undefined : `width: ${px}px; height: ${px}px; font-size: ${Math.round(px * 0.42)}px`}
-  class="{presence ? 'relative' : ''} shrink-0 box-border rounded-full flex items-center justify-center font-bold {TONE[
-    guest ? 'guest' : tone
-  ]} {className}"
+  class="{presence ? 'relative' : ''} shrink-0 box-border rounded-full flex items-center justify-center font-bold {look} {className}"
 >
   {initial(name)}
   {#if presence}
