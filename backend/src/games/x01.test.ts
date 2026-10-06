@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { x01Game, x01Module } from './x01.js'
+import { x01Game, x01Module, configMeta } from './x01.js'
 import type { X01Config, X01State } from './x01.js'
 import type { BoardEvent, Player } from '../session/types.js'
 
@@ -10,6 +10,7 @@ const defaultCfg: X01Config = {
   inMode: 'straight',
   outMode: 'double',
   bullOff: 'off',
+  botSpeed: 'normal',
   bullValue: '25_50',
   maxRounds: 50,
   firstTo: 3,
@@ -115,6 +116,11 @@ describe('init', () => {
   it('master in: opened = false for all players', () => {
     const s = x01Game.init({ ...defaultCfg, inMode: 'master' }, players)
     expect(s.opened).toEqual([false, false])
+  })
+
+  it("defaults botSpeed to 'normal', and configMeta describes it", () => {
+    expect(x01Game.defaultConfig.botSpeed).toBe('normal')
+    expect(configMeta.botSpeed.options?.map(o => o.value)).toEqual(['fast', 'normal', 'slow'])
   })
 })
 
@@ -487,6 +493,12 @@ describe('view', () => {
   it('does not include totalDarts (tracked by engine, not module)', () => {
     const v = x01Game.view(makeState(), players)
     expect(v).not.toHaveProperty('totalDarts')
+  })
+
+  it('exposes botSpeed through the view, for the bot scheduler to read without touching internal state', () => {
+    const players = [{ name: 'Christoph' }]
+    const s = x01Game.init({ ...x01Game.defaultConfig, botSpeed: 'fast' }, players)
+    expect(x01Game.view(s, players).config.botSpeed).toBe('fast')
   })
 })
 
