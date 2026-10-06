@@ -19,6 +19,7 @@ export const isMember = (lobby: LobbyState, userId: string): boolean => memberOf
  * agree on who's ready.
  */
 export function effectiveReady(lobby: LobbyState, person: LobbyPerson): boolean {
+  if (person.bot !== null) return true
   if (person.userId !== null) return person.ready
   return memberOf(lobby, person.addedByUserId)?.ready ?? person.ready
 }

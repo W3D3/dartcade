@@ -556,19 +556,26 @@ export class LobbyService {
 
   // ---- people -----------------------------------------------------------------------
 
-  async addGuest(userId: string, lobbyId: string, guest: { name: string; boardId?: string | null }): Promise<{ id: string }> {
+  async addGuest(
+    userId: string,
+    lobbyId: string,
+    guest: { name: string; boardId?: string | null; bot?: { level: number } | null },
+  ): Promise<{ id: string }> {
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.openFor(lobbyId, userId)
       const name = guest.name.trim()
       if (name === '') throw LobbyError.badRequest('the name is empty')
-      // A guest sits at their adder's board, unless the adder picks one of their own or Manual
+      const bot = guest.bot ?? null
+      // A bot never has a board; a guest sits at their adder's board unless the adder picks
+      // one of their own or Manual
       let boardId: string | null
-      if (guest.boardId === undefined) boardId = rules.memberOf(lobby, userId)?.boardId ?? null
+      if (bot !== null) boardId = null
+      else if (guest.boardId === undefined) boardId = rules.memberOf(lobby, userId)?.boardId ?? null
       else if (guest.boardId === null) boardId = null
       else boardId = (await this.ownFreeBoard(lobbyId, userId, guest.boardId)).id
       const id = ulid()
       await this.db.transaction().execute(async trx => {
-        await q.insertPerson(trx, { id, lobbyId, userId: null, addedByUserId: userId, name, boardId, ready: true })
+        await q.insertPerson(trx, { id, lobbyId, userId: null, addedByUserId: userId, name, boardId, ready: true, botLevel: bot?.level })
         await q.addActivity(trx, lobbyId, 'guest_added', userId, { name })
         await this.fillTeams(trx, lobbyId, lobby.nextGame)
       })

@@ -27,6 +27,8 @@ export type NewPerson = {
   boardId: string | null
   ready: boolean
   joinedAt?: Date
+  /** A bot's difficulty 1-10; omit or null for a member/guest. */
+  botLevel?: number | null
 }
 export type LobbyUpdate = {
   name?: string
@@ -91,6 +93,7 @@ export async function insertPerson(db: Kysely<Database>, p: NewPerson): Promise<
       ready: p.ready,
       board_moved_by: null,
       joined_at: p.joinedAt ?? new Date(),
+      bot_level: p.botLevel ?? null,
       position: sql<number>`(SELECT COALESCE(MAX(position) + 1, 0) FROM lobby_people WHERE lobby_id = ${p.lobbyId})`,
     })
     .execute()
@@ -162,6 +165,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       'p.board_moved_by',
       'p.joined_at',
       'p.team',
+      'p.bot_level',
     ])
     .where('p.lobby_id', '=', id)
     .orderBy('p.position')
@@ -212,6 +216,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       joinedAt: p.joined_at,
       usualBoardName: p.user_id === null ? null : (usual.get(p.user_id)?.name ?? null),
       team: p.team,
+      bot: p.bot_level === null ? null : { level: p.bot_level },
     })),
     invites: invites.map(i => ({
       id: i.id,

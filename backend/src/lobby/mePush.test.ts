@@ -41,6 +41,7 @@ const person = (id: string, userId: string, name: string, boardId: string, posit
   joinedAt: new Date(0),
   usualBoardName: boardId,
   team: null,
+  bot: null,
 })
 const lobby: LobbyState = {
   id: 'l1',

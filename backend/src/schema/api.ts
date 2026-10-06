@@ -1338,8 +1338,12 @@ export interface components {
         };
         AddGuestRequest: {
             name: string;
-            /** @description Absent: the adder's board. null: Manual. Otherwise one of the adder's own boards */
+            /** @description Absent: the adder's board. null: Manual. Otherwise one of the adder's own boards. Ignored if bot is set. */
             boardId?: string | null;
+            /** @description Add a bot instead of a guest: the server throws for this seat, at this difficulty. */
+            bot?: {
+                level: number;
+            } | null;
         };
         UpdatePersonRequest: {
             /** @description One of your own boards, or null for Manual */

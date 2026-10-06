@@ -30,6 +30,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   joinedAt: new Date(0),
   usualBoardName: null,
   team: null,
+  bot: null,
   ...over,
 })
 const at = new Date(Date.UTC(2026, 9, 2, 18, 0))

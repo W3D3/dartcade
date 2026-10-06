@@ -15,11 +15,12 @@ export type StartGame = NextGame & { personIds: string[] }
 /** A lobby's two teams; inside a game they're team indices 0 and 1. */
 export type TeamId = 'A' | 'B'
 
-/** A member (userId set) or a guest at a member's board (userId null). */
+/** A member (userId set), a guest at a member's board (userId null), or a bot (userId null,
+ *  bot set) — added, and controlled, by whoever added it, exactly like a guest. */
 export type LobbyPerson = {
   id: string
   userId: string | null
-  /** The member themselves; for a guest, who added them (and controls their seat). */
+  /** The member themselves; for a guest or a bot, who added them (and controls their seat). */
   addedByUserId: string
   name: string
   boardId: string | null
@@ -30,10 +31,12 @@ export type LobbyPerson = {
   ready: boolean
   boardMovedBy: string | null
   joinedAt: Date
-  /** A member's usual board (latest game's own board, else first paired); null for guests. */
+  /** A member's usual board (latest game's own board, else first paired); null for guests and bots. */
   usualBoardName: string | null
   /** Their team, kept from game to game (and while the next game is singles); null: none yet. */
   team: TeamId | null
+  /** A bot's difficulty 1-10; null for a member or guest. */
+  bot: { level: number } | null
 }
 
 /** Someone invited into the lobby who hasn't answered yet. */

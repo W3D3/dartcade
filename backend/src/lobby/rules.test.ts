@@ -34,6 +34,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   joinedAt: new Date(0),
   usualBoardName: null,
   team: null,
+  bot: null,
   ...over,
 })
 const lobbyOf = (people: LobbyPerson[], hostUserId: string | null = 'chris'): LobbyState => ({
@@ -134,6 +135,12 @@ describe('ready, plays, order, removal', () => {
     expect(effectiveReady(l, { ...guest, ready: true })).toBe(true) // same, whatever the stored flag says
     const guestOfChris = { ...guest, addedByUserId: 'chris', ready: true }
     expect(effectiveReady(l, guestOfChris)).toBe(false) // chris isn't ready, so neither is his guest
+  })
+
+  it('a bot is always ready, regardless of its stored ready flag or its adder', () => {
+    const bot = person({ id: 'b', userId: null, addedByUserId: 'chris', name: 'Bot Lvl 5', ready: false, bot: { level: 5 } })
+    const l = lobbyOf([chris, bot])
+    expect(effectiveReady(l, bot)).toBe(true)
   })
 
   it("plays: the person, a guest's adder, or the host", () => {

@@ -17,6 +17,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   joinedAt: new Date(0),
   usualBoardName: null,
   team: null,
+  bot: null,
   ...over,
 })
 const chris = person({
@@ -196,6 +197,19 @@ describe('planGame', () => {
       { ...online, starterUserId: 'chris' },
     )
     expect(solo.ok).toBe(true)
+  })
+
+  it('a bot in the lobby becomes a bot seat, controlled by whoever added it', () => {
+    const bot = person({ id: 'b', userId: null, addedByUserId: 'chris', name: 'Bot Lvl 2', position: 1, bot: { level: 2 } })
+    const l = lobby({ people: [chris, bot] })
+    const r = planGame(l, { ...all, personIds: ['c', 'b'] }, online)
+    expect(r.ok).toBe(true)
+    if (r.ok) {
+      const seat = r.plan.seats.find(s => s.name === 'Bot Lvl 2')
+      expect(seat?.bot).toEqual({ level: 2 })
+      expect(seat?.controllerUserId).toBe('chris')
+      expect(seat?.boardId).toBeNull()
+    }
   })
 
   describe('teams', () => {

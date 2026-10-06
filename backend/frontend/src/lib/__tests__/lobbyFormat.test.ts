@@ -232,6 +232,7 @@ describe('personLine', () => {
     ready: false,
     team: null,
     presence: null,
+    bot: null,
     ...over,
   })
   const chris = person({ id: 'c', userId: 'chris', addedByUserId: 'chris', name: 'Christoph' })
