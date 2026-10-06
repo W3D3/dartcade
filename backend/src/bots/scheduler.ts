@@ -44,7 +44,11 @@ export type BotCapableView = {
 } & Partial<BullOffViewField> & { phase?: string }
 
 function isBotCapableView(v: object): v is BotCapableView {
-  return 'winner' in v && 'visitLocked' in v && 'config' in v
+  if (!('winner' in v) || !('visitLocked' in v) || !('config' in v)) return false
+  const { config }: { config: unknown } = v
+  if (typeof config !== 'object' || config === null || !('botSpeed' in config)) return false
+  const { botSpeed }: { botSpeed: unknown } = config
+  return typeof botSpeed === 'string'
 }
 
 function botCapableView(session: Pick<Session, 'module' | 'currentState' | 'players'>): BotCapableView {
@@ -52,7 +56,7 @@ function botCapableView(session: Pick<Session, 'module' | 'currentState' | 'play
   if (!isBotCapableView(view)) {
     // Should never happen: see this function's and BotCapableView's doc. Fail loudly instead
     // of letting the scheduler read undefined fields and misbehave silently.
-    throw new Error(`bot-capable module '${session.module.id}' produced a view missing winner/visitLocked/config`)
+    throw new Error(`bot-capable module '${session.module.id}' produced a view missing winner/visitLocked/config.botSpeed`)
   }
   return view
 }
@@ -91,7 +95,22 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     // supportsBots), but this is defense in depth: no-op, rather than throwing synchronously
     // inside push().
     if (!session.module.botTarget) return
-    const view = botCapableView(session)
+    const rawView = session.module.view(session.currentState, session.players)
+    if (!isBotCapableView(rawView)) {
+      // Should never happen: see BotCapableView's doc — a module that defines botTarget is
+      // expected to produce a view satisfying this shape. But onChange runs synchronously
+      // inside push() (including rebuildOne on restart, where it's not caught and would abort
+      // the whole session), so unlike act() below — where a throw becomes a rejected promise
+      // caught by its own .catch() — a throw here would surface as an error on an already-
+      // applied human action, or abort a restart. Warn and no-op instead, same as the "no
+      // botTarget defined" case just above.
+      warn('bot-capable module produced a view missing winner/visitLocked/config.botSpeed', {
+        sessionId: session.id,
+        moduleId: session.module.id,
+      })
+      return
+    }
+    const view = rawView
     const dartsThrown = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
     // The bull off decided (or needs a rethrow) but hasn't flipped stage yet — see act() —
     // is also "nothing to throw right now", paced like the end of a visit.
