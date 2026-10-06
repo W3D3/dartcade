@@ -13,6 +13,7 @@
   } from '$lib/boardAim'
   import { untrack, type Snippet } from 'svelte'
   import { markerPositions, parseLabel } from '$lib/dartUtils.js'
+  import { R, SEGS, HALF, segAngle, segmentAt } from '$shared/board.js'
   import type { Segment } from '$lib/api/game-ws'
 
   let {
@@ -79,20 +80,6 @@
   // On the photo the wires are only a hint, so they don't hide the real board
   const wireOpacity = $derived(photo ? 0.35 : 1)
 
-  const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.0 }
-  const SEGS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
-  const HALF = Math.PI / 20
-
-  const RING_BED: Record<string, { bed: Segment['bed']; multiplier: Segment['multiplier'] }> = {
-    si: { bed: 'SingleOuter', multiplier: 1 },
-    tr: { bed: 'Triple', multiplier: 3 },
-    so: { bed: 'SingleOuter', multiplier: 1 },
-    db: { bed: 'Double', multiplier: 2 },
-  }
-
-  function segAngle(i: number) {
-    return Math.PI / 2 - i * 2 * HALF
-  }
 
   function sectorPath(r1: number, r2: number, a1: number, a2: number) {
     const [c1, s1, c2, s2] = [Math.cos(a1), Math.sin(a1), Math.cos(a2), Math.sin(a2)]
@@ -105,7 +92,7 @@
     if (label === 'Bull') return { bull: R.bull50 }
     if (label === '25') return { bull: R.bull25 }
     const { mult, num } = parseLabel(label)
-    const si = SEGS.indexOf(num)
+    const si = (SEGS as readonly number[]).indexOf(num)
     if (si < 0) return null
     const a = segAngle(si)
     const [r1, r2] = mult === 3 ? [R.si, R.tr] : mult === 2 ? [R.so, R.db] : [R.tr, R.so]
@@ -145,7 +132,7 @@
     if (bed === 'Outside') return null
     if (number === 25) return { x: 0, y: (R.bull50 + R.bull25) / 2 }
     if (number === 50) return { x: 0, y: R.bull50 / 2 }
-    const si = SEGS.indexOf(number)
+    const si = (SEGS as readonly number[]).indexOf(number)
     if (si < 0) return null
     const a = segAngle(si)
     const r =
@@ -159,21 +146,6 @@
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
 
-  /** The segment at a point in board units (y up), as Board Manager would name it. */
-  function segmentAt(x: number, y: number): Segment {
-    const r = Math.hypot(x, y)
-    if (r <= R.bull50) return { name: 'Bull', number: 50, bed: 'Double', multiplier: 1 }
-    if (r <= R.bull25) return { name: '25', number: 25, bed: 'Single', multiplier: 1 }
-    // Sector 0 (20) is centred on +y; sectors run clockwise
-    const cw = (Math.PI / 2 - Math.atan2(y, x) + 2 * Math.PI) % (2 * Math.PI)
-    const num = SEGS[Math.round(cw / (2 * HALF)) % 20]
-    // Just off the board: a near miss next to that number
-    if (r > R.db) return { name: `M${num}`, number: num, bed: 'Outside', multiplier: 0 }
-    const ring = r <= R.si ? 'si' : r <= R.tr ? 'tr' : r <= R.so ? 'so' : 'db'
-    const { bed, multiplier } = RING_BED[ring]
-    const name = multiplier === 3 ? `T${num}` : multiplier === 2 ? `D${num}` : `S${num}`
-    return { name, number: num, bed, multiplier }
-  }
 
   let svgEl: SVGSVGElement
 
