@@ -95,6 +95,27 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       const rows = await getActiveGameSessions(db)
       expect(rows).toHaveLength(0)
     })
+
+    it('roundtrips a bot seat alongside a human one: bot_level is neither dropped nor leaked', async () => {
+      await insertGameSession(db, {
+        id: '01JTEST00000000000000000BT',
+        owner_user_id: 'u-test-1',
+        board_db_id: null,
+        game_id: 'atc',
+        game_version: 1,
+        rng_seed: 0,
+        config: {},
+        players: [
+          { name: 'Christoph', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
+          { name: 'Bot Lvl 5', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, bot_level: 5 },
+        ],
+      })
+      const row = (await getActiveGameSessions(db)).find(s => s.id === '01JTEST00000000000000000BT')
+      expect(row?.players.map(p => ({ name: p.name, bot_level: p.bot_level }))).toEqual([
+        { name: 'Christoph', bot_level: null },
+        { name: 'Bot Lvl 5', bot_level: 5 },
+      ])
+    })
   })
 
   describe('insertBridgeEvent', () => {
