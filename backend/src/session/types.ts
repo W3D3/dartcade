@@ -152,6 +152,11 @@ export interface GameModule<
    * (session.openVisitEvents), not something every game's own state necessarily tracks the
    * same way. A bull off (any wrapped game) is handled by the scheduler itself, never through
    * this hook — see backend/src/bots/scheduler.ts.
+   *
+   * A module that defines this must also produce a `view()` satisfying `BotCapableView` in
+   * backend/src/bots/scheduler.ts (`winner`, `visitLocked`, `config.botSpeed`, and — when
+   * wrapped by `withBullOff` — `phase`/`bullOff`): the scheduler reads those fields to pace
+   * and drive the bot.
    */
   botTarget?(s: S, seatIndex: number, dartsThrown: number): Point | 'takeout' | null
   /** The leg the current visit belongs to (0-based); single-leg games leave it out. */
