@@ -537,6 +537,18 @@ export class LobbyService {
       if (patch.nextGame !== undefined && patch.nextGame !== null && !games[patch.nextGame.gameId]) {
         throw LobbyError.badRequest(`unknown game: ${patch.nextGame.gameId}`)
       }
+      // Bots only know how to play X01 (the scheduler drives them — see addGuest's same
+      // guard): a bot already seated blocks switching away from X01, not just adding one to
+      // a non-X01 lobby. Without this, a running ATC (or any other) game with a bot seat
+      // throws synchronously inside the engine's push() on the bot's first turn.
+      if (
+        patch.nextGame !== undefined &&
+        patch.nextGame !== null &&
+        patch.nextGame.gameId !== 'x01' &&
+        lobby.people.some(p => p.bot !== null)
+      ) {
+        throw LobbyError.badRequest("can't switch to a non-X01 game while a bot is in the lobby — remove the bot first")
+      }
       if (patch.throwOrder !== undefined || patch.nextGame !== undefined) {
         const coupled = rules.coupleBullOff(lobby, patch, gameId => 'bullOff' in (games[gameId]?.defaultConfig ?? {}))
         if ('error' in coupled) throw LobbyError.badRequest(coupled.error)

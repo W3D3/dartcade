@@ -668,6 +668,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await expect(lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })).rejects.toMatchObject({ statusCode: 400 })
     })
 
+    it("rejects switching the next game away from X01 while a bot is seated — the bot's own guard works both ways", async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      await lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })
+      await expect(lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })).rejects.toMatchObject({ statusCode: 400 })
+      // The lobby's next game never changed
+      expect((await lobbies.view(id))?.nextGame).toMatchObject({ gameId: 'x01' })
+    })
+
+    it('still allows switching between X01 configs (or to no game) while a bot is seated', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      await lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 301 } } })
+      expect((await lobbies.view(id))?.nextGame).toMatchObject({ gameId: 'x01', config: { startScore: 301 } })
+      await lobbies.update('chris', id, { nextGame: null })
+      expect((await lobbies.view(id))?.nextGame).toBeNull()
+    })
+
     it('anyone gives a person on Manual one of their own boards, marked as moved', async () => {
       await lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' })
       expect(await person('Max')).toMatchObject({ boardId: 'garage', boardName: 'Garage', boardMovedBy: 'chris' })

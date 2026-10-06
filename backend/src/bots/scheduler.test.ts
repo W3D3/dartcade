@@ -3,6 +3,7 @@ import { SessionEngine, type EngineStore } from '../session/engine.js'
 import type { Seat } from '../session/types.js'
 import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
+import { atcModule } from '../games/atc.js'
 
 const seat = (name: string, controllerUserId: string, boardId: string | null, bot: { level: number } | null = null): Seat => ({
   name,
@@ -129,6 +130,30 @@ describe('bot scheduler', () => {
       await vi.advanceTimersByTimeAsync(5000)
     }
     expect((engine.getSnapshot(sessionId)!.game as X01Game).phase).toBe('game')
+  })
+
+  it('a bot seat in a non-x01 session never crashes session creation or push: the scheduler no-ops', async () => {
+    const push = vi.fn()
+    const engine = new SessionEngine(makeStore(), push)
+    // Bots are x01-only per the spec; the lobby guards this at the source (see
+    // lobby/service.test.ts), but the scheduler must defend itself too — a synchronous throw
+    // inside push() (called from createWithSeats itself, here) must never happen regardless.
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'atc',
+      config: atcModule.defaultConfig,
+      seats: [seat('Bot Lvl 5', 'chris', null, { level: 5 })],
+    })
+    expect(engine.getSnapshot(sessionId)?.status).toBe('active')
+    // Plenty of time for the scheduler to have tried (and failed) to drive it, if it were going to
+    await vi.advanceTimersByTimeAsync(20_000)
+    expect(engine.getSnapshot(sessionId)?.status).toBe('active')
+    // The game still works normally otherwise — nothing about the bot's presence broke it
+    await engine.onUserAction(sessionId, 'chris', {
+      type: 'add_dart',
+      segment: { name: 'S20', number: 20, bed: 'Single', multiplier: 1 },
+    })
+    expect(engine.getSnapshot(sessionId)?.status).toBe('active')
   })
 
   it('a game with two bots and no human plays to completion', async () => {
