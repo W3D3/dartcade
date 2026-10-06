@@ -648,13 +648,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     })
 
     it('adds a bot: no board, always ready, a given level', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       const { id: botId } = await lobbies.addGuest('chris', id, { name: 'Bot Lvl 4', bot: { level: 4 } })
       expect(await person('Bot Lvl 4')).toMatchObject({ id: botId, userId: null, boardId: null, ready: true, bot: { level: 4 } })
     })
 
     it('ignores a boardId passed alongside bot: a bot never has a board', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       await lobbies.addGuest('chris', id, { name: 'Bot Lvl 1', boardId: 'living', bot: { level: 1 } })
       expect(await person('Bot Lvl 1')).toMatchObject({ boardId: null })
+    })
+
+    it('rejects a bot outside X01: the scheduler only knows how to drive X01 games', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })
+      await expect(lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })).rejects.toMatchObject({ statusCode: 400 })
+    })
+
+    it('rejects a bot when no game is picked yet', async () => {
+      await expect(lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })).rejects.toMatchObject({ statusCode: 400 })
     })
 
     it('anyone gives a person on Manual one of their own boards, marked as moved', async () => {

@@ -96,6 +96,7 @@
   const updatePerson = (personId: string, patch: PersonPatch) => withLobby(a => a.updatePerson(personId, patch))
   const removePerson = (personId: string) => withLobby(a => a.removePerson(personId))
   const addGuest = (name: string) => withLobby(a => a.addGuest(name))
+  const addBot = (level: number) => withLobby(a => a.addBot(level))
   const invite = (userId: string) => withLobby(a => a.invite(userId))
   const setTeam = (personId: string, team: TeamId) => withLobby(a => a.setTeam(personId, team))
   const shuffleTeams = () => withLobby(a => a.shuffleTeams())
@@ -218,6 +219,7 @@
             onupdate={updatePerson}
             onremove={removePerson}
             onguest={addGuest}
+            onbot={addBot}
             oninvite={invite}
           />
         </div>
