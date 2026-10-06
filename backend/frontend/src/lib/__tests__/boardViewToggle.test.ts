@@ -26,18 +26,18 @@ const html = (settings: Partial<GameSettings> = {}, opts: { snapshot?: Snapshot 
   }).body
 
 describe('BoardViewToggle', () => {
-  it('shows Drawn and Combined when the board is drawn and nothing was picked yet', () => {
+  it('shows a dartboard icon and a Combined camera option when the board is drawn and nothing was picked yet', () => {
     const out = html({ boardView: 'svg', lastCameraView: 'combined' })
     expect(out).toContain('role="radiogroup"')
-    expect(out).toContain('>Drawn<')
-    expect(out).toContain('>Combined<')
+    expect(out).toContain('aria-label="Drawn board"')
+    expect(out).toContain('aria-label="Combined camera"')
     expect(out).toMatch(/aria-label="Drawn board"[^>]*aria-checked="true"|aria-checked="true"[^>]*aria-label="Drawn board"/)
   })
 
-  it("shows the camera's own name instead of Combined when a single camera is picked", () => {
+  it("labels the camera option with the camera's own name instead of Combined when a single camera is picked", () => {
     const out = html({ boardView: 'cam2', lastCameraView: 'combined' })
-    expect(out).toContain('>Cam 2<')
-    expect(out).not.toContain('>Combined<')
+    expect(out).toContain('aria-label="Cam 2 camera"')
+    expect(out).not.toContain('aria-label="Combined camera"')
   })
 
   it('checks the camera side, not Drawn, once a camera is picked', () => {
