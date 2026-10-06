@@ -18,6 +18,7 @@
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const X01_DEFAULTS: Record<string, unknown> = {
+    format: 'singles',
     startScore: 501,
     inMode: 'straight',
     outMode: 'double',
