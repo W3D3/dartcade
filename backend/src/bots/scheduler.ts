@@ -1,13 +1,16 @@
 // Drives a bot seat's turn: schedules its darts and takeout, paced like a real visit, by
 // calling the same onUserAction a human's manual entry uses. See
-// docs/superpowers/specs/2026-10-06-dart-bots-design.md.
+// docs/superpowers/specs/2026-10-06-dart-bots-design.md. This scheduler has no knowledge of
+// any particular game — it only knows how to drive a `GameModule` that defines `botTarget`
+// (see session/types.ts), and how to run a bull off in front of one (any `withBullOff`-wrapped
+// game, generically).
 import type { SessionEngine } from '../session/engine.js'
 import type { WarnFn } from '../session/replay.js'
 import type { Session } from '../session/types.js'
-import type { X01ModuleView } from '../session/views.js'
-import { BULL, pickTarget, throwAt } from './accuracy.js'
+import type { BullOffViewField } from '../session/views.js'
+import { BULL, throwAt } from './accuracy.js'
 import { sigmaForLevel } from './levels.js'
-import { dartDelay, takeoutDelay } from './pacing.js'
+import { dartDelay, takeoutDelay, type BotSpeed } from './pacing.js'
 
 export type BotScheduler = {
   /** Call after every snapshot push: schedules the up seat's next dart if it's a bot and
@@ -17,16 +20,41 @@ export type BotScheduler = {
   stop(sessionId: string): void
 }
 
-// The X01 view, the only shape this scheduler ever deals with (bots are X01-only per the
-// spec's scope). Reading through view() — not session.committedState — matters: X01 sessions
-// are always withBullOff-wrapped ({ stage, bullOff, game }), so committedState.cfg doesn't
-// exist; view() already flattens that away into one flat shape regardless of bull-off stage.
-// A non-x01 session can only reach this scheduler if a bot seat somehow ends up in a game
-// that isn't x01 (the lobby guards against this at the source — see LobbyService — but this
-// is defense in depth: null, rather than throwing synchronously inside push()).
-function x01View(session: Pick<Session, 'module' | 'currentState' | 'players'>): X01ModuleView | null {
-  if (session.module.id !== 'x01') return null
-  return session.module.view(session.currentState, session.players)
+/**
+ * The minimal view shape the scheduler needs to drive any bot-capable game, regardless of
+ * which module produced it: who's won, whether the visit is locked, how fast its bots throw,
+ * and — only when the session is withBullOff-wrapped — the bull-off phase and state (see
+ * `BullOffViewField` in session/views.ts).
+ *
+ * This isn't enforced through `AnyGameModule`'s union type at the one call site below
+ * (`botCapableView`): `session.module.view(...)` is statically typed as the union of every
+ * registered game's own view type (e.g. `X01ModuleView | AtcView`), and ATC's view satisfies
+ * none of this (it has no `visitLocked` or `config.botSpeed`) — correctly, since ATC never
+ * defines `botTarget`. Narrowing "this module defines botTarget" to "this module's view
+ * satisfies BotCapableView" isn't expressible through that union without real contortion, so
+ * `botCapableView` below checks the shape with a real (if light) runtime guard instead of an
+ * `as` assertion — every module that defines `botTarget` is expected, by convention, to
+ * produce a view satisfying this shape (X01's own view does), and the guard's job is only to
+ * fail loudly if a future module breaks that convention rather than silently misbehaving.
+ */
+export type BotCapableView = {
+  winner: number | null
+  visitLocked: boolean
+  config: { botSpeed: BotSpeed }
+} & Partial<BullOffViewField> & { phase?: string }
+
+function isBotCapableView(v: object): v is BotCapableView {
+  return 'winner' in v && 'visitLocked' in v && 'config' in v
+}
+
+function botCapableView(session: Pick<Session, 'module' | 'currentState' | 'players'>): BotCapableView {
+  const view = session.module.view(session.currentState, session.players)
+  if (!isBotCapableView(view)) {
+    // Should never happen: see this function's and BotCapableView's doc. Fail loudly instead
+    // of letting the scheduler read undefined fields and misbehave silently.
+    throw new Error(`bot-capable module '${session.module.id}' produced a view missing winner/visitLocked/config`)
+  }
+  return view
 }
 
 export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => undefined): BotScheduler {
@@ -58,8 +86,12 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     const seat = session.seats[upIndex]
     if (!seat.bot) return
     if (timers.has(session.id)) return // already scheduled
-    const view = x01View(session)
-    if (!view) return // a bot seat in a non-x01 session: nothing this scheduler knows how to drive
+    // A bot seat in a module that defines no botTarget: nothing this scheduler knows how to
+    // drive. The lobby guards against this at the source (see LobbyService, games/index.ts's
+    // supportsBots), but this is defense in depth: no-op, rather than throwing synchronously
+    // inside push().
+    if (!session.module.botTarget) return
+    const view = botCapableView(session)
     const dartsThrown = session.openVisitEvents.filter(e => e.kind === 'dart.detected').length
     // The bull off decided (or needs a rethrow) but hasn't flipped stage yet — see act() —
     // is also "nothing to throw right now", paced like the end of a visit.
@@ -101,8 +133,9 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     const seat = current.seats[upIndex]
     if (!seat.bot) return // the turn moved on, or something changed under us — stop quietly
 
-    const view = x01View(current)
-    if (!view) return // defense in depth: see x01View
+    if (!current.module.botTarget) return // defense in depth: see onChange
+
+    const view = botCapableView(current)
 
     // The bull off has a result (a final order, or a rethrow) but stage is still 'bulloff':
     // that flip only happens when the engine processes the *next* visit.opened, which a real
@@ -126,16 +159,21 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
       return
     }
 
-    // A bull-off throw is a different mini-game, not X01 scoring: aim at the bull, not
-    // wherever pickTarget's checkout/treble-20 logic would send a dart at the session's
-    // starting score (pickTarget has no notion of "this is a bull off", and shouldn't need one).
-    const target =
-      view.phase === 'bulloff'
-        ? BULL
-        : pickTarget(view.scores[upIndex] ?? 0, 3 - dartsThrown, view.config.outMode, {
-            opened: view.opened[upIndex] ?? true,
-            inMode: view.config.inMode,
-          })
+    // A bull-off throw is a different mini-game than any wrapped module's own scoring: aim at
+    // the bull directly, without ever asking the module itself — it has no notion of "this is
+    // a bull off" (and shouldn't need one), so botTarget is never called for this phase.
+    if (view.phase === 'bulloff') {
+      const segment = throwAt(BULL, sigmaForLevel(seat.bot.level), current.rng)
+      await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'add_dart', segment })
+      return
+    }
+
+    const target = current.module.botTarget(current.currentState, upIndex, dartsThrown)
+    if (target === 'takeout') {
+      await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'takeout' })
+      return
+    }
+    if (target === null) return // defensive: nothing scheduled this round (shouldn't come up)
     const segment = throwAt(target, sigmaForLevel(seat.bot.level), current.rng)
     await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'add_dart', segment })
     // onUserAction's own push (if the action changed anything) re-enters onChange and
