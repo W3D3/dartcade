@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -90,18 +91,31 @@ func (c *Client) Start(ctx context.Context) error {
 	return nil
 }
 
+// bareVersion matches a plain version string (e.g. "1.0.7"): starts with a digit, otherwise
+// only the characters version numbers use. Guards against treating an HTML error page or
+// other wrong-URL response as a version (see TestInitChecksBoardManagerResponses).
+var bareVersion = regexp.MustCompile(`^[0-9][0-9A-Za-z.+_-]{0,31}$`)
+
 func (c *Client) fetchVersion(ctx context.Context) error {
 	raw, err := getBody(ctx, c.boardURL+"/api/version")
 	if err != nil {
 		return err
 	}
+	// Most Board Manager builds answer with a bare version string ("1.0.7"), not JSON;
+	// some older ones wrap it as {"version": "1.0.7"}. Accept either.
 	var v struct {
 		Version string `json:"version"`
 	}
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return fmt.Errorf("decode /api/version: %w", err)
+	if err := json.Unmarshal(raw, &v); err == nil && v.Version != "" {
+		c.bmVersion = v.Version
+	} else if trimmed := strings.TrimSpace(string(raw)); bareVersion.MatchString(trimmed) {
+		c.bmVersion = trimmed
+	} else {
+		if len(trimmed) > 80 {
+			trimmed = trimmed[:80] + "…"
+		}
+		return fmt.Errorf("decode /api/version: not JSON and not a bare version string: %q", trimmed)
 	}
-	c.bmVersion = v.Version
 	log.Debug("BM version", "version", c.bmVersion)
 	return nil
 }
