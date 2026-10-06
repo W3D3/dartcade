@@ -36,7 +36,7 @@
   import { isNarrowMatch, isPhone, isWide } from '$lib/viewport'
   import { x01Teams } from '$lib/teams'
   import { matchLayout } from '$lib/matchLayout'
-  import { isMyTurn } from '$lib/turn'
+  import { canThrowNow, isMyTurn } from '$lib/turn'
   import PhonePlayerRow from '../lib/components/PhonePlayerRow.svelte'
   import PhoneX01Card from '../lib/components/PhoneX01Card.svelte'
   import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
@@ -253,9 +253,12 @@
       void push(afterGameRoute(snapshot))
     }
   })
-  // Online: only the seat's controller enters its darts (a local game's owner controls every seat)
+  // Online: only the seat's controller enters its darts (a local game's owner controls every seat).
+  // A bot seat's own controller (the host) controls it but doesn't throw for it: `myTurn` still
+  // includes a bot seat (so Undo, below, stays reachable to fix a misdetected bot throw), but
+  // `canThrow` — the live entry controls (keypad, board-click-to-score, Next/takeout) — excludes it.
   const myTurn = $derived(isMyTurn(snapshot))
-  const canThrow = $derived(isActive && myTurn)
+  const canThrow = $derived(isActive && canThrowNow(snapshot))
   // Remote games: what the centre shows when it isn't your turn, and where each seat throws
   const remote = $derived(centerState(snapshot, viewerId))
   const lines = $derived(seatLines(snapshot))
@@ -405,8 +408,10 @@
   const send = (action: UserAction) => sessionStore?.send(action)
   const undo = () => send({ type: 'undo_dart' })
   const advance = () => send({ type: 'takeout' })
-  // Undo takes back the last dart, or with none open reopens the last visit (its thrower is up again)
-  const canUndo = $derived(canThrow && (darts.length > 0 || snapshot?.canUndoVisit === true))
+  // Undo takes back the last dart, or with none open reopens the last visit (its thrower is up
+  // again) — available whenever the viewer's own seat (bot included) is up, even though `canThrow`
+  // excludes a bot: the host may still need to correct a misdetected bot throw.
+  const canUndo = $derived(isActive && myTurn && (darts.length > 0 || snapshot?.canUndoVisit === true))
   const next = $derived(
     nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending }),
   )
