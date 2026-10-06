@@ -7,6 +7,7 @@ import {
   isManualTurn,
   isRemoteGame,
   myBoard,
+  myBoardsInUse,
   noticeLines,
   rowSub,
   seatLines,
@@ -124,6 +125,31 @@ describe('myBoard', () => {
     expect(myBoard(local())).toBeNull()
     expect(myBoard(remote({ seats: [{ boardId: null, boardName: null, boardOnline: false }] }))).toBeNull()
     expect(myBoard(null)).toBeNull()
+  })
+})
+
+describe('myBoardsInUse', () => {
+  const boardA = { id: 'board-a', name: 'Living room' }
+  const boardB = { id: 'board-b', name: "Lena's place" }
+  const boardC = { id: 'board-c', name: 'Spare room' }
+
+  it('only the owner boards actually playing a seat, in a remote game', () => {
+    // The viewer owns board-a and board-c; only board-a (Christoph's seat) is in this game
+    expect(myBoardsInUse(remote(), [boardA, boardC])).toEqual([boardA])
+  })
+
+  it('includes an owned board a guest is borrowing, even when the viewer has no seat there', () => {
+    // The viewer owns board-b too, but it's Lena's seat, not theirs
+    expect(myBoardsInUse(remote({ mySeats: [] }), [boardA, boardB])).toEqual([boardA, boardB])
+  })
+
+  it('a local game: the single board, via its seats', () => {
+    expect(myBoardsInUse(local({ boardId: 'board-a' }), [boardA, boardC])).toEqual([boardA])
+  })
+
+  it('none without a snapshot, or when none of the owner boards are in use', () => {
+    expect(myBoardsInUse(null, [boardA])).toEqual([])
+    expect(myBoardsInUse(remote(), [boardC])).toEqual([])
   })
 })
 

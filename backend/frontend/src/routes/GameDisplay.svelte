@@ -32,7 +32,7 @@
   import { x01Player, atcPlayer, x01Roll } from '../lib/playerStats.js'
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
-  import { api, type Segment, type UserAction } from '$lib/api'
+  import { api, type Board, type Segment, type UserAction } from '$lib/api'
   import { isNarrowMatch, isPhone, isWide } from '$lib/viewport'
   import { x01Teams } from '$lib/teams'
   import { matchLayout } from '$lib/matchLayout'
@@ -43,7 +43,18 @@
   import DartKeypad from '../lib/components/DartKeypad.svelte'
   import type { AtcGame, NoticeMessage, X01Game } from '$lib/api/game-ws'
   import { authClient } from '$lib/auth'
-  import { boardCaption, centerState, isManualTurn, myBoard, noticeLines, rowSub, seatLines, startsOnKeypad, turnStatus } from '$lib/remote'
+  import {
+    boardCaption,
+    centerState,
+    isManualTurn,
+    myBoard,
+    myBoardsInUse,
+    noticeLines,
+    rowSub,
+    seatLines,
+    startsOnKeypad,
+    turnStatus,
+  } from '$lib/remote'
   import BoardCaption from '../lib/components/BoardCaption.svelte'
   import TurnStatusBar from '../lib/components/TurnStatusBar.svelte'
   import OfflineNotice from '../lib/components/OfflineNotice.svelte'
@@ -97,6 +108,9 @@
   let unsubSnap: (() => void) | null = null
   // The signed-in user: the host gets Abort while the game waits for someone
   let viewerId = $state<string | null>(null)
+  // The viewer's own boards (fetched once), for the status/controls panel on whichever of
+  // them are playing in this game (see myBoards below)
+  let myOwnBoards = $state<Board[]>([])
   let unsubNotice: (() => void) | null = null
   let unsubError: (() => void) | null = null
   let unsubConnected: (() => void) | null = null
@@ -172,6 +186,12 @@
         viewerId = r.data?.user.id ?? null
       })
       .catch(() => undefined)
+    api
+      .GET('/api/boards')
+      .then(({ data }) => {
+        myOwnBoards = data?.boards ?? []
+      })
+      .catch(() => undefined)
   })
   onDestroy(() => {
     unsubSnap?.()
@@ -205,6 +225,8 @@
   // ── Game state ────────────────────────────────────────────────────────────
   const gameId = $derived(snapshot?.gameId ?? '')
   const boardId = $derived(snapshot?.boardId ?? null)
+  // The viewer's own boards actually playing in this game, for the status/controls panel in the header
+  const myBoards = $derived(myBoardsInUse(snapshot, myOwnBoards))
   const players = $derived(snapshot?.players ?? [])
   // The snapshot's game narrowed by game id; both null for a game this page doesn't know
   const current = $derived(gameState(snapshot))
@@ -670,10 +692,8 @@
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
         showViewToggle={!bullOff && remote.kind === 'play'}
-        {sessionId}
-        {boardId}
+        boards={myBoards}
         {gameId}
-        bmStatus={snapshot.bmStatus}
         {viewMode}
         compact={$isPhone}
         lobbyName={snapshot.lobbyName}
