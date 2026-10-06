@@ -3,6 +3,7 @@
   // (a name adds a guest, @username sends an invite). Solo or not, players are added here.
   // The host drags people (or uses the ⋯ menu) to change the order.
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
+  import AddBot from './AddBot.svelte'
   import AddSomeone from './AddSomeone.svelte'
   import BoardChip from './BoardChip.svelte'
   import PeopleList from './PeopleList.svelte'
@@ -16,6 +17,7 @@
     onupdate,
     onremove,
     onguest,
+    onbot,
     oninvite,
   }: {
     lobby: Lobby
@@ -24,6 +26,7 @@
     onupdate: (personId: string, patch: PersonPatch) => Promise<boolean>
     onremove: (personId: string) => Promise<boolean>
     onguest: (name: string) => Promise<boolean>
+    onbot: (level: number) => Promise<boolean>
     oninvite: (userId: string) => Promise<boolean>
   } = $props()
 </script>
@@ -39,5 +42,12 @@
   {#snippet controlsOf(p: LobbyPerson, i: number)}
     <PersonControls {lobby} person={p} index={i} {viewerId} {onupdate} {onremove} />
   {/snippet}
-  {#snippet footer()}<AddSomeone exclude={alreadyInOrInvited(lobby)} {onguest} {oninvite} />{/snippet}
+  {#snippet footer()}
+    <div class="flex flex-col gap-2 md:flex-row md:items-start">
+      <div class="flex-grow min-w-0">
+        <AddSomeone exclude={alreadyInOrInvited(lobby)} {onguest} {oninvite} />
+      </div>
+      <AddBot {onbot} />
+    </div>
+  {/snippet}
 </PeopleList>

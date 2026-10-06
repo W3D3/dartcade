@@ -566,6 +566,8 @@ export class LobbyService {
       const name = guest.name.trim()
       if (name === '') throw LobbyError.badRequest('the name is empty')
       const bot = guest.bot ?? null
+      // Bots only know how to play X01 (the scheduler drives them); refuse one anywhere else
+      if (bot !== null && lobby.nextGame?.gameId !== 'x01') throw LobbyError.badRequest('bots can only be added to an X01 game')
       // A bot never has a board; a guest sits at their adder's board unless the adder picks
       // one of their own or Manual
       let boardId: string | null
