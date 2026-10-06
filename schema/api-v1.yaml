@@ -1341,7 +1341,7 @@ components:
               label: { type: string }
     GameInfo:
       type: object
-      required: [id, defaultConfig, configMeta, teams]
+      required: [id, defaultConfig, configMeta, teams, supportsBots]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -1350,6 +1350,7 @@ components:
           type: object
           additionalProperties: { $ref: '#/components/schemas/ConfigFieldMeta' }
         teams: { type: boolean, description: 'The game can be played in teams (its config takes format and teams)' }
+        supportsBots: { type: boolean, description: 'The game can seat a bot (its module defines botTarget)' }
     GameModeList:
       type: object
       required: [modes]

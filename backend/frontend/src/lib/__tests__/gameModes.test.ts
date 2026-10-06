@@ -2,8 +2,8 @@ import { describe, it, expect } from 'vitest'
 import { canSwitchTo, settlePending, withDefaults } from '../gameModes.js'
 
 const games = [
-  { id: 'atc', defaultConfig: { order: 'asc' }, configMeta: {}, teams: false },
-  { id: 'x01', defaultConfig: { startScore: 501, firstTo: 3 }, configMeta: {}, teams: false },
+  { id: 'atc', defaultConfig: { order: 'asc' }, configMeta: {}, teams: false, supportsBots: false },
+  { id: 'x01', defaultConfig: { startScore: 501, firstTo: 3 }, configMeta: {}, teams: true, supportsBots: true },
 ]
 
 describe('withDefaults', () => {
@@ -24,7 +24,9 @@ describe('canSwitchTo', () => {
   it('refuses the current mode, nothing picked, a mode that is coming soon, and one the backend lacks', () => {
     expect(canSwitchTo('x01', 'x01', games)).toBe(false)
     expect(canSwitchTo(null, 'x01', games)).toBe(false)
-    expect(canSwitchTo('soccer', 'x01', [...games, { id: 'soccer', defaultConfig: {}, configMeta: {}, teams: false }])).toBe(false)
+    expect(
+      canSwitchTo('soccer', 'x01', [...games, { id: 'soccer', defaultConfig: {}, configMeta: {}, teams: false, supportsBots: false }]),
+    ).toBe(false)
     expect(canSwitchTo('atc', 'x01', [])).toBe(false)
   })
 })
