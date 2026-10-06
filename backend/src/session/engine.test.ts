@@ -774,6 +774,46 @@ describe('rebuild with seats', () => {
   })
 })
 
+describe('rebuild resumes a bot', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it("a session rebuilt at startup with a bot seat up throws on its own, without any human action", async () => {
+    const store = makeStore()
+    store.getActiveSessions.mockResolvedValue([
+      {
+        id: 's1',
+        owner_user_id: 'chris',
+        board_db_id: null,
+        game_id: 'x01',
+        game_version: 1,
+        rng_seed: 1,
+        config: { ...x01Module.defaultConfig, startScore: 121, botSpeed: 'fast' },
+        created_at: new Date(),
+        players: [{ name: 'Bot Lvl 10', user_id: null, controller_user_id: 'chris', board_db_id: null, board_name: null, bot_level: 10 }],
+        lobby_id: null,
+        lobby_name: null,
+      } satisfies StoredGameSession,
+    ])
+    const engine = new SessionEngine(store, push)
+    // rebuild() runs with no watcher ever having opened the game (push is a no-op mock here,
+    // same as a real restart before any browser reconnects) — only the scheduler itself can
+    // move this game forward.
+    await engine.rebuild()
+    expect(engine.getSession('s1')?.status).toBe('active')
+    for (let i = 0; i < 500; i++) {
+      const snap = engine.getSnapshot('s1')
+      if (!snap || snap.status !== 'active') break
+      await vi.advanceTimersByTimeAsync(5000)
+    }
+    expect(engine.getSnapshot('s1')?.status).toBe('finished')
+  })
+})
+
 describe('pushes only what changed something', () => {
   it('does not push a refused action', async () => {
     const { engine, sessionId } = await twoBoardGame()
