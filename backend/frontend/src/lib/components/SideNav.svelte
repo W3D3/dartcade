@@ -15,7 +15,7 @@
   const links = [
     { href: '/', label: 'Play', icon: 'play' },
     { href: '/boards', label: 'Boards', icon: 'boards' },
-    { href: '/tournaments', label: 'Tournaments', icon: 'trophy' },
+    { href: '/tournaments', label: 'Tournaments', icon: 'trophy', soon: true },
     { href: '/history', label: 'History', icon: 'clock' },
     { href: '/settings', label: 'Settings', icon: 'settings' },
   ]
@@ -39,7 +39,7 @@
   <div class="flex flex-col gap-1">
     {#each links as link (link.href)}
       {@const active = isActive(link.href)}
-      <NavLink href={`#${link.href}`} {active}>
+      <NavLink href={`#${link.href}`} {active} disabled={link.soon}>
         {#if link.icon === 'play'}
           <Target size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'boards'}
@@ -52,6 +52,13 @@
           <Settings size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {/if}
         {link.label}
+        {#if link.soon}
+          <span
+            class="ml-auto text-[11px] font-medium tracking-[0.06em] uppercase text-text-dim border border-line-3 rounded-[5px] px-[7px] py-[3px]"
+          >
+            Soon
+          </span>
+        {/if}
       </NavLink>
     {/each}
     {#if inviteCount > 0}
