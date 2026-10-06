@@ -74,13 +74,22 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
         // version that kills the whole process, taking down every live game, not just this
         // bot's. Logged and swallowed, same discipline as the browser-gw handler applies to a
         // human action that fails to apply.
-        warn('bot action failed', { sessionId: session.id, error: String(err) })
-        // Nothing else will retry this bot: a failed action produced no change, so no push
-        // follows to re-enter onChange naturally. Re-run it ourselves (if the session is still
-        // there and active) so the bot gets another attempt after one more normal pacing
-        // delay, rather than being stuck forever on a transient blip.
-        const current = engine.getSession(session.id)
-        if (current) onChange(current)
+        //
+        // This handler's own body must never throw either: a throwing `warn` (e.g. a logger
+        // that itself fails) or a throwing re-entrant onChange would otherwise produce a new
+        // unhandled rejection one layer deeper — exactly what this catch exists to prevent.
+        // There's nothing further to escalate a secondary failure to here, so it's swallowed.
+        try {
+          warn('bot action failed', { sessionId: session.id, error: String(err) })
+          // Nothing else will retry this bot: a failed action produced no change, so no push
+          // follows to re-enter onChange naturally. Re-run it ourselves (if the session is
+          // still there and active) so the bot gets another attempt after one more normal
+          // pacing delay, rather than being stuck forever on a transient blip.
+          const current = engine.getSession(session.id)
+          if (current) onChange(current)
+        } catch {
+          // Swallowed on purpose: see above.
+        }
       })
     })
   }
