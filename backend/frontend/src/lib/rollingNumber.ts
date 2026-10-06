@@ -49,9 +49,12 @@ export function planChange(o: {
   const numeric = a !== null && b !== null && a.prefix === b.prefix
   const dir: Dir = numeric && Number(b.digits) > Number(a.digits) ? 'up' : 'down'
   const busted = o.bust === true && !o.wasBust && o.from !== null && !o.reset
+  // The visit was cleared (takeout, a new one opened) before another dart changed the score:
+  // still a take-back, so the red doesn't just sit there till a later change happens to clear it
+  const unbusted = o.wasBust === true && o.bust !== true
   // A dart that busts on a score that stays (the visit's first) still flashes and shakes
-  if (o.from === o.to && !busted) return { kind: 'none', dir, tone: 'plain' }
-  if (o.from === null || o.reset || !numeric) return { kind: 'jump', dir, tone: busted ? 'bust' : 'plain' }
+  if (o.from === o.to && !busted && !unbusted) return { kind: 'none', dir, tone: 'plain' }
+  if (o.from === null || o.reset || !numeric) return { kind: 'jump', dir, tone: busted ? 'bust' : unbusted ? 'back' : 'plain' }
 
   let tone: Tone
   if (busted) tone = 'bust'

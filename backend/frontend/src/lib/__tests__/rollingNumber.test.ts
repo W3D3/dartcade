@@ -126,6 +126,13 @@ describe('planChange', () => {
     expect(planChange({ ...base, from: '32', to: '12', bust: false, wasBust: true })).toEqual({ kind: 'roll', dir: 'down', tone: 'back' })
   })
 
+  it('the visit clearing after a bust is a take-back too, even before a new dart moves the score', () => {
+    // Regression: the next visit opening (or its takeout) can reach the client before its first
+    // dart does, leaving the score unchanged but no longer bust — it must not stay red till
+    // whenever a later dart happens to change the number.
+    expect(planChange({ ...base, from: '32', to: '32', bust: false, wasBust: true })).toEqual({ kind: 'roll', dir: 'down', tone: 'back' })
+  })
+
   it('a bust in the same snapshot as a new leg just jumps, no red flash', () => {
     expect(planChange({ ...base, from: '32', to: '501', bust: true, wasBust: false, reset: true })).toEqual({
       kind: 'jump',
