@@ -1,5 +1,5 @@
 <script lang="ts">
-  // One friend: avatar with status dot, name and @handle, the status line, the action
+  // One friend: avatar with a status ring, name and @handle, the status line, the action
   // (In your lobby / Join / Invite to lobby / Invited) and the ⋯ menu. Phones say "Invite" and "In lobby".
   import { Check } from '@lucide/svelte'
   import type { Friend } from '$lib/api/lobby-ws'
@@ -7,7 +7,7 @@
   import { isPhone } from '$lib/viewport'
   import { Button } from '$lib/components/ui/button/index.js'
   import FriendMenu from './FriendMenu.svelte'
-  import StatusDot from './StatusDot.svelte'
+  import StatusRing from './StatusRing.svelte'
   import { statusLine, type RowAction } from '$lib/friends/view'
 
   let {
@@ -32,9 +32,9 @@
 <li
   class="flex items-center gap-3 md:gap-[14px] min-h-[58px] md:min-h-[68px] box-border pl-3 pr-1 md:pl-[14px] md:pr-2 rounded-[12px] bg-surface-panel border border-line"
 >
-  <span class="relative shrink-0 flex">
+  <span class="relative shrink-0 flex m-1">
     <Avatar name={friend.name} size={$isPhone ? 38 : 44} />
-    <StatusDot kind={friend.status.kind} class="absolute -right-[2px] -bottom-[2px]" />
+    <StatusRing kind={friend.status.kind} />
   </span>
   <span class="flex flex-col gap-[2px] md:gap-[3px] min-w-0 flex-grow">
     <span class="flex items-baseline gap-2 min-w-0">

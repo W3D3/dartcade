@@ -77,7 +77,7 @@ describe('AddFriendCard', () => {
 describe('StatusDot', () => {
   it('is a hollow grey ring when offline, red while playing', () => {
     expect(render(StatusDot, { props: { kind: 'offline' } }).body).toContain('border-text-dim')
-    expect(render(StatusDot, { props: { kind: 'playing' } }).body).toContain('bg-live')
+    expect(render(StatusDot, { props: { kind: 'playing' } }).body).toContain('border-live')
   })
 })
 
