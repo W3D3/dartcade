@@ -134,7 +134,12 @@ const storedAborted = (row: StoredGameSession): GameEnded => ({
 /** The seats as one viewer sees them: boards online, controllers connected or since when not. */
 function seatViews(session: Session, view: SnapshotView) {
   return session.seats.map((s, i) => {
-    const connected = view.connectedUserIds.has(s.controllerUserId)
+    // A bot seat has no controller connection of its own: the host's browser controls it, but
+    // the scheduler drives its turns server-side and never needs that browser open. So a bot
+    // seat always reports connected, regardless of whether its host's screen is actually open —
+    // otherwise closing the host's screen would make a bot seat look disconnected to everyone
+    // else, even though the bot keeps throwing normally.
+    const connected = s.bot !== null || view.connectedUserIds.has(s.controllerUserId)
     return {
       controllerUserId: s.controllerUserId,
       userId: s.userId,
