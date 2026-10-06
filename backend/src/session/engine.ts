@@ -144,6 +144,7 @@ function seatViews(session: Session, view: SnapshotView) {
       // Only a controller without the game open has a time; it says how long the game waits
       disconnectedAt: connected ? null : (view.disconnectedAt(s.controllerUserId)?.toISOString() ?? null),
       forfeited: session.forfeited.includes(i),
+      bot: s.bot,
     }
   })
 }
@@ -185,6 +186,7 @@ export class SessionEngine {
       controllerUserId: ownerUserId,
       boardId,
       boardName,
+      bot: null,
     }))
     return this.start({ ownerUserId, gameId, config, seats }, boardId)
   }
@@ -237,7 +239,13 @@ export class SessionEngine {
         rng_seed: seed,
         config: spec.config,
         lobby_id: lobbyId,
-        players: seats.map(s => ({ name: s.name, user_id: s.userId, controller_user_id: s.controllerUserId, board_db_id: s.boardId })),
+        players: seats.map(s => ({
+          name: s.name,
+          user_id: s.userId,
+          controller_user_id: s.controllerUserId,
+          board_db_id: s.boardId,
+          bot_level: s.bot?.level ?? null,
+        })),
       })
     } catch (err) {
       this.release(session)
@@ -460,6 +468,7 @@ export class SessionEngine {
       controllerUserId: p.controller_user_id ?? owner,
       boardId: p.board_db_id,
       boardName: p.board_name,
+      bot: p.bot_level === null ? null : { level: p.bot_level },
     }))
     const session = newSession({
       id: row.id,

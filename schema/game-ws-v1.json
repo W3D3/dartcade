@@ -184,7 +184,8 @@
         "boardOnline",
         "controllerConnected",
         "disconnectedAt",
-        "forfeited"
+        "forfeited",
+        "bot"
       ],
       "additionalProperties": false,
       "properties": {
@@ -198,7 +199,19 @@
           "anyOf": [{ "type": "string", "format": "date-time" }, { "type": "null" }],
           "description": "Server time the controller's last socket of this game closed; null while they have it open, or if they haven't opened it since the server started."
         },
-        "forfeited": { "type": "boolean" }
+        "forfeited": { "type": "boolean" },
+        "bot": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": ["level"],
+              "additionalProperties": false,
+              "properties": { "level": { "type": "integer", "minimum": 1, "maximum": 10 } }
+            },
+            { "type": "null" }
+          ],
+          "description": "The server throws for this seat itself, at this difficulty 1-10; null for a human or guest."
+        }
       }
     },
     "SessionStatus": { "title": "SessionStatus", "type": "string", "enum": ["active", "finished", "aborted"] },

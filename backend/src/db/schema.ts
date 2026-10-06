@@ -65,6 +65,8 @@ export interface GamePlayersTable {
   /** Where the seat's darts come from; null = entered by hand. */
   board_db_id: string | null
   forfeited: ColumnType<boolean, boolean | undefined, boolean>
+  /** The seat is a bot thrown by the server, at this difficulty 1-10; null for a human or guest (migration 017). */
+  bot_level: number | null
 }
 
 export interface GameSessionEventsTable {

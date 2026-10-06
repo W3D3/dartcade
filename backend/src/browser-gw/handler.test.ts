@@ -218,8 +218,8 @@ describe('WS auth', () => {
       lobbyId: 'l1',
       lobbyName: 'L',
       seats: [
-        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null },
-        { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null },
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null, bot: null },
+        { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null, bot: null },
       ],
     })
     const isLobbyMember = vi.fn().mockResolvedValue(true)
@@ -275,8 +275,8 @@ describe('WS client messages', () => {
       gameId: 'x01',
       config: x01Module.defaultConfig,
       seats: [
-        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: null },
-        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null },
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: null, bot: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null, bot: null },
       ],
     })
     const onUserAction = vi.spyOn(engine, 'onUserAction')
@@ -635,8 +635,8 @@ describe('WS camera stills', () => {
       gameId: 'x01',
       config: x01Module.defaultConfig,
       seats: [
-        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'cam-board-a', boardName: null },
-        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'cam-board-b', boardName: null },
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'cam-board-a', boardName: null, bot: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'cam-board-b', boardName: null, bot: null },
       ],
     })
     const stills = new CameraStills()

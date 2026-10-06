@@ -29,8 +29,20 @@ export type {
 
 export type Player = { name: string }
 
-/** A seat: the player, who may act for them, and where their darts come from (null = by hand). */
-export type Seat = { name: string; userId: string | null; controllerUserId: string; boardId: string | null; boardName: string | null }
+/** A bot seat's only setting: how accurate it is (see backend/src/bots/levels.ts). */
+export type BotConfig = { level: number }
+
+/** A seat: the player, who may act for them, and where their darts come from (null = by hand).
+ *  `bot`: the server throws for this seat itself (see backend/src/bots/); null for a human or
+ *  a guest, whose darts come from a board or their controller's manual entry. */
+export type Seat = {
+  name: string
+  userId: string | null
+  controllerUserId: string
+  boardId: string | null
+  boardName: string | null
+  bot: BotConfig | null
+}
 
 export type BmStatus = { status: string; running: boolean; event: string }
 

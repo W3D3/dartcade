@@ -24,6 +24,7 @@ const base = {
       controllerConnected: true,
       disconnectedAt: null,
       forfeited: false,
+      bot: null,
     },
   ],
 }

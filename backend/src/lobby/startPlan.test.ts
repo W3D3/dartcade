@@ -71,9 +71,9 @@ describe('planGame', () => {
   it('seats the players in lobby order: members control themselves, guests their adder', () => {
     const r = planGame(lobby(), { ...all, personIds: ['m', 'g', 'c'] }, online)
     expect(r.ok && r.plan.seats).toEqual([
-      { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room' },
-      { name: 'Guest 1', userId: null, controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" },
-      { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null },
+      { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room', bot: null },
+      { name: 'Guest 1', userId: null, controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place", bot: null },
+      { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null, bot: null },
     ])
     expect(r.ok && r.plan.personIds).toEqual(['c', 'g', 'm'])
     expect(r.ok && r.plan.shuffleSeats).toBe(false)
@@ -131,6 +131,7 @@ describe('planGame', () => {
       controllerUserId: 'lena',
       boardId: 'lenas',
       boardName: "Lena's place",
+      bot: null,
     })
   })
 

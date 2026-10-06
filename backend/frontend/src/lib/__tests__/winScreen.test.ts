@@ -11,6 +11,7 @@ const seat = (o: { userId?: string | null; boardName?: string | null } = {}) => 
   controllerConnected: true,
   disconnectedAt: null,
   forfeited: false,
+  bot: null,
 })
 
 function x01(o: { players?: string[]; game?: Record<string, unknown>; guests?: number[] } = {}): Snapshot {

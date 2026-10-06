@@ -61,7 +61,13 @@ export async function runMigrations(db: Kysely<Database>, opts: { until?: string
 // Game sessions and their history
 // ---------------------------------------------------------------------------
 
-export type SeatRow = { name: string; user_id: string | null; controller_user_id: string; board_db_id: string | null }
+export type SeatRow = {
+  name: string
+  user_id: string | null
+  controller_user_id: string
+  board_db_id: string | null
+  bot_level: number | null
+}
 export type NewGameSession = {
   id: string
   owner_user_id: string
@@ -81,6 +87,7 @@ export type StoredSeatRow = {
   controller_user_id: string | null
   board_db_id: string | null
   board_name: string | null
+  bot_level: number | null
 }
 export type StoredGameSession = {
   id: string
@@ -148,6 +155,7 @@ export async function insertGameSession(db: Kysely<Database>, s: NewGameSession)
           user_id: p.user_id,
           controller_user_id: p.controller_user_id,
           board_db_id: p.board_db_id,
+          bot_level: p.bot_level,
         })),
       )
       .execute()
@@ -176,7 +184,7 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
   const seats = await db
     .selectFrom('game_players as gp')
     .leftJoin('boards as b', 'b.id', 'gp.board_db_id')
-    .select(['gp.session_id', 'gp.name', 'gp.user_id', 'gp.controller_user_id', 'gp.board_db_id', 'b.name as board_name'])
+    .select(['gp.session_id', 'gp.name', 'gp.user_id', 'gp.controller_user_id', 'gp.board_db_id', 'b.name as board_name', 'gp.bot_level'])
     .where(
       'gp.session_id',
       'in',
@@ -194,6 +202,7 @@ export async function getActiveGameSessions(db: Kysely<Database>): Promise<Store
       controller_user_id: s.controller_user_id,
       board_db_id: s.board_db_id,
       board_name: s.board_name,
+      bot_level: s.bot_level,
     })),
   }))
 }

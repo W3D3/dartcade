@@ -863,8 +863,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const session = engine.getSession(sessionId)
       expect(session).toMatchObject({ ownerUserId: 'chris', lobbyId: id, lobbyName: "Christoph's lobby", boardId: null })
       expect(session?.seats).toEqual([
-        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room' },
-        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" },
+        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room', bot: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place", bot: null },
       ])
       expect(engineStore.insertSession).toHaveBeenCalledWith(
         expect.objectContaining({ lobby_id: id, config: expect.objectContaining({ startScore: 101, bullOff: 'off' }) }),
@@ -930,8 +930,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       const { sessionId } = await lobbies.start('chris', id, true)
       const session = engine.getSession(sessionId)
       expect(session?.seats).toEqual([
-        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room' },
-        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place" },
+        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'Living room', bot: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'lenas', boardName: "Lena's place", bot: null },
       ])
     })
 

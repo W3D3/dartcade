@@ -31,7 +31,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
       game_version: 1,
       rng_seed: 0,
       config: {},
-      players: seats.map(s => ({ ...s, controller_user_id: owner, board_db_id: null })),
+      players: seats.map(s => ({ ...s, controller_user_id: owner, board_db_id: null, bot_level: null })),
     })
     if (finishedAt === 'abort') await abortGameSession(db, id, t(0))
     else if (finishedAt !== 'active')

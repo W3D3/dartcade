@@ -15,6 +15,7 @@ const seat = (name: string, controllerUserId: string, boardId: string | null, us
   controllerUserId,
   boardId,
   boardName: boardId,
+  bot: null,
 })
 
 function makeStore() {
@@ -495,7 +496,7 @@ describe('rebuild', () => {
       rng_seed: 1,
       config: atcModule.defaultConfig,
       created_at: new Date(),
-      players: [{ name: 'Alice', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null, board_name: null }],
+      players: [{ name: 'Alice', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
     }
@@ -508,7 +509,7 @@ describe('rebuild', () => {
       rng_seed: 1,
       config: atcModule.defaultConfig,
       created_at: new Date(),
-      players: [{ name: 'Bob', user_id: 'user-2', controller_user_id: 'user-2', board_db_id: null, board_name: null }],
+      players: [{ name: 'Bob', user_id: 'user-2', controller_user_id: 'user-2', board_db_id: null, board_name: null, bot_level: null }],
       lobby_id: null,
       lobby_name: null,
     }
@@ -544,6 +545,19 @@ describe('getSnapshot', () => {
     expect(snap.gameId).toBe('atc')
     expect((snap.game as any).currentVisitDarts).toHaveLength(1)
   })
+
+  it('shows a bot seat in the snapshot, and a human seat as bot: null', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
+      seats: [seat('Christoph', 'chris', 'living'), { ...seat('Bot Lvl 3', 'chris', null, null), bot: { level: 3 } }],
+    })
+    const snap = engine.getSnapshot(sessionId)
+    expect(snap?.seats[0].bot).toBeNull()
+    expect(snap?.seats[1].bot).toEqual({ level: 3 })
+  })
 })
 
 describe('createWithSeats', () => {
@@ -575,8 +589,8 @@ describe('createWithSeats', () => {
         owner_user_id: 'host',
         board_db_id: null,
         players: [
-          { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'board-a' },
-          { name: 'Guest', user_id: null, controller_user_id: 'host', board_db_id: null },
+          { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'board-a', bot_level: null },
+          { name: 'Guest', user_id: null, controller_user_id: 'host', board_db_id: null, bot_level: null },
         ],
       }),
     )
@@ -741,8 +755,8 @@ describe('rebuild with seats', () => {
         config: {},
         created_at: new Date(),
         players: [
-          { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'board-a', board_name: 'Living room' },
-          { name: 'Lena', user_id: 'lena', controller_user_id: null, board_db_id: 'board-b', board_name: "Lena's place" },
+          { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'board-a', board_name: 'Living room', bot_level: null },
+          { name: 'Lena', user_id: 'lena', controller_user_id: null, board_db_id: 'board-b', board_name: "Lena's place", bot_level: null },
         ],
         lobby_id: null,
         lobby_name: null,
@@ -752,9 +766,9 @@ describe('rebuild with seats', () => {
     await engine.rebuild()
     const s = engine.getSession('s1')
     expect(s?.seats).toEqual([
-      { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: 'Living room' },
+      { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: 'Living room', bot: null },
       // A deleted controller falls back to the host, so the seat can still be played
-      { name: 'Lena', userId: 'lena', controllerUserId: 'host', boardId: 'board-b', boardName: "Lena's place" },
+      { name: 'Lena', userId: 'lena', controllerUserId: 'host', boardId: 'board-b', boardName: "Lena's place", bot: null },
     ])
     expect(engine.getSessionByBoard('board-b')?.id).toBe('s1')
   })
@@ -888,8 +902,8 @@ describe('forfeit', () => {
         config: {},
         created_at: new Date(),
         players: [
-          { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'a', board_name: null },
-          { name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: 'b', board_name: null },
+          { name: 'Host', user_id: 'host', controller_user_id: 'host', board_db_id: 'a', board_name: null, bot_level: null },
+          { name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: 'b', board_name: null, bot_level: null },
         ],
       },
     ])
@@ -1208,8 +1222,8 @@ describe('lobby games', () => {
       lobby_id: id === 'ok' ? 'l1' : 'l2',
       lobby_name: 'Friday darts',
       players: [
-        { name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null, board_name: null },
-        { name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null },
+        { name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null, board_name: null, bot_level: null },
+        { name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null, bot_level: null },
       ],
     })
     // No owner: it can't be played on, so it's aborted
@@ -1246,7 +1260,7 @@ describe('lobby games', () => {
       created_at: new Date(),
       lobby_id: 'l2',
       lobby_name: 'Friday darts',
-      players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null }],
+      players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: null, board_name: null, bot_level: null }],
     }
     store.getActiveSessions.mockResolvedValue([row])
     const engine = new SessionEngine(store, push, warn, undefined, ended)

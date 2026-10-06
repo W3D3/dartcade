@@ -114,6 +114,7 @@ export function planGame(
         controllerUserId: controllerOf(p),
         boardId: p.boardId,
         boardName: p.boardName,
+        bot: null,
       })),
     },
   }
