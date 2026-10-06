@@ -4,6 +4,10 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 RUN npm install
 COPY frontend/ .
+# $shared (backend/src/shared) is outside this stage's WORKDIR but inside the build context
+# (backend/, per docker-compose.yaml's build: .) — vite.config.ts's alias expects it at
+# ../src/shared relative to the frontend dir, i.e. /app/src/shared here.
+COPY src/shared /app/src/shared
 RUN npm run build
 
 # Stage 2: Build backend
