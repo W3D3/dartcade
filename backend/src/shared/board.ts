@@ -6,7 +6,7 @@ export type Bed = 'Outside' | 'Single' | 'SingleInner' | 'SingleOuter' | 'Triple
 export type Segment = { name: string; number: number; bed: Bed; multiplier: 0 | 1 | 2 | 3 }
 
 export const R = { bull50: 0.037, bull25: 0.094, si: 0.582, tr: 0.629, so: 0.953, db: 1.0 } as const
-export const SEGS = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5] as const
+export const SEGS: readonly number[] = [20, 1, 18, 4, 13, 6, 10, 15, 2, 17, 3, 19, 7, 16, 8, 11, 14, 9, 12, 5]
 export const HALF = Math.PI / 20
 
 /** The board angle (y up, 0 at +y) of segment index `i`'s centre (0 = the 20). */
