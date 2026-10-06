@@ -61,7 +61,7 @@
 
 {#snippet avatar(size: number)}
   <span class="relative shrink-0 m-1">
-    <Avatar {name} tone="accent" {size} />
+    <Avatar {name} {size} />
     <StatusRing kind={invisible ? 'offline' : 'online'} />
   </span>
 {/snippet}
