@@ -11,7 +11,7 @@ import { ActiveSessionError, BoardBusyError } from '../session/errors.js'
 import { engineApiError } from '../api/engineErrors.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import type { Lobby, LobbyServerMessage, MeMessage, PendingInvite } from '../schema/lobby-ws.js'
-import { games } from '../games/index.js'
+import { games, supportsBots } from '../games/index.js'
 import { KeyedQueue } from '../util/keyedQueue.js'
 import { LobbyError, inLobby } from './errors.js'
 import type { LobbyHub } from './hub.js'
@@ -537,17 +537,17 @@ export class LobbyService {
       if (patch.nextGame !== undefined && patch.nextGame !== null && !games[patch.nextGame.gameId]) {
         throw LobbyError.badRequest(`unknown game: ${patch.nextGame.gameId}`)
       }
-      // Bots only know how to play X01 (the scheduler drives them — see addGuest's same
-      // guard): a bot already seated blocks switching away from X01, not just adding one to
-      // a non-X01 lobby. Without this, a running ATC (or any other) game with a bot seat
+      // A bot seat can only be driven by a module that defines botTarget (see addGuest's same
+      // guard): a bot already seated blocks switching to a game that doesn't, not just adding
+      // one to such a lobby. Without this, a running game with a bot seat but no botTarget
       // throws synchronously inside the engine's push() on the bot's first turn.
       if (
         patch.nextGame !== undefined &&
         patch.nextGame !== null &&
-        patch.nextGame.gameId !== 'x01' &&
+        !supportsBots(patch.nextGame.gameId) &&
         lobby.people.some(p => p.bot !== null)
       ) {
-        throw LobbyError.badRequest("can't switch to a non-X01 game while a bot is in the lobby — remove the bot first")
+        throw LobbyError.badRequest("can't switch to a game that doesn't support bots while a bot is in the lobby — remove the bot first")
       }
       if (patch.throwOrder !== undefined || patch.nextGame !== undefined) {
         const coupled = rules.coupleBullOff(lobby, patch, gameId => 'bullOff' in (games[gameId]?.defaultConfig ?? {}))
@@ -578,8 +578,9 @@ export class LobbyService {
       const name = guest.name.trim()
       if (name === '') throw LobbyError.badRequest('the name is empty')
       const bot = guest.bot ?? null
-      // Bots only know how to play X01 (the scheduler drives them); refuse one anywhere else
-      if (bot !== null && lobby.nextGame?.gameId !== 'x01') throw LobbyError.badRequest('bots can only be added to an X01 game')
+      // Only a module that defines botTarget can seat a bot (the scheduler drives them
+      // through that hook); refuse one anywhere else, including when no game is picked yet.
+      if (bot !== null && !supportsBots(lobby.nextGame?.gameId ?? '')) throw LobbyError.badRequest("this game doesn't support bots")
       // A bot never has a board; a guest sits at their adder's board unless the adder picks
       // one of their own or Manual
       let boardId: string | null
