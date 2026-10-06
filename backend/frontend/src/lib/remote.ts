@@ -51,6 +51,15 @@ export function myBoard(snap: Snapshot | null): MyBoard | null {
   return seat ? { name: seat.boardName ?? 'Board', online: seat.boardOnline } : null
 }
 
+/** Of the viewer's own boards (everything GET /api/boards returned them), the ones actually
+ *  playing a seat in this game right now — any seat, so a guest borrowing one of your boards
+ *  counts too. For the status/controls panel in the header. */
+export function myBoardsInUse<T extends { id: string }>(snap: Snapshot | null, ownBoards: T[]): T[] {
+  if (!snap) return []
+  const inUse = new Set(snap.seats.map(s => s.boardId).filter((id): id is string => id !== null))
+  return ownBoards.filter(b => inUse.has(b.id))
+}
+
 /** What the centre column shows. */
 export type CenterState =
   /** Your turn, or a local game: as always. */

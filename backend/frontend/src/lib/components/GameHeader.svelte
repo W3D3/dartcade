@@ -4,17 +4,15 @@
   import BoardStatusPanel from '$lib/components/BoardStatusPanel.svelte'
   import SettingsDrawer from '$lib/components/SettingsDrawer.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import type { Board } from '$lib/api'
   import type { GameSettings } from '$lib/gameSettings.js'
   import type { MyBoard } from '$lib/remote'
-  import type { Snapshot } from '$lib/ws.js'
 
   let {
     title,
     meta = '',
-    sessionId,
-    boardId,
+    boards,
     gameId,
-    bmStatus,
     viewMode,
     canEnd,
     endMode = 'end',
@@ -30,10 +28,9 @@
   }: {
     title: string
     meta?: string
-    sessionId: string
-    boardId: string | null
+    /** The viewer's own boards currently in use in this game (whoever's seat they're on). */
+    boards: Board[]
     gameId: string
-    bmStatus: Snapshot['bmStatus']
     viewMode: 'board' | 'entry'
     /** Whether the end-of-game control shows at all. */
     canEnd: boolean
@@ -123,7 +120,7 @@
           <X size={18} />
         </button>
       {/if}
-      {#if boardId !== null}<BoardStatusPanel {sessionId} {bmStatus} compact />{/if}
+      {#each boards as b (b.id)}<BoardStatusPanel board={b} compact />{/each}
       <button
         type="button"
         onclick={() => (showSettings = !showSettings)}
@@ -208,9 +205,9 @@
         {/if}
       {/if}
 
-      {#if boardId !== null}
-        <BoardStatusPanel {sessionId} {bmStatus} />
-      {/if}
+      {#each boards as b (b.id)}
+        <BoardStatusPanel board={b} />
+      {/each}
 
       <button
         type="button"
