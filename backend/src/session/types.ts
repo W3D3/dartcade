@@ -167,6 +167,10 @@ export interface Session {
   createdAt: Date
   /** Seed of the generator passed to init(); stored so a replay sets the game up the same way. */
   seed: number
+  /** The live generator seeded from `seed`, continuing past whatever init() drew from it.
+   *  Bots draw from this for every decision, so a session's bot throws are reproducible
+   *  for a given seed within one live run (see docs/superpowers/specs/2026-10-06-dart-bots-design.md). */
+  rng: Rng
   /** Visits committed so far; numbers the next one. */
   visitCount: number
   /** seq of the next input log entry. */

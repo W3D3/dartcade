@@ -351,3 +351,72 @@ describe('engine persistence', () => {
     expect(restarted.getSnapshot(sessionId)).toEqual(live.getSnapshot(sessionId))
   })
 })
+
+describe('newSession rng', () => {
+  it('keeps a live Rng seeded from the session, continuing past what init consumed', () => {
+    const session = newSession({
+      id: 's1',
+      ownerUserId: 'chris',
+      boardId: null,
+      module: games.x01!,
+      config: games.x01!.defaultConfig,
+      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+      seed: 42,
+      createdAt: new Date(),
+    })
+    expect(typeof session.rng).toBe('function')
+    const a = session.rng()
+    const b = session.rng()
+    expect(a).not.toBe(b) // a continuing stream, not the same value called twice
+    expect(a).toBeGreaterThanOrEqual(0)
+    expect(a).toBeLessThan(1)
+  })
+
+  it('two sessions with the same seed draw the same sequence after init', () => {
+    const make = () =>
+      newSession({
+        id: 's1',
+        ownerUserId: 'chris',
+        boardId: null,
+        module: games.x01!,
+        config: games.x01!.defaultConfig,
+        seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+        seed: 7,
+        createdAt: new Date(),
+      })
+    const first = make()
+    const second = make()
+    expect(first.rng()).toBe(second.rng())
+    expect(first.rng()).toBe(second.rng())
+  })
+
+  it('replaying logged inputs never touches rng again (bot darts replay as recorded, not re-rolled)', () => {
+    const session = newSession({
+      id: 's1',
+      ownerUserId: 'chris',
+      boardId: null,
+      module: games.x01!,
+      config: games.x01!.defaultConfig,
+      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+      seed: 1,
+      createdAt: new Date(),
+    })
+    const before = session.rng()
+    const after1 = session.rng()
+    // A fresh rebuild from the same seed draws the exact same two values, proving replay()
+    // (called next, with however many logged rows) doesn't consume any more from the stream
+    const rebuilt = newSession({
+      id: 's1',
+      ownerUserId: 'chris',
+      boardId: null,
+      module: games.x01!,
+      config: games.x01!.defaultConfig,
+      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+      seed: 1,
+      createdAt: new Date(),
+    })
+    replay(rebuilt, [], () => undefined) // an empty log: nothing to replay
+    expect(rebuilt.rng()).toBe(before)
+    expect(rebuilt.rng()).toBe(after1)
+  })
+})

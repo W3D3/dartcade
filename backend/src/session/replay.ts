@@ -42,7 +42,8 @@ export function newSession(a: {
   lobbyName?: string | null
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
-  const initial = a.module.init(a.config, players, seededRng(a.seed))
+  const rng = seededRng(a.seed)
+  const initial = a.module.init(a.config, players, rng)
   return {
     id: a.id,
     ownerUserId: a.ownerUserId,
@@ -57,6 +58,7 @@ export function newSession(a: {
     status: 'active',
     createdAt: a.createdAt,
     seed: a.seed,
+    rng,
     visitCount: 0,
     nextSeq: 0,
     totalDarts: Array<number>(players.length).fill(0),

@@ -2,11 +2,13 @@ import { describe, it, expect } from 'vitest'
 import { applyInput, awaitsFinish, type GameInput } from './apply.js'
 import { atcModule } from '../games/atc.js'
 import { x01Module } from '../games/x01.js'
+import { seededRng } from './rng.js'
 import type { AnyGameModule, Session, Segment } from './types.js'
 
 function session(module: AnyGameModule, config: Record<string, unknown>, n = 1): Session {
   const players = Array.from({ length: n }, (_, i) => ({ name: `P${i}` }))
-  const s = module.init(config, players)
+  const rng = seededRng(0)
+  const s = module.init(config, players, rng)
   return {
     id: 's1',
     ownerUserId: 'u1',
@@ -23,6 +25,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
     status: 'active',
     createdAt: new Date(0),
     seed: 0,
+    rng,
     visitCount: 0,
     nextSeq: 0,
     totalDarts: Array<number>(n).fill(0),
