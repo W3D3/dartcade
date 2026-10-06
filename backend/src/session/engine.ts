@@ -515,6 +515,10 @@ export class SessionEngine {
       return
     }
     this.index(session)
+    // A bot seat up in a session rebuilt at startup would otherwise just sit there until a
+    // human acts (the scheduler only ever runs from push) — an all-bot game would never
+    // resume at all. Safe even if the session somehow isn't x01: onChange no-ops for that.
+    this.botScheduler.onChange(session)
   }
 
   getSnapshot(sessionId: string, view: SnapshotView = NO_VIEWER): Snapshot | undefined {
