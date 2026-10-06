@@ -21,7 +21,16 @@ const dart = {
 describe('module detail() matches schema/api-v1.yaml', () => {
   it('X01Detail', () => {
     const s = x01Game.init(
-      { startScore: 301, inMode: 'straight', outMode: 'double', bullOff: 'off', botSpeed: 'normal', bullValue: '25_50', maxRounds: 50, firstTo: 1 },
+      {
+        startScore: 301,
+        inMode: 'straight',
+        outMode: 'double',
+        bullOff: 'off',
+        botSpeed: 'normal',
+        bullValue: '25_50',
+        maxRounds: 50,
+        firstTo: 1,
+      },
       [{ name: 'A' }],
     )
     const end = { ...s, scores: [241] }

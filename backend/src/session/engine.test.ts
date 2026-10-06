@@ -782,7 +782,7 @@ describe('rebuild resumes a bot', () => {
     vi.useRealTimers()
   })
 
-  it("a session rebuilt at startup with a bot seat up throws on its own, without any human action", async () => {
+  it('a session rebuilt at startup with a bot seat up throws on its own, without any human action', async () => {
     const store = makeStore()
     store.getActiveSessions.mockResolvedValue([
       {
