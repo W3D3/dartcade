@@ -500,6 +500,17 @@ describe('view', () => {
     const s = x01Game.init({ ...x01Game.defaultConfig, botSpeed: 'fast' }, players)
     expect(x01Game.view(s, players).config.botSpeed).toBe('fast')
   })
+
+  it("defaults botSpeed to 'normal' when a session started before the field existed has none stored", () => {
+    // A pre-botSpeed session's stored config has no such key at all (its startPlan-merged
+    // defaults predate the field, and rebuildOne doesn't re-merge current defaults on
+    // restore) — view() must not omit the (schema-required) field just because cfg lacks it.
+    const players = [{ name: 'Christoph' }]
+    const s = makeState({})
+    const { botSpeed: _omit, ...cfgWithoutBotSpeed } = s.cfg
+    const old = { ...s, cfg: cfgWithoutBotSpeed as unknown as typeof s.cfg }
+    expect(x01Game.view(old, players).config.botSpeed).toBe('normal')
+  })
 })
 
 describe('bull as a double, leaving 1', () => {

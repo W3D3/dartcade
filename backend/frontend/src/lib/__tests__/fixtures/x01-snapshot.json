@@ -34,7 +34,8 @@
     "config": {
       "outMode": "double",
       "startScore": 501,
-      "inMode": "straight"
+      "inMode": "straight",
+      "botSpeed": "normal"
     },
     "visitLocked": false,
     "bullOff": null,
@@ -74,7 +75,8 @@
       "boardOnline": true,
       "controllerConnected": true,
       "disconnectedAt": null,
-      "forfeited": false
+      "forfeited": false,
+      "bot": null
     },
     {
       "controllerUserId": "u1",
@@ -84,7 +86,8 @@
       "boardOnline": true,
       "controllerConnected": true,
       "disconnectedAt": null,
-      "forfeited": false
+      "forfeited": false,
+      "bot": null
     }
   ],
   "mySeats": [

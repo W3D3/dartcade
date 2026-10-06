@@ -85,6 +85,17 @@ function meetsMode(dart: Dart, mode: 'straight' | 'double' | 'master'): boolean 
 /** Nothing can finish from 1 unless any dart may finish. */
 const deadEnd = (score: number, outMode: 'straight' | 'double' | 'master') => score === 1 && outMode !== 'straight'
 
+// A session started before botSpeed existed has no such key in its stored config at all (its
+// startPlan-merged defaults predate the field, and rebuildOne doesn't re-merge current defaults
+// on restore) — defaulted here, at read time, rather than needing a migration. `X01Config` says
+// it's always present, which is true for everything *written* from now on, but not for what may
+// already be sitting in the database; the cast reflects that gap honestly instead of asserting
+// past it.
+function readBotSpeed(cfg: X01Config): X01Config['botSpeed'] {
+  const maybePartial: Partial<X01Config> = cfg
+  return maybePartial.botSpeed ?? 'normal'
+}
+
 // The open turn's position in `order`. A state that only names `currentPlayer` (in
 // singles every seat appears once in `order`) falls back to that seat's position.
 function position(s: X01State): number {
@@ -379,7 +390,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       winner: s.winner === null ? null : s.teamOf.indexOf(s.winner),
       opened: s.teamOf.map(t => s.opened[t]),
       bustThisVisit: s.bustThisVisit,
-      config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode, botSpeed: s.cfg.botSpeed },
+      config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode, botSpeed: readBotSpeed(s.cfg) },
       visitLocked: s.bustThisVisit || s.scores[s.teamOf[s.currentPlayer]] === 0,
     }
     if (s.cfg.format !== 'teams') return view
