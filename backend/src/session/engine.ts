@@ -522,7 +522,8 @@ export class SessionEngine {
     this.index(session)
     // A bot seat up in a session rebuilt at startup would otherwise just sit there until a
     // human acts (the scheduler only ever runs from push) — an all-bot game would never
-    // resume at all. Safe even if the session somehow isn't x01: onChange no-ops for that.
+    // resume at all. Safe even if the module doesn't define botTarget: onChange no-ops when a
+    // session's module isn't bot-capable.
     this.botScheduler.onChange(session)
   }
 
