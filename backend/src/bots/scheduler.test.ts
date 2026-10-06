@@ -1,9 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SessionEngine, type EngineStore } from '../session/engine.js'
-import type { Seat } from '../session/types.js'
+import type { AnyGameModule, GameModule, Seat } from '../session/types.js'
 import type { X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
+import { games } from '../games/index.js'
 
 const seat = (name: string, controllerUserId: string, boardId: string | null, bot: { level: number } | null = null): Seat => ({
   name,
@@ -250,5 +251,72 @@ describe('bot scheduler', () => {
       await vi.advanceTimersByTimeAsync(5000)
     }
     expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+  })
+})
+
+describe('bot scheduler: genericity (a module the scheduler has never heard of)', () => {
+  type FakeState = { currentPlayer: number; dartsThisVisit: number; visitsWon: number; winner: number | null }
+  type FakeView = { winner: number | null; visitLocked: boolean; config: { botSpeed: 'fast' | 'normal' | 'slow' } }
+
+  // A game the scheduler has no built-in knowledge of, with rules that look nothing like
+  // X01's (no scores, no checkout, no bull, no treble 20): win after two visits of three
+  // darts each. Its botTarget always aims at the same fixed point, never reaching for X01's
+  // pickTarget/checkoutHint or any other scoring logic — if the scheduler only drives this
+  // correctly by accident of some leftover X01 assumption, this test is the one that catches
+  // it (it would fail if scheduler.ts ever re-narrowed to `session.module.id === 'x01'`, or
+  // read X01-shaped view fields like `scores`/`opened` that this module's view doesn't have).
+  const fakeModule: GameModule<FakeState, Record<string, never>, FakeView, 'fake-bot-game'> = {
+    id: 'fake-bot-game',
+    version: 1,
+    defaultConfig: {},
+    init: () => ({ currentPlayer: 0, dartsThisVisit: 0, visitsWon: 0, winner: null }),
+    getCurrentPlayer: s => s.currentPlayer,
+    onBoardEvent: (s, e) => {
+      if (e.kind === 'dart.detected') return { state: { ...s, dartsThisVisit: s.dartsThisVisit + 1 } }
+      if (e.kind === 'takeout.finished') {
+        const visitsWon = s.visitsWon + 1
+        return { state: { ...s, dartsThisVisit: 0, visitsWon, winner: visitsWon >= 2 ? 0 : null } }
+      }
+      return { state: s }
+    },
+    onUserAction: s => ({ state: s }),
+    view: s => ({ winner: s.winner, visitLocked: false, config: { botSpeed: 'fast' } }),
+    summarize: () => [{ placement: 1, stats: {} }],
+    detail: () => ({}),
+    // Trivial and deterministic: always the same fixed point until three darts are in, then
+    // takeout. Nothing like X01's checkout-hint/treble-20 aiming.
+    botTarget: (_s, _seatIndex, dartsThrown) => (dartsThrown >= 3 ? 'takeout' : { x: 10, y: 10 }),
+  }
+
+  // Registered only for this describe block, exactly like a real game would be registered in
+  // games/index.ts — but this one never is, which is the point: it's not one of the two real
+  // modules the lobby guard (supportsBots) or the frontend know about, only something this
+  // test wires in directly to drive the scheduler through the real engine.
+  beforeEach(() => {
+    games['fake-bot-game'] = fakeModule as unknown as AnyGameModule
+  })
+  afterEach(() => {
+    Reflect.deleteProperty(games, 'fake-bot-game')
+  })
+
+  it('drives a bot seat purely through botTarget, with no game-specific knowledge', async () => {
+    const push = vi.fn()
+    const engine = new SessionEngine(makeStore(), push)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'fake-bot-game',
+      config: {},
+      seats: [seat('Bot', 'chris', null, { level: 5 })],
+    })
+    for (let i = 0; i < 200; i++) {
+      const snap = engine.getSnapshot(sessionId)
+      if (!snap || snap.status !== 'active') break
+      await vi.advanceTimersByTimeAsync(5000)
+    }
+    const session = engine.getSession(sessionId)
+    expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+    // Proves the fake module's own (non-X01) win condition actually ran to completion, not
+    // some accidental pass-through.
+    expect((session?.committedState as FakeState | undefined)?.visitsWon).toBe(2)
   })
 })
