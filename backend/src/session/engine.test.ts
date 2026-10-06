@@ -1124,6 +1124,23 @@ describe('remote states in the snapshot', () => {
     expect(snap?.seats[1]).toMatchObject({ controllerConnected: false, disconnectedAt: null })
   })
 
+  it("shows a bot seat as connected even when its host's own browser is gone", async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'host',
+      gameId: 'x01',
+      config: x01Module.defaultConfig,
+      seats: [{ ...seat('Bot Lvl 3', 'host', null, null), bot: { level: 3 } }, seat('Lena', 'lena', 'board-b')],
+    })
+    // The host (who controls the bot seat) has no open connection at all, and has been gone
+    // a while — the bot keeps throwing server-side regardless, so it must still read connected.
+    const snap = engine.getSnapshot(
+      sessionId,
+      view({ connectedUserIds: new Set(['lena']), disconnectedAt: u => (u === 'host' ? left : null) }),
+    )
+    expect(snap?.seats[0]).toMatchObject({ controllerConnected: true, disconnectedAt: null })
+  })
+
   it('carries the lobby name: null outside a lobby', async () => {
     const { engine, sessionId } = await twoBoardGame()
     expect(engine.getSnapshot(sessionId)?.lobbyName).toBeNull()
