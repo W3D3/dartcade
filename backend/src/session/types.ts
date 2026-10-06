@@ -29,6 +29,9 @@ export type {
 
 export type Player = { name: string }
 
+/** A point in board units (see backend/src/shared/board.ts) — what botTarget aims a dart at. */
+export type Point = { x: number; y: number }
+
 /** A bot seat's only setting: how accurate it is (see backend/src/bots/levels.ts). */
 export type BotConfig = { level: number }
 
@@ -139,6 +142,18 @@ export interface GameModule<
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }
   onUserAction(s: S, a: UserAction): { state: S; effects?: Effect[] }
   view(s: S, players: Player[]): V
+  /**
+   * Where seat `seatIndex` (which is up, and is a bot) should aim its next dart, given the
+   * game's own state and how many darts it's thrown so far this visit (0-2). Returns
+   * `'takeout'` when the visit is over and the bot should take its darts out instead of
+   * throwing. A module that doesn't define this can't have a bot seat — see
+   * LobbyService.addGuest and games/index.ts's `supportsBots`. `dartsThrown` is passed in
+   * (rather than derived by the module itself) because it's engine-level truth
+   * (session.openVisitEvents), not something every game's own state necessarily tracks the
+   * same way. A bull off (any wrapped game) is handled by the scheduler itself, never through
+   * this hook — see backend/src/bots/scheduler.ts.
+   */
+  botTarget?(s: S, seatIndex: number, dartsThrown: number): Point | 'takeout' | null
   /** The leg the current visit belongs to (0-based); single-leg games leave it out. */
   getLeg?(s: S): number
   /** The result once the game is won: one entry per seat, in seat order. */

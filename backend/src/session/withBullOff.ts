@@ -51,11 +51,15 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
   }
 
   const teamsOf = game.teamsOf?.bind(game)
+  const botTarget = game.botTarget?.bind(game)
   return {
     id: game.id,
     version: game.version,
     teams: game.teams,
     teamsOf: teamsOf && (s => teamsOf(s.game)),
+    // The wrapped game only ever sees its own state; a bull-off throw is handled by the
+    // scheduler itself (see backend/src/bots/scheduler.ts), never through this hook.
+    botTarget: botTarget && ((s, seatIndex, dartsThrown) => botTarget(s.game, seatIndex, dartsThrown)),
     getLeg: s => game.getLeg?.(s.game) ?? 0,
     summarize: (s, ctx) => game.summarize(s.game, ctx),
     // Empty when the game has no throw order of its own (results() then uses seat order)

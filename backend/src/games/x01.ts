@@ -1,7 +1,8 @@
-import type { GameModule, BoardEvent, Player, Dart, ConfigFieldMeta, X01Detail, SeatResult } from '../session/types.js'
+import type { GameModule, BoardEvent, Player, Dart, ConfigFieldMeta, Point, X01Detail, SeatResult } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
 import type { X01View } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
+import { pickTarget } from '../bots/accuracy.js'
 import { rankSeats } from './ranking.js'
 import { seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, type TeamsConfig } from './teams.js'
 
@@ -402,6 +403,18 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       legs: s.legs[t],
     }))
     return { ...view, teams }
+  },
+
+  // Reads state directly rather than going through view(): botTarget's signature has no
+  // `players` argument (it's never needed here — only scores/config/opened are), and the raw
+  // state is simpler and more direct than reconstructing the same values from the view's
+  // per-seat arrays. A bull off is not X01's concern — the scheduler aims at the bull itself
+  // without ever calling this (see backend/src/bots/scheduler.ts).
+  botTarget(s: X01State, seatIndex: number, dartsThrown: number): Point | 'takeout' | null {
+    const t = s.teamOf[seatIndex]
+    const visitOver = s.bustThisVisit || s.scores[t] === 0 || dartsThrown >= 3 || s.winner !== null
+    if (visitOver) return 'takeout'
+    return pickTarget(s.scores[t] ?? 0, 3 - dartsThrown, s.cfg.outMode, { opened: s.opened[t] ?? true, inMode: s.cfg.inMode })
   },
 
   getLeg(s: X01State): number {
