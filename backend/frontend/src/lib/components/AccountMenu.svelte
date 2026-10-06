@@ -12,8 +12,8 @@
   import DevUserSwitch from './DevUserSwitch.svelte'
   import ErrorText from './ErrorText.svelte'
   import NavBadge from './NavBadge.svelte'
-  import StatusDot from './friends/StatusDot.svelte'
   import StatusOption from './friends/StatusOption.svelte'
+  import StatusRing from './friends/StatusRing.svelte'
 
   let { placement = 'header' }: { placement?: 'header' | 'rail' | 'sidebar' } = $props()
 
@@ -60,9 +60,9 @@
 <svelte:window onkeydown={onKeydown} />
 
 {#snippet avatar(size: number)}
-  <span class="relative shrink-0">
+  <span class="relative shrink-0 m-1">
     <Avatar {name} tone="accent" {size} />
-    <StatusDot kind={invisible ? 'offline' : 'online'} class="absolute -right-[2px] -bottom-[2px]" />
+    <StatusRing kind={invisible ? 'offline' : 'online'} />
   </span>
 {/snippet}
 
