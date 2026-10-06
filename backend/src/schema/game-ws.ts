@@ -204,6 +204,12 @@ export interface SeatInfo {
    */
   disconnectedAt: string | null
   forfeited: boolean
+  /**
+   * The server throws for this seat itself, at this difficulty 1-10; null for a human or guest.
+   */
+  bot: {
+    level: number
+  } | null
 }
 /**
  * A transient hint for this viewer, e.g. a dart thrown on a board that isn't up.

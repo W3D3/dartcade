@@ -74,8 +74,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
         rng_seed: 0,
         config: { throwAgainOnAllHit: false },
         players: [
-          { name: 'Alice', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null },
-          { name: 'Bob', user_id: null, controller_user_id: 'u-test-1', board_db_id: null },
+          { name: 'Alice', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
+          { name: 'Bob', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
         ],
       })
       const rows = await getActiveGameSessions(db)
@@ -138,8 +138,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
         rng_seed: 7,
         config: { startScore: 301 },
         players: [
-          { name: 'Test', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null },
-          { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null },
+          { name: 'Test', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
+          { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
         ],
       })
 
@@ -295,8 +295,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
         rng_seed: 0,
         config: {},
         players: [
-          { name: 'Gone', user_id: 'u-gone', controller_user_id: 'u-test-1', board_db_id: null },
-          { name: 'Other', user_id: 'u-test-2', controller_user_id: 'u-test-1', board_db_id: null },
+          { name: 'Gone', user_id: 'u-gone', controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
+          { name: 'Other', user_id: 'u-test-2', controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
         ],
       })
       await db.deleteFrom('user').where('id', '=', 'u-gone').execute()
@@ -367,14 +367,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
         rng_seed: 1,
         config: {},
         players: [
-          { name: 'Christoph', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: 'mb-1' },
-          { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null },
+          { name: 'Christoph', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: 'mb-1', bot_level: null },
+          { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, bot_level: null },
         ],
       })
       const row = (await getActiveGameSessions(db)).find(s => s.id === 'mp-1')
       expect(row?.players).toEqual([
-        { name: 'Christoph', user_id: 'u-test-1', controller_user_id: 'u-test-1', board_db_id: 'mb-1', board_name: 'Living room' },
-        { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, board_name: null },
+        {
+          name: 'Christoph',
+          user_id: 'u-test-1',
+          controller_user_id: 'u-test-1',
+          board_db_id: 'mb-1',
+          board_name: 'Living room',
+          bot_level: null,
+        },
+        { name: 'Guest', user_id: null, controller_user_id: 'u-test-1', board_db_id: null, board_name: null, bot_level: null },
       ])
       expect(await hasActiveSessionOnBoard(db, 'mb-1')).toBe(true)
     })

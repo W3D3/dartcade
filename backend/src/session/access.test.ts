@@ -10,6 +10,7 @@ const seat = (name: string, controllerUserId: string, boardId: string | null): S
   controllerUserId,
   boardId,
   boardName: null,
+  bot: null,
 })
 
 function game(seats: Seat[], owner = 'host') {
@@ -113,7 +114,7 @@ describe('canWatchSession', () => {
       seed: 1,
       createdAt: new Date(),
       lobbyId: 'l1',
-      seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null }],
+      seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null, bot: null }],
     })
 
   it("lets the lobby's members watch its game, besides the host and controllers", async () => {
@@ -133,7 +134,7 @@ describe('canWatchSession', () => {
       config: x01Module.defaultConfig,
       seed: 1,
       createdAt: new Date(),
-      seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null }],
+      seats: [{ name: 'Host', userId: 'host', controllerUserId: 'host', boardId: null, boardName: null, bot: null }],
     })
     expect(await canWatchSession('lena', local, isMember)).toBe(false)
     expect(isMember).not.toHaveBeenCalled()

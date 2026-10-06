@@ -33,8 +33,8 @@ describe('two players, two boards', () => {
       gameId: 'x01',
       config: x01Module.defaultConfig,
       seats: [
-        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'a', boardName: 'Living room' },
-        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'b', boardName: "Lena's place" },
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'a', boardName: 'Living room', bot: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'b', boardName: "Lena's place", bot: null },
       ],
     })
     const hostWs = sock()
@@ -82,8 +82,8 @@ describe('two players, two boards', () => {
       gameId: 'x01',
       config: x01Module.defaultConfig,
       seats: [
-        { name: 'Host', userId: 'host2', controllerUserId: 'host2', boardId: 'c', boardName: 'Living room' },
-        { name: 'Lena', userId: 'lena2', controllerUserId: 'lena2', boardId: 'd', boardName: "Lena's place" },
+        { name: 'Host', userId: 'host2', controllerUserId: 'host2', boardId: 'c', boardName: 'Living room', bot: null },
+        { name: 'Lena', userId: 'lena2', controllerUserId: 'lena2', boardId: 'd', boardName: "Lena's place", bot: null },
       ],
     })
     const hostWs = sock()

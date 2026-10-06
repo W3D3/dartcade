@@ -168,8 +168,8 @@ describe('lobbySummary', () => {
       lobbyId: 'l1',
       lobbyName: lobby.name,
       seats: [
-        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null },
-        { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null },
+        { name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null, bot: null },
+        { name: 'Max', userId: 'max', controllerUserId: 'max', boardId: null, boardName: null, bot: null },
       ],
     })
     const session = engine.getSession(sessionId)

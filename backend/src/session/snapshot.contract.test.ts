@@ -93,8 +93,8 @@ describe('snapshots match schema/game-ws-v1.json', () => {
       gameId: 'x01',
       config: x01Module.defaultConfig,
       seats: [
-        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: 'Kitchen' },
-        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null },
+        { name: 'Host', userId: 'host', controllerUserId: 'host', boardId: 'board-a', boardName: 'Kitchen', bot: null },
+        { name: 'Lena', userId: 'lena', controllerUserId: 'lena', boardId: 'board-b', boardName: null, bot: null },
       ],
     })
     await e.onBridgeEvent('board-a', 'board.status', { status: 'Throw', running: true, event: 'x' })

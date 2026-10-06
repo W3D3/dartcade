@@ -173,6 +173,7 @@ describe('the input log', () => {
         controllerUserId: 'user-1',
         boardId: 'board-1',
         boardName: null,
+        bot: null,
       })),
       seed: row.rng_seed,
       createdAt: row.created_at,
@@ -325,7 +326,7 @@ describe('engine persistence', () => {
       game_version: 1,
       rng_seed: 0,
       config: {},
-      players: [{ name: 'A', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null }],
+      players: [{ name: 'A', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: null, bot_level: null }],
       status: 'active',
       created_at: new Date(),
     })
@@ -360,7 +361,7 @@ describe('newSession rng', () => {
       boardId: null,
       module: games.x01!,
       config: games.x01!.defaultConfig,
-      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null, bot: null }],
       seed: 42,
       createdAt: new Date(),
     })
@@ -380,7 +381,7 @@ describe('newSession rng', () => {
         boardId: null,
         module: games.x01!,
         config: games.x01!.defaultConfig,
-        seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+        seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null, bot: null }],
         seed: 7,
         createdAt: new Date(),
       })
@@ -397,7 +398,7 @@ describe('newSession rng', () => {
       boardId: null,
       module: games.x01!,
       config: games.x01!.defaultConfig,
-      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null, bot: null }],
       seed: 1,
       createdAt: new Date(),
     })
@@ -411,7 +412,7 @@ describe('newSession rng', () => {
       boardId: null,
       module: games.x01!,
       config: games.x01!.defaultConfig,
-      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null }],
+      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: null, boardName: null, bot: null }],
       seed: 1,
       createdAt: new Date(),
     })

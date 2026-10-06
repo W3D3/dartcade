@@ -88,6 +88,7 @@ async function lobbyGame() {
       controllerUserId: p.userId!,
       boardId: p.boardId,
       boardName: p.boardName,
+      bot: null,
     })),
   })
   // The lobby is loaded in this process, and both members have /ws/me open
@@ -148,7 +149,7 @@ describe('/ws/me during a lobby game', () => {
       config: x01Module.defaultConfig,
       lobbyId: 'l1',
       lobbyName: lobby.name,
-      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'living' }],
+      seats: [{ name: 'Christoph', userId: 'chris', controllerUserId: 'chris', boardId: 'living', boardName: 'living', bot: null }],
     })
     const meMessage = vi.spyOn(lobbies, 'meMessage')
     await lobbies.onSessionPush(next.sessionId)

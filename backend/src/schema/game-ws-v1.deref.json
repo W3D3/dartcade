@@ -807,7 +807,8 @@
         "boardOnline",
         "controllerConnected",
         "disconnectedAt",
-        "forfeited"
+        "forfeited",
+        "bot"
       ],
       "additionalProperties": false,
       "properties": {
@@ -856,6 +857,28 @@
         },
         "forfeited": {
           "type": "boolean"
+        },
+        "bot": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The server throws for this seat itself, at this difficulty 1-10; null for a human or guest."
         }
       }
     },
@@ -1478,7 +1501,8 @@
               "boardOnline",
               "controllerConnected",
               "disconnectedAt",
-              "forfeited"
+              "forfeited",
+              "bot"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1527,6 +1551,28 @@
               },
               "forfeited": {
                 "type": "boolean"
+              },
+              "bot": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "level"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "level": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The server throws for this seat itself, at this difficulty 1-10; null for a human or guest."
               }
             }
           },
@@ -1877,7 +1923,8 @@
               "boardOnline",
               "controllerConnected",
               "disconnectedAt",
-              "forfeited"
+              "forfeited",
+              "bot"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1926,6 +1973,28 @@
               },
               "forfeited": {
                 "type": "boolean"
+              },
+              "bot": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "level"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "level": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "The server throws for this seat itself, at this difficulty 1-10; null for a human or guest."
               }
             }
           },
@@ -2460,7 +2529,8 @@
                   "boardOnline",
                   "controllerConnected",
                   "disconnectedAt",
-                  "forfeited"
+                  "forfeited",
+                  "bot"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -2509,6 +2579,28 @@
                   },
                   "forfeited": {
                     "type": "boolean"
+                  },
+                  "bot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The server throws for this seat itself, at this difficulty 1-10; null for a human or guest."
                   }
                 }
               },
@@ -2859,7 +2951,8 @@
                   "boardOnline",
                   "controllerConnected",
                   "disconnectedAt",
-                  "forfeited"
+                  "forfeited",
+                  "bot"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -2908,6 +3001,28 @@
                   },
                   "forfeited": {
                     "type": "boolean"
+                  },
+                  "bot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "The server throws for this seat itself, at this difficulty 1-10; null for a human or guest."
                   }
                 }
               },

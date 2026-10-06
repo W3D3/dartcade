@@ -60,7 +60,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
         rng_seed: 1,
         config: {},
         lobby_id: 'l1',
-        players: [{ name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null }],
+        players: [{ name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null, bot_level: null }],
       })
       const game = (await getActiveGameSessions(db)).find(s => s.id === 'g1')
       expect(game).toMatchObject({ lobby_id: 'l1', lobby_name: "Christoph's lobby" })
@@ -75,7 +75,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
         game_version: 1,
         rng_seed: 1,
         config: {},
-        players: [{ name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null }],
+        players: [{ name: 'Christoph', user_id: 'chris', controller_user_id: 'chris', board_db_id: null, bot_level: null }],
       })
       const game = (await getActiveGameSessions(db)).find(s => s.id === 'g-local')
       expect(game).toMatchObject({ lobby_id: null, lobby_name: null })
@@ -151,7 +151,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('lobby tables', () => {
         game_version: 1,
         rng_seed: 1,
         config: {},
-        players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: 'lenas' }],
+        players: [{ name: 'Lena', user_id: 'lena', controller_user_id: 'lena', board_db_id: 'lenas', bot_level: null }],
       })
       await insertLobby(
         db,

@@ -14,7 +14,7 @@ export function buildDetail(game: HistoryGame, events: LoggedInput[], warn: Warn
     boardId: null,
     module: mod,
     config: config.data,
-    seats: game.seats.map(s => ({ name: s.name, userId: null, controllerUserId: '', boardId: null, boardName: null })),
+    seats: game.seats.map(s => ({ name: s.name, userId: null, controllerUserId: '', boardId: null, boardName: null, bot: null })),
     seed: game.rng_seed,
     createdAt: game.created_at,
   })
