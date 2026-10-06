@@ -182,6 +182,36 @@ describe('bot scheduler', () => {
     expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
   })
 
+  it("a warn that itself throws inside the failure handler never becomes an unhandled rejection either", async () => {
+    const push = vi.fn()
+    const store = { ...makeStore(), appendEvent: vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(undefined) }
+    // The logger itself fails on this call — the scenario the reviewer demonstrated: without a
+    // try/catch around the catch body, this throw becomes a second unhandled rejection, the
+    // exact class of crash the outer catch was added to prevent, just one layer deeper.
+    const warn = vi.fn(() => {
+      throw new Error('logger down too')
+    })
+    const engine = new SessionEngine(store, push, warn)
+    await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'x01',
+      config: { ...x01Module.defaultConfig, startScore: 121, botSpeed: 'fast' },
+      seats: [seat('Bot Lvl 10', 'chris', null, { level: 10 })],
+    })
+    const unhandled = vi.fn()
+    process.on('unhandledRejection', unhandled)
+    try {
+      // Enough time for the bot's first (failing) action attempt to run; the retry it would
+      // normally schedule never happens here since the throwing warn aborts before reaching
+      // it, but nothing must crash as a result.
+      await vi.advanceTimersByTimeAsync(5000)
+    } finally {
+      process.off('unhandledRejection', unhandled)
+    }
+    expect(warn).toHaveBeenCalled()
+    expect(unhandled).not.toHaveBeenCalled()
+  })
+
   it('a bot under double-in aims at a double (not T20) until it opens, and the leg still finishes', async () => {
     const push = vi.fn()
     const engine = new SessionEngine(makeStore(), push)
