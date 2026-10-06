@@ -12,6 +12,7 @@ import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameErro
 import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
+import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
 
 type PushFn = (sessionId: string) => void
 
@@ -161,15 +162,31 @@ export class SessionEngine {
   // log's order is the order they were applied in
   private readonly queues = new KeyedQueue()
 
+  private bots: BotScheduler | undefined
+
   constructor(
     private readonly store: EngineStore,
-    private readonly push: PushFn,
+    private readonly pushRaw: PushFn,
     private readonly warn: WarnFn = () => undefined,
     private readonly notify: NotifyFn = () => undefined,
     private readonly ended: EndedFn = () => undefined,
     private readonly started: StartedFn = () => undefined,
     private readonly opts: EngineOptions = {},
   ) {}
+
+  // Pushes the snapshot, then lets any bot whose turn it now is schedule its next move. A
+  // getter, not eager construction in the constructor, so createBotScheduler (which takes
+  // `this`) only ever sees a fully-constructed engine.
+  private get botScheduler(): BotScheduler {
+    this.bots ??= createBotScheduler(this)
+    return this.bots
+  }
+
+  private push(sessionId: string): void {
+    this.pushRaw(sessionId)
+    const session = this.byId.get(sessionId)
+    if (session) this.botScheduler.onChange(session)
+  }
 
   async create(
     ownerUserId: string,
@@ -253,6 +270,9 @@ export class SessionEngine {
       throw err
     }
     await this.notifyStarted({ sessionId, userIds: seatedUserIds(session) })
+    // No watcher is subscribed yet (pushRaw is then a no-op), but a bot seated first needs
+    // this to get its first turn scheduled — the scheduler only ever runs from push.
+    this.push(sessionId)
     return { sessionId }
   }
 
@@ -593,6 +613,7 @@ export class SessionEngine {
     this.evictions.delete(session.id)
     if (this.byId.get(session.id) !== session) return
     this.byId.delete(session.id)
+    this.bots?.stop(session.id)
     this.opts.forgotten?.(session.id)
   }
 }
