@@ -47,7 +47,11 @@
       <div class="flex-grow min-w-0">
         <AddSomeone exclude={alreadyInOrInvited(lobby)} {onguest} {oninvite} />
       </div>
-      <AddBot {onbot} />
+      <!-- Bots only know how to play X01 (the scheduler drives them); the server would refuse
+           one anywhere else, so don't even offer it. -->
+      {#if lobby.nextGame?.gameId === 'x01'}
+        <AddBot {onbot} />
+      {/if}
     </div>
   {/snippet}
 </PeopleList>
