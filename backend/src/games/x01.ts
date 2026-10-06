@@ -14,6 +14,8 @@ export type X01Config = {
   bullValue: '25_50' | '50_50'
   maxRounds: number
   firstTo: number
+  /** How fast a bot seat throws. Only shown in GameSettings when a bot is in the lobby. */
+  botSpeed: 'fast' | 'normal' | 'slow'
 } & TeamsConfig
 
 /**
@@ -191,6 +193,15 @@ export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>,
       { value: 'pdc', label: 'PDC' },
     ],
   },
+  botSpeed: {
+    label: 'Bot speed',
+    tooltip: 'How fast a bot seat throws its darts.',
+    options: [
+      { value: 'fast', label: 'Fast' },
+      { value: 'normal', label: 'Normal' },
+      { value: 'slow', label: 'Slow' },
+    ],
+  },
   bullValue: {
     label: 'Bull value',
     tooltip: 'Score of the outer bull (25). 50/50: both bulls score 50 points.',
@@ -218,6 +229,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
     inMode: 'straight',
     outMode: 'double',
     bullOff: 'off',
+    botSpeed: 'normal',
     bullValue: '25_50',
     maxRounds: 50,
     firstTo: 3,
@@ -367,7 +379,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       winner: s.winner === null ? null : s.teamOf.indexOf(s.winner),
       opened: s.teamOf.map(t => s.opened[t]),
       bustThisVisit: s.bustThisVisit,
-      config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode },
+      config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode, botSpeed: s.cfg.botSpeed },
       visitLocked: s.bustThisVisit || s.scores[s.teamOf[s.currentPlayer]] === 0,
     }
     if (s.cfg.format !== 'teams') return view

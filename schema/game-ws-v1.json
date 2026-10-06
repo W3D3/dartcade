@@ -97,12 +97,13 @@
         "bustThisVisit": { "type": "boolean" },
         "config": {
           "type": "object",
-          "required": ["outMode", "startScore", "inMode"],
+          "required": ["outMode", "startScore", "inMode", "botSpeed"],
           "additionalProperties": false,
           "properties": {
             "outMode": { "type": "string", "enum": ["straight", "double", "master"] },
             "startScore": { "type": "integer", "minimum": 2 },
-            "inMode": { "type": "string", "enum": ["straight", "double", "master"] }
+            "inMode": { "type": "string", "enum": ["straight", "double", "master"] },
+            "botSpeed": { "type": "string", "enum": ["fast", "normal", "slow"] }
           }
         },
         "visitLocked": { "type": "boolean" },

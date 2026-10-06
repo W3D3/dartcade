@@ -22,6 +22,7 @@ const cfg: X01Config = {
   inMode: 'straight',
   outMode: 'straight',
   bullOff: 'off',
+  botSpeed: 'normal',
   bullValue: '25_50',
   maxRounds: 50,
   firstTo: 1,
