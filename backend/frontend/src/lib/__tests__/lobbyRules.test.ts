@@ -35,6 +35,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   ready: false,
   team: null,
   presence: null,
+  bot: null,
   ...over,
 })
 const chris = person({

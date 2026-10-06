@@ -41,6 +41,7 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
       ready: effectiveReady(lobby, p),
       team: p.team,
       presence: p.userId === null ? null : ctx.online.has(p.userId) ? 'online' : 'away',
+      bot: p.bot,
     })),
     invites: lobby.invites.map(i => ({
       id: i.id,

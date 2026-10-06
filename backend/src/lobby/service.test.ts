@@ -647,6 +647,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await expect(lobbies.addGuest('chris', id, { name: ' ' })).rejects.toMatchObject({ statusCode: 400 })
     })
 
+    it('adds a bot: no board, always ready, a given level', async () => {
+      const { id: botId } = await lobbies.addGuest('chris', id, { name: 'Bot Lvl 4', bot: { level: 4 } })
+      expect(await person('Bot Lvl 4')).toMatchObject({ id: botId, userId: null, boardId: null, ready: true, bot: { level: 4 } })
+    })
+
+    it('ignores a boardId passed alongside bot: a bot never has a board', async () => {
+      await lobbies.addGuest('chris', id, { name: 'Bot Lvl 1', boardId: 'living', bot: { level: 1 } })
+      expect(await person('Bot Lvl 1')).toMatchObject({ boardId: null })
+    })
+
     it('anyone gives a person on Manual one of their own boards, marked as moved', async () => {
       await lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' })
       expect(await person('Max')).toMatchObject({ boardId: 'garage', boardName: 'Garage', boardMovedBy: 'chris' })

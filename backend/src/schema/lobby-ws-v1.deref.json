@@ -43,7 +43,7 @@
     },
     "LobbyPerson": {
       "title": "LobbyPerson",
-      "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+      "description": "A member (userId set), a guest at a member's board (userId null), or a bot (userId null, bot set), in lobby order.",
       "type": "object",
       "required": [
         "id",
@@ -59,7 +59,8 @@
         "plays",
         "ready",
         "team",
-        "presence"
+        "presence",
+        "bot"
       ],
       "additionalProperties": false,
       "properties": {
@@ -155,6 +156,28 @@
             }
           ],
           "description": "Members: online while they have the lobby open. null for guests."
+        },
+        "bot": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "level"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "A bot's difficulty 1-10; null for a member or guest."
         }
       }
     },
@@ -475,7 +498,7 @@
           "type": "array",
           "items": {
             "title": "LobbyPerson",
-            "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+            "description": "A member (userId set), a guest at a member's board (userId null), or a bot (userId null, bot set), in lobby order.",
             "type": "object",
             "required": [
               "id",
@@ -491,7 +514,8 @@
               "plays",
               "ready",
               "team",
-              "presence"
+              "presence",
+              "bot"
             ],
             "additionalProperties": false,
             "properties": {
@@ -587,6 +611,28 @@
                   }
                 ],
                 "description": "Members: online while they have the lobby open. null for guests."
+              },
+              "bot": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "level"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "level": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "A bot's difficulty 1-10; null for a member or guest."
               }
             }
           }
@@ -876,7 +922,7 @@
               "type": "array",
               "items": {
                 "title": "LobbyPerson",
-                "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+                "description": "A member (userId set), a guest at a member's board (userId null), or a bot (userId null, bot set), in lobby order.",
                 "type": "object",
                 "required": [
                   "id",
@@ -892,7 +938,8 @@
                   "plays",
                   "ready",
                   "team",
-                  "presence"
+                  "presence",
+                  "bot"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -988,6 +1035,28 @@
                       }
                     ],
                     "description": "Members: online while they have the lobby open. null for guests."
+                  },
+                  "bot": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ],
+                    "description": "A bot's difficulty 1-10; null for a member or guest."
                   }
                 }
               }
@@ -1300,7 +1369,7 @@
                   "type": "array",
                   "items": {
                     "title": "LobbyPerson",
-                    "description": "A member (userId set) or a guest at a member's board (userId null), in lobby order.",
+                    "description": "A member (userId set), a guest at a member's board (userId null), or a bot (userId null, bot set), in lobby order.",
                     "type": "object",
                     "required": [
                       "id",
@@ -1316,7 +1385,8 @@
                       "plays",
                       "ready",
                       "team",
-                      "presence"
+                      "presence",
+                      "bot"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -1412,6 +1482,28 @@
                           }
                         ],
                         "description": "Members: online while they have the lobby open. null for guests."
+                      },
+                      "bot": {
+                        "anyOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "level"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "level": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 10
+                              }
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ],
+                        "description": "A bot's difficulty 1-10; null for a member or guest."
                       }
                     }
                   }

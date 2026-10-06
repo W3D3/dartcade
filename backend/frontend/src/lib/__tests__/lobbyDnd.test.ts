@@ -17,6 +17,7 @@ const person = (id: string, team: TeamId | null, plays = true): LobbyPerson => (
   ready: false,
   team,
   presence: null,
+  bot: null,
 })
 // Lobby order: a1 b1 x(sits out, team A) a2 b2 a3
 const a1 = person('a1', 'A'),

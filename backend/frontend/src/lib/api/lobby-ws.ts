@@ -49,7 +49,7 @@ export interface NextGame {
   }
 }
 /**
- * A member (userId set) or a guest at a member's board (userId null), in lobby order.
+ * A member (userId set), a guest at a member's board (userId null), or a bot (userId null, bot set), in lobby order.
  *
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "LobbyPerson".
@@ -99,6 +99,12 @@ export interface LobbyPerson {
    * Members: online while they have the lobby open. null for guests.
    */
   presence: ('online' | 'away') | null
+  /**
+   * A bot's difficulty 1-10; null for a member or guest.
+   */
+  bot: {
+    level: number
+  } | null
 }
 /**
  * A pending invite, shown after the joined people ("Waiting for X to confirm").
