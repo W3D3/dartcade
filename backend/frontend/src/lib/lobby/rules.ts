@@ -54,6 +54,8 @@ export type BoardChoice = { boardId: string | null; label: string; detail: strin
  */
 export function boardChoices(p: LobbyPerson, viewerId: string | null, own: OwnBoard[]): BoardChoice[] {
   if (viewerId === null) return []
+  // A bot never has a board (the server refuses it too): nothing to offer
+  if (p.bot !== null) return []
   const controls = isMine(p, viewerId)
   const owner = p.boardId !== null && p.boardOwnerUserId === viewerId
   const choices: BoardChoice[] = []

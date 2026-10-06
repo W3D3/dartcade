@@ -115,6 +115,13 @@ describe('canSetBoard', () => {
     expect(canSetBoard('max', max, null)).toBe(true)
     expect(canSetBoard('chris', max, null)).toBe(false)
   })
+
+  it('a bot never gets a board, not from its own adder, the board owner, or anyone else', () => {
+    const bot = person({ id: 'b', userId: null, addedByUserId: 'chris', name: 'Bot Lvl 5', bot: { level: 5 } })
+    expect(canSetBoard('chris', bot, living)).toBe(false) // its own adder, giving one of their own boards
+    expect(canSetBoard('lena', bot, lenas)).toBe(false) // another board owner
+    expect(canSetBoard('chris', bot, null)).toBe(false) // even "to Manual" (a no-op, but still refused as a patch)
+  })
 })
 
 describe('ready, plays, order, removal', () => {
