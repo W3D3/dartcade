@@ -1,6 +1,6 @@
 // The three dart slots under the board: thrown darts, then what to aim at next.
 import { parseLabel } from './dartUtils.js'
-import { checkoutHint, type CheckoutPrefs } from './checkout.js'
+import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'bust' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
 export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string }

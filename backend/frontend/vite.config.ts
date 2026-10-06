@@ -15,9 +15,11 @@ export default defineConfig({
   resolve: {
     alias: {
       $lib: path.resolve('./src/lib'),
+      $shared: path.resolve('../src/shared'),
     },
   },
   server: {
+    fs: { allow: [path.resolve('..')] },
     allowedHosts,
     proxy: {
       '/api': { target: `http://${backendHost}:3000`, changeOrigin: true },

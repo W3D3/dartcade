@@ -3,7 +3,7 @@
 import { fmtAvg, x01Player } from './playerStats.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
 import type { ScoreUpdates } from './heldScore.js'
-import type { CheckoutPrefs } from './checkout.js'
+import type { CheckoutPrefs } from '$shared/checkout.js'
 import type { X01Game } from './api/game-ws'
 import { initial } from './fmt.js'
 

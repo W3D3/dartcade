@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
-import { checkoutHint } from '../checkout.js'
-import { CHECKOUTS } from '../checkoutTable.js'
-import { parseLabel } from '../dartUtils.js'
+import { checkoutHint } from './checkout.js'
+import { CHECKOUTS } from './checkoutTable.js'
+import { parseLabel } from '../../frontend/src/lib/dartUtils.js'
 
 const total = (route: string[]) => route.reduce((a, l) => a + parseLabel(l).score, 0)
 const finishesOnADouble = (route: string[]) => route.at(-1) === 'Bull' || route.at(-1)?.startsWith('D') === true

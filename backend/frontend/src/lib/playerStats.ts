@@ -1,5 +1,5 @@
 // What a player panel or row shows, computed from the game snapshot and the visit history.
-import { checkoutHint, type CheckoutPrefs } from './checkout.js'
+import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
 import { atcCells, atcDone, atcTargetLabel, type AtcCell } from './atc.js'
 import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
 import { shownScore, type ScoreUpdates } from './heldScore.js'
