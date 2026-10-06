@@ -41,6 +41,9 @@ export const friendsMayJoin = (lobby: Pick<LobbyState, 'access' | 'hostUserId'>,
  * `target` null means Manual.
  */
 export function canSetBoard(actorUserId: string, person: LobbyPerson, target: BoardTarget | null): boolean {
+  // A bot never has a board (the scheduler drives it, with no board to throw on): not even a
+  // later "move board" action may give it one, same as addGuest refuses one when it's added.
+  if (person.bot !== null) return false
   const controls = controllerOf(person) === actorUserId
   if (target === null) return controls || (person.boardId !== null && person.boardOwnerUserId === actorUserId)
   if (target.ownerUserId !== actorUserId) return false

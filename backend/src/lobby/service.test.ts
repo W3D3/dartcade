@@ -685,6 +685,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect((await lobbies.view(id))?.nextGame).toBeNull()
     })
 
+    it('rejects moving a board onto a bot: a bot never has a board, even moved in later', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      const { id: botId } = await lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })
+      await expect(lobbies.updatePerson('chris', id, botId, { boardId: 'garage' })).rejects.toMatchObject({ statusCode: 403 })
+      expect(await person('Bot Lvl 5')).toMatchObject({ boardId: null })
+    })
+
     it('anyone gives a person on Manual one of their own boards, marked as moved', async () => {
       await lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'garage' })
       expect(await person('Max')).toMatchObject({ boardId: 'garage', boardName: 'Garage', boardMovedBy: 'chris' })

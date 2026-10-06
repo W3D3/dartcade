@@ -145,6 +145,11 @@ describe('lobby rules for the screens', () => {
     expect(boardChoices(onChris, 'chris', own)[0]).toMatchObject({ label: 'Manual entry', detail: 'Take Living room back' })
   })
 
+  it('board menu: nothing to offer for a bot — it never has a board', () => {
+    const bot = person({ id: 'b', userId: null, addedByUserId: 'chris', name: 'Bot Lvl 5', bot: { level: 5 } })
+    expect(boardChoices(bot, 'chris', own)).toEqual([])
+  })
+
   it('counts people, who plays and who is ready; names the boards in use', () => {
     expect(counts(lobby)).toEqual({ people: 4, playing: 3, ready: 2 })
     expect(boardSummary(lobby)).toBe("Living room, Lena's place")
