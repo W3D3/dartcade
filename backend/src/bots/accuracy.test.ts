@@ -27,6 +27,27 @@ describe('pickTarget', () => {
     const t = pickTarget(169, 3, 'double')
     expect(segmentAt(t.x, t.y).name).toBe('T20')
   })
+
+  it('aims at D20 instead of treble 20 while not yet opened under double-in', () => {
+    // 501, unopened, double check-in: a dart at T20 never counts, so it must aim at a double
+    const t = pickTarget(501, 3, 'double', { opened: false, inMode: 'double' })
+    expect(segmentAt(t.x, t.y).name).toBe('D20')
+  })
+
+  it('aims at treble 20 once opened, even under double-in', () => {
+    const t = pickTarget(501, 3, 'double', { opened: true, inMode: 'double' })
+    expect(segmentAt(t.x, t.y).name).toBe('T20')
+  })
+
+  it('aims at treble 20 while unopened under master-in: a treble already counts', () => {
+    const t = pickTarget(501, 3, 'double', { opened: false, inMode: 'master' })
+    expect(segmentAt(t.x, t.y).name).toBe('T20')
+  })
+
+  it('without opening info (calibration, straight-in callers) behaves exactly as before', () => {
+    const t = pickTarget(501, 3, 'double')
+    expect(segmentAt(t.x, t.y).name).toBe('T20')
+  })
 })
 
 describe('throwAt', () => {

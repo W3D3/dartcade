@@ -182,6 +182,32 @@ describe('bot scheduler', () => {
     expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
   })
 
+  it('a bot under double-in aims at a double (not T20) until it opens, and the leg still finishes', async () => {
+    const push = vi.fn()
+    const engine = new SessionEngine(makeStore(), push)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'x01',
+      // A tight bot (level 10) at a low start score: before the fix this never opens (it
+      // always aimed at T20, which never counts under double-in) and the leg runs out the
+      // clock at maxRounds with the bot stuck on its starting score.
+      config: { ...x01Module.defaultConfig, startScore: 41, inMode: 'double', outMode: 'double', botSpeed: 'fast' },
+      seats: [seat('Bot Lvl 10', 'chris', null, { level: 10 })],
+    })
+    for (let i = 0; i < 500; i++) {
+      const snap = engine.getSnapshot(sessionId)
+      if (!snap || snap.status !== 'active') break
+      await vi.advanceTimersByTimeAsync(5000)
+    }
+    const snap = engine.getSnapshot(sessionId)
+    expect(snap?.status).toBe('finished')
+    // A round-limit timeout (the bug: never opening, so every leg runs out the clock) finishes
+    // with the leg count unchanged (0); actually checking out legs (firstTo, default 3) proves
+    // it opened and played normally instead.
+    expect((snap?.game as X01Game).legs[0]).toBeGreaterThan(0)
+    expect((snap?.game as X01Game).winner).toBe(0)
+  })
+
   it('a game with two bots and no human plays to completion', async () => {
     const push = vi.fn()
     const engine = new SessionEngine(makeStore(), push)

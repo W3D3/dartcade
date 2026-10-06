@@ -121,7 +121,12 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     // wherever pickTarget's checkout/treble-20 logic would send a dart at the session's
     // starting score (pickTarget has no notion of "this is a bull off", and shouldn't need one).
     const target =
-      view.phase === 'bulloff' ? BULL : pickTarget(view.scores[upIndex] ?? 0, 3 - dartsThrown, view.config.outMode)
+      view.phase === 'bulloff'
+        ? BULL
+        : pickTarget(view.scores[upIndex] ?? 0, 3 - dartsThrown, view.config.outMode, {
+            opened: view.opened[upIndex] ?? true,
+            inMode: view.config.inMode,
+          })
     const segment = throwAt(target, sigmaForLevel(seat.bot.level), current.rng)
     await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'add_dart', segment })
     // onUserAction's own push (if the action changed anything) re-enters onChange and
