@@ -44,7 +44,7 @@ downstream (history, undo, replay, remote spectators) needs to know a bot was in
   - **Undo does not rewind the rng stream.** There's no bookkeeping tracking how many draws
     happened in a now-undone visit, and the stream is only ever reconstructed from the seed when
     the session is freshly loaded into memory. If a bot is asked to throw again for an undone
-    slot, it draws the *next* value and throws something new — it is not guaranteed, or expected,
+    slot, it draws the _next_ value and throws something new — it is not guaranteed, or expected,
     to repeat the same dart. This matches how undoing a human's or a real board's dart already
     works: a retry is a new event, not a replay of the old one.
 - **Bot speed is a per-game config field, shown only when relevant.** Added to `X01Config`

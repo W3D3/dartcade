@@ -41,12 +41,7 @@ const DOUBLE_20: Point = pointFor('D20')
  *  treble already counts, so T20 needs no special case). `inOpts` is omitted by calibration and
  *  existing tests, which only ever model straight-in 501 (no opening requirement, so the
  *  distinction never applies to them). */
-export function pickTarget(
-  remaining: number,
-  dartsLeft: number,
-  outMode: OutMode,
-  inOpts?: { opened: boolean; inMode: OutMode },
-): Point {
+export function pickTarget(remaining: number, dartsLeft: number, outMode: OutMode, inOpts?: { opened: boolean; inMode: OutMode }): Point {
   if (inOpts && !inOpts.opened && inOpts.inMode === 'double') return DOUBLE_20
   const hint = checkoutHint(remaining, outMode, dartsLeft)
   return hint ? pointFor(hint[0]) : TREBLE_20

@@ -80,7 +80,6 @@
   // On the photo the wires are only a hint, so they don't hide the real board
   const wireOpacity = $derived(photo ? 0.35 : 1)
 
-
   function sectorPath(r1: number, r2: number, a1: number, a2: number) {
     const [c1, s1, c2, s2] = [Math.cos(a1), Math.sin(a1), Math.cos(a2), Math.sin(a2)]
     return `M${r1 * c1} ${-r1 * s1} L${r2 * c1} ${-r2 * s1} A${r2} ${r2} 0 0 1 ${r2 * c2} ${-r2 * s2} L${r1 * c2} ${-r1 * s2} A${r1} ${r1} 0 0 0 ${r1 * c1} ${-r1 * s1}Z`
@@ -150,7 +149,6 @@
               : (R.tr + R.so) / 2
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
-
 
   let svgEl: SVGSVGElement
 

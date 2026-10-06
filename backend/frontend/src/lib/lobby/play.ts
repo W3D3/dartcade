@@ -35,11 +35,7 @@ export type NextGame = { gameId: string; config: Record<string, unknown> }
  * and a whitelist of its fields from `config` (so stray form state can't leak into the saved
  * config). null when the backend has no games at all.
  */
-export function chosenGame(
-  games: { id: string }[],
-  selectedMode: string,
-  config: Record<string, unknown>,
-): NextGame | null {
+export function chosenGame(games: { id: string }[], selectedMode: string, config: Record<string, unknown>): NextGame | null {
   const gameId = games.find(g => g.id === selectedMode)?.id ?? games.find(g => g.id.includes('501'))?.id ?? games[0]?.id
   if (!gameId) return null
   const settings =

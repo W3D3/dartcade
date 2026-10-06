@@ -113,10 +113,7 @@ describe('bot scheduler', () => {
       // Level 10's tight grouping makes a near-bull landing reliable enough to assert on
       // directly, which is the point: a throw aimed at treble 20 instead (the bug this
       // regression test exists for) would land ~100mm out, not within this radius.
-      seats: [
-        { ...seat('Bot Lvl 10', 'chris', null, { level: 10 }) },
-        { ...seat('Bot Lvl 10', 'chris', null, { level: 10 }) },
-      ],
+      seats: [{ ...seat('Bot Lvl 10', 'chris', null, { level: 10 }) }, { ...seat('Bot Lvl 10', 'chris', null, { level: 10 }) }],
     })
     expect((engine.getSnapshot(sessionId)!.game as X01Game).phase).toBe('bulloff')
     // One dart's worth of delay: just enough for the first bot's single bull-off throw to land
@@ -182,7 +179,7 @@ describe('bot scheduler', () => {
     expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
   })
 
-  it("a warn that itself throws inside the failure handler never becomes an unhandled rejection either", async () => {
+  it('a warn that itself throws inside the failure handler never becomes an unhandled rejection either', async () => {
     const push = vi.fn()
     const store = { ...makeStore(), appendEvent: vi.fn().mockRejectedValueOnce(new Error('db down')).mockResolvedValue(undefined) }
     // The logger itself fails on this call — the scenario the reviewer demonstrated: without a
@@ -245,10 +242,7 @@ describe('bot scheduler', () => {
       ownerUserId: 'chris',
       gameId: 'x01',
       config: { ...x01Module.defaultConfig, startScore: 121, botSpeed: 'fast' },
-      seats: [
-        { ...seat('Bot Lvl 8', 'chris', null, { level: 8 }) },
-        { ...seat('Bot Lvl 3', 'chris', null, { level: 3 }) },
-      ],
+      seats: [{ ...seat('Bot Lvl 8', 'chris', null, { level: 8 }) }, { ...seat('Bot Lvl 3', 'chris', null, { level: 3 }) }],
     })
     for (let i = 0; i < 1000; i++) {
       const snap = engine.getSnapshot(sessionId)
