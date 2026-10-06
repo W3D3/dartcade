@@ -129,20 +129,25 @@
   function dartPos(dart: (typeof darts)[0]): { x: number; y: number } | null {
     if (dart.coords) return dart.coords
     const { bed, number } = dart.segment
-    if (bed === 'Outside') return null
     if (number === 25) return { x: 0, y: (R.bull50 + R.bull25) / 2 }
     if (number === 50) return { x: 0, y: R.bull50 / 2 }
     const si = SEGS.indexOf(number)
     if (si < 0) return null
     const a = segAngle(si)
+    // A miss (bed 'Outside') has no ring of its own: segmentAt still names the nearby number
+    // it landed closest to, so it's placed just past the double wire at that number's angle —
+    // not at a fixed spot unrelated to where it actually landed (the fallback below, for a
+    // dart this can't resolve a position for at all, isn't that: it has no angle to place at).
     const r =
-      bed === 'SingleInner'
-        ? (R.bull25 + R.si) / 2
-        : bed === 'Triple'
-          ? (R.si + R.tr) / 2
-          : bed === 'Double'
-            ? (R.so + R.db) / 2
-            : (R.tr + R.so) / 2
+      bed === 'Outside'
+        ? R.db + 0.08
+        : bed === 'SingleInner'
+          ? (R.bull25 + R.si) / 2
+          : bed === 'Triple'
+            ? (R.si + R.tr) / 2
+            : bed === 'Double'
+              ? (R.so + R.db) / 2
+              : (R.tr + R.so) / 2
     return { x: r * Math.cos(a), y: r * Math.sin(a) }
   }
 
