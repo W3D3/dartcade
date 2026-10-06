@@ -36,6 +36,7 @@
   const defaults = $derived(info?.defaultConfig ?? {})
   const config = $derived(game ? withDefaults(game.config, defaults) : {})
   const teamGame = $derived(isTeamFormat(info?.teams, config))
+  const hasBot = $derived(lobby.people.some(p => p.bot !== null))
   let settingsOpen = $state(false)
 </script>
 
@@ -50,6 +51,7 @@
       {defaults}
       meta={info?.configMeta ?? {}}
       teams={info?.teams ?? false}
+      {hasBot}
       readonly
     >
       <ThrowOrderField {lobby} gameId={game.gameId} readonly />

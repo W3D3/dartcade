@@ -1754,7 +1754,8 @@
         "youThrowNext",
         "leg",
         "youHost",
-        "solo"
+        "solo",
+        "hasBot"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1833,6 +1834,10 @@
         "solo": {
           "type": "boolean",
           "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+        },
+        "hasBot": {
+          "type": "boolean",
+          "description": "At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed."
         }
       }
     },
@@ -1946,7 +1951,8 @@
                 "youThrowNext",
                 "leg",
                 "youHost",
-                "solo"
+                "solo",
+                "hasBot"
               ],
               "additionalProperties": false,
               "properties": {
@@ -2025,6 +2031,10 @@
                 "solo": {
                   "type": "boolean",
                   "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+                },
+                "hasBot": {
+                  "type": "boolean",
+                  "description": "At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed."
                 }
               }
             },
@@ -2383,7 +2393,8 @@
                     "youThrowNext",
                     "leg",
                     "youHost",
-                    "solo"
+                    "solo",
+                    "hasBot"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -2462,6 +2473,10 @@
                     "solo": {
                       "type": "boolean",
                       "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+                    },
+                    "hasBot": {
+                      "type": "boolean",
+                      "description": "At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed."
                     }
                   }
                 },

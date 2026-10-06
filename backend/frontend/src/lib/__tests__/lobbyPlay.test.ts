@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { boardToApply, lobbyPath, playAction } from '../lobby/play.js'
+import { boardToApply, chosenGame, lobbyPath, playAction } from '../lobby/play.js'
 
 describe('playAction', () => {
   it('no lobby: create one', () => {
@@ -37,5 +37,52 @@ describe('boardToApply', () => {
     expect(boardToApply(null, 'b1', boards)).toBeNull()
     expect(boardToApply('b1', 'b1', boards)).toBeNull()
     expect(boardToApply('b9', 'b1', boards)).toBeNull()
+  })
+})
+
+describe('chosenGame', () => {
+  const games = [{ id: 'atc' }, { id: 'x01' }]
+
+  it("carries the x01 form's botSpeed through, alongside its other fields", () => {
+    const config = {
+      startScore: 301,
+      inMode: 'straight',
+      outMode: 'double',
+      bullOff: 'off',
+      bullValue: '25_50',
+      maxRounds: 50,
+      firstTo: 3,
+      botSpeed: 'fast',
+      // Not in the x01 whitelist: must not leak into the saved config
+      format: 'singles',
+    }
+    expect(chosenGame(games, 'x01', config)).toEqual({
+      gameId: 'x01',
+      config: {
+        startScore: 301,
+        inMode: 'straight',
+        outMode: 'double',
+        bullOff: 'off',
+        bullValue: '25_50',
+        maxRounds: 50,
+        firstTo: 3,
+        botSpeed: 'fast',
+      },
+    })
+  })
+
+  it("doesn't carry botSpeed for atc, which has no bots", () => {
+    const config = { finishOn: 'twenty', order: 'asc', multiplierAdvances: true, throwAgainOnAllHit: false, botSpeed: 'fast' }
+    const picked = chosenGame(games, 'atc', config)
+    expect(picked?.config).not.toHaveProperty('botSpeed')
+  })
+
+  it('falls back to a 501 game, then the first one, when the picked mode is unknown to the backend', () => {
+    expect(chosenGame([{ id: 'x501' }, { id: 'other' }], 'missing', {})?.gameId).toBe('x501')
+    expect(chosenGame([{ id: 'other' }], 'missing', {})?.gameId).toBe('other')
+  })
+
+  it('null when the backend has no games', () => {
+    expect(chosenGame([], 'x01', {})).toBeNull()
   })
 })

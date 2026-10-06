@@ -57,6 +57,7 @@ const meMsg = {
     leg: null,
     youHost: true,
     solo: false,
+    hasBot: false,
   },
 }
 

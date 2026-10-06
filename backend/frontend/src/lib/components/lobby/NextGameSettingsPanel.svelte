@@ -15,6 +15,7 @@
     defaults,
     meta,
     teams = false,
+    hasBot = false,
     readonly = false,
     onchange,
     class: className = '',
@@ -28,6 +29,8 @@
     meta: Partial<Record<string, ConfigFieldMeta>>
     /** The game can be played in teams: GameSettings shows the Format field. */
     teams?: boolean
+    /** At least one seat is a bot: GameSettings shows the Bot speed field. */
+    hasBot?: boolean
     /** A member sees exactly what's set, but can't change it. */
     readonly?: boolean
     onchange?: (key: string, value: unknown) => void
@@ -45,6 +48,7 @@
       {defaults}
       {meta}
       {teams}
+      {hasBot}
       {readonly}
       onchange={(key: string, value: unknown) => onchange?.(key, value)}
     />

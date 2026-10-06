@@ -12,7 +12,7 @@
   import { gameName } from '$lib/lobby/format'
   import { me } from '$lib/lobby/sockets'
   import { initialGameSelection } from '$lib/lobby/start'
-  import { lobbyPath, playAction, saveNextGame, type PlayAction } from '$lib/lobby/play'
+  import { chosenGame as pickChosenGame, lobbyPath, playAction, saveNextGame, type PlayAction } from '$lib/lobby/play'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
   import { GAME_MODES, gameModes, withDefaults } from '$lib/gameModes'
 
@@ -79,6 +79,8 @@
   const lobbyGameInfo = $derived(lobbyGame ? games.find(g => g.id === lobbyGame.gameId) : undefined)
   // The server's defaults, as the lobby's own cards use them
   const lobbyGameDefaults = $derived(lobbyGameInfo?.defaultConfig ?? {})
+  // At least one seat in the current lobby is a bot: shows Bot speed in the settings form
+  const lobbyHasBot = $derived($me?.lobby?.hasBot ?? false)
 
   // The host's form starts from the lobby's saved next game: applied once, the first time it's
   // known (after the defaults above), so the host's later edits here aren't overwritten by it.
@@ -111,29 +113,9 @@
 
   /** The picked mode and settings as the API takes them; null (with the error shown) if the backend has no such game. */
   function chosenGame(): { gameId: string; config: Record<string, unknown> } | null {
-    const gameId = games.find(g => g.id === selectedMode)?.id ?? games.find(g => g.id.includes('501'))?.id ?? games[0]?.id
-    if (!gameId) {
-      error = 'No game found. Is the backend running?'
-      return null
-    }
-    const settings =
-      selectedMode === 'atc'
-        ? {
-            finishOn: config.finishOn,
-            order: config.order,
-            multiplierAdvances: config.multiplierAdvances,
-            throwAgainOnAllHit: config.throwAgainOnAllHit,
-          }
-        : {
-            startScore: config.startScore,
-            inMode: config.inMode,
-            outMode: config.outMode,
-            bullOff: config.bullOff,
-            bullValue: config.bullValue,
-            maxRounds: config.maxRounds,
-            firstTo: config.firstTo,
-          }
-    return { gameId, config: settings }
+    const picked = pickChosenGame(games, selectedMode, config)
+    if (!picked) error = 'No game found. Is the backend running?'
+    return picked
   }
 
   async function toLobby() {
@@ -192,6 +174,7 @@
                 defaults={lobbyGameDefaults}
                 meta={lobbyGameInfo?.configMeta ?? {}}
                 teams={lobbyGameInfo?.teams ?? false}
+                hasBot={lobbyHasBot}
                 readonly
               />
             {:else}
@@ -207,6 +190,7 @@
               defaults={gameDefaults[selectedMode] ?? {}}
               meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}}
               teams={games.find(g => g.id === selectedMode)?.teams ?? false}
+              hasBot={lobbyHasBot}
               onchange={(key: string, value: unknown) => (config = { ...config, [key]: value })}
             />
           {/if}

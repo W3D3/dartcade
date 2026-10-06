@@ -57,6 +57,7 @@
   let picking = $state(false)
   let settingsOpen = $state(false)
   const teamGame = $derived(isTeamFormat(info?.teams, config))
+  const hasBot = $derived(lobby.people.some(p => p.bot !== null))
 
   // Each snapshot settles the pending changes it shows (or whose save came back). This only
   // trims what's shown: saving happens in the handlers, so an echo never saves again.
@@ -130,6 +131,7 @@
       {defaults}
       meta={info?.configMeta ?? {}}
       teams={info?.teams ?? false}
+      {hasBot}
       onchange={(key: string, value: unknown) => void setConfig(key, value)}
     />
   {/if}

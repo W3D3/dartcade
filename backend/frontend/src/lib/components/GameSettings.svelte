@@ -16,6 +16,7 @@
     defaults,
     meta,
     teams = false,
+    hasBot = false,
     readonly = false,
     onchange,
   }: {
@@ -28,6 +29,8 @@
     meta: Partial<Record<string, ConfigFieldMeta>>
     /** The game can be played in teams: shows the Format field (Singles / Teams). */
     teams?: boolean
+    /** At least one seat in the lobby/game is a bot: shows the Bot speed field. */
+    hasBot?: boolean
     /** A member sees exactly what's set, but can't change it: every control is disabled, and
      * nothing here calls onchange. */
     readonly?: boolean
@@ -82,6 +85,24 @@
           disabled={readonly}
           defaultValue={defaults.format}
           onchange={v => set('format', v)}
+        />
+      </fieldset>
+    {/if}
+
+    {#if hasBot && meta.botSpeed}
+      <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+        <legend class="flex items-center gap-2 field-label mb-2">
+          {meta.botSpeed.label}
+          {#if meta.botSpeed.tooltip}
+            <Tooltip text={meta.botSpeed.tooltip} />
+          {/if}
+        </legend>
+        <SegmentedControl
+          options={meta.botSpeed.options ?? []}
+          value={config.botSpeed}
+          disabled={readonly}
+          defaultValue={defaults.botSpeed}
+          onchange={v => set('botSpeed', v)}
         />
       </fieldset>
     {/if}

@@ -30,6 +30,40 @@ export function boardToApply(target: string | null, current: string | null, own:
 export type NextGame = { gameId: string; config: Record<string, unknown> }
 
 /**
+ * The picked mode and its settings, as the Play page's form saves them: the mode's id (falling
+ * back to a 501 game, then whatever's first, if the picked one isn't among the backend's games)
+ * and a whitelist of its fields from `config` (so stray form state can't leak into the saved
+ * config). null when the backend has no games at all.
+ */
+export function chosenGame(
+  games: { id: string }[],
+  selectedMode: string,
+  config: Record<string, unknown>,
+): NextGame | null {
+  const gameId = games.find(g => g.id === selectedMode)?.id ?? games.find(g => g.id.includes('501'))?.id ?? games[0]?.id
+  if (!gameId) return null
+  const settings =
+    selectedMode === 'atc'
+      ? {
+          finishOn: config.finishOn,
+          order: config.order,
+          multiplierAdvances: config.multiplierAdvances,
+          throwAgainOnAllHit: config.throwAgainOnAllHit,
+        }
+      : {
+          startScore: config.startScore,
+          inMode: config.inMode,
+          outMode: config.outMode,
+          bullOff: config.bullOff,
+          bullValue: config.bullValue,
+          maxRounds: config.maxRounds,
+          firstTo: config.firstTo,
+          botSpeed: config.botSpeed,
+        }
+  return { gameId, config: settings }
+}
+
+/**
  * Saves the game as the next game of your lobby: `lobbyId` when you have one, else a new one.
  * A new one refused with in_lobby means you have one already (another tab opened it): that one
  * gets the game. Resolves null when it went through, else the message to show.

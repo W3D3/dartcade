@@ -186,6 +186,7 @@ describe('lobbySummary', () => {
       leg: 0,
       youHost: true,
       solo: false,
+      hasBot: false,
     })
     expect(lobbySummary(lobby, 'max', session).youThrowNext).toBe(false)
     expect(lobbySummary(lobby, 'max', session).youHost).toBe(false)
@@ -205,6 +206,12 @@ describe('lobbySummary', () => {
     expect(lobbySummary(lobby, 'max', undefined).hostName).toBe('Christoph')
     const hostless: LobbyState = { ...lobby, hostUserId: null }
     expect(lobbySummary(hostless, 'max', undefined).hostName).toBeNull()
+  })
+
+  it('has a bot once one is seated, not before', () => {
+    expect(lobbySummary(lobby, 'chris', undefined).hasBot).toBe(false)
+    const withBot: LobbyState = { ...lobby, people: [...lobby.people, person({ id: 'b', name: 'Bot Lvl 5', bot: { level: 5 } })] }
+    expect(lobbySummary(withBot, 'chris', undefined).hasBot).toBe(true)
   })
 })
 

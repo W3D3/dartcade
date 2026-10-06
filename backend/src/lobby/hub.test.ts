@@ -22,6 +22,7 @@ const me = (n: number) => ({
           leg: null,
           youHost: false,
           solo: n <= 1,
+          hasBot: false,
         },
 })
 
