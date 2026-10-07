@@ -3,9 +3,11 @@
   // calm green at Level 1 up to intense red at Level 10 — instead of the name-hash colour).
   // Tones: the default chip (name colour, or the bot's level colour), `accent` for the thrower
   // or yourself, `guest` dashed, `quiet` a darker chip (bull off) — these override the identity
-  // colour the same way for a bot as for a human; the glyph alone still marks it as a bot. Size:
-  // `size` in px (the glyph scales with it), or classes in `class` for responsive sizes. A dot
-  // while a member has the lobby open.
+  // colour the same way for a bot as for a human, except `guest`: a bot has no account either
+  // (`userId: null`, same as a guest), so a caller that derives `guest` from that naturally sets
+  // it for a bot seat too; `bot` wins there, since the glyph and level colour are the more
+  // specific identity. Size: `size` in px (the glyph scales with it), or classes in `class` for
+  // responsive sizes. A dot while a member has the lobby open.
   import { Bot as BotIcon } from '@lucide/svelte'
   import { avatarColor } from '$lib/avatarColor'
   import { botAvatarColor } from '$lib/botAvatarColor'
@@ -40,7 +42,15 @@
     quiet: 'bg-line-3 text-text',
   }
   const look = $derived(
-    guest ? TONE.guest : tone === 'default' ? `${bot ? botAvatarColor(bot.level) : avatarColor(name)} text-text` : TONE[tone],
+    bot
+      ? tone === 'default'
+        ? `${botAvatarColor(bot.level)} text-text`
+        : TONE[tone]
+      : guest
+        ? TONE.guest
+        : tone === 'default'
+          ? `${avatarColor(name)} text-text`
+          : TONE[tone],
   )
   const px = $derived(size ?? (className ? null : 36))
 </script>
