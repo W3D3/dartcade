@@ -55,14 +55,34 @@ function gaussianPair(rng: Rng): [number, number] {
   return [r * Math.cos(2 * Math.PI * u2), r * Math.sin(2 * Math.PI * u2)]
 }
 
+// How much a dart's accuracy wobbles throw to throw, on top of the level's own calibrated
+// sigma: a log-normal multiplier, tuned (alongside LEVEL_SIGMA, in levels.ts) so the long-run
+// average stays on the calibrated curve. Log-normal rather than a symmetric jitter because
+// sigma can't go negative, and the asymmetry is the point — most darts land close to the
+// bot's usual grouping, but it occasionally has a genuinely bad one (never a correspondingly
+// *tighter*-than-usual one by the same amount), the way even a strong player sometimes does.
+const SIGMA_JITTER = 0.5
+
+/** A multiplier on a throw's sigma for this one dart: 1 on a typical throw, occasionally much
+ *  higher on a bad one. Consumes one Gaussian pair (only one value used; the symmetry makes a
+ *  cheaper single-value draw not worth a second Box-Muller implementation). */
+function sigmaJitter(rng: Rng): number {
+  const [z] = gaussianPair(rng)
+  return Math.exp(SIGMA_JITTER * z)
+}
+
 /** A dart thrown at `target`, landing with a 2D Gaussian miss of standard deviation `sigma`
- *  (board units) in each axis. Returns both the segment it hits and where it actually landed
- *  (`coords`) — the caller sends `coords` along with the action the same way a real board
- *  detection does, so the dart renders at its true landing spot instead of a generic
- *  segment-center fallback. Draws exactly two values from `rng` (one Gaussian pair covers both
- *  axes). */
+ *  (board units) in each axis, widened per-throw by `sigmaJitter` so a level's accuracy isn't
+ *  perfectly identical dart after dart. Returns both the segment it hits and where it actually
+ *  landed (`coords`) — the caller sends `coords` along with the action the same way a real
+ *  board detection does, so the dart renders at its true landing spot instead of a generic
+ *  segment-center fallback. Draws exactly four values from `rng` (one Gaussian pair for the
+ *  jitter, one for the throw itself). */
 export function throwAt(target: Point, sigma: number, rng: Rng): { segment: Segment; coords: Point } {
+  const effectiveSigma = sigma * sigmaJitter(rng)
   const [z0, z1] = gaussianPair(rng)
-  const coords = { x: target.x + z0 * sigma, y: target.y + z1 * sigma }
+  const dx = z0 * effectiveSigma
+  const dy = z1 * effectiveSigma
+  const coords = { x: target.x + dx, y: target.y + dy }
   return { segment: segmentAt(coords.x, coords.y), coords }
 }
