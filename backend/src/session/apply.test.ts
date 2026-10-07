@@ -233,3 +233,24 @@ describe('applyInput', () => {
     })
   })
 })
+
+describe('X01 live stats under undo', () => {
+  const user = (type: 'undo_dart'): GameInput => ({ source: 'user', action: { type } })
+
+  it('undo of a committed visit takes its stats back with it', () => {
+    const s = session(x01Module, x01Module.defaultConfig, 2)
+    applyInput(s, board('visit.opened'), t(0))
+    for (const i of [0, 1, 2]) applyInput(s, dart(S1, i), t(1 + i))
+    applyInput(s, board('takeout.finished'), t(5))
+    expect(s.module.view(s.currentState, s.players)).toMatchObject({ dartsThrown: [3, 0], lastVisit: [{ seat: 0, scored: 3 }, null] })
+
+    applyInput(s, user('undo_dart'), t(6))
+    // The visit is open again: nothing committed for it
+    expect(s.module.view(s.currentState, s.players)).toMatchObject({
+      dartsThrown: [0, 0],
+      legVisits: [],
+      lastVisit: [null, null],
+      pointsScored: [0, 0],
+    })
+  })
+})

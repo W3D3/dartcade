@@ -77,7 +77,14 @@
         "bullOff",
         "currentVisitDarts",
         "totalDarts",
-        "totalVisits"
+        "totalVisits",
+        "pointsScored",
+        "dartsThrown",
+        "legVisits",
+        "lastVisit",
+        "checkoutAttempts",
+        "checkoutHits",
+        "visitStartScores"
       ],
       "additionalProperties": false,
       "properties": {
@@ -111,6 +118,41 @@
         "currentVisitDarts": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/Dart" } },
         "totalDarts": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
         "totalVisits": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
+        "pointsScored": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "description": "Per seat: points scored in committed visits (busts count 0)."
+        },
+        "dartsThrown": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "description": "Per seat: darts in committed visits; with pointsScored, the match average."
+        },
+        "legVisits": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/X01Visit" },
+          "description": "This leg's committed visits, in throwing order."
+        },
+        "lastVisit": {
+          "type": "array",
+          "items": { "anyOf": [{ "$ref": "#/$defs/X01Visit" }, { "type": "null" }] },
+          "description": "Per seat: their last committed visit, kept across legs; null before their first."
+        },
+        "checkoutAttempts": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "description": "Per seat: darts thrown on a one-dart finish, wherever they landed."
+        },
+        "checkoutHits": {
+          "type": "array",
+          "items": { "type": "integer", "minimum": 0 },
+          "description": "Per seat: of those, the darts that finished the leg."
+        },
+        "visitStartScores": {
+          "type": "array",
+          "items": { "type": "integer" },
+          "description": "Per seat: the team's score when its open (or next) visit started."
+        },
         "teams": {
           "type": "array",
           "description": "Only in a team game: each team with its shared score and legs.",
@@ -131,6 +173,20 @@
             }
           }
         }
+      }
+    },
+    "X01Visit": {
+      "title": "X01Visit",
+      "description": "A committed X01 visit.",
+      "type": "object",
+      "required": ["seat", "scored", "left", "bust", "darts"],
+      "additionalProperties": false,
+      "properties": {
+        "seat": { "type": "integer", "minimum": 0 },
+        "scored": { "type": "integer", "minimum": 0, "description": "Points the visit scored; 0 on a bust or before opening." },
+        "left": { "type": "integer", "minimum": 0, "description": "The team's score after the visit." },
+        "bust": { "type": "boolean" },
+        "darts": { "type": "integer", "minimum": 0 }
       }
     },
     "AtcGame": {
