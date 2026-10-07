@@ -1,3 +1,9 @@
+# An explicit project name, distinct from docker-compose.dev.yaml's, so running this (e.g. the
+# e2e suite locally, alongside a live dev stack) never recreates the dev stack's same-named
+# containers. See docker-compose.dev.yaml's own name: comment for the incident this guards
+# against. Deliberately no persistent volume for postgres here — every e2e run starts clean.
+name: dartcade-e2e
+
 services:
   postgres:
     image: postgres:16-alpine
