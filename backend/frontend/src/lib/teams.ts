@@ -1,7 +1,7 @@
 // Team games (X01): the "Teams 2v2" label, the winning team, and what each team panel shows,
-// computed from the snapshot and the visit history. The teams themselves come from the server.
-import { fmtAvg, x01Player } from './playerStats.js'
-import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
+// computed from the snapshot. The teams themselves come from the server.
+import { avgOf, checkoutRate, x01Player } from './playerStats.js'
+import type { Visit } from './visitHistory.js'
 import type { ScoreUpdates } from './heldScore.js'
 import type { CheckoutPrefs } from '$shared/checkout.js'
 import type { X01Game } from './api/game-ws'
@@ -51,6 +51,9 @@ export type X01TeamView = {
   teamAvg: string
   /** The match's 3-dart average over the team's visits. */
   matchAvg: string
+  /** Darts at a finish that hit, over the team's players. */
+  checkout: string
+  checkoutDarts: string
   darts: number
   legsWon: number
   firstTo: number
@@ -69,7 +72,6 @@ export type X01TeamView = {
 export function x01Teams(
   game: X01Game,
   players: { name: string }[],
-  history: VisitHistory,
   o: { suggest: boolean; checkout?: CheckoutPrefs; scoreUpdates?: ScoreUpdates },
 ): X01TeamView[] {
   const teams = game.teams
@@ -85,7 +87,7 @@ export function x01Teams(
     const active = playing && upTeam === team
     // The thrower carries the running visit; any seat of the team has its score
     const seat = active ? cp : (team.seats.at(0) ?? 0)
-    const p = x01Player(game, seat, history, {
+    const p = x01Player(game, seat, {
       active,
       suggest: o.suggest,
       checkout: o.checkout,
@@ -93,22 +95,12 @@ export function x01Teams(
       scoreUpdates: o.scoreUpdates,
     })
 
-    // Interleave the players' leg visits in the order they were thrown
-    const taken = new Map<number, number>()
-    const visits: Visit[] = []
-    const marks: string[] = []
-    for (const s of history.legSeats) {
-      if (!team.seats.includes(s)) continue
-      const k = taken.get(s) ?? 0
-      taken.set(s, k + 1)
-      const visit = history.leg.at(s)?.at(k)
-      if (visit) {
-        visits.push(visit)
-        marks.push(initial(nameOf(s)))
-      }
-    }
-    const legVisits = team.seats.flatMap(s => history.leg.at(s) ?? [])
-    const allVisits = team.seats.flatMap(s => history.all.at(s) ?? [])
+    // This leg's visits by the team's players, in the order they were thrown
+    const mine = game.legVisits.filter(v => team.seats.includes(v.seat))
+    const visits: Visit[] = mine
+    const marks = mine.map(v => initial(nameOf(v.seat)))
+    const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
+    const of = (field: number[]) => sum(team.seats.map(s => field.at(s) ?? 0))
 
     return {
       id: team.id,
@@ -119,8 +111,9 @@ export function x01Teams(
       shown: active ? p.shown : team.score,
       opened: p.opened,
       canFinish: p.canFinish,
-      teamAvg: fmtAvg(threeDartAvg(legVisits)),
-      matchAvg: fmtAvg(threeDartAvg(allVisits)),
+      teamAvg: avgOf(sum(mine.map(v => v.scored)), sum(mine.map(v => v.darts))),
+      matchAvg: avgOf(of(game.pointsScored), of(game.dartsThrown)),
+      ...checkoutRate(of(game.checkoutHits), of(game.checkoutAttempts)),
       darts: team.seats.reduce((a, s) => a + (game.totalDarts.at(s) ?? 0), 0),
       legsWon: team.legs,
       firstTo: game.firstTo,
@@ -132,7 +125,7 @@ export function x01Teams(
       members: team.seats.map(s => ({
         seat: s,
         name: nameOf(s),
-        avg: fmtAvg(threeDartAvg(history.all.at(s) ?? [])),
+        avg: avgOf(game.pointsScored.at(s) ?? 0, game.dartsThrown.at(s) ?? 0),
         role: !playing ? null : s === cp ? 'throwing' : s === nextSeat ? 'up-next' : 'after',
       })),
     }

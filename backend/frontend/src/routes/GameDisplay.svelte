@@ -161,8 +161,9 @@
         const prev = gameState(snapshot)
         const pg = prev.x01 ?? prev.atc
         if (pg) playSounds(pg, g)
-        history = trackVisits(history, g)
       }
+      // X01 sends its visits with the snapshot; Around the Clock still tracks them here
+      if (next.atc) history = trackVisits(history, next.atc)
       snapshot = snap
     })
     unsubNotice = sessionStore.notice.subscribe(n => {
@@ -281,7 +282,7 @@
   const checkout = $derived({ favouriteDouble: settings.favouriteDouble })
   // A team game (X01): one panel per team, sharing a score
   const teams = $derived(
-    x01 ? x01Teams(x01, players, history, { suggest: settings.checkoutSuggestions, checkout, scoreUpdates: settings.scoreUpdates }) : [],
+    x01 ? x01Teams(x01, players, { suggest: settings.checkoutSuggestions, checkout, scoreUpdates: settings.scoreUpdates }) : [],
   )
   const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch))
   // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
@@ -298,7 +299,7 @@
   const x01Players = $derived(
     x01
       ? players.map((_, i) =>
-          x01Player(x01, i, history, {
+          x01Player(x01, i, {
             active: i === currentPlayer && isActive,
             suggest: settings.checkoutSuggestions,
             checkout,
@@ -333,7 +334,8 @@
   )
 
   const hitCount = $derived(atc?.hitCounts.at(currentPlayer) ?? 0)
-  const visitStart = $derived(history.start.at(currentPlayer) ?? null)
+  // X01 sends where the visit started; Around the Clock still tracks it in the browser
+  const visitStart = $derived(x01 ? (x01.visitStartScores.at(currentPlayer) ?? null) : (history.start.at(currentPlayer) ?? null))
   const band = $derived(
     isX01
       ? x01Band({

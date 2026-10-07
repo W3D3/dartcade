@@ -1,10 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import { x01Player, atcPlayer, x01Roll } from '../playerStats.js'
-import { emptyHistory, type VisitHistory } from '../visitHistory.js'
 import type { AtcGame, X01Game } from '../api/game-ws'
 
-const visit = (scored: number, left: number, darts = 3) => ({ scored, left, darts, bust: false })
-const history = (leg: VisitHistory['leg'], all = leg): VisitHistory => ({ ...emptyHistory(), leg, all })
+const visit = (seat: number, scored: number, left: number, darts = 3) => ({ seat, scored, left, darts, bust: false })
+// Alice has thrown 100 and 60 this leg and is on 81 with a T20 in her running visit
 const game = (o: Record<string, unknown> = {}): X01Game =>
   ({
     scores: [81, 87],
@@ -14,12 +13,20 @@ const game = (o: Record<string, unknown> = {}): X01Game =>
     totalDarts: [16, 18],
     config: { outMode: 'double' },
     currentVisitDarts: [{ segment: { name: 'T20' }, score: 60 }],
+    pointsScored: [160, 45],
+    dartsThrown: [6, 3],
+    legVisits: [visit(0, 100, 401), visit(0, 60, 341)],
+    lastVisit: [visit(0, 60, 341), null],
+    checkoutAttempts: [0, 0],
+    checkoutHits: [0, 0],
+    visitStartScores: [141, 87],
     ...o,
   }) as unknown as X01Game
+const none = { pointsScored: [0, 0], dartsThrown: [0, 0], legVisits: [], lastVisit: [null, null] }
 
 describe('x01Player', () => {
   it('the thrower: running visit on the chalkboard, finish with the darts left', () => {
-    const p = x01Player(game(), 0, history([[visit(100, 401), visit(60, 341)]]), { active: true, suggest: true })
+    const p = x01Player(game(), 0, { active: true, suggest: true })
     expect(p).toMatchObject({
       remaining: 81,
       canFinish: 'T19 · D12',
@@ -29,18 +36,40 @@ describe('x01Player', () => {
       darts: 16,
       legsWon: 1,
       firstTo: 3,
+      visits: [visit(0, 100, 401), visit(0, 60, 341)],
       current: { scored: 60, left: 81, bust: false },
     })
   })
 
-  it("'visit': the thrower's big score holds at the visit's start; the rest stays per dart", () => {
-    const h = { ...history([[visit(100, 401), visit(60, 341)]]), start: [141, null] }
-    const p = x01Player(game(), 0, h, { active: true, suggest: true, scoreUpdates: 'visit' })
+  it('a cold snapshot (after a reload) has the whole match: averages, last visit and chalkboard', () => {
+    // Two legs in: the match average spans both, the leg average and chalkboard only this leg
+    const g = game({
+      pointsScored: [601, 0],
+      dartsThrown: [18, 0],
+      legVisits: [visit(0, 100, 401)],
+      lastVisit: [visit(0, 100, 401), null],
+      currentVisitDarts: [],
+    })
+    const p = x01Player(g, 0, { active: false, suggest: true })
+    expect(p).toMatchObject({ avg: '100.2', legAvg: '100.0', last: '100', visits: [visit(0, 100, 401)] })
+  })
+
+  it("only the seat's own visits are on its chalkboard", () => {
+    const g = game({ legVisits: [visit(0, 100, 401), visit(1, 45, 456), visit(0, 60, 341)] })
+    expect(x01Player(g, 1, { active: false, suggest: true }).visits).toEqual([visit(1, 45, 456)])
+  })
+
+  it("'visit': the thrower's big score holds at the visit's start from the snapshot; the rest stays per dart", () => {
+    const p = x01Player(game(), 0, { active: true, suggest: true, scoreUpdates: 'visit' })
     expect(p).toMatchObject({ remaining: 81, shown: 141, canFinish: 'T19 · D12', current: { scored: 60, left: 81 } })
-    expect(x01Player(game(), 0, h, { active: true, suggest: true }).shown).toBe(81)
-    expect(
-      x01Player(game({ visitLocked: true, scores: [0, 87] }), 0, h, { active: true, suggest: true, scoreUpdates: 'visit' }).shown,
-    ).toBe(0)
+    expect(x01Player(game(), 0, { active: true, suggest: true }).shown).toBe(81)
+    expect(x01Player(game({ visitLocked: true, scores: [0, 87] }), 0, { active: true, suggest: true, scoreUpdates: 'visit' }).shown).toBe(0)
+  })
+
+  it('checkout rate: hits over darts at a finish, a dash before the first', () => {
+    expect(x01Player(game(), 0, { active: false, suggest: true })).toMatchObject({ checkout: '—', checkoutDarts: '0/0' })
+    const g = game({ checkoutAttempts: [5, 0], checkoutHits: [2, 0] })
+    expect(x01Player(g, 0, { active: false, suggest: true })).toMatchObject({ checkout: '40%', checkoutDarts: '2/5' })
   })
 
   it('x01Roll: how the big score rolls (new leg, bust, checkout), for players and teams alike', () => {
@@ -50,41 +79,44 @@ describe('x01Player', () => {
   })
 
   it('counts the legs played: the score starts over when that changes', () => {
-    expect(x01Player(game({ legs: [1, 2] }), 1, emptyHistory(), { active: false, suggest: true }).leg).toBe(3)
+    expect(x01Player(game({ legs: [1, 2] }), 1, { active: false, suggest: true }).leg).toBe(3)
   })
 
   it('a waiting player has no running visit and three darts to finish', () => {
-    const p = x01Player(game(), 1, history([[], [visit(45, 87)]]), { active: false, suggest: true })
+    const p = x01Player(game({ legVisits: [visit(1, 45, 87)] }), 1, { active: false, suggest: true })
     expect(p.current).toBeNull()
     // First two-dart finish the finder meets (it prefers trebles high to low), not the design's sample T17 · D18
     expect(p.canFinish).toBe('T17 · D18')
   })
 
-  it('averages show a dash without visits', () => {
-    const p = x01Player(game(), 1, emptyHistory(), { active: false, suggest: true })
+  it('averages and last show a dash before any visit', () => {
+    const p = x01Player(game(none), 1, { active: false, suggest: true })
     expect([p.avg, p.legAvg, p.last]).toEqual(['—', '—', '—'])
   })
 
   it('no finish is null (too high, not opened, or suggestions off)', () => {
-    expect(x01Player(game({ scores: [301, 87] }), 0, emptyHistory(), { active: true, suggest: true }).canFinish).toBeNull()
-    expect(x01Player(game({ opened: [false, true] }), 0, emptyHistory(), { active: true, suggest: true }).canFinish).toBeNull()
-    expect(x01Player(game(), 1, emptyHistory(), { active: false, suggest: false }).canFinish).toBeNull()
+    expect(x01Player(game({ scores: [301, 87] }), 0, { active: true, suggest: true }).canFinish).toBeNull()
+    expect(x01Player(game({ opened: [false, true] }), 0, { active: true, suggest: true }).canFinish).toBeNull()
+    expect(x01Player(game(), 1, { active: false, suggest: false }).canFinish).toBeNull()
   })
 
   it('leg average uses this leg only', () => {
-    const p = x01Player(game(), 0, history([[visit(30, 471)]], [[visit(100, 401), visit(30, 471)]]), { active: false, suggest: true })
+    const p = x01Player(game({ pointsScored: [130, 0], dartsThrown: [6, 0], legVisits: [visit(0, 30, 471)] }), 0, {
+      active: false,
+      suggest: true,
+    })
     expect([p.avg, p.legAvg]).toEqual(['65.0', '30.0'])
   })
 
   it('during a bust: no finish, running row marked bust', () => {
-    const p = x01Player(game(), 0, emptyHistory(), { active: true, suggest: true, bust: true })
+    const p = x01Player(game(), 0, { active: true, suggest: true, bust: true })
     expect(p.canFinish).toBeNull()
     expect(p.current).toEqual({ scored: 60, left: 81, bust: true })
   })
 
   it('showFinish follows the suggestions setting', () => {
-    expect(x01Player(game(), 1, emptyHistory(), { active: false, suggest: false }).showFinish).toBe(false)
-    expect(x01Player(game(), 1, emptyHistory(), { active: false, suggest: true }).showFinish).toBe(true)
+    expect(x01Player(game(), 1, { active: false, suggest: false }).showFinish).toBe(false)
+    expect(x01Player(game(), 1, { active: false, suggest: true }).showFinish).toBe(true)
   })
 })
 

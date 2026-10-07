@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { emptyHistory, trackVisits, threeDartAvg, type VisitHistory } from '../visitHistory.js'
+import { emptyHistory, trackVisits, type VisitHistory } from '../visitHistory.js'
 
 type G = Record<string, unknown>
 const dart = (score: number) => ({ segment: { name: `S${score}` }, score })
@@ -157,22 +157,5 @@ describe('trackVisits (ATC)', () => {
     const h = run([atc([4, 2], [3, 3], 0), atc([6, 2], [3, 3], 0, [1, 1, 0]), atc([6, 2], [4, 3], 1)])
     expect(h.leg[0]).toEqual([{ scored: 2, left: 0, darts: 3, bust: false }])
     expect(h.start[1]).toBe(2)
-  })
-})
-
-describe('threeDartAvg', () => {
-  it('is points per dart times three', () => {
-    expect(
-      threeDartAvg([
-        { scored: 60, left: 0, darts: 3, bust: false },
-        { scored: 45, left: 0, darts: 3, bust: false },
-      ]),
-    ).toBe(52.5)
-  })
-  it('counts the darts of short visits', () => {
-    expect(threeDartAvg([{ scored: 40, left: 0, darts: 1, bust: false }])).toBe(120)
-  })
-  it('is null without darts', () => {
-    expect(threeDartAvg([])).toBeNull()
   })
 })

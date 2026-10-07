@@ -57,7 +57,14 @@
     "totalVisits": [
       0,
       0
-    ]
+    ],
+    "pointsScored": [0, 0],
+    "dartsThrown": [0, 0],
+    "legVisits": [],
+    "lastVisit": [null, null],
+    "checkoutAttempts": [0, 0],
+    "checkoutHits": [0, 0],
+    "visitStartScores": [501, 501]
   },
   "bmStatus": null,
   "status": "active",

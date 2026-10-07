@@ -1,9 +1,20 @@
 import { describe, it, expect } from 'vitest'
 import { teamsLabel, teamOf, winnerName, x01Teams } from '../teams.js'
-import { emptyHistory, type Visit, type VisitHistory } from '../visitHistory.js'
 import type { X01Game } from '../api/game-ws'
 
-const v = (scored: number, left: number, darts = 3): Visit => ({ scored, left, darts, bust: false })
+const lv = (seat: number, scored: number, left: number) => ({ seat, scored, left, darts: 3, bust: false })
+// This leg: C 100, L 140, G 85, M 41, C 45, L 100, G 130, M 133 (60 running for C, 81 left);
+// Christoph also threw 60 at the end of the previous leg
+const legVisits = [
+  lv(0, 100, 401),
+  lv(1, 140, 361),
+  lv(2, 85, 316),
+  lv(3, 41, 320),
+  lv(0, 45, 271),
+  lv(1, 100, 220),
+  lv(2, 130, 141),
+  lv(3, 133, 87),
+]
 const team = (id: 'A' | 'B', seats: number[], o: { score?: number; legs?: number } = {}) => ({
   id,
   name: `Team ${id}`,
@@ -28,25 +39,16 @@ const game = (o: Record<string, unknown> = {}): X01Game =>
     config: { outMode: 'double', inMode: 'straight', startScore: 501 },
     currentVisitDarts: [{ segment: { name: 'T20' }, score: 60 }],
     teams: [team('A', [0, 2], { score: 81, legs: 1 }), team('B', [1, 3], { score: 87, legs: 1 })],
+    pointsScored: [205, 240, 215, 174],
+    dartsThrown: [9, 6, 6, 6],
+    legVisits,
+    lastVisit: [lv(0, 45, 271), lv(1, 100, 220), lv(2, 130, 141), lv(3, 133, 87)],
+    checkoutAttempts: [0, 0, 0, 0],
+    checkoutHits: [0, 0, 0, 0],
+    visitStartScores: [141, 87, 141, 87],
     ...o,
   }) as unknown as X01Game
-const history = (): VisitHistory => ({
-  ...emptyHistory(),
-  // This leg: C 100, L 140, G 85, M 41, C 45, L 100, G 130, M 133 (60 running for C, 81 left)
-  leg: [
-    [v(100, 401), v(45, 271)],
-    [v(140, 361), v(100, 220)],
-    [v(85, 316), v(130, 141)],
-    [v(41, 320), v(133, 87)],
-  ],
-  all: [
-    [v(60, 441), v(100, 401), v(45, 271)],
-    [v(140, 361), v(100, 220)],
-    [v(85, 316), v(130, 141)],
-    [v(41, 320), v(133, 87)],
-  ],
-  legSeats: [0, 1, 2, 3, 0, 1, 2, 3],
-})
+const none = { pointsScored: [0, 0, 0, 0], dartsThrown: [0, 0, 0, 0], legVisits: [], lastVisit: [null, null, null, null] }
 const opts = { suggest: true }
 
 describe('teamsLabel', () => {
@@ -70,7 +72,7 @@ describe('teamOf / winnerName', () => {
 
 describe('x01Teams', () => {
   it('the throwing team: shared score, running visit, team and match averages, darts', () => {
-    const [a] = x01Teams(game(), players, history(), opts)
+    const [a] = x01Teams(game(), players, opts)
     expect(a).toMatchObject({
       id: 'A',
       name: 'Team A',
@@ -91,19 +93,18 @@ describe('x01Teams', () => {
   })
 
   it("'visit': the thrower's team holds the score its visit started from; the other team shows its own", () => {
-    const h = { ...history(), start: [141, null, null, null] }
-    const [a, b] = x01Teams(game(), players, h, { ...opts, scoreUpdates: 'visit' })
+    const [a, b] = x01Teams(game(), players, { ...opts, scoreUpdates: 'visit' })
     expect([a.remaining, a.shown, b.shown]).toEqual([81, 141, 87])
-    expect(x01Teams(game(), players, h, opts)[0].shown).toBe(81)
+    expect(x01Teams(game(), players, opts)[0].shown).toBe(81)
   })
 
   it('counts the legs both teams have played', () => {
-    const [a, b] = x01Teams(game(), players, history(), opts)
+    const [a, b] = x01Teams(game(), players, opts)
     expect([a.leg, b.leg]).toEqual([2, 2])
   })
 
   it("the visit list interleaves the team's players in throwing order, each marked by initial", () => {
-    const [a, b] = x01Teams(game(), players, history(), opts)
+    const [a, b] = x01Teams(game(), players, opts)
     expect(a.visits.map(x => x.scored)).toEqual([100, 85, 45, 130])
     expect(a.marks).toEqual(['C', 'G', 'C', 'G'])
     expect(b.visits.map(x => x.left)).toEqual([361, 320, 220, 87])
@@ -113,7 +114,7 @@ describe('x01Teams', () => {
   })
 
   it('members: Throwing, Up next for the next thrower, "after" for the rest', () => {
-    const [a, b] = x01Teams(game(), players, history(), opts)
+    const [a, b] = x01Teams(game(), players, opts)
     expect(a.members.map(m => [m.seat, m.name, m.role, m.avg])).toEqual([
       [0, 'Christoph', 'throwing', '68.3'],
       [2, 'Guest 1', 'after', '107.5'],
@@ -125,7 +126,7 @@ describe('x01Teams', () => {
   })
 
   it("Up next is the server's nextPlayer: at a checkout, the next leg's starter", () => {
-    const [a, b] = x01Teams(game({ nextPlayer: 3 }), players, history(), opts)
+    const [a, b] = x01Teams(game({ nextPlayer: 3 }), players, opts)
     expect(a.members.map(m => m.role)).toEqual(['throwing', 'after'])
     expect(b.members.map(m => [m.seat, m.role])).toEqual([
       [1, 'after'],
@@ -134,28 +135,33 @@ describe('x01Teams', () => {
   })
 
   it('nobody is up next when the visit ends the game', () => {
-    const [, b] = x01Teams(game({ nextPlayer: null }), players, history(), opts)
+    const [, b] = x01Teams(game({ nextPlayer: null }), players, opts)
     expect(b.members.map(m => m.role)).toEqual(['after', 'after'])
   })
 
   it('the waiting team can finish with three darts', () => {
-    const [, b] = x01Teams(game(), players, history(), opts)
+    const [, b] = x01Teams(game(), players, opts)
     expect(b.active).toBe(false)
     expect(b.canFinish).toBe('T17 · D18')
   })
 
-  it('without a history the averages are dashes and the visit list is empty', () => {
-    const [a] = x01Teams(game(), players, emptyHistory(), opts)
+  it('before any visit the averages are dashes and the visit list is empty', () => {
+    const [a] = x01Teams(game(none), players, opts)
     expect([a.teamAvg, a.matchAvg, a.visits, a.marks]).toEqual(['—', '—', [], []])
   })
 
+  it("the team's checkout rate sums its players' darts at a finish", () => {
+    const [a] = x01Teams(game({ checkoutAttempts: [2, 0, 3, 0], checkoutHits: [1, 0, 1, 0] }), players, opts)
+    expect(a).toMatchObject({ checkout: '40%', checkoutDarts: '2/5' })
+  })
+
   it('a finished game: the winning team is marked, nobody is throwing', () => {
-    const [a, b] = x01Teams(game({ winner: 2, currentVisitDarts: [] }), players, history(), opts)
+    const [a, b] = x01Teams(game({ winner: 2, currentVisitDarts: [] }), players, opts)
     expect([a.won, b.won, a.active]).toEqual([true, false, false])
     expect(a.members.every(m => m.role === null)).toBe(true)
   })
 
   it('a singles game has no teams', () => {
-    expect(x01Teams(game({ teams: undefined }), players, history(), opts)).toEqual([])
+    expect(x01Teams(game({ teams: undefined }), players, opts)).toEqual([])
   })
 })
