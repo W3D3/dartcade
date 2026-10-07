@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
-# Start the dev stack. Extra args are passed to `docker compose up`.
+# Start the dev stack, detached by default. Extra args are passed to `docker compose up`
+# (e.g. `scripts/dev.sh --attach backend` to follow one service's logs, or drop `-d` yourself
+# by editing the invocation below if you want it attached every time).
 set -eu
 cd "$(dirname "$0")/.."
 
@@ -12,4 +14,4 @@ mkdir -p backend/node_modules backend/frontend/node_modules
 BRIDGE_COMMIT="$(git describe --always --dirty --exclude '*' 2>/dev/null || true)"
 export BRIDGE_COMMIT
 
-exec docker compose -f docker-compose.dev.yaml up --build "$@"
+exec docker compose -f docker-compose.dev.yaml up --build -d "$@"
