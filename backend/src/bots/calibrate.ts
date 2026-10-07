@@ -18,7 +18,7 @@ function simulateLeg(sigma: number, rng: () => number): { darts: number; points:
   while (remaining > 0) {
     const dartsLeft = 3 - dartsThisVisit
     const target = pickTarget(remaining, dartsLeft, OUT_MODE)
-    const seg = throwAt(target, sigma, rng)
+    const { segment: seg } = throwAt(target, sigma, rng)
     darts++
     dartsThisVisit++
     const scored = seg.multiplier * (seg.number === 50 ? 25 : seg.number) // Bull=50 scores 50, not 25*2

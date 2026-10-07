@@ -30,7 +30,7 @@ describe('LEVEL_SIGMA', () => {
         while (remaining > 0) {
           const dartsLeft = 3 - dartsThisVisit
           const target = pickTarget(remaining, dartsLeft, 'double')
-          const seg = throwAt(target, sigma, rng)
+          const { segment: seg } = throwAt(target, sigma, rng)
           darts++
           dartsThisVisit++
           const value = seg.name === 'Bull' ? 50 : seg.multiplier * seg.number
