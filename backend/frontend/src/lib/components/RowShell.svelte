@@ -11,6 +11,7 @@
 
   let {
     name,
+    bot = null,
     active,
     pill,
     seat = null,
@@ -18,6 +19,8 @@
     children,
   }: {
     name: string
+    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial. */
+    bot?: { level: number } | null
     active: boolean
     pill: PillKind | null
     seat?: SeatLine | null
@@ -35,7 +38,7 @@
   >
     <div class="flex flex-col gap-[10px] min-w-0">
       <span class="flex items-center gap-[10px] xl:gap-3 min-w-0">
-        <Avatar {name} tone={active ? 'accent' : 'default'} class="w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]" />
+        <Avatar {name} {bot} tone={active ? 'accent' : 'default'} class="w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]" />
         <PlayerName
           {name}
           {seat}

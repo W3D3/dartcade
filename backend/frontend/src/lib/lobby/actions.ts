@@ -1,6 +1,7 @@
 // The changes the lobby screens make to a lobby (the lobby page, the Play page's next game).
 // Each resolves with the server's refusal, if any; the change itself comes back on the socket.
 import { api } from '$lib/api'
+import { averageForLevel } from '$shared/botLevels.js'
 import type { TeamId } from '../api/lobby-ws'
 import type { Refusal } from './input'
 import type { LobbyPatch, PersonPatch } from './rules'
@@ -16,7 +17,10 @@ export function lobbyActions(id: string) {
       api.DELETE('/api/lobbies/{id}/people/{personId}', { params: { path: { id, personId } } }),
     addGuest: (name: string): Promise<ActionResult> => api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name } }),
     addBot: (level: number): Promise<ActionResult> =>
-      api.POST('/api/lobbies/{id}/people', { params: { path: { id } }, body: { name: `Bot Lvl ${level}`, bot: { level } } }),
+      api.POST('/api/lobbies/{id}/people', {
+        params: { path: { id } },
+        body: { name: `Bot Lvl ${level} (${averageForLevel(level)} avg)`, bot: { level } },
+      }),
     invite: (userId: string): Promise<ActionResult> =>
       api.POST('/api/lobbies/{id}/invites', { params: { path: { id } }, body: { userId } }),
     /** Host: move someone to this team. */

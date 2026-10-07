@@ -10,10 +10,13 @@
 
   let {
     member,
+    bot = null,
     seat = null,
     compact = false,
   }: {
     member: TeamMember
+    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial. */
+    bot?: { level: number } | null
     /** Remote games: the seat's board, and "· you". */
     seat?: SeatLine | null
     compact?: boolean
@@ -30,7 +33,7 @@
       ? 'bg-surface-row border-line-2'
       : 'border-line'}"
 >
-  <Avatar name={member.name} tone={throwing ? 'accent' : 'default'} size={30} />
+  <Avatar name={member.name} {bot} tone={throwing ? 'accent' : 'default'} size={30} />
   <PlayerName
     name={member.name}
     you={seat?.you ?? false}

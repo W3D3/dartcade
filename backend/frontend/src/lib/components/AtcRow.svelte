@@ -8,17 +8,26 @@
 
   let {
     name,
+    bot = null,
     p,
     active,
     pill,
     seat = null,
-  }: { name: string; p: AtcPlayerView; active: boolean; pill: PillKind | null; seat?: SeatLine | null } = $props()
+  }: {
+    name: string
+    bot?: { level: number } | null
+    p: AtcPlayerView
+    active: boolean
+    pill: PillKind | null
+    seat?: SeatLine | null
+  } = $props()
 </script>
 
 <!-- Tablets, by the row's own width: from 672 px three columns; 512 to 672 px narrower ones with
      the strip in two rows; below 512 px name, target and progress stacked -->
 <RowShell
   {name}
+  {bot}
   {active}
   {pill}
   {seat}

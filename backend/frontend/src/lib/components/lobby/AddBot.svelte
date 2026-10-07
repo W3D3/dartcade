@@ -3,6 +3,7 @@
   // AddSomeone; unlike it, there's no text to type — just a level.
   import { Bot } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { averageForLevel } from '$shared/botLevels.js'
   import MenuItem from './MenuItem.svelte'
   import PopoverPanel from './PopoverPanel.svelte'
 
@@ -29,7 +30,7 @@
   {#if open}
     <PopoverPanel label="Bot difficulty" align="stretch">
       {#each Array.from({ length: 10 }, (_, i) => i + 1) as level (level)}
-        <MenuItem label="Level {level}" onclick={() => void pick(level)} />
+        <MenuItem label="Level {level}" detail="{averageForLevel(level)} avg" onclick={() => void pick(level)} />
       {/each}
     </PopoverPanel>
   {/if}

@@ -10,6 +10,7 @@
 
   let {
     name,
+    bot = null,
     active,
     solo = false,
     pill,
@@ -20,6 +21,8 @@
     waiting,
   }: {
     name: string
+    /** A bot seat: shows a robot glyph coloured by level instead of the name's initial. */
+    bot?: { level: number } | null
     active: boolean
     solo?: boolean
     pill: PillKind | null
@@ -48,6 +51,7 @@
   <div class="flex items-center {solo ? 'gap-3' : 'gap-[10px] xl:gap-3'} min-w-0">
     <Avatar
       {name}
+      {bot}
       tone={active ? 'accent' : 'default'}
       class={solo ? 'w-10 h-10 text-[17px]' : 'w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]'}
     />

@@ -262,6 +262,7 @@
   // Remote games: what the centre shows when it isn't your turn, and where each seat throws
   const remote = $derived(centerState(snapshot, viewerId))
   const lines = $derived(seatLines(snapshot))
+  const bots = $derived(snapshot?.seats.map(s => s.bot) ?? [])
   const turn = $derived(turnStatus(remote))
   const caption = $derived(boardCaption(remote))
   // The keypad: picked with Enter on your turn, or forced while your board is offline.
@@ -627,6 +628,7 @@
   {#if isX01}
     <X01Panel
       name={players[i]?.name ?? ''}
+      bot={bots[i] ?? null}
       p={x01Players[i]}
       active={i === currentPlayer && isActive}
       solo={layout === 'solo'}
@@ -638,6 +640,7 @@
   {:else}
     <AtcPanel
       name={players[i]?.name ?? ''}
+      bot={bots[i] ?? null}
       p={atcPlayers[i]}
       active={i === currentPlayer && isActive}
       solo={layout === 'solo'}
@@ -667,6 +670,7 @@
     <TeamPanel
       {team}
       seats={lines}
+      {bots}
       chalkboard={settings.chalkboard && !compact}
       {compact}
       overlay={away && !compact ? teamWaiting : undefined}
@@ -719,7 +723,7 @@
       {/if}
 
       {#if bullOff}
-        <BullOffPanel {players} {bullOff} manual={boardId === null} {send} />
+        <BullOffPanel {players} {bots} {bullOff} manual={boardId === null} {send} />
       {:else if !game}
         <main class="flex-grow flex items-center justify-center">
           <p class="text-text-muted">Unsupported game</p>
@@ -762,6 +766,7 @@
                     <PhonePlayerRow
                       active={up}
                       name={player.name}
+                      bot={bots[i] ?? null}
                       you={line?.you ?? false}
                       pill={up ? null : pillFor(i, true)}
                       sub={rowSub(
@@ -785,6 +790,7 @@
                     <PhonePlayerRow
                       active={up}
                       name={player.name}
+                      bot={bots[i] ?? null}
                       you={line?.you ?? false}
                       pill={up ? null : pillFor(i, true)}
                       sub={rowSub(
@@ -839,6 +845,7 @@
               {#if isX01}
                 <X01Row
                   name={player.name}
+                  bot={bots[i] ?? null}
                   p={x01Players[i]}
                   active={i === currentPlayer && isActive}
                   pill={pillFor(i, true)}
@@ -847,6 +854,7 @@
               {:else}
                 <AtcRow
                   name={player.name}
+                  bot={bots[i] ?? null}
                   p={atcPlayers[i]}
                   active={i === currentPlayer && isActive}
                   pill={pillFor(i, true)}
