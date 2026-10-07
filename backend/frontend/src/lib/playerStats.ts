@@ -1,7 +1,7 @@
-// What a player panel or row shows, computed from the game snapshot and the visit history.
+// What a player panel or row shows, computed from the game snapshot.
 import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
 import { atcCells, atcDone, atcTargetLabel, type AtcCell } from './atc.js'
-import { threeDartAvg, type Visit, type VisitHistory } from './visitHistory.js'
+import type { Visit } from './visitHistory.js'
 import { shownScore, type ScoreUpdates } from './heldScore.js'
 import type { RollOptions } from './rollingNumber.js'
 
@@ -9,6 +9,15 @@ import type { AtcGame, X01Game } from './api/game-ws'
 
 /** A 3-dart average to one decimal; a dash without darts. */
 export const fmtAvg = (v: number | null) => (v === null ? '—' : v.toFixed(1))
+
+/** A 3-dart average from points and darts, to one decimal; a dash without darts. */
+export const avgOf = (points: number, darts: number) => fmtAvg(darts > 0 ? (points / darts) * 3 : null)
+
+/** Darts at a finish that hit, as "40%" and "2/5"; a dash before the first. */
+export const checkoutRate = (hits: number, attempts: number) => ({
+  checkout: attempts > 0 ? `${Math.round((hits / attempts) * 100)}%` : '—',
+  checkoutDarts: `${hits}/${attempts}`,
+})
 
 export type X01PlayerView = {
   remaining: number
@@ -20,6 +29,10 @@ export type X01PlayerView = {
   avg: string
   legAvg: string
   last: string
+  /** Darts at a finish that hit: "40%", or a dash before the first. */
+  checkout: string
+  /** The same as "hits/darts". */
+  checkoutDarts: string
   darts: number
   legsWon: number
   firstTo: number
@@ -37,7 +50,6 @@ export type X01PlayerView = {
 export function x01Player(
   game: X01Game,
   i: number,
-  history: VisitHistory,
   o: { active: boolean; suggest: boolean; checkout?: CheckoutPrefs; bust?: boolean; scoreUpdates?: ScoreUpdates },
 ): X01PlayerView {
   const remaining = game.scores.at(i) ?? 0
@@ -48,9 +60,8 @@ export function x01Player(
     o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0
       ? checkoutHint(remaining, game.config.outMode, dartsLeft, o.checkout)
       : null
-  const all = history.all.at(i) ?? []
-  const leg = history.leg.at(i) ?? []
-  const last = all.at(-1)
+  const leg: Visit[] = game.legVisits.filter(v => v.seat === i)
+  const last = game.lastVisit.at(i) ?? null
   return {
     remaining,
     opened,
@@ -60,12 +71,16 @@ export function x01Player(
       thrower: o.active,
       locked: game.visitLocked,
       darts: running,
-      start: history.start.at(i) ?? null,
+      start: game.visitStartScores.at(i) ?? null,
     }),
     canFinish: hint ? hint.join(' · ') : null,
-    avg: fmtAvg(threeDartAvg(all)),
-    legAvg: fmtAvg(threeDartAvg(leg)),
+    avg: avgOf(game.pointsScored.at(i) ?? 0, game.dartsThrown.at(i) ?? 0),
+    legAvg: avgOf(
+      leg.reduce((a, v) => a + v.scored, 0),
+      leg.reduce((a, v) => a + v.darts, 0),
+    ),
     last: last ? String(last.scored) : '—',
+    ...checkoutRate(game.checkoutHits.at(i) ?? 0, game.checkoutAttempts.at(i) ?? 0),
     darts: game.totalDarts.at(i) ?? 0,
     legsWon: game.legs.at(i) ?? 0,
     firstTo: game.firstTo,

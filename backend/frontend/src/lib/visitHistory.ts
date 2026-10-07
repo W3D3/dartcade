@@ -92,10 +92,3 @@ export function trackVisits(h: VisitHistory, game: X01Game | AtcGame): VisitHist
     prev: { totalVisits: [...totalVisits], totalDarts: [...totalDarts], legs: [...legs], darts, bust, cp },
   }
 }
-
-/** Points per dart times three over the given visits, or null without darts. */
-export function threeDartAvg(visits: Visit[]): number | null {
-  const darts = visits.reduce((a, v) => a + v.darts, 0)
-  if (darts === 0) return null
-  return (visits.reduce((a, v) => a + v.scored, 0) / darts) * 3
-}
