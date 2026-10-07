@@ -132,6 +132,9 @@ jobs:
   test-e2e:
     runs-on: ubuntu-latest
     continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - uses: actions/checkout@v5
       - uses: jdx/mise-action@v4
@@ -151,3 +154,39 @@ jobs:
           name: playwright-report
           path: e2e/playwright-report/
           retention-days: 7
+      - name: Comment the failure on the PR
+        # One comment per PR, edited on each run (see check-migrations' schema-diff comment for
+        # the same pattern), so repeated failures update one comment instead of piling up.
+        # success()/failure() are only valid in a step's own `if:`, not inside env: — hence two
+        # steps instead of one branching on a computed outcome. Forks get a read-only token:
+        # skipped.
+        if: ${{ failure() && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          {
+            echo '<!-- e2e-report -->'
+            echo '### e2e smoke tests failed'
+            echo
+            node ../scripts/summarize-e2e-failures.mjs e2e-results.json
+            echo
+            echo "[Full report with traces and screenshots]($RUN_URL) (download the \`playwright-report\` artifact)."
+          } > /tmp/e2e-comment.md
+          ../scripts/upsert-pr-comment.sh "${{ github.repository }}" "${{ github.event.pull_request.number }}" "<!-- e2e-report -->" /tmp/e2e-comment.md
+        working-directory: e2e
+      - name: Clear a stale e2e failure comment
+        # The mirror of the step above: a later passing run updates that same comment to say
+        # so, rather than leaving a stale failure behind. A PR that never had a failing run
+        # never gets a comment in the first place (upsert-pr-comment.sh always posts one, so
+        # this step only runs when there's a real chance one already exists).
+        if: ${{ success() && github.event.pull_request.head.repo.full_name == github.repository }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          id=$(gh api "repos/${{ github.repository }}/issues/${{ github.event.pull_request.number }}/comments" --paginate \
+            --jq '[.[] | select(.body | startswith("<!-- e2e-report -->"))][0].id // empty')
+          [ -z "$id" ] && exit 0
+          { echo '<!-- e2e-report -->'; echo '### e2e smoke tests are passing again'; } > /tmp/e2e-comment.md
+          gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$id" -F body=@/tmp/e2e-comment.md >/dev/null
+        working-directory: e2e
