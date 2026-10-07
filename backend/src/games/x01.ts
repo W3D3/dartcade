@@ -456,6 +456,13 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       bustThisVisit: s.bustThisVisit,
       config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode, botSpeed: readBotSpeed(s.cfg) },
       visitLocked: s.bustThisVisit || s.scores[s.teamOf[s.currentPlayer]] === 0,
+      pointsScored: s.pointsScored,
+      dartsThrown: s.dartsThrown,
+      legVisits: s.legVisits,
+      lastVisit: s.lastVisit,
+      checkoutAttempts: s.checkoutAttempts,
+      checkoutHits: s.checkoutHits,
+      visitStartScores: s.teamOf.map(t => s.visitOpenedScores[t]),
     }
     if (s.cfg.format !== 'teams') return view
     const teams = seatsByTeam(s.teamOf).map((seats, t) => ({

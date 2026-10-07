@@ -500,6 +500,26 @@ describe('bull off integration', () => {
 // ─── view ─────────────────────────────────────────────────────────────────────
 
 describe('view', () => {
+  it('sends the live stats, per seat', () => {
+    const s = playVisit(makeState(), [T20, T20, T20])
+    const v = x01Game.view(s, players)
+    const alice = { seat: 0, scored: 180, left: 321, bust: false, darts: 3 }
+    expect(v).toMatchObject({
+      pointsScored: [180, 0],
+      dartsThrown: [3, 0],
+      legVisits: [alice],
+      lastVisit: [alice, null],
+      checkoutAttempts: [0, 0],
+      checkoutHits: [0, 0],
+      visitStartScores: [321, 501],
+    })
+  })
+
+  it("visitStartScores gives each seat its team's score at the visit's start", () => {
+    const s = makeState({ playerCount: 4, teamOf: [0, 1, 0, 1], scores: [100, 200], visitOpenedScores: [140, 200] })
+    expect(x01Game.view(s, players).visitStartScores).toEqual([140, 200, 140, 200])
+  })
+
   it('returns expected fields', () => {
     const s = makeState({ scores: [180, 501], legs: [1, 0], currentPlayer: 1, winner: null })
     const v = x01Game.view(s, players)

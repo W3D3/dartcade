@@ -109,6 +109,34 @@ export interface X01Game {
   totalDarts: number[]
   totalVisits: number[]
   /**
+   * Per seat: points scored in committed visits (busts count 0).
+   */
+  pointsScored: number[]
+  /**
+   * Per seat: darts in committed visits; with pointsScored, the match average.
+   */
+  dartsThrown: number[]
+  /**
+   * This leg's committed visits, in throwing order.
+   */
+  legVisits: X01Visit[]
+  /**
+   * Per seat: their last committed visit, kept across legs; null before their first.
+   */
+  lastVisit: (X01Visit | null)[]
+  /**
+   * Per seat: darts thrown on a one-dart finish, wherever they landed.
+   */
+  checkoutAttempts: number[]
+  /**
+   * Per seat: of those, the darts that finished the leg.
+   */
+  checkoutHits: number[]
+  /**
+   * Per seat: the team's score when its open (or next) visit started.
+   */
+  visitStartScores: number[]
+  /**
    * Only in a team game: each team with its shared score and legs.
    */
   teams?: {
@@ -151,6 +179,25 @@ export interface Coords {
 export interface Polar {
   r: number
   theta_deg: number
+}
+/**
+ * A committed X01 visit.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "X01Visit".
+ */
+export interface X01Visit {
+  seat: number
+  /**
+   * Points the visit scored; 0 on a bust or before opening.
+   */
+  scored: number
+  /**
+   * The team's score after the visit.
+   */
+  left: number
+  bust: boolean
+  darts: number
 }
 /**
  * Around the Clock view plus the engine's per-session fields.
