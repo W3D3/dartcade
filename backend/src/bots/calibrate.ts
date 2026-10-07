@@ -3,6 +3,7 @@
 // paste the printed LEVEL_SIGMA array into levels.ts. Not part of the running app.
 import { pickTarget, throwAt } from './accuracy.js'
 import { seededRng } from '../session/rng.js'
+import { LEVEL_AVERAGE } from '../shared/botLevels.js'
 
 const START = 501
 const OUT_MODE = 'double'
@@ -67,12 +68,9 @@ function calibrate(targetAvg: number, seed: number): number {
   return (lo + hi) / 2
 }
 
-// Level 1 (30 avg) through Level 10 (105 avg), roughly evenly spaced
-const TARGETS = [30, 38, 46, 54, 63, 72, 81, 90, 98, 105]
-
-const sigmas = TARGETS.map((avg, i) => calibrate(avg, 1000 + i))
+const sigmas = LEVEL_AVERAGE.map((avg, i) => calibrate(avg, 1000 + i))
 console.log('LEVEL_SIGMA (paste into levels.ts):')
 console.log(JSON.stringify(sigmas.map(s => Number(s.toFixed(5)))))
 sigmas.forEach((s, i) => {
-  console.log(`Level ${i + 1}: target ${TARGETS[i]}, sigma ${s.toFixed(5)}, verified avg ${averageAt(s, 1000 + i).toFixed(1)}`)
+  console.log(`Level ${i + 1}: target ${LEVEL_AVERAGE[i]}, sigma ${s.toFixed(5)}, verified avg ${averageAt(s, 1000 + i).toFixed(1)}`)
 })
