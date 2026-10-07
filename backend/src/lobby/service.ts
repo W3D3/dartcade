@@ -807,7 +807,7 @@ export class LobbyService {
         seats: plan.seats,
         shuffleSeats: plan.shuffleSeats,
         lobbyId: lobby.id,
-        lobbyName: rules.isSolo(lobby) ? null : lobby.name,
+        lobbyName: lobby.name,
       }))
     } catch (err) {
       throw this.startError(lobby, hostUserId, err)

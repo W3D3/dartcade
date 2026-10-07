@@ -194,7 +194,7 @@ export interface Lobby {
    */
   activity: LobbyActivity[]
   /**
-   * Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo.
+   * Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states.
    */
   solo: boolean
   /**
@@ -272,7 +272,7 @@ export interface LobbySummary {
    */
   youHost: boolean
   /**
-   * Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo.
+   * Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states.
    */
   solo: boolean
   /**

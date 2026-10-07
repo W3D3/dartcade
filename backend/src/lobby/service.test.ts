@@ -974,12 +974,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(engine.getSession(sessionId)).toBeDefined()
     })
 
-    it('a solo lobby starts without being ready, and the game carries no lobby name', async () => {
+    it('a solo lobby starts without being ready, and the game carries the lobby name', async () => {
       const solo = await lobbies.create('max')
       await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
       await lobbies.addGuest('max', solo.id, { name: 'Guest 1' })
       const { sessionId } = await lobbies.start('max', solo.id, false)
-      expect(engine.getSession(sessionId)).toMatchObject({ lobbyId: solo.id, lobbyName: null })
+      expect(engine.getSession(sessionId)).toMatchObject({ lobbyId: solo.id, lobbyName: "Max's lobby" })
     })
 
     it('seats a guest with their adder as controller, and leaves out who sits out', async () => {

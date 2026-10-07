@@ -794,7 +794,7 @@
         },
         "solo": {
           "type": "boolean",
-          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
         },
         "nextHostName": {
           "type": [
@@ -1218,7 +1218,7 @@
             },
             "solo": {
               "type": "boolean",
-              "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+              "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
             },
             "nextHostName": {
               "type": [
@@ -1665,7 +1665,7 @@
                 },
                 "solo": {
                   "type": "boolean",
-                  "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+                  "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
                 },
                 "nextHostName": {
                   "type": [
@@ -1833,7 +1833,7 @@
         },
         "solo": {
           "type": "boolean",
-          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
         },
         "hasBot": {
           "type": "boolean",
@@ -2030,7 +2030,7 @@
                 },
                 "solo": {
                   "type": "boolean",
-                  "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+                  "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
                 },
                 "hasBot": {
                   "type": "boolean",
@@ -2472,7 +2472,7 @@
                     },
                     "solo": {
                       "type": "boolean",
-                      "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+                      "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
                     },
                     "hasBot": {
                       "type": "boolean",

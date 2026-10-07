@@ -188,7 +188,7 @@
         "activity": { "type": "array", "items": { "$ref": "#/$defs/LobbyActivity" }, "description": "Newest first, at most 50." },
         "solo": {
           "type": "boolean",
-          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
         },
         "nextHostName": { "type": ["string", "null"], "description": "Who becomes host if the host leaves now; null when nobody would." }
       }
@@ -273,7 +273,7 @@
         "youHost": { "type": "boolean", "description": "The viewer is the lobby's host." },
         "solo": {
           "type": "boolean",
-          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens keep the lobby out of the way while solo."
+          "description": "Only one account is in the lobby (guests and pending invites don't count). The screens give the invite panel more room and hide ready states."
         },
         "hasBot": {
           "type": "boolean",
