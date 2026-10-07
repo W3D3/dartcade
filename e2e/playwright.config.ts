@@ -30,5 +30,8 @@ export default defineConfig({
       executablePath: resolveExecutablePath(),
     },
   },
-  reporter: process.env.CI ? 'github' : 'list',
+  // CI: inline annotations on the PR (github) plus a real HTML report to upload as an
+  // artifact (github alone writes nothing to disk — there was never a report to upload),
+  // plus a small JSON summary the workflow reads to build a PR comment on failure.
+  reporter: process.env.CI ? [['github'], ['html', { open: 'never' }], ['json', { outputFile: 'e2e-results.json' }]] : 'list',
 })
