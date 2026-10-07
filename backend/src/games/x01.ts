@@ -4,6 +4,7 @@ import type { X01View } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
 import { pickTarget } from '../bots/accuracy.js'
 import { rankSeats } from './ranking.js'
+import { checkoutHint } from '../shared/checkout.js'
 import { seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, type TeamsConfig } from './teams.js'
 
 export type X01Config = {
@@ -74,6 +75,10 @@ export type X01State = {
   lastVisit: (X01VisitRecord | null)[]
   /** Darts in each player's committed visits: with pointsScored, the match average. */
   dartsThrown: number[]
+  /** Darts each player threw on a one-dart finish, wherever they landed (opened players only). */
+  checkoutAttempts: number[]
+  /** Of those, the darts that finished the leg. */
+  checkoutHits: number[]
 }
 
 // What the current player's visit scored: a bust resets the score and an unopened
@@ -320,6 +325,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       legVisits: [],
       lastVisit: Array<X01VisitRecord | null>(n).fill(null),
       dartsThrown: Array<number>(n).fill(0),
+      checkoutAttempts: Array<number>(n).fill(0),
+      checkoutHits: Array<number>(n).fill(0),
     }
   },
 
@@ -362,14 +369,23 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           return { state: { ...thrown, opened, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
         }
 
+        const cp = s.currentPlayer
+        // A dart thrown on a one-dart finish is a dart at the double, wherever it lands (see #119 for 25)
+        const attempt = checkoutHint(s.scores[t], s.cfg.outMode, 1) !== null
+        const counted = attempt ? { ...thrown, checkoutAttempts: s.checkoutAttempts.map((a, i) => (i === cp ? a + 1 : a)) } : thrown
+
         const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
         const newScore = s.scores[t] - dartScore
 
         if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !meetsMode(dart, s.cfg.outMode))) {
-          return { state: { ...thrown, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
+          return { state: { ...counted, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
         }
 
-        return { state: { ...thrown, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
+        const scores = s.scores.map((sc, i) => (i === t ? newScore : sc))
+        if (newScore === 0) {
+          return { state: { ...counted, scores, checkoutHits: s.checkoutHits.map((h, i) => (i === cp ? h + 1 : h)) } }
+        }
+        return { state: { ...counted, scores } }
       }
 
       case 'takeout.finished': {

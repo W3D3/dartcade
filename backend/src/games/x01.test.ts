@@ -41,6 +41,8 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
     legVisits: [],
     lastVisit: Array<null>(n).fill(null),
     dartsThrown: Array<number>(n).fill(0),
+    checkoutAttempts: Array<number>(n).fill(0),
+    checkoutHits: Array<number>(n).fill(0),
     ...overrides,
   }
 }
@@ -903,5 +905,77 @@ describe('committed visits', () => {
   it('init starts every list and count empty', () => {
     const s = x01Game.init(defaultCfg, players)
     expect(s).toMatchObject({ visitDarts: 0, legVisits: [], lastVisit: [null, null], dartsThrown: [0, 0] })
+  })
+})
+
+describe('checkout darts', () => {
+  const on = (score: number, o: Partial<X01State> = {}) =>
+    openedVisit(makeState({ scores: [score, 501], visitOpenedScores: [score, 501], ...o }))
+  const throwAll = (s: X01State, darts: BoardEvent[]) => darts.reduce((st, d) => x01Game.onBoardEvent(st, d).state, s)
+
+  it('a dart on a one-dart finish is an attempt wherever it lands; the finishing one is a hit', () => {
+    // 40 left: S20 misses (20 left, still a one-dart finish), D10 finishes
+    const s = throwAll(on(40), [S20, D10])
+    expect(s.checkoutAttempts).toEqual([2, 0])
+    expect(s.checkoutHits).toEqual([1, 0])
+  })
+
+  it('a dart on a score that needs more than one dart is not an attempt', () => {
+    expect(throwAll(on(170), [T20]).checkoutAttempts).toEqual([0, 0])
+    // 41: S1 leaves 40 (not an attempt), then D20 on 40 (attempt, hit)
+    const s = throwAll(on(41), [S1, D20])
+    expect(s.checkoutAttempts).toEqual([1, 0])
+    expect(s.checkoutHits).toEqual([1, 0])
+  })
+
+  it('a bust on a one-dart finish is an attempt and a miss', () => {
+    const s = throwAll(on(40), [T20])
+    expect(s.bustThisVisit).toBe(true)
+    expect(s.checkoutAttempts).toEqual([1, 0])
+    expect(s.checkoutHits).toEqual([0, 0])
+  })
+
+  it('darts before opening are never attempts', () => {
+    const cfg: X01Config = { ...defaultCfg, inMode: 'double' }
+    expect(throwAll(on(40, { cfg, opened: [false, false] }), [S20]).checkoutAttempts).toEqual([0, 0])
+  })
+
+  it('master out: a finishing triple is a hit', () => {
+    const cfg: X01Config = { ...defaultCfg, outMode: 'master' }
+    const s = throwAll(on(60, { cfg }), [T20])
+    expect(s.checkoutAttempts).toEqual([1, 0])
+    expect(s.checkoutHits).toEqual([1, 0])
+  })
+
+  it('counts for the thrower, not their team', () => {
+    // Teams: seats 0 and 2 are team 0 on 40, seat 2 throwing
+    const s = throwAll(
+      openedVisit(
+        makeState({
+          playerCount: 4,
+          teamOf: [0, 1, 0, 1],
+          order: [0, 1, 2, 3],
+          scores: [40, 501],
+          visitOpenedScores: [40, 501],
+          currentPlayer: 2,
+          turn: 2,
+        }),
+      ),
+      [S20],
+    )
+    expect(s.checkoutAttempts).toEqual([0, 0, 1, 0])
+  })
+
+  it('a corrected dart refolded through the open visit leaves the counts right', () => {
+    const committed = makeState({ scores: [40, 501], visitOpenedScores: [40, 501] })
+    const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v1' } }
+    expect(refoldVisit(x01Game, committed, [opened, S20, D10]).checkoutHits).toEqual([1, 0])
+    const corrected = refoldVisit(x01Game, committed, [opened, S20, dartEvent(10, 'Single', 1)])
+    expect(corrected.checkoutAttempts).toEqual([2, 0])
+    expect(corrected.checkoutHits).toEqual([0, 0])
+  })
+
+  it('init starts the counts at zero', () => {
+    expect(x01Game.init(defaultCfg, players)).toMatchObject({ checkoutAttempts: [0, 0], checkoutHits: [0, 0] })
   })
 })
