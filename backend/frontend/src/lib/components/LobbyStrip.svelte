@@ -1,13 +1,12 @@
 <script lang="ts">
-  // Above the phone tab bar while you're in a lobby that isn't solo: its name and what's next,
-  // or during its game the way back. Not on the lobby page itself, and nothing shows here while
-  // solo (the side nav's small "Play with friends" card covers that).
+  // Above the phone tab bar while you're in a lobby: its name and what's next, or during its
+  // game the way back. Not on the lobby page itself.
   import { ChevronRight } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import { me } from '$lib/lobby/sockets'
   import { indicatorView } from '$lib/lobby/format'
 
-  const view = $derived($me?.lobby && !$me.lobby.solo ? indicatorView($me.lobby) : null)
+  const view = $derived($me?.lobby ? indicatorView($me.lobby) : null)
 </script>
 
 {#if view && $location !== '/lobby'}

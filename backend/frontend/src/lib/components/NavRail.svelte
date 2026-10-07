@@ -2,7 +2,7 @@
   // The tablet's main navigation (md up to xl): an 88 px icon rail with the phone's tabs, the
   // Lobby item, Friends and the avatar that opens the account menu. Desktops get SideNav instead.
   import { location, push } from 'svelte-spa-router'
-  import { Plus, Users, House } from '@lucide/svelte'
+  import { Plus, House } from '@lucide/svelte'
   import { navTabs, isActiveRoute, railLobby } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'
   import { me } from '$lib/lobby/sockets'
@@ -70,19 +70,11 @@
         aria-current={active ? 'page' : undefined}
         class="relative w-[72px] h-16 box-border px-1 flex flex-col items-center justify-center gap-1 rounded-[10px]
                no-underline text-[11px] font-semibold
-               {lobbyLink.kind === 'in'
-          ? `border text-text ${active ? 'bg-surface-paused border-accent' : 'bg-surface-active border-accent-line'}`
-          : `border ${active ? 'bg-surface-paused border-transparent text-text' : 'border-line-chip text-ink-2'}`}"
+               border text-text {active ? 'bg-surface-paused border-accent' : 'bg-surface-active border-accent-line'}"
       >
-        {#if lobbyLink.kind === 'in'}
-          <span
-            class="absolute top-2 right-[10px] w-2 h-2 rounded-full bg-accent animate-pulse motion-reduce:animate-none"
-            aria-hidden="true"
-          ></span>
-          <House size={22} strokeWidth={1.8} class="text-accent" />
-        {:else}
-          <Users size={20} strokeWidth={1.8} />
-        {/if}
+        <span class="absolute top-2 right-[10px] w-2 h-2 rounded-full bg-accent animate-pulse motion-reduce:animate-none" aria-hidden="true"
+        ></span>
+        <House size={22} strokeWidth={1.8} class="text-accent" />
         <span class="max-w-full truncate">{lobbyLink.label}</span>
       </a>
     {/if}

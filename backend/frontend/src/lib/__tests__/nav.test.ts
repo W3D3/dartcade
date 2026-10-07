@@ -56,13 +56,8 @@ describe('railLobby', () => {
       aria: "You're in the lobby Friday darts. 6 people · Next: X01. Open the lobby",
     })
   })
-  it('a solo lobby is a quiet way to invite friends', () => {
-    expect(railLobby({ ...s, solo: true }, true)).toEqual({
-      kind: 'solo',
-      href: '/lobby',
-      label: 'Lobby',
-      aria: 'Play with friends: open the lobby',
-    })
+  it('a solo lobby shows like any other: its name', () => {
+    expect(railLobby({ ...s, solo: true }, true)).toMatchObject({ kind: 'in', href: '/lobby', label: 'Friday darts' })
   })
 })
 
