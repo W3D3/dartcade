@@ -25,7 +25,7 @@ export function joinLink(origin: string, code: string): string {
 export function accessHint(access: LobbyAccess): string {
   return access === 'friends'
     ? 'Your friends see this lobby in Friends and join without the code. The code and link work too.'
-    : 'Only people with the code, the link or an invite can join.'
+    : 'Only people you invite or give the code to.'
 }
 
 const ATC_ORDER: Record<string, string> = { asc: '1–20', desc: '20–1', random: 'Random order' }

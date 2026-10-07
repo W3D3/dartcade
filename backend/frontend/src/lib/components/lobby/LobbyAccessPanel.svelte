@@ -1,6 +1,6 @@
 <script lang="ts">
   // The host's "Who can join": Friends (the host's friends join from Friends without the code) or
-  // Invite only. No artboard has it; it sits with the lobby's other host settings.
+  // Private (only people you invite or give the code to). No artboard has it; it sits with the lobby's other host settings.
   import type { LobbyAccess } from '$lib/api/lobby-ws'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import Panel from './Panel.svelte'
@@ -10,7 +10,7 @@
   const isAccess = (v: unknown): v is LobbyAccess => v === 'friends' || v === 'invite'
   const options = [
     { value: 'friends', label: 'Friends' },
-    { value: 'invite', label: 'Invite only' },
+    { value: 'invite', label: 'Private' },
   ]
 </script>
 

@@ -275,6 +275,6 @@ describe('personLine', () => {
 describe('accessHint', () => {
   it('says who can join', () => {
     expect(accessHint('friends')).toBe('Your friends see this lobby in Friends and join without the code. The code and link work too.')
-    expect(accessHint('invite')).toBe('Only people with the code, the link or an invite can join.')
+    expect(accessHint('invite')).toBe('Only people you invite or give the code to.')
   })
 })

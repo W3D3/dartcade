@@ -11,11 +11,11 @@ vi.mock('bits-ui', () => ({
 }))
 
 describe('LobbyAccessPanel', () => {
-  it('offers Friends and Invite only, with what the choice means', () => {
+  it('offers Friends and Private, with what the choice means', () => {
     const out = render(LobbyAccessPanel, { props: { access: 'invite', onchange: () => {} } }).body
     expect(out).toContain('Who can join')
     expect(out).toContain('Friends')
-    expect(out).toContain('Invite only')
-    expect(out).toContain('Only people with the code, the link or an invite can join.')
+    expect(out).toContain('Private')
+    expect(out).toContain('Only people you invite or give the code to.')
   })
 })

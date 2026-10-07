@@ -223,10 +223,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
   })
 
   describe('joining as a friend', () => {
-    it('a friend of the host joins a lobby open to friends without a code', async () => {
+    it('new lobbies are private; a friend of the host joins one open to friends without a code', async () => {
       await befriend('chris', 'lena')
       const { id } = await lobbies.create('chris')
-      expect((await lobbies.view(id))?.access).toBe('friends')
+      expect((await lobbies.view(id))?.access).toBe('invite')
+      await expect(lobbies.join('lena', id)).rejects.toMatchObject({ statusCode: 403 })
+      await lobbies.update('chris', id, { access: 'friends' })
       expect(await lobbies.join('lena', id)).toMatchObject({ id })
       expect((await lobbies.view(id))?.people.map(p => p.name)).toEqual(['Christoph', 'Lena'])
     })
