@@ -56,11 +56,13 @@ function gaussianPair(rng: Rng): [number, number] {
 }
 
 /** A dart thrown at `target`, landing with a 2D Gaussian miss of standard deviation `sigma`
- *  (board units) in each axis, resolved to the segment it hits. Draws exactly two values from
- *  `rng` (one Gaussian pair covers both axes). */
-export function throwAt(target: Point, sigma: number, rng: Rng): Segment {
+ *  (board units) in each axis. Returns both the segment it hits and where it actually landed
+ *  (`coords`) — the caller sends `coords` along with the action the same way a real board
+ *  detection does, so the dart renders at its true landing spot instead of a generic
+ *  segment-center fallback. Draws exactly two values from `rng` (one Gaussian pair covers both
+ *  axes). */
+export function throwAt(target: Point, sigma: number, rng: Rng): { segment: Segment; coords: Point } {
   const [z0, z1] = gaussianPair(rng)
-  const dx = z0 * sigma
-  const dy = z1 * sigma
-  return segmentAt(target.x + dx, target.y + dy)
+  const coords = { x: target.x + z0 * sigma, y: target.y + z1 * sigma }
+  return { segment: segmentAt(coords.x, coords.y), coords }
 }

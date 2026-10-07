@@ -54,8 +54,9 @@ describe('throwAt', () => {
   it('a sigma of 0 always lands exactly on the target', () => {
     const target = { x: 0.1, y: 0.2 }
     const rng = () => 0.5 // any fixed value; with sigma 0 the offset is always (0, 0)
-    const seg = throwAt(target, 0, rng)
-    expect(seg).toEqual(segmentAt(target.x, target.y))
+    const { segment, coords } = throwAt(target, 0, rng)
+    expect(segment).toEqual(segmentAt(target.x, target.y))
+    expect(coords).toEqual(target)
   })
 
   it('consumes exactly two rng() calls per throw (one Gaussian pair via Box-Muller)', () => {
@@ -76,8 +77,8 @@ describe('throwAt', () => {
       seed = (seed * 1103515245 + 12345) % 2147483648
       return seed / 2147483648
     }
-    const tight = new Set(Array.from({ length: 200 }, () => throwAt(target, 0.01, rng).name))
-    const wide = new Set(Array.from({ length: 200 }, () => throwAt(target, 0.15, rng).name))
+    const tight = new Set(Array.from({ length: 200 }, () => throwAt(target, 0.01, rng).segment.name))
+    const wide = new Set(Array.from({ length: 200 }, () => throwAt(target, 0.15, rng).segment.name))
     expect(wide.size).toBeGreaterThan(tight.size)
   })
 })

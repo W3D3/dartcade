@@ -182,8 +182,8 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     // the bull directly, without ever asking the module itself — it has no notion of "this is
     // a bull off" (and shouldn't need one), so botTarget is never called for this phase.
     if (view.phase === 'bulloff') {
-      const segment = throwAt(BULL, sigmaForLevel(seat.bot.level), current.rng)
-      await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'add_dart', segment })
+      const { segment, coords } = throwAt(BULL, sigmaForLevel(seat.bot.level), current.rng)
+      await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'add_dart', segment, coords })
       return
     }
 
@@ -193,8 +193,8 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
       return
     }
     if (target === null) return // defensive: nothing scheduled this round (shouldn't come up)
-    const segment = throwAt(target, sigmaForLevel(seat.bot.level), current.rng)
-    await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'add_dart', segment })
+    const { segment, coords } = throwAt(target, sigmaForLevel(seat.bot.level), current.rng)
+    await engine.onUserAction(sessionId, seat.controllerUserId, { type: 'add_dart', segment, coords })
     // onUserAction's own push (if the action changed anything) re-enters onChange and
     // schedules the next step — nothing more to do here
   }

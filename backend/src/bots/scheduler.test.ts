@@ -57,6 +57,29 @@ describe('bot scheduler', () => {
     expect(snap?.status).toBe('finished')
   })
 
+  it('a bot dart carries coords, so it renders at its actual landing spot (not a generic segment-center fallback)', async () => {
+    const push = vi.fn()
+    const engine = new SessionEngine(makeStore(), push)
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'x01',
+      config: { ...x01Module.defaultConfig, startScore: 501, botSpeed: 'fast' },
+      seats: [seat('Bot Lvl 5', 'chris', null, { level: 5 })],
+    })
+    // Step in small increments and stop the instant the first dart lands (see the undo test
+    // below for why a single big jump can race past this point).
+    for (let i = 0; i < 20; i++) {
+      const g = engine.getSnapshot(sessionId)?.game
+      const darts = g && 'currentVisitDarts' in g ? g.currentVisitDarts : []
+      if (darts.length > 0) {
+        expect(darts[0]?.coords).toEqual({ x: expect.any(Number), y: expect.any(Number) })
+        return
+      }
+      await vi.advanceTimersByTimeAsync(100)
+    }
+    throw new Error('bot never threw its first dart')
+  })
+
   it('undoing a bot dart mid-visit does not get stuck, and the redo is a new dart (not a replay)', async () => {
     const push = vi.fn()
     const engine = new SessionEngine(makeStore(), push)
