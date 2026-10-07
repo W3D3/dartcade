@@ -152,7 +152,7 @@
       Start · {c.playing}
       {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
     </Button>
-    <span class="text-[13px]"><ReadyCount {lobby} suffix="you can start anyway" /></span>
+    {#if !lobby.solo}<span class="text-[13px]"><ReadyCount {lobby} suffix="you can start anyway" /></span>{/if}
   </div>
 </section>
 

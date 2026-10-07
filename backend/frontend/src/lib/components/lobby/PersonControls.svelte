@@ -29,6 +29,8 @@
   // A guest has no ready of their own: their row shows the badge, never the toggle (the
   // adder sets it on their own row instead)
   const readyControl = $derived(canSetReady(person, viewerId))
+  // A solo lobby has no ready: every row is the viewer's or their guests'
+  const showReady = $derived(!lobby.solo)
   const mover = $derived(canMove(lobby, viewerId))
   const last = $derived(lobby.people.length - 1)
   let removing = $state(false)
@@ -42,7 +44,7 @@
   >
     {person.plays ? 'In' : 'Sits out'}
   </ToggleChip>
-  {#if person.plays}
+  {#if person.plays && showReady}
     {#if readyControl}
       <ToggleChip
         tone="solid"
@@ -57,7 +59,7 @@
     {/if}
   {/if}
 {:else}
-  <PersonStatus {person} />
+  <PersonStatus {person} {showReady} />
 {/if}
 <RowMenu
   name={person.name}

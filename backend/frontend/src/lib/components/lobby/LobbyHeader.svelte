@@ -1,7 +1,8 @@
 <script lang="ts">
   // The lobby's name (the host renames it), who hosts, and - while the lobby isn't solo - the
   // code and a link to join, the QR code, and Close (the host) or Leave (everyone). While solo
-  // none of that applies: there's nobody to invite with, and nothing to close or leave.
+  // the code sits in the Invite friends panel instead, and only Close shows: there's nobody to
+  // hand the lobby to.
   import { Check, Pencil } from '@lucide/svelte'
   import type { Lobby } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -96,7 +97,20 @@
     </p>
   </div>
 
-  {#if !lobby.solo}
+  {#if lobby.solo}
+    {#if host}
+      <div class="flex flex-col gap-1 lg:items-end">
+        <Button
+          variant="destructive"
+          onclick={() => (confirm = 'close')}
+          class="h-[46px] md:h-12 self-start lg:self-end"
+          disabled={gameRunning}
+          title={gameRunning ? 'End the game first' : undefined}>Close lobby</Button
+        >
+        {#if gameRunning}<span class="text-[12px] text-text-dim">End the game first</span>{/if}
+      </div>
+    {/if}
+  {:else}
     <!-- Wide tablets in landscape: the code, Leave and Close in one row, as the name has room to give -->
     <div class="flex flex-col gap-1 lg:items-end min-[1100px]:max-xl:shrink-0">
       <div class="flex items-center gap-2 md:gap-[10px] flex-wrap min-[1100px]:max-xl:flex-nowrap lg:justify-end">

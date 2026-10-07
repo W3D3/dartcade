@@ -1,7 +1,7 @@
 <script lang="ts">
   // Solo: the lobby page shows this next to the people list - the code, the link and the QR
-  // code - so playing alone stays one tap from playing with friends. (Close, Leave and the
-  // history stay hidden while solo; the people list has the add field.)
+  // code - so playing alone stays one tap from playing with friends. (The header has Close but
+  // no code while solo; the people list has the add field.)
   import type { Lobby } from '$lib/api/lobby-ws'
   import JoinCodeCard from './JoinCodeCard.svelte'
 

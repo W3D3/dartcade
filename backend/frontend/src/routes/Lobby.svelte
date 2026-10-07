@@ -206,7 +206,7 @@
         onleave={() => void leave()}
       />
       {@render errorBanner()}
-      <!-- Solo: no history, and Invite friends leads; the people list (add field included) shows either way.
+      <!-- Solo: Invite friends leads (the header has no code then); the people list (add field included) and the history show either way.
            Two columns from lg (tablets: the next game in a 420 px column); one below, as on phones -->
       <div
         class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:flex-grow lg:min-h-0"
@@ -245,13 +245,9 @@
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
           {/if}
-          {#if !l.solo}
-            <div class="hidden lg:flex lg:flex-col lg:min-h-0"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
-          {/if}
+          <div class="hidden lg:flex lg:flex-col lg:min-h-0"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
         </div>
-        {#if !l.solo}
-          <div class="order-3 lg:hidden"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
-        {/if}
+        <div class="order-3 lg:hidden"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
       </div>
     {:else}
       <p class="m-0 text-[15px] text-text-muted">Loading the lobby…</p>

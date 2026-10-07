@@ -68,7 +68,10 @@
       {#snippet grip()}<DragHandle name={p.name} describedby={hintId} />{/snippet}
       <PersonRow person={p} index={i} {lobby} {viewerId} handle={onplace ? grip : undefined}>
         {#snippet board()}{#if boardOf}{@render boardOf(p)}{:else}<BoardLabel person={p} />{/if}{/snippet}
-        {#snippet controls()}{#if controlsOf}{@render controlsOf(p, i)}{:else}<PersonStatus person={p} />{/if}{/snippet}
+        {#snippet controls()}{#if controlsOf}{@render controlsOf(p, i)}{:else}<PersonStatus
+              person={p}
+              showReady={!lobby.solo}
+            />{/if}{/snippet}
       </PersonRow>
     {/each}
     {#each lobby.invites as inv (inv.id)}
