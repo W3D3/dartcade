@@ -52,16 +52,18 @@ a double": every dart thrown while the player is on a one-dart finish.
 
 New `X01State` fields, all per seat unless noted:
 
-| Field                                                  | Purpose                                         | Reset       | Updated                                          |
-| ------------------------------------------------------ | ----------------------------------------------- | ----------- | ------------------------------------------------ |
-| `legVisits: { seat, scored, left, bust, darts }[]`     | this leg's committed visits, in throw order     | `freshLeg`  | appended on `takeout.finished` / `visit.cleared` |
-| `lastVisit: ({ scored, left, bust, darts } \| null)[]` | the thrower's last visit; survives a leg change | `init` only | the thrower's entry, on commit                   |
-| `checkoutAttempts: number[]`                           | see above                                       | `init` only | `dart.detected`                                  |
-| `checkoutHits: number[]`                               | see above                                       | `init` only | `dart.detected`                                  |
+| Field                                                        | Purpose                                         | Reset       | Updated                                          |
+| ------------------------------------------------------------ | ----------------------------------------------- | ----------- | ------------------------------------------------ |
+| `legVisits: { seat, scored, left, bust, darts }[]`           | this leg's committed visits, in throw order     | `freshLeg`  | appended on `takeout.finished` / `visit.cleared` |
+| `lastVisit: ({ seat, scored, left, bust, darts } \| null)[]` | the thrower's last visit; survives a leg change | `init` only | the thrower's entry, on commit                   |
+| `checkoutAttempts: number[]`                                 | see above                                       | `init` only | `dart.detected`                                  |
+| `checkoutHits: number[]`                                     | see above                                       | `init` only | `dart.detected`                                  |
 
 `scored` is the visit's points (0 on a bust), `left` the team's score after it, `darts` the
 darts thrown in it (the leg average divides by these). The reducer doesn't count a visit's
-darts today (the engine does, in `totalDarts`), so a visit's dart count is kept in a scalar
+darts today (the engine does, in `totalDarts`, but that includes the open visit's darts while
+`pointsScored` doesn't, so an average from it would dip during every visit). The reducer keeps a
+per-seat `dartsThrown` (darts in committed visits) for the match average, and a visit's dart count in a scalar
 `visitDarts` (not in the view), reset on `visit.opened` and on commit, incremented on every
 `dart.detected` (including darts after a bust or before opening: they were thrown). Bull-off
 darts never reach the X01 reducer, so they count for nothing.
@@ -70,7 +72,7 @@ darts never reach the X01 reducer, so they count for nothing.
 
 `X01View` (and `X01Game` in `schema/game-ws-v1.json`) gain, all additive:
 
-- `pointsScored: number[]` (exists in state, newly exposed)
+- `pointsScored: number[]` (exists in state, newly exposed) and `dartsThrown: number[]`
 - `legVisits`, `lastVisit`, `checkoutAttempts`, `checkoutHits`
 - `visitStartScores: number[]`: each seat's team `visitOpenedScores`
 
@@ -79,12 +81,13 @@ unknown fields, so an open tab on the old frontend keeps working.
 
 ## Frontend
 
-- `playerStats.ts` `x01Player()`: `avg` = `pointsScored[i] / totalDarts[i] × 3`; `legAvg` and
+- `playerStats.ts` `x01Player()`: `avg` = `pointsScored[i] / dartsThrown[i] × 3`; `legAvg` and
   the Chalkboard `visits` from `legVisits` for that seat; `last` from `lastVisit[i]`; the visit
-  start from `visitStartScores[i]`; a new `checkout` value ("2/5 · 40%", "—" before any attempt).
+  start from `visitStartScores[i]`; a new `checkout` value ("40%", "—" before any attempt) and `checkoutDarts` ("2/5", for a tooltip).
   It no longer takes the visit history.
 - `teams.ts` `x01Teams()`: the team Chalkboard is `legVisits` for the team's seats (already
-  interleaved in throw order); team averages sum `pointsScored` and `totalDarts` over its seats.
+  interleaved in throw order); team averages sum `pointsScored` and `dartsThrown` over its seats; the team checkout rate sums
+  attempts and hits.
 - `GameDisplay.svelte`: the X01 paths and the score band's visit start read the snapshot.
   `visitHistory.ts` / `trackVisits` remain for Around the Clock only.
 - The checkout rate shows next to Avg/Last in the X01 rows, panels, phone card and team panel.
