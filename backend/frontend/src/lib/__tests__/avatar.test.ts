@@ -30,4 +30,17 @@ describe('Avatar', () => {
     expect(quiet).toContain('lucide-bot')
     expect(quiet).toContain('bg-line-3')
   })
+
+  it('keeps its level colour even when guest=true — a bot has no account either, so a caller that derives guest from userId===null naturally passes it for a bot seat too', () => {
+    const out = html({ name: 'Bot Lvl 3', bot: { level: 3 }, guest: true })
+    expect(out).toContain('lucide-bot')
+    expect(out).toContain(botAvatarColor(3))
+    expect(out).not.toContain('border-dashed')
+  })
+
+  it('a human guest still gets the dashed guest chip (no bot set)', () => {
+    const out = html({ name: 'Lena', guest: true })
+    expect(out).toContain('border-dashed')
+    expect(out).not.toContain('lucide-bot')
+  })
 })
