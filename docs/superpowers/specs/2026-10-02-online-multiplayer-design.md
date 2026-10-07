@@ -678,7 +678,8 @@ stays out of the way until a second account joins.
   turns the setting on (WDC). The server keeps the two in sync (`coupleBullOff` in
   `backend/src/lobby/rules.ts`; it also turns the setting off for any other order), so a stray
   setting can't contradict the throw order on refresh.
-- **Solo:** a lobby is _solo_ while you are its only member (guests don't count). The server
+- **Solo** (superseded 2026-10-08 by `2026-10-08-visible-lobby-design.md`: the lobby is always
+  shown, new lobbies are Private, the Play page says Choose players): a lobby is _solo_ while you are its only member (guests don't count). The server
   decides it and says so: the lobby state and `LobbySummary` carry `solo: boolean`, and the
   screens only read that flag (no counting players in the browser).
   - The lobby indicator (desktop side nav card, phone strip) shows only when the lobby isn't

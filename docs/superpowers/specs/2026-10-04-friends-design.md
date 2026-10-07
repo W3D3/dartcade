@@ -64,7 +64,8 @@ Tracked as issue #54. Agreed with the user on 2026-10-04; breaking changes are f
 
 ## Lobby access
 
-- New lobby setting `access`: `friends` (default for new lobbies) | `invite`. Host-only change in
+- New lobby setting `access`: `friends` (default for new lobbies; `invite`, labelled Private, since
+  2026-10-08, see `2026-10-08-visible-lobby-design.md`) | `invite`. Host-only change in
   the lobby's settings; pushed to members like other settings.
 - `friends`: the host's friends see the lobby in the host's status ("In a lobby · Join") and can
   join without a code: `POST /api/lobbies/{id}/join` with no code is allowed iff access is
