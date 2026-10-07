@@ -57,8 +57,8 @@
   {/if}
 
   <div class="flex {solo ? 'gap-9' : 'gap-[18px] xl:gap-9'}">
-    {#each [{ label: solo ? 'Leg avg' : 'Avg', value: solo ? p.legAvg : p.avg }, { label: 'Darts', value: String(p.darts) }] as s (s.label)}
-      <span class="flex flex-col gap-1">
+    {#each [{ label: solo ? 'Leg avg' : 'Avg', value: solo ? p.legAvg : p.avg }, { label: 'Darts', value: String(p.darts) }, { label: 'Checkout', value: p.checkout, title: `${p.checkoutDarts} darts at a finish` }] as s (s.label)}
+      <span class="flex flex-col gap-1" title={'title' in s ? s.title : undefined}>
         <span class="{solo ? 'text-[13px]' : 'text-[11px] xl:text-[13px]'} label-caps {active ? 'text-text-muted' : 'text-text-dim'}"
           >{s.label}</span
         >

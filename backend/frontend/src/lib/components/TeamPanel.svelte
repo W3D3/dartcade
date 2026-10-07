@@ -37,6 +37,7 @@
   const stats = $derived([
     { label: 'Team avg', value: team.teamAvg, dim: false },
     { label: 'Match avg', value: team.matchAvg, dim: true },
+    { label: 'Checkout', value: team.checkout, dim: true },
     { label: 'Darts', value: String(team.darts), dim: false },
   ])
 </script>
@@ -80,7 +81,7 @@
       </span>
     {/if}
 
-    <div class="flex {compact ? 'gap-[14px]' : 'gap-7'}">
+    <div class="flex flex-wrap {compact ? 'gap-x-[14px] gap-y-1' : 'gap-x-7 gap-y-2'}">
       {#each stats as s (s.label)}
         <span class="flex flex-col {compact ? 'gap-[1px]' : 'gap-1'}">
           <span

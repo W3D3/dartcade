@@ -71,8 +71,11 @@
     {:else}
       <span class={stacked}></span>
     {/if}
-    {#each [{ label: 'Last', value: p.last }, { label: 'Avg', value: p.avg }] as s (s.label)}
-      <span class="flex flex-col gap-1 {stacked} {s.label === 'Last' ? 'max-xl:@lg:@max-2xl:hidden' : ''}">
+    {#each [{ label: 'Last', value: p.last }, { label: 'Avg', value: p.avg }, { label: 'Checkout', value: p.checkout, title: `${p.checkoutDarts} darts at a finish` }] as s (s.label)}
+      <span
+        class="flex flex-col gap-1 {stacked} {s.label !== 'Avg' ? 'max-xl:@lg:@max-2xl:hidden' : ''}"
+        title={'title' in s ? s.title : undefined}
+      >
         <span class="text-[12px] label-caps {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
         <span
           class="font-display font-bold leading-none tabular-nums {active

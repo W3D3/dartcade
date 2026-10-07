@@ -26,6 +26,7 @@
   const stats = $derived([
     { label: 'Leg avg', value: p.legAvg, dim: false },
     { label: 'Match avg', value: p.avg, dim: true },
+    { label: 'Checkout', value: p.checkout, dim: true },
     { label: 'Darts', value: String(p.darts), dim: false },
   ])
 </script>
@@ -41,7 +42,7 @@
         ><RollingNumber {...x01Roll(p)} /></span
       >
       {#if !p.opened}<span class="text-[12px] label-caps text-text-muted">Needs to open</span>{/if}
-      <div class="hidden [@media(min-height:600px)]:flex gap-[14px]">
+      <div class="hidden [@media(min-height:600px)]:flex flex-wrap gap-x-[14px] gap-y-1">
         {#each stats as s (s.label)}
           <span class="flex flex-col gap-[1px]">
             <span class="text-[10px] uppercase tracking-[0.08em] text-text-muted whitespace-nowrap">{s.label}</span>
