@@ -59,14 +59,14 @@ describe('throwAt', () => {
     expect(coords).toEqual(target)
   })
 
-  it('consumes exactly two rng() calls per throw (one Gaussian pair via Box-Muller)', () => {
+  it('consumes exactly four rng() calls per throw (one Gaussian pair for the sigma jitter, one for the throw itself)', () => {
     let calls = 0
     const rng = () => {
       calls++
       return 0.5
     }
     throwAt({ x: 0, y: 0 }, 0.05, rng)
-    expect(calls).toBe(2)
+    expect(calls).toBe(4)
   })
 
   it('a larger sigma produces a wider spread of outcomes over many throws', () => {
@@ -80,5 +80,25 @@ describe('throwAt', () => {
     const tight = new Set(Array.from({ length: 200 }, () => throwAt(target, 0.01, rng).segment.name))
     const wide = new Set(Array.from({ length: 200 }, () => throwAt(target, 0.15, rng).segment.name))
     expect(wide.size).toBeGreaterThan(tight.size)
+  })
+
+  it('the same sigma produces an occasional much-wider miss than a typical throw (sigma jitter)', () => {
+    // A fixed sigma with no jitter would make every throw's distance-from-target roughly the
+    // same scale; with jitter, a seed exists where this one throw lands far outside what a
+    // tight, un-jittered sigma could ever produce. Deterministic seed search, not a vibe check.
+    const target = { x: 0, y: (R.si + R.tr) / 2 }
+    const sigma = 0.01 // tight — a 6-sigma un-jittered miss (~0.06 board units) would already clear the whole board
+    let found = false
+    for (let seed = 1; seed < 100000 && !found; seed++) {
+      let s = seed
+      const rng = () => {
+        s = (s * 1103515245 + 12345) % 2147483648
+        return s / 2147483648
+      }
+      const { coords } = throwAt(target, sigma, rng)
+      const dist = Math.hypot(coords.x - target.x, coords.y - target.y)
+      if (dist > sigma * 8) found = true
+    }
+    expect(found).toBe(true)
   })
 })
