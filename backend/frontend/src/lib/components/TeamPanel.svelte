@@ -15,6 +15,7 @@
   let {
     team,
     seats,
+    bots,
     chalkboard,
     compact = false,
     overlay,
@@ -22,6 +23,8 @@
     team: X01TeamView
     /** Per seat (the snapshot's seat order): its board line in a remote game, else null. */
     seats: (SeatLine | null)[]
+    /** Per seat (the snapshot's seat order): its bot info, else null. */
+    bots: ({ level: number } | null)[]
     chalkboard: boolean
     /** Phones and narrow screens, where the two panels are stacked: smaller score, no chalkboard. */
     compact?: boolean
@@ -57,7 +60,7 @@
 
   <div class="flex flex-col gap-[6px]">
     {#each team.members as m (m.seat)}
-      <TeamMemberRow member={m} seat={seats[m.seat] ?? null} {compact} />
+      <TeamMemberRow member={m} seat={seats[m.seat] ?? null} bot={bots[m.seat] ?? null} {compact} />
     {/each}
   </div>
 

@@ -36,7 +36,7 @@
 >
   {#if handle}{@render handle()}{/if}
   <span class="font-mono text-[12px] text-text-dim text-center">{index + 1}</span>
-  <Avatar name={person.name} guest={person.userId === null} presence={person.presence} />
+  <Avatar name={person.name} bot={person.bot} guest={person.userId === null} presence={person.presence} />
   <span class="flex flex-col gap-1 min-w-0">
     <!-- The tags wrap under the name on a narrow row, so the name stays readable -->
     <span class="flex flex-wrap items-center gap-x-[6px] gap-y-1 min-w-0">

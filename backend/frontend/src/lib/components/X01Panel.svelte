@@ -11,6 +11,7 @@
 
   let {
     name,
+    bot = null,
     p,
     active,
     solo = false,
@@ -20,6 +21,7 @@
     waiting,
   }: {
     name: string
+    bot?: { level: number } | null
     p: X01PlayerView
     active: boolean
     solo?: boolean
@@ -30,7 +32,7 @@
   } = $props()
 </script>
 
-<PanelShell {name} {active} {solo} {pill} {seat} {waiting} pillInRow={solo}>
+<PanelShell {name} {bot} {active} {solo} {pill} {seat} {waiting} pillInRow={solo}>
   {#snippet aside()}
     {#if !solo}<LegPips total={p.firstTo} won={p.legsWon} {active} />{/if}
   {/snippet}

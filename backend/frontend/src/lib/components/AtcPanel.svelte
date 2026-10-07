@@ -9,6 +9,7 @@
 
   let {
     name,
+    bot = null,
     p,
     active,
     solo = false,
@@ -17,6 +18,7 @@
     waiting,
   }: {
     name: string
+    bot?: { level: number } | null
     p: AtcPlayerView
     active: boolean
     solo?: boolean
@@ -26,7 +28,7 @@
   } = $props()
 </script>
 
-<PanelShell {name} {active} {solo} {pill} {seat} {waiting} pillInRow>
+<PanelShell {name} {bot} {active} {solo} {pill} {seat} {waiting} pillInRow>
   <div class="flex flex-col gap-[6px]">
     <span class="text-[12px] label-caps {active ? 'text-text-muted' : 'text-text-dim'}">Target</span>
     <span

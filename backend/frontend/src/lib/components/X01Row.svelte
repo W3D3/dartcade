@@ -9,11 +9,19 @@
 
   let {
     name,
+    bot = null,
     p,
     active,
     pill,
     seat = null,
-  }: { name: string; p: X01PlayerView; active: boolean; pill: PillKind | null; seat?: SeatLine | null } = $props()
+  }: {
+    name: string
+    bot?: { level: number } | null
+    p: X01PlayerView
+    active: boolean
+    pill: PillKind | null
+    seat?: SeatLine | null
+  } = $props()
   // Stacked rows (portrait tablets): only the thrower's stats; the others keep their leg pips
   const stacked = $derived(active ? '' : '@max-lg:hidden')
 </script>
@@ -23,6 +31,7 @@
      score and stats stacked, the stats only for the thrower (leg pips for everyone) -->
 <RowShell
   {name}
+  {bot}
   {active}
   {pill}
   {seat}
