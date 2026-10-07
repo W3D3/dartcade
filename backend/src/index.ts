@@ -74,13 +74,24 @@ const lobbies: LobbyService = new LobbyService({
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
+// Lobbies with one account close after hours without activity (lobby/service.ts, SOLO_IDLE_MS)
+const idleSweep = setInterval(
+  () => {
+    lobbies.closeIdleLobbies().catch((err: unknown) => {
+      warn('idle lobby sweep failed', { error: String(err) })
+    })
+  },
+  5 * 60 * 1000,
+)
+idleSweep.unref()
 
 const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../../frontend/dist') })
 warn = (message, details) => {
   app.log.warn({ details }, message)
 }
-// Stopping: no friends pushes, grace or debounce timers left running
+// Stopping: no idle sweep, friends pushes, grace or debounce timers left running
 app.addHook('onClose', (_instance, done) => {
+  clearInterval(idleSweep)
   friends.close()
   done()
 })

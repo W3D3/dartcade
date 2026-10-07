@@ -24,6 +24,9 @@ import type { LobbyAccess, LobbyPerson, LobbyState, NextGame, StartGame, TeamId,
 
 const CODE_ATTEMPTS = 5
 
+/** A lobby with one account closes after this long without activity (and no game running). */
+export const SOLO_IDLE_MS = 6 * 60 * 60 * 1000
+
 export type LobbyRef = { id: string; name: string; code: string }
 export type LobbyPreview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
 export type LobbyPatch = {
@@ -513,6 +516,29 @@ export class LobbyService {
     if (this.deps.engine.getLobbySession(lobbyId)) return false
     await this.closeNow(lobby)
     return true
+  }
+
+  /**
+   * The idle sweep (every few minutes, from index.ts): closes lobbies with one account, no game
+   * running and no activity for SOLO_IDLE_MS, so last night's guests aren't waiting tomorrow.
+   * Each close re-checks inside the lobby's queue: someone may have joined or started a game
+   * since the query. Returns the ids it closed.
+   */
+  async closeIdleLobbies(now: Date = new Date()): Promise<string[]> {
+    const before = new Date(now.getTime() - SOLO_IDLE_MS)
+    const closed: string[] = []
+    for (const id of await q.idleSoloLobbyIds(this.db, before)) {
+      const done = await this.enqueue(id, async () => {
+        if (this.deps.engine.getLobbySession(id)) return false
+        if ((await q.idleSoloLobbyIds(this.db, before, id)).length === 0) return false
+        const lobby = await q.loadLobby(this.db, id)
+        if (!lobby || lobby.closedAt !== null) return false
+        await this.closeNow(lobby)
+        return true
+      })
+      if (done) closed.push(id)
+    }
+    return closed
   }
 
   async close(userId: string, lobbyId: string): Promise<void> {

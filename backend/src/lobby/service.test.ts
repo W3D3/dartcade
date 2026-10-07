@@ -222,6 +222,49 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     })
   })
 
+  describe('idle close', () => {
+    const later = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000)
+
+    it('closes a solo lobby (guests count as solo) idle for 6 hours, not one idle for less', async () => {
+      const { id } = await lobbies.create('chris')
+      await lobbies.addGuest('chris', id, { name: 'Guest 1' })
+      expect(await lobbies.closeIdleLobbies(later(5))).toEqual([])
+      expect(await lobbies.view(id)).not.toBeNull()
+      expect(await lobbies.closeIdleLobbies(later(7))).toEqual([id])
+      expect(await lobbies.view(id)).toBeNull()
+    })
+
+    it('keeps a lobby with two accounts, and one whose game is running', async () => {
+      const shared = await lobbies.create('chris')
+      await lobbies.join('lena', shared.id, shared.code)
+      const playing = await lobbies.create('max')
+      await lobbies.update('max', playing.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+      await lobbies.start('max', playing.id, false)
+      expect(await lobbies.closeIdleLobbies(later(7))).toEqual([])
+      expect(await lobbies.view(shared.id)).not.toBeNull()
+      expect(await lobbies.view(playing.id)).not.toBeNull()
+    })
+
+    it('re-checks inside the queue: a lobby someone joined meanwhile stays open', async () => {
+      const { id } = await lobbies.create('chris')
+      // Hold the lobby's queue so the sweep's query runs while the lobby is still solo, then
+      // someone joins (a row written straight away) before its close gets its turn
+      let release!: () => void
+      const gate = new Promise<void>(resolve => (release = resolve))
+      const held = (lobbies as any).enqueue(id, () => gate) as Promise<void>
+      const sweep = lobbies.closeIdleLobbies(later(7))
+      await db
+        .insertInto('lobby_people')
+        .values({ id: 'lena-row', lobby_id: id, user_id: 'lena', added_by_user_id: 'lena', name: 'Lena', board_id: null, position: 1 })
+        .execute()
+      release()
+      await held
+      expect(await sweep).toEqual([])
+      const row = await db.selectFrom('lobbies').select('closed_at').where('id', '=', id).executeTakeFirstOrThrow()
+      expect(row.closed_at).toBeNull()
+    })
+  })
+
   describe('joining as a friend', () => {
     it('new lobbies are private; a friend of the host joins one open to friends without a code', async () => {
       await befriend('chris', 'lena')
