@@ -19,6 +19,17 @@ export type X01Config = {
   botSpeed: 'fast' | 'normal' | 'slow'
 } & TeamsConfig
 
+/** A committed visit: for the Chalkboard, the leg average and the last visit. */
+export type X01VisitRecord = {
+  seat: number
+  /** Points the visit scored; 0 on a bust or before opening. */
+  scored: number
+  /** The team's score after it. */
+  left: number
+  bust: boolean
+  darts: number
+}
+
 /**
  * `scores`, `legs`, `opened` and `visitOpenedScores` are per team (index: `teamOf[seat]`);
  * in singles every seat is its own team, so they are per seat. The personal stats
@@ -55,6 +66,14 @@ export type X01State = {
   pointsScored: number[]
   /** Each player's highest checkout (the score left when the checkout visit started); 0 = none yet. */
   bestCheckout: number[]
+  /** Darts thrown in the open visit, scoring or not. */
+  visitDarts: number
+  /** This leg's committed visits, in throwing order. */
+  legVisits: X01VisitRecord[]
+  /** Each player's last committed visit, kept across legs; null before their first. */
+  lastVisit: (X01VisitRecord | null)[]
+  /** Darts in each player's committed visits: with pointsScored, the match average. */
+  dartsThrown: number[]
 }
 
 // What the current player's visit scored: a bust resets the score and an unopened
@@ -63,6 +82,26 @@ function withVisitScored(s: X01State): number[] {
   const cp = s.currentPlayer
   const t = s.teamOf[cp]
   return s.pointsScored.map((p, i) => (i === cp ? p + s.visitOpenedScores[t] - s.scores[t] : p))
+}
+
+// Ends the open visit for its thrower: its record and the per-player totals that count it
+function committedVisit(s: X01State): Pick<X01State, 'pointsScored' | 'dartsThrown' | 'legVisits' | 'lastVisit' | 'visitDarts'> {
+  const cp = s.currentPlayer
+  const t = s.teamOf[cp]
+  const record: X01VisitRecord = {
+    seat: cp,
+    scored: s.visitOpenedScores[t] - s.scores[t],
+    left: s.scores[t],
+    bust: s.bustThisVisit,
+    darts: s.visitDarts,
+  }
+  return {
+    pointsScored: withVisitScored(s),
+    dartsThrown: s.dartsThrown.map((d, i) => (i === cp ? d + s.visitDarts : d)),
+    legVisits: [...s.legVisits, record],
+    lastVisit: s.lastVisit.map((v, i) => (i === cp ? record : v)),
+    visitDarts: 0,
+  }
 }
 
 function effectiveDartScore(dart: Dart, bullValue: '25_50' | '50_50'): number {
@@ -141,6 +180,7 @@ function freshLeg(s: X01State, legs: number[]): Partial<X01State> {
     turn,
     currentPlayer: s.order[turn],
     round: 1,
+    legVisits: [],
   }
 }
 
@@ -276,6 +316,10 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       playerCount: n,
       pointsScored: Array<number>(n).fill(0),
       bestCheckout: Array<number>(n).fill(0),
+      visitDarts: 0,
+      legVisits: [],
+      lastVisit: Array<X01VisitRecord | null>(n).fill(null),
+      dartsThrown: Array<number>(n).fill(0),
     }
   },
 
@@ -290,7 +334,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   onBoardEvent(s: X01State, e: BoardEvent): { state: X01State } {
     switch (e.kind) {
       case 'visit.opened': {
-        return { state: { ...s, bustThisVisit: false, visitOpenedScores: [...s.scores] } }
+        return { state: { ...s, bustThisVisit: false, visitOpenedScores: [...s.scores], visitDarts: 0 } }
       }
 
       case 'dart.detected': {
@@ -298,73 +342,76 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         // The thrower's team: its score counts down
         const t = s.teamOf[s.currentPlayer]
 
-        if (s.bustThisVisit) return { state: s }
         if (s.scores[t] === 0) return { state: s }
+
+        const thrown = { ...s, visitDarts: s.visitDarts + 1 }
+        // Darts after a bust score nothing but were thrown (a correction can bust an earlier dart)
+        if (s.bustThisVisit) return { state: thrown }
 
         if (!s.opened[t]) {
           const opens = meetsMode(dart, s.cfg.inMode)
-          if (!opens) return { state: s }
+          if (!opens) return { state: thrown }
           const opened = s.opened.map((o, i) => (i === t ? true : o))
           const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
           const newScore = s.scores[t] - dartScore
           if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !meetsMode(dart, s.cfg.outMode))) {
             return {
-              state: { ...s, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)) },
+              state: { ...thrown, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)) },
             }
           }
-          return { state: { ...s, opened, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
+          return { state: { ...thrown, opened, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
         }
 
         const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
         const newScore = s.scores[t] - dartScore
 
         if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !meetsMode(dart, s.cfg.outMode))) {
-          return { state: { ...s, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
+          return { state: { ...thrown, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
         }
 
-        return { state: { ...s, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
+        return { state: { ...thrown, scores: s.scores.map((sc, i) => (i === t ? newScore : sc)) } }
       }
 
       case 'takeout.finished': {
         const cp = s.currentPlayer
         const t = s.teamOf[cp]
-        const pointsScored = withVisitScored(s)
+        const done = committedVisit(s)
 
         // Leg win, for the thrower's team; the checkout counts for the thrower
         if (s.scores[t] === 0) {
           const legs = s.legs.map((l, i) => (i === t ? l + 1 : l))
           const bestCheckout = s.bestCheckout.map((b, i) => (i === cp ? Math.max(b, s.visitOpenedScores[t]) : b))
           if (legs[t] >= s.cfg.firstTo) {
-            return { state: { ...s, legs, winner: t, phase: 'finished', pointsScored, bestCheckout } }
+            return { state: { ...s, ...done, legs, winner: t, phase: 'finished', bestCheckout } }
           }
-          return { state: { ...s, legs, pointsScored, bestCheckout, ...freshLeg(s, legs) } }
+          return { state: { ...s, ...done, legs, bestCheckout, ...freshLeg(s, legs) } }
         }
 
         const { nextPlayer, turn, round } = nextTurn(s)
 
         if (round > s.cfg.maxRounds) {
           return {
-            state: { ...s, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished', pointsScored },
+            state: { ...s, ...done, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished' },
           }
         }
 
         return {
-          state: { ...s, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored },
+          state: { ...s, ...done, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores] },
         }
       }
 
       case 'visit.cleared': {
-        const pointsScored = withVisitScored(s)
+        const done = committedVisit(s)
         const { nextPlayer, turn, round } = nextTurn(s)
 
         if (round > s.cfg.maxRounds) {
           return {
-            state: { ...s, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished', pointsScored },
+            state: { ...s, ...done, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished' },
           }
         }
 
         return {
-          state: { ...s, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores], pointsScored },
+          state: { ...s, ...done, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores] },
         }
       }
 

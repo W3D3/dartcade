@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { x01Game, x01Module, configMeta } from './x01.js'
 import type { X01Config, X01State } from './x01.js'
 import type { BoardEvent, Player } from '../session/types.js'
+import { refoldVisit } from '../session/refold.js'
 
 const players: Player[] = [{ name: 'Alice' }, { name: 'Bob' }]
 
@@ -17,6 +18,7 @@ const defaultCfg: X01Config = {
 }
 
 function makeState(overrides: Partial<X01State> = {}): X01State {
+  const n = overrides.playerCount ?? 2
   return {
     cfg: defaultCfg,
     scores: [501, 501],
@@ -25,7 +27,7 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
     phase: 'game',
     order: [0, 1],
     // Singles: every seat its own team
-    teamOf: Array.from({ length: overrides.playerCount ?? 2 }, (_, i) => i),
+    teamOf: Array.from({ length: n }, (_, i) => i),
     turn: 0,
     currentPlayer: 0,
     round: 1,
@@ -33,8 +35,12 @@ function makeState(overrides: Partial<X01State> = {}): X01State {
     visitOpenedScores: [501, 501],
     winner: null,
     playerCount: 2,
-    pointsScored: [0, 0],
-    bestCheckout: [0, 0],
+    pointsScored: Array<number>(n).fill(0),
+    bestCheckout: Array<number>(n).fill(0),
+    visitDarts: 0,
+    legVisits: [],
+    lastVisit: Array<null>(n).fill(null),
+    dartsThrown: Array<number>(n).fill(0),
     ...overrides,
   }
 }
@@ -57,6 +63,19 @@ function openedVisit(s: X01State): X01State {
   const { state } = x01Game.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } })
   return state
 }
+
+// Opens a visit for the current player, throws the darts and ends it with a takeout
+function playVisit(s: X01State, darts: BoardEvent[]): X01State {
+  let state = openedVisit(s)
+  for (const d of darts) state = x01Game.onBoardEvent(state, d).state
+  return x01Game.onBoardEvent(state, { kind: 'takeout.finished', data: {} }).state
+}
+
+const T20 = dartEvent(20, 'Triple', 3)
+const S20 = dartEvent(20, 'Single', 1)
+const S1 = dartEvent(1, 'Single', 1)
+const D20 = dartEvent(20, 'Double', 2)
+const D10 = dartEvent(10, 'Double', 2)
 
 // ─── init ────────────────────────────────────────────────────────────────────
 
@@ -810,5 +829,79 @@ describe('teams detail', () => {
       { id: 'B', name: 'Team B', seats: [1, 3] },
     ])
     expect(x01Game.detail([], x01Game.init(defaultCfg, players))).not.toHaveProperty('teams')
+  })
+})
+
+describe('committed visits', () => {
+  it("records each visit for the leg and as the thrower's last, with its darts", () => {
+    let s = playVisit(makeState(), [T20, T20, T20])
+    const alice = { seat: 0, scored: 180, left: 321, bust: false, darts: 3 }
+    expect(s.legVisits).toEqual([alice])
+    expect(s.lastVisit).toEqual([alice, null])
+    expect(s.dartsThrown).toEqual([3, 0])
+    expect(s.pointsScored).toEqual([180, 0])
+
+    s = playVisit(s, [S1, S1, S1])
+    const bob = { seat: 1, scored: 3, left: 498, bust: false, darts: 3 }
+    expect(s.legVisits).toEqual([alice, bob])
+    expect(s.lastVisit).toEqual([alice, bob])
+    expect(s.dartsThrown).toEqual([3, 3])
+  })
+
+  it('keeps the open visit out of dartsThrown until the takeout', () => {
+    const s = x01Game.onBoardEvent(openedVisit(makeState()), T20).state
+    expect(s.visitDarts).toBe(1)
+    expect(s.dartsThrown).toEqual([0, 0])
+    expect(s.legVisits).toEqual([])
+  })
+
+  it('a bust records nothing scored, the score it went back to, and the darts thrown', () => {
+    const s = playVisit(makeState({ scores: [40, 501], visitOpenedScores: [40, 501] }), [T20])
+    expect(s.legVisits).toEqual([{ seat: 0, scored: 0, left: 40, bust: true, darts: 1 }])
+    expect(s.dartsThrown).toEqual([1, 0])
+  })
+
+  it('a checkout counts only the darts thrown; the next leg starts a new list but keeps the last visit', () => {
+    const s = playVisit(makeState({ scores: [40, 501], visitOpenedScores: [40, 501] }), [D20])
+    const checkout = { seat: 0, scored: 40, left: 0, bust: false, darts: 1 }
+    expect(s.legs).toEqual([1, 0])
+    expect(s.legVisits).toEqual([])
+    expect(s.lastVisit).toEqual([checkout, null])
+    expect(s.dartsThrown).toEqual([1, 0])
+  })
+
+  it('the match-winning visit stays in the leg list', () => {
+    const s = playVisit(makeState({ scores: [40, 501], visitOpenedScores: [40, 501], cfg: { ...defaultCfg, firstTo: 1 } }), [D20])
+    expect(s.phase).toBe('finished')
+    expect(s.legVisits).toEqual([{ seat: 0, scored: 40, left: 0, bust: false, darts: 1 }])
+  })
+
+  it('darts before opening (double in) count as thrown and score nothing', () => {
+    const cfg: X01Config = { ...defaultCfg, inMode: 'double' }
+    const s = playVisit(makeState({ cfg, opened: [false, false] }), [S20, S20, S20])
+    expect(s.legVisits).toEqual([{ seat: 0, scored: 0, left: 501, bust: false, darts: 3 }])
+    expect(s.dartsThrown).toEqual([3, 0])
+  })
+
+  it('a cleared visit is recorded too', () => {
+    let s = x01Game.onBoardEvent(openedVisit(makeState()), S20).state
+    s = x01Game.onBoardEvent(s, { kind: 'visit.cleared', data: {} }).state
+    expect(s.legVisits).toEqual([{ seat: 0, scored: 20, left: 481, bust: false, darts: 1 }])
+    expect(s.visitDarts).toBe(0)
+  })
+
+  it('darts after a bust still count when a correction refolds the visit', () => {
+    // Three darts thrown, then the first corrected to T20 on 40: a bust, with two darts after it
+    const committed = makeState({ scores: [40, 501], visitOpenedScores: [40, 501] })
+    const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v1' } }
+    const s = refoldVisit(x01Game, committed, [opened, T20, S1, S1])
+    expect(s.visitDarts).toBe(3)
+    const done = x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state
+    expect(done.legVisits).toEqual([{ seat: 0, scored: 0, left: 40, bust: true, darts: 3 }])
+  })
+
+  it('init starts every list and count empty', () => {
+    const s = x01Game.init(defaultCfg, players)
+    expect(s).toMatchObject({ visitDarts: 0, legVisits: [], lastVisit: [null, null], dartsThrown: [0, 0] })
   })
 })
