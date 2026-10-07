@@ -22,8 +22,8 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
       - run: npm ci
         working-directory: backend
       - run: npm run typecheck
@@ -38,8 +38,8 @@ jobs:
   test-frontend:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
       - run: npm ci
         working-directory: backend/frontend
       - run: npm run typecheck
@@ -52,8 +52,8 @@ jobs:
   test-bridge:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
       - name: Go code is gofmt-formatted
         run: '[ -z "$(gofmt -l .)" ] || { gofmt -l .; echo "::error::Run gofmt -w . in bridge/ and commit the result"; exit 1; }'
         working-directory: bridge
@@ -63,8 +63,8 @@ jobs:
   check-generated:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
       - run: npm ci
       - run: npm run lint:api
       - run: npm run format:check
@@ -93,10 +93,10 @@ jobs:
           --health-timeout 5s
           --health-retries 5
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
-      - uses: jdx/mise-action@v2
+      - uses: jdx/mise-action@v4
       - name: Shipped migrations are unchanged; new ones are numbered after them
         run: scripts/check-migrations.sh origin/${{ github.base_ref }}
       - run: npm ci
@@ -133,8 +133,8 @@ jobs:
     runs-on: ubuntu-latest
     continue-on-error: true
     steps:
-      - uses: actions/checkout@v4
-      - uses: jdx/mise-action@v2
+      - uses: actions/checkout@v5
+      - uses: jdx/mise-action@v4
       - name: Install e2e dependencies
         run: npm ci
         working-directory: e2e
