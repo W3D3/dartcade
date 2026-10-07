@@ -1,6 +1,6 @@
 // The Play page's main button: it picks the game, the lobby holds the people (spec: Every game
-// is a lobby). Create lobby / Continue in lobby save the game as the lobby's next game and go
-// there; a member of someone else's lobby only opens it.
+// is a lobby). Choose players saves the game as your lobby's next game (opening one if you have
+// none) and goes there; a member of someone else's lobby only opens it. New lobby starts over.
 import { api } from '$lib/api'
 import type { LobbySummary } from '$lib/api/lobby-ws'
 import { createLobby } from './create'
@@ -14,6 +14,18 @@ export type PlayAction = 'create' | 'continue' | 'open'
 export function playAction(lobby: Pick<LobbySummary, 'youHost'> | null): PlayAction {
   if (!lobby) return 'create'
   return lobby.youHost ? 'continue' : 'open'
+}
+
+const LABELS: Record<PlayAction, string> = { create: 'Choose players', continue: 'Choose players', open: 'Open lobby' }
+
+/** The main button's text: the next step (picking the people) unless it's someone else's lobby. */
+export function playLabel(action: PlayAction): string {
+  return LABELS[action]
+}
+
+/** "New lobby" under the main button: only for the host of a solo lobby with no game running (nobody gets left behind). */
+export function offersNewLobby(lobby: Pick<LobbySummary, 'youHost' | 'solo' | 'sessionId'> | null): boolean {
+  return lobby !== null && lobby.youHost && lobby.solo && lobby.sessionId === null
 }
 
 /** The lobby page, carrying the board picked with "Play on this board" (it moves your row there). */
@@ -75,4 +87,11 @@ export async function saveNextGame(lobbyId: string | null, game: NextGame): Prom
   if (!id) return 'Could not open your lobby'
   const { error } = await lobbyActions(id).updateLobby({ nextGame: game })
   return error ? describeConflict(error) : null
+}
+
+/** New lobby: closes yours (guests and bots go with it) and opens a fresh one with the game. Null when done, else the message. */
+export async function startFreshLobby(lobbyId: string, game: NextGame): Promise<string | null> {
+  const { error } = await api.POST('/api/lobbies/{id}/close', { params: { path: { id: lobbyId } } })
+  if (error) return describeConflict(error)
+  return saveNextGame(null, game)
 }

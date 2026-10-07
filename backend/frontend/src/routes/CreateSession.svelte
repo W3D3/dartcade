@@ -1,7 +1,8 @@
 <script lang="ts">
   // The Play page: pick a game and set it up. The lobby holds the people (spec: Every game is a
-  // lobby): the main button saves the game as your lobby's next game and goes there, opening a
-  // lobby when you have none. A member of someone else's lobby sees its planned game read-only.
+  // lobby): Choose players saves the game as your lobby's next game and goes there, opening a
+  // lobby when you have none; New lobby starts over with a fresh one while you're alone in yours.
+  // A member of someone else's lobby sees its planned game read-only.
   import { untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
@@ -12,7 +13,17 @@
   import { gameName } from '$lib/lobby/format'
   import { me } from '$lib/lobby/sockets'
   import { initialGameSelection } from '$lib/lobby/start'
-  import { chosenGame as pickChosenGame, lobbyPath, playAction, saveNextGame, type PlayAction } from '$lib/lobby/play'
+  import { Button } from '$lib/components/ui/button/index.js'
+  import {
+    chosenGame as pickChosenGame,
+    lobbyPath,
+    offersNewLobby,
+    playAction,
+    playLabel,
+    saveNextGame,
+    startFreshLobby,
+    type PlayAction,
+  } from '$lib/lobby/play'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
   import { GAME_MODES, gameModes, withDefaults } from '$lib/gameModes'
 
@@ -106,7 +117,8 @@
 
   // "Play on this board" on the Boards page (#/?board=): the lobby page moves your row there
   const boardFromLink = new URLSearchParams($querystring ?? '').get('board')
-  const LABELS: Record<PlayAction, string> = { create: 'Create lobby', continue: 'Continue in lobby', open: 'Open lobby' }
+  // New lobby: only while you host a solo lobby with no game running (nobody gets left behind)
+  const newLobby = $derived(offersNewLobby($me?.lobby ?? null))
   // Until /ws/me arrives the page doesn't know your lobby: no button yet, so nobody creates a
   // lobby they already have or saves over someone else's next game
   const loading = $derived($me === null)
@@ -136,6 +148,23 @@
       busy = false
     }
   }
+
+  /** New lobby: closes yours (your guests and bots go with it) and opens a fresh one with this game. */
+  async function freshLobby() {
+    const lobbyId = $me?.lobby?.id
+    if (busy || loading || !lobbyId) return
+    error = ''
+    const picked = chosenGame()
+    if (!picked) return
+    busy = true
+    try {
+      const failed = await startFreshLobby(lobbyId, picked)
+      if (failed) error = failed
+      else void push(lobbyPath(boardFromLink))
+    } finally {
+      busy = false
+    }
+  }
 </script>
 
 <Layout title="New game">
@@ -146,7 +175,7 @@
     <header class="hidden md:flex items-end justify-between">
       <div class="flex flex-col gap-[6px]">
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">New game</h1>
-        <p class="m-0 text-[15px] text-text-muted">Choose a mode and set it up. Your players gather in the lobby.</p>
+        <p class="m-0 text-[15px] text-text-muted">Choose a mode and set it up, then choose who plays.</p>
       </div>
     </header>
 
@@ -202,7 +231,10 @@
           class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[14px] px-4 pb-6 md:px-6 md:pb-6 pt-2 md:pt-3 flex flex-col gap-3 border-t border-line"
         >
           {#if error}<p class="m-0 text-[14px] text-live-text">{error}</p>{/if}
-          <PlayButton label={loading ? 'Loading…' : LABELS[action]} {busy} disabled={loading} onclick={() => void toLobby()} />
+          <PlayButton label={loading ? 'Loading…' : playLabel(action)} {busy} disabled={loading} onclick={() => void toLobby()} />
+          {#if newLobby && !loading}
+            <Button variant="ghost" size="md" disabled={busy} onclick={() => void freshLobby()}>New lobby</Button>
+          {/if}
         </div>
       </aside>
     </div>

@@ -1,5 +1,23 @@
 import { describe, it, expect } from 'vitest'
-import { boardToApply, chosenGame, lobbyPath, playAction } from '../lobby/play.js'
+import { boardToApply, chosenGame, lobbyPath, offersNewLobby, playAction, playLabel } from '../lobby/play.js'
+
+describe('playLabel', () => {
+  it("Choose players with or without a lobby of your own; Open lobby in someone else's", () => {
+    expect(playLabel('create')).toBe('Choose players')
+    expect(playLabel('continue')).toBe('Choose players')
+    expect(playLabel('open')).toBe('Open lobby')
+  })
+})
+
+describe('offersNewLobby', () => {
+  it('only to the host of a solo lobby with no game running', () => {
+    expect(offersNewLobby(null)).toBe(false)
+    expect(offersNewLobby({ youHost: true, solo: true, sessionId: null })).toBe(true)
+    expect(offersNewLobby({ youHost: true, solo: false, sessionId: null })).toBe(false)
+    expect(offersNewLobby({ youHost: true, solo: true, sessionId: 's1' })).toBe(false)
+    expect(offersNewLobby({ youHost: false, solo: true, sessionId: null })).toBe(false)
+  })
+})
 
 describe('playAction', () => {
   it('no lobby: create one', () => {
