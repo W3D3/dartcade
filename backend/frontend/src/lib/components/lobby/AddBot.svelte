@@ -29,7 +29,7 @@
     <Bot size={16} />Add bot
   </Button>
   {#if open}
-    <PopoverPanel label="Bot difficulty" align="stretch">
+    <PopoverPanel label="Bot difficulty" width={200}>
       {#each Array.from({ length: 10 }, (_, i) => i + 1) as level (level)}
         <MenuItem label="Level {level}" detail="{averageForLevel(level)} avg" onclick={() => void pick(level)}>
           {#snippet leading()}
