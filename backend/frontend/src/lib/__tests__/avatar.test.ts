@@ -16,7 +16,7 @@ describe('Avatar', () => {
   })
 
   it("shows a bot's robot glyph instead of an initial, in its level's colour", () => {
-    const out = html({ name: 'Bot Lvl 5 (63 avg)', bot: { level: 5 } })
+    const out = html({ name: 'Bot Lvl 5', bot: { level: 5 } })
     expect(out).toContain('lucide-bot')
     expect(out).toContain(botAvatarColor(5))
     expect(out).not.toContain('>B<')
