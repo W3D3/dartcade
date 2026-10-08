@@ -14,6 +14,7 @@
     width = 250,
     trigger,
     children,
+    onopen,
   }: {
     /** The menu's accessible name. */
     label: string
@@ -26,10 +27,12 @@
     trigger: Snippet<[boolean]>
     /** The items; given `close` to call after a pick. */
     children: Snippet<[() => void]>
+    /** Called each time the menu opens. */
+    onopen?: () => void
   } = $props()
 </script>
 
-<Popover {triggerLabel} {triggerClass} {trigger}>
+<Popover {triggerLabel} {triggerClass} {trigger} {onopen}>
   {#snippet panel(close: () => void)}
     <PopoverPanel {label} {align} {width}>{@render children(close)}</PopoverPanel>
   {/snippet}

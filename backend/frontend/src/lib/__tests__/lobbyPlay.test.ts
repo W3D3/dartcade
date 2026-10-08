@@ -42,8 +42,8 @@ describe('lobbyPath', () => {
 
 describe('boardToApply', () => {
   const boards = [
-    { id: 'b1', name: 'Garage' },
-    { id: 'b2', name: 'Kitchen' },
+    { id: 'b1', name: 'Garage', online: true },
+    { id: 'b2', name: 'Kitchen', online: true },
   ]
 
   it('moves you to one of your boards', () => {
