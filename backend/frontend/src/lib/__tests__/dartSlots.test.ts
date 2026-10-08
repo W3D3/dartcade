@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { x01Slots, atcSlots } from '../dartSlots.js'
+import { x01Slots, atcSlots, boardCheckoutTargets } from '../dartSlots.js'
 
 const d = (name: string, score: number) => ({ segment: { name }, score })
 const base = { outMode: 'double' as const, opened: true, bust: false, suggest: true }
@@ -90,5 +90,17 @@ describe('atcSlots', () => {
       multiplierAdvances: true,
     })
     expect(s[0].points).toBe('+1')
+  })
+})
+
+describe('boardCheckoutTargets', () => {
+  it("is X01's next suggested dart", () => {
+    const s = x01Slots({ ...base, darts: [], remaining: 40 })
+    expect(boardCheckoutTargets(s, true)).toEqual(['D20'])
+  })
+
+  it("is empty in ATC: the target slot isn't a checkout", () => {
+    const s = atcSlots({ darts: [], hits: [], target: '17' })
+    expect(boardCheckoutTargets(s, false)).toEqual([])
   })
 })

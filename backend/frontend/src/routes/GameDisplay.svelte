@@ -25,7 +25,7 @@
   import { createCaller } from '$lib/caller/player'
   import { voiceClips, type Clips } from '$lib/caller/voices'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
-  import { x01Slots, atcSlots } from '../lib/dartSlots.js'
+  import { x01Slots, atcSlots, boardCheckoutTargets } from '../lib/dartSlots.js'
   import { gameState } from '../lib/gameState.js'
   import { x01Band, atcBand, atcAdvanced, bigDartIndex } from '../lib/visitBand.js'
   import { nextButton } from '../lib/controls.js'
@@ -362,7 +362,7 @@
   const targets = $derived(atc?.targets ?? [])
   // Only the very next dart's suggestion is highlighted on the board itself; later darts in
   // the chain only show in the dart slots below it.
-  const checkoutTargets = $derived(slots.filter(s => s.kind === 'suggested-next').map(s => s.label))
+  const checkoutTargets = $derived(boardCheckoutTargets(slots, isX01))
   const boardTarget = $derived(!isX01 && isActive ? atcTargetSegment(sequence, targets.at(currentPlayer)) : null)
   const boardNext = $derived(!isX01 && isActive && players.length === 2 ? atcTargetSegment(sequence, targets.at(atcNext)) : null)
   const markers = $derived(

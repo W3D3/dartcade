@@ -91,3 +91,9 @@ export function atcSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: stri
   const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i], o.hits[i] ? `+${steps(d)}` : '0'))
   return [...done, ...openSlots(done.length, o.target ? [{ label: o.target, foot: 'your target' }] : [])]
 }
+
+/** The checkout labels to highlight on the board: only X01's next suggested dart. ATC's
+ *  suggestion is a bare target number, not a checkout; the board shows its whole wedge. */
+export function boardCheckoutTargets(slots: Slot[], isX01: boolean): string[] {
+  return isX01 ? slots.filter(s => s.kind === 'suggested-next').map(s => s.label) : []
+}
