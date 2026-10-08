@@ -231,6 +231,8 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
         targetBefore: v.start.targets[v.seat],
         targetAfter: v.end.targets[v.seat],
       })),
+      // TODO(Task 3): fill with the per-dart walk (hitsTarget/advanceInSequence).
+      progress: [],
     }
   },
 }

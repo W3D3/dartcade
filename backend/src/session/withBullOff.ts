@@ -52,6 +52,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
 
   const teamsOf = game.teamsOf?.bind(game)
   const botTarget = game.botTarget?.bind(game)
+  const matchStats = game.matchStats?.bind(game)
   return {
     id: game.id,
     version: game.version,
@@ -70,6 +71,13 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
         visits.map(v => ({ ...v, start: v.start.game, end: v.end.game, after: v.after.game })),
         final.game,
       ),
+    matchStats:
+      matchStats &&
+      ((visits, final) =>
+        matchStats(
+          visits.map(v => ({ ...v, start: v.start.game, end: v.end.game, after: v.after.game })),
+          final.game,
+        )),
     defaultConfig: { bullOff: 'off', ...game.defaultConfig },
     configMeta: {
       ...game.configMeta,

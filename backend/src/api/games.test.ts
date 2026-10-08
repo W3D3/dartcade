@@ -128,7 +128,7 @@ describe('GET /api/games/:id', () => {
     vi.mocked(history.getViewableGame).mockResolvedValue(game())
     const res = await makeApp().inject({ method: 'GET', url: '/api/games/g1' })
     expect(res.statusCode).toBe(200)
-    expect(res.json()).toMatchObject({ game: { id: 'g1', mySeat: 0 }, detail: { mode: 'x01', legs: [] } })
+    expect(res.json()).toMatchObject({ game: { id: 'g1', mySeat: 0 }, detail: { mode: 'x01', legs: [] }, stats: { rows: [], seats: [] } })
     expect(queries.getSessionEvents).toHaveBeenCalledWith(expect.anything(), 'g1')
   })
 

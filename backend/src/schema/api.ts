@@ -1052,6 +1052,18 @@ export interface components {
                 /** @description Target after the visit; past the last target means finished */
                 targetAfter: number;
             }[];
+            /** @description One per seat, in seat order. Every target the seat got to, in order. */
+            progress: {
+                seat: number;
+                steps: {
+                    /** @description 1–20, 21 = 25, 22 = bull */
+                    target: number;
+                    /** @description Darts thrown at it; 0 when a multiplier skipped it */
+                    darts: number;
+                    /** @description Completed; false only for the target the game ended on */
+                    hit: boolean;
+                }[];
+            }[];
         };
         Health: {
             ok: boolean;
@@ -1147,6 +1159,44 @@ export interface components {
         GameDetail: {
             game: components["schemas"]["GameSummary"];
             detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"];
+            stats: components["schemas"]["MatchStats"];
+        };
+        /** @description The game's match stats, the same shape for every game mode. Rows say how to show each value, so a mode adds stats without a frontend change. */
+        MatchStats: {
+            /** @description In display order */
+            rows: components["schemas"]["StatRow"][];
+            /** @description One per seat, in seat order */
+            seats: components["schemas"]["StatValues"][];
+            /** @description Only in a team game; one per team. Seats keep their own values. */
+            teams?: components["schemas"]["StatValues"][];
+        };
+        /** @description seat or team (the index), and its values by key; a missing key means the stat does not apply */
+        StatValues: {
+            index: number;
+            values: {
+                [key: string]: number;
+            };
+        };
+        StatRow: {
+            /** @description Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise */
+            key: string;
+            label: string;
+            /**
+             * @description decimal 83.9, integer 6, darts "15 darts", target 1–20 / 21 = 25 / 22 = Bull, ratio "50% · 3/6"
+             * @enum {string}
+             */
+            format: "decimal" | "integer" | "darts" | "target" | "ratio";
+            /** @description The key holding the row's value (for a ratio, the numerator); default `key` */
+            value?: string;
+            /** @description ratio only: the key of the denominator */
+            of?: string;
+            /**
+             * @description null when no side is better (e.g. darts thrown)
+             * @enum {string|null}
+             */
+            better: "higher" | "lower" | null;
+            /** @description Also shown where space is short (party standings, phone) */
+            compact: boolean;
         };
         Board: {
             id: string;

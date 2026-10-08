@@ -81,7 +81,7 @@ describe('buildDetail', () => {
       ],
       vi.fn(),
     )
-    expect(d).toMatchObject({ mode: 'atc', visits: [{ visit: 0, seat: 0, hits: 1, targetBefore: 1, targetAfter: 2 }] })
+    expect(d).toMatchObject({ detail: { mode: 'atc', visits: [{ visit: 0, seat: 0, hits: 1, targetBefore: 1, targetAfter: 2 }] } })
   })
   it('null for a mode that no longer exists', () => {
     expect(buildDetail({ ...game, game_id: 'gone' }, [], vi.fn())).toBeNull()
