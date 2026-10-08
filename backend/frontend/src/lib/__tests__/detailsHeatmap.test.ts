@@ -14,6 +14,7 @@ import {
   trebles,
   type HeatDart,
 } from '../details/heatmap.js'
+import { boardNumbers, boardSegments } from '../details/boardGeometry.js'
 
 const seg = (name: string, number: number, multiplier: 0 | 1 | 2 | 3) => ({
   name,
@@ -164,5 +165,60 @@ describe('heatmap helpers', () => {
       top = toBoardPx({ x: 0, y: 1 })
     expect([right.x, right.y + 0]).toEqual([170, 0])
     expect([top.x + 0, top.y]).toEqual([0, -170])
+  })
+})
+
+describe('board geometry', () => {
+  it('builds 80 sector paths and 20 numbers, 20 at the top', () => {
+    expect(boardSegments()).toHaveLength(80)
+    const nums = boardNumbers()
+    expect(nums).toHaveLength(20)
+    const n20 = nums.find(n => n.n === 20)
+    expect(n20?.x).toBeCloseTo(0, 2)
+    expect(n20?.y).toBeCloseTo(-184, 2)
+  })
+
+  // Match a sector's exact shape (M, outer arc, L, inner arc, Z) to pull out each arc's start
+  // point, end point, radius and flags — a loose number scan would also catch the arcs' own
+  // rx/ry radii, which look just like another coordinate pair.
+  const SECTOR_RE =
+    /^M(-?[\d.]+) (-?[\d.]+) A([\d.]+) ([\d.]+) 0 (\d) (\d) (-?[\d.]+) (-?[\d.]+) L(-?[\d.]+) (-?[\d.]+) A([\d.]+) ([\d.]+) 0 (\d) (\d) (-?[\d.]+) (-?[\d.]+) Z$/
+  function sectorArcs(d: string) {
+    const m = d.match(SECTOR_RE)
+    if (!m) throw new Error(`unexpected sector path shape: ${d}`)
+    const [x0, y0, rx1, ry1, fA1, fS1, x1, y1, x2, y2, rx0, ry0, fA2, fS2, x3, y3] = m.slice(1).map(Number)
+    return [
+      { x1: x0, y1: y0, x2: x1, y2: y1, r: rx1, ry: ry1, largeArc: fA1, sweep: fS1 },
+      { x1: x2, y1: y2, x2: x3, y2: y3, r: rx0, ry: ry0, largeArc: fA2, sweep: fS2 },
+    ]
+  }
+
+  // The standard SVG elliptical-arc endpoint-to-centre conversion (implementation notes F.6.5),
+  // specialised to rx = ry and no rotation (both always true for our sectors).
+  function arcCenter(x1: number, y1: number, x2: number, y2: number, r: number, largeArc: number, sweep: number) {
+    const x1p = (x1 - x2) / 2
+    const y1p = (y1 - y2) / 2
+    const sign = largeArc === sweep ? -1 : 1
+    const v = (r * r - y1p * y1p - x1p * x1p) / (y1p * y1p + x1p * x1p)
+    const co = sign * Math.sqrt(Math.max(v, 0))
+    return { x: co * y1p + (x1 + x2) / 2, y: co * -x1p + (y1 + y2) / 2 }
+  }
+
+  // Runs the real endpoint-to-centre conversion on each arc, using its own previous point, radius,
+  // large-arc flag and sweep flag — not just reading back the literal flags `sector()` emits — so
+  // a wrong sweep (which would centre the arc off the board, bowing the wrong way) actually fails
+  // this test instead of only a textual change to the hard-coded flags.
+  it('every arc centres on the origin: segment 20 and one sector per other quadrant', () => {
+    const segs = boardSegments()
+    // SEGS[0] === 20 (top); boardSegments() lists 4 rings per segment index, so segs[i * 4] is
+    // that segment's single ring. Stepping 5 segment indices is 5 * (HALF * 2) = 90°, landing
+    // one sampled sector in each of the other three quadrants.
+    const samples = [0, 5, 10, 15].map(i => segs[i * 4])
+    for (const s of samples) {
+      for (const arc of sectorArcs(s.d)) {
+        const c = arcCenter(arc.x1, arc.y1, arc.x2, arc.y2, arc.r, arc.largeArc, arc.sweep)
+        expect(Math.hypot(c.x, c.y)).toBeLessThan(0.01)
+      }
+    }
   })
 })
