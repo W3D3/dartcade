@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { Snapshot } from '$lib/api'
-import { endControl, afterGameRoute, leaveRefused } from '../endControl.js'
+import { endControl, afterGameRoute, leaveRefused, winActions } from '../endControl.js'
 import fixture from './fixtures/x01-snapshot.json'
 
 const snap = (patch: { ownerUserId?: string; mySeats?: number[]; lobbyId?: string | null } = {}): Snapshot => {
@@ -59,5 +59,20 @@ describe('leaveRefused', () => {
   it('says "the host" when the host has no seat', () => {
     expect(leaveRefused(withHostSeat(null))).toBe('Only the host can end this game.')
     expect(leaveRefused(null)).toBe('Only the host can end this game.')
+  })
+})
+
+describe('winActions', () => {
+  it('the host of a lobby game: Rematch, then Back to lobby', () => {
+    expect(winActions(snap({ ownerUserId: 'host', lobbyId: 'l1' }), 'host')).toEqual({ primary: 'rematch', secondary: 'lobby' })
+  })
+
+  it('anyone else in a lobby game: Back to lobby', () => {
+    expect(winActions(snap({ ownerUserId: 'host', lobbyId: 'l1' }), 'lena')).toEqual({ primary: 'lobby', secondary: null })
+    expect(winActions(snap({ ownerUserId: 'host', lobbyId: 'l1' }), null)).toEqual({ primary: 'lobby', secondary: null })
+  })
+
+  it('a game outside a lobby: Back to Play', () => {
+    expect(winActions(snap({ ownerUserId: 'host', lobbyId: null }), 'host')).toEqual({ primary: 'play', secondary: null })
   })
 })

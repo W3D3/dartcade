@@ -1,7 +1,7 @@
 <script lang="ts">
   // The match screen once a game is won: two sides face off around the score (a duel, or two
   // teams), three or more stand on a podium with the standings beside it. Confetti falls behind.
-  import { Check, House, RotateCcwClock, Trophy } from '@lucide/svelte'
+  import { Check, House, RotateCcw, RotateCcwClock, Trophy } from '@lucide/svelte'
   import { ordinal } from '$lib/fmt'
   import Avatar from './Avatar.svelte'
   import type { Competitor, WinView } from '$lib/winScreen'
@@ -13,8 +13,8 @@
     lobbyName,
     board,
     saved,
-    doneLabel,
-    ondone,
+    primary,
+    secondary = null,
     onhistory,
   }: {
     view: WinView
@@ -25,8 +25,10 @@
     board: string | null
     /** The viewer played: the game is in their History. */
     saved: boolean
-    doneLabel: string
-    ondone: () => void
+    /** The main button: Rematch (the host of a lobby game), Back to lobby or Back to Play. */
+    primary: { label: string; rematch: boolean; onclick: () => void }
+    /** Beside it: Back to lobby next to Rematch. */
+    secondary?: { label: string; onclick: () => void } | null
     onhistory: () => void
   } = $props()
 
@@ -346,19 +348,32 @@
       <button
         type="button"
         onclick={onhistory}
-        class="ml-auto h-14 px-[22px] flex items-center gap-[10px] rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
+        class="ml-auto h-14 px-[22px] {secondary
+          ? 'hidden md:flex'
+          : 'flex'} items-center gap-[10px] rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
       >
         <RotateCcwClock size={20} />History
       </button>
     {/if}
+    {#if secondary}
+      <button
+        type="button"
+        onclick={secondary.onclick}
+        class="{saved
+          ? 'max-md:ml-auto'
+          : 'ml-auto'} h-14 px-4 md:px-[22px] flex items-center gap-[10px] whitespace-nowrap rounded-[12px] border border-line-strong bg-transparent text-text text-[16px] font-semibold cursor-pointer hover:bg-surface-paused"
+      >
+        {secondary.label}
+      </button>
+    {/if}
     <button
       type="button"
-      onclick={ondone}
-      class="{saved
+      onclick={primary.onclick}
+      class="{saved || secondary
         ? ''
         : 'ml-auto'} flex-1 md:flex-none h-14 px-4 md:px-7 flex items-center justify-center gap-[10px] whitespace-nowrap rounded-[12px] border-0 bg-accent text-accent-fg font-display font-bold text-[19px] md:text-[22px] tracking-[0.06em] uppercase cursor-pointer hover:brightness-[1.08]"
     >
-      <House size={20} strokeWidth={2.2} />{doneLabel}
+      {#if primary.rematch}<RotateCcw size={20} strokeWidth={2.2} />{:else}<House size={20} strokeWidth={2.2} />{/if}{primary.label}
     </button>
   </footer>
 </div>

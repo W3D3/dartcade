@@ -1,5 +1,27 @@
 import { describe, it, expect } from 'vitest'
-import { initialGameSelection, shouldOpenGame, startOutcome } from '../lobby/start.js'
+import { initialGameSelection, rematchStep, shouldOpenGame, startOutcome } from '../lobby/start.js'
+
+describe('rematchStep', () => {
+  const lobby = (solo: boolean, currentSessionId: string | null = null) => ({ hostUserId: 'chris', solo, currentSessionId })
+
+  it('the host of a solo lobby starts right away', () => {
+    expect(rematchStep(lobby(true), 'chris')).toBe('start')
+  })
+
+  it('the host of a shared lobby marks themselves ready', () => {
+    expect(rematchStep(lobby(false), 'chris')).toBe('ready')
+  })
+
+  it('no lobby any more (closed meanwhile): back to Play', () => {
+    expect(rematchStep(null, 'chris')).toBe('play')
+  })
+
+  it('nothing for a member, a signed-out viewer, or while a game runs', () => {
+    expect(rematchStep(lobby(false), 'lena')).toBeNull()
+    expect(rematchStep(lobby(true), null)).toBeNull()
+    expect(rematchStep(lobby(true, 's1'), 'chris')).toBeNull()
+  })
+})
 
 describe('startOutcome', () => {
   it('started: the new game', () => {

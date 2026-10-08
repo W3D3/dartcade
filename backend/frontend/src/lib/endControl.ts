@@ -27,3 +27,16 @@ export function leaveRefused(snapshot: Snapshot | null): string {
 export function afterGameRoute(snapshot: Snapshot | null): '/lobby' | '/' {
   return snapshot !== null && snapshot.lobbyId !== null ? '/lobby' : '/'
 }
+
+export type WinAction = 'rematch' | 'lobby' | 'play'
+
+/**
+ * The win screen's buttons: the host of a lobby game gets Rematch (the same game, people and
+ * settings again: the lobby keeps them after a game) and Back to lobby; anyone else in a lobby
+ * game Back to lobby; a game outside a lobby Back to Play.
+ */
+export function winActions(snapshot: Snapshot | null, userId: string | null): { primary: WinAction; secondary: WinAction | null } {
+  if (afterGameRoute(snapshot) === '/') return { primary: 'play', secondary: null }
+  if (userId !== null && userId === snapshot?.ownerUserId) return { primary: 'rematch', secondary: 'lobby' }
+  return { primary: 'lobby', secondary: null }
+}

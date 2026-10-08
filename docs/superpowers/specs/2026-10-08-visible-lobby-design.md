@@ -87,15 +87,16 @@ History stays as it is.
 
 **Rematch:**
 
-1. End the game: `DELETE /api/sessions/{id}`, as Back to lobby does today. The engine's ended
-   hook enqueues the lobby's reset before the DELETE returns, so anything the lobby does next runs
-   after the reset.
-2. If the lobby is solo (`$me.lobby.solo`): `POST /api/lobbies/{id}/start` (no `force`). On
-   success go to the new match (`#/session/{id}`). On a refusal (a board offline, someone's game
-   running) go to the lobby, which shows the refusal in its start-problem dialog as if Start had
-   been pressed there.
-3. Otherwise: mark yourself ready (`PATCH /api/lobbies/{id}/people/{personId}`, `ready: true`) and go to the lobby, where
-   the others see you ready and the usual ready check runs when you press Start.
+1. Clear the game away: `DELETE /api/sessions/{id}`, as Back to lobby does today. A won game
+   already finished (and the lobby reset) when it was won; the DELETE only drops it from the
+   engine. A 404 (someone cleared it already) is fine.
+2. Go to `/lobby?rematch=1`. The lobby page, once it has the lobby, does the rest
+   (`rematchStep`) and drops the param from the URL:
+   - host of a solo lobby: Start, as if pressed there. Success opens the new match; a refusal (a
+     board offline, someone's game running) shows the start-problem dialog.
+   - host of a shared lobby: marks themselves ready (`PATCH .../people/{personId}` with
+     `ready: true`); the others see it and the usual ready check runs when the host presses Start.
+   - anyone else, or a game already running (a reload after the rematch started): nothing.
 
 The rematch keeps the game, settings, people and throw order the lobby has after its reset; with
 Bull off on, the rematch bulls off again. It doesn't swap who throws first.
@@ -135,7 +136,7 @@ that's fine, as playing a game does.
   passes the lobby name for solo lobbies.
 - Frontend unit tests: ready states hidden on the lobby page while solo, shown once shared;
   `winActions` for host / member / no lobby; the Play page's labels and the
-  New lobby condition (`play.ts`); the Rematch flow's branches (solo start ok, start refused, not
-  solo, DELETE 404).
+  New lobby condition (`play.ts`); `rematchStep` for solo host / shared host / member / game
+  running.
 - E2E: the solo lobby flow now expects the side-nav card and the code; a rematch from the win
   screen starts a new game.

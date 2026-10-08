@@ -21,7 +21,7 @@
   import { currentUser } from '$lib/auth'
   import { describeConflict, type Refusal } from '$lib/lobby/input'
   import { isHost, myRow, playsInGame, type LobbyPatch, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
-  import { shouldOpenGame, startGame, type StartOutcome } from '$lib/lobby/start'
+  import { rematchStep, shouldOpenGame, startGame, type StartOutcome } from '$lib/lobby/start'
   import { createLobby } from '$lib/lobby/create'
   import { lobbyActions, type LobbyActions } from '$lib/lobby/actions'
   import { boardToApply } from '$lib/lobby/play'
@@ -152,6 +152,26 @@
     boardFromLink = null
     void replace('/lobby')
     if (target) void updatePerson(personId, { boardId: target })
+  })
+
+  // Rematch on the win screen (#/lobby?rematch=1): start the same game again (solo) or get ready
+  // (shared), or back to Play if the lobby closed meanwhile (see rematchStep). Plain, not state:
+  // handled once, and dropped from the URL so a reload doesn't do it again.
+  let rematch = new URLSearchParams($querystring ?? '').get('rematch') === '1'
+  $effect(() => {
+    if (!rematch) return
+    const gone = phase === 'none'
+    if (!gone && (!lobby || !mine)) return
+    const step = rematchStep(gone ? null : lobby, viewerId)
+    const me = mine
+    rematch = false
+    if (step === 'play') {
+      void replace('/')
+      return
+    }
+    void replace('/lobby')
+    if (step === 'start') void start()
+    else if (step === 'ready' && me && !me.ready) void updatePerson(me.id, { ready: true })
   })
 
   onMount(() => {

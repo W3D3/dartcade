@@ -4,7 +4,7 @@
   import ConfirmModal from '../lib/components/ConfirmModal.svelte'
   import ErrorText from '../lib/components/ErrorText.svelte'
   import { createSessionStore, type Snapshot } from '../lib/ws.js'
-  import { afterGameRoute, endControl, leaveRefused } from '../lib/endControl.js'
+  import { afterGameRoute, endControl, leaveRefused, winActions, type WinAction } from '../lib/endControl.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import DartBoard from '../lib/components/DartBoard.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
@@ -483,12 +483,18 @@
 
   /** The win screen's button: the session is already finished and released, so a refused
    * DELETE here blocks nothing. Only the host sends it (anyone else's always 403s). */
-  async function backToLobbyAfterWin() {
+  // The win screen's buttons (winActions). Rematch goes through the lobby page, which starts the
+  // same game again (solo) or marks the host ready (shared) - see rematchStep
+  const winButtons = $derived(winActions(snapshot, viewerId))
+  const WIN_LABELS: Record<WinAction, string> = { rematch: 'Rematch', lobby: 'Back to lobby', play: 'Back to Play' }
+  const WIN_ROUTES: Record<WinAction, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/' }
+  async function finishWin(next: WinAction) {
     if (!sessionId) return
-    const route = afterGameRoute(snapshot)
+    // The host ends the game for everyone; a 404 means it was ended already, which is fine
     if (control === 'end') await api.DELETE('/api/sessions/{id}', { params: { path: { id: sessionId } } })
-    void push(route)
+    void push(WIN_ROUTES[next])
   }
+  const winSecondary = $derived(winButtons.secondary)
 </script>
 
 {#snippet waitingCard(compact: boolean)}
@@ -692,8 +698,12 @@
         lobbyName={snapshot.lobbyName}
         board={sharedBoard(snapshot)}
         saved={snapshot.mySeats.length > 0}
-        doneLabel={afterGameRoute(snapshot) === '/lobby' ? 'Back to lobby' : 'Back to Play'}
-        ondone={backToLobbyAfterWin}
+        primary={{
+          label: WIN_LABELS[winButtons.primary],
+          rematch: winButtons.primary === 'rematch',
+          onclick: () => void finishWin(winButtons.primary),
+        }}
+        secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
         onhistory={() => push('/history')}
       />
     {:else}

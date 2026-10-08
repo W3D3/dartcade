@@ -1,6 +1,7 @@
 // Starting a lobby game with the soft ready gate: a start problem shows in a dialog, the host
 // can start anyway (an offline board on manual entry, or people who aren't ready) or go back.
 import { api } from '$lib/api'
+import type { Lobby } from '$lib/api/lobby-ws'
 import type { Refusal } from './input'
 
 export type StartOutcome =
@@ -30,6 +31,22 @@ export async function startGame(lobbyId: string, opts: { force?: boolean } = {})
  */
 export function shouldOpenGame(prev: string | null | undefined, next: string | null, playing: boolean): boolean {
   return prev === null && next !== null && playing
+}
+
+/**
+ * What the lobby page does for `?rematch=1` (Rematch on the win screen): the host of a solo lobby
+ * starts the next game right away; the host of a shared one marks themselves ready, and the
+ * others get ready as usual. With no lobby any more (it closed meanwhile, e.g. idle overnight)
+ * back to the Play page. Nothing for anyone else, or while a game runs (a reload after the
+ * rematch started).
+ */
+export function rematchStep(
+  lobby: Pick<Lobby, 'hostUserId' | 'solo' | 'currentSessionId'> | null,
+  viewerId: string | null,
+): 'start' | 'ready' | 'play' | null {
+  if (lobby === null) return 'play'
+  if (viewerId === null || lobby.hostUserId !== viewerId || lobby.currentSessionId !== null) return null
+  return lobby.solo ? 'start' : 'ready'
 }
 
 export type GameSelection = { mode: string; config: Record<string, unknown> }
