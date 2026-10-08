@@ -110,19 +110,24 @@
   aria-label="Next game"
   class="box-border p-4 md:px-6 md:py-[22px] rounded-[14px] bg-surface-active border-2 border-accent flex flex-col gap-[14px] md:gap-[18px]"
 >
-  <NextGameSummary {lobby} pickedBy="picked by you" />
-  <div class="grid grid-cols-2 gap-2">
+  <!-- Settings and Change game: stacked beside the game from md (Lobby board), in a row under it on phones -->
+  {#snippet gameButtons(cls: string)}
     {#if game}
-      <SettingsToggleButton open={settingsOpen} ontoggle={() => (settingsOpen = !settingsOpen)} />
+      <SettingsToggleButton open={settingsOpen} ontoggle={() => (settingsOpen = !settingsOpen)} class={cls} />
     {/if}
     <Button
       variant="outline"
       size="md"
-      class="font-semibold {game ? '' : 'col-span-2'}"
+      class="font-semibold {cls} {game ? '' : 'col-span-2'}"
       aria-haspopup="dialog"
       onclick={() => (picking = true)}>{game ? 'Change game' : 'Pick a game'}</Button
     >
+  {/snippet}
+  <div class="flex items-start gap-[18px]">
+    <div class="flex-grow min-w-0"><NextGameSummary {lobby} pickedBy="picked by you" /></div>
+    <div class="hidden md:flex flex-col gap-2 shrink-0">{@render gameButtons('h-10 px-[14px]')}</div>
   </div>
+  <div class="grid grid-cols-2 gap-2 md:hidden">{@render gameButtons('')}</div>
   {#if game}
     <NextGameSettingsPanel
       open={settingsOpen}
@@ -146,13 +151,18 @@
   {:else}
     <WhoPlays {lobby} onplays={(personId: string, plays: boolean) => void onplays(personId, plays)} />
   {/if}
-  <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
-  <div class="flex flex-col gap-[6px]">
-    <Button size="xl" class="w-full" disabled={!game || running || busy} onclick={() => onstart()}>
-      Start · {c.playing}
-      {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
-    </Button>
-    {#if !lobby.solo}<span class="text-[13px]"><ReadyCount {lobby} suffix="you can start anyway" /></span>{/if}
+  <!-- Throw order and Start in one row while there's room, Start on the right (Lobby board) -->
+  <div class="flex flex-col gap-[14px] md:flex-row md:flex-wrap md:items-end md:gap-x-4 md:gap-y-[14px]">
+    <div class="min-w-0 [&_button]:whitespace-nowrap [&_button]:px-[14px]">
+      <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
+    </div>
+    <div class="flex flex-col gap-[6px] md:ml-auto md:items-end">
+      <Button size="xl" class="w-full md:w-auto md:px-7" disabled={!game || running || busy} onclick={() => onstart()}>
+        Start · {c.playing}
+        {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
+      </Button>
+      {#if !lobby.solo}<span class="text-[13px]"><ReadyCount {lobby} suffix="you can start anyway" /></span>{/if}
+    </div>
   </div>
 </section>
 
