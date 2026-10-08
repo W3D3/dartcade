@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import BoardLabel from '../components/lobby/BoardLabel.svelte'
+import { averageForLevel } from '$shared/botLevels.js'
 import type { LobbyPerson } from '../api/lobby-ws'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -28,9 +29,9 @@ describe('BoardLabel', () => {
     expect(out).toContain('Manual entry')
   })
 
-  it("shows a bot's level instead of Manual entry, even though it also has no board", () => {
+  it("shows a bot's calibrated average instead of Manual entry, even though it also has no board", () => {
     const out = render(BoardLabel, { props: { person: person({ bot: { level: 6 } }) } }).body
-    expect(out).toContain('Level 6')
+    expect(out).toContain(`${averageForLevel(6)} avg`)
     expect(out).not.toContain('Manual entry')
   })
 })
