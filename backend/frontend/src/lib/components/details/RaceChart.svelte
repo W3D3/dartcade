@@ -33,7 +33,8 @@
       props: {
         class: s.seat === highlight ? 'stroke-accent' : 'stroke-line-pip',
         strokeWidth: s.seat === highlight ? 2.5 : 1.5,
-        strokeDasharray: s.seat === highlight ? undefined : '4 4',
+        // Spread onto the <path> as is (Path only maps its own props), so the attribute's own name
+        'stroke-dasharray': s.seat === highlight ? undefined : '4 4',
       },
     })),
   )
