@@ -7,6 +7,7 @@
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
+  import { friendsDrawerOpen } from '$lib/friends/drawer'
   import { STATUS_COPY, setInvisible } from '$lib/presence'
   import Avatar from './Avatar.svelte'
   import DevUserSwitch from './DevUserSwitch.svelte'
@@ -45,6 +46,15 @@
   function closeMenu() {
     open = false
     triggerEl?.focus()
+  }
+
+  // Desktops and tablets open the Friends drawer beside the nav; phones go to the Friends page
+  function openFriends(e: MouseEvent) {
+    if (placement === 'header') return closeMenu()
+    e.preventDefault()
+    open = false
+    triggerEl?.focus()
+    friendsDrawerOpen.set(true)
   }
 
   function onKeydown(e: KeyboardEvent) {
@@ -131,7 +141,7 @@
       </div>
       {#if statusError}<ErrorText>{statusError}</ErrorText>{/if}
       <hr class="m-0 border-0 border-t border-line-3" />
-      <a href="#/friends" role="menuitem" onclick={closeMenu} class={ITEM}>
+      <a href="#/friends" role="menuitem" onclick={openFriends} class={ITEM}>
         <UsersRound size={18} strokeWidth={1.8} />
         Friends
         <span class="ml-auto text-[13px] text-text-muted">{friends.online} online</span>
