@@ -85,6 +85,8 @@ export type UndoableVisit = { committedState: unknown; openVisitEvents: BoardEve
 export type DartMeta = { source: DartSource; corrected: boolean; thrownAt: Date }
 export type X01Detail = components['schemas']['X01Detail']
 export type AtcDetail = components['schemas']['AtcDetail']
+export type MatchStats = components['schemas']['MatchStats']
+export type StatRow = components['schemas']['StatRow']
 export type VisitPhase = 'game' | 'bulloff'
 
 /** A visit as it was committed, with the game state around it (see applyInput). */
@@ -167,6 +169,8 @@ export interface GameModule<
   throwOrder?(s: S): number[]
   /** The game's detail for GET /api/games/:id, built from its replayed visits. */
   detail(visits: CommittedVisit<S>[], final: S): D
+  /** The match stats for GET /api/games/:id, from the same replay as detail(); none when left out. */
+  matchStats?(visits: CommittedVisit<S>[], final: S): MatchStats
 }
 
 /** A registered game with its state type erased; `id` tells which view (and snapshot) it produces. */

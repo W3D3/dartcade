@@ -1293,7 +1293,7 @@ components:
                     bust: { type: boolean }
     AtcDetail:
       type: object
-      required: [mode, visits]
+      required: [mode, visits, progress]
       additionalProperties: false
       properties:
         mode: { type: string, enum: [atc] }
@@ -1311,6 +1311,25 @@ components:
               hits: { type: integer, minimum: 0, maximum: 3 }
               targetBefore: { type: integer, description: 'Target at the start of the visit (1–20, 21 = 25, 22 = bull)' }
               targetAfter: { type: integer, description: Target after the visit; past the last target means finished }
+        progress:
+          type: array
+          description: One per seat, in seat order. Every target the seat got to, in order.
+          items:
+            type: object
+            required: [seat, steps]
+            additionalProperties: false
+            properties:
+              seat: { type: integer, minimum: 0 }
+              steps:
+                type: array
+                items:
+                  type: object
+                  required: [target, darts, hit]
+                  additionalProperties: false
+                  properties:
+                    target: { type: integer, description: '1–20, 21 = 25, 22 = bull' }
+                    darts: { type: integer, minimum: 0, description: 'Darts thrown at it; 0 when a multiplier skipped it' }
+                    hit: { type: boolean, description: 'Completed; false only for the target the game ended on' }
 
     Health:
       type: object
@@ -1454,7 +1473,7 @@ components:
           additionalProperties: { $ref: '#/components/schemas/ModeStats' }
     GameDetail:
       type: object
-      required: [game, detail]
+      required: [game, detail, stats]
       additionalProperties: false
       properties:
         game: { $ref: '#/components/schemas/GameSummary' }
@@ -1467,6 +1486,57 @@ components:
             mapping:
               x01: '#/components/schemas/X01Detail'
               atc: '#/components/schemas/AtcDetail'
+        stats: { $ref: '#/components/schemas/MatchStats' }
+
+    MatchStats:
+      type: object
+      description: The game's match stats, the same shape for every game mode. Rows say how to show each value, so a mode adds stats without a frontend change.
+      required: [rows, seats]
+      additionalProperties: false
+      properties:
+        rows:
+          type: array
+          description: In display order
+          items: { $ref: '#/components/schemas/StatRow' }
+        seats:
+          type: array
+          description: One per seat, in seat order
+          items: { $ref: '#/components/schemas/StatValues' }
+        teams:
+          type: array
+          description: Only in a team game; one per team. Seats keep their own values.
+          items: { $ref: '#/components/schemas/StatValues' }
+
+    StatValues:
+      type: object
+      description: 'seat or team (the index), and its values by key; a missing key means the stat does not apply'
+      required: [index, values]
+      additionalProperties: false
+      properties:
+        index: { type: integer, minimum: 0 }
+        values:
+          type: object
+          additionalProperties: { type: number }
+
+    StatRow:
+      type: object
+      required: [key, label, format, better, compact]
+      additionalProperties: false
+      properties:
+        key: { type: string, description: 'Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise' }
+        label: { type: string }
+        format:
+          type: string
+          enum: [decimal, integer, darts, target, ratio]
+          description: 'decimal 83.9, integer 6, darts "15 darts", target 1–20 / 21 = 25 / 22 = Bull, ratio "50% · 3/6"'
+        value: { type: string, description: "The key holding the row's value (for a ratio, the numerator); default `key`" }
+        of: { type: string, description: 'ratio only: the key of the denominator' }
+        better:
+          type: string
+          enum: [higher, lower, null]
+          nullable: true
+          description: null when no side is better (e.g. darts thrown)
+        compact: { type: boolean, description: 'Also shown where space is short (party standings, phone)' }
 
     Board:
       type: object

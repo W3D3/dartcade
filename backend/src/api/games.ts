@@ -71,11 +71,11 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   app.get<Route<'getGame'>>('/api/games/:id', { preValidation: requireAuth, schema: fromSpec('getGame') }, async (req, reply) => {
     const game = await getViewableGame(db, req.params.id, req.userId)
     if (!game) return reply.code(404).send({ error: 'not found' })
-    const detail = buildDetail(game, await getSessionEvents(db, game.id), (message, details) => {
+    const built = buildDetail(game, await getSessionEvents(db, game.id), (message, details) => {
       req.log.warn({ details }, message)
     })
-    if (!detail) return reply.code(404).send({ error: 'not found' })
-    return reply.send({ game: toSummary(game), detail })
+    if (!built) return reply.code(404).send({ error: 'not found' })
+    return reply.send({ game: toSummary(game), detail: built.detail, stats: built.stats })
   })
 
   done()

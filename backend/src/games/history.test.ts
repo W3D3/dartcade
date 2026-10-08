@@ -226,6 +226,7 @@ describe('ATC summarize and detail', () => {
       visits: [
         { visit: 0, seat: 0, committedAt: '2026-10-01T10:00:00.000Z', darts: [hd(S1, 0)], hits: 2, targetBefore: 1, targetAfter: 3 },
       ],
+      progress: [],
     })
   })
 })
