@@ -11,13 +11,14 @@
   import { raceSeries } from '$lib/details/atc'
   import { flattenByX, stepFocus } from '$lib/details/chartNav'
 
-  type RacePoint = { darts: number; hits: number }
+  /** Tagged with its seat: the tooltip names the player from the point it's on. */
+  type RacePoint = { darts: number; hits: number; seat: number }
   type RaceScale = AnyScale<number, number>
   type RaceChartState = ChartState<RacePoint, RaceScale, RaceScale>
 
   let { detail, highlight = null }: { detail: GameDetail; highlight?: number | null } = $props()
   const atc = $derived(detail.detail.mode === 'atc' ? detail.detail : null)
-  const series = $derived(atc ? raceSeries(atc) : [])
+  const series = $derived((atc ? raceSeries(atc) : []).map(s => ({ ...s, points: s.points.map(p => ({ ...p, seat: s.seat })) })))
   const total = $derived(Math.max(1, atc?.sequence.length ?? 0))
   const maxDarts = $derived(Math.max(3, ...series.flatMap(s => s.points.map(p => p.darts))))
   const nameOf = (seat: number) => detail.game.players.find(p => p.seat === seat)?.name ?? ''
@@ -51,13 +52,13 @@
   let focusIndex = $state<number | null>(null)
   let chartContext = $state<RaceChartState | undefined>()
 
-  function describe(data: RacePoint, seat: number): string {
-    return `${nameOf(seat)}: ${data.hits} targets after ${data.darts} darts`
+  function describe(data: RacePoint): string {
+    return `${nameOf(data.seat)}: ${data.hits} targets after ${data.darts} darts`
   }
 
   const liveText = $derived.by(() => {
     const n = focusIndex === null ? undefined : navPoints.at(focusIndex)
-    return n ? describe(n.point, n.seriesKey) : ''
+    return n ? describe(n.point) : ''
   })
 
   function focusPoint(index: number | null) {
@@ -127,11 +128,10 @@
       {#snippet tooltip({ context }: { context: RaceChartState })}
         <Tooltip.Root variant="none" {context}>
           {#snippet children({ data }: { data: RacePoint })}
-            {@const seat = Number(context.tooltip.series[0]?.key)}
             <div
               class="bg-surface-inset border border-line-popover rounded-[10px] px-2.5 py-1.5 text-text text-[13px] whitespace-nowrap shadow-tooltip"
             >
-              {describe(data, seat)}
+              {describe(data)}
             </div>
           {/snippet}
         </Tooltip.Root>
