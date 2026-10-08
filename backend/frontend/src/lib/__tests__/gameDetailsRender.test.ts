@@ -5,6 +5,8 @@ import Standings from '../components/details/Standings.svelte'
 import ResultCard from '../components/details/ResultCard.svelte'
 import TeamShares from '../components/details/TeamShares.svelte'
 import X01Legs from '../components/details/X01Legs.svelte'
+import AtcTargets from '../components/details/AtcTargets.svelte'
+import RaceChart from '../components/details/RaceChart.svelte'
 import type { GameDetail, StatRow } from '../api'
 import { detailSides } from '../details/page.js'
 
@@ -181,5 +183,49 @@ describe('X01 leg by leg', () => {
     // seat 0's first visit (321 left) is crossed out once passed, not the checkout visit
     expect(out).toContain('321')
     expect(out).toContain('Out')
+  })
+})
+
+describe('Around the Clock sections', () => {
+  const atc = (): GameDetail => {
+    const d = game(2)
+    d.game.mode = 'atc'
+    d.game.config = { order: 'asc', finishOn: 'twenty', multiplierAdvances: false }
+    d.detail = {
+      mode: 'atc',
+      sequence: [1, 2, 3],
+      visits: [],
+      progress: [
+        {
+          seat: 0,
+          steps: [
+            { target: 1, darts: 2, hit: true },
+            { target: 2, darts: 3, hit: false },
+          ],
+        },
+        { seat: 1, steps: [{ target: 1, darts: 5, hit: false }] },
+      ],
+    }
+    d.stats = {
+      rows: [],
+      seats: [
+        { index: 0, values: { hardestTarget: 1 } },
+        { index: 1, values: {} },
+      ],
+    }
+    return d
+  }
+
+  it('grids targets per player with the hardest-target line', () => {
+    const out = render(AtcTargets, { props: { detail: atc() } }).body
+    expect(out).toContain('Target by target')
+    expect(out).toContain('1 cost P0 the most.')
+    expect(out).toContain('P1')
+  })
+
+  it('draws the race', () => {
+    const out = render(RaceChart, { props: { detail: atc(), highlight: 0 } }).body
+    expect(out).toContain('Race to the Bull')
+    expect(out).toContain('<path')
   })
 })
