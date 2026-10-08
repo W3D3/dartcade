@@ -8,8 +8,9 @@ import X01Legs from '../components/details/X01Legs.svelte'
 import AtcTargets from '../components/details/AtcTargets.svelte'
 import RaceChart from '../components/details/RaceChart.svelte'
 import HeatBoard from '../components/details/HeatBoard.svelte'
+import HeatmapView from '../components/details/HeatmapView.svelte'
 import type { GameDetail, StatRow } from '../api'
-import type { HeatDart } from '../details/heatmap.js'
+import { groupingMm, type HeatDart } from '../details/heatmap.js'
 import { detailSides } from '../details/page.js'
 
 const rows: StatRow[] = [
@@ -319,5 +320,232 @@ describe('HeatBoard', () => {
     const cx = out.match(/class="heat-dot"[\s\S]*?cx="(-?[\d.]+)"/)
     expect(cx).not.toBeNull()
     expect(Number(cx![1])).toBeCloseTo(235, 5)
+  })
+})
+
+describe('HeatmapView', () => {
+  const seg = (name: string, number: number, multiplier: 0 | 1 | 2 | 3) => ({
+    name,
+    number,
+    multiplier,
+    bed: (multiplier === 0 ? 'Outside' : multiplier === 2 ? 'Double' : multiplier === 3 ? 'Triple' : 'Single') as 'Single',
+  })
+  const dart = (
+    s: ReturnType<typeof seg>,
+    coords: { x: number; y: number } | null,
+    index = 0,
+  ): {
+    index: number
+    segment: ReturnType<typeof seg>
+    coords: { x: number; y: number } | null
+    source: 'camera' | 'manual'
+    corrected: boolean
+    thrownAt: string
+  } => ({
+    index,
+    segment: s,
+    coords,
+    source: coords ? 'camera' : 'manual',
+    corrected: false,
+    thrownAt: '',
+  })
+  const T20 = seg('T20', 20, 3)
+  const S5 = seg('S5', 5, 1)
+  const S1 = seg('S1', 1, 1)
+  const S7 = seg('S7', 7, 1)
+  const S9 = seg('S9', 9, 1)
+
+  it('duel with darts: chips, summary and the exact card values for the selected (default) player', () => {
+    const d = game(2)
+    const seat0Coords = [
+      { x: 0, y: 0.85 },
+      { x: 0.02, y: 0.86 },
+      { x: -0.01, y: 0.87 },
+    ]
+    d.detail = {
+      mode: 'x01',
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: 0,
+          visits: [
+            {
+              visit: 0,
+              seat: 0,
+              committedAt: '',
+              darts: seat0Coords.map((c, i) => dart(T20, c, i)),
+              scored: 180,
+              remaining: 321,
+              bust: false,
+            },
+            {
+              visit: 1,
+              seat: 1,
+              committedAt: '',
+              darts: [dart(S5, { x: 0.3, y: 0.2 }, 0), dart(S1, { x: 0.5, y: -0.1 }, 1)],
+              scored: 6,
+              remaining: 495,
+              bust: false,
+            },
+          ],
+        },
+      ],
+    }
+    // d.game.mySeat is 0 (see `game()`), so seat 0 (three T20s) is the default-selected player.
+    const expectedMm = Math.round(groupingMm(seat0Coords.map(c => ({ segment: T20, coords: c, manual: false })))!)
+    const out = render(HeatmapView, { props: { detail: d } }).body
+    expect(out).toContain('aria-pressed')
+    expect(out).toContain('P0')
+    expect(out).toContain('P1')
+    expect(out).toContain('<strong class="font-semibold text-text">P0</strong> · 1 leg · 3 darts')
+    expect(out).toMatch(/In the 20[\s\S]*?>100%</)
+    expect(out).toContain('3 of 3')
+    expect(out).toMatch(/Trebles[\s\S]*?>3</)
+    expect(out).toContain('T20 × 3')
+    expect(out).toContain(`${expectedMm} mm`)
+    // Neither 1/18 nor 5/12: no miss-side lean at all for this player.
+    expect(out).toMatch(/Miss side[\s\S]*?>—</)
+    expect(out).toMatch(/Most hit[\s\S]*?T20/)
+  })
+
+  it('most hit: every treble bolds regardless of rank, and bars are shaded by share of the first', () => {
+    const d = game(2)
+    const S20 = seg('S20', 20, 1)
+    d.detail = {
+      mode: 'x01',
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: null,
+          visits: [
+            {
+              visit: 0,
+              seat: 0,
+              committedAt: '',
+              darts: [
+                ...Array.from({ length: 4 }, (_, i) => dart(S20, null, i)),
+                ...Array.from({ length: 2 }, (_, i) => dart(T20, null, 4 + i)),
+                dart(S5, null, 6),
+              ],
+              scored: 100,
+              remaining: 401,
+              bust: false,
+            },
+          ],
+        },
+      ],
+    }
+    const out = render(HeatmapView, { props: { detail: d } }).body
+    // S20 ranks first (4 hits) but isn't a treble: medium weight, not bold.
+    expect(out).toContain('<span class="font-mono text-[13px] text-ink-2 font-medium">S20</span>')
+    // T20 ranks second (2 hits) but is a treble: bold, regardless of rank.
+    expect(out).toContain('<span class="font-mono text-[13px] text-text font-bold">T20</span>')
+    // Its bar is half the width of the first (2 of 4 hits); opacity follows 0.35 + 0.65 × ratio,
+    // the floor that keeps the smallest bar readable.
+    expect(out).toMatch(/T20[\s\S]*?width: 50%; opacity: 0\.675/)
+  })
+
+  it('a player with no trebles, no 20s or miss-side numbers, and fewer than 3 positions: the dash branches', () => {
+    const d = game(2)
+    d.detail = {
+      mode: 'x01',
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: null,
+          visits: [
+            {
+              visit: 0,
+              seat: 0,
+              committedAt: '',
+              darts: [dart(S7, { x: 0.1, y: 0.1 }, 0), dart(S9, { x: -0.1, y: 0.1 }, 1)],
+              scored: 16,
+              remaining: 485,
+              bust: false,
+            },
+          ],
+        },
+      ],
+    }
+    const out = render(HeatmapView, { props: { detail: d } }).body
+    // In the 20: 0 of 2 (a real value, not a dash — these darts exist, just not in the 20).
+    expect(out).toMatch(/In the 20[\s\S]*?>0%</)
+    expect(out).toContain('0 of 2')
+    // Trebles: count 0, and its sub ("—") immediately follows.
+    expect(out).toMatch(/Trebles[\s\S]*?>0<[\s\S]*?>—</)
+    // Miss side: neither 1/18 nor 5/12 was hit.
+    expect(out).toMatch(/Miss side[\s\S]*?>—<[\s\S]*?>—</)
+    // Grouping: only 2 positioned darts, below the 3-dart floor.
+    expect(out).toMatch(/Grouping[\s\S]*?>—</)
+  })
+
+  it('teams: Team A and Team B headings group the right players under each', () => {
+    const d = game(4)
+    d.detail = {
+      mode: 'x01',
+      teams: [
+        { id: 'A', name: 'Team A', seats: [0, 2] },
+        { id: 'B', name: 'Team B', seats: [1, 3] },
+      ],
+      legs: [],
+    }
+    const out = render(HeatmapView, { props: { detail: d } }).body
+    const aIdx = out.indexOf('Team A')
+    const bIdx = out.indexOf('Team B')
+    const chipsEnd = out.indexOf('@container')
+    expect(aIdx).toBeGreaterThanOrEqual(0)
+    expect(bIdx).toBeGreaterThan(aIdx)
+    expect(chipsEnd).toBeGreaterThan(bIdx)
+    const teamASection = out.slice(aIdx, bIdx)
+    const teamBSection = out.slice(bIdx, chipsEnd)
+    expect(teamASection).toContain('P0')
+    expect(teamASection).toContain('P2')
+    expect(teamASection).not.toContain('P1')
+    expect(teamASection).not.toContain('P3')
+    expect(teamBSection).toContain('P1')
+    expect(teamBSection).toContain('P3')
+    expect(teamBSection).not.toContain('P0')
+    expect(teamBSection).not.toContain('P2')
+  })
+
+  it('a player with only manual darts: the summary line ends with the hand-entered note', () => {
+    const d = game(2)
+    d.detail = {
+      mode: 'x01',
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: null,
+          visits: [
+            {
+              visit: 0,
+              seat: 0,
+              committedAt: '',
+              darts: [dart(T20, null, 0), dart(S5, null, 1)],
+              scored: 65,
+              remaining: 436,
+              bust: false,
+            },
+          ],
+        },
+      ],
+    }
+    const out = render(HeatmapView, { props: { detail: d } }).body
+    expect(out).toContain('entered by hand, not on the board</p>')
+  })
+
+  it('a forfeit before any visit: the summary reads "No darts thrown", not "All 0 legs"', () => {
+    const d = game(2)
+    d.detail = { mode: 'x01', legs: [] }
+    const out = render(HeatmapView, { props: { detail: d } }).body
+    expect(out).toContain('<strong class="font-semibold text-text">P0</strong> · No darts thrown')
+    expect(out).not.toContain('All 0 legs')
+    // The board's aria label matches the visible overlay text instead of disagreeing with it.
+    expect(out).toMatch(/aria-label="No darts thrown for P0"/)
+    expect(out).toContain('>No darts thrown<')
   })
 })
