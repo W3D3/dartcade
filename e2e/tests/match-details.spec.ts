@@ -39,6 +39,13 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await expect(page.getByText('3-dart average')).toBeVisible()
   await expect(page.getByText('Leg by leg')).toBeVisible()
   await expect(page.getByRole('table', { name: /Visits in this leg/ })).toContainText('T20')
+
+  await page.getByRole('tab', { name: 'Heatmap' }).click()
+  await expect(page.getByText('Where every dart landed')).toBeVisible()
+  await expect(page.getByText('In the 20')).toBeVisible()
+  await expect(page.getByText('Most hit')).toBeVisible()
+  // Manual-entry darts (as thrown above) have no position, so the board falls back to this.
+  await expect(page.getByText('No dart positions')).toBeVisible()
 })
 
 test('an unknown game id shows a not-available page', async ({ authedPage: page }) => {
