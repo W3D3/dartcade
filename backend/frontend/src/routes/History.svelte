@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { LoaderCircle } from '@lucide/svelte'
+  import { ChevronRight, LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
@@ -152,7 +152,7 @@
     <section aria-label="Matches" class="flex min-h-0 flex-col overflow-hidden card">
       <!-- Desktops only: the column headings, and the Board column -->
       <div
-        class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] text-[12px] label-caps text-text-dim xl:grid xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]"
+        class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] pr-12 text-[12px] label-caps text-text-dim xl:grid xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]"
       >
         <span>When</span><span>Game</span><span>Players</span><span>Result</span><span>Key stat</span><span>Board</span>
       </div>
@@ -173,57 +173,64 @@
             {@const key = historyStat(g)}
             {@const badges = playerBadges(g)}
             {@const rules = rulesLine(g)}
-            <li class="border-b border-line px-[22px] py-3 lg:min-h-[68px] lg:py-0">
-              <!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
-              <div class="flex flex-col gap-1 lg:hidden">
-                <div class="flex items-baseline justify-between gap-3">
-                  <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
-                    <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]"
+            <li class="border-b border-line">
+              <a
+                href="#/history/{g.id}"
+                aria-label="{getGameView(g.mode).title}, {when.day} {when.time}{result.text ? `, ${result.text}` : ''}: details"
+                class="relative block px-[22px] pr-12 py-3 lg:min-h-[68px] lg:py-0 text-text no-underline hover:bg-surface-active"
+              >
+                <!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
+                <div class="flex flex-col gap-1 lg:hidden">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
+                      <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]"
+                        >{getGameView(g.mode).title}</span
+                      >
+                      <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
+                    </span>
+                    {@render resultPill(result, 'shrink-0')}
+                  </div>
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
+                      >{#each badges as p (p.n)}{@render badge(p)}{/each}</span
+                    >
+                    {#if key}
+                      <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"
+                        ><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span
+                      >
+                    {/if}
+                  </div>
+                  {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
+                </div>
+
+                <!-- lg and up: a column grid; tablets (up to xl) leave out the Board column -->
+                <div
+                  class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[110px_minmax(0,1fr)_200px_110px_90px] xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4"
+                >
+                  <span class="flex flex-col gap-0.5">
+                    <span class="text-[15px] font-semibold">{when.day}</span>
+                    <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
+                  </span>
+                  <span class="flex min-w-0 flex-col gap-0.5">
+                    <span class="font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]"
                       >{getGameView(g.mode).title}</span
                     >
-                    <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
+                    <span class="text-[13px] text-text-muted">{rules}</span>
                   </span>
-                  {@render resultPill(result, 'shrink-0')}
+                  <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-2.5">
+                    {#each badges as p (p.n)}{@render badge(p)}{/each}
+                  </span>
+                  <span>{@render resultPill(result)}</span>
+                  <span class="flex flex-col gap-0.5">
+                    {#if key}
+                      <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>
+                      <span class="text-[12px] text-text-dim">{key.label}</span>
+                    {/if}
+                  </span>
+                  <span class="hidden xl:inline text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
                 </div>
-                <div class="flex items-baseline justify-between gap-3">
-                  <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
-                    >{#each badges as p (p.n)}{@render badge(p)}{/each}</span
-                  >
-                  {#if key}
-                    <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"
-                      ><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span
-                    >
-                  {/if}
-                </div>
-                {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
-              </div>
-
-              <!-- lg and up: a column grid; tablets (up to xl) leave out the Board column -->
-              <div
-                class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[110px_minmax(0,1fr)_200px_110px_90px] xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4"
-              >
-                <span class="flex flex-col gap-0.5">
-                  <span class="text-[15px] font-semibold">{when.day}</span>
-                  <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
-                </span>
-                <span class="flex min-w-0 flex-col gap-0.5">
-                  <span class="font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]"
-                    >{getGameView(g.mode).title}</span
-                  >
-                  <span class="text-[13px] text-text-muted">{rules}</span>
-                </span>
-                <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-2.5">
-                  {#each badges as p (p.n)}{@render badge(p)}{/each}
-                </span>
-                <span>{@render resultPill(result)}</span>
-                <span class="flex flex-col gap-0.5">
-                  {#if key}
-                    <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>
-                    <span class="text-[12px] text-text-dim">{key.label}</span>
-                  {/if}
-                </span>
-                <span class="hidden xl:inline text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
-              </div>
+                <ChevronRight size={18} class="absolute right-4 top-1/2 -translate-y-1/2 text-text-dim" />
+              </a>
             </li>
           {/each}
         </ul>

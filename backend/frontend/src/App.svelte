@@ -1,5 +1,6 @@
 <script lang="ts">
   import Router, { push } from 'svelte-spa-router'
+  import wrap from 'svelte-spa-router/wrap'
   import { onMount } from 'svelte'
   import { Tooltip } from 'bits-ui'
   import CreateSession from './routes/CreateSession.svelte'
@@ -8,6 +9,8 @@
   import Register from './routes/Register.svelte'
   import Boards from './routes/Boards.svelte'
   import History from './routes/History.svelte'
+  import RouteLoading from './routes/RouteLoading.svelte'
+  import RouteLoadFailed from './routes/RouteLoadFailed.svelte'
   import Lobby from './routes/Lobby.svelte'
   import Join from './routes/Join.svelte'
   import Invites from './routes/Invites.svelte'
@@ -19,12 +22,25 @@
   import { me } from '$lib/lobby/sockets'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
 
+  // Match details pulls in LayerChart for its two charts; load it only when someone opens it.
+  // `RouteLoadFailed` is a static import (not another dynamic one) so a failed chunk fetch —
+  // offline, or a stale tab after a deploy whose hashed chunk is gone — can't fail the same way
+  // and leave a blank page; it resolves synchronously in the `.catch`. `RouteLoading` is attached
+  // the same way `wrap()`'s own (unused here) `loadingComponent` option would, via `Object.assign`
+  // rather than passing it through `wrap()` directly — svelte-spa-router 4.x's bundled types
+  // predate Svelte 5 and reject a Svelte 5 component there even though the identical component
+  // works fine as a plain route value a few lines below.
+  const loadGameDetails = Object.assign(() => import('./routes/GameDetails.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
+
   const routes = {
     '/': CreateSession,
     '/session/:id': GameDisplay,
     '/login': Login,
     '/register': Register,
     '/boards': Boards,
+    '/history/:id': wrap({ asyncComponent: loadGameDetails }),
     '/history': History,
     '/lobby': Lobby,
     '/join': Join,
