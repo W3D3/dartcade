@@ -12,6 +12,8 @@ export type DetailSide = {
   values: Record<string, number>
   me: boolean
   guest: boolean
+  /** A bot seat: its difficulty; null for a member, a guest or a team */
+  bot: { level: number } | null
   members: string[]
   /** Gave up the game (a team: any of its players did) */
   forfeited: boolean
@@ -49,6 +51,7 @@ export function detailSides(d: GameDetail): DetailSide[] {
         values: valuesOf(d.stats.teams, i),
         me: t.seats.includes(d.game.mySeat ?? -1),
         guest: false,
+        bot: null,
         members: members.map(p => p.name),
         forfeited: members.some(p => p.forfeited),
       }
@@ -61,6 +64,7 @@ export function detailSides(d: GameDetail): DetailSide[] {
     values: valuesOf(d.stats.seats, p.seat),
     me: p.seat === d.game.mySeat,
     guest: p.userId === null && p.seat !== d.game.mySeat,
+    bot: p.bot,
     members: [p.name],
     forfeited: p.forfeited,
   }))

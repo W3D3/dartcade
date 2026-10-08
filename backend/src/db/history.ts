@@ -9,6 +9,8 @@ export type HistorySeat = {
   seat: number
   name: string
   user_id: string | null
+  /** The bot's difficulty; null for a member or guest. */
+  bot_level: number | null
   placement: number
   throw_position: number | null
   stats: Record<string, number>
@@ -36,7 +38,7 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
   if (ids.length === 0) return new Map()
   const rows = await db
     .selectFrom('game_players')
-    .select(['session_id', 'seat', 'name', 'user_id', 'placement', 'throw_position', 'stats', 'forfeited'])
+    .select(['session_id', 'seat', 'name', 'user_id', 'bot_level', 'placement', 'throw_position', 'stats', 'forfeited'])
     .where('session_id', 'in', ids)
     .where('placement', 'is not', null)
     .$narrowType<{ placement: NotNull }>()
@@ -51,6 +53,7 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
         seat: r.seat,
         name: r.name,
         user_id: r.user_id,
+        bot_level: r.bot_level,
         placement: r.placement,
         throw_position: r.throw_position,
         stats: StatsSchema.parse(r.stats),

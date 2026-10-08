@@ -33,12 +33,22 @@ const game = (o: Partial<HistoryGame> = {}): HistoryGame => ({
       seat: 0,
       name: 'Christoph',
       user_id: 'user-1',
+      bot_level: null,
       placement: 1,
       throw_position: 1,
       stats: { average: 83.9, legsWon: 3 },
       forfeited: false,
     },
-    { seat: 1, name: 'Guest', user_id: null, placement: 2, throw_position: 0, stats: { average: 71.6, legsWon: 1 }, forfeited: false },
+    {
+      seat: 1,
+      name: 'Guest',
+      user_id: null,
+      bot_level: null,
+      placement: 2,
+      throw_position: 0,
+      stats: { average: 71.6, legsWon: 1 },
+      forfeited: false,
+    },
   ],
   ...o,
 })
@@ -83,6 +93,7 @@ describe('GET /api/games', () => {
       seat: 1,
       name: 'Guest',
       userId: null,
+      bot: null,
       placement: 2,
       throwPosition: 0,
       stats: { average: 71.6, legsWon: 1 },
@@ -141,5 +152,13 @@ describe('GET /api/games/:id', () => {
     const body = (await makeApp().inject({ method: 'GET', url: '/api/games/g1' })).json()
     expect(body.game.mySeat).toBeNull()
     expect(body.game.players.map((p: any) => p.userId)).toEqual([null, null])
+  })
+
+  it("returns a bot seat's level, null for everyone else", async () => {
+    const g = game()
+    g.seats[1] = { ...g.seats[1], name: 'Bot Lvl 7', bot_level: 7 }
+    vi.mocked(history.getViewableGame).mockResolvedValue(g)
+    const body = (await makeApp().inject({ method: 'GET', url: '/api/games/g1' })).json()
+    expect(body.game.players.map((p: any) => p.bot)).toEqual([null, { level: 7 }])
   })
 })

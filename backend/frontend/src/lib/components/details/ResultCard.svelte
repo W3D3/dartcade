@@ -13,7 +13,7 @@
 {#snippet side(s: DetailSide, align: 'start' | 'end')}
   <div class="flex flex-col gap-[10px] min-w-0 {align === 'end' ? 'items-end text-right' : 'items-start'}">
     <span class="flex items-center gap-[10px] min-w-0 {align === 'end' ? 'flex-row-reverse' : ''}">
-      <Avatar name={s.name} size={36} guest={s.guest} tone={s.me ? 'accent' : 'default'} />
+      <Avatar name={s.name} size={36} guest={s.guest} bot={s.bot} tone={s.me ? 'accent' : 'default'} />
       <span class="text-[18px] md:text-[20px] font-semibold truncate {s.placement === 1 ? 'text-text' : 'text-ink-2'}">{s.name}</span>
     </span>
     {#if s.members.length > 1}<span class="text-[13px] text-text-muted">{s.members.join(' · ')}</span>{/if}

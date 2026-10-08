@@ -23,6 +23,7 @@ const seat = (s: number, name: string, placement: number) => ({
   throwPosition: s,
   name,
   userId: null,
+  bot: null,
   placement,
   stats: {},
   forfeited: false,
@@ -72,6 +73,24 @@ describe('details components', () => {
     d.game.players[0].forfeited = true
     const out = render(ResultCard, { props: { detail: d, sides: detailSides(d) } }).body
     expect(out).toContain('Gave up')
+  })
+
+  it("draws a bot seat with the bot's avatar, not the guest one", () => {
+    const duel = game(2)
+    duel.game.players[1].bot = { level: 5 }
+    const card = render(ResultCard, { props: { detail: duel, sides: detailSides(duel) } }).body
+    expect(card).toContain('lucide-bot')
+    expect(card).not.toContain('border-dashed')
+    const chips = render(HeatmapView, { props: { detail: duel } }).body
+    expect(chips).toContain('lucide-bot')
+    expect(chips).not.toContain('border-dashed')
+
+    const party = game(3)
+    party.game.players[2].bot = { level: 3 }
+    const standings = render(Standings, { props: { rows, sides: detailSides(party) } }).body
+    expect(standings.match(/lucide-bot/g)).toHaveLength(1)
+    // The other non-account seat is a guest: still the dashed ring
+    expect(standings).toContain('border-dashed')
   })
 
   it('hides non-compact rows on phones', () => {

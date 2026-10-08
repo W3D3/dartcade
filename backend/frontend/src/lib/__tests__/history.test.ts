@@ -15,6 +15,7 @@ const game = (o: Partial<GameSummary> = {}): GameSummary => ({
       seat: 0,
       name: 'Christoph',
       userId: 'u1',
+      bot: null,
       placement: 1,
       throwPosition: 0,
       stats: { average: 83.94, legsWon: 3, dartsThrown: 66 },
@@ -24,6 +25,7 @@ const game = (o: Partial<GameSummary> = {}): GameSummary => ({
       seat: 1,
       name: 'Guest 1',
       userId: null,
+      bot: null,
       placement: 2,
       throwPosition: 1,
       stats: { average: 71.6, legsWon: 1, dartsThrown: 65 },
@@ -68,7 +70,10 @@ describe('players and result', () => {
   })
   it('three or more: placement of n', () => {
     const party = game({
-      players: [...game().players, { seat: 2, name: 'Lena', userId: null, placement: 3, throwPosition: 2, stats: {}, forfeited: false }],
+      players: [
+        ...game().players,
+        { seat: 2, name: 'Lena', userId: null, bot: null, placement: 3, throwPosition: 2, stats: {}, forfeited: false },
+      ],
     })
     expect(playerBadges(party).map(p => p.name)).toEqual(['Christoph', 'Guest 1', 'Lena'])
     expect(resultLabel({ ...party, mySeat: 1 })).toEqual({ text: '2nd of 3', won: false })
@@ -96,8 +101,8 @@ describe('playerBadges', () => {
   it('numbers players in throw order, not seat order', () => {
     const g = game({
       players: [
-        { seat: 0, name: 'Christoph', userId: 'u1', placement: 1, throwPosition: 1, stats: {}, forfeited: false },
-        { seat: 1, name: 'Guest 1', userId: null, placement: 2, throwPosition: 0, stats: {}, forfeited: false },
+        { seat: 0, name: 'Christoph', userId: 'u1', bot: null, placement: 1, throwPosition: 1, stats: {}, forfeited: false },
+        { seat: 1, name: 'Guest 1', userId: null, bot: null, placement: 2, throwPosition: 0, stats: {}, forfeited: false },
       ],
     })
     expect(playerBadges(g)).toEqual([
