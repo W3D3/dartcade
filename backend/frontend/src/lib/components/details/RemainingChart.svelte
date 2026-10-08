@@ -9,6 +9,7 @@
   import type { ChartState, AnyScale } from 'layerchart'
   import { remainingTicks, type Side } from '$lib/details/x01'
   import { flattenByX, stepFocus } from '$lib/details/chartNav'
+  import { otherColor } from '$lib/details/chartColors'
 
   type Visit = { visit: number; left: number; scored: number }
   /** A visit tagged with its side: the tooltip names the side from the point it's on. */
@@ -28,15 +29,20 @@
   const name = (key: number) => sides.find(s => s.key === key)?.name ?? ''
   const ticks = $derived(remainingTicks(start))
 
+  // Lime for the highlighted side; the others dashed, in grey or (several) a colour each
+  const others = $derived(series.filter(s => s.key !== lead).map(s => s.key))
+  const colorOf = (key: number) =>
+    key === lead ? 'var(--color-accent)' : otherColor(others.indexOf(key), others.length, 'var(--color-line-pip)')
+
   // One LayerChart series per side, carrying its own points; `props` lands on the rendered
-  // <path> (see Spline), so the highlighted side draws solid lime, the rest dashed grey.
+  // <path> (see Spline).
   const chartSeries = $derived(
     tagged.map(s => ({
       key: String(s.key),
       data: s.points,
-      color: s.key === lead ? 'var(--color-accent)' : 'var(--color-line-pip)',
+      color: colorOf(s.key),
       props: {
-        class: s.key === lead ? 'stroke-accent' : 'stroke-line-pip',
+        style: `stroke: ${colorOf(s.key)}`,
         strokeWidth: s.key === lead ? 2.5 : 1.5,
         // Spread onto the <path> as is (Path only maps its own props), so the attribute's own name
         'stroke-dasharray': s.key === lead ? undefined : '4 4',
@@ -89,7 +95,7 @@
     <span>Points remaining after each visit</span>
     {#each series as s (s.key)}
       <span class="inline-flex items-center gap-[6px] {s.key === lead ? 'ml-auto md:ml-0' : ''}"
-        ><span class="w-4 h-[2px] {s.key === lead ? 'bg-accent' : 'bg-line-pip'}"></span>{name(s.key)}</span
+        ><span class="w-4 h-[2px]" style:background={colorOf(s.key)}></span>{name(s.key)}</span
       >
     {/each}
   </figcaption>
@@ -135,7 +141,7 @@
               r={p.scored === 180 ? 10 : 7}
               fill="none"
               stroke-width={p.scored === 180 ? 3 : 1.5}
-              class={s.key === lead ? 'stroke-accent' : 'stroke-line-pip'}
+              style:stroke={colorOf(s.key)}
             />
           {/if}
         {/each}
