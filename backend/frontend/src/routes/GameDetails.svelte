@@ -10,7 +10,7 @@
   import StatsTable from '$lib/components/details/StatsTable.svelte'
   import Standings from '$lib/components/details/Standings.svelte'
   import TeamShares from '$lib/components/details/TeamShares.svelte'
-  import X01Legs from '$lib/components/details/X01Legs.svelte'
+  import X01Section from '$lib/components/details/X01Section.svelte'
   import AtcTargets from '$lib/components/details/AtcTargets.svelte'
   import RaceChart from '$lib/components/details/RaceChart.svelte'
   import HighlightPicker from '$lib/components/details/HighlightPicker.svelte'
@@ -74,7 +74,7 @@
             {/if}
           </section>
           <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
-            {#if d.game.mode === 'x01'}<X01Legs detail={d} party={layout === 'party'} />{/if}
+            {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
             {#if d.game.mode === 'atc'}
               <AtcTargets detail={d} />
               {#if layout === 'party'}
