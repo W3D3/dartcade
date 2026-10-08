@@ -8,6 +8,7 @@ import LobbyHeader from '../components/lobby/LobbyHeader.svelte'
 // JoinCodeCard's tooltip pulls in bits-ui's barrel, which crashes SSR here (see lobbyAccessPanel.test.ts)
 vi.mock('bits-ui', () => ({
   Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
+  Popover: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
   Dialog: {
     Root: () => {},
     Trigger: () => {},

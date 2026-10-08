@@ -9,6 +9,7 @@
   import FriendChips from './FriendChips.svelte'
   import MenuItem from './MenuItem.svelte'
   import PopoverPanel from './PopoverPanel.svelte'
+  import { Popover } from 'bits-ui'
   import { parseAddInput } from '$lib/lobby/input'
   import { friendChips, friendMatches } from '$lib/lobby/friendChips'
   import { me } from '$lib/lobby/sockets'
@@ -29,7 +30,7 @@
   let hint = $state('')
   // The server's exact-name match for what's typed
   let matches = $state<Account[]>([])
-  // The suggestions show until Escape, a click outside, or a pick
+  // The suggestions show until Escape, a click outside the field, or a pick
   let open = $state(false)
   let form: HTMLFormElement | undefined = $state()
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -99,13 +100,7 @@
     }
     if (await onguest(parsed.name)) text = ''
   }
-
-  function outside(e: PointerEvent) {
-    if (open && form && e.target instanceof Node && !form.contains(e.target)) open = false
-  }
 </script>
-
-<svelte:window onpointerdown={outside} />
 
 <div class="flex flex-col gap-2">
   <form
@@ -135,13 +130,18 @@
     <Button variant="outline" size="md" type="submit" class="bg-surface-key border-0 font-semibold">
       <Plus size={16} />{parsed.kind === 'invite' ? 'Invite' : 'Add guest'}
     </Button>
-    {#if open && suggestions.length > 0}
-      <PopoverPanel label="Players matching @{query}" align="stretch">
+    <Popover.Root
+      open={open && suggestions.length > 0}
+      onOpenChange={o => {
+        if (!o) open = false
+      }}
+    >
+      <PopoverPanel label="Players matching @{query}" align="stretch" anchor={form} keepFocus>
         {#each suggestions as s (s.id)}
           <MenuItem label="Invite {s.name}" detail={s.friend ? 'Friend' : undefined} onclick={() => void invite(s)} />
         {/each}
       </PopoverPanel>
-    {/if}
+    </Popover.Root>
   </form>
   <span class="text-[12px] {hint ? 'text-live-text' : 'text-text-dim'}">
     {hint || 'A @name gets an invite. A plain name adds a guest at your board.'}
