@@ -202,3 +202,13 @@ export function shuffleTeams(lobby: { people: readonly TeamPerson[] }, random: (
   )
   return new Map(ids.map((id, i) => [id, i % 2 === 0 ? 'A' : 'B']))
 }
+
+/** `base`, or `base (2)`, `base (3)`...: the first name no one in `taken` has (case-insensitive). */
+export function uniqueName(base: string, taken: readonly string[]): string {
+  const used = new Set(taken.map(n => n.toLowerCase()))
+  if (!used.has(base.toLowerCase())) return base
+  for (let n = 2; ; n++) {
+    const candidate = `${base} (${n})`
+    if (!used.has(candidate.toLowerCase())) return candidate
+  }
+}
