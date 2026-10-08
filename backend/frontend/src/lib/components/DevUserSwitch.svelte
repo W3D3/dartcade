@@ -4,7 +4,8 @@
   import { DEV_USERS, signInAs, type DevUser } from '$lib/devUsers'
   import { currentUser } from '$lib/auth'
 
-  let { label = 'Dev: sign in as' }: { label?: string } = $props()
+  // `markCurrent` off (login page): nobody counts as signed in, so every button works
+  let { label = 'Dev: sign in as', markCurrent = true }: { label?: string; markCurrent?: boolean } = $props()
 
   let busy = $state<string | null>(null)
   let error = $state('')
@@ -24,7 +25,7 @@
   <span class="text-[12px] uppercase tracking-[0.08em] text-text-dim">{label}</span>
   <div class="flex flex-wrap gap-2">
     {#each DEV_USERS as user (user.email)}
-      {@const current = $currentUser?.email === user.email}
+      {@const current = markCurrent && $currentUser?.email === user.email}
       <button
         type="button"
         disabled={busy !== null || current}
