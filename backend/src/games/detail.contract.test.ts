@@ -41,6 +41,28 @@ describe('module detail() matches schema/api-v1.yaml', () => {
     const validate = ajv.compile(schemas.X01Detail)
     expect(validate(d), JSON.stringify(validate.errors)).toBe(true)
   })
+  it('X01 MatchStats', () => {
+    const s = x01Game.init(
+      {
+        startScore: 301,
+        inMode: 'straight',
+        outMode: 'double',
+        bullOff: 'off',
+        botSpeed: 'normal',
+        bullValue: '25_50',
+        maxRounds: 50,
+        firstTo: 1,
+      },
+      [{ name: 'A' }],
+    )
+    const end = { ...s, scores: [241] }
+    const m = x01Game.matchStats!(
+      [{ visit: 0, seat: 0, leg: 0, phase: 'game', committedAt: '2026-10-01T10:00:00.000Z', darts: [dart], start: s, end, after: end }],
+      end,
+    )
+    const validate = ajv.compile(schemas.MatchStats)
+    expect(validate(m), JSON.stringify(validate.errors)).toBe(true)
+  })
   it('AtcDetail', () => {
     const s = atcModule.init({ throwAgainOnAllHit: false, finishOn: 'bull', multiplierAdvances: false, order: 'asc' }, [{ name: 'A' }])
     const d = atcModule.detail(

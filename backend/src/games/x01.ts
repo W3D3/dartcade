@@ -6,6 +6,7 @@ import { pickTarget } from '../bots/accuracy.js'
 import { rankSeats } from './ranking.js'
 import { checkoutHint } from '../shared/checkout.js'
 import { seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, type TeamsConfig } from './teams.js'
+import { x01MatchStats } from './x01Stats.js'
 
 export type X01Config = {
   /** Any score; the setup offers 301, 501 and 701. */
@@ -545,6 +546,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
     const teams = seatsByTeam(final.teamOf).map((seats, t) => ({ id: TEAM_IDS[t], name: `Team ${TEAM_IDS[t]}`, seats }))
     return { mode: 'x01', teams, legs }
   },
+
+  matchStats: x01MatchStats,
 }
 
 /** X01 with an optional bull off deciding the throwing order. */
