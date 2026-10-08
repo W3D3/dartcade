@@ -1,7 +1,8 @@
 <script lang="ts">
   // "Name or @username": a plain name adds a guest at your board; @ invites an account — your
   // friends whose name starts with it first, then whoever has exactly that name. Under it, your
-  // friends as one-tap chips (online first). The lobby boards' "Friends: + name" row.
+  // friends as one-tap chips (online first) on phones; tablets and desktops have the lobby's
+  // Friends tab instead.
   import { Plus } from '@lucide/svelte'
   import { api } from '$lib/api'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -145,5 +146,5 @@
   <span class="text-[12px] {hint ? 'text-live-text' : 'text-text-dim'}">
     {hint || 'A @name gets an invite. A plain name adds a guest at your board.'}
   </span>
-  <FriendChips {chips} onpick={(id: string) => void oninvite(id)} />
+  {#if chips.length > 0}<div class="md:hidden"><FriendChips {chips} onpick={(id: string) => void oninvite(id)} /></div>{/if}
 </div>

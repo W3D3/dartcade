@@ -1,5 +1,5 @@
-// The lobby header while solo: the host can close the lobby (it's always visible now), but there's
-// nobody to hand it to, so no Leave; the code sits in the Invite friends panel instead.
+// The lobby header while solo: the code to invite with and Close lobby (it's always visible now),
+// but no Leave: there's nobody to hand it to.
 import { describe, it, expect, vi } from 'vitest'
 import { render } from 'svelte/server'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
@@ -61,8 +61,9 @@ const header = (lobby: Lobby, viewerId: string) =>
   }).body
 
 describe('LobbyHeader while solo', () => {
-  it('the host gets Close lobby, no Leave', () => {
+  it('the host gets the code and Close lobby, no Leave', () => {
     const out = header(lobbyOf([member('chris', 'Christoph')], true), 'chris')
+    expect(out).toContain('K7Q4-MD')
     expect(out).toContain('Close lobby')
     expect(out).not.toContain('Leave lobby')
   })
