@@ -38,7 +38,8 @@
       props: {
         class: s.key === lead ? 'stroke-accent' : 'stroke-line-pip',
         strokeWidth: s.key === lead ? 2.5 : 1.5,
-        strokeDasharray: s.key === lead ? undefined : '4 4',
+        // Spread onto the <path> as is (Path only maps its own props), so the attribute's own name
+        'stroke-dasharray': s.key === lead ? undefined : '4 4',
       },
     })),
   )
