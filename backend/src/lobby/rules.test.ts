@@ -17,6 +17,7 @@ import {
   nextHost,
   reorder,
   shuffleTeams,
+  uniqueName,
 } from './rules.js'
 
 const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
@@ -270,4 +271,11 @@ describe('friendsMayJoin', () => {
     expect(friendsMayJoin({ access: 'invite', hostUserId: 'chris' }, true)).toBe(false)
     expect(friendsMayJoin({ access: 'friends', hostUserId: null }, true)).toBe(false)
   })
+})
+
+describe('uniqueName', () => {
+  it('keeps a free name', () => expect(uniqueName('Bot Lvl 5', ['Bot Lvl 3', 'Ann'])).toBe('Bot Lvl 5'))
+  it('numbers from 2', () => expect(uniqueName('Bot Lvl 5', ['Bot Lvl 5'])).toBe('Bot Lvl 5 (2)'))
+  it('takes the first free number, ignoring case', () =>
+    expect(uniqueName('Bot Lvl 5', ['bot lvl 5', 'Bot Lvl 5 (2)', 'Bot Lvl 5 (4)'])).toBe('Bot Lvl 5 (3)'))
 })
