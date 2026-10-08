@@ -54,6 +54,7 @@ corrected dart replays the open visit cleanly.
 | Settings page and the caller | `backend/frontend/src/routes/Settings.svelte`, its cards in `lib/components/settings/` (`CallerVoices`, `VoiceSelect`); what the caller says, its voices and the player in `lib/caller/` (`calls.ts`, `voices.ts`, `player.ts`); voice packs on the server in `backend/src/caller/`, their API in `backend/src/api/voices.ts` |
 | Dart helpers (labels, checkout hints) | `backend/frontend/src/lib/dartUtils.ts` |
 | Game history: input log, replay, results | `backend/src/session/{apply,replay}.ts`, `backend/src/history/`, `backend/src/db/history.ts`, `backend/src/api/games.ts` |
+| Match details page (a finished game's result, match stats, leg/target sections) | `backend/frontend/src/routes/GameDetails.svelte`, helpers in `lib/details/`, components in `lib/components/details/`; stats from each module's `matchStats()` (`backend/src/games/matchStats.ts`, `x01Stats.ts`, `atcProgress.ts`) |
 | Architecture overview | `ARCHITECTURE.md`; the original research and Board Manager API findings in `docs/architecture.md` |
 | Feature specs and implementation plans | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
 | Setup, tests, builds | `DEVELOPMENT.md`, `mise.toml` |
@@ -65,7 +66,8 @@ corrected dart replays the open visit cleanly.
    anything random), `onBoardEvent`, `onUserAction`, `view`, `defaultConfig`/`configMeta`
    for the setup form, and for the history `version`, `summarize` (placement and stats per
    seat), `detail` (its per-mode detail; add the schema to `schema/api-v1.yaml` and the
-   `GameDetail.detail` union) and `getLeg` if it has legs. Keep it a pure reducer: games
+   `GameDetail.detail` union), `matchStats` (rows and values for the details page; see
+   `backend/src/games/matchStats.ts`) and `getLeg` if it has legs. Keep it a pure reducer: games
    are rebuilt by replaying their input log. Wrap it with `withBullOff` if it needs a
    throwing order. `summarize` must also work on a game that isn't won (no winner): a
    forfeit ends games early and ranks seats by it.
