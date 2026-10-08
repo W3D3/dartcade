@@ -10,7 +10,9 @@
   import { remainingTicks, type Side } from '$lib/details/x01'
   import { flattenByX, stepFocus } from '$lib/details/chartNav'
 
-  type Point = { visit: number; left: number; scored: number }
+  type Visit = { visit: number; left: number; scored: number }
+  /** A visit tagged with its side: the tooltip names the side from the point it's on. */
+  type Point = Visit & { side: number }
   type PointScale = AnyScale<number, number>
   type PointChartState = ChartState<Point, PointScale, PointScale>
   let {
@@ -18,8 +20,9 @@
     sides,
     start,
     highlight = null,
-  }: { series: { key: number; points: Point[] }[]; sides: Side[]; start: number; highlight?: number | null } = $props()
+  }: { series: { key: number; points: Visit[] }[]; sides: Side[]; start: number; highlight?: number | null } = $props()
 
+  const tagged = $derived(series.map(s => ({ key: s.key, points: s.points.map(p => ({ ...p, side: s.key })) })))
   const maxVisits = $derived(Math.max(1, ...series.map(s => s.points.length - 1)))
   const lead = $derived(highlight === null ? (series[0]?.key ?? 0) : highlight)
   const name = (key: number) => sides.find(s => s.key === key)?.name ?? ''
@@ -28,7 +31,7 @@
   // One LayerChart series per side, carrying its own points; `props` lands on the rendered
   // <path> (see Spline), so the highlighted side draws solid lime, the rest dashed grey.
   const chartSeries = $derived(
-    series.map(s => ({
+    tagged.map(s => ({
       key: String(s.key),
       data: s.points,
       color: s.key === lead ? 'var(--color-accent)' : 'var(--color-line-pip)',
@@ -45,19 +48,18 @@
   // through the chart's own tooltip state keeps the pointer-driven tooltip snippet below as the
   // single source of its text; the live region repeats that text for screen readers, since
   // nothing moves focus onto the (positioned, not tabbable) tooltip itself.
-  const navPoints = $derived(flattenByX(series, p => p.visit))
+  const navPoints = $derived(flattenByX(tagged, p => p.visit))
   let focusIndex = $state<number | null>(null)
   let chartContext = $state<PointChartState | undefined>()
 
-  function describe(data: Point, seriesKey: string | number): string {
-    const side = sides.find(sd => String(sd.key) === String(seriesKey))
-    if (data.visit === 0) return `${side?.name ?? ''}: ${start} to start`
-    return `${side?.name ?? ''}, visit ${data.visit}: scored ${data.scored}, ${data.left} left`
+  function describe(data: Point): string {
+    if (data.visit === 0) return `${name(data.side)}: ${start} to start`
+    return `${name(data.side)}, visit ${data.visit}: scored ${data.scored}, ${data.left} left`
   }
 
   const liveText = $derived.by(() => {
     const n = focusIndex === null ? undefined : navPoints.at(focusIndex)
-    return n ? describe(n.point, n.seriesKey) : ''
+    return n ? describe(n.point) : ''
   })
 
   function focusPoint(index: number | null) {
@@ -141,11 +143,10 @@
     {#snippet tooltip({ context }: { context: PointChartState })}
       <Tooltip.Root variant="none" {context}>
         {#snippet children({ data }: { data: Point })}
-          {@const seriesKey = context.tooltip.series[0]?.key ?? ''}
           <div
             class="bg-surface-inset border border-line-popover rounded-[10px] px-2.5 py-1.5 text-text text-[13px] whitespace-nowrap shadow-tooltip"
           >
-            {describe(data, seriesKey)}
+            {describe(data)}
           </div>
         {/snippet}
       </Tooltip.Root>
