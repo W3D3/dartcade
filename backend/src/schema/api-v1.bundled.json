@@ -2922,7 +2922,8 @@
         "required": [
           "mode",
           "visits",
-          "progress"
+          "progress",
+          "sequence"
         ],
         "additionalProperties": false,
         "properties": {
@@ -2931,6 +2932,13 @@
             "enum": [
               "atc"
             ]
+          },
+          "sequence": {
+            "type": "array",
+            "description": "Every target in order, 1–20, 21 = 25, 22 = bull",
+            "items": {
+              "type": "integer"
+            }
           },
           "visits": {
             "type": "array",

@@ -72,4 +72,13 @@ describe('module detail() matches schema/api-v1.yaml', () => {
     const validate = ajv.compile(schemas.AtcDetail)
     expect(validate(d), JSON.stringify(validate.errors)).toBe(true)
   })
+  it('ATC MatchStats', () => {
+    const s = atcModule.init({ throwAgainOnAllHit: false, finishOn: 'bull', multiplierAdvances: false, order: 'asc' }, [{ name: 'A' }])
+    const m = atcModule.matchStats!(
+      [{ visit: 0, seat: 0, leg: 0, phase: 'game', committedAt: '2026-10-01T10:00:00.000Z', darts: [dart], start: s, end: s, after: s }],
+      s,
+    )
+    const validate = ajv.compile(schemas.MatchStats)
+    expect(validate(m), JSON.stringify(validate.errors)).toBe(true)
+  })
 })
