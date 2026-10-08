@@ -1,5 +1,5 @@
 <script lang="ts">
-  // A button that opens a small menu below it; picking an item or clicking outside closes it.
+  // A button that opens a small menu next to it; picking an item or clicking outside closes it.
   // Built on Popover, the shared open/close/focus-return behaviour (also used by the lobby QR
   // code popover).
   import type { Snippet } from 'svelte'
