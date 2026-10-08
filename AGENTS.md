@@ -97,6 +97,21 @@ corrected dart replays the open visit cleanly.
 - Lint: `npm run lint` in `backend/` (oxlint, type-aware, config in `.oxlintrc.json`) and in `backend/frontend/` (ESLint: oxlint can't type-check `.svelte` files).
 - Formatting: oxfmt (Prettier-compatible) for TS, Svelte, JSON, YAML and Markdown, run from the repo root: `npm run format` (CI runs `npm run format:check`); config in `.oxfmtrc.json`; `gofmt -w .` in `bridge/`.
 
+## Libraries over hand-rolled code
+
+Don't reinvent what a dependency already does. Before writing a non-trivial helper or UI
+behaviour (floating placement, focus traps, menus, dialogs, date maths, parsing, …), check
+what the project already uses and build on it:
+
+- UI primitives: bits-ui (popovers, tooltips, selects, dialogs; positioning and collision
+  handling come with it), shadcn-style components in `lib/components/ui/`, icons from
+  `@lucide/svelte`, charts from layerchart.
+- Data and validation: zod, openapi-fetch (typed API client), Kysely for SQL.
+
+If nothing in the project covers it, prefer adding a popular, maintained library over writing
+and maintaining our own version, and say why in the commit. Hand-roll only when the library
+would be much bigger than the problem.
+
 ## Commits and merging
 
 - Commit messages follow commitlint's conventional format: `type(scope): subject`
