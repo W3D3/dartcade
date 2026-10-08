@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Router, { push } from 'svelte-spa-router'
+  import Router, { push, location } from 'svelte-spa-router'
   import wrap from 'svelte-spa-router/wrap'
   import { onMount } from 'svelte'
   import { Tooltip } from 'bits-ui'
@@ -65,6 +65,13 @@
       void push('/login')
     }
     checked = true
+  })
+
+  // Every 401 handler (API, sockets, voice import) sends the user to the login page by setting
+  // the hash only, so whoever was signed in stays in the store. Nobody is signed in on the
+  // login page: drop the stale user so it can't leak into things like the dev user switch.
+  $effect(() => {
+    if ($location.startsWith('/login')) currentUser.set(null)
   })
 
   // The per-user socket (invites, the lobby indicator) runs while someone is signed in, and

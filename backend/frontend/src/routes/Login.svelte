@@ -88,7 +88,7 @@
         </Button>
 
         {#if import.meta.env.DEV}
-          <DevUserSwitch />
+          <DevUserSwitch markCurrent={false} />
         {/if}
       </div>
 
