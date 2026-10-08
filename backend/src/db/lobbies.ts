@@ -115,17 +115,21 @@ export async function getOpenLobbyIdByCode(db: Kysely<Database>, code: string): 
 }
 
 /**
- * Open lobbies with at most one account (guests and bots don't count) whose last activity — the
- * newest feed line, else when it opened — is before `before`. `onlyId` narrows it to one lobby
- * (the re-check inside its queue). Whether a game runs isn't known here: the caller checks.
+ * Open lobbies whose last activity — the newest feed line, else when it opened — is before
+ * `soloBefore` (lobbies with at most one account; guests and bots don't count) or before
+ * `sharedBefore` (lobbies with several accounts). `onlyId` narrows it to one lobby (the
+ * re-check inside its queue). Whether a game runs isn't known here: the caller checks.
  */
-export async function idleSoloLobbyIds(db: Kysely<Database>, before: Date, onlyId?: string): Promise<string[]> {
+export async function idleLobbyIds(db: Kysely<Database>, soloBefore: Date, sharedBefore: Date, onlyId?: string): Promise<string[]> {
   let query = db
     .selectFrom('lobbies as l')
     .select('l.id')
     .where('l.closed_at', 'is', null)
-    .where(sql<boolean>`(SELECT count(*) FROM lobby_people p WHERE p.lobby_id = l.id AND p.user_id IS NOT NULL) <= 1`)
-    .where(sql<boolean>`COALESCE((SELECT max(a.at) FROM lobby_activity a WHERE a.lobby_id = l.id), l.created_at) < ${before}`)
+    .where(
+      sql<boolean>`COALESCE((SELECT max(a.at) FROM lobby_activity a WHERE a.lobby_id = l.id), l.created_at) <
+        CASE WHEN (SELECT count(*) FROM lobby_people p WHERE p.lobby_id = l.id AND p.user_id IS NOT NULL) <= 1
+          THEN ${soloBefore}::timestamptz ELSE ${sharedBefore}::timestamptz END`,
+    )
   if (onlyId !== undefined) query = query.where('l.id', '=', onlyId)
   return (await query.execute()).map(r => r.id)
 }
