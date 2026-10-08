@@ -11,12 +11,16 @@
   import Standings from '$lib/components/details/Standings.svelte'
   import TeamShares from '$lib/components/details/TeamShares.svelte'
   import X01Legs from '$lib/components/details/X01Legs.svelte'
+  import AtcTargets from '$lib/components/details/AtcTargets.svelte'
+  import RaceChart from '$lib/components/details/RaceChart.svelte'
+  import HighlightPicker from '$lib/components/details/HighlightPicker.svelte'
   import { api, type GameDetail } from '$lib/api'
-  import { detailSides, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
+  import { detailSides, highlightDefault, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
 
   let { params }: { params: { id: string } } = $props()
   let detail = $state<GameDetail | null>(null)
   let phase = $state<'loading' | 'ready' | 'missing' | 'failed'>('loading')
+  let atcHighlight = $state<number | null>(null)
 
   async function load() {
     phase = 'loading'
@@ -71,7 +75,17 @@
           </section>
           <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
             {#if d.game.mode === 'x01'}<X01Legs detail={d} party={layout === 'party'} />{/if}
-            <!-- ATC sections (Task 9) -->
+            {#if d.game.mode === 'atc'}
+              <AtcTargets detail={d} />
+              {#if layout === 'party'}
+                <HighlightPicker
+                  options={d.game.players.map(p => ({ key: p.seat, name: p.name }))}
+                  value={atcHighlight ?? highlightDefault(d)}
+                  onpick={(k: number) => (atcHighlight = k)}
+                />
+              {/if}
+              <RaceChart detail={d} highlight={atcHighlight ?? highlightDefault(d)} />
+            {/if}
           </div>
         </main>
         {#snippet failed(_error: unknown, reset: () => void)}
