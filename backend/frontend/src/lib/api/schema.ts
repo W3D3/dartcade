@@ -1040,6 +1040,8 @@ export interface components {
              * @enum {string}
              */
             mode: "atc";
+            /** @description Every target in order, 1–20, 21 = 25, 22 = bull */
+            sequence: number[];
             visits: {
                 visit: number;
                 seat: number;

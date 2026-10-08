@@ -223,10 +223,24 @@ describe('ATC summarize and detail', () => {
     )
     expect(d).toEqual({
       mode: 'atc',
+      sequence: end.sequence,
       visits: [
         { visit: 0, seat: 0, committedAt: '2026-10-01T10:00:00.000Z', darts: [hd(S1, 0)], hits: 2, targetBefore: 1, targetAfter: 3 },
       ],
-      progress: [],
+      // Seat 0's single dart hits target 1 (one step; this synthetic end state jumps straight to
+      // target 3, so there's no step for 2) and ends on target 3, not yet hit. Seats 1 and 2 never
+      // had a visit, so they're still at their starting target, not yet hit.
+      progress: [
+        {
+          seat: 0,
+          steps: [
+            { target: 1, darts: 1, hit: true },
+            { target: 3, darts: 0, hit: false },
+          ],
+        },
+        { seat: 1, steps: [{ target: 1, darts: 0, hit: false }] },
+        { seat: 2, steps: [{ target: 1, darts: 0, hit: false }] },
+      ],
     })
   })
 })

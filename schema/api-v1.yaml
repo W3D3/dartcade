@@ -1293,10 +1293,14 @@ components:
                     bust: { type: boolean }
     AtcDetail:
       type: object
-      required: [mode, visits, progress]
+      required: [mode, visits, progress, sequence]
       additionalProperties: false
       properties:
         mode: { type: string, enum: [atc] }
+        sequence:
+          type: array
+          description: Every target in order, 1–20, 21 = 25, 22 = bull
+          items: { type: integer }
         visits:
           type: array
           items:

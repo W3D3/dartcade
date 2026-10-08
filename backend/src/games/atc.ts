@@ -3,6 +3,7 @@ import type { ConfigFieldMeta, AtcDetail, SeatResult } from '../session/types.js
 import type { AtcView } from '../session/views.js'
 import { shuffle, type Rng } from '../session/rng.js'
 import { rankSeats } from './ranking.js'
+import { atcMatchStats, atcProgress } from './atcProgress.js'
 
 export type ATCConfig = {
   throwAgainOnAllHit: boolean
@@ -37,7 +38,7 @@ export function buildSequence(cfg: ATCConfig, rng: Rng = Math.random): number[] 
   return ordered
 }
 
-function hitsTarget(target: number, dart: Dart): boolean {
+export function hitsTarget(target: number, dart: Dart): boolean {
   const { number, bed, multiplier } = dart.segment
   if (multiplier === 0) return false
   if (target >= 1 && target <= 20) return number === target
@@ -49,7 +50,7 @@ function hitsTarget(target: number, dart: Dart): boolean {
 // Returns the new target value after advancing `steps` positions through the sequence.
 // Bull checkpoints (21, 22) advance exactly 1 step; multiplier cannot skip them.
 // A win is signalled by returning a value not in the sequence (> last element).
-function advanceInSequence(current: number, steps: number, sequence: number[]): number {
+export function advanceInSequence(current: number, steps: number, sequence: number[]): number {
   const idx = sequence.indexOf(current)
   if (idx === -1) return current
 
@@ -219,9 +220,10 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
     })
   },
 
-  detail(visits): AtcDetail {
+  detail(visits, final): AtcDetail {
     return {
       mode: 'atc',
+      sequence: final.sequence,
       visits: visits.map(v => ({
         visit: v.visit,
         seat: v.seat,
@@ -231,8 +233,9 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
         targetBefore: v.start.targets[v.seat],
         targetAfter: v.end.targets[v.seat],
       })),
-      // TODO(Task 3): fill with the per-dart walk (hitsTarget/advanceInSequence).
-      progress: [],
+      progress: atcProgress(visits, final),
     }
   },
+
+  matchStats: atcMatchStats,
 }
