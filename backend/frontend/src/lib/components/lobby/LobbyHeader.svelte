@@ -1,8 +1,6 @@
 <script lang="ts">
-  // The lobby's name (the host renames it), who hosts, and - while the lobby isn't solo - the
-  // code and a link to join, the QR code, and Close (the host) or Leave (everyone). While solo
-  // the code sits in the Invite friends panel instead, and only Close shows: there's nobody to
-  // hand the lobby to.
+  // The lobby's name (the host renames it), who hosts, the code and a link to join, the QR code,
+  // and Close (the host) or Leave (everyone; the host only once someone else could take over).
   import { Check, Pencil } from '@lucide/svelte'
   import type { Lobby } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -91,56 +89,41 @@
       <span class="inline-flex items-center gap-[6px] text-accent font-semibold"
         ><span class="w-2 h-2 rounded-full bg-accent"></span>Lobby open</span
       >
-      {#if !lobby.solo}<span>· {host ? "You're the host" : `Hosted by ${lobby.hostName ?? 'nobody yet'}`}</span>{/if}
-      <span>· {c.people} {c.people === 1 ? 'person' : 'people'}</span>
+      <span>· {host ? "You're the host" : `Hosted by ${lobby.hostName ?? 'nobody yet'}`}</span>
+      <span>· {c.people === 1 ? 'Just you' : `${c.people} people`}</span>
       {#if boards}<span>· {boards}</span>{/if}
     </p>
   </div>
 
-  {#if lobby.solo}
-    {#if host}
-      <div class="flex flex-col gap-1 lg:items-end">
-        <Button
-          variant="destructive"
-          onclick={() => (confirm = 'close')}
-          class="h-[46px] md:h-12 self-start lg:self-end"
-          disabled={gameRunning}
-          title={gameRunning ? 'End the game first' : undefined}>Close lobby</Button
-        >
-        {#if gameRunning}<span class="text-[12px] text-text-dim">End the game first</span>{/if}
-      </div>
-    {/if}
-  {:else}
-    <!-- Wide tablets in landscape: the code, Leave and Close in one row, as the name has room to give -->
-    <div class="flex flex-col gap-1 lg:items-end min-[1100px]:max-xl:shrink-0">
-      <div class="flex items-center gap-2 md:gap-[10px] flex-wrap min-[1100px]:max-xl:flex-nowrap lg:justify-end">
-        <JoinCodeCard code={lobby.code} name={lobby.name} {host} {onnewcode} />
-        <!-- Leave and Close stay together: beside the code card, or both under it -->
-        <div class="flex items-center gap-2 md:gap-[10px] shrink-0">
-          {#if !host}
-            <Button variant="destructive" onclick={() => (confirm = 'leave')} class="h-[46px] md:h-12">Leave lobby</Button>
-          {:else}
-            <Button
+  <!-- Wide tablets in landscape: the code, Leave and Close in one row, as the name has room to give -->
+  <div class="flex flex-col gap-1 lg:items-end min-[1100px]:max-xl:shrink-0">
+    <div class="flex items-center gap-2 md:gap-[10px] flex-wrap min-[1100px]:max-xl:flex-nowrap lg:justify-end">
+      <JoinCodeCard code={lobby.code} name={lobby.name} {host} {onnewcode} />
+      <!-- Leave and Close stay together: beside the code card, or both under it -->
+      <div class="flex items-center gap-2 md:gap-[10px] shrink-0">
+        {#if !host}
+          <Button variant="destructive" onclick={() => (confirm = 'leave')} class="h-[46px] md:h-12">Leave lobby</Button>
+        {:else}
+          {#if !lobby.solo}<Button
               variant="outline"
               size="md"
               onclick={() => (confirm = 'leave')}
               class="h-[46px] md:h-12"
               disabled={gameRunning}
               title={gameRunning ? 'End the game first' : undefined}>Leave lobby</Button
-            >
-            <Button
-              variant="destructive"
-              onclick={() => (confirm = 'close')}
-              class="h-[46px] md:h-12"
-              disabled={gameRunning}
-              title={gameRunning ? 'End the game first' : undefined}>Close lobby</Button
-            >
-          {/if}
-        </div>
+            >{/if}
+          <Button
+            variant="destructive"
+            onclick={() => (confirm = 'close')}
+            class="h-[46px] md:h-12"
+            disabled={gameRunning}
+            title={gameRunning ? 'End the game first' : undefined}>Close lobby</Button
+          >
+        {/if}
       </div>
-      {#if host && gameRunning}<span class="text-[12px] text-text-dim">End the game first</span>{/if}
     </div>
-  {/if}
+    {#if host && gameRunning}<span class="text-[12px] text-text-dim">End the game first</span>{/if}
+  </div>
 </header>
 
 {#if confirm === 'close'}

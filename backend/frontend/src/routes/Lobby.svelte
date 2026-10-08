@@ -9,10 +9,8 @@
   import EmptyState from '$lib/components/lobby/EmptyState.svelte'
   import LobbyHeader from '$lib/components/lobby/LobbyHeader.svelte'
   import LobbyPeople from '$lib/components/lobby/LobbyPeople.svelte'
-  import ActivityFeed from '$lib/components/lobby/ActivityFeed.svelte'
   import GameRunningBar from '$lib/components/lobby/GameRunningBar.svelte'
-  import InviteFriendsPanel from '$lib/components/lobby/InviteFriendsPanel.svelte'
-  import LobbyAccessPanel from '$lib/components/lobby/LobbyAccessPanel.svelte'
+  import LobbySidePanel from '$lib/components/lobby/LobbySidePanel.svelte'
   import NextGameCard from '$lib/components/lobby/NextGameCard.svelte'
   import MemberPanel from '$lib/components/lobby/MemberPanel.svelte'
   import StartProblemDialog from '$lib/components/lobby/StartProblemDialog.svelte'
@@ -226,8 +224,8 @@
         onleave={() => void leave()}
       />
       {@render errorBanner()}
-      <!-- Solo: Invite friends leads (the header has no code then); the people list (add field included) and the history show either way.
-           Two columns from lg (tablets: the next game in a 420 px column); one below, as on phones -->
+      <!-- Lobby board: people on the left; the next game, then friends and the history on the right.
+           Two columns from lg (tablets: the right one 420 px wide); one below, as on phones -->
       <div
         class="flex flex-col gap-4 md:gap-5 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,580px)_minmax(0,1fr)] lg:flex-grow lg:min-h-0"
       >
@@ -244,10 +242,6 @@
           />
         </div>
         <div class="order-1 lg:order-none flex flex-col gap-4 md:gap-5 min-w-0 lg:min-h-0">
-          {#if l.solo}<InviteFriendsPanel lobby={l} onnewcode={() => void newCode()} />{/if}
-          {#if host}<div class="shrink-0">
-              <LobbyAccessPanel access={l.access} onchange={(access: LobbyAccess) => void updateLobby({ access })} />
-            </div>{/if}
           {#if l.currentSessionId}
             <GameRunningBar sessionId={l.currentSessionId} playing={playsInGame(l, viewerId)} />
           {/if}
@@ -265,10 +259,13 @@
           {:else if mine}
             <MemberPanel lobby={l} me={mine} onupdate={updatePerson} />
           {/if}
-          <div class="hidden lg:flex lg:flex-col lg:min-h-0"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
+          <div class="hidden lg:flex lg:flex-col lg:flex-grow lg:min-h-[280px]">{@render side()}</div>
         </div>
-        <div class="order-3 lg:hidden"><ActivityFeed activity={l.activity} {viewerId} since={l.createdAt} /></div>
+        <div class="order-3 lg:hidden flex flex-col max-h-[520px]">{@render side()}</div>
       </div>
+      {#snippet side()}
+        <LobbySidePanel lobby={l} {viewerId} {host} oninvite={invite} onaccess={(access: LobbyAccess) => void updateLobby({ access })} />
+      {/snippet}
     {:else}
       <p class="m-0 text-[15px] text-text-muted">Loading the lobby…</p>
     {/if}
