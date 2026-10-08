@@ -5,6 +5,7 @@ import Standings from '../components/details/Standings.svelte'
 import ResultCard from '../components/details/ResultCard.svelte'
 import TeamShares from '../components/details/TeamShares.svelte'
 import X01Legs from '../components/details/X01Legs.svelte'
+import X01Section from '../components/details/X01Section.svelte'
 import AtcTargets from '../components/details/AtcTargets.svelte'
 import RaceChart from '../components/details/RaceChart.svelte'
 import HeatBoard from '../components/details/HeatBoard.svelte'
@@ -128,7 +129,7 @@ describe('details components', () => {
     expect(sharesOut).toContain('P0')
     expect(sharesOut).toContain('2')
 
-    const legsOut = render(X01Legs, { props: { detail: d, party: false } }).body
+    const legsOut = render(X01Legs, { props: { detail: d, party: false, leg: 0, highlight: null } }).body
     expect(legsOut).toContain('P0')
     expect(legsOut).toContain('P1')
   })
@@ -177,15 +178,88 @@ describe('X01 leg by leg', () => {
         },
       ],
     }
-    const out = render(X01Legs, { props: { detail: d, party: false } }).body
-    expect(out).toContain('Leg by leg')
-    expect(out).toContain('Leg 1')
+    const out = render(X01Legs, { props: { detail: d, party: false, leg: 0, highlight: null } }).body
     expect(out).toContain('P0 threw first')
     expect(out).toContain('<svg')
     expect(out).toContain('T20')
     // seat 0's first visit (321 left) is crossed out once passed, not the checkout visit
     expect(out).toContain('321')
     expect(out).toContain('Out')
+  })
+})
+
+describe('X01Section', () => {
+  it('title-tabs: Leg by leg selected by default, its panel shows the chalkboard', () => {
+    const seg = (name: string, number: number, multiplier: 1 | 2 | 3) => ({ name, number, multiplier, bed: 'Single' as const })
+    const dart = (s: ReturnType<typeof seg>, index: number) => ({
+      index,
+      segment: s,
+      coords: null,
+      source: 'manual' as const,
+      corrected: false,
+      thrownAt: '',
+    })
+    const d = game(2)
+    d.detail = {
+      mode: 'x01',
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: 0,
+          visits: [{ visit: 0, seat: 0, committedAt: '', darts: [dart(seg('T20', 20, 3), 0)], scored: 60, remaining: 441, bust: false }],
+        },
+      ],
+    }
+    const out = render(X01Section, { props: { detail: d, party: false } }).body
+    expect(out).toContain('role="tablist"')
+    expect(out).toContain('aria-label="Match view"')
+    expect(out.match(/role="tab"/g)).toHaveLength(2)
+    expect(out).toMatch(/aria-selected="true"[^>]*>Leg by leg/)
+    expect(out).toMatch(/aria-selected="false"[^>]*>Heatmap/)
+    // The unselected tab hovers to the artboard's full-brightness text, not a middling one.
+    expect(out).toMatch(/text-text-dim hover:text-text[^>]*>Heatmap/)
+    expect(out).toContain('role="tabpanel"')
+    // Only one leg: the header's right side falls back to a plain "Leg 1" label, in the same
+    // row as the title-tabs (not a separate row owned by X01Legs).
+    const tablistIdx = out.indexOf('role="tablist"')
+    const panelIdx = out.indexOf('role="tabpanel"')
+    const legLabelIdx = out.indexOf('Leg 1')
+    expect(legLabelIdx).toBeGreaterThan(tablistIdx)
+    expect(legLabelIdx).toBeLessThan(panelIdx)
+    // The Leg by leg panel's content: the chalkboard's table and a dart from it.
+    expect(out).toContain('T20')
+    expect(out).toContain('<svg')
+    // Heatmap's own subtitle only shows when Heatmap is the selected view.
+    expect(out).not.toContain('Where every dart landed')
+  })
+
+  it('party, several legs: leg tabs and the highlight picker share the header row with the title-tabs', () => {
+    const d = game(3)
+    d.detail = {
+      mode: 'x01',
+      legs: [0, 1].map(leg => ({
+        leg,
+        starter: 0,
+        winner: leg === 0 ? 1 : null,
+        visits: [{ visit: 0, seat: 0, committedAt: '', darts: [], scored: 60, remaining: 441, bust: false }],
+      })),
+    }
+    const out = render(X01Section, { props: { detail: d, party: true } }).body
+    const tablistIdx = out.indexOf('role="tablist"')
+    const panelIdx = out.indexOf('role="tabpanel"')
+    // The leg tabs group and the highlight picker both sit between the title-tabs and the panel
+    // — the same header row, not a second row owned by X01Legs.
+    const legGroupIdx = out.indexOf('aria-label="Leg"')
+    const highlightIdx = out.indexOf('aria-label="Highlight a player"')
+    expect(legGroupIdx).toBeGreaterThan(tablistIdx)
+    expect(legGroupIdx).toBeLessThan(panelIdx)
+    expect(highlightIdx).toBeGreaterThan(tablistIdx)
+    expect(highlightIdx).toBeLessThan(panelIdx)
+    // The last leg is selected by default.
+    expect(out).toMatch(/aria-pressed="true"[^>]*>Leg 2</)
+    // Heatmap's note doesn't show while Leg by leg is selected.
+    expect(out).not.toContain('Where every dart landed')
   })
 })
 
