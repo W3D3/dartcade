@@ -74,7 +74,8 @@ const lobbies: LobbyService = new LobbyService({
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
-// Lobbies with one account close after hours without activity (lobby/service.ts, SOLO_IDLE_MS)
+// Lobbies with no game running close after hours without activity: 6 h with one account,
+// 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS)
 const idleSweep = setInterval(
   () => {
     lobbies.closeIdleLobbies().catch((err: unknown) => {
