@@ -43,7 +43,7 @@
       <span class="max-w-full text-[15px] font-semibold truncate">{person.name}</span>
       {#if person.userId !== null && person.userId === viewerId}<span class="text-[12px] font-medium text-accent shrink-0">· you</span>{/if}
       {#if !lobby.solo && person.userId !== null && person.userId === lobby.hostUserId}<Badge variant="host">Host</Badge>{/if}
-      {#if person.userId === null}<Badge variant="guest">Guest</Badge>{/if}
+      {#if person.bot}<Badge variant="bot">Bot</Badge>{:else if person.userId === null}<Badge variant="guest">Guest</Badge>{/if}
     </span>
     <span class="flex items-center gap-[6px] min-w-0 text-[12px] text-text-muted">
       {@render board()}
