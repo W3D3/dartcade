@@ -54,13 +54,23 @@
   }
 </script>
 
-<Panel title="People · {c.people}" label="People in this lobby" flat>
+<Panel title="People · {c.people}" label="People in this lobby" flat class="lg:flex-grow">
   {#snippet note()}<ReadyCount {lobby} suffix={order} />{/snippet}
   {#if onplace}
     <ReorderStatus id={hintId} hint="Arrow up or down moves them one place." announcement={moves.announcement} />
   {/if}
+  <!-- Wide screens give the board its own column (Lobby board) -->
+  <div
+    aria-hidden="true"
+    class="hidden xl:grid -mb-1 gap-[10px] text-[11px] label-caps text-text-dim
+           {onplace
+      ? 'xl:grid-cols-[32px_14px_36px_minmax(0,1fr)_150px_148px] pr-2'
+      : 'xl:grid-cols-[14px_36px_minmax(0,1fr)_150px_148px] px-[10px]'}"
+  >
+    <span class="col-start-[-4]">Player</span><span>Board</span><span class="text-right pr-[42px]">Status</span>
+  </div>
   <ol
-    class="m-0 p-0 list-none flex flex-col gap-[6px]"
+    class="m-0 p-0 list-none flex flex-col gap-[6px] lg:min-h-0 lg:overflow-y-auto"
     data-sortable-zone="people"
     use:sortable={{ ondrop, onkey, oncancel: () => moves.cancelled() }}
   >

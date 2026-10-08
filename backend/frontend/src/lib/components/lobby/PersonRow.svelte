@@ -1,6 +1,7 @@
 <script lang="ts">
   // One person in the lobby list: place in the order, avatar, name and tags (no Host tag while
-  // the lobby is solo), where they play, and on the right whatever the list puts there.
+  // the lobby is solo), where they play (its own column on wide screens), and on the right
+  // whatever the list puts there.
   // The host's lists put a drag handle in front.
   import type { Snippet } from 'svelte'
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
@@ -32,7 +33,9 @@
 <li
   data-sortable-id={person.id}
   class="relative grid items-center gap-[10px] min-h-[56px] box-border py-[6px] pr-1 md:pr-2 rounded-[10px] bg-surface-row
-         {handle ? 'grid-cols-[32px_14px_36px_minmax(0,1fr)_auto] pl-0' : 'grid-cols-[14px_36px_minmax(0,1fr)_auto] pl-[10px]'}"
+         {handle
+    ? 'grid-cols-[32px_14px_36px_minmax(0,1fr)_auto] xl:grid-cols-[32px_14px_36px_minmax(0,1fr)_150px_148px] pl-0'
+    : 'grid-cols-[14px_36px_minmax(0,1fr)_auto] xl:grid-cols-[14px_36px_minmax(0,1fr)_150px_148px] pl-[10px]'}"
 >
   {#if handle}{@render handle()}{/if}
   <span class="font-mono text-[12px] text-text-dim text-center">{index + 1}</span>
@@ -46,9 +49,10 @@
       {#if person.bot}<Badge variant="bot">Bot</Badge>{:else if person.userId === null}<Badge variant="guest">Guest</Badge>{/if}
     </span>
     <span class="flex items-center gap-[6px] min-w-0 text-[12px] text-text-muted">
-      {@render board()}
+      <span class="xl:hidden contents">{@render board()}</span>
       {#if line}<span class="truncate">{line}</span>{/if}
     </span>
   </span>
-  <span class="flex items-center gap-[6px]">{@render controls()}</span>
+  <span class="hidden xl:flex min-w-0 text-[12px] text-text-muted">{@render board()}</span>
+  <span class="flex items-center justify-end gap-[6px]">{@render controls()}</span>
 </li>

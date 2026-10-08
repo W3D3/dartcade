@@ -8,6 +8,7 @@
     flat = false,
     note,
     children,
+    class: className = '',
   }: {
     title: string
     /** Accessible name of the section (default: the title). */
@@ -16,13 +17,14 @@
     flat?: boolean
     note?: Snippet
     children: Snippet
+    class?: string
   } = $props()
 </script>
 
 <section
   aria-label={label ?? title}
   class="flex flex-col gap-[10px] md:gap-[14px] min-h-0 box-border
-         {flat ? 'md:p-5 md:card' : 'p-4 md:p-5 card'}"
+         {flat ? 'md:p-5 md:card' : 'p-4 md:p-5 card'} {className}"
 >
   <div class="flex justify-between items-baseline gap-3">
     <h2 class="m-0 text-[15px] md:text-[17px] font-semibold">{title}</h2>
