@@ -4,7 +4,6 @@
   // right-hand column (below the list on narrow tablets); phones stack everything (add, requests,
   // online, offline) without tabs.
   import { onMount } from 'svelte'
-  import { push } from 'svelte-spa-router'
   import { UsersRound } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -17,10 +16,9 @@
   import RequestsPanel from '$lib/components/friends/RequestsPanel.svelte'
   import StatusCard from '$lib/components/friends/StatusCard.svelte'
   import type { Friend } from '$lib/api/lobby-ws'
-  import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
-  import { answerRequest, cancelRequest, inviteFriend, joinFriend, removeFriend } from '$lib/friends/actions'
+  import { createFriendActions } from '$lib/friends/controller.svelte'
   import { setInvisible } from '$lib/presence'
   import { friendsTabId, splitOnline, tabCounts, type FriendsTab } from '$lib/friends/view'
 
@@ -32,10 +30,7 @@
   const myLobbyId = $derived($me?.lobby?.id ?? null)
   const noRequests = $derived(list.incoming.length === 0 && list.outgoing.length === 0)
   let tab = $state<FriendsTab>('all')
-  // A refused action (a Join the row was too old for, say); the row itself updates from the next push
-  let error = $state('')
-  let busy = $state(false)
-  let switching = $state<{ lobbyId: string; lobbyName: string; from: string } | null>(null)
+  const actions = createFriendActions(() => myLobbyId)
   // Ticks so "10 min ago" ages while the page is open
   let now = $state(new Date())
   onMount(() => {
@@ -47,54 +42,11 @@
     }
   })
 
-  async function once(run: () => Promise<string | null>): Promise<string | null> {
-    if (busy) return null
-    busy = true
-    try {
-      const err = await run()
-      error = err ?? ''
-      return err
-    } finally {
-      busy = false
-    }
-  }
-
-  const invite = (f: Friend) => once(() => (myLobbyId ? inviteFriend(myLobbyId, f.id) : Promise.resolve(null)))
-  const remove = (f: Friend) => once(() => removeFriend(f.id))
-  const answer = (id: string, a: 'accept' | 'decline') => once(() => answerRequest(id, a))
-  const cancel = (id: string) => once(() => cancelRequest(id))
-
-  async function join(lobbyId: string, lobbyName: string): Promise<string | null> {
-    const r = await joinFriend(lobbyId)
-    if (r.kind === 'joined') {
-      void push('/lobby')
-      return null
-    }
-    if (r.kind === 'switch') {
-      switching = { lobbyId, lobbyName, from: r.from }
-      return null
-    }
-    return r.text
-  }
-  const joinFriendOf = (f: Friend) =>
-    once(() => (f.status.kind === 'lobby' ? join(f.status.lobbyId, f.status.lobbyName) : Promise.resolve(null)))
-
-  function leaveAndJoin() {
-    const s = switching
-    switching = null
-    if (!s) return
-    return once(async () => {
-      const left = await api.POST('/api/lobbies/{id}/leave', { params: { path: { id: s.from } } })
-      // 404: we'd already left it; anything else, stop rather than ask again
-      if (left.error && left.response.status !== 404) return left.error.error
-      return join(s.lobbyId, s.lobbyName)
-    })
-  }
-
+  const busy = $derived(actions.busy)
   const rowHandlers = {
-    oninvite: (f: Friend) => void invite(f),
-    onjoin: (f: Friend) => void joinFriendOf(f),
-    onremove: (f: Friend) => void remove(f),
+    oninvite: (f: Friend) => void actions.invite(f),
+    onjoin: (f: Friend) => void actions.join(f),
+    onremove: (f: Friend) => void actions.remove(f),
   }
 </script>
 
@@ -114,8 +66,8 @@
       </div>
       <FriendsTabs bind:tab {counts} panelId="friends-panel" />
     </header>
-    {#if invisible}<InvisibleBanner ongoonline={() => void once(() => setInvisible(false))} />{/if}
-    {#if error}<ErrorText>{error}</ErrorText>{/if}
+    {#if invisible}<InvisibleBanner ongoonline={() => void actions.once(() => setInvisible(false))} />{/if}
+    {#if actions.error}<ErrorText>{actions.error}</ErrorText>{/if}
 
     <div
       class="flex flex-col gap-[14px] md:gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px] lg:items-start"
@@ -164,8 +116,8 @@
               {now}
               emptyText="No open requests."
               {busy}
-              onanswer={answer}
-              oncancel={cancel}
+              onanswer={actions.answer}
+              oncancel={actions.cancel}
             />
           </div>
         {/if}
@@ -175,7 +127,7 @@
         <!-- Phones (Friends-Phone.dc.html): Your status first. Tablets/desktops (Friends.dc.html,
              Tablet-Friends.dc.html): Add a friend, then Friend requests, then Your status last. -->
         <div class="order-first md:order-last">
-          <StatusCard {invisible} onchange={(v: boolean) => once(() => setInvisible(v))} />
+          <StatusCard {invisible} onchange={(v: boolean) => actions.once(() => setInvisible(v))} />
         </div>
         <AddFriendCard />
         <section
@@ -197,8 +149,8 @@
             headings={false}
             emptyText="No requests for you right now."
             {busy}
-            onanswer={answer}
-            oncancel={cancel}
+            onanswer={actions.answer}
+            oncancel={actions.cancel}
           />
         </section>
       </aside>
@@ -206,12 +158,12 @@
   </main>
 </Layout>
 
-{#if switching}
-  {@const s = switching}
+{#if actions.switching}
+  {@const s = actions.switching}
   <SwitchLobbyConfirm
     from={$me?.lobby?.name ?? 'your lobby'}
     to={s.lobbyName}
-    onconfirm={() => void leaveAndJoin()}
-    oncancel={() => (switching = null)}
+    onconfirm={() => void actions.leaveAndJoin()}
+    oncancel={actions.stopSwitch}
   />
 {/if}
