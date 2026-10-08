@@ -85,6 +85,21 @@
   --font-mono: 'JetBrains Mono', monospace;
 }
 
+/*
+ * LayerChart (details charts) themes through its own CSS variables rather than Tailwind
+ * classes for anything we don't style directly (the default series colour, the Highlight dot's
+ * fallback background, the default/unused Tooltip surface). Map them to our tokens here, once,
+ * instead of per chart.
+ */
+.lc-root-container,
+.lc-tooltip-root {
+  --color-primary: var(--color-accent);
+  --color-surface-100: var(--color-surface-inset);
+  --color-surface-200: var(--color-surface-inset);
+  --color-surface-300: var(--color-surface-inset);
+  --color-surface-content: var(--color-text);
+}
+
 @layer base {
   body {
     margin: 0;

@@ -16,6 +16,7 @@
     "better-auth": "1.7.6",
     "clsx": "^2.1.1",
     "flowbite-svelte": "^0.46.0",
+    "layerchart": "^2.5.2",
     "openapi-fetch": "0.17.0",
     "svelte": "^5.0.0",
     "svelte-spa-router": "^4.0.1",
