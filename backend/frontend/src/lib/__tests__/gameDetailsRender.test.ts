@@ -7,7 +7,9 @@ import TeamShares from '../components/details/TeamShares.svelte'
 import X01Legs from '../components/details/X01Legs.svelte'
 import AtcTargets from '../components/details/AtcTargets.svelte'
 import RaceChart from '../components/details/RaceChart.svelte'
+import HeatBoard from '../components/details/HeatBoard.svelte'
 import type { GameDetail, StatRow } from '../api'
+import type { HeatDart } from '../details/heatmap.js'
 import { detailSides } from '../details/page.js'
 
 const rows: StatRow[] = [
@@ -227,5 +229,95 @@ describe('Around the Clock sections', () => {
     const out = render(RaceChart, { props: { detail: atc(), highlight: 0 } }).body
     expect(out).toContain('Race to the Bull')
     expect(out).toContain('<path')
+  })
+})
+
+describe('HeatBoard', () => {
+  const seg = (name: string, number: number, multiplier: 0 | 1 | 2 | 3) => ({
+    name,
+    number,
+    multiplier,
+    bed: (multiplier === 0 ? 'Outside' : multiplier === 2 ? 'Double' : multiplier === 3 ? 'Triple' : 'Single') as 'Single',
+  })
+  const S20 = seg('S20', 20, 1)
+
+  it('shows the board label, a dot per positioned dart and the legend; no empty-state text', () => {
+    const darts: HeatDart[] = [
+      { segment: S20, coords: { x: 0, y: 0.8 }, manual: false },
+      { segment: S20, coords: { x: 0.1, y: 0.7 }, manual: false },
+      { segment: S20, coords: { x: -0.1, y: 0.75 }, manual: false },
+      { segment: S20, coords: null, manual: true },
+    ]
+    const out = render(HeatBoard, { props: { darts, name: 'Christoph' } }).body
+    expect(out).toContain('role="img"')
+    expect(out).toMatch(/aria-label="Heatmap of 3 dart positions for Christoph/)
+    expect(out.match(/class="heat-dot"/g)).toHaveLength(3)
+    expect(out).toContain('Fewer')
+    expect(out).toContain('More darts')
+    // The legend runs cool to hot: blue first at 0%, red last at 100% (not a solid bar)
+    expect(out).toMatch(/linear-gradient\(to right, #2b6cff 0%, [^)]*#ef4444 100%\)/)
+    expect(out).not.toContain('No dart positions')
+  })
+
+  it('gives each dot a <title> with its dart label, for a native tooltip and assistive tech', () => {
+    const T20 = seg('T20', 20, 3)
+    const darts: HeatDart[] = [{ segment: T20, coords: { x: 0, y: 0.8 }, manual: false }]
+    const out = render(HeatBoard, { props: { darts, name: 'Christoph' } }).body
+    expect(out).toContain('<title>T20</title>')
+  })
+
+  it('labels a near-miss dot "Miss" instead of the chalkboard dash', () => {
+    const miss = seg('–', 20, 0)
+    const darts: HeatDart[] = [{ segment: miss, coords: { x: 0, y: 0.9 }, manual: false }]
+    const out = render(HeatBoard, { props: { darts, name: 'Christoph' } }).body
+    expect(out).toContain('<title>Miss</title>')
+  })
+
+  it('shows the hand-entered empty state when every unpositioned dart is manual', () => {
+    const darts: HeatDart[] = [{ segment: S20, coords: null, manual: true }]
+    const out = render(HeatBoard, { props: { darts, name: 'Christoph' } }).body
+    expect(out).toContain('No dart positions — these darts were entered by hand')
+  })
+
+  it('shows the plain empty state when an unpositioned dart is a camera bounce-out', () => {
+    const bounceOut: HeatDart[] = [{ segment: S20, coords: null, manual: false }]
+    const out = render(HeatBoard, { props: { darts: bounceOut, name: 'Christoph' } }).body
+    expect(out).toContain('No dart positions')
+    expect(out).not.toContain('entered by hand')
+  })
+
+  it('shows the plain empty state when unpositioned darts are a mix of manual and camera', () => {
+    const mixed: HeatDart[] = [
+      { segment: S20, coords: null, manual: true },
+      { segment: S20, coords: null, manual: false },
+    ]
+    const out = render(HeatBoard, { props: { darts: mixed, name: 'Christoph' } }).body
+    expect(out).toContain('No dart positions')
+    expect(out).not.toContain('entered by hand')
+  })
+
+  it('shows "No darts thrown" with no darts at all', () => {
+    const out = render(HeatBoard, { props: { darts: [], name: 'Christoph' } }).body
+    expect(out).toContain('No darts thrown')
+    expect(out).toMatch(/aria-label="No darts thrown for Christoph"/)
+  })
+
+  it('widens the viewBox so a wide miss (r ≈ 1.25) still lands inside it', () => {
+    // 1.25 board units × 170 mm/unit = 212.5, inside BOARD_VIEW_HALF (235) but outside the old
+    // -200..200 box, which used to clip this dart off the board entirely.
+    const darts: HeatDart[] = [{ segment: S20, coords: { x: 1.25, y: 0 }, manual: false }]
+    const out = render(HeatBoard, { props: { darts, name: 'Christoph' } }).body
+    expect(out).toContain('viewBox="-235 -235 470 470"')
+    expect(out).toContain('class="heat-dot"')
+    expect(out).toMatch(/cx="212\.5"/)
+  })
+
+  it('clamps an extreme outlier to the viewBox rim for drawing, instead of dropping it', () => {
+    // r = 500/170 ≈ 2.94, far past BOARD_VIEW_HALF; the drawn dot must still sit on the rim.
+    const darts: HeatDart[] = [{ segment: S20, coords: { x: 500 / 170, y: 0 }, manual: false }]
+    const out = render(HeatBoard, { props: { darts, name: 'Christoph' } }).body
+    const cx = out.match(/class="heat-dot"[\s\S]*?cx="(-?[\d.]+)"/)
+    expect(cx).not.toBeNull()
+    expect(Number(cx![1])).toBeCloseTo(235, 5)
   })
 })
