@@ -605,9 +605,17 @@ export class LobbyService {
   ): Promise<{ id: string }> {
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.openFor(lobbyId, userId)
-      const name = guest.name.trim()
-      if (name === '') throw LobbyError.badRequest('the name is empty')
+      const typed = guest.name.trim()
+      if (typed === '') throw LobbyError.badRequest('the name is empty')
       const bot = guest.bot ?? null
+      // Bots of one level would share a name: number them (Bot Lvl 5, Bot Lvl 5 (2), …)
+      const name =
+        bot === null
+          ? typed
+          : rules.uniqueName(
+              typed,
+              lobby.people.map(p => p.name),
+            )
       // Only a module that defines botTarget can seat a bot (the scheduler drives them
       // through that hook); refuse one anywhere else, including when no game is picked yet.
       if (bot !== null && !supportsBots(lobby.nextGame?.gameId ?? '')) throw LobbyError.badRequest("this game doesn't support bots")

@@ -706,6 +706,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await person('Bot Lvl 4')).toMatchObject({ id: botId, userId: null, boardId: null, ready: true, bot: { level: 4 } })
     })
 
+    it('numbers bots that share a level', async () => {
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
+      await lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })
+      await lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })
+      await lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })
+      expect(await person('Bot Lvl 5')).toMatchObject({ bot: { level: 5 } })
+      expect(await person('Bot Lvl 5 (2)')).toMatchObject({ bot: { level: 5 } })
+      expect(await person('Bot Lvl 5 (3)')).toMatchObject({ bot: { level: 5 } })
+    })
+
     it('ignores a boardId passed alongside bot: a bot never has a board', async () => {
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       await lobbies.addGuest('chris', id, { name: 'Bot Lvl 1', boardId: 'living', bot: { level: 1 } })
