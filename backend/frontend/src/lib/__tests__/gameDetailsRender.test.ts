@@ -3,6 +3,8 @@ import { render } from 'svelte/server'
 import StatsTable from '../components/details/StatsTable.svelte'
 import Standings from '../components/details/Standings.svelte'
 import ResultCard from '../components/details/ResultCard.svelte'
+import TeamShares from '../components/details/TeamShares.svelte'
+import X01Legs from '../components/details/X01Legs.svelte'
 import type { GameDetail, StatRow } from '../api'
 import { detailSides } from '../details/page.js'
 
@@ -78,5 +80,106 @@ describe('details components', () => {
     expect(out).toContain('3rd')
     expect(out).toContain('Best leg')
     expect(out).not.toContain('3-dart average')
+  })
+
+  it('teams: stats, each player share and the chalkboard name the thrower', () => {
+    const d = game(4)
+    d.detail = {
+      mode: 'x01',
+      teams: [
+        { id: 'A', name: 'Team A', seats: [0, 2] },
+        { id: 'B', name: 'Team B', seats: [1, 3] },
+      ],
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: null,
+          visits: [
+            { visit: 0, seat: 0, committedAt: '', darts: [], scored: 60, remaining: 441, bust: false },
+            { visit: 1, seat: 1, committedAt: '', darts: [], scored: 45, remaining: 456, bust: false },
+          ],
+        },
+      ],
+    }
+    d.stats.teams = [
+      { index: 0, values: { average: 78.2 } },
+      { index: 1, values: { average: 65.4 } },
+    ]
+    d.stats.seats = [
+      { index: 0, values: { average: 80.1, legsClosed: 2 } },
+      { index: 1, values: { average: 60.3, legsClosed: 1 } },
+      { index: 2, values: { average: 76.3, legsClosed: 1 } },
+      { index: 3, values: { average: 70.5, legsClosed: 0 } },
+    ]
+
+    const statsOut = render(StatsTable, { props: { rows, sides: detailSides(d) } }).body
+    expect(statsOut).toContain('Team A')
+    expect(statsOut).toContain('Team B')
+    expect(statsOut).toContain('78.2')
+
+    const sharesOut = render(TeamShares, { props: { detail: d } }).body
+    expect(sharesOut).toContain("Each player's share")
+    expect(sharesOut).toContain('P0')
+    expect(sharesOut).toContain('2')
+
+    const legsOut = render(X01Legs, { props: { detail: d, party: false } }).body
+    expect(legsOut).toContain('P0')
+    expect(legsOut).toContain('P1')
+  })
+})
+
+describe('X01 leg by leg', () => {
+  it('shows the last leg: summary, chart and chalkboard', () => {
+    const seg = (name: string, number: number, multiplier: 1 | 2 | 3) => ({ name, number, multiplier, bed: 'Single' as const })
+    const dart = (s: ReturnType<typeof seg>, index: number) => ({
+      index,
+      segment: s,
+      coords: null,
+      source: 'manual' as const,
+      corrected: false,
+      thrownAt: '',
+    })
+    const d = game(2)
+    d.detail = {
+      mode: 'x01',
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: 0,
+          visits: [
+            {
+              visit: 0,
+              seat: 0,
+              committedAt: '',
+              darts: [dart(seg('T20', 20, 3), 0), dart(seg('T20', 20, 3), 1), dart(seg('T20', 20, 3), 2)],
+              scored: 180,
+              remaining: 321,
+              bust: false,
+            },
+            { visit: 1, seat: 1, committedAt: '', darts: [dart(seg('S20', 20, 1), 0)], scored: 20, remaining: 481, bust: false },
+            {
+              visit: 2,
+              seat: 0,
+              committedAt: '',
+              darts: [dart(seg('D20', 20, 2), 0)],
+              scored: 40,
+              remaining: 0,
+              bust: false,
+            },
+          ],
+        },
+      ],
+    }
+    const out = render(X01Legs, { props: { detail: d, party: false } }).body
+    expect(out).toContain('Leg by leg')
+    expect(out).toContain('Leg 1')
+    expect(out).toContain('P0 threw first')
+    expect(out).toContain('<svg')
+    expect(out).toContain('T20')
+    // seat 0's first visit (321 left) is crossed out once passed, not the checkout visit
+    expect(out).toContain('321')
+    expect(out).toContain('Out')
   })
 })

@@ -10,6 +10,7 @@
   import StatsTable from '$lib/components/details/StatsTable.svelte'
   import Standings from '$lib/components/details/Standings.svelte'
   import TeamShares from '$lib/components/details/TeamShares.svelte'
+  import X01Legs from '$lib/components/details/X01Legs.svelte'
   import { api, type GameDetail } from '$lib/api'
   import { detailSides, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
 
@@ -69,7 +70,8 @@
             {/if}
           </section>
           <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
-            <!-- Mode sections: X01Legs (Task 8), AtcTargets / RaceChart (Task 9) -->
+            {#if d.game.mode === 'x01'}<X01Legs detail={d} party={layout === 'party'} />{/if}
+            <!-- ATC sections (Task 9) -->
           </div>
         </main>
         {#snippet failed(_error: unknown, reset: () => void)}
