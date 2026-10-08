@@ -234,15 +234,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await lobbies.view(id)).toBeNull()
     })
 
-    it('keeps a lobby with two accounts, and one whose game is running', async () => {
-      const shared = await lobbies.create('chris')
-      await lobbies.join('lena', shared.id, shared.code)
-      const playing = await lobbies.create('max')
-      await lobbies.update('max', playing.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
-      await lobbies.start('max', playing.id, false)
+    it('closes a lobby with two accounts after 24 hours without activity, not 23', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
       expect(await lobbies.closeIdleLobbies(later(7))).toEqual([])
-      expect(await lobbies.view(shared.id)).not.toBeNull()
-      expect(await lobbies.view(playing.id)).not.toBeNull()
+      expect(await lobbies.closeIdleLobbies(later(23))).toEqual([])
+      expect(await lobbies.view(id)).not.toBeNull()
+      expect(await lobbies.closeIdleLobbies(later(25))).toEqual([id])
+      expect(await lobbies.view(id)).toBeNull()
+    })
+
+    it('never closes a lobby whose game is running, solo or shared', async () => {
+      const solo = await lobbies.create('max')
+      await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+      await lobbies.start('max', solo.id, false)
+      expect(await lobbies.closeIdleLobbies(later(7))).toEqual([])
+      expect(await lobbies.closeIdleLobbies(later(100))).toEqual([])
+      expect(await lobbies.view(solo.id)).not.toBeNull()
     })
 
     it('re-checks inside the queue: a lobby someone joined meanwhile stays open', async () => {
