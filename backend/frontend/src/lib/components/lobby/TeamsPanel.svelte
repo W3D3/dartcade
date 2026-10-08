@@ -80,7 +80,7 @@
         <Avatar name={p.name} bot={p.bot} guest={p.userId === null} size={30} />
         <span class="flex flex-col gap-px min-w-0 flex-grow">
           <span class="text-[14px] font-semibold truncate">{p.name}</span>
-          <span class="text-[12px] text-text-muted truncate">{p.boardName ?? 'Manual entry'}</span>
+          <span class="text-[12px] text-text-muted truncate">{p.bot ? `Level ${p.bot.level}` : (p.boardName ?? 'Manual entry')}</span>
         </span>
         {#if editable}
           <button
