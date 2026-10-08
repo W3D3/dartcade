@@ -9,7 +9,7 @@
   import PeopleList from './PeopleList.svelte'
   import PersonControls from './PersonControls.svelte'
   import { gameModes } from '$lib/gameModes'
-  import { alreadyInOrInvited, boardChoices, canMove, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
+  import { alreadyInOrInvited, boardChoices, canMove, withLiveStatus, type OwnBoard, type PersonPatch } from '$lib/lobby/rules'
 
   let {
     lobby,
@@ -20,6 +20,7 @@
     onguest,
     onbot,
     oninvite,
+    onboardsopen,
   }: {
     lobby: Lobby
     viewerId: string | null
@@ -29,11 +30,14 @@
     onguest: (name: string) => Promise<boolean>
     onbot: (level: number) => Promise<boolean>
     oninvite: (userId: string) => Promise<boolean>
+    /** A board menu opened: reload your boards' status. */
+    onboardsopen?: () => void
   } = $props()
 
   // Whether the next game's module can seat a bot at all (it defines botTarget server-side —
   // see supportsBots in backend/src/games/index.ts); the server would refuse adding one
   // otherwise, so don't even offer it.
+  const boards = $derived(withLiveStatus(ownBoards, lobby))
   const supportsBots = $derived($gameModes.find(g => g.id === lobby.nextGame?.gameId)?.supportsBots ?? false)
 </script>
 
@@ -41,8 +45,9 @@
   {#snippet boardOf(p: LobbyPerson)}
     <BoardChip
       person={p}
-      choices={boardChoices(p, viewerId, ownBoards)}
+      choices={boardChoices(p, viewerId, boards)}
       onpick={(boardId: string | null) => void onupdate(p.id, { boardId })}
+      onopen={onboardsopen}
     />
   {/snippet}
   {#snippet controlsOf(p: LobbyPerson, i: number)}

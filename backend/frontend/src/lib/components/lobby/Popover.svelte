@@ -9,6 +9,7 @@
     haspopup = 'menu',
     trigger,
     panel,
+    onopen,
   }: {
     /** The trigger button's accessible name. */
     triggerLabel?: string
@@ -18,6 +19,8 @@
     trigger: Snippet<[boolean]>
     /** The floating content; given `close` to call after use. */
     panel: Snippet<[() => void]>
+    /** Called each time it opens. */
+    onopen?: () => void
   } = $props()
 
   let open = $state(false)
@@ -41,7 +44,10 @@
   <button
     bind:this={triggerButton}
     type="button"
-    onclick={() => (open = !open)}
+    onclick={() => {
+      open = !open
+      if (open) onopen?.()
+    }}
     aria-haspopup={haspopup}
     aria-expanded={open}
     aria-label={triggerLabel}

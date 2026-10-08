@@ -17,6 +17,7 @@ import {
   playsInGame,
   teamRosters,
   teamsMessage,
+  withLiveStatus,
 } from '../lobby/rules.js'
 import type { Lobby, LobbyPerson } from '../api/lobby-ws'
 
@@ -87,8 +88,8 @@ const lobby: Lobby = {
   nextHostName: 'Lena',
 }
 const own = [
-  { id: 'living', name: 'Living room' },
-  { id: 'garage', name: 'Garage' },
+  { id: 'living', name: 'Living room', online: true },
+  { id: 'garage', name: 'Garage', online: false },
 ]
 
 describe('lobby rules for the screens', () => {
@@ -131,11 +132,28 @@ describe('lobby rules for the screens', () => {
     ])
   })
 
+  it('board menu: says which of your boards are offline', () => {
+    expect(boardChoices(max, 'chris', own).map(b => [b.boardId, b.online, b.detail])).toEqual([
+      ['living', true, 'Your board · online'],
+      ['garage', false, 'Your board · offline'],
+    ])
+  })
+
+  it("board status: the lobby's live status wins for a board someone sits on", () => {
+    // Christoph sits on Living room, which the lobby says went offline; nobody is on Garage
+    expect(withLiveStatus(own, lobby).map(b => [b.id, b.online])).toEqual([
+      ['living', false],
+      ['garage', false],
+    ])
+    const l = { ...lobby, people: [...lobby.people, person({ id: 'g', boardId: 'garage', boardOnline: true })] }
+    expect(withLiveStatus(own, l).find(b => b.id === 'garage')?.online).toBe(true)
+  })
+
   it('board menu: once someone has a board, only they change it, and its owner takes it back', () => {
     // Lena on her own board: Chris can't move her
     expect(boardChoices(lena, 'chris', own)).toEqual([])
     // Lena herself: Manual and her own boards
-    expect(boardChoices(lena, 'lena', [{ id: 'lenas', name: "Lena's place" }]).map(b => [b.boardId, b.current])).toEqual([
+    expect(boardChoices(lena, 'lena', [{ id: 'lenas', name: "Lena's place", online: true }]).map(b => [b.boardId, b.current])).toEqual([
       [null, false],
       ['lenas', true],
     ])

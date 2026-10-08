@@ -10,7 +10,15 @@ export type PersonPatch = components['schemas']['UpdatePersonRequest']
 export type LobbyPatch = components['schemas']['UpdateLobbyRequest']
 
 /** One of the viewer's own paired boards. */
-export type OwnBoard = { id: string; name: string }
+/** online: whether the board's bridge is connected (as /api/boards last said). */
+export type OwnBoard = { id: string; name: string; online: boolean }
+
+/**
+ * Your boards with the lobby's live status for those someone sits on: the lobby pushes it,
+ * /api/boards is only as fresh as its last load.
+ */
+export const withLiveStatus = (own: OwnBoard[], lobby: Lobby): OwnBoard[] =>
+  own.map(b => ({ ...b, online: lobby.people.find(p => p.boardId === b.id)?.boardOnline ?? b.online }))
 
 /** Who acts for a person: a member for themselves, a guest's adder for the guest. */
 export const controllerOf = (p: LobbyPerson): string => p.userId ?? p.addedByUserId
@@ -45,7 +53,8 @@ export function canRemove(lobby: Lobby, p: LobbyPerson, viewerId: string | null)
 }
 
 /** An entry in a person's board menu; boardId null is manual entry. */
-export type BoardChoice = { boardId: string | null; label: string; detail: string; current: boolean }
+/** online: null for manual entry. */
+export type BoardChoice = { boardId: string | null; label: string; detail: string; current: boolean; online: boolean | null }
 
 /**
  * What the board chip offers the viewer for this person (spec, Decisions → Boards). Your own
@@ -65,10 +74,19 @@ export function boardChoices(p: LobbyPerson, viewerId: string | null, own: OwnBo
       label: 'Manual entry',
       detail: controls ? 'Enter darts on the keypad' : `Take ${p.boardName ?? 'your board'} back`,
       current: p.boardId === null,
+      online: null,
     })
   }
   if (controls || p.boardId === null) {
-    for (const b of own) choices.push({ boardId: b.id, label: b.name, detail: 'Your board', current: p.boardId === b.id })
+    for (const b of own) {
+      choices.push({
+        boardId: b.id,
+        label: b.name,
+        detail: b.online ? 'Your board · online' : 'Your board · offline',
+        current: p.boardId === b.id,
+        online: b.online,
+      })
+    }
   }
   return choices
 }

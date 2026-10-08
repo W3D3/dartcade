@@ -54,11 +54,24 @@
     phase = 'open'
   }
 
+  const toOwnBoards = (boards: { id: string; name: string; online: boolean }[] = []): OwnBoard[] =>
+    boards.map(b => ({ id: b.id, name: b.name, online: b.online }))
+
+  /** Fresh online status for the board menus; a failed load keeps what we had. */
+  async function reloadBoards() {
+    try {
+      const { data } = await api.GET('/api/boards')
+      if (data) ownBoards = toOwnBoards(data.boards)
+    } catch {
+      // keep the last list
+    }
+  }
+
   async function load() {
     phase = 'loading'
     try {
       const [cur, boards] = await Promise.all([api.GET('/api/lobbies/current'), api.GET('/api/boards')])
-      ownBoards = (boards.data?.boards ?? []).map(b => ({ id: b.id, name: b.name }))
+      ownBoards = toOwnBoards(boards.data?.boards)
       if (cur.data) open(cur.data.id)
       else phase = cur.response.status === 404 ? 'none' : 'failed'
     } catch {
@@ -239,6 +252,7 @@
             onguest={addGuest}
             onbot={addBot}
             oninvite={invite}
+            onboardsopen={() => void reloadBoards()}
           />
         </div>
         <div class="order-1 lg:order-none flex flex-col gap-4 md:gap-5 min-w-0 lg:min-h-0">
