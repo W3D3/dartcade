@@ -24,6 +24,7 @@
     const p = players.find(p => p.seat === seat)
     return p !== undefined && p.userId === null && seat !== detail.game.mySeat
   }
+  const playerBot = (seat: number) => players.find(p => p.seat === seat)?.bot ?? null
 
   const selectedSeat = $derived(picked ?? highlightDefault(detail))
   const name = $derived(playerName(selectedSeat))
@@ -72,7 +73,7 @@
               class="h-10 inline-flex items-center gap-2 pl-[5px] pr-3 rounded-full cursor-pointer font-[inherit] text-[14px] font-semibold text-text
                      {selectedSeat === seat ? 'border-2 border-accent bg-accent-tint' : 'border border-line-chip bg-transparent'}"
             >
-              <Avatar name={playerName(seat)} guest={playerGuest(seat)} size={24} />
+              <Avatar name={playerName(seat)} guest={playerGuest(seat)} bot={playerBot(seat)} size={24} />
               {playerName(seat)}
             </button>
           {/each}

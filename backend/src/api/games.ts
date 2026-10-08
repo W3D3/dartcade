@@ -31,6 +31,7 @@ function toSummary(g: HistoryGame): GameSummary {
       seat: s.seat,
       name: s.name,
       userId: g.mySeat === null ? null : s.user_id,
+      bot: s.bot_level === null ? null : { level: s.bot_level },
       placement: s.placement,
       throwPosition: s.throw_position,
       stats: s.stats,

@@ -1099,8 +1099,12 @@ export interface components {
             /** @description Where the seat threw in the game (0 = first; a bull off can change it from the seat order). null for games finished before it was recorded */
             throwPosition: number | null;
             name: string;
-            /** @description The seat's account; null for guests, and for everyone when viewing a public game you didn't play in */
+            /** @description The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in */
             userId: string | null;
+            /** @description A bot's difficulty 1-10; null for a member or guest. */
+            bot: {
+                level: number;
+            } | null;
             placement: number;
             /** @description Per game mode, e.g. X01 average, dartsThrown, legsWon, pointsScored; ATC dartsThrown, targetsHit */
             stats: {

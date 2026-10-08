@@ -27,9 +27,8 @@
           <td class="px-4 py-3 font-display font-bold text-[20px]">{ordinal(s.placement)}</td>
           <td class="px-2 py-3"
             ><span class="flex items-center gap-2"
-              ><Avatar name={s.name} size={28} guest={s.guest} /><span class="font-semibold">{s.name}</span>{#if s.forfeited}<span
-                  class="text-[12px] text-danger-text">gave up</span
-                >{/if}</span
+              ><Avatar name={s.name} size={28} guest={s.guest} bot={s.bot} /><span class="font-semibold">{s.name}</span
+              >{#if s.forfeited}<span class="text-[12px] text-danger-text">gave up</span>{/if}</span
             ></td
           >
           {#each compact as row (row.key)}

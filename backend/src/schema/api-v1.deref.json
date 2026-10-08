@@ -406,6 +406,7 @@
                                 "seat",
                                 "name",
                                 "userId",
+                                "bot",
                                 "placement",
                                 "throwPosition",
                                 "stats",
@@ -429,7 +430,23 @@
                                 "userId": {
                                   "type": "string",
                                   "nullable": true,
-                                  "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                                  "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                                },
+                                "bot": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "required": [
+                                    "level"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "level": {
+                                      "type": "integer",
+                                      "minimum": 1,
+                                      "maximum": 10
+                                    }
+                                  },
+                                  "description": "A bot's difficulty 1-10; null for a member or guest."
                                 },
                                 "placement": {
                                   "type": "integer",
@@ -916,6 +933,7 @@
                               "seat",
                               "name",
                               "userId",
+                              "bot",
                               "placement",
                               "throwPosition",
                               "stats",
@@ -939,7 +957,23 @@
                               "userId": {
                                 "type": "string",
                                 "nullable": true,
-                                "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                                "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                              },
+                              "bot": {
+                                "type": "object",
+                                "nullable": true,
+                                "required": [
+                                  "level"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "level": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 10
+                                  }
+                                },
+                                "description": "A bot's difficulty 1-10; null for a member or guest."
                               },
                               "placement": {
                                 "type": "integer",
@@ -14954,6 +14988,7 @@
           "seat",
           "name",
           "userId",
+          "bot",
           "placement",
           "throwPosition",
           "stats",
@@ -14977,7 +15012,23 @@
           "userId": {
             "type": "string",
             "nullable": true,
-            "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+            "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+          },
+          "bot": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "level"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "level": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10
+              }
+            },
+            "description": "A bot's difficulty 1-10; null for a member or guest."
           },
           "placement": {
             "type": "integer",
@@ -15058,6 +15109,7 @@
                 "seat",
                 "name",
                 "userId",
+                "bot",
                 "placement",
                 "throwPosition",
                 "stats",
@@ -15081,7 +15133,23 @@
                 "userId": {
                   "type": "string",
                   "nullable": true,
-                  "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                  "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                },
+                "bot": {
+                  "type": "object",
+                  "nullable": true,
+                  "required": [
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "level": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 10
+                    }
+                  },
+                  "description": "A bot's difficulty 1-10; null for a member or guest."
                 },
                 "placement": {
                   "type": "integer",
@@ -15175,6 +15243,7 @@
                       "seat",
                       "name",
                       "userId",
+                      "bot",
                       "placement",
                       "throwPosition",
                       "stats",
@@ -15198,7 +15267,23 @@
                       "userId": {
                         "type": "string",
                         "nullable": true,
-                        "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                        "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                      },
+                      "bot": {
+                        "type": "object",
+                        "nullable": true,
+                        "required": [
+                          "level"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "level": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 10
+                          }
+                        },
+                        "description": "A bot's difficulty 1-10; null for a member or guest."
                       },
                       "placement": {
                         "type": "integer",
@@ -15478,6 +15563,7 @@
                     "seat",
                     "name",
                     "userId",
+                    "bot",
                     "placement",
                     "throwPosition",
                     "stats",
@@ -15501,7 +15587,23 @@
                     "userId": {
                       "type": "string",
                       "nullable": true,
-                      "description": "The seat's account; null for guests, and for everyone when viewing a public game you didn't play in"
+                      "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                    },
+                    "bot": {
+                      "type": "object",
+                      "nullable": true,
+                      "required": [
+                        "level"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "level": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 10
+                        }
+                      },
+                      "description": "A bot's difficulty 1-10; null for a member or guest."
                     },
                     "placement": {
                       "type": "integer",

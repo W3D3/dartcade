@@ -18,7 +18,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     id: string,
     mode: string,
     owner: string,
-    seats: { name: string; user_id: string | null }[],
+    seats: { name: string; user_id: string | null; bot_level?: number }[],
     finishedAt: Date | 'abort' | 'active',
     board: string | null = null,
     forfeitedSeats: number[] = [],
@@ -31,7 +31,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
       game_version: 1,
       rng_seed: 0,
       config: {},
-      players: seats.map(s => ({ ...s, controller_user_id: owner, board_db_id: null, bot_level: null })),
+      players: seats.map(s => ({ ...s, controller_user_id: owner, board_db_id: null, bot_level: s.bot_level ?? null })),
     })
     if (finishedAt === 'abort') await abortGameSession(db, id, t(0))
     else if (finishedAt !== 'active')
@@ -133,5 +133,27 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     expect((await getViewableGame(db, 'x-1', 'u2'))?.mySeat).toBeNull()
     expect(await getViewableGame(db, 'x-aborted', 'u1')).toBeUndefined()
     expect(await getViewableGame(db, 'x-running', 'u1')).toBeUndefined()
+  })
+
+  it("carries a bot seat's level; null for members and guests", async () => {
+    await game(
+      'x-bot',
+      'x01',
+      'u2',
+      [
+        { name: 'Two', user_id: 'u2' },
+        { name: 'Bot Lvl 4', user_id: null, bot_level: 4 },
+        { name: 'Guest', user_id: null },
+      ],
+      t(5),
+    )
+    const g = await getViewableGame(db, 'x-bot', 'u2')
+    expect(g?.seats.map(s => [s.name, s.bot_level])).toEqual([
+      ['Two', null],
+      ['Bot Lvl 4', 4],
+      ['Guest', null],
+    ])
+    const { games } = await listFinishedGames(db, 'u2', { limit: 10, after: null })
+    expect(games.find(x => x.id === 'x-bot')?.seats.map(s => s.bot_level)).toEqual([null, 4, null])
   })
 })
