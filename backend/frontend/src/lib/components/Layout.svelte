@@ -6,6 +6,8 @@
   import PhoneHeader from './PhoneHeader.svelte'
   import LobbyStrip from './LobbyStrip.svelte'
   import TabBar from './TabBar.svelte'
+  import FriendsDrawer from './friends/FriendsDrawer.svelte'
+  import { friendsDrawerOpen } from '$lib/friends/drawer'
 
   let { title, headerAction, children }: { title?: string; headerAction?: Snippet; children: Snippet } = $props()
 </script>
@@ -21,3 +23,5 @@
     <TabBar />
   </div>
 </div>
+
+{#if $friendsDrawerOpen}<FriendsDrawer />{/if}
