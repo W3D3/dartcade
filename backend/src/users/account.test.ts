@@ -65,6 +65,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('account names', () => {
       email: 'old@example.com',
       nameNeedsChange: false,
       invisible: false,
+      role: null,
     })
     await expect(renameUser(db, 'dup', 'luke')).rejects.toMatchObject({ statusCode: 409, body: { error: 'That name is taken' } })
     await expect(renameUser(db, 'dup', 'l u k e')).rejects.toMatchObject({ statusCode: 400 })

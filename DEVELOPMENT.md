@@ -85,11 +85,12 @@ runs without a hash list.
 
 Backend-only (set automatically by the dev compose, documented here for manual runs):
 
-| Variable            | Description                          |
-| ------------------- | ------------------------------------ |
-| `DATABASE_URL`      | Postgres connection string           |
-| `PORT`              | HTTP/WS listen port (default `3000`) |
-| `TEST_DATABASE_URL` | Override DB URL for `npm test`       |
+| Variable            | Description                                                                                                                                                                                                                                  |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`      | Postgres connection string                                                                                                                                                                                                                   |
+| `PORT`              | HTTP/WS listen port (default `3000`)                                                                                                                                                                                                         |
+| `TEST_DATABASE_URL` | Override DB URL for `npm test`                                                                                                                                                                                                               |
+| `ADMIN_EMAILS`      | Comma-separated emails that are admins (the minigolf test bench at `#/admin/minigolf`). The dev compose names `admin@dartcade.local`, which the dev seed also gives `role = 'admin'`; setting `role = 'admin'` on a user in the DB works too |
 
 ## Running backend tests
 
