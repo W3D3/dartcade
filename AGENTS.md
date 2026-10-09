@@ -42,7 +42,8 @@ corrected dart replays the open visit cleanly.
 | REST API | `backend/src/api/` |
 | WebSocket gateways | `backend/src/bridge-gw/` (bridge), `backend/src/browser-gw/` (browser) |
 | Auth, DB (Kysely + Postgres, migrations) | `backend/src/auth/`, `backend/src/db/` |
-| Code shared by backend and frontend (`$shared/...`) | `backend/src/shared/` (dependency-free) |
+| Code shared by backend and frontend (`$shared/...`) | `backend/src/shared/` (dependency-free, except `minigolf/`, which uses nape-js pinned to the same version in both packages) |
+| Minigolf core: holes, dart → shot, physics (nape-js), courses | `backend/src/shared/minigolf/`; admin test bench `#/admin/minigolf` (`routes/MinigolfBench.svelte`, `lib/minigolf/`, `lib/components/minigolf/`) |
 | Frontend pages (svelte-spa-router, hash routes) | `backend/frontend/src/routes/`; the match screen is `GameDisplay.svelte`; the Play page (picks the game, not the players) is `CreateSession.svelte` |
 | Per-game UI (stats, board highlights) | `backend/frontend/src/lib/gameViews/` |
 | Match screen in remote games (seat boards, live/offline/waiting centre, not-your-turn toast) | `backend/frontend/src/lib/remote.ts`, `lib/toast.ts`; components `SeatBoardLine`, `BoardCaption`, `TurnStatusBar`, `OfflineNotice`, `WaitingCard`, `NotTurnToast` |
