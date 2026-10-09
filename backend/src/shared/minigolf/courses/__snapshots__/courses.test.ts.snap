@@ -1,0 +1,136 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`courses > test/dogleg golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      300,
+      2458.296,
+    ],
+    "samples": 69,
+  },
+  {
+    "holed": false,
+    "rest": [
+      300,
+      2277.825,
+    ],
+    "samples": 90,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1781.91,
+      2600.541,
+    ],
+    "samples": 108,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1770.905,
+      2542.1,
+    ],
+    "samples": 119,
+  },
+  {
+    "holed": false,
+    "rest": [
+      2033.48,
+      2500,
+    ],
+    "samples": 103,
+  },
+]
+`;
+
+exports[`courses > test/straight golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      250,
+      1403.75,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": true,
+    "rest": [
+      250,
+      300,
+    ],
+    "samples": 80,
+  },
+  {
+    "holed": false,
+    "rest": [
+      324.592,
+      825.033,
+    ],
+    "samples": 113,
+  },
+  {
+    "holed": false,
+    "rest": [
+      336.632,
+      777.979,
+    ],
+    "samples": 117,
+  },
+  {
+    "holed": false,
+    "rest": [
+      246.529,
+      2750,
+    ],
+    "samples": 65,
+  },
+]
+`;
+
+exports[`courses > test/summit golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      900,
+      2084.967,
+    ],
+    "samples": 71,
+  },
+  {
+    "holed": false,
+    "rest": [
+      900,
+      2160.757,
+    ],
+    "samples": 93,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1296.803,
+      291.997,
+    ],
+    "samples": 120,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1745.467,
+      255.115,
+    ],
+    "samples": 141,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1205.594,
+      2350,
+    ],
+    "samples": 86,
+  },
+]
+`;
