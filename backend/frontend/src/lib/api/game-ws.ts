@@ -519,6 +519,7 @@ export interface MinigolfGame {
     index: number
     scores: number[]
     paths: MinigolfPt[][][]
+    hole: MinigolfHole
   } | null
   currentVisitDarts: Dart[]
   totalDarts: number[]

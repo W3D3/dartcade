@@ -279,7 +279,11 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
         path: t.result ? roundPath(t.result.path) : [],
         others: (t.result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
       })),
-      lastHole: s.lastHole && { ...s.lastHole, paths: s.lastHole.paths.map(seat => seat.map(roundPath)) },
+      lastHole: s.lastHole && {
+        ...s.lastHole,
+        hole: holeView(s.holes[s.lastHole.index]),
+        paths: s.lastHole.paths.map(seat => seat.map(roundPath)),
+      },
     }
   },
 
