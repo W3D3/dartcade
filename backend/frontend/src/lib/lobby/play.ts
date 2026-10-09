@@ -51,23 +51,31 @@ export function chosenGame(games: { id: string }[], selectedMode: string, config
   const gameId = games.find(g => g.id === selectedMode)?.id ?? games.find(g => g.id.includes('501'))?.id ?? games[0]?.id
   if (!gameId) return null
   const settings =
-    selectedMode === 'atc'
+    selectedMode === 'minigolf'
       ? {
-          finishOn: config.finishOn,
-          order: config.order,
-          multiplierAdvances: config.multiplierAdvances,
-          throwAgainOnAllHit: config.throwAgainOnAllHit,
+          course: config.course,
+          tries: config.tries,
+          maxStrokes: config.maxStrokes,
+          ballContact: config.ballContact,
+          shotDelay: config.shotDelay,
         }
-      : {
-          startScore: config.startScore,
-          inMode: config.inMode,
-          outMode: config.outMode,
-          bullOff: config.bullOff,
-          bullValue: config.bullValue,
-          maxRounds: config.maxRounds,
-          firstTo: config.firstTo,
-          botSpeed: config.botSpeed,
-        }
+      : selectedMode === 'atc'
+        ? {
+            finishOn: config.finishOn,
+            order: config.order,
+            multiplierAdvances: config.multiplierAdvances,
+            throwAgainOnAllHit: config.throwAgainOnAllHit,
+          }
+        : {
+            startScore: config.startScore,
+            inMode: config.inMode,
+            outMode: config.outMode,
+            bullOff: config.bullOff,
+            bullValue: config.bullValue,
+            maxRounds: config.maxRounds,
+            firstTo: config.firstTo,
+            botSpeed: config.botSpeed,
+          }
   return { gameId, config: settings }
 }
 

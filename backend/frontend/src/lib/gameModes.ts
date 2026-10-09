@@ -20,6 +20,13 @@ export const GAME_MODES: GameMode[] = [
     desc: 'Count down from your chosen score. Configure check-in, check-out, and bull off.',
     available: true,
   },
+  {
+    id: 'minigolf',
+    glyph: 'Par 3',
+    name: 'Minigolf',
+    desc: 'Your dart is the putter. Angle sets direction, distance sets power.',
+    available: true,
+  },
   { id: 'soccer', glyph: 'Soccer', name: 'Dart Soccer', desc: 'Coming soon.', available: false },
   { id: 'tournament', glyph: 'R16', name: 'Tournament', desc: 'Coming soon.', available: false },
 ]

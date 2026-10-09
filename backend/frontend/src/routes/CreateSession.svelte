@@ -48,10 +48,11 @@
   let error = $state('')
   let busy = $state(false)
 
-  const atcGame = $derived(games.find(g => g.id === 'atc'))
-  const gameDefaults = $derived<Partial<Record<string, Config>>>(
-    atcGame ? { x01: X01_DEFAULTS, atc: atcGame.defaultConfig } : { x01: X01_DEFAULTS },
-  )
+  // X01's defaults are the form's own; the other modes take theirs from the backend
+  const gameDefaults = $derived<Partial<Record<string, Config>>>({
+    ...Object.fromEntries(games.filter(g => g.id !== 'x01').map(g => [g.id, g.defaultConfig])),
+    x01: X01_DEFAULTS,
+  })
   let savedConfigs = $state<Partial<Record<string, Config>>>(initPrefs?.configs ?? {})
   let config = $state<Record<string, unknown>>({
     ...X01_DEFAULTS,
