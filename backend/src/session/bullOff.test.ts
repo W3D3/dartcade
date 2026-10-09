@@ -15,7 +15,7 @@ import type { Dart } from './types.js'
 const at = (mm: number | null): BullOffThrow => ({ mm, segment: '', thetaDeg: null, estimated: false })
 
 function dart(overrides: Partial<Dart> = {}): Dart {
-  return { segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 }, score: 25, ...overrides }
+  return { segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 }, score: 20, ...overrides }
 }
 
 describe('initBullOff', () => {
@@ -36,7 +36,7 @@ describe('initBullOff', () => {
 describe('throwFromDart', () => {
   it('measures from the cameras: r = 1 is the outer double wire (170 mm)', () => {
     const t = throwFromDart(dart({ polar: { r: 0.0753, theta_deg: 135 } }))
-    expect(t).toEqual({ mm: 12.8, segment: '25', thetaDeg: 135, estimated: false })
+    expect(t).toEqual({ mm: 12.8, segment: 'S20', thetaDeg: 135, estimated: false })
   })
 
   it('falls back to coords when polar is missing', () => {
@@ -109,6 +109,13 @@ describe('rank', () => {
 
   it('rethrows when more than one dart is in the bullseye', () => {
     expect(rank([at(2), at(6)])).toMatchObject({ rethrow: true, reason: 'bullseye' })
+  })
+
+  it('under WDC rules rethrows when two darts are in the outer bull, however far apart', () => {
+    const bull = (mm: number): BullOffThrow => ({ ...at(mm), segment: '25' })
+    expect(rank([bull(9), bull(14)], 'wdc')).toMatchObject({ rethrow: true, reason: 'tie' })
+    expect(rank([bull(9), bull(14)], 'pdc').rethrow).toBe(false)
+    expect(rank([at(3), bull(9), bull(14)], 'wdc').rethrow).toBe(false)
   })
 
   it('rethrows when nobody hit the board', () => {

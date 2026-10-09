@@ -26,6 +26,7 @@ export type BullOffResult = {
 
 export type BullOffState = {
   active: boolean
+  mode: BullOffMode
   throws: (BullOffThrow | null)[]
   /** Who throws when (player indices); reversed on every rethrow. */
   sequence: number[]
@@ -54,6 +55,7 @@ const BED_ESTIMATE_MM: Record<string, number> = {
 export function initBullOff(cfg: BullOffConfig): BullOffState {
   return {
     active: cfg.mode !== 'off',
+    mode: cfg.mode,
     throws: Array<BullOffThrow | null>(cfg.playerCount).fill(null),
     sequence: Array.from({ length: cfg.playerCount }, (_, i) => i),
     step: 0,
@@ -95,7 +97,7 @@ export function onBullOffTakeout(s: BullOffState): BullOffState {
     const step = s.step + 1
     return { ...s, step, currentPlayer: s.sequence[step] }
   }
-  return { ...s, result: rank(s.throws) }
+  return { ...s, result: rank(s.throws, s.mode) }
 }
 
 /** The current player gives up their dart (counts as off the board) and play moves on. */
@@ -122,12 +124,17 @@ export function rethrowBullOff(s: BullOffState): BullOffState {
 /**
  * Closest to the centre throws first. A rethrow is needed when nobody hit the
  * board, more than one dart is in the bullseye, or the top two are within 0.5 mm.
+ * Under WDC rules the distance only separates darts in different rings: two
+ * darts in the outer bull are always rethrown.
  */
-export function rank(throws: (BullOffThrow | null)[]): BullOffResult {
+export function rank(throws: (BullOffThrow | null)[], mode: BullOffMode = 'pdc'): BullOffResult {
   const dist = (i: number) => throws[i]?.mm ?? Infinity
   const order = throws.map((_, i) => i).sort((a, b) => dist(a) - dist(b) || a - b)
   if (order.every(i => dist(i) === Infinity)) return { order, rethrow: true, reason: 'all_missed' }
   if (order.filter(i => dist(i) <= BULLSEYE_MM).length > 1) return { order, rethrow: true, reason: 'bullseye' }
+  if (mode === 'wdc' && order.filter(i => throws[i]?.segment === '25').length > 1 && dist(order[0]) > BULLSEYE_MM) {
+    return { order, rethrow: true, reason: 'tie' }
+  }
   if (order.length > 1 && dist(order[1]) - dist(order[0]) < TIE_MM) return { order, rethrow: true, reason: 'tie' }
   return { order, rethrow: false }
 }
