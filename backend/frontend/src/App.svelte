@@ -33,6 +33,10 @@
   const loadGameDetails = Object.assign(() => import('./routes/GameDetails.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
   })
+  // The minigolf bench brings the physics engine (nape-js): only admins open it, so it loads on demand too
+  const loadMinigolfBench = Object.assign(() => import('./routes/MinigolfBench.svelte').catch(() => ({ default: RouteLoadFailed })), {
+    loading: RouteLoading,
+  })
 
   const routes = {
     '/': CreateSession,
@@ -48,6 +52,7 @@
     '/invites': Invites,
     '/settings': Settings,
     '/friends': Friends,
+    '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
   }
 
   let checked = $state(false)
