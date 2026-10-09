@@ -30,8 +30,11 @@ export function clampToView(p: { x: number; y: number }): { x: number; y: number
 const scored = (s: Segment) => s.multiplier > 0
 const positioned = (darts: HeatDart[]) => darts.flatMap(d => (d.coords ? [d.coords] : []))
 
-export function seatDarts(detail: X01Detail, seat: number): HeatDart[] {
-  return detail.legs.flatMap(l =>
+/** `leg` filters to one leg (by its `leg` number, as `X01Detail.legs[].leg`); omitted or `null`
+ *  keeps every leg, for the "Match" selection. */
+export function seatDarts(detail: X01Detail, seat: number, leg?: number | null): HeatDart[] {
+  const legs = leg == null ? detail.legs : detail.legs.filter(l => l.leg === leg)
+  return legs.flatMap(l =>
     l.visits
       .filter(v => v.seat === seat)
       .flatMap(v => v.darts.map(x => ({ segment: x.segment, coords: x.coords ?? null, manual: x.source === 'manual' }))),
@@ -79,15 +82,21 @@ export function mostHit(darts: HeatDart[], n = 5) {
     .slice(0, n)
 }
 
-export function heatSummary(name: string, legCount: number, darts: HeatDart[]): string {
-  // A forfeit before the first visit leaves no legs and no darts for anyone — "All 0 legs" would
-  // be a lie, so say plainly that nothing was thrown.
-  if (darts.length === 0 || legCount === 0) return `${name} · No darts thrown`
-  const legs = legCount === 1 ? '1 leg' : `All ${legCount} legs`
+/** The leg part of the summary line: "Leg 2" for one selected leg, "All 4 legs" / "1 leg" for
+ *  the whole match (`leg` null), as `heatSummary` reads it. */
+export function heatmapLegLabel(leg: number | null, legCount: number): string {
+  if (leg !== null) return `Leg ${leg + 1}`
+  return legCount === 1 ? '1 leg' : `All ${legCount} legs`
+}
+
+export function heatSummary(name: string, legLabel: string, darts: HeatDart[]): string {
+  // No darts for the selection (a forfeit before the first visit, or a leg nobody's reached yet)
+  // — "Leg 3 · 0 darts" or "All 0 legs" would read oddly, so say plainly nothing was thrown.
+  if (darts.length === 0) return `${name} · No darts thrown`
   // Only hand-entered darts without a board position are "entered by hand, not on the board" —
   // a camera dart with no coords is a bounce-out, not something somebody typed in.
   const byHand = darts.filter(d => d.manual && d.coords === null).length
-  return [name, legs, plural(darts.length, 'dart'), ...(byHand > 0 ? [`${byHand} entered by hand, not on the board`] : [])].join(' · ')
+  return [name, legLabel, plural(darts.length, 'dart'), ...(byHand > 0 ? [`${byHand} entered by hand, not on the board`] : [])].join(' · ')
 }
 
 export function boardLabel(name: string, darts: HeatDart[]): string {

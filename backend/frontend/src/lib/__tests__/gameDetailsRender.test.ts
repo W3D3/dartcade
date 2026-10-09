@@ -154,49 +154,49 @@ describe('details components', () => {
   })
 })
 
-describe('X01 leg by leg', () => {
-  it('shows the last leg: summary, chart and chalkboard', () => {
-    const seg = (name: string, number: number, multiplier: 1 | 2 | 3) => ({ name, number, multiplier, bed: 'Single' as const })
-    const dart = (s: ReturnType<typeof seg>, index: number) => ({
-      index,
-      segment: s,
-      coords: null,
-      source: 'manual' as const,
-      corrected: false,
-      thrownAt: '',
-    })
+describe('X01 Breakdown, one leg', () => {
+  const seg = (name: string, number: number, multiplier: 1 | 2 | 3) => ({ name, number, multiplier, bed: 'Single' as const })
+  const dart = (s: ReturnType<typeof seg>, index: number) => ({
+    index,
+    segment: s,
+    coords: null,
+    source: 'manual' as const,
+    corrected: false,
+    thrownAt: '',
+  })
+  const twoLegs = () => ({
+    mode: 'x01' as const,
+    legs: [
+      {
+        leg: 0,
+        starter: 0,
+        winner: 0,
+        visits: [
+          {
+            visit: 0,
+            seat: 0,
+            committedAt: '',
+            darts: [dart(seg('T20', 20, 3), 0), dart(seg('T20', 20, 3), 1), dart(seg('T20', 20, 3), 2)],
+            scored: 180,
+            remaining: 321,
+            bust: false,
+          },
+          { visit: 1, seat: 1, committedAt: '', darts: [dart(seg('S20', 20, 1), 0)], scored: 20, remaining: 481, bust: false },
+          { visit: 2, seat: 0, committedAt: '', darts: [dart(seg('D20', 20, 2), 0)], scored: 40, remaining: 0, bust: false },
+        ],
+      },
+      {
+        leg: 1,
+        starter: 1,
+        winner: 1,
+        visits: [{ visit: 0, seat: 1, committedAt: '', darts: [dart(seg('T19', 19, 3), 0)], scored: 57, remaining: 444, bust: false }],
+      },
+    ],
+  })
+
+  it('shows the given leg: summary, chart and chalkboard', () => {
     const d = game(2)
-    d.detail = {
-      mode: 'x01',
-      legs: [
-        {
-          leg: 0,
-          starter: 0,
-          winner: 0,
-          visits: [
-            {
-              visit: 0,
-              seat: 0,
-              committedAt: '',
-              darts: [dart(seg('T20', 20, 3), 0), dart(seg('T20', 20, 3), 1), dart(seg('T20', 20, 3), 2)],
-              scored: 180,
-              remaining: 321,
-              bust: false,
-            },
-            { visit: 1, seat: 1, committedAt: '', darts: [dart(seg('S20', 20, 1), 0)], scored: 20, remaining: 481, bust: false },
-            {
-              visit: 2,
-              seat: 0,
-              committedAt: '',
-              darts: [dart(seg('D20', 20, 2), 0)],
-              scored: 40,
-              remaining: 0,
-              bust: false,
-            },
-          ],
-        },
-      ],
-    }
+    d.detail = twoLegs()
     const out = render(X01Legs, { props: { detail: d, party: false, leg: 0, highlight: null } }).body
     expect(out).toContain('P0 threw first')
     expect(out).toContain('<svg')
@@ -205,10 +205,20 @@ describe('X01 leg by leg', () => {
     expect(out).toContain('321')
     expect(out).toContain('Out')
   })
+
+  it('a selected leg renders only that leg, not the others', () => {
+    const d = game(2)
+    d.detail = twoLegs()
+    const out = render(X01Legs, { props: { detail: d, party: false, leg: 1, highlight: null } }).body
+    expect(out).toContain('P1 threw first')
+    expect(out).toContain('T19')
+    // Leg 0's own content doesn't leak into leg 1's block.
+    expect(out).not.toContain('T20')
+  })
 })
 
 describe('X01Section', () => {
-  it('title-tabs: Leg by leg selected by default, its panel shows the chalkboard', () => {
+  it('title-tabs read Breakdown and Heatmap; the leg selector shows Match first, then Leg 1', () => {
     const seg = (name: string, number: number, multiplier: 1 | 2 | 3) => ({ name, number, multiplier, bed: 'Single' as const })
     const dart = (s: ReturnType<typeof seg>, index: number) => ({
       index,
@@ -234,26 +244,33 @@ describe('X01Section', () => {
     expect(out).toContain('role="tablist"')
     expect(out).toContain('aria-label="Match view"')
     expect(out.match(/role="tab"/g)).toHaveLength(2)
-    expect(out).toMatch(/aria-selected="true"[^>]*>Leg by leg/)
+    expect(out).toMatch(/aria-selected="true"[^>]*>Breakdown/)
     expect(out).toMatch(/aria-selected="false"[^>]*>Heatmap/)
     // The unselected tab hovers to the artboard's full-brightness text, not a middling one.
     expect(out).toMatch(/text-text-dim hover:text-text[^>]*>Heatmap/)
     expect(out).toContain('role="tabpanel"')
-    // Only one leg: the header's right side falls back to a plain "Leg 1" label, in the same
-    // row as the title-tabs (not a separate row owned by X01Legs).
+    // The leg selector sits between the title-tabs and the panel, Match first, then Leg 1 — a
+    // single-leg game still shows both (not a plain "Leg 1" label any more).
     const tablistIdx = out.indexOf('role="tablist"')
     const panelIdx = out.indexOf('role="tabpanel"')
-    const legLabelIdx = out.indexOf('Leg 1')
-    expect(legLabelIdx).toBeGreaterThan(tablistIdx)
-    expect(legLabelIdx).toBeLessThan(panelIdx)
-    // The Leg by leg panel's content: the chalkboard's table and a dart from it.
+    const legGroupIdx = out.indexOf('aria-label="Leg"')
+    const matchIdx = out.indexOf('>Match<')
+    const leg1Idx = out.indexOf('>Leg 1<')
+    expect(legGroupIdx).toBeGreaterThan(tablistIdx)
+    expect(legGroupIdx).toBeLessThan(panelIdx)
+    expect(matchIdx).toBeGreaterThan(legGroupIdx)
+    expect(matchIdx).toBeLessThan(leg1Idx)
+    expect(leg1Idx).toBeLessThan(panelIdx)
+    // Match is selected by default.
+    expect(out).toMatch(/aria-pressed="true"[^>]*>Match</)
+    // Match on Breakdown: the one leg's chart and chalkboard, under its own "Leg 1" heading.
     expect(out).toContain('T20')
     expect(out).toContain('<svg')
     // Heatmap's own subtitle only shows when Heatmap is the selected view.
     expect(out).not.toContain('Where every dart landed')
   })
 
-  it('party, several legs: leg tabs and the highlight picker share the header row with the title-tabs', () => {
+  it('party, several legs: Match repeats the chart and table once per leg, each under its own heading', () => {
     const d = game(3)
     d.detail = {
       mode: 'x01',
@@ -267,17 +284,24 @@ describe('X01Section', () => {
     const out = render(X01Section, { props: { detail: d, party: true } }).body
     const tablistIdx = out.indexOf('role="tablist"')
     const panelIdx = out.indexOf('role="tabpanel"')
-    // The leg tabs group and the highlight picker both sit between the title-tabs and the panel
-    // — the same header row, not a second row owned by X01Legs.
+    // The leg selector and the highlight picker both sit between the title-tabs and the panel —
+    // the same header block, not a row owned by X01Legs.
     const legGroupIdx = out.indexOf('aria-label="Leg"')
     const highlightIdx = out.indexOf('aria-label="Highlight a player"')
     expect(legGroupIdx).toBeGreaterThan(tablistIdx)
     expect(legGroupIdx).toBeLessThan(panelIdx)
     expect(highlightIdx).toBeGreaterThan(tablistIdx)
     expect(highlightIdx).toBeLessThan(panelIdx)
-    // The last leg is selected by default.
-    expect(out).toMatch(/aria-pressed="true"[^>]*>Leg 2</)
-    // Heatmap's note doesn't show while Leg by leg is selected.
+    // Match is selected by default, not the last leg.
+    expect(out).toMatch(/aria-pressed="true"[^>]*>Match</)
+    expect(out).toMatch(/aria-pressed="false"[^>]*>Leg 1</)
+    expect(out).toMatch(/aria-pressed="false"[^>]*>Leg 2</)
+    // One "Leg N" heading per leg inside the panel, in order.
+    const leg1HeadingIdx = out.indexOf('>Leg 1<', panelIdx)
+    const leg2HeadingIdx = out.indexOf('>Leg 2<', panelIdx)
+    expect(leg1HeadingIdx).toBeGreaterThan(panelIdx)
+    expect(leg2HeadingIdx).toBeGreaterThan(leg1HeadingIdx)
+    // Heatmap's note doesn't show while Breakdown is selected.
     expect(out).not.toContain('Where every dart landed')
   })
 })
@@ -500,6 +524,43 @@ describe('HeatmapView', () => {
     // Neither 1/18 nor 5/12: no miss-side lean at all for this player.
     expect(out).toMatch(/Miss side[\s\S]*?>—</)
     expect(out).toMatch(/Most hit[\s\S]*?T20/)
+  })
+
+  it('filtered to one leg: the summary says "Leg N" and only that leg\'s darts count', () => {
+    const d = game(2)
+    d.detail = {
+      mode: 'x01',
+      legs: [
+        {
+          leg: 0,
+          starter: 0,
+          winner: 0,
+          visits: [
+            { visit: 0, seat: 0, committedAt: '', darts: [dart(T20, { x: 0, y: 0.85 }, 0)], scored: 60, remaining: 441, bust: false },
+          ],
+        },
+        {
+          leg: 1,
+          starter: 1,
+          winner: 0,
+          visits: [
+            {
+              visit: 0,
+              seat: 0,
+              committedAt: '',
+              darts: [dart(S5, { x: 0.3, y: 0.2 }, 0), dart(S5, { x: 0.3, y: 0.2 }, 1)],
+              scored: 10,
+              remaining: 491,
+              bust: false,
+            },
+          ],
+        },
+      ],
+    }
+    // Leg 2 (index 1): seat 0 threw 2 darts, not the 1 dart from leg 1.
+    const out = render(HeatmapView, { props: { detail: d, leg: 1 } }).body
+    expect(out).toContain('<strong class="font-semibold text-text">P0</strong> · Leg 2 · 2 darts')
+    expect(out).not.toContain('Leg 1')
   })
 
   it('most hit: every treble bolds regardless of rank, and bars are shaded by share of the first', () => {
