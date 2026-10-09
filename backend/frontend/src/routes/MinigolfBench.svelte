@@ -9,6 +9,7 @@
   import DartBoard from '$lib/components/DartBoard.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
+  import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
   import { playPath } from '$lib/minigolf/animate'
   import { canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
   import { COURSES } from '$shared/minigolf/courses/index'
@@ -109,13 +110,17 @@
         <div class="min-h-[50vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
           <HoleView {hole} ball={shown} wallThickness={physics.wallThickness} onPlace={placing ? place : undefined} />
         </div>
-        <div class="flex min-h-0 flex-col items-center justify-center gap-3">
+        <div class="flex min-h-0 flex-col items-center gap-3 overflow-y-auto">
           <div class="w-full max-w-[520px]">
             <DartBoard {onBoardClick} />
           </div>
           <p class="m-0 text-[14px] text-text-muted text-center">
             Angle from the bull = direction · distance = power · bull putts at the cup · off the board is a miss
           </p>
+          <details class="w-full max-w-[520px] rounded-2xl bg-surface-panel p-4">
+            <summary class="cursor-pointer font-display font-bold text-[20px] uppercase">Physics</summary>
+            <div class="pt-3"><PhysicsPanel bind:physics /></div>
+          </details>
         </div>
       </div>
     </main>
