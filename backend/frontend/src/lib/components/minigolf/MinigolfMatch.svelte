@@ -9,6 +9,8 @@
   import ControlBar from '$lib/components/ControlBar.svelte'
   import DartBoard from '$lib/components/DartBoard.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
+  import ScorecardOverlay from '$lib/components/minigolf/ScorecardOverlay.svelte'
+  import { holeJustFinished } from '$lib/minigolf/scorecard'
   import { playFrames } from '$lib/minigolf/animate'
   import { latestShot, otherBalls, ownBall, rows, toHole, trySlots } from '$lib/minigolf/match'
   import type { Pt } from '$shared/minigolf/types'
@@ -68,6 +70,19 @@
       clearTimeout(timer)
       stop()
     }
+  })
+
+  // The scorecard between holes: opens when the game moves on to a new hole, closes on its own,
+  // or as soon as the new hole's first dart lands
+  let prevHole: number | null = null
+  let scorecard = $state(false)
+  $effect(() => {
+    const h = game.holeIdx
+    if (holeJustFinished(prevHole, h)) scorecard = true
+    prevHole = h
+  })
+  $effect(() => {
+    if (game.tries.length > 0 || game.finished) scorecard = false
   })
 
   const at = (path: Pt[], i: number): Pt => path[Math.min(i, path.length - 1)]
@@ -151,3 +166,7 @@
     <ControlBar {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
   </section>
 </main>
+
+{#if scorecard}
+  <ScorecardOverlay {game} {players} onclose={() => (scorecard = false)} />
+{/if}

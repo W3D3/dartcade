@@ -1156,7 +1156,7 @@
           "anyOf": [
             {
               "type": "object",
-              "required": ["index", "scores", "paths"],
+              "required": ["index", "scores", "paths", "hole"],
               "additionalProperties": false,
               "properties": {
                 "index": {
@@ -1180,6 +1180,9 @@
                       }
                     }
                   }
+                },
+                "hole": {
+                  "$ref": "#/$defs/MinigolfHole"
                 }
               }
             },
