@@ -1,14 +1,46 @@
 <!--
   A minigolf hole drawn in course space (mm, y down) in the design's look (Minigolf.dc.html):
   felt, cream rails, red bumpers, slopes with arrows along their push, the tee, the cup and flag,
-  and the ball.
+  and the ball. With `onPlace`, the ball can be dragged anywhere.
 -->
 <script lang="ts">
   import { bounds } from '$shared/minigolf/geometry'
   import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
   import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
 
-  let { hole, ball, wallThickness = DEFAULT_PHYSICS.wallThickness }: { hole: Hole; ball: Pt; wallThickness?: number } = $props()
+  let {
+    hole,
+    ball,
+    wallThickness = DEFAULT_PHYSICS.wallThickness,
+    onPlace,
+  }: {
+    hole: Hole
+    ball: Pt
+    wallThickness?: number
+    /** Set to let the ball be dragged; called with each new spot in course space. */
+    onPlace?: (at: Pt) => void
+  } = $props()
+
+  let svg = $state<SVGSVGElement>()
+  let dragging = $state(false)
+
+  function toCourse(e: PointerEvent): Pt | null {
+    const m = svg?.getScreenCTM()
+    if (!svg || !m) return null
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse())
+    return [Math.round(p.x), Math.round(p.y)]
+  }
+  function dragStart(e: PointerEvent): void {
+    if (!onPlace) return
+    e.preventDefault()
+    if (e.currentTarget instanceof Element) e.currentTarget.setPointerCapture(e.pointerId)
+    dragging = true
+  }
+  function dragMove(e: PointerEvent): void {
+    if (!dragging || !onPlace) return
+    const at = toCourse(e)
+    if (at) onPlace(at)
+  }
 
   const PAD = 120
   const box = $derived(bounds(hole.outline))
@@ -41,7 +73,14 @@
   }
 </script>
 
-<svg {viewBox} class="block w-full h-full" role="img" aria-label="Hole {hole.name}, par {hole.par}" data-testid="hole-view">
+<svg
+  bind:this={svg}
+  {viewBox}
+  class="block w-full h-full touch-none"
+  role="img"
+  aria-label="Hole {hole.name}, par {hole.par}"
+  data-testid="hole-view"
+>
   <defs>
     <pattern id="mg-felt" width="56" height="56" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
       <rect width="56" height="56" fill="#2a7045" />
@@ -104,5 +143,29 @@
     stroke-linecap="round"
   />
   <path d="M{hole.cup.at[0]} {hole.cup.at[1] - 240} l110 34 l-110 34 z" fill="#c6f24e" stroke="#0a0b09" stroke-width="4" />
-  <circle cx={ball[0]} cy={ball[1]} r={BALL_R} fill="#c6f24e" stroke="#0a0b09" stroke-width="5" data-testid="ball" />
+  {#if onPlace}
+    <circle
+      cx={ball[0]}
+      cy={ball[1]}
+      r={BALL_R * 3}
+      fill="#c6f24e"
+      fill-opacity="0.15"
+      stroke="#c6f24e"
+      stroke-dasharray="10 8"
+      stroke-width="4"
+    />
+  {/if}
+  <circle
+    cx={ball[0]}
+    cy={ball[1]}
+    r={onPlace ? BALL_R * 3 : BALL_R}
+    fill="transparent"
+    class={onPlace ? (dragging ? 'cursor-grabbing' : 'cursor-grab') : ''}
+    onpointerdown={dragStart}
+    onpointermove={dragMove}
+    onpointerup={() => (dragging = false)}
+    onpointercancel={() => (dragging = false)}
+    role="presentation"
+  />
+  <circle cx={ball[0]} cy={ball[1]} r={BALL_R} fill="#c6f24e" stroke="#0a0b09" stroke-width="5" pointer-events="none" data-testid="ball" />
 </svg>

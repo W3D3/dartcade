@@ -10,7 +10,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import { playPath } from '$lib/minigolf/animate'
-  import { canShoot, finishShot, initBench, startShot, type BenchState } from '$lib/minigolf/bench'
+  import { canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
   import { COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { shotFromDart } from '$shared/minigolf/shot'
@@ -30,6 +30,16 @@
   let bench = $state<BenchState>(initBench(COURSES[0].holes[0]))
   /** Where the ball is drawn: follows the path while a shot rolls. */
   let shown = $state<Pt>(COURSES[0].holes[0].tee)
+  let placing = $state(false)
+
+  function undo(): void {
+    bench = undoShot(bench)
+    shown = bench.ball
+  }
+  function place(at: Pt): void {
+    bench = placeBall(bench, at)
+    shown = bench.ball
+  }
 
   function toTee(): void {
     bench = initBench(hole)
@@ -83,13 +93,21 @@
           </select>
         </label>
         <button type="button" class={BUTTON} onclick={toTee} disabled={bench.rolling}>Reset to tee</button>
+        <button type="button" class={BUTTON} onclick={undo} disabled={bench.rolling || bench.history.length === 0}>Undo</button>
+        <button
+          type="button"
+          class="{BUTTON} {placing ? 'border-accent text-accent' : ''}"
+          aria-pressed={placing}
+          onclick={() => (placing = !placing)}
+          disabled={bench.rolling}>Place ball</button
+        >
         <span class="ml-auto font-display font-bold text-[28px] uppercase" data-testid="strokes" aria-live="polite">
           {#if bench.holed}Holed in {bench.strokes}{:else}Strokes {bench.strokes}{/if}
         </span>
       </header>
       <div class="grid min-h-0 flex-grow gap-6 grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div class="min-h-[50vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
-          <HoleView {hole} ball={shown} wallThickness={physics.wallThickness} />
+          <HoleView {hole} ball={shown} wallThickness={physics.wallThickness} onPlace={placing ? place : undefined} />
         </div>
         <div class="flex min-h-0 flex-col items-center justify-center gap-3">
           <div class="w-full max-w-[520px]">
