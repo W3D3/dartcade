@@ -9,7 +9,9 @@
       "$lib": ["./src/lib"],
       "$lib/*": ["./src/lib/*"],
       "$shared": ["../src/shared"],
-      "$shared/*": ["../src/shared/*"]
+      "$shared/*": ["../src/shared/*"],
+      // $shared/minigolf imports this; resolved from here, where it's installed too (as vite's dedupe)
+      "@newkrok/nape-js": ["./node_modules/@newkrok/nape-js"]
     }
   },
   "include": ["src/**/*", "*.ts"]
