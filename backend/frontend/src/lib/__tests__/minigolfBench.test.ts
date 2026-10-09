@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canShoot, finishShot, initBench, placeBall, startShot, undoShot } from '$lib/minigolf/bench'
+import { canShoot, finishShot, initBench, parseHole, placeBall, startShot, undoShot } from '$lib/minigolf/bench'
 import { testCourse } from '$shared/minigolf/courses/test'
 
 const hole = testCourse.holes[0]
@@ -39,5 +39,19 @@ describe('bench', () => {
   it('places the ball anywhere without a stroke', () => {
     const s = placeBall(initBench(hole), [100, 100])
     expect(s).toMatchObject({ ball: [100, 100], strokes: 0, holed: false })
+  })
+  it('parses an edited hole', () => {
+    expect(parseHole(JSON.stringify(hole))).toEqual({ hole })
+    const { walls: _w, bumpers: _b, slopes: _s, ...bare } = hole
+    expect(parseHole(JSON.stringify(bare))).toEqual({ hole: { ...bare, walls: [], bumpers: [], slopes: [] } })
+  })
+  it('reports bad JSON, missing keys, wrong shapes and invalid holes', () => {
+    expect(parseHole('{')).toMatchObject({ errors: [expect.stringMatching(/^invalid JSON/)] })
+    expect(parseHole('[]')).toMatchObject({ errors: [expect.stringMatching(/^hole:/)] })
+    expect(parseHole('{"id":"x"}')).toMatchObject({
+      errors: expect.arrayContaining([expect.stringMatching(/^tee:/), expect.stringMatching(/^cup:/)]),
+    })
+    expect(parseHole(JSON.stringify({ ...hole, outline: 5 }))).toMatchObject({ errors: [expect.stringMatching(/^outline:/)] })
+    expect(parseHole(JSON.stringify({ ...hole, tee: [9999, 9999] }))).toEqual({ errors: ['tee is outside the outline'] })
   })
 })

@@ -1,4 +1,6 @@
 // The test bench's state: where the ball is, strokes, and whether a shot is still rolling.
+import { z } from 'zod'
+import { validateHole } from '$shared/minigolf/hole'
 import type { Hole, Pt, ShotResult } from '$shared/minigolf/types'
 
 export interface BenchState {
@@ -33,4 +35,39 @@ export function undoShot(s: BenchState): BenchState {
 /** Puts the ball anywhere, for testing a tricky spot; no stroke. */
 export function placeBall(s: BenchState, at: Pt): BenchState {
   return s.rolling ? s : { ...s, ball: at, holed: false }
+}
+
+const pt = z.tuple([z.number(), z.number()]).readonly()
+const holeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  par: z.number(),
+  outline: z.array(pt),
+  walls: z.array(z.object({ points: z.array(pt), closed: z.boolean().optional(), restitution: z.number().optional() })).default([]),
+  bumpers: z.array(z.object({ at: pt, r: z.number(), restitution: z.number().optional(), kick: z.number().optional() })).default([]),
+  slopes: z
+    .array(
+      z.union([
+        z.object({ area: z.array(pt), force: pt }),
+        z.object({ area: z.array(pt), radial: z.object({ center: pt, strength: z.number() }) }),
+      ]),
+    )
+    .default([]),
+  tee: pt,
+  cup: z.object({ at: pt, r: z.number() }),
+}) satisfies z.ZodType<Hole>
+
+/** A hole edited as JSON on the bench: the hole, or why it can't be played. Missing walls,
+ *  bumpers and slopes count as none. */
+export function parseHole(text: string): { hole: Hole } | { errors: string[] } {
+  let raw: unknown
+  try {
+    raw = JSON.parse(text)
+  } catch (e) {
+    return { errors: [`invalid JSON: ${e instanceof Error ? e.message : String(e)}`] }
+  }
+  const parsed = holeSchema.safeParse(raw)
+  if (!parsed.success) return { errors: parsed.error.issues.map(i => `${i.path.join('.') || 'hole'}: ${i.message}`) }
+  const errors = validateHole(parsed.data)
+  return errors.length ? { errors } : { hole: parsed.data }
 }
