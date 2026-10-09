@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canShoot, finishShot, initBench, startShot } from '$lib/minigolf/bench'
+import { canShoot, finishShot, initBench, placeBall, startShot, undoShot } from '$lib/minigolf/bench'
 import { testCourse } from '$shared/minigolf/courses/test'
 
 const hole = testCourse.holes[0]
@@ -24,5 +24,20 @@ describe('bench', () => {
     const s = finishShot(startShot(initBench(hole)), { path: [hole.cup.at], rest: hole.cup.at, holed: true })
     expect(s.holed).toBe(true)
     expect(canShoot(s)).toBe(false)
+  })
+  it('undoes the last stroke', () => {
+    let s = finishShot(startShot(initBench(hole)), { path: [], rest: [250, 1000], holed: false })
+    s = finishShot(startShot(s), { path: [], rest: hole.cup.at, holed: true })
+    s = undoShot(s)
+    expect(s).toMatchObject({ ball: [250, 1000], strokes: 1, holed: false, history: [hole.tee] })
+    expect(undoShot(undoShot(undoShot(s)))).toMatchObject({ ball: hole.tee, strokes: 0 })
+  })
+  it('does not undo while the ball rolls', () => {
+    const s = startShot(initBench(hole))
+    expect(undoShot(s)).toBe(s)
+  })
+  it('places the ball anywhere without a stroke', () => {
+    const s = placeBall(initBench(hole), [100, 100])
+    expect(s).toMatchObject({ ball: [100, 100], strokes: 0, holed: false })
   })
 })
