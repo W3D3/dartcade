@@ -5,6 +5,7 @@ import wsSchema from '../schema/game-ws-v1.deref.json' with { type: 'json' }
 import { SessionEngine, type EngineStore } from './engine.js'
 import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
+import { minigolfModule } from '../games/minigolf.js'
 import { SnapshotSchema } from '../schema/zod.js'
 
 // ajv-formats is CommonJS: under NodeNext, TypeScript types its default import as the
@@ -53,6 +54,25 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     expectValid(e.getSnapshot(sessionId))
     await play(e, ['visit.opened', { visit_id: 'v' }], ['dart.detected', dart(0.3)])
     expectValid(e.getSnapshot(sessionId))
+  })
+
+  it('Minigolf, mid-visit and after a stroke; manual darts need a spot on the board', async () => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', 'minigolf', { ...minigolfModule.defaultConfig, course: 'test' }, players)
+    expectValid(e.getSnapshot(sessionId))
+    const withCoords = { ...dart(0.3), dart: { ...dart(0.3).dart, coords: { x: 0, y: 0.3 } } }
+    await play(e, ['visit.opened', { visit_id: 'v' }], ['dart.detected', withCoords])
+    const mid = e.getSnapshot(sessionId)
+    expectValid(mid)
+    expect(SnapshotSchema.safeParse(mid).success).toBe(true)
+    await play(e, ['takeout.finished', {}])
+    expectValid(e.getSnapshot(sessionId))
+    // Bob is up, by hand: a segment alone is refused, a spot on the board counts
+    const segment = { name: 'S20', number: 20, bed: 'SingleInner', multiplier: 1 } as const
+    await e.onUserAction(sessionId, 'u1', { type: 'add_dart', segment })
+    expect(e.getSnapshot(sessionId)?.game.currentVisitDarts).toHaveLength(0)
+    await e.onUserAction(sessionId, 'u1', { type: 'add_dart', segment, coords: { x: 0, y: 0.3 } })
+    expect(e.getSnapshot(sessionId)?.game.currentVisitDarts).toHaveLength(1)
   })
 
   it('X01 without bull off, after a visit', async () => {

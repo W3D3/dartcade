@@ -1,7 +1,7 @@
 import { games } from '../games/index.js'
 import { noStats } from '../games/matchStats.js'
 import { newSession, replay, StoredConfigSchema, type LoggedInput, type WarnFn } from '../session/replay.js'
-import type { AtcDetail, MatchStats, X01Detail } from '../session/types.js'
+import type { AtcDetail, MatchStats, MinigolfDetail, X01Detail } from '../session/types.js'
 import type { HistoryGame } from '../db/history.js'
 
 /** The game's per-mode detail and match stats, from replaying its input log; null if its mode is gone. */
@@ -9,7 +9,7 @@ export function buildDetail(
   game: HistoryGame,
   events: LoggedInput[],
   warn: WarnFn,
-): { detail: X01Detail | AtcDetail; stats: MatchStats } | null {
+): { detail: X01Detail | AtcDetail | MinigolfDetail; stats: MatchStats } | null {
   const mod = games[game.game_id]
   const config = StoredConfigSchema.safeParse(game.config)
   if (!mod || !config.success) return null

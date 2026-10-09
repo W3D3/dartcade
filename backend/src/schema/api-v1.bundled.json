@@ -2917,6 +2917,61 @@
           }
         }
       },
+      "MinigolfDetail": {
+        "type": "object",
+        "required": [
+          "mode",
+          "course",
+          "holes",
+          "scores"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "minigolf"
+            ]
+          },
+          "course": {
+            "type": "string",
+            "description": "The course name (\"Mixed course\" for random holes)"
+          },
+          "holes": {
+            "type": "array",
+            "description": "The holes in the order played",
+            "items": {
+              "type": "object",
+              "required": [
+                "name",
+                "par"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "par": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            }
+          },
+          "scores": {
+            "type": "array",
+            "description": "Strokes per hole (in hole order), then per seat; null for a hole not finished",
+            "items": {
+              "type": "array",
+              "items": {
+                "type": "integer",
+                "minimum": 1,
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
       "AtcDetail": {
         "type": "object",
         "required": [
@@ -3405,13 +3460,17 @@
               },
               {
                 "$ref": "#/components/schemas/AtcDetail"
+              },
+              {
+                "$ref": "#/components/schemas/MinigolfDetail"
               }
             ],
             "discriminator": {
               "propertyName": "mode",
               "mapping": {
                 "x01": "#/components/schemas/X01Detail",
-                "atc": "#/components/schemas/AtcDetail"
+                "atc": "#/components/schemas/AtcDetail",
+                "minigolf": "#/components/schemas/MinigolfDetail"
               }
             }
           },
