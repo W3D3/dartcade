@@ -13,6 +13,11 @@ export interface UserTable {
   name_needs_change: ColumnType<boolean, boolean | undefined, boolean>
   /** Friends see this user as offline (migration 016). */
   invisible: ColumnType<boolean, boolean | undefined, boolean>
+  /** better-auth admin plugin (migration 019): 'admin', 'user' or null. */
+  role: ColumnType<string | null, string | null | undefined, string | null>
+  banned: ColumnType<boolean | null, boolean | undefined, boolean>
+  banReason: string | null
+  banExpires: Date | null
 }
 
 export interface BoardsTable {

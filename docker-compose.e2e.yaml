@@ -27,6 +27,7 @@ services:
     environment:
       DATABASE_URL: postgres://dartgames:dev@postgres:5432/dartgames
       NODE_ENV: test
+      ADMIN_EMAILS: e2e-admin@test.local
       PORT: '3000'
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5174

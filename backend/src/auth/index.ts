@@ -1,5 +1,5 @@
 import { betterAuth } from 'better-auth'
-import { openAPI } from 'better-auth/plugins'
+import { admin, openAPI } from 'better-auth/plugins'
 import { db } from '../db/index.js'
 import { nameHooks } from './nameHooks.js'
 
@@ -20,5 +20,5 @@ export const auth = betterAuth({
   advanced: { database: { validateSchema: false } },
   // Generates better-auth's own OpenAPI document (served at /api/auth/open-api/generate-schema);
   // Swagger UI at /api/docs shows it next to ours, so its built-in reference page is off.
-  plugins: [openAPI({ disableDefaultReference: true })],
+  plugins: [openAPI({ disableDefaultReference: true }), admin()],
 })

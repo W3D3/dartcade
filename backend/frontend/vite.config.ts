@@ -17,6 +17,9 @@ export default defineConfig({
       $lib: path.resolve('./src/lib'),
       $shared: path.resolve('../src/shared'),
     },
+    // $shared/minigolf imports nape-js, but $shared sits outside this package (and outside /app in
+    // the dev container and the Docker build): resolve it from here, where it's installed too
+    dedupe: ['@newkrok/nape-js'],
   },
   server: {
     fs: { allow: [path.resolve('..')] },

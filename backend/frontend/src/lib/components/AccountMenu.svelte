@@ -3,7 +3,7 @@
   // Invisible), Friends, Settings, Sign out. Phones: the avatar in the header (menu below it).
   // Tablets: the avatar at the foot of the rail (menu beside it). Desktops: a row with your name
   // and status at the foot of the side nav (menu above it).
-  import { ChevronUp, LogOut, Settings, UsersRound } from '@lucide/svelte'
+  import { ChevronUp, Flag, LogOut, Settings, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
@@ -150,6 +150,12 @@
             label="{friends.requests} friend {friends.requests === 1 ? 'request' : 'requests'}"
           />{/if}
       </a>
+      {#if $currentUser?.isAdmin}
+        <a href="#/admin/minigolf" role="menuitem" onclick={closeMenu} class={ITEM}>
+          <Flag size={18} strokeWidth={1.8} />
+          Minigolf bench
+        </a>
+      {/if}
       <a href="#/settings" role="menuitem" onclick={closeMenu} class={ITEM}>
         <Settings size={18} strokeWidth={1.8} />
         Settings
