@@ -24,6 +24,7 @@
     playerMarkers = [],
     checkoutTargets = [],
     onBoardClick,
+    onBoardHover,
     selectedDart = null,
     onDartMove,
     zoom = 1,
@@ -46,6 +47,8 @@
     /** Click anywhere on the board: the exact spot (r = 1 at the outer double wire, y up)
      *  and the segment under it. */
     onBoardClick?: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
+    /** The pointer over the board, in the same units as onBoardClick; null when it leaves. */
+    onBoardHover?: (coords: { x: number; y: number } | null) => void
     /** Index into `darts` of the dart picked for correction; it is highlighted. */
     selectedDart?: number | null
     /** A dart was dragged to a new spot (any dart can be dragged while this is set). */
@@ -263,6 +266,7 @@
     }
   }
   function pressMove(e: PointerEvent) {
+    if (onBoardHover && e.pointerType === 'mouse') onBoardHover(toBoard(e))
     const p = viewPt(e)
     if (!p) return
     if (aim) {
@@ -337,6 +341,7 @@
   onpointermove={pressMove}
   onpointerup={pressEnd}
   onpointercancel={pressCancel}
+  onpointerleave={onBoardHover ? () => onBoardHover(null) : undefined}
   oncontextmenu={e => {
     if (precise) e.preventDefault()
   }}
