@@ -473,9 +473,9 @@ describe('bull off integration', () => {
     expect(s.game.currentPlayer).toBe(1)
   })
 
-  it('a tie within 0.5 mm rethrows in reverse order', () => {
+  it('a tie within 2 mm rethrows in reverse order', () => {
     let s = x01Module.init({ ...defaultCfg, bullOff: 'wdc' }, players)
-    s = play(s, opened, dartAt(10.2), takeout, opened, dartAt(10.5), takeout)
+    s = play(s, opened, dartAt(40), takeout, opened, dartAt(41.5), takeout)
     expect(s.bullOff.result).toMatchObject({ rethrow: true, reason: 'tie' })
 
     s = play(s, opened)

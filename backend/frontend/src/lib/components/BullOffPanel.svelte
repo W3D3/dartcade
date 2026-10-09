@@ -90,7 +90,7 @@
     t.mm === null ? 'Off the board' : t.mm <= BULLSEYE_MM ? 'Bullseye' : t.mm <= OUTER_BULL_MM ? 'Outer bull' : t.segment
 
   const RETHROW_REASON: Record<string, string> = {
-    tie: 'The two closest darts are within 0.5 mm.',
+    tie: 'The two closest darts are within 2 mm.',
     bullseye: 'More than one dart landed in the bullseye.',
     outer_bull: 'More than one dart landed in the outer bull.',
     no_bull: 'Nobody hit the bull.',
@@ -366,7 +366,7 @@
 
       <ul class="m-0 mt-auto pl-[18px] flex flex-col gap-1 text-[14px] leading-[1.45] text-text-muted">
         <li>Closest to the centre starts; everyone else follows by distance.</li>
-        <li>Two in the bullseye, or the closest two within 0.5 mm: everyone throws again, in reverse order.</li>
+        <li>Two in the same bull, or the closest two within 2 mm: everyone throws again, in reverse order.</li>
         <li>A dart off the board counts as the farthest.</li>
       </ul>
     </section>
