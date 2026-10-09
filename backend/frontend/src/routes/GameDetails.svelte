@@ -60,7 +60,9 @@
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
         <DetailsHeader detail={d} />
-        <main class="flex-grow min-h-0 overflow-y-auto box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6">
+        <main
+          class="flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
+        >
           <section
             aria-label="Result and statistics"
             class="flex flex-col gap-4 min-w-0 lg:shrink-0 {layout === 'party' ? 'lg:w-[560px]' : 'lg:w-[420px] xl:w-[520px]'}"
