@@ -21,7 +21,7 @@ export type BullOffResult = {
   /** Player indices, closest first — the throwing order for the game. */
   order: number[]
   rethrow: boolean
-  reason?: 'tie' | 'bullseye' | 'all_missed'
+  reason?: 'tie' | 'bullseye' | 'outer_bull' | 'no_bull' | 'all_missed'
 }
 
 export type BullOffState = {
@@ -121,20 +121,27 @@ export function rethrowBullOff(s: BullOffState): BullOffState {
   return { ...s, throws: Array<BullOffThrow | null>(s.playerCount).fill(null), sequence, step: 0, currentPlayer: sequence[0], result: null }
 }
 
+/** What a PDC bull off counts: only the segment hit (bullseye, outer bull, or anything else). */
+const segmentTier = (t: BullOffThrow | null) => (t?.segment === 'Bull' || t?.segment === '50' ? 2 : t?.segment === '25' ? 1 : 0)
+
 /**
- * Closest to the centre throws first. A rethrow is needed when nobody hit the
- * board, more than one dart is in the bullseye, or the top two are within 0.5 mm.
- * Under WDC rules the distance only separates darts in different rings: two
- * darts in the outer bull are always rethrown.
+ * WDC: closest to the centre throws first. A rethrow is needed when nobody hit the board, more
+ * than one dart is in the bullseye, or the top two are within 0.5 mm.
+ * PDC: only the segment counts (bullseye beats outer bull beats the rest, however close). A
+ * rethrow is needed until exactly one player has the best segment, and the best has to be a bull.
  */
-export function rank(throws: (BullOffThrow | null)[], mode: BullOffMode = 'pdc'): BullOffResult {
+export function rank(throws: (BullOffThrow | null)[], mode: BullOffMode = 'wdc'): BullOffResult {
   const dist = (i: number) => throws[i]?.mm ?? Infinity
-  const order = throws.map((_, i) => i).sort((a, b) => dist(a) - dist(b) || a - b)
+  const tier = (i: number) => (mode === 'pdc' ? segmentTier(throws[i] ?? null) : 0)
+  const order = throws.map((_, i) => i).sort((a, b) => tier(b) - tier(a) || dist(a) - dist(b) || a - b)
   if (order.every(i => dist(i) === Infinity)) return { order, rethrow: true, reason: 'all_missed' }
-  if (order.filter(i => dist(i) <= BULLSEYE_MM).length > 1) return { order, rethrow: true, reason: 'bullseye' }
-  if (mode === 'wdc' && order.filter(i => throws[i]?.segment === '25').length > 1 && dist(order[0]) > BULLSEYE_MM) {
-    return { order, rethrow: true, reason: 'tie' }
+  if (mode === 'pdc') {
+    const best = tier(order[0])
+    if (best === 0) return { order, rethrow: true, reason: 'no_bull' }
+    if (order.filter(i => tier(i) === best).length > 1) return { order, rethrow: true, reason: best === 2 ? 'bullseye' : 'outer_bull' }
+    return { order, rethrow: false }
   }
+  if (order.filter(i => dist(i) <= BULLSEYE_MM).length > 1) return { order, rethrow: true, reason: 'bullseye' }
   if (order.length > 1 && dist(order[1]) - dist(order[0]) < TIE_MM) return { order, rethrow: true, reason: 'tie' }
   return { order, rethrow: false }
 }

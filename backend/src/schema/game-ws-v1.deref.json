@@ -101,6 +101,8 @@
           "enum": [
             "tie",
             "bullseye",
+            "outer_bull",
+            "no_bull",
             "all_missed"
           ]
         }
@@ -197,6 +199,8 @@
                   "enum": [
                     "tie",
                     "bullseye",
+                    "outer_bull",
+                    "no_bull",
                     "all_missed"
                   ]
                 }
@@ -432,6 +436,8 @@
                           "enum": [
                             "tie",
                             "bullseye",
+                            "outer_bull",
+                            "no_bull",
                             "all_missed"
                           ]
                         }
@@ -1455,6 +1461,8 @@
                               "enum": [
                                 "tie",
                                 "bullseye",
+                                "outer_bull",
+                                "no_bull",
                                 "all_missed"
                               ]
                             }
@@ -2625,6 +2633,8 @@
                                   "enum": [
                                     "tie",
                                     "bullseye",
+                                    "outer_bull",
+                                    "no_bull",
                                     "all_missed"
                                   ]
                                 }

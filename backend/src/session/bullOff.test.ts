@@ -111,11 +111,47 @@ describe('rank', () => {
     expect(rank([at(2), at(6)])).toMatchObject({ rethrow: true, reason: 'bullseye' })
   })
 
-  it('under WDC rules rethrows when two darts are in the outer bull, however far apart', () => {
+  it('WDC lets the distance decide between two outer bull darts', () => {
     const bull = (mm: number): BullOffThrow => ({ ...at(mm), segment: '25' })
-    expect(rank([bull(9), bull(14)], 'wdc')).toMatchObject({ rethrow: true, reason: 'tie' })
-    expect(rank([bull(9), bull(14)], 'pdc').rethrow).toBe(false)
-    expect(rank([at(3), bull(9), bull(14)], 'wdc').rethrow).toBe(false)
+    expect(rank([bull(9), bull(14)], 'wdc')).toEqual({ order: [0, 1], rethrow: false })
+  })
+
+  describe('PDC counts only the segment hit', () => {
+    const t = (segment: string, mm: number | null): BullOffThrow => ({ ...at(mm), segment })
+    const outer = (mm: number) => t('25', mm)
+    const inner = (mm: number) => t('Bull', mm)
+    const board = (mm: number) => t('S20', mm)
+
+    it('rethrows when two darts are in the outer bull, however far apart', () => {
+      expect(rank([outer(9), outer(14)], 'pdc')).toMatchObject({ rethrow: true, reason: 'outer_bull' })
+    })
+
+    it('rethrows when two darts are in the bullseye', () => {
+      expect(rank([inner(2), inner(5)], 'pdc')).toMatchObject({ rethrow: true, reason: 'bullseye' })
+    })
+
+    it('the bullseye beats the outer bull, and the outer bull beats the rest', () => {
+      expect(rank([outer(8), inner(5)], 'pdc')).toEqual({ order: [1, 0], rethrow: false })
+      expect(rank([board(30), outer(14)], 'pdc')).toEqual({ order: [1, 0], rethrow: false })
+      expect(rank([board(30), null, inner(6)], 'pdc')).toEqual({ order: [2, 0, 1], rethrow: false })
+    })
+
+    it('a closer dart outside the bull does not beat a farther one inside it', () => {
+      expect(rank([outer(15.8), board(16)], 'pdc')).toEqual({ order: [0, 1], rethrow: false })
+    })
+
+    it('rethrows when nobody hit a bull, even if darts are on the board', () => {
+      expect(rank([board(30), board(60)], 'pdc')).toMatchObject({ rethrow: true, reason: 'no_bull' })
+      expect(rank([board(30), t('Miss', null)], 'pdc')).toMatchObject({ rethrow: true, reason: 'no_bull' })
+    })
+
+    it('rethrows when nobody hit the board', () => {
+      expect(rank([t('Miss', null), t('Miss', null)], 'pdc')).toMatchObject({ rethrow: true, reason: 'all_missed' })
+    })
+
+    it('ties further down the order do not force a rethrow', () => {
+      expect(rank([outer(10), inner(3), outer(12)], 'pdc')).toEqual({ order: [1, 0, 2], rethrow: false })
+    })
   })
 
   it('rethrows when nobody hit the board', () => {

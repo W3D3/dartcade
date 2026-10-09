@@ -92,6 +92,8 @@
   const RETHROW_REASON: Record<string, string> = {
     tie: 'The two closest darts are within 0.5 mm.',
     bullseye: 'More than one dart landed in the bullseye.',
+    outer_bull: 'More than one dart landed in the outer bull.',
+    no_bull: 'Nobody hit the bull.',
     all_missed: 'Nobody hit the board.',
   }
   // The rethrow goes in reverse order

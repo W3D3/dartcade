@@ -42,7 +42,7 @@
       "properties": {
         "order": { "type": "array", "items": { "type": "integer", "minimum": 0 } },
         "rethrow": { "type": "boolean" },
-        "reason": { "type": "string", "enum": ["tie", "bullseye", "all_missed"] }
+        "reason": { "type": "string", "enum": ["tie", "bullseye", "outer_bull", "no_bull", "all_missed"] }
       }
     },
     "BullOffView": {
