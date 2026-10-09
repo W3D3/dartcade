@@ -14,6 +14,7 @@
     ball,
     wallThickness = DEFAULT_PHYSICS.wallThickness,
     onPlace,
+    others = [],
     debug = false,
     lastPath = null,
     preview = null,
@@ -23,6 +24,8 @@
     wallThickness?: number
     /** Set to let the ball be dragged; called with each new spot in course space. */
     onPlace?: (at: Pt) => void
+    /** Other players' balls, drawn faded with their initial. */
+    others?: { seat: number; at: Pt; label: string }[]
     debug?: boolean
     lastPath?: readonly Pt[] | null
     /** The putt the pointer would make: a dashed line as long as it would roll on flat felt. */
@@ -209,6 +212,22 @@
       </text>
     </g>
   {/if}
+  {#each others as o (o.seat)}
+    <g opacity="0.55" pointer-events="none" data-testid="other-ball">
+      <circle cx={o.at[0]} cy={o.at[1]} r={BALL_R} fill="#efeee6" stroke="#0a0b09" stroke-width="5" />
+      <text
+        x={o.at[0]}
+        y={o.at[1] - BALL_R - 14}
+        fill="#efeee6"
+        font-size="52"
+        font-weight="700"
+        text-anchor="middle"
+        stroke="#0a0b09"
+        stroke-width="8"
+        paint-order="stroke">{o.label}</text
+      >
+    </g>
+  {/each}
   {#if onPlace}
     <circle
       cx={ball[0]}
@@ -233,5 +252,7 @@
     onpointercancel={() => (dragging = false)}
     role="presentation"
   />
+  <!-- The ball is true to scale (4.3 cm): a halo keeps it findable from across the room -->
+  <circle cx={ball[0]} cy={ball[1]} r={BALL_R * 2.6} fill="#c6f24e" fill-opacity="0.18" pointer-events="none" />
   <circle cx={ball[0]} cy={ball[1]} r={BALL_R} fill="#c6f24e" stroke="#0a0b09" stroke-width="5" pointer-events="none" data-testid="ball" />
 </svg>
