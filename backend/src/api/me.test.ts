@@ -24,7 +24,7 @@ const app = () => {
 beforeEach(() => {
   vi.mocked(getAccount)
     .mockReset()
-    .mockResolvedValue({ id: 'old', name: 'Phil Taylor', email: 'p@x', nameNeedsChange: true, invisible: false })
+    .mockResolvedValue({ id: 'old', name: 'Phil Taylor', email: 'p@x', nameNeedsChange: true, invisible: false, role: null })
   vi.mocked(setInvisible).mockReset()
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
   vi.mocked(renameUser).mockReset().mockResolvedValue('Phil_T')
@@ -40,12 +40,34 @@ describe('/api/me', () => {
       email: 'p@x',
       nameNeedsChange: true,
       invisible: false,
+      isAdmin: false,
       suggestedName: 'Phil.Taylor',
     })
   })
 
+  it('tells admins they are', async () => {
+    vi.mocked(getAccount).mockResolvedValue({
+      id: 'a',
+      name: 'Admin',
+      email: 'a@x',
+      nameNeedsChange: false,
+      invisible: false,
+      role: 'admin',
+    })
+    const res = await app().inject({ method: 'GET', url: '/api/me' })
+    expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true })
+    expect(JSON.parse(res.body)).not.toHaveProperty('role')
+  })
+
   it('renames and answers with the account as it is now', async () => {
-    vi.mocked(getAccount).mockResolvedValue({ id: 'old', name: 'Phil_T', email: 'p@x', nameNeedsChange: false, invisible: false })
+    vi.mocked(getAccount).mockResolvedValue({
+      id: 'old',
+      name: 'Phil_T',
+      email: 'p@x',
+      nameNeedsChange: false,
+      invisible: false,
+      role: null,
+    })
     const res = await app().inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
     expect(res.statusCode).toBe(200)
     expect(renameUser).toHaveBeenCalledWith({}, 'old', 'Phil_T')
@@ -67,7 +89,14 @@ describe('/api/me', () => {
     const onChanged = vi.fn()
     const a = createFastify()
     a.register(meApiPlugin, { db: {} as any, onChanged })
-    vi.mocked(getAccount).mockResolvedValue({ id: 'old', name: 'Phil_T', email: 'p@x', nameNeedsChange: false, invisible: true })
+    vi.mocked(getAccount).mockResolvedValue({
+      id: 'old',
+      name: 'Phil_T',
+      email: 'p@x',
+      nameNeedsChange: false,
+      invisible: true,
+      role: null,
+    })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { invisible: true } })
     expect(res.statusCode).toBe(200)
     expect(setInvisible).toHaveBeenCalledWith({}, 'old', true)

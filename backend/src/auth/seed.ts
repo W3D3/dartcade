@@ -25,6 +25,7 @@ export async function seedDev(): Promise<void> {
   }
 
   const admin = await db.selectFrom('user').select('id').where('email', '=', 'admin@dartcade.local').executeTakeFirstOrThrow()
+  await db.updateTable('user').set({ role: 'admin' }).where('id', '=', admin.id).execute()
 
   const tokenHash = hashBoardToken('dev-bridge-token')
   await db

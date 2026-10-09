@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
+import { isAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
 import { getAccount, setInvisible } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
@@ -21,7 +22,12 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
   async function me(userId: string) {
     const account = await getAccount(db, userId)
     if (!account) throw new ApiError(404, { error: 'account not found' })
-    return { ...account, suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null }
+    const { role, ...rest } = account
+    return {
+      ...rest,
+      isAdmin: isAdmin({ role, email: account.email }),
+      suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
+    }
   }
 
   app.get<Route<'getMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('getMe') }, async req => me(req.userId))

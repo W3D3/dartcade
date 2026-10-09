@@ -1342,6 +1342,8 @@ export interface components {
             suggestedName: string | null;
             /** @description Friends see you as offline */
             invisible: boolean;
+            /** @description May open admin pages (the minigolf test bench) */
+            isAdmin: boolean;
         };
         UpdateMeRequest: {
             name?: string;
