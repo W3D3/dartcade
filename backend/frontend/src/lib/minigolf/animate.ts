@@ -18,3 +18,21 @@ export function playPath(path: Pt[], onFrame: (p: Pt) => void, reducedMotion: bo
     requestAnimationFrame(tick)
   })
 }
+
+/** Steps through `frames` 60 Hz frames in real time, calling `onFrame` with each index; returns a
+ *  function that stops it. With reduced motion it jumps to the last frame. */
+export function playFrames(frames: number, onFrame: (i: number) => void, reducedMotion: boolean): () => void {
+  if (reducedMotion || frames < 2) {
+    onFrame(Math.max(0, frames - 1))
+    return () => {}
+  }
+  let raf = 0
+  const start = performance.now()
+  const tick = (now: number) => {
+    const i = Math.min(frames - 1, Math.floor(((now - start) / 1000) * 60))
+    onFrame(i)
+    if (i < frames - 1) raf = requestAnimationFrame(tick)
+  }
+  raf = requestAnimationFrame(tick)
+  return () => cancelAnimationFrame(raf)
+}

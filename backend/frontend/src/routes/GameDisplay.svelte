@@ -9,6 +9,7 @@
   import DartBoard from '../lib/components/DartBoard.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
+  import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
   import BoardLegend from '../lib/components/BoardLegend.svelte'
   import VisitBand from '../lib/components/VisitBand.svelte'
   import DartSlots from '../lib/components/DartSlots.svelte'
@@ -233,7 +234,8 @@
   const current = $derived(gameState(snapshot))
   const x01 = $derived(current.x01)
   const atc = $derived(current.atc)
-  const game = $derived(x01 ?? atc)
+  const minigolf = $derived(current.minigolf)
+  const game = $derived(x01 ?? atc ?? minigolf)
   const isX01 = $derived(x01 !== null)
   const view = $derived(getGameView(gameId))
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
@@ -275,7 +277,7 @@
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
   // The visit is over (bust, checkout, win): no more darts until the next player
-  const locked = $derived(x01?.visitLocked === true || winner !== null)
+  const locked = $derived(x01?.visitLocked === true || minigolf?.visitLocked === true || winner !== null)
   const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
   // Checkout preferences: this device's for now; per player (from each seat's account) once they
   // can be set in Settings
@@ -712,7 +714,7 @@
       <GameHeader
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-        showViewToggle={!bullOff && remote.kind === 'play'}
+        showViewToggle={!bullOff && !minigolf && remote.kind === 'play'}
         boards={myBoards}
         {gameId}
         {viewMode}
@@ -736,6 +738,19 @@
 
       {#if bullOff}
         <BullOffPanel {players} {bots} {bullOff} manual={boardId === null} {send} />
+      {:else if minigolf}
+        <MinigolfMatch
+          game={minigolf}
+          {players}
+          {darts}
+          {canThrow}
+          {locked}
+          {canUndo}
+          {next}
+          onUndo={undo}
+          onNext={advance}
+          onBoardClick={addBoardDart}
+        />
       {:else if !game}
         <main class="flex-grow flex items-center justify-center">
           <p class="text-text-muted">Unsupported game</p>
