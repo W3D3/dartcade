@@ -48,11 +48,27 @@ export interface Shot {
   power: number
 }
 
-/** `path` is the ball sampled at 60 Hz for animation, starting at the ball and ending at `rest`. */
+/** Another player's ball on the hole, in the way of a putt (ball contact). */
+export interface OtherBall {
+  id: number
+  at: Pt
+}
+
+/** Another player's ball a putt moved: its path (same timeline as the putt's), where it stopped. */
+export interface MovedBall {
+  id: number
+  path: Pt[]
+  rest: Pt
+  holed: boolean
+}
+
+/** `path` is the ball sampled at 60 Hz for animation, starting at the ball and ending at `rest`.
+ *  `others`: the balls it knocked, when other balls were on the hole. */
 export interface ShotResult {
   path: Pt[]
   rest: Pt
   holed: boolean
+  others?: MovedBall[]
 }
 
 /** A golf ball, 42.7 mm across. */

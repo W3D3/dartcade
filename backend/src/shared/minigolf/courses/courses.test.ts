@@ -5,7 +5,7 @@ import { validateHole } from '../hole.js'
 import { DEFAULT_PHYSICS } from '../physics.js'
 import { simulateShot } from '../simulate.js'
 import type { Shot } from '../types.js'
-import { COURSES } from './index.js'
+import { COURSES, mixedHoles } from './index.js'
 
 const SHOTS: Shot[] = [
   { dir: [0, -1], power: 0.3 },
@@ -28,4 +28,18 @@ describe('courses', () => {
       })
     }
   }
+
+  it('draws mixed holes from every course without repeats', () => {
+    let seed = 1
+    const rng = () => (seed = (seed * 16807) % 2147483647) / 2147483647
+    const holes = mixedHoles(rng)
+    const all = COURSES.flatMap(c => c.holes)
+    expect(holes.length).toBe(Math.min(9, all.length))
+    expect(new Set(holes.map(h => h.id)).size).toBe(holes.length)
+  })
+
+  it('gives every hole an id unique across courses', () => {
+    const ids = COURSES.flatMap(c => c.holes.map(h => h.id))
+    expect(new Set(ids).size).toBe(ids.length)
+  })
 })

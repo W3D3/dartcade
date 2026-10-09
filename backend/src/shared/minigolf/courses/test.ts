@@ -6,7 +6,7 @@ export const testCourse = {
   name: 'Test',
   holes: [
     {
-      id: 'straight',
+      id: 'test-straight',
       name: 'Straight',
       par: 2,
       outline: [
@@ -22,7 +22,7 @@ export const testCourse = {
       cup: { at: [250, 300], r: 54 },
     },
     {
-      id: 'dogleg',
+      id: 'test-dogleg',
       name: 'Dogleg',
       par: 3,
       // An L: tee bottom-left, cup top-right, bank off the corner
@@ -53,7 +53,7 @@ export const testCourse = {
       cup: { at: [2150, 400], r: 54 },
     },
     {
-      id: 'summit',
+      id: 'test-summit',
       name: 'Summit',
       par: 3,
       outline: [
