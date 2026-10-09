@@ -23,3 +23,14 @@ export function finishShot(s: BenchState, result: ShotResult | null): BenchState
   if (!result) return { ...s, rolling: false }
   return { ...s, ball: result.rest, holed: result.holed, rolling: false }
 }
+
+/** Back to the ball before the last stroke. */
+export function undoShot(s: BenchState): BenchState {
+  if (s.rolling || s.history.length === 0) return s
+  return { ...s, ball: s.history[s.history.length - 1], strokes: s.strokes - 1, holed: false, history: s.history.slice(0, -1) }
+}
+
+/** Puts the ball anywhere, for testing a tricky spot; no stroke. */
+export function placeBall(s: BenchState, at: Pt): BenchState {
+  return s.rolling ? s : { ...s, ball: at, holed: false }
+}
