@@ -1034,6 +1034,22 @@ export interface components {
                 }[];
             }[];
         };
+        MinigolfDetail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "minigolf";
+            /** @description The course name ("Mixed course" for random holes) */
+            course: string;
+            /** @description The holes in the order played */
+            holes: {
+                name: string;
+                par: number;
+            }[];
+            /** @description Strokes per hole (in hole order), then per seat; null for a hole not finished */
+            scores: (number | null)[][];
+        };
         AtcDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -1164,7 +1180,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"];
             stats: components["schemas"]["MatchStats"];
         };
         /** @description The game's match stats, the same shape for every game mode. Rows say how to show each value, so a mode adds stats without a frontend change. */

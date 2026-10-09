@@ -1,9 +1,9 @@
 // The win screen after a game: who won, the final standings and the match stats we keep.
 // Placements come from the final snapshot (the server ranks the same way); the per-player
 // X01 stats (average, best checkout) and the legs come from the saved game, once it loads.
-import type { AtcGame, GameDetail, Snapshot, X01Game } from './api'
+import type { AtcGame, GameDetail, MinigolfGame, Snapshot, X01Game } from './api'
 import { atcPlayer, fmtAvg } from './playerStats.js'
-import { atcRules, x01Rules } from './gameViews/meta.js'
+import { atcRules, minigolfRules, x01Rules } from './gameViews/meta.js'
 import { teamsLabel } from './teams.js'
 import { plural } from './fmt.js'
 
@@ -30,7 +30,7 @@ export type WinLeg = { n: number; name: string; guest: boolean; byWinner: boolea
 export type StatRow = { label: string; values: [string, string]; share: number }
 
 export type WinView = {
-  mode: 'x01' | 'atc'
+  mode: 'x01' | 'atc' | 'minigolf'
   layout: 'duel' | 'party'
   /** By placement: the winner first. */
   competitors: Competitor[]
@@ -67,6 +67,10 @@ export function winMeta(snapshot: Snapshot): string {
     const g = snapshot.game
     const teams = g.teams ? teamsLabel(g.teams) : undefined
     return x01Rules({ ...g.config, firstTo: g.firstTo }, n, teams) + (teams ? '' : vs)
+  }
+  if (snapshot.gameId === 'minigolf') {
+    const g = snapshot.game
+    return minigolfRules(g.config, g.courseName, g.holeCount, n) + vs
   }
   return atcRules(snapshot.game.cfg, n) + vs
 }
@@ -262,9 +266,54 @@ export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
   }
 }
 
+/** "+3", "−2", "E" (even). */
+export const fmtToPar = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : 'E')
+
+export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinView {
+  const g = snapshot.game
+  const aces = (seat: number) => g.scores.filter(row => row[seat] === 1).length
+  // Lowest total wins; equal totals share a place
+  const places = rank(snapshot.players.length, null, (a, b) => g.totals[a] - g.totals[b])
+  const competitors = byPlacement(
+    snapshot.players.map((p, i): Competitor => ({
+      name: p.name,
+      guest: snapshot.seats[i]?.userId === null,
+      members: [],
+      seats: [i],
+      placement: places[i],
+      score: g.totals[i],
+      sub: `${plural(g.totals[i], 'stroke')} · ${fmtToPar(g.toPar[i])}`,
+      cells: [String(g.totals[i]), fmtToPar(g.toPar[i]), String(aces(i))],
+    })),
+  )
+  const [ws, rs] = competitors.map(c => c.seats[0])
+  const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
+  return {
+    mode: 'minigolf',
+    layout: competitors.length > 2 ? 'party' : 'duel',
+    competitors,
+    kicker: 'Round over',
+    scoreLabel: `Strokes · ${g.holeCount} ${g.holeCount === 1 ? 'hole' : 'holes'}`,
+    note: 'Ranked by total strokes, fewest first',
+    checkout: null,
+    legs: [],
+    stats:
+      competitors.length < 2
+        ? []
+        : [
+            { label: 'Strokes', values: pair(String(g.totals[ws]), String(g.totals[rs])), share: share(g.totals[rs], g.totals[ws]) },
+            { label: 'To par', values: pair(fmtToPar(g.toPar[ws]), fmtToPar(g.toPar[rs])), share: 0.5 },
+            { label: 'Holes in one', values: pair(String(aces(ws)), String(aces(rs))), share: share(aces(ws), aces(rs)) },
+          ],
+    columns: ['Strokes', 'To par', 'Aces'],
+    highlights: [],
+  }
+}
+
 /** The win screen once a won game has ended (not while its winning visit waits for Finish); null before, or when nobody won. */
 export function winView(snapshot: Snapshot | null, detail: GameDetail | null): WinView | null {
   if (!snapshot || snapshot.status !== 'finished' || snapshot.game.winner === null) return null
   if (snapshot.gameId === 'x01') return x01Win(snapshot, detail?.detail.mode === 'x01' ? detail : null)
+  if (snapshot.gameId === 'minigolf') return minigolfWin(snapshot)
   return atcWin(snapshot)
 }

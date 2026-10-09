@@ -68,6 +68,7 @@ describe('GET /api/gamemodes', () => {
     expect(res.json().modes.map((m: any) => ({ id: m.id, teams: m.teams, supportsBots: m.supportsBots }))).toEqual([
       { id: 'atc', teams: false, supportsBots: false },
       { id: 'x01', teams: true, supportsBots: true },
+      { id: 'minigolf', teams: false, supportsBots: false },
     ])
   })
 })

@@ -126,6 +126,8 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
     }
 
     case 'correct_dart': {
+      // Minigolf counts where a dart landed: a segment alone says nothing
+      if (session.module.positionalDarts && !action.coords) return NONE
       const target = dartEvents(session).find((_, i) => i === action.visitIndex)
       if (target) {
         // The camera position no longer matches the corrected segment, so drop it,
@@ -162,6 +164,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
     }
 
     case 'add_dart': {
+      if (session.module.positionalDarts && !action.coords) return NONE
       const dartCount = dartEvents(session).length
       if (dartCount >= 3) return NONE
       // A finished visit (bust, checkout, win) takes no more darts
