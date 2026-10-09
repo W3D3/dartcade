@@ -36,7 +36,8 @@ as the admin tool for testing levels; the code it runs is the code the game will
   that fail CI when an upgrade changes results. Its minigolf example confirms the approach (zero
   gravity, the cup as a `TriggerZone`, slopes as sensor zones) but has no rolling friction, which we
   add. Rapier's `-deterministic-compat` build is the fallback if we ever need cross-platform results.
-- **Holes are JSON files in git.** The bench is a test bench, not an editor: changes are copied back
+- **Holes are JSON-shaped data in git** (TypeScript files holding plain data, `satisfies Course`, so
+  JSON pasted from the bench works as-is and the type checker guards the shape). The bench is a test bench, not an editor: changes are copied back
   into the repo and shipped with a commit. A finished game can then always point at the hole it was
   played on. A visual editor can grow out of the bench later.
 - **Admins through better-auth's admin plugin** rather than our own role column: it adds `user.role`
@@ -44,14 +45,14 @@ as the admin tool for testing levels; the code it runs is the code the game will
 
 ## Elements (v1)
 
-| Element        | Data                                                                   | Behaviour                                                                                                    |
-| -------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| Course outline | polygon                                                                | Rails around the felt; the ball banks off them                                                               |
-| Wall           | polyline or polygon, optional restitution                              | Obstacles inside the course                                                                                  |
-| Bumper         | circle, restitution, optional kick                                     | Bounces the ball, a kick adds speed along the normal                                                         |
-| Slope          | polygon + force vector, or polygon + `radial` (centre, strength, sign) | Pushes the ball while it's inside; `radial` with a negative sign is the summit (pushes away from the centre) |
-| Tee            | point                                                                  | Where the first stroke starts                                                                                |
-| Cup            | point, radius                                                          | Holes the ball when it passes over it slower than the capture speed                                          |
+| Element        | Data                                                             | Behaviour                                                                                                                         |
+| -------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Course outline | polygon                                                          | Rails around the felt; the ball banks off them                                                                                    |
+| Wall           | polyline or polygon, optional restitution                        | Obstacles inside the course                                                                                                       |
+| Bumper         | circle, restitution, optional kick                               | Bounces the ball (nape caps bounce at 1), our kick adds speed along the normal once per hit                                       |
+| Slope          | polygon + force vector, or polygon + `radial` (centre, strength) | Pushes the ball while it's inside; `radial` with a positive strength is the summit (pushes away from the centre), negative a bowl |
+| Tee            | point                                                            | Where the first stroke starts                                                                                                     |
+| Cup            | point, radius                                                    | Holes the ball when it passes over it slower than the capture speed                                                               |
 
 Water and out of bounds wait until a hole needs them.
 
@@ -72,7 +73,8 @@ dependency-free today; `minigolf/` becomes the one exception and may import `@ne
   - `null` coords or `r > 1` → `null` (a miss).
   - `r ≤ R.bull25` (both bull rings) → direction from the ball to the cup.
   - Otherwise → direction `(x, -y) / r` in course space (y down), no trig.
-  - Power: `0` at `R.bull25`, `1` at `r = 1`, shaped by the power curve, never below the minimum putt.
+  - Power: from the minimum putt at the centre to `1` at `r = 1`, shaped by the power curve (the bull
+    rings are the softest putts).
 - **`physics.ts`**: `Physics`, the feel values kept apart from holes so the bench can change them:
   rolling friction (constant deceleration, mm/s²), rest speed (below it the ball stops), capture speed
   (the most the ball may have to drop into the cup), the full-power roll (how far power 1 rolls on flat felt; power is a share of it, so the dart's
@@ -81,7 +83,8 @@ dependency-free today; `minigolf/` becomes the one exception and may import `@ne
   the step (fixed, 1/240 s) and caps (max simulated time). `DEFAULT_PHYSICS` is the shipped set.
 - **`simulate.ts`**: `simulateShot(hole, physics, ballPos, shot) → { path, rest, holed }`.
   - Builds a nape `Space` (zero gravity, `deterministic = true`) from the hole: the outline and walls
-    as static bodies, bumpers as static circles, slopes and the cup as sensors. The ball is a dynamic
+    as static bodies (segments become thin quads with round caps), bumpers as static circles. Slopes, the
+    cup and bumper kicks are plain checks in our step loop rather than nape sensors. The ball is a dynamic
     circle with CCD on, so a full-power ball can't pass through a thin wall.
   - Steps synchronously at the fixed step until the ball is at rest, holed, or the time cap is hit (it
     then stops where it is). Each step applies our rolling friction (a force against the velocity,
@@ -94,7 +97,7 @@ dependency-free today; `minigolf/` becomes the one exception and may import `@ne
 
 ### Holes: `backend/src/shared/minigolf/courses/`
 
-One JSON file per course (`{ id, name, holes: Hole[] }`), loaded through an index that validates every
+One file per course (`{ id, name, holes: Hole[] }`), loaded through an index that validates every
 hole. This sub-project ships a `test` course with three holes: a straight one, a dogleg with a bank shot
 (like `Minigolf.dc.html`'s hole 4, without the windmill) and one with a slope and a bumper. The real
 courses come in sub-project 4.
@@ -102,10 +105,11 @@ courses come in sub-project 4.
 ### Backend: admin role
 
 - Add better-auth's `admin()` plugin to `backend/src/auth/index.ts` (and its client plugin to the SPA's
-  auth client) and a migration for its columns (`user.role`, `banned`, `ban_reason`, `ban_expires`,
-  `session.impersonated_by`), following how our migrations add better-auth's columns.
-- The dev seed makes `admin@dartcade.local` an admin. In production an admin is set by hand in the DB
-  (documented in `DEVELOPMENT.md`).
+  auth client, only once the SPA needs its APIs) and a migration for its columns (`user.role`, `banned`,
+  `banReason`, `banExpires`, `session.impersonatedBy`), following how our migrations add better-auth's columns.
+- The dev seed makes `admin@dartcade.local` an admin. A deployment names its admins with
+  `ADMIN_EMAILS` (comma-separated), so the PR preview and production need no DB access; setting
+  `role = 'admin'` in the DB works too (documented in `DEVELOPMENT.md`).
 - A `requireAdmin` guard next to the existing auth middleware, so admin APIs have one place to check.
   This sub-project adds no admin API: the bench simulates in the browser. The guard comes with a test
   so the next sub-project can rely on it.
@@ -153,8 +157,8 @@ The plan builds it so it can be played halfway through.
 
 ## Testing
 
-- **`shot.ts`** (unit): a point straight up rolls up the screen and one at 6 rolls right; power is 0 at
-  the bull's edge, 1 at the double wire and capped beyond; both bull rings aim at the cup; `r > 1` and
+- **`shot.ts`** (unit): a point straight up rolls up the screen and one at 6 rolls right; power runs from
+  the minimum putt at the centre to 1 at the double wire; both bull rings aim at the cup; `r > 1` and
   `null` are misses.
 - **`simulate.ts`** (unit, on small fixture holes): a straight putt stops short or rolls past as power
   changes; a ball banks off a wall at the mirrored angle (within a tolerance); a full-power shot at a
