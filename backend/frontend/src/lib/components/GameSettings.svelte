@@ -1,7 +1,8 @@
 <script lang="ts">
   // A game mode's settings (the Play page's setup, the lobby's next-game card): X01's start
   // score, check-in, check-out, bull off, bull value, max rounds and first to; Around the
-  // Clock's fields as the backend describes them. Bull off also drives the lobby's throw
+  // Clock's fields as the backend describes them; Minigolf's course cards, tries, max strokes,
+  // ball contact and shot delay. Bull off also drives the lobby's throw
   // order (the server keeps them in sync): picking WDC/PDC here turns the throw order to
   // Bull-off, and picking Off there turns this back off.
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
@@ -9,6 +10,7 @@
   import Tooltip from '$lib/components/Tooltip.svelte'
   import type { ConfigFieldMeta } from '$lib/api'
   import { GAME_MODES } from '$lib/gameModes'
+  import { COURSES } from '$shared/minigolf/courses/index'
 
   let {
     gameId,
@@ -60,6 +62,15 @@
     { value: '25_50', label: '25 / 50' },
     { value: '50_50', label: '50 / 50' },
   ]
+
+  // Minigolf's courses as cards: name, holes and par; plus the mixed course
+  const courseCards = [
+    ...COURSES.map(c => ({ id: c.id, name: c.name, sub: `${c.holes.length} holes · par ${c.holes.reduce((n, h) => n + h.par, 0)}` })),
+    { id: 'mixed', name: 'Mixed course', sub: '9 random holes from all courses' },
+  ]
+  const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
+  const setMaxStrokes = (n: number) => set('maxStrokes', clamp(n, 3, 10))
+  const setShotDelay = (n: number) => set('shotDelay', clamp(n, 0, 5))
 
   // ATC config fields in display order — populated from backend configMeta
   const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
@@ -214,6 +225,76 @@
         </fieldset>
       {/if}
     {/each}
+  </div>
+{:else if gameId === 'minigolf'}
+  <div class="flex flex-col gap-[18px]">
+    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+      <legend class="field-label mb-2">Course</legend>
+      <div class="grid gap-2" role="radiogroup" aria-label="Course">
+        {#each courseCards as c (c.id)}
+          {@const on = config.course === c.id}
+          <button
+            type="button"
+            role="radio"
+            aria-checked={on}
+            disabled={readonly}
+            onclick={() => set('course', c.id)}
+            class="flex flex-col items-start gap-[2px] rounded-[10px] border px-3 py-[10px] text-left font-[inherit] cursor-pointer disabled:cursor-default
+              {on ? 'border-accent bg-accent-tint text-text' : 'border-line-2 bg-surface-2 text-text hover:bg-surface-hover'}"
+          >
+            <span class="text-[15px] font-semibold">{c.name}</span>
+            <span class="text-[13px] text-text-muted">{c.sub}</span>
+          </button>
+        {/each}
+      </div>
+    </fieldset>
+    {#each ['tries', 'ballContact'] as fieldKey (fieldKey)}
+      {@const field = meta[fieldKey]}
+      {#if field?.options}
+        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+          <legend class="flex items-center gap-2 field-label mb-2">
+            {field.label}
+            {#if field.tooltip}<Tooltip text={field.tooltip} />{/if}
+          </legend>
+          <SegmentedControl
+            options={field.options}
+            value={config[fieldKey]}
+            defaultValue={defaults[fieldKey]}
+            disabled={readonly}
+            onchange={(v: unknown) => set(fieldKey, v)}
+          />
+        </fieldset>
+      {/if}
+    {/each}
+    <div class="flex justify-between items-center">
+      <span class="flex items-center gap-2 field-label"
+        >Max strokes per hole{#if meta.maxStrokes?.tooltip}<Tooltip text={meta.maxStrokes.tooltip} />{/if}</span
+      >
+      <Stepper
+        value={num(config.maxStrokes, 6)}
+        label="strokes"
+        min={3}
+        highlight={isNonDefault('maxStrokes')}
+        disabled={readonly}
+        onchange={setMaxStrokes}
+      />
+    </div>
+    {#if config.tries !== 1}
+      <div class="flex justify-between items-center">
+        <span class="flex items-center gap-2 field-label"
+          >Shot delay{#if meta.shotDelay?.tooltip}<Tooltip text={meta.shotDelay.tooltip} />{/if}</span
+        >
+        <Stepper
+          value={num(config.shotDelay, 3)}
+          label="seconds"
+          unit={n => (n === 0 ? 'off' : 's')}
+          min={0}
+          highlight={isNonDefault('shotDelay')}
+          disabled={readonly}
+          onchange={setShotDelay}
+        />
+      </div>
+    {/if}
   </div>
 {:else}
   <div

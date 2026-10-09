@@ -51,6 +51,14 @@ describe('rulesLine', () => {
       rulesLine(game({ mode: 'atc', config: { order: 'asc', finishOn: 'bull', multiplierAdvances: false }, players: [game().players[0]] })),
     ).toBe('1–20, then Bull · Practice')
   })
+  it('names the course for Minigolf', () => {
+    expect(rulesLine(game({ mode: 'minigolf', config: { course: 'test', tries: 3, ballContact: false } }))).toBe(
+      'Test · 3 holes · 3 tries per stroke',
+    )
+    expect(rulesLine(game({ mode: 'minigolf', config: { course: 'mixed', tries: 1, ballContact: true } }))).toBe(
+      'Mixed course · 3 holes · 1 dart per stroke · ball contact',
+    )
+  })
   it('empty for an unknown mode or an unreadable config', () => {
     expect(rulesLine(game({ mode: 'soccer' }))).toBe('')
     expect(rulesLine(game({ config: {} }))).toBe('')
