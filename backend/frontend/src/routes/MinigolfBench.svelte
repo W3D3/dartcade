@@ -8,6 +8,7 @@
   import { currentUser } from '$lib/auth'
   import DartBoard from '$lib/components/DartBoard.svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import HoleEditor from '$lib/components/minigolf/HoleEditor.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
   import { playPath } from '$lib/minigolf/animate'
@@ -16,7 +17,7 @@
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { shotFromDart } from '$shared/minigolf/shot'
   import { simulateShot } from '$shared/minigolf/simulate'
-  import type { Pt } from '$shared/minigolf/types'
+  import type { Hole, Pt } from '$shared/minigolf/types'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
   $effect(() => {
@@ -26,7 +27,10 @@
   let courseId = $state(COURSES[0].id)
   let holeIdx = $state(0)
   const course = $derived(COURSES.find(c => c.id === courseId) ?? COURSES[0])
-  const hole = $derived(course.holes[Math.min(holeIdx, course.holes.length - 1)])
+  const picked = $derived(course.holes[Math.min(holeIdx, course.holes.length - 1)])
+  /** The hole as edited in the JSON editor; picking a hole drops the edit. */
+  let edited = $state<Hole | null>(null)
+  const hole = $derived(edited ?? picked)
   let physics = $state<Physics>({ ...DEFAULT_PHYSICS })
   let bench = $state<BenchState>(initBench(COURSES[0].holes[0]))
   /** Where the ball is drawn: follows the path while a shot rolls. */
@@ -48,6 +52,15 @@
   function place(at: Pt): void {
     bench = placeBall(bench, at)
     shown = bench.ball
+  }
+
+  function onHoleEdit(h: Hole): void {
+    edited = h
+  }
+
+  function pickHole(): void {
+    edited = null
+    toTee()
   }
 
   function toTee(): void {
@@ -95,7 +108,7 @@
             bind:value={courseId}
             onchange={() => {
               holeIdx = 0
-              toTee()
+              pickHole()
             }}
           >
             {#each COURSES as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
@@ -103,7 +116,7 @@
         </label>
         <label class="flex items-center gap-2 text-[15px] text-text-muted">
           Hole
-          <select class={SELECT} bind:value={holeIdx} onchange={toTee}>
+          <select class={SELECT} bind:value={holeIdx} onchange={pickHole}>
             {#each course.holes as h, i (h.id)}<option value={i}>{i + 1}. {h.name} · par {h.par}</option>{/each}
           </select>
         </label>
@@ -150,6 +163,10 @@
           <details class="w-full max-w-[520px] rounded-2xl bg-surface-panel p-4">
             <summary class="cursor-pointer font-display font-bold text-[20px] uppercase">Physics</summary>
             <div class="pt-3"><PhysicsPanel bind:physics /></div>
+          </details>
+          <details class="w-full max-w-[520px] rounded-2xl bg-surface-panel p-4">
+            <summary class="cursor-pointer font-display font-bold text-[20px] uppercase">Hole JSON</summary>
+            <div class="pt-3"><HoleEditor {hole} onChange={onHoleEdit} /></div>
           </details>
         </div>
       </div>
