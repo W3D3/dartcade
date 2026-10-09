@@ -1,8 +1,9 @@
 <script lang="ts">
-  // X01 leg by leg body (X01-Details*): the leg's summary line, the points-left chart and the
-  // chalkboard. Party: the chalkboard beside the chart on desktop. The leg number and the
+  // X01 Breakdown body for one leg (X01-Details*): the leg's summary line, the points-left chart
+  // and the chalkboard. Party: the chalkboard beside the chart on desktop. The leg number and the
   // highlighted side are picked by X01Section, which also owns the surrounding card, the
-  // title-tabs and the header row (leg tabs / highlight picker).
+  // title-tabs and the header row (leg selector / highlight picker) — X01Section renders this
+  // once per leg when "Match" is selected, each under its own "Leg N" heading.
   import type { GameDetail } from '$lib/api'
   import Chalkboard from './Chalkboard.svelte'
   import RemainingChart from './RemainingChart.svelte'

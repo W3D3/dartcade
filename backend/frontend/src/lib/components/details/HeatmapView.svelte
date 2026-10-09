@@ -6,15 +6,21 @@
   // otherwise, but the chips underneath it are always per-seat. The pick itself lives in the
   // caller (X01Section), the same way the leg and highlight picks do, so it survives this view
   // being remounted on a tab switch; `picked`/`onpick` default so this still works standalone
-  // (e.g. in a test that renders HeatmapView on its own).
+  // (e.g. in a test that renders HeatmapView on its own). `leg` is the shared leg selector on
+  // X01Section's header: null for "Match" (every leg), or one leg's number.
   import type { GameDetail } from '$lib/api'
   import Avatar from '$lib/components/Avatar.svelte'
   import HeatBoard from './HeatBoard.svelte'
-  import { groupingMm, heatSummary, inThe20, missSide, mostHit, seatDarts, trebles } from '$lib/details/heatmap'
+  import { groupingMm, heatmapLegLabel, heatSummary, inThe20, missSide, mostHit, seatDarts, trebles } from '$lib/details/heatmap'
   import { x01Sides } from '$lib/details/x01'
   import { highlightDefault } from '$lib/details/page'
 
-  let { detail, picked = null, onpick }: { detail: GameDetail; picked?: number | null; onpick?: (seat: number) => void } = $props()
+  let {
+    detail,
+    picked = null,
+    onpick,
+    leg = null,
+  }: { detail: GameDetail; picked?: number | null; onpick?: (seat: number) => void; leg?: number | null } = $props()
 
   const x01 = $derived(detail.detail.mode === 'x01' ? detail.detail : null)
   const sides = $derived(x01 ? x01Sides(detail.game, x01) : [])
@@ -28,9 +34,9 @@
 
   const selectedSeat = $derived(picked ?? highlightDefault(detail))
   const name = $derived(playerName(selectedSeat))
-  const darts = $derived(x01 ? seatDarts(x01, selectedSeat) : [])
+  const darts = $derived(x01 ? seatDarts(x01, selectedSeat, leg) : [])
 
-  const summaryFull = $derived(x01 ? heatSummary(name, x01.legs.length, darts) : '')
+  const summaryFull = $derived(x01 ? heatSummary(name, heatmapLegLabel(leg, x01.legs.length), darts) : '')
   // heatSummary joins with the name verbatim first, so the rest of the line is everything after
   // it — letting the name alone render bold without re-deriving the join here.
   const summaryRest = $derived(summaryFull.slice(name.length))

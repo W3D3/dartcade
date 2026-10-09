@@ -37,7 +37,7 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await page.waitForURL(url => url.hash.startsWith('#/history/'))
   await expect(page.getByRole('heading', { name: 'X01' })).toBeVisible()
   await expect(page.getByText('3-dart average')).toBeVisible()
-  await expect(page.getByText('Leg by leg')).toBeVisible()
+  await expect(page.getByText('Breakdown')).toBeVisible()
   await expect(page.getByRole('table', { name: /Visits in this leg/ })).toContainText('T20')
 
   await page.getByRole('tab', { name: 'Heatmap' }).click()

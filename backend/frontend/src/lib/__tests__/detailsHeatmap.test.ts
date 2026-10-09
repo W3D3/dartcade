@@ -5,6 +5,7 @@ import {
   boardLabel,
   clampToView,
   groupingMm,
+  heatmapLegLabel,
   heatSummary,
   inThe20,
   missSide,
@@ -73,6 +74,38 @@ describe('heatmap helpers', () => {
     expect(seatDarts(detail, 2)).toEqual([])
   })
 
+  it("filters a seat's darts to one leg, or keeps every leg when the leg is omitted or null", () => {
+    const hd = (s: ReturnType<typeof seg>, coords: { x: number; y: number } | null) => ({
+      index: 0,
+      segment: s,
+      coords,
+      source: 'camera' as const,
+      corrected: false,
+      thrownAt: '',
+    })
+    const v = (seat: number, darts: ReturnType<typeof hd>[]) => ({
+      visit: 0,
+      seat,
+      committedAt: '',
+      darts,
+      scored: 0,
+      remaining: 0,
+      bust: false,
+    })
+    const detail = {
+      mode: 'x01',
+      legs: [
+        { leg: 0, starter: 0, winner: 0, visits: [v(0, [hd(S20, { x: 0, y: 0.8 })])] },
+        { leg: 1, starter: 1, winner: null, visits: [v(0, [hd(T20, { x: 0, y: 0.7 })])] },
+      ],
+    } as X01Detail
+    expect(seatDarts(detail, 0, 0).map(x => x.segment.name)).toEqual(['S20'])
+    expect(seatDarts(detail, 0, 1).map(x => x.segment.name)).toEqual(['T20'])
+    expect(seatDarts(detail, 0, 2)).toEqual([])
+    expect(seatDarts(detail, 0, null).map(x => x.segment.name)).toEqual(['S20', 'T20'])
+    expect(seatDarts(detail, 0).map(x => x.segment.name)).toEqual(['S20', 'T20'])
+  })
+
   it('counts darts in the 20, misses excluded from the 20 but in the total', () => {
     expect(inThe20([d(S20), d(T20), d(D20), d(S1), d(M20)])).toEqual({ pct: 60, hits: 3, total: 5 })
     expect(inThe20([])).toEqual({ pct: null, hits: 0, total: 0 })
@@ -119,24 +152,39 @@ describe('heatmap helpers', () => {
 
   it('writes the summary line and the board label', () => {
     const darts = [d(S20, { x: 0, y: 0.8 }), d(T20), d(S5)]
-    expect(heatSummary('Christoph', 4, darts)).toBe('Christoph · All 4 legs · 3 darts · 2 entered by hand, not on the board')
-    expect(heatSummary('Christoph', 1, [d(S20, { x: 0, y: 0.8 })])).toBe('Christoph · 1 leg · 1 dart')
+    expect(heatSummary('Christoph', heatmapLegLabel(null, 4), darts)).toBe(
+      'Christoph · All 4 legs · 3 darts · 2 entered by hand, not on the board',
+    )
+    expect(heatSummary('Christoph', heatmapLegLabel(null, 1), [d(S20, { x: 0, y: 0.8 })])).toBe('Christoph · 1 leg · 1 dart')
     expect(boardLabel('Christoph', darts)).toBe('Heatmap of 1 dart position for Christoph; most hit S20, T20, S5')
     expect(boardLabel('Guest 1', [d(S20)])).toBe('No dart positions for Guest 1')
+  })
+
+  it('names the leg part of the summary: "Leg N" for one leg, "All N legs" / "1 leg" for Match', () => {
+    expect(heatmapLegLabel(0, 4)).toBe('Leg 1')
+    expect(heatmapLegLabel(3, 4)).toBe('Leg 4')
+    expect(heatmapLegLabel(null, 4)).toBe('All 4 legs')
+    expect(heatmapLegLabel(null, 1)).toBe('1 leg')
   })
 
   it('a bounce-out (camera, no coords) is not reported as entered by hand', () => {
     // M20 here stands in for a bounce-out: a camera dart (manual: false) with no coords.
     const darts = [d(S20, { x: 0, y: 0.8 }), d(M20, null, false)]
-    expect(heatSummary('Christoph', 1, darts)).toBe('Christoph · 1 leg · 2 darts')
+    expect(heatSummary('Christoph', heatmapLegLabel(null, 1), darts)).toBe('Christoph · 1 leg · 2 darts')
     // Mixed with an actual hand-entered dart, only the manual one is counted.
     const mixed = [d(S20, { x: 0, y: 0.8 }), d(M20, null, false), d(T19, null, true)]
-    expect(heatSummary('Christoph', 1, mixed)).toBe('Christoph · 1 leg · 3 darts · 1 entered by hand, not on the board')
+    expect(heatSummary('Christoph', heatmapLegLabel(null, 1), mixed)).toBe(
+      'Christoph · 1 leg · 3 darts · 1 entered by hand, not on the board',
+    )
   })
 
   it('a forfeit before any visit: no legs and no darts reads as "No darts thrown"', () => {
-    expect(heatSummary('A', 0, [])).toBe('A · No darts thrown')
+    expect(heatSummary('A', heatmapLegLabel(null, 0), [])).toBe('A · No darts thrown')
     expect(boardLabel('A', [])).toBe('No darts thrown for A')
+  })
+
+  it('a leg with no darts yet also reads as "No darts thrown", not "Leg 2 · 0 darts"', () => {
+    expect(heatSummary('A', heatmapLegLabel(1, 4), [])).toBe('A · No darts thrown')
   })
 
   it('clamps a point beyond the viewBox to its rim, direction preserved', () => {
