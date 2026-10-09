@@ -143,4 +143,25 @@ describe('simulateShot', () => {
     expect(b).toEqual(a)
     expect(dist(a.rest, a.path.at(-1)!)).toBe(0)
   })
+
+  it('knocks a ball in the way and passes on most of its speed', () => {
+    const r = simulateShot(lane, P, [200, 3000], up(0.4), [
+      { id: 2, at: [200, 2500] },
+      { id: 3, at: [50, 3500] },
+    ])
+    expect(r.others?.map(o => o.id)).toEqual([2]) // the ball off to the side didn't move
+    const knocked = r.others![0]
+    expect(knocked.rest[1]).toBeLessThan(2500 - 300)
+    expect(r.rest[1]).toBeGreaterThan(knocked.rest[1])
+    expect(knocked.path.length).toBeLessThanOrEqual(r.path.length + 1)
+  })
+
+  it('knocks a ball into the cup', () => {
+    const r = simulateShot(lane, P, [200, 900], up(700 / P.maxRoll), [{ id: 2, at: [200, 420] }])
+    expect(r.others?.[0]).toMatchObject({ id: 2, holed: true, rest: lane.cup.at })
+  })
+
+  it('lists no others when none were passed', () => {
+    expect(simulateShot(lane, P, lane.tee, up(0.3)).others).toBeUndefined()
+  })
 })
