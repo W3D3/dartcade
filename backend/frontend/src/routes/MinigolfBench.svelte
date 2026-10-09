@@ -32,6 +32,14 @@
   /** Where the ball is drawn: follows the path while a shot rolls. */
   let shown = $state<Pt>(COURSES[0].holes[0].tee)
   let placing = $state(false)
+  let debug = $state(false)
+  let lastPath = $state<Pt[] | null>(null)
+  let hover = $state<{ x: number; y: number } | null>(null)
+  const preview = $derived.by(() => {
+    if (!hover || !canShoot(bench)) return null
+    const shot = shotFromDart(hover, bench.ball, hole.cup.at, physics)
+    return shot && { from: bench.ball, ...shot, roll: shot.power * physics.maxRoll }
+  })
 
   function undo(): void {
     bench = undoShot(bench)
@@ -45,6 +53,7 @@
   function toTee(): void {
     bench = initBench(hole)
     shown = hole.tee
+    lastPath = null
   }
 
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -55,9 +64,14 @@
     const from = bench.ball
     bench = startShot(bench)
     const result = shot ? simulateShot(hole, physics, from, shot) : null
+    lastPath = result?.path ?? null
     if (result) await playPath(result.path, p => (shown = p), reducedMotion())
     bench = finishShot(bench, result)
     shown = bench.ball
+  }
+
+  function onBoardHover(coords: { x: number; y: number } | null): void {
+    hover = coords
   }
 
   function onBoardClick(hit: { coords: { x: number; y: number } }): void {
@@ -102,17 +116,33 @@
           onclick={() => (placing = !placing)}
           disabled={bench.rolling}>Place ball</button
         >
+        <button
+          type="button"
+          class="{BUTTON} {debug ? 'border-accent text-accent' : ''}"
+          aria-pressed={debug}
+          onclick={() => (debug = !debug)}
+        >
+          Debug
+        </button>
         <span class="ml-auto font-display font-bold text-[28px] uppercase" data-testid="strokes" aria-live="polite">
           {#if bench.holed}Holed in {bench.strokes}{:else}Strokes {bench.strokes}{/if}
         </span>
       </header>
       <div class="grid min-h-0 flex-grow gap-6 grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <div class="min-h-[50vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
-          <HoleView {hole} ball={shown} wallThickness={physics.wallThickness} onPlace={placing ? place : undefined} />
+          <HoleView
+            {hole}
+            ball={shown}
+            wallThickness={physics.wallThickness}
+            onPlace={placing ? place : undefined}
+            {debug}
+            {lastPath}
+            {preview}
+          />
         </div>
         <div class="flex min-h-0 flex-col items-center gap-3 overflow-y-auto">
           <div class="w-full max-w-[520px]">
-            <DartBoard {onBoardClick} />
+            <DartBoard {onBoardClick} {onBoardHover} />
           </div>
           <p class="m-0 text-[14px] text-text-muted text-center">
             Angle from the bull = direction · distance = power · bull putts at the cup · off the board is a miss

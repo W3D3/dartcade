@@ -1,7 +1,8 @@
 <!--
   A minigolf hole drawn in course space (mm, y down) in the design's look (Minigolf.dc.html):
   felt, cream rails, red bumpers, slopes with arrows along their push, the tee, the cup and flag,
-  and the ball. With `onPlace`, the ball can be dragged anywhere.
+  and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `debug` draws the cup's
+  capture radius, rail normals, slope outlines and the last shot's samples; `preview` a putt's line.
 -->
 <script lang="ts">
   import { bounds } from '$shared/minigolf/geometry'
@@ -13,13 +14,36 @@
     ball,
     wallThickness = DEFAULT_PHYSICS.wallThickness,
     onPlace,
+    debug = false,
+    lastPath = null,
+    preview = null,
   }: {
     hole: Hole
     ball: Pt
     wallThickness?: number
     /** Set to let the ball be dragged; called with each new spot in course space. */
     onPlace?: (at: Pt) => void
+    debug?: boolean
+    lastPath?: readonly Pt[] | null
+    /** The putt the pointer would make: a dashed line as long as it would roll on flat felt. */
+    preview?: { from: Pt; dir: Pt; power: number; roll: number } | null
   } = $props()
+
+  /** Each rail segment's midpoint and a short tick along its normal. */
+  const normals = $derived(
+    [{ points: hole.outline, closed: true }, ...hole.walls].flatMap(w => {
+      const n = w.points.length
+      const segs = w.closed ? n : n - 1
+      return Array.from({ length: segs }, (_, i) => {
+        const a = w.points[i]
+        const b = w.points[(i + 1) % n]
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]) || 1
+        const mid: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
+        const end: Pt = [mid[0] - ((b[1] - a[1]) / len) * 60, mid[1] + ((b[0] - a[0]) / len) * 60]
+        return { mid, end }
+      })
+    }),
+  )
 
   let svg = $state<SVGSVGElement>()
   let dragging = $state(false)
@@ -143,6 +167,48 @@
     stroke-linecap="round"
   />
   <path d="M{hole.cup.at[0]} {hole.cup.at[1] - 240} l110 34 l-110 34 z" fill="#c6f24e" stroke="#0a0b09" stroke-width="4" />
+  {#if debug}
+    <g pointer-events="none" data-testid="debug-overlay">
+      {#each hole.slopes as sl, i (i)}
+        <polygon points={pts(sl.area)} fill="none" stroke="#e9dfc4" stroke-dasharray="16 12" stroke-width="4" />
+      {/each}
+      {#each normals as n, i (i)}
+        <line x1={n.mid[0]} y1={n.mid[1]} x2={n.end[0]} y2={n.end[1]} stroke="#4ec6f2" stroke-width="6" stroke-linecap="round" />
+      {/each}
+      <circle cx={hole.cup.at[0]} cy={hole.cup.at[1]} r={hole.cup.r} fill="none" stroke="#4ec6f2" stroke-dasharray="8 6" stroke-width="4" />
+      {#if lastPath}
+        <polyline points={pts(lastPath)} fill="none" stroke="#c6f24e" stroke-opacity="0.6" stroke-width="5" />
+        {#each lastPath as p, i (i)}<circle cx={p[0]} cy={p[1]} r="5" fill="#c6f24e" />{/each}
+      {/if}
+    </g>
+  {/if}
+  {#if preview}
+    {@const end = [preview.from[0] + preview.dir[0] * preview.roll, preview.from[1] + preview.dir[1] * preview.roll]}
+    <g pointer-events="none" data-testid="shot-preview">
+      <line
+        x1={preview.from[0]}
+        y1={preview.from[1]}
+        x2={end[0]}
+        y2={end[1]}
+        stroke="#c6f24e"
+        stroke-width="8"
+        stroke-dasharray="18 12"
+        stroke-linecap="round"
+      />
+      <text
+        x={end[0] + 24}
+        y={end[1]}
+        fill="#efeee6"
+        font-size="64"
+        font-weight="700"
+        stroke="#0a0b09"
+        stroke-width="10"
+        paint-order="stroke"
+      >
+        {Math.round(preview.power * 100)}%
+      </text>
+    </g>
+  {/if}
   {#if onPlace}
     <circle
       cx={ball[0]}

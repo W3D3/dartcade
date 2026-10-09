@@ -1576,7 +1576,8 @@ The bench passes a hover handler to the dartboard. `DartBoard.svelte` has `onBoa
 add `onBoardHover?: (coords: { x: number; y: number } | null) => void`, called from a `pointermove`
 on the board svg with `toBoard(e)` and with `null` on `pointerleave`. The bench turns the hover coords
 into `shotFromDart(...)` and passes `preview` (null for a miss); `HoleView` draws a dashed lime line
-from the ball along `dir`, `power × 600` mm long, with the power as a percentage at its tip.
+from the ball along `dir`, as long as the putt would roll on flat felt (`power × maxRoll`), with the
+power as a percentage at its tip.
 
 - [ ] **Step 3: Verify and commit**
 
