@@ -6,7 +6,7 @@ import type { Page } from '@playwright/test'
  * guests are added there, and Start opens the game. A fresh test user owns no boards, so
  * everyone plays with manual entry and a solo start never asks "Start anyway?".
  */
-export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01'; setup?: (page: Page) => Promise<void>; guests?: string[] }) {
+export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01' | 'Minigolf'; setup?: (page: Page) => Promise<void>; guests?: string[] }) {
   await page.goto('/#/')
   const main = page.locator('main')
   const create = main.getByRole('button', { name: /Choose players/ })
