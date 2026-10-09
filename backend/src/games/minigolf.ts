@@ -1,13 +1,15 @@
 // Minigolf: your dart is the putter. Everyone plays the same hole, one stroke per visit; with 3
 // tries every dart of the visit replays the stroke from the same spot and takeout keeps the last.
 // Design: docs/superpowers/specs/2026-10-10-minigolf-game-design.md
-import type { BoardEvent, ConfigFieldMeta, GameModule, Player, SeatResult } from '../session/types.js'
+import type { BoardEvent, ConfigFieldMeta, GameModule, MinigolfDetail, Player, SeatResult } from '../session/types.js'
+import type { MinigolfView } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
 import { COURSES, getCourse, mixedHoles } from '../shared/minigolf/courses/index.js'
 import { DEFAULT_PHYSICS, type Physics } from '../shared/minigolf/physics.js'
 import { shotFromDart } from '../shared/minigolf/shot.js'
 import type { Hole, OtherBall, Pt, ShotResult } from '../shared/minigolf/types.js'
 import { cachedShot } from './minigolfShots.js'
+import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
 
 export type MinigolfConfig = {
@@ -48,42 +50,6 @@ export type MinigolfState = {
   playerCount: number
 }
 
-export type MinigolfViewData = {
-  winner: number | null
-  finished: boolean
-  currentPlayer: number
-  visitLocked: boolean
-  config: MinigolfConfig
-  courseName: string
-  holeIdx: number
-  holeCount: number
-  hole: Hole
-  pars: number[]
-  holeNames: string[]
-  order: number[]
-  balls: { at: Pt; strokes: number; status: BallStatus }[]
-  scores: (number | null)[][]
-  totals: number[]
-  toPar: number[]
-  tries: {
-    label: string
-    coords: { x: number; y: number } | null
-    power: number | null
-    holed: boolean
-    missed: boolean
-    path: Pt[]
-    others: { seat: number; path: Pt[]; holed: boolean }[]
-  }[]
-  lastHole: { index: number; scores: number[]; paths: Pt[][][] } | null
-}
-
-export type MinigolfDetailData = {
-  mode: 'minigolf'
-  course: string
-  holes: { name: string; par: number }[]
-  scores: (number | null)[][]
-}
-
 const configMeta: Record<string, ConfigFieldMeta> = {
   course: {
     label: 'Course',
@@ -112,12 +78,38 @@ const configMeta: Record<string, ConfigFieldMeta> = {
   },
 }
 
-const roundPt = (p: Pt): Pt => [Math.round(p[0]), Math.round(p[1])]
-const roundPath = (path: readonly Pt[]): Pt[] => path.map(roundPt)
+// The view carries points as plain [x, y] arrays (the snapshot schema's MinigolfPt)
+type ViewPt = number[]
+const pt = (p: Pt): ViewPt => [p[0], p[1]]
+const roundPt = (p: Pt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
+const roundPath = (path: readonly Pt[]): ViewPt[] => path.map(roundPt)
+
+function holeView(h: Hole): MinigolfView['hole'] {
+  return {
+    id: h.id,
+    name: h.name,
+    par: h.par,
+    outline: h.outline.map(pt),
+    walls: h.walls.map(w => ({ ...w, points: w.points.map(pt) })),
+    bumpers: h.bumpers.map(b => ({ ...b, at: pt(b.at) })),
+    slopes: h.slopes.map(sl =>
+      'force' in sl
+        ? { area: sl.area.map(pt), force: pt(sl.force) }
+        : { area: sl.area.map(pt), radial: { center: pt(sl.radial.center), strength: sl.radial.strength } },
+    ),
+    tee: pt(h.tee),
+    cup: { at: pt(h.cup.at), r: h.cup.r },
+  }
+}
 
 /** A hole's score for a seat: its strokes if it's in the cup, else one more than the maximum. */
 function holeScore(b: BallState, cfg: MinigolfConfig): number {
   return b.status === 'holed' ? b.strokes : cfg.maxStrokes + 1
+}
+
+/** Strokes on the holes a seat finished. */
+function playedStrokes(s: MinigolfState, seat: number): number {
+  return s.scores.reduce((sum, row) => sum + (row[seat] ?? 0), 0)
 }
 
 /** Strokes so far: written scores, plus the maximum + 1 for every hole not played (forfeits). */
@@ -206,11 +198,12 @@ function winnerOf(s: MinigolfState): number | null {
   return t.indexOf(Math.min(...t))
 }
 
-export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfViewData, 'minigolf', MinigolfDetailData> = {
+export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfView, 'minigolf', MinigolfDetail> = {
   id: 'minigolf',
   version: 1,
   defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, shotDelay: 3 },
   configMeta,
+  positionalDarts: true,
 
   validate(cfg) {
     if (cfg.course !== 'mixed' && !getCourse(cfg.course)) return 'Unknown course'
@@ -259,7 +252,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
 
   onUserAction: s => ({ state: s }),
 
-  view(s: MinigolfState): MinigolfViewData {
+  view(s: MinigolfState): MinigolfView {
     return {
       winner: winnerOf(s),
       finished: s.finished,
@@ -269,7 +262,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       courseName: s.courseName,
       holeIdx: s.holeIdx,
       holeCount: s.holes.length,
-      hole: s.holes[s.holeIdx],
+      hole: holeView(s.holes[s.holeIdx]),
       pars: s.holes.map(h => h.par),
       holeNames: s.holes.map(h => h.name),
       order: s.order,
@@ -308,12 +301,34 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
     })
   },
 
-  detail(_visits, final): MinigolfDetailData {
+  detail(_visits, final): MinigolfDetail {
     return {
       mode: 'minigolf',
       course: final.courseName,
       holes: final.holes.map(h => ({ name: h.name, par: h.par })),
       scores: final.scores,
+    }
+  },
+
+  matchStats(_visits, final) {
+    const results = minigolfModule.summarize(final, { totalDarts: [], totalVisits: [] })
+    return {
+      rows: [
+        row('strokes', 'Strokes', 'integer', 'lower', { compact: true }),
+        row('toPar', 'To par', 'integer', 'lower', { compact: true }),
+        row('holesInOne', 'Holes in one', 'integer', 'higher'),
+        row('avgStrokes', 'Strokes per hole', 'decimal', 'lower'),
+      ],
+      seats: results
+        .map((r, index) =>
+          values({
+            strokes: r.stats.strokes,
+            toPar: r.stats.toPar,
+            holesInOne: r.stats.holesInOne,
+            avgStrokes: r.stats.holesPlayed > 0 ? playedStrokes(final, index) / r.stats.holesPlayed : undefined,
+          }),
+        )
+        .map((v, index) => ({ index, values: v })),
     }
   },
 }

@@ -10,7 +10,7 @@ import type {
   BoardStatusData,
 } from '../schema/types.js'
 import type { UserAction } from '../schema/game-ws.js'
-import type { AtcView, X01ModuleView } from './views.js'
+import type { AtcView, MinigolfView, X01ModuleView } from './views.js'
 import type { Rng } from './rng.js'
 import type { components } from '../schema/api.js'
 
@@ -85,6 +85,7 @@ export type UndoableVisit = { committedState: unknown; openVisitEvents: BoardEve
 export type DartMeta = { source: DartSource; corrected: boolean; thrownAt: Date }
 export type X01Detail = components['schemas']['X01Detail']
 export type AtcDetail = components['schemas']['AtcDetail']
+export type MinigolfDetail = components['schemas']['MinigolfDetail']
 export type MatchStats = components['schemas']['MatchStats']
 export type StatRow = components['schemas']['StatRow']
 export type VisitPhase = 'game' | 'bulloff'
@@ -136,6 +137,9 @@ export interface GameModule<
   teams?: true
   /** The team index of every seat (a game with `teams`; in singles the seat itself). */
   teamsOf?(s: S): number[]
+  /** Darts count by where they landed (Minigolf): manual darts and corrections without a spot
+   *  on the board are refused. */
+  positionalDarts?: true
   /** Reject a config that can't be played with these players; returns the reason. */
   validate?(cfg: Cfg, players: Player[]): string | null
   /** `rng` drives any random setup; the engine passes one seeded per game. */
@@ -177,6 +181,7 @@ export interface GameModule<
 export type AnyGameModule =
   | GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail>
   | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
+  | GameModule<unknown, GameConfig, MinigolfView, 'minigolf', MinigolfDetail>
 
 /** A game's config as the API and the database carry it (a JSON object). */
 export type GameConfig = Record<string, unknown>
