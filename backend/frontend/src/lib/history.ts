@@ -1,7 +1,8 @@
 // Formatting for the History page: one finished game per row, plus the stat tiles.
 import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
-import { atcRules, x01Rules } from './gameViews/meta.js'
+import { atcRules, minigolfRules, x01Rules } from './gameViews/meta.js'
+import { COURSES } from '$shared/minigolf/courses/index'
 import { dayMonth, ordinal, startOfDay } from './fmt.js'
 
 const DAY_MS = 86_400_000
@@ -12,6 +13,20 @@ const AtcConfigSchema = z.object({
   finishOn: z.enum(['twenty', 'single_bull', 'bull']),
   multiplierAdvances: z.boolean(),
 })
+const MinigolfConfigSchema = z.object({ course: z.string(), tries: z.number(), ballContact: z.boolean() })
+
+/** A minigolf config's course: its name and hole count ("Mixed course": 9 of all holes). */
+export function minigolfCourse(id: string): { name: string; holes: number } {
+  const course = COURSES.find(c => c.id === id)
+  if (course) return { name: course.name, holes: course.holes.length }
+  return {
+    name: 'Mixed course',
+    holes: Math.min(
+      9,
+      COURSES.reduce((n, c) => n + c.holes.length, 0),
+    ),
+  }
+}
 
 /** "Today" / "Yesterday" / "24 Sep", and the time, in the viewer's time zone. */
 export function formatWhen(iso: string, now: Date): { day: string; time: string } {
@@ -32,6 +47,12 @@ export function rulesLine(game: GameSummary): string {
   if (game.mode === 'atc') {
     const c = AtcConfigSchema.safeParse(game.config)
     return c.success ? atcRules(c.data, n) : ''
+  }
+  if (game.mode === 'minigolf') {
+    const c = MinigolfConfigSchema.safeParse(game.config)
+    if (!c.success) return ''
+    const course = minigolfCourse(c.data.course)
+    return minigolfRules(c.data, course.name, course.holes, n)
   }
   return ''
 }
@@ -71,6 +92,10 @@ export function historyStat(game: GameSummary): { value: string; label: string }
   if (game.mode === 'atc') {
     const darts = stat(me, 'dartsThrown')
     return darts === undefined ? null : { value: String(darts), label: 'darts to finish' }
+  }
+  if (game.mode === 'minigolf') {
+    const strokes = stat(me, 'strokes')
+    return strokes === undefined ? null : { value: String(strokes), label: 'strokes' }
   }
   return null
 }
@@ -131,6 +156,15 @@ export function statTiles(s: GameStats, mode: string | null, title: (mode: strin
       ...head,
       plain('Best finish', finish ? String(finish.min) : NONE, finish ? 'darts' : null),
       plain('Average finish', finish ? String(Math.round(finish.avg)) : NONE, finish ? 'darts' : null),
+    ]
+  }
+  if (mode === 'minigolf') {
+    const strokes = modeStat(s, 'minigolf', 'strokes')
+    const aces = modeStat(s, 'minigolf', 'holesInOne')
+    return [
+      ...head,
+      plain('Best round', strokes ? String(strokes.min) : NONE, strokes ? 'strokes' : null),
+      plain('Holes in one', aces ? String(aces.sum) : NONE),
     ]
   }
   return head

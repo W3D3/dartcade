@@ -32,14 +32,18 @@ const base = {
 describe('gameState', () => {
   it('narrows an X01 snapshot', () => {
     const game = { scores: [501] } as any
-    expect(gameState({ ...base, gameId: 'x01', game })).toEqual({ x01: game, atc: null })
+    expect(gameState({ ...base, gameId: 'x01', game })).toEqual({ x01: game, atc: null, minigolf: null })
   })
   it('narrows an ATC snapshot', () => {
     const game = { targets: [1] } as any
-    expect(gameState({ ...base, gameId: 'atc', game })).toEqual({ x01: null, atc: game })
+    expect(gameState({ ...base, gameId: 'atc', game })).toEqual({ x01: null, atc: game, minigolf: null })
+  })
+  it('narrows a Minigolf snapshot', () => {
+    const game = { holeIdx: 0 } as any
+    expect(gameState({ ...base, gameId: 'minigolf', game })).toEqual({ x01: null, atc: null, minigolf: game })
   })
   it('unknown game ids give null', () => {
-    expect(gameState({ ...base, gameId: 'soccer', game: {} } as any)).toEqual({ x01: null, atc: null })
-    expect(gameState(null)).toEqual({ x01: null, atc: null })
+    expect(gameState({ ...base, gameId: 'soccer', game: {} } as any)).toEqual({ x01: null, atc: null, minigolf: null })
+    expect(gameState(null)).toEqual({ x01: null, atc: null, minigolf: null })
   })
 })
