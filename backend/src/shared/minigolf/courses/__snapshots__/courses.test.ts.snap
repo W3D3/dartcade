@@ -1,6 +1,6 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`courses > test/dogleg golden shots 1`] = `
+exports[`courses > test/test-dogleg golden shots 1`] = `
 [
   {
     "holed": false,
@@ -45,7 +45,7 @@ exports[`courses > test/dogleg golden shots 1`] = `
 ]
 `;
 
-exports[`courses > test/straight golden shots 1`] = `
+exports[`courses > test/test-straight golden shots 1`] = `
 [
   {
     "holed": false,
@@ -90,7 +90,7 @@ exports[`courses > test/straight golden shots 1`] = `
 ]
 `;
 
-exports[`courses > test/summit golden shots 1`] = `
+exports[`courses > test/test-summit golden shots 1`] = `
 [
   {
     "holed": false,
