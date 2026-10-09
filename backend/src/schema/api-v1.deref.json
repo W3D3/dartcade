@@ -5683,7 +5683,8 @@
                     "email",
                     "nameNeedsChange",
                     "suggestedName",
-                    "invisible"
+                    "invisible",
+                    "isAdmin"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -5709,6 +5710,10 @@
                     "invisible": {
                       "type": "boolean",
                       "description": "Friends see you as offline"
+                    },
+                    "isAdmin": {
+                      "type": "boolean",
+                      "description": "May open admin pages (the minigolf test bench)"
                     }
                   }
                 }
@@ -5875,7 +5880,8 @@
                     "email",
                     "nameNeedsChange",
                     "suggestedName",
-                    "invisible"
+                    "invisible",
+                    "isAdmin"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -5901,6 +5907,10 @@
                     "invisible": {
                       "type": "boolean",
                       "description": "Friends see you as offline"
+                    },
+                    "isAdmin": {
+                      "type": "boolean",
+                      "description": "May open admin pages (the minigolf test bench)"
                     }
                   }
                 }
@@ -17222,7 +17232,8 @@
           "email",
           "nameNeedsChange",
           "suggestedName",
-          "invisible"
+          "invisible",
+          "isAdmin"
         ],
         "additionalProperties": false,
         "properties": {
@@ -17248,6 +17259,10 @@
           "invisible": {
             "type": "boolean",
             "description": "Friends see you as offline"
+          },
+          "isAdmin": {
+            "type": "boolean",
+            "description": "May open admin pages (the minigolf test bench)"
           }
         }
       },

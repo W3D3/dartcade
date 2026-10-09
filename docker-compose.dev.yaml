@@ -29,6 +29,7 @@ services:
     environment:
       DATABASE_URL: postgres://dartgames:dev@postgres:5432/dartgames
       NODE_ENV: development
+      ADMIN_EMAILS: admin@dartcade.local
       PORT: '3000'
       BETTER_AUTH_URL: http://localhost:3000
       # Extra origins (e.g. this machine's tailnet address) come from .env
