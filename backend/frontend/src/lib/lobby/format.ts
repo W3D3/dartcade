@@ -1,10 +1,11 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
 import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
-import { x01Rules, type Mode } from '../gameViews/meta.js'
+import { minigolfRules, x01Rules, type Mode } from '../gameViews/meta.js'
+import { minigolfCourse } from '../history.js'
 import { teamSizesLabel } from '../teams.js'
 import { dayMonth, pad2, startOfDay } from '../fmt.js'
 
-const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock' }
+const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock', minigolf: 'Minigolf' }
 
 /** The mode's name ("X01", "Around the Clock"); the id itself for a mode we don't know. */
 export function gameName(gameId: string): string {
@@ -62,6 +63,10 @@ function rulesLine(game: NextGame | null, defaults: Record<string, unknown>): st
     return bullOff ? `${rules} · ${bullOff}` : rules
   }
   if (game.gameId === 'atc') return [ATC_ORDER[str(c.order)], ATC_FINISH[str(c.finishOn)]].filter(Boolean).join(' · ')
+  if (game.gameId === 'minigolf') {
+    const course = minigolfCourse(str(c.course))
+    return minigolfRules({ tries: int(c.tries) ?? 3, ballContact: c.ballContact === true }, course.name, course.holes, 2)
+  }
   return ''
 }
 

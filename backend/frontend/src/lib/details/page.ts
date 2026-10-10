@@ -80,6 +80,10 @@ export function headline(d: GameDetail, sides: DetailSide[]): { big: string; cap
     const winner = sides.find(s => s.placement === 1) ?? sides[0]
     return { big: '', caption: atcResult(winner.values) }
   }
+  if (d.game.mode === 'minigolf' && d.detail.mode === 'minigolf') {
+    const strokes = sides.map(s => (Object.hasOwn(s.values, 'strokes') ? s.values.strokes : 0))
+    return { big: strokes.join('–'), caption: `Strokes · ${d.detail.holes.length} holes on ${d.detail.course}` }
+  }
   return { big: '', caption: '' }
 }
 

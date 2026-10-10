@@ -40,6 +40,7 @@ describe('lobby text', () => {
   })
 
   it('sums up the next game', () => {
+    expect(nextGameSummary({ gameId: 'minigolf', config: { course: 'test', tries: 3 } })).toBe('Test · 3 holes · 3 tries per stroke')
     expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 2 } })).toBe(
       '501 · Double out · First to 2 legs',
     )

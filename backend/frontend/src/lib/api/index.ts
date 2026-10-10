@@ -21,7 +21,7 @@ export type VoicePackSummary = Schemas['VoicePackSummary']
 export type VoicePackImport = Schemas['VoicePackImport']
 export type VoicePackList = Schemas['VoicePackList']
 
-export type { Snapshot, UserAction, Segment, BullOffView, X01Game, AtcGame } from './game-ws'
+export type { Snapshot, UserAction, Segment, BullOffView, X01Game, AtcGame, MinigolfGame, MinigolfHole } from './game-ws'
 export { WsCloseCode } from './game-ws'
 export { api, createApi } from './client'
 export { runBoardAction, type BoardAction } from './boardActions'

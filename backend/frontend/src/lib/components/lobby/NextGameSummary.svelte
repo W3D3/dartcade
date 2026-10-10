@@ -18,7 +18,13 @@
     return [a.length, b.length]
   })
   const big = $derived(
-    game?.gameId === 'x01' && typeof config.startScore === 'number' ? String(config.startScore) : game ? game.gameId.toUpperCase() : '—',
+    game?.gameId === 'x01' && typeof config.startScore === 'number'
+      ? String(config.startScore)
+      : game?.gameId === 'minigolf'
+        ? 'Par 3'
+        : game
+          ? game.gameId.toUpperCase()
+          : '—',
   )
 </script>
 

@@ -7,12 +7,19 @@ export type TeamId = 'A' | 'B'
  */
 export type SessionStatus = 'active' | 'finished' | 'aborted'
 /**
+ * A point in course space, [x, y]: millimetres, x right, y down.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MinigolfPt".
+ */
+export type MinigolfPt = number[]
+/**
  * Full session state, pushed after every change.
  *
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "Snapshot".
  */
-export type Snapshot = X01Snapshot | AtcSnapshot
+export type Snapshot = X01Snapshot | AtcSnapshot | MinigolfSnapshot
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "UserAction".
@@ -377,6 +384,166 @@ export interface AtcSnapshot {
   lobbyName: string | null
   players: Player[]
   game: AtcGame
+  /**
+   * Status of the board of the seat that's up.
+   */
+  bmStatus: BmStatus | null
+  status: SessionStatus
+  /**
+   * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
+   */
+  finishPending: boolean
+  /**
+   * No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it).
+   */
+  canUndoVisit: boolean
+  /**
+   * The host: starts the bull off, aborts the game.
+   */
+  ownerUserId: string
+  /**
+   * Same order as players.
+   */
+  seats: SeatInfo[]
+  /**
+   * Seats the viewer controls.
+   */
+  mySeats: number[]
+}
+/**
+ * A hole's geometry (see backend/src/shared/minigolf/types.ts).
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MinigolfHole".
+ */
+export interface MinigolfHole {
+  id: string
+  name: string
+  par: number
+  outline: MinigolfPt[]
+  walls: {
+    points: MinigolfPt[]
+    closed?: boolean
+    restitution?: number
+  }[]
+  bumpers: {
+    at: MinigolfPt
+    r: number
+    restitution?: number
+    kick?: number
+  }[]
+  slopes: (
+    | {
+        area: MinigolfPt[]
+        force: MinigolfPt
+      }
+    | {
+        area: MinigolfPt[]
+        radial: {
+          center: MinigolfPt
+          strength: number
+        }
+      }
+  )[]
+  tee: MinigolfPt
+  cup: {
+    at: MinigolfPt
+    r: number
+  }
+}
+/**
+ * Minigolf view plus the engine's per-session fields.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MinigolfGame".
+ */
+export interface MinigolfGame {
+  winner: number | null
+  finished: boolean
+  currentPlayer: number
+  /**
+   * No more darts this visit (all tries thrown, or the game is over).
+   */
+  visitLocked: boolean
+  config: {
+    course: string
+    tries: 1 | 3
+    maxStrokes: number
+    ballContact: boolean
+    shotDelay: number
+  }
+  courseName: string
+  holeIdx: number
+  holeCount: number
+  hole: MinigolfHole
+  pars: number[]
+  holeNames: string[]
+  /**
+   * Seats in turn order on this hole.
+   */
+  order: number[]
+  /**
+   * Per seat, this hole. waiting: not putted yet (in hand); done: max strokes reached.
+   */
+  balls: {
+    at: MinigolfPt
+    strokes: number
+    status: 'waiting' | 'playing' | 'holed' | 'done'
+  }[]
+  /**
+   * Strokes per hole, then per seat; null until the hole is over.
+   */
+  scores: (number | null)[][]
+  totals: number[]
+  toPar: number[]
+  /**
+   * The open visit's tries; the last one counts at takeout.
+   */
+  tries: {
+    label: string
+    coords: Coords | null
+    power: number | null
+    holed: boolean
+    missed: boolean
+    path: MinigolfPt[]
+    others: {
+      seat: number
+      path: MinigolfPt[]
+      holed: boolean
+    }[]
+  }[]
+  /**
+   * The hole just finished: scores and every stroke's path per seat, for the scorecard.
+   */
+  lastHole: {
+    index: number
+    scores: number[]
+    paths: MinigolfPt[][][]
+    hole: MinigolfHole
+  } | null
+  currentVisitDarts: Dart[]
+  totalDarts: number[]
+  totalVisits: number[]
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MinigolfSnapshot".
+ */
+export interface MinigolfSnapshot {
+  type: 'snapshot'
+  sessionId: string
+  gameId: 'minigolf'
+  boardId: string | null
+  /**
+   * The lobby the game was started from; null for a local game.
+   */
+  lobbyId: string | null
+  /**
+   * The lobby's name, for the match header; null for a local game.
+   */
+  lobbyName: string | null
+  players: Player[]
+  game: MinigolfGame
   /**
    * Status of the board of the seat that's up.
    */
