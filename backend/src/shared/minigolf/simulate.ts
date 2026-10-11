@@ -92,7 +92,8 @@ function roll(b: Rolling, hole: Hole, physics: Physics): boolean {
   let speed = Math.sqrt(vx * vx + vy * vy)
 
   const dc = Math.sqrt((pos[0] - hole.cup.at[0]) ** 2 + (pos[1] - hole.cup.at[1]) ** 2)
-  if (dc < hole.cup.r && speed < physics.captureSpeed) {
+  // A ball over the middle of the cup drops at up to twice the speed of one clipping its rim
+  if (dc < hole.cup.r && speed < physics.captureSpeed * (2 - dc / hole.cup.r)) {
     b.holed = true
     b.body.space = null
     return false

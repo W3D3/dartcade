@@ -61,7 +61,7 @@ exports[`courses > test/test-straight golden shots 1`] = `
       250,
       300,
     ],
-    "samples": 80,
+    "samples": 59,
   },
   {
     "holed": false,
