@@ -22,6 +22,8 @@ export interface Physics {
   maxTime: number
   /** Rails and walls are this thick, mm. */
   wallThickness: number
+  /** Aim assist: a putt within this many degrees of a clear line to the cup is pulled onto it. */
+  assistAngle: number
 }
 
 export const DEFAULT_PHYSICS: Physics = {
@@ -36,4 +38,5 @@ export const DEFAULT_PHYSICS: Physics = {
   step: 1 / 240,
   maxTime: 20,
   wallThickness: 20,
+  assistAngle: 10,
 }

@@ -62,10 +62,19 @@ describe('chosenGame', () => {
   const games = [{ id: 'atc' }, { id: 'x01' }, { id: 'minigolf' }]
 
   it("keeps Minigolf's own fields, and only those", () => {
-    const config = { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, shotDelay: 2, startScore: 501 }
+    const config = {
+      course: 'test',
+      tries: 1,
+      maxStrokes: 5,
+      ballContact: true,
+      shotDelay: 2,
+      aimAssist: false,
+      shotPreview: true,
+      startScore: 501,
+    }
     expect(chosenGame(games, 'minigolf', config)).toEqual({
       gameId: 'minigolf',
-      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, shotDelay: 2 },
+      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, shotDelay: 2, aimAssist: false, shotPreview: true },
     })
   })
 

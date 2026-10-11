@@ -20,6 +20,10 @@ export type MinigolfConfig = {
   ballContact: boolean
   /** Seconds the match screen waits for another dart before the ball rolls (presentation only). */
   shotDelay: number
+  /** A putt close to a clear line to the cup is pulled onto it (see shared/minigolf/shot.ts). */
+  aimAssist: boolean
+  /** Show where a try goes while darts are left to replace it; off: only once the stroke is kept. */
+  shotPreview: boolean
 }
 
 /** `waiting`: not putted yet on this hole (the ball is in hand, not on the felt). */
@@ -46,6 +50,8 @@ export type MinigolfState = {
   visitStart: Pt[] | null
   tries: Try[]
   lastHole: { index: number; scores: number[]; paths: Pt[][][] } | null
+  /** The stroke kept at the last takeout, for the match screen to roll when tries were hidden. */
+  lastStroke: { hole: number; seat: number; stroke: number; result: ShotResult | null } | null
   finished: boolean
   playerCount: number
 }
@@ -67,6 +73,22 @@ const configMeta: Record<string, ConfigFieldMeta> = {
   ballContact: {
     label: 'Ball contact',
     tooltip: 'Balls can knock each other; a ball knocked into the cup counts.',
+    options: [
+      { value: false, label: 'Off' },
+      { value: true, label: 'On' },
+    ],
+  },
+  aimAssist: {
+    label: 'Aim assist',
+    tooltip: 'A putt close to a clear line to the cup is pulled onto it.',
+    options: [
+      { value: true, label: 'On' },
+      { value: false, label: 'Off' },
+    ],
+  },
+  shotPreview: {
+    label: 'Shot preview',
+    tooltip: 'Show where each try goes while you still have darts to replace it. Off: the ball rolls once you pull the darts.',
     options: [
       { value: false, label: 'Off' },
       { value: true, label: 'On' },
@@ -138,7 +160,7 @@ function playTry(s: MinigolfState, data: Extract<BoardEvent, { kind: 'dart.detec
   const hole = s.holes[s.holeIdx]
   const ball = start[s.current]
   const coords = data.dart.coords ?? null
-  const shot = shotFromDart(coords, ball, hole.cup.at, s.physics)
+  const shot = shotFromDart(coords, ball, hole.cup.at, s.physics, s.cfg.aimAssist ? hole : null)
   const others: OtherBall[] = s.cfg.ballContact
     ? s.balls.flatMap((b, seat) => (seat !== s.current && b.status === 'playing' ? [{ id: seat, at: start[seat] }] : []))
     : []
@@ -178,7 +200,8 @@ function commitStroke(s: MinigolfState): MinigolfState {
     if (!moved) return b
     return { ...b, at: moved.rest, status: moved.holed ? 'holed' : b.status }
   })
-  const next = { ...s, balls, tries: [], visitStart: null }
+  const lastStroke = { hole: s.holeIdx, seat: s.current, stroke: balls[s.current].strokes, result }
+  const next = { ...s, balls, tries: [], visitStart: null, lastStroke }
   const k = next.order.indexOf(s.current)
   for (let i = 1; i <= next.order.length; i++) {
     const seat = next.order[(k + i) % next.order.length]
@@ -191,6 +214,11 @@ function locked(s: MinigolfState): boolean {
   return s.finished || s.tries.length >= s.cfg.tries
 }
 
+/** Without shot preview, tries stay hidden while darts are left to replace them. */
+function hidden(s: MinigolfState): boolean {
+  return !s.cfg.shotPreview && !locked(s)
+}
+
 /** The winner once the game is over: the lowest total (the lower seat on a tie). */
 function winnerOf(s: MinigolfState): number | null {
   if (!s.finished) return null
@@ -201,7 +229,7 @@ function winnerOf(s: MinigolfState): number | null {
 export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfView, 'minigolf', MinigolfDetail> = {
   id: 'minigolf',
   version: 1,
-  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, shotDelay: 3 },
+  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, shotDelay: 3, aimAssist: true, shotPreview: false },
   configMeta,
   positionalDarts: true,
 
@@ -211,7 +239,9 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
     return null
   },
 
-  init(cfg: MinigolfConfig, players: Player[], rng: Rng = Math.random): MinigolfState {
+  init(saved: MinigolfConfig, players: Player[], rng: Rng = Math.random): MinigolfState {
+    // A config saved before an option existed plays with its default
+    const cfg = { ...minigolfModule.defaultConfig, ...saved }
     const course = getCourse(cfg.course)
     const holes = course ? course.holes : mixedHoles(rng)
     const order = players.map((_, i) => i)
@@ -228,6 +258,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       visitStart: null,
       tries: [],
       lastHole: null,
+      lastStroke: null,
       finished: false,
       playerCount: players.length,
     }
@@ -270,15 +301,27 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       scores: s.scores,
       totals: totals(s),
       toPar: toPar(s),
-      tries: s.tries.map(t => ({
-        label: t.label,
-        coords: t.coords,
-        power: t.power,
-        holed: t.result?.holed ?? false,
-        missed: t.result === null,
-        path: t.result ? roundPath(t.result.path) : [],
-        others: (t.result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
-      })),
+      shotHidden: hidden(s),
+      // Hidden tries keep only what the board shows anyway: the dart and its power
+      tries: s.tries.map(t => {
+        const result = hidden(s) ? null : t.result
+        return {
+          label: t.label,
+          coords: t.coords,
+          power: t.power,
+          holed: result?.holed ?? false,
+          missed: t.result === null,
+          path: result ? roundPath(result.path) : [],
+          others: (result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
+        }
+      }),
+      lastStroke: s.lastStroke && {
+        hole: s.lastStroke.hole,
+        seat: s.lastStroke.seat,
+        stroke: s.lastStroke.stroke,
+        path: s.lastStroke.result ? roundPath(s.lastStroke.result.path) : [],
+        others: (s.lastStroke.result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
+      },
       lastHole: s.lastHole && {
         ...s.lastHole,
         hole: holeView(s.holes[s.lastHole.index]),

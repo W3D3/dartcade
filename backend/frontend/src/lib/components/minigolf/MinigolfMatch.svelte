@@ -12,7 +12,7 @@
   import ScorecardOverlay from '$lib/components/minigolf/ScorecardOverlay.svelte'
   import { holeJustFinished } from '$lib/minigolf/scorecard'
   import { playFrames } from '$lib/minigolf/animate'
-  import { latestShot, otherBalls, ownBall, rows, toHole, trySlots } from '$lib/minigolf/match'
+  import { otherBalls, ownBall, pathSig, rollFor, rows, toHole, trySlots } from '$lib/minigolf/match'
   import type { Pt } from '$shared/minigolf/types'
 
   let {
@@ -42,30 +42,35 @@
 
   const playerRows = $derived(rows(game, players))
   const slots = $derived(trySlots(game))
-  const shot = $derived(latestShot(game))
+  const roll = $derived(rollFor(game))
   const current = $derived(game.balls[game.currentPlayer])
 
-  // Where the balls are drawn: at rest from the snapshot, or along the latest try while it rolls
+  // Where the balls are drawn: at rest from the snapshot, or along the roll while it plays
   let frame = $state<number | null>(null)
-  // Only a new try (or a correction of the latest) restarts the animation: other snapshot
-  // changes must not cancel one that's rolling
-  const shotKey = $derived(shot?.key ?? null)
+  let rolled = ''
+  // Only a new roll restarts the animation: other snapshot changes must not cancel one in play
+  const rollKey = $derived(roll?.key ?? null)
   $effect(() => {
-    if (shotKey === null) {
+    if (rollKey === null) {
       frame = null
       return
     }
-    const s = untrack(() => shot)
-    if (!s) return
+    const r = untrack(() => roll)
+    if (!r) return
+    // A kept stroke that already rolled as its last try stays put
+    if (r.kept && pathSig(r.own) === rolled) {
+      frame = null
+      return
+    }
+    rolled = pathSig(r.own)
     // The ball waits on its spot until no newer dart lands for the shot delay
     frame = 0
-    const frames = Math.max(s.own.length, ...s.others.map(o => o.path.length))
-    const delay = untrack(() => (game.config.tries === 1 ? 0 : game.config.shotDelay * 1000))
+    const frames = Math.max(r.own.length, ...r.others.map(o => o.path.length))
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let stop = () => {}
     const timer = setTimeout(() => {
       stop = playFrames(frames, i => (frame = i), reduced)
-    }, delay)
+    }, r.delayMs)
     return () => {
       clearTimeout(timer)
       stop()
@@ -86,13 +91,23 @@
   })
 
   const at = (path: Pt[], i: number): Pt => path[Math.min(i, path.length - 1)]
-  const ball = $derived(shot && frame !== null ? at(shot.own, frame) : ownBall(game))
-  const others = $derived(
-    otherBalls(game, players).map(o => {
-      const moved = shot && frame !== null ? shot.others.find(m => m.seat === o.seat) : undefined
-      return moved ? { ...o, at: at(moved.path, frame ?? 0) } : o
-    }),
-  )
+  /** A seat's ball while the roll plays; undefined when the roll doesn't move it. */
+  function rolling(seat: number): Pt | undefined {
+    if (!roll || frame === null) return undefined
+    if (seat === roll.seat) return at(roll.own, frame)
+    const moved = roll.others.find(m => m.seat === seat)
+    return moved && at(moved.path, frame)
+  }
+  const ball = $derived(rolling(game.currentPlayer) ?? ownBall(game))
+  const others = $derived.by(() => {
+    const resting = otherBalls(game, players).map(o => ({ ...o, at: rolling(o.seat) ?? o.at }))
+    // The ball of a kept stroke rolls on even though the next player is up (and it may be in the cup by now)
+    const seat = roll?.seat
+    if (seat === undefined || seat === game.currentPlayer || resting.some(o => o.seat === seat)) return resting
+    const at_ = rolling(seat)
+    const label = (players[seat]?.name ?? '?').slice(0, 1).toUpperCase()
+    return at_ && frame !== null && frame < (roll?.own.length ?? 0) - 1 ? [...resting, { seat, at: at_, label }] : resting
+  })
 </script>
 
 <main

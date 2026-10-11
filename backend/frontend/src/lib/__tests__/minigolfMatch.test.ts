@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { MinigolfGame } from '$lib/api'
-import { fmtToPar, latestShot, otherBalls, ownBall, rows, trySlots } from '$lib/minigolf/match'
+import { fmtToPar, otherBalls, ownBall, rollFor, rows, trySlots } from '$lib/minigolf/match'
 
 const hole = {
   id: 'h',
@@ -26,7 +26,7 @@ function game(over: Partial<MinigolfGame> = {}): MinigolfGame {
     finished: false,
     currentPlayer: 1,
     visitLocked: false,
-    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, shotDelay: 3 },
+    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, shotDelay: 3, aimAssist: true, shotPreview: true },
     courseName: 'Test',
     holeIdx: 1,
     holeCount: 3,
@@ -47,7 +47,9 @@ function game(over: Partial<MinigolfGame> = {}): MinigolfGame {
     totals: [3, 2, 2],
     toPar: [1, 0, 0],
     tries: [],
+    shotHidden: false,
     lastHole: null,
+    lastStroke: null,
     currentVisitDarts: [],
     totalDarts: [0, 0, 0],
     totalVisits: [0, 0, 0],
@@ -97,14 +99,36 @@ describe('minigolf match', () => {
     expect(otherBalls(game(), players)).toEqual([{ seat: 0, at: [100, 1000], label: 'A' }])
   })
 
-  it('animates the latest try, with a new key for a new try or a correction', () => {
-    expect(latestShot(game())).toBeNull()
-    const a = latestShot(game({ tries: [tryOf('S20')] }))
-    const b = latestShot(game({ tries: [tryOf('S20', { coords: { x: 0.1, y: 0.5 } })] }))
-    expect(a?.own).toEqual([
-      [250, 2750],
-      [250, 2000],
-    ])
+  it('rolls the latest shown try after the delay, with a new key for a new try or a correction', () => {
+    expect(rollFor(game())).toBeNull()
+    const a = rollFor(game({ tries: [tryOf('S20')] }))
+    const b = rollFor(game({ tries: [tryOf('S20', { coords: { x: 0.1, y: 0.5 } })] }))
+    expect(a).toMatchObject({
+      seat: 1,
+      delayMs: 3000,
+      kept: false,
+      own: [
+        [250, 2750],
+        [250, 2000],
+      ],
+    })
     expect(a?.key).not.toBe(b?.key)
+  })
+
+  it('rolls nothing for a hidden try, then the kept stroke once the darts are pulled', () => {
+    expect(rollFor(game({ shotHidden: true, tries: [tryOf('S20', { path: [], holed: false })] }))).toBeNull()
+    const lastStroke = {
+      hole: 1,
+      seat: 1,
+      stroke: 1,
+      path: [
+        [250, 2750],
+        [250, 1500],
+      ],
+      others: [],
+    }
+    expect(rollFor(game({ currentPlayer: 0, lastStroke }))).toMatchObject({ seat: 1, delayMs: 0, kept: true })
+    // A stroke that ended the last hole shows on the scorecard instead
+    expect(rollFor(game({ lastStroke: { ...lastStroke, hole: 0 } }))).toBeNull()
   })
 })

@@ -161,4 +161,40 @@ describe('minigolf', () => {
     expect(a.stats.strokes).toBe(1 + 2 * (M.defaultConfig.maxStrokes + 1))
     expect(a.stats.holesInOne).toBe(1)
   })
+
+  it('hides tries without shot preview until the darts are used up or pulled', () => {
+    const s0 = M.init(cfg({ shotPreview: false }), two)
+    const one = play(s0, [opened, dart({ x: 0, y: 0.3 })])
+    const v1 = M.view(one, two)
+    expect(v1.shotHidden).toBe(true)
+    expect(v1.tries[0]).toMatchObject({ label: 'S20', path: [], holed: false })
+    expect(v1.tries[0].power).toBeGreaterThan(0)
+    const three = play(one, [dart({ x: 0, y: 0.3 }, 1), dart({ x: 0, y: 0.3 }, 2)])
+    expect(M.view(three, two).shotHidden).toBe(false)
+    expect(M.view(three, two).tries[2].path.length).toBeGreaterThan(1)
+    const kept = M.onBoardEvent(one, takeout).state
+    expect(M.view(kept, two).lastStroke).toMatchObject({ hole: 0, seat: 0, stroke: 1 })
+    expect(M.view(kept, two).lastStroke?.path.at(-1)).toEqual(kept.balls[0].at.map(Math.round))
+  })
+
+  it('shows tries right away with shot preview', () => {
+    const one = play(M.init(cfg({ shotPreview: true }), two), [opened, dart({ x: 0, y: 0.3 })])
+    expect(M.view(one, two).shotHidden).toBe(false)
+    expect(M.view(one, two).tries[0].path.length).toBeGreaterThan(1)
+  })
+
+  it('pulls a putt near the cup line with aim assist, not without', () => {
+    // A little right of straight up: the straight hole's cup is straight up from the tee
+    const nearly = dart({ x: 0.03, y: 0.5 })
+    const assisted = visit(M.init(cfg({ aimAssist: true }), two), nearly)
+    const plain = visit(M.init(cfg({ aimAssist: false }), two), nearly)
+    expect(assisted.balls[0].at[0]).toBeCloseTo(straight.tee[0], 0)
+    expect(plain.balls[0].at[0]).toBeGreaterThan(straight.tee[0] + 20)
+  })
+
+  it('plays a config saved before an option existed with its default', () => {
+    const { aimAssist: _a, shotPreview: _p, ...old } = cfg()
+    const s = M.init(old as MinigolfConfig, two)
+    expect(s.cfg).toMatchObject({ aimAssist: true, shotPreview: false })
+  })
 })

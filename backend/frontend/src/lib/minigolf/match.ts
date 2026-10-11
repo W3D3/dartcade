@@ -92,14 +92,38 @@ export function otherBalls(g: MinigolfGame, players: { name: string }[]): { seat
   )
 }
 
-/** The latest try's paths, to animate: the putted ball's, and the balls it knocked. */
-export function latestShot(g: MinigolfGame): { key: string; own: Pt[]; others: { seat: number; path: Pt[] }[] } | null {
+/** A shot to roll on the hole: whose ball, its path, the balls it knocked, and how long to wait. */
+export type Roll = { key: string; seat: number; own: Pt[]; others: { seat: number; path: Pt[] }[]; delayMs: number; kept: boolean }
+
+/**
+ * What to roll: the latest try while it's shown (after the shot delay, so a quick retry replaces
+ * it first), else the stroke just kept when its tries were hidden. null for nothing new.
+ */
+export function rollFor(g: MinigolfGame): Roll | null {
   const t = g.tries.at(-1)
-  if (!t) return null
+  if (t && !g.shotHidden && t.path.length > 0) {
+    return {
+      // A new try, or a correction of the latest, changes the key
+      key: `try:${g.holeIdx}:${g.currentPlayer}:${g.tries.length}:${t.label}:${t.coords?.x ?? ''}:${t.coords?.y ?? ''}`,
+      seat: g.currentPlayer,
+      own: t.path.map(pt),
+      others: t.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
+      delayMs: g.config.tries === 1 ? 0 : g.config.shotDelay * 1000,
+      kept: false,
+    }
+  }
+  const k = g.lastStroke
+  // A stroke that finished the hole shows on the scorecard instead
+  if (g.tries.length > 0 || !k || k.hole !== g.holeIdx || k.path.length < 2) return null
   return {
-    // A new try, or a correction of the latest, changes the key
-    key: `${g.holeIdx}:${g.currentPlayer}:${g.tries.length}:${t.label}:${t.coords?.x ?? ''}:${t.coords?.y ?? ''}`,
-    own: t.path.length > 0 ? t.path.map(pt) : [ownBall(g)],
-    others: t.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
+    key: `stroke:${k.hole}:${k.seat}:${k.stroke}`,
+    seat: k.seat,
+    own: k.path.map(pt),
+    others: k.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
+    delayMs: 0,
+    kept: true,
   }
 }
+
+/** Identifies a rolled path, so a kept stroke that already rolled as its last try isn't rolled again. */
+export const pathSig = (path: Pt[]): string => `${path.length}:${path.at(-1)?.join(',') ?? ''}`
