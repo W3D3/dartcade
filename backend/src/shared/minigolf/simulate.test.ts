@@ -115,7 +115,8 @@ describe('simulateShot', () => {
     const holed = simulateShot(lane, P, lane.tee, up(slow))
     expect(holed.holed).toBe(true)
     expect(holed.rest).toEqual(lane.cup.at)
-    const fast = simulateShot(lane, P, [200, 600], up(0.9))
+    // A dead rail behind the cup, so the ball can't come back over it
+    const fast = simulateShot(lane, { ...P, wallRestitution: 0 }, [200, 600], up(0.9))
     expect(fast.holed).toBe(false)
   })
 
@@ -163,5 +164,14 @@ describe('simulateShot', () => {
 
   it('lists no others when none were passed', () => {
     expect(simulateShot(lane, P, lane.tee, up(0.3)).others).toBeUndefined()
+  })
+
+  it('drops a ball crossing the middle of the cup faster than one clipping its rim', () => {
+    // Crosses the cup at about 1.5 × the capture speed: straight over its centre, then 45 mm off it
+    const roll = (1.5 * P.captureSpeed) ** 2 / (2 * P.friction)
+    const power = (lane.tee[1] - lane.cup.at[1] + roll) / P.maxRoll
+    const dead = { ...P, wallRestitution: 0 } // no second pass after the rail behind the cup
+    expect(simulateShot(lane, dead, lane.tee, up(power)).holed).toBe(true)
+    expect(simulateShot(lane, dead, [lane.tee[0] + 45, lane.tee[1]], up(power)).holed).toBe(false)
   })
 })

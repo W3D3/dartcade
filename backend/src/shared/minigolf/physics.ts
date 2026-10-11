@@ -5,7 +5,7 @@ export interface Physics {
   friction: number
   /** Below this speed (mm/s) the ball stops, unless a slope is stronger than friction. */
   restSpeed: number
-  /** The fastest the ball may roll over the cup and still drop, mm/s. */
+  /** The fastest the ball may roll over the cup's rim and still drop, mm/s; over its centre twice that. */
   captureSpeed: number
   /** How far a full-power putt rolls on flat felt, mm. Power is a share of this distance, so the
    *  distance from the bull maps linearly to how far the ball rolls. */
