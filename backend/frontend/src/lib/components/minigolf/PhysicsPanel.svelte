@@ -18,6 +18,7 @@
     { key: 'bumperRestitution', label: 'Bumper bounce', min: 0, max: 1, step: 0.05 },
     { key: 'wallThickness', label: 'Rail thickness (mm)', min: 5, max: 60, step: 1 },
     { key: 'maxTime', label: 'Time cap (s)', min: 5, max: 60, step: 1 },
+    { key: 'assistAngle', label: 'Aim assist window (°)', min: 0, max: 30, step: 1 },
   ]
 
   let copied = $state(false)

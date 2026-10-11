@@ -1,5 +1,5 @@
 // Plane geometry for holes, with arithmetic only (no trig), so results match everywhere.
-import type { Pt } from './types.js'
+import { BALL_R, type Hole, type Pt } from './types.js'
 
 /** Even-odd ray cast; points exactly on an edge may land either side. */
 export function pointInPolygon([x, y]: Pt, poly: readonly Pt[]): boolean {
@@ -35,4 +35,24 @@ export function bounds(pts: readonly Pt[]): { minX: number; minY: number; maxX: 
     maxY = Math.max(maxY, y)
   }
   return { minX, minY, maxX, maxY }
+}
+
+/** Whether a ball can roll straight from `from` to `to`: no rail, wall or bumper in the way. */
+export function lineClear(hole: Hole, from: Pt, to: Pt): boolean {
+  const edges = (pts: readonly Pt[], closed: boolean) =>
+    pts.slice(0, closed ? pts.length : pts.length - 1).map((p, i): [Pt, Pt] => [p, pts[(i + 1) % pts.length]])
+  const walls = [...edges(hole.outline, true), ...hole.walls.flatMap(w => edges(w.points, !!w.closed))]
+  if (walls.some(([a, b]) => segmentsIntersect(from, to, a, b))) return false
+  return hole.bumpers.every(b => distanceToSegment(b.at, from, to) > b.r + BALL_R)
+}
+
+/** The distance from p to the segment ab. */
+export function distanceToSegment(p: Pt, a: Pt, b: Pt): number {
+  const dx = b[0] - a[0]
+  const dy = b[1] - a[1]
+  const len2 = dx * dx + dy * dy
+  const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2))
+  const x = a[0] + t * dx - p[0]
+  const y = a[1] + t * dy - p[1]
+  return Math.sqrt(x * x + y * y)
 }

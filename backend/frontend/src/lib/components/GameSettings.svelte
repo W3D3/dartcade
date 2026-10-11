@@ -248,7 +248,7 @@
         {/each}
       </div>
     </fieldset>
-    {#each ['tries', 'ballContact'] as fieldKey (fieldKey)}
+    {#each ['tries', 'aimAssist', 'shotPreview', 'ballContact'] as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
         <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">

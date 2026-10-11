@@ -471,6 +471,8 @@ export interface MinigolfGame {
     maxStrokes: number
     ballContact: boolean
     shotDelay: number
+    aimAssist: boolean
+    shotPreview: boolean
   }
   courseName: string
   holeIdx: number
@@ -524,6 +526,24 @@ export interface MinigolfGame {
   currentVisitDarts: Dart[]
   totalDarts: number[]
   totalVisits: number[]
+  /**
+   * Shot preview is off and darts are left: the tries carry no paths or outcome.
+   */
+  shotHidden: boolean
+  /**
+   * The stroke kept at the last takeout: rolled on the match screen when its tries were hidden.
+   */
+  lastStroke: {
+    hole: number
+    seat: number
+    stroke: number
+    path: MinigolfPt[]
+    others: {
+      seat: number
+      path: MinigolfPt[]
+      holed: boolean
+    }[]
+  } | null
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

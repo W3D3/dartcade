@@ -37,11 +37,12 @@
   let shown = $state<Pt>(COURSES[0].holes[0].tee)
   let placing = $state(false)
   let debug = $state(false)
+  let assist = $state(true)
   let lastPath = $state<Pt[] | null>(null)
   let hover = $state<{ x: number; y: number } | null>(null)
   const preview = $derived.by(() => {
     if (!hover || !canShoot(bench)) return null
-    const shot = shotFromDart(hover, bench.ball, hole.cup.at, physics)
+    const shot = shotFromDart(hover, bench.ball, hole.cup.at, physics, assist ? hole : null)
     return shot && { from: bench.ball, ...shot, roll: shot.power * physics.maxRoll }
   })
 
@@ -73,7 +74,7 @@
 
   async function shoot(coords: { x: number; y: number }): Promise<void> {
     if (!canShoot(bench)) return
-    const shot = shotFromDart(coords, bench.ball, hole.cup.at, physics)
+    const shot = shotFromDart(coords, bench.ball, hole.cup.at, physics, assist ? hole : null)
     const from = bench.ball
     bench = startShot(bench)
     const result = shot ? simulateShot(hole, physics, from, shot) : null
@@ -136,6 +137,14 @@
           onclick={() => (debug = !debug)}
         >
           Debug
+        </button>
+        <button
+          type="button"
+          class="{BUTTON} {assist ? 'border-accent text-accent' : ''}"
+          aria-pressed={assist}
+          onclick={() => (assist = !assist)}
+        >
+          Aim assist
         </button>
         <span class="ml-auto font-display font-bold text-[28px] uppercase" data-testid="strokes" aria-live="polite">
           {#if bench.holed}Holed in {bench.strokes}{:else}Strokes {bench.strokes}{/if}

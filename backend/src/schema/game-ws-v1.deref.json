@@ -2577,7 +2577,9 @@
         "lastHole",
         "currentVisitDarts",
         "totalDarts",
-        "totalVisits"
+        "totalVisits",
+        "shotHidden",
+        "lastStroke"
       ],
       "additionalProperties": false,
       "properties": {
@@ -2605,7 +2607,9 @@
             "tries",
             "maxStrokes",
             "ballContact",
-            "shotDelay"
+            "shotDelay",
+            "aimAssist",
+            "shotPreview"
           ],
           "additionalProperties": false,
           "properties": {
@@ -2626,6 +2630,12 @@
             },
             "shotDelay": {
               "type": "number"
+            },
+            "aimAssist": {
+              "type": "boolean"
+            },
+            "shotPreview": {
+              "type": "boolean"
             }
           }
         },
@@ -3394,6 +3404,86 @@
             "type": "integer",
             "minimum": 0
           }
+        },
+        "shotHidden": {
+          "type": "boolean",
+          "description": "Shot preview is off and darts are left: the tries carry no paths or outcome."
+        },
+        "lastStroke": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "hole",
+                "seat",
+                "stroke",
+                "path",
+                "others"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "hole": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "seat": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "stroke": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "path": {
+                  "type": "array",
+                  "items": {
+                    "title": "MinigolfPt",
+                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  }
+                },
+                "others": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "seat",
+                      "path",
+                      "holed"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "seat": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "path": {
+                        "type": "array",
+                        "items": {
+                          "title": "MinigolfPt",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "type": "array",
+                          "items": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "holed": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The stroke kept at the last takeout: rolled on the match screen when its tries were hidden."
         }
       }
     },
@@ -3490,7 +3580,9 @@
             "lastHole",
             "currentVisitDarts",
             "totalDarts",
-            "totalVisits"
+            "totalVisits",
+            "shotHidden",
+            "lastStroke"
           ],
           "additionalProperties": false,
           "properties": {
@@ -3518,7 +3610,9 @@
                 "tries",
                 "maxStrokes",
                 "ballContact",
-                "shotDelay"
+                "shotDelay",
+                "aimAssist",
+                "shotPreview"
               ],
               "additionalProperties": false,
               "properties": {
@@ -3539,6 +3633,12 @@
                 },
                 "shotDelay": {
                   "type": "number"
+                },
+                "aimAssist": {
+                  "type": "boolean"
+                },
+                "shotPreview": {
+                  "type": "boolean"
                 }
               }
             },
@@ -4307,6 +4407,86 @@
                 "type": "integer",
                 "minimum": 0
               }
+            },
+            "shotHidden": {
+              "type": "boolean",
+              "description": "Shot preview is off and darts are left: the tries carry no paths or outcome."
+            },
+            "lastStroke": {
+              "anyOf": [
+                {
+                  "type": "object",
+                  "required": [
+                    "hole",
+                    "seat",
+                    "stroke",
+                    "path",
+                    "others"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "hole": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "seat": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "stroke": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "path": {
+                      "type": "array",
+                      "items": {
+                        "title": "MinigolfPt",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "others": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "seat",
+                          "path",
+                          "holed"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "seat": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "path": {
+                            "type": "array",
+                            "items": {
+                              "title": "MinigolfPt",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "type": "array",
+                              "items": {
+                                "type": "number"
+                              }
+                            }
+                          },
+                          "holed": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "The stroke kept at the last takeout: rolled on the match screen when its tries were hidden."
             }
           }
         },
@@ -5726,7 +5906,9 @@
                 "lastHole",
                 "currentVisitDarts",
                 "totalDarts",
-                "totalVisits"
+                "totalVisits",
+                "shotHidden",
+                "lastStroke"
               ],
               "additionalProperties": false,
               "properties": {
@@ -5754,7 +5936,9 @@
                     "tries",
                     "maxStrokes",
                     "ballContact",
-                    "shotDelay"
+                    "shotDelay",
+                    "aimAssist",
+                    "shotPreview"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -5775,6 +5959,12 @@
                     },
                     "shotDelay": {
                       "type": "number"
+                    },
+                    "aimAssist": {
+                      "type": "boolean"
+                    },
+                    "shotPreview": {
+                      "type": "boolean"
                     }
                   }
                 },
@@ -6543,6 +6733,86 @@
                     "type": "integer",
                     "minimum": 0
                   }
+                },
+                "shotHidden": {
+                  "type": "boolean",
+                  "description": "Shot preview is off and darts are left: the tries carry no paths or outcome."
+                },
+                "lastStroke": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "hole",
+                        "seat",
+                        "stroke",
+                        "path",
+                        "others"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "hole": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "seat": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "stroke": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "path": {
+                          "type": "array",
+                          "items": {
+                            "title": "MinigolfPt",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "others": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "seat",
+                              "path",
+                              "holed"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "seat": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "path": {
+                                "type": "array",
+                                "items": {
+                                  "title": "MinigolfPt",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "type": "array",
+                                  "items": {
+                                    "type": "number"
+                                  }
+                                }
+                              },
+                              "holed": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "description": "The stroke kept at the last takeout: rolled on the match screen when its tries were hidden."
                 }
               }
             },
