@@ -486,6 +486,16 @@
   // Minigolf's last stroke rolls before the win screen
   let minigolfRolling = $state(false)
   const win = $derived(minigolfRolling ? null : winView(snapshot, savedGame?.game.id === snapshot?.sessionId ? savedGame : null))
+  // The win fanfare, once, when a game played here is won (not when opening a finished one)
+  let sawPlay = false
+  let fanfare = false
+  $effect(() => {
+    if (snapshot?.status === 'active') sawPlay = true
+    if (win && sawPlay && !fanfare) {
+      fanfare = true
+      if (settings.soundWin) sounds.win()
+    }
+  })
 
   /** The win screen's button: the session is already finished and released, so a refused
    * DELETE here blocks nothing. Only the host sends it (anyone else's always 403s). */
@@ -753,6 +763,7 @@
           onNext={advance}
           onBoardClick={addBoardDart}
           bind:rolling={minigolfRolling}
+          {settings}
         />
       {:else if !game}
         <main class="flex-grow flex items-center justify-center">

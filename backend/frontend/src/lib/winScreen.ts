@@ -5,6 +5,7 @@ import type { AtcGame, GameDetail, MinigolfGame, Snapshot, X01Game } from './api
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { atcRules, minigolfRules, x01Rules } from './gameViews/meta.js'
 import { teamsLabel } from './teams.js'
+import { fmtToPar } from './minigolf/match.js'
 import { plural } from './fmt.js'
 
 type X01Detail = Extract<GameDetail['detail'], { mode: 'x01' }>
@@ -265,9 +266,6 @@ export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
     highlights: [],
   }
 }
-
-/** "+3", "−2", "E" (even). */
-export const fmtToPar = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : 'E')
 
 export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinView {
   const g = snapshot.game

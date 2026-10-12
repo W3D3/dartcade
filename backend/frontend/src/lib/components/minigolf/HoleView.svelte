@@ -16,6 +16,7 @@
     hole,
     ball,
     ballColor = '#c6f24e',
+    halo = true,
     wallThickness = DEFAULT_PHYSICS.wallThickness,
     onPlace,
     others = [],
@@ -30,6 +31,8 @@
     ball: Pt
     /** The putter's colour: its ball and halo (lime on the bench). */
     ballColor?: string
+    /** The ring that keeps a resting ball findable; off while it rolls. */
+    halo?: boolean
     wallThickness?: number
     /** Set to let the ball be dragged; called with each new spot in course space. */
     onPlace?: (at: Pt) => void
@@ -347,7 +350,9 @@
     role="presentation"
   />
   <!-- The ball is true to scale (4.3 cm): a halo keeps it findable from across the room -->
-  <circle cx={ball[0]} cy={ball[1]} r={BALL_R * 2.6} fill={ballColor} fill-opacity="0.22" pointer-events="none" />
+  {#if halo}
+    <circle cx={ball[0]} cy={ball[1]} r={BALL_R * 2.6} fill={ballColor} fill-opacity="0.22" pointer-events="none" />
+  {/if}
   <circle
     cx={ball[0]}
     cy={ball[1]}

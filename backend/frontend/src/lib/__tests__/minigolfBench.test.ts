@@ -12,7 +12,7 @@ describe('bench', () => {
     let s = startShot(initBench(hole))
     expect(s.strokes).toBe(1)
     expect(canShoot(s)).toBe(false) // still rolling: further clicks are ignored
-    s = finishShot(s, { path: [hole.tee, [250, 1000]], rest: [250, 1000], holed: false, preview: [] })
+    s = finishShot(s, { path: [hole.tee, [250, 1000]], rest: [250, 1000], holed: false, preview: [], hits: [] })
     expect(s).toMatchObject({ ball: [250, 1000], rolling: false, history: [hole.tee] })
     expect(canShoot(s)).toBe(true)
   })
@@ -21,13 +21,13 @@ describe('bench', () => {
     expect(s).toMatchObject({ ball: hole.tee, strokes: 1, rolling: false })
   })
   it('takes no more shots once holed', () => {
-    const s = finishShot(startShot(initBench(hole)), { path: [hole.cup.at], rest: hole.cup.at, holed: true, preview: [] })
+    const s = finishShot(startShot(initBench(hole)), { path: [hole.cup.at], rest: hole.cup.at, holed: true, preview: [], hits: [] })
     expect(s.holed).toBe(true)
     expect(canShoot(s)).toBe(false)
   })
   it('undoes the last stroke', () => {
-    let s = finishShot(startShot(initBench(hole)), { path: [], rest: [250, 1000], holed: false, preview: [] })
-    s = finishShot(startShot(s), { path: [], rest: hole.cup.at, holed: true, preview: [] })
+    let s = finishShot(startShot(initBench(hole)), { path: [], rest: [250, 1000], holed: false, preview: [], hits: [] })
+    s = finishShot(startShot(s), { path: [], rest: hole.cup.at, holed: true, preview: [], hits: [] })
     s = undoShot(s)
     expect(s).toMatchObject({ ball: [250, 1000], strokes: 1, holed: false, history: [hole.tee] })
     expect(undoShot(undoShot(undoShot(s)))).toMatchObject({ ball: hole.tee, strokes: 0 })

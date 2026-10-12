@@ -19,19 +19,27 @@
     { key: 'chalkboard', label: 'Chalkboard', sub: 'Scored and left for every visit' },
     { key: 'showMarkers', label: "Other players' targets", sub: 'Around the Clock with 3 or more players' },
   ] as const
-  // Other players' targets only exist in Around the Clock
-  const rows = $derived(display.filter(r => r.key !== 'showMarkers' || gameId === 'atc'))
+  const minigolfDisplay = [
+    { key: 'aimDial', label: 'Direction wheel', sub: 'Around your ball while you aim' },
+    { key: 'slowMotion', label: 'Slow motion', sub: 'When the ball gets close to the cup' },
+  ] as const
+  // Other players' targets only exist in Around the Clock; Minigolf has its own
+  const rows = $derived(gameId === 'minigolf' ? minigolfDisplay : display.filter(r => r.key !== 'showMarkers' || gameId === 'atc'))
   const scoreUpdates: { value: ScoreUpdates; label: string }[] = [
     { value: 'dart', label: 'Every dart' },
     { value: 'visit', label: 'After the visit' },
   ]
   const boardViews: { value: BoardView; label: string }[] = BOARD_VIEWS.map(v => ({ value: v, label: BOARD_VIEW_LABELS[v] }))
-  const sounds = [
+  const allSounds = [
     { key: 'soundHit', label: 'Hit' },
     { key: 'soundMiss', label: 'Miss' },
     { key: 'soundSwitch', label: 'Player switch' },
     { key: 'soundBust', label: 'Bust' },
+    { key: 'soundBall', label: 'Ball' },
+    { key: 'soundWin', label: 'Win' },
   ] as const
+  // No bust in Minigolf; the ball's sound only there
+  const sounds = $derived(allSounds.filter(r => (gameId === 'minigolf' ? r.key !== 'soundBust' : r.key !== 'soundBall')))
 
   // The caller (X01 only) picks from the user's voices, loaded fresh when the drawer opens
   onMount(() => {

@@ -101,6 +101,7 @@ type ViewPt = number[]
 const pt = (p: Pt): ViewPt => [p[0], p[1]]
 const roundPt = (p: Pt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
 const roundPath = (path: readonly Pt[]): ViewPt[] => path.map(roundPt)
+const roundHit = (sample: number) => Math.round(sample * 100) / 100
 
 function holeView(h: Hole): MinigolfView['hole'] {
   return {
@@ -322,6 +323,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
           holed: result?.holed ?? false,
           missed: t.result === null,
           path: result ? roundPath(result.path) : [],
+          hits: result?.hits.map(roundHit) ?? [],
           preview: hidden(s) && s.cfg.shotPreview && t.result ? roundPath(t.result.preview) : [],
           others: (result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
         }
@@ -331,6 +333,8 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
         seat: s.lastStroke.seat,
         stroke: s.lastStroke.stroke,
         path: s.lastStroke.result ? roundPath(s.lastStroke.result.path) : [],
+        hits: s.lastStroke.result?.hits.map(roundHit) ?? [],
+        holed: s.lastStroke.result?.holed ?? false,
         others: (s.lastStroke.result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
       },
       lastHole: s.lastHole && {

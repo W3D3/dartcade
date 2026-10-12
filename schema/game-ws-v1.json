@@ -1101,7 +1101,7 @@
           "description": "The open visit's tries; the last one counts at takeout.",
           "items": {
             "type": "object",
-            "required": ["label", "coords", "power", "holed", "missed", "path", "others", "preview"],
+            "required": ["label", "coords", "power", "holed", "missed", "path", "others", "preview", "hits"],
             "additionalProperties": false,
             "properties": {
               "label": {
@@ -1161,6 +1161,14 @@
                   "$ref": "#/$defs/MinigolfPt"
                 },
                 "description": "With shot preview, while darts are left: the try's way up to its first contact."
+              },
+              "hits": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "description": "When the ball knocked into something, in path samples (for its sound)."
               }
             }
           }
@@ -1233,7 +1241,7 @@
           "anyOf": [
             {
               "type": "object",
-              "required": ["hole", "seat", "stroke", "path", "others"],
+              "required": ["hole", "seat", "stroke", "path", "others", "hits", "holed"],
               "additionalProperties": false,
               "properties": {
                 "hole": {
@@ -1276,6 +1284,17 @@
                       }
                     }
                   }
+                },
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "description": "When the ball knocked into something, in path samples (for its sound)."
+                },
+                "holed": {
+                  "type": "boolean"
                 }
               }
             },
