@@ -70,19 +70,20 @@ const tryOf = (label: string, o: Partial<MinigolfGame['tries'][number]> = {}): M
   ],
   others: [],
   preview: [],
+  hits: [],
   ...o,
 })
 
 describe('minigolf match', () => {
   it('formats the score to par', () => {
-    expect([fmtToPar(2), fmtToPar(-1), fmtToPar(0)]).toEqual(['+2', '−1', 'E'])
+    expect([fmtToPar(2), fmtToPar(-1), fmtToPar(0)]).toEqual(['+2', '−1', '±0'])
   })
 
   it('lists players in turn order with their status', () => {
     expect(rows(game(), players).map(r => [r.name, r.status, r.toPar, r.active])).toEqual([
-      ['Ben', 'Putting', 'E', true],
+      ['Ben', 'Putting', '±0', true],
       ['Anna', 'On the green', '+1', false],
-      ['Cleo', 'In the cup', 'E', false],
+      ['Cleo', 'In the cup', '±0', false],
     ])
   })
 
@@ -127,6 +128,8 @@ describe('minigolf match', () => {
         [250, 1500],
       ],
       others: [],
+      hits: [],
+      holed: false,
     }
     expect(rollFor(game({ currentPlayer: 0, lastStroke }))).toMatchObject({ seat: 1, kept: true })
     // A stroke that ended the last hole shows on the scorecard instead
@@ -162,6 +165,8 @@ describe('minigolf match', () => {
         [250, 300],
       ],
       others: [],
+      hits: [],
+      holed: false,
     }
     const lastHole = { index: 0, scores: [3, 2, 2], paths: [[], [], []], hole }
     expect(rollFor(game({ holeIdx: 1, lastHole, lastStroke }))).toMatchObject({ hole: 0, seat: 2, kept: true })

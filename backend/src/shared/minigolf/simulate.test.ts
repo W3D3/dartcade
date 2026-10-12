@@ -223,4 +223,23 @@ describe('simulateShot', () => {
     const r = simulateShot(lane, P, lane.tee, up(0.2))
     expect(r.preview).toEqual(r.path)
   })
+
+  it('records when the ball knocks into something, once per knock', () => {
+    const walled: Hole = {
+      ...lane,
+      walls: [
+        {
+          points: [
+            [0, 2000],
+            [400, 2000],
+          ],
+        },
+      ],
+    }
+    const r = simulateShot(walled, P, lane.tee, up(0.6))
+    expect(r.hits).toHaveLength(1)
+    const at = r.path[Math.round(r.hits[0])]
+    expect(Math.abs(at[1] - (2000 + P.wallThickness / 2 + 21.35))).toBeLessThan(30)
+    expect(simulateShot(lane, P, lane.tee, up(0.2)).hits).toEqual([])
+  })
 })

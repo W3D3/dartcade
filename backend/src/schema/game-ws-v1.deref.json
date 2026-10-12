@@ -2946,7 +2946,8 @@
               "missed",
               "path",
               "others",
-              "preview"
+              "preview",
+              "hits"
             ],
             "additionalProperties": false,
             "properties": {
@@ -3044,6 +3045,14 @@
                   }
                 },
                 "description": "With shot preview, while darts are left: the try's way up to its first contact."
+              },
+              "hits": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "description": "When the ball knocked into something, in path samples (for its sound)."
               }
             }
           }
@@ -3428,7 +3437,9 @@
                 "seat",
                 "stroke",
                 "path",
-                "others"
+                "others",
+                "hits",
+                "holed"
               ],
               "additionalProperties": false,
               "properties": {
@@ -3486,6 +3497,17 @@
                       }
                     }
                   }
+                },
+                "hits": {
+                  "type": "array",
+                  "items": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "description": "When the ball knocked into something, in path samples (for its sound)."
+                },
+                "holed": {
+                  "type": "boolean"
                 }
               }
             },
@@ -3978,7 +4000,8 @@
                   "missed",
                   "path",
                   "others",
-                  "preview"
+                  "preview",
+                  "hits"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -4076,6 +4099,14 @@
                       }
                     },
                     "description": "With shot preview, while darts are left: the try's way up to its first contact."
+                  },
+                  "hits": {
+                    "type": "array",
+                    "items": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "description": "When the ball knocked into something, in path samples (for its sound)."
                   }
                 }
               }
@@ -4460,7 +4491,9 @@
                     "seat",
                     "stroke",
                     "path",
-                    "others"
+                    "others",
+                    "hits",
+                    "holed"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -4518,6 +4551,17 @@
                           }
                         }
                       }
+                    },
+                    "hits": {
+                      "type": "array",
+                      "items": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "description": "When the ball knocked into something, in path samples (for its sound)."
+                    },
+                    "holed": {
+                      "type": "boolean"
                     }
                   }
                 },
@@ -6333,7 +6377,8 @@
                       "missed",
                       "path",
                       "others",
-                      "preview"
+                      "preview",
+                      "hits"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -6431,6 +6476,14 @@
                           }
                         },
                         "description": "With shot preview, while darts are left: the try's way up to its first contact."
+                      },
+                      "hits": {
+                        "type": "array",
+                        "items": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "description": "When the ball knocked into something, in path samples (for its sound)."
                       }
                     }
                   }
@@ -6815,7 +6868,9 @@
                         "seat",
                         "stroke",
                         "path",
-                        "others"
+                        "others",
+                        "hits",
+                        "holed"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -6873,6 +6928,17 @@
                               }
                             }
                           }
+                        },
+                        "hits": {
+                          "type": "array",
+                          "items": {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          "description": "When the ball knocked into something, in path samples (for its sound)."
+                        },
+                        "holed": {
+                          "type": "boolean"
                         }
                       }
                     },

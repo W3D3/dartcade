@@ -516,6 +516,10 @@ export interface MinigolfGame {
      * With shot preview, while darts are left: the try's way up to its first contact.
      */
     preview: MinigolfPt[]
+    /**
+     * When the ball knocked into something, in path samples (for its sound).
+     */
+    hits: number[]
   }[]
   /**
    * The hole just finished: scores and every stroke's path per seat, for the scorecard.
@@ -546,6 +550,11 @@ export interface MinigolfGame {
       path: MinigolfPt[]
       holed: boolean
     }[]
+    /**
+     * When the ball knocked into something, in path samples (for its sound).
+     */
+    hits: number[]
+    holed: boolean
   } | null
   /**
    * How far a putt rolls on flat felt (mm) for a dart in the middle of the treble ring and at the double wire: the aim overlay's rings.

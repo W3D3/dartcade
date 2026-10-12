@@ -16,8 +16,8 @@ export type Row = {
 
 export type Slot = { label: string; note: string; state: 'kept' | 'replaced' | 'empty' }
 
-/** "+3", "−2", "E" (even). */
-export const fmtToPar = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : 'E')
+/** "+3", "−2", "±0" (par exactly; golf writes "E", which few people read as "even"). */
+export const fmtToPar = (n: number): string => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '±0')
 
 const STATUS: Record<MinigolfGame['balls'][number]['status'], string> = {
   waiting: 'Waiting',
@@ -91,7 +91,17 @@ export function otherBalls(g: MinigolfGame, players: { name: string }[], up = g.
 }
 
 /** A shot to roll: on which hole, whose ball, its path, the balls it knocked. */
-export type Roll = { key: string; hole: number; seat: number; own: Pt[]; others: { seat: number; path: Pt[] }[]; kept: boolean }
+export type Roll = {
+  key: string
+  hole: number
+  seat: number
+  own: Pt[]
+  others: { seat: number; path: Pt[] }[]
+  kept: boolean
+  /** When the ball knocks into something, in path samples; and whether it drops (for its sounds). */
+  hits: number[]
+  holed: boolean
+}
 
 /**
  * What to roll: the latest try once it's revealed (the tries are used up), else the stroke just
@@ -108,6 +118,8 @@ export function rollFor(g: MinigolfGame): Roll | null {
       own: t.path.map(pt),
       others: t.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
       kept: false,
+      hits: t.hits,
+      holed: t.holed,
     }
   }
   const k = g.lastStroke
@@ -121,6 +133,8 @@ export function rollFor(g: MinigolfGame): Roll | null {
     own: k.path.map(pt),
     others: k.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
     kept: true,
+    hits: k.hits,
+    holed: k.holed,
   }
 }
 

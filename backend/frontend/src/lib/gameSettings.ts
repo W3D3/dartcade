@@ -20,6 +20,14 @@ export interface GameSettings {
   soundMiss: boolean
   soundSwitch: boolean
   soundBust: boolean
+  /** Minigolf: the ball knocking into things and dropping into the cup. */
+  soundBall: boolean
+  /** A fanfare when the game is won. */
+  soundWin: boolean
+  /** Minigolf: the direction wheel around the ball while aiming. */
+  aimDial: boolean
+  /** Minigolf: rolls slow down near the cup. */
+  slowMotion: boolean
   /** The match screen's input: the board or the keypad, as last picked; null until picked. */
   inputView: 'board' | 'entry' | null
   /** X01: the caller says each visit. */
@@ -62,6 +70,10 @@ export const defaultSettings: GameSettings = {
   soundMiss: false,
   soundSwitch: false,
   soundBust: false,
+  soundBall: false,
+  soundWin: false,
+  aimDial: true,
+  slowMotion: true,
   inputView: null,
   callerOn: false,
   callerVoice: null,
@@ -101,6 +113,10 @@ const SettingsSchema = z
     soundMiss: flag(d.soundMiss),
     soundSwitch: flag(d.soundSwitch),
     soundBust: flag(d.soundBust),
+    soundBall: flag(d.soundBall),
+    soundWin: flag(d.soundWin),
+    aimDial: flag(d.aimDial),
+    slowMotion: flag(d.slowMotion),
     inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
     callerOn: flag(d.callerOn),
     callerVoice: z.string().min(1).nullable().catch(null).default(null),

@@ -15,7 +15,9 @@
   import { seatColor } from '$lib/details/chartColors'
   import { holeJustFinished } from '$lib/minigolf/scorecard'
   import { playFrames } from '$lib/minigolf/animate'
-  import { otherBalls, pathSig, previewLines, rollFor, rollRate, rows, toHole, trySlots } from '$lib/minigolf/match'
+  import type { GameSettings } from '$lib/gameSettings'
+  import { createSounds } from '$lib/sounds'
+  import { PLAYBACK, otherBalls, pathSig, previewLines, rollFor, rollRate, rows, toHole, trySlots } from '$lib/minigolf/match'
   import type { Pt } from '$shared/minigolf/types'
 
   let {
@@ -30,6 +32,7 @@
     onNext,
     onBoardClick,
     rolling: busy = $bindable(false),
+    settings,
   }: {
     game: MinigolfGame
     players: { name: string }[]
@@ -44,6 +47,8 @@
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** A stroke is still rolling: the match screen holds the turn (and the win screen) until it's done. */
     rolling?: boolean
+    /** The viewer's display and sound settings (direction wheel, slow motion, sounds). */
+    settings: GameSettings
   } = $props()
 
   const slots = $derived(trySlots(game))
@@ -55,6 +60,9 @@
   // Only a new roll restarts the animation: other snapshot changes must not cancel one in play
   const rollKey = $derived(roll?.key ?? null)
   const zoom = new Tween(0, { duration: 450, easing: cubicOut })
+  const sounds = createSounds(() => settings.volume)
+  /** The last samples of a dropped ball's path: it sinking into the cup. */
+  const SINKING = 8
   let playing = $state(false)
   // Opening the page (or a reload) shows the game at rest: a stroke rolled before isn't rolled again
   const openedOn = untrack(() => rollKey)
@@ -63,8 +71,9 @@
       frame = null
       return
     }
-    const r = untrack(() => roll)
-    if (!r) return
+    const current = untrack(() => roll)
+    if (!current) return
+    const r = current
     // A kept stroke that already rolled as its last try stays put
     if (r.kept && pathSig(r.own) === rolled) {
       frame = null
@@ -80,15 +89,26 @@
     playing = true
     let stop = () => {}
     let cancelled = false
+    let knocks = 0
+    let dropped = false
     const play = () => {
       if (cancelled) return
-      stop = playFrames(frames, i => (frame = i), reduced, {
-        rate: i => rollRate(at(r.own, i), cup),
+      stop = playFrames(frames, onFrame, reduced, {
+        rate: i => (settings.slowMotion ? rollRate(at(r.own, i), cup) : PLAYBACK),
         onDone: () => {
           playing = false
           zoomOut = setTimeout(() => void zoom.set(0), 700)
         },
       })
+    }
+    function onFrame(i: number): void {
+      frame = i
+      // The ball's sounds: a knock as it reaches each contact, a plop as it starts to sink
+      for (; knocks < r.hits.length && i >= r.hits[knocks]; knocks++) if (settings.soundBall) sounds.knock()
+      if (r.holed && !dropped && i >= r.own.length - SINKING) {
+        dropped = true
+        if (settings.soundBall) sounds.cup()
+      }
     }
     // The camera settles on the ball before it starts to roll
     if (reduced) play()
@@ -116,6 +136,18 @@
     if (game.tries.length > 0 || game.finished) scorecardDue = false
   })
   const scorecard = $derived(scorecardDue && !playing)
+
+  // A dart lands: hit, or a miss off the board
+  let triesHeard = untrack(() => game.tries.length)
+  $effect(() => {
+    const n = game.tries.length
+    const last = game.tries.at(-1)
+    if (n > triesHeard && last) {
+      if (last.missed && settings.soundMiss) sounds.miss()
+      if (!last.missed && settings.soundHit) sounds.hit()
+    }
+    triesHeard = n
+  })
   $effect(() => {
     busy = playing
   })
@@ -155,6 +187,12 @@
       : otherBalls(game, players, up).map(o => ({ ...o, at: rolling(o.seat) ?? o.at, color: seatColor(o.seat) })),
   )
   const current = $derived(game.balls[up])
+  // The next player is up once the stroke has rolled
+  let upHeard = untrack(() => up)
+  $effect(() => {
+    if (up !== upHeard && settings.soundSwitch) sounds.switchPlayer()
+    upHeard = up
+  })
   // The dial only while the putter can still aim: nothing rolling, tries left, the ball still in play
   const aiming = $derived(!playing && !game.finished && !game.visitLocked && (current.status === 'waiting' || current.status === 'playing'))
 </script>
@@ -199,7 +237,8 @@
       ballColor={seatColor(up)}
       {others}
       previews={previewLines(game)}
-      aim={aiming ? { at: ball, ...game.reach } : null}
+      aim={aiming && settings.aimDial ? { at: ball, ...game.reach } : null}
+      halo={!playing}
       camera={roll && zoom.current > 0 ? { focus: rolling(roll.seat) ?? ball, t: zoom.current } : null}
     />
   </section>

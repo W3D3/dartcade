@@ -12,7 +12,11 @@ export function audioContext(): AudioContext | null {
 }
 
 export function createSounds(volume: () => number) {
-  function tone(freq: number, dur: number, type: OscillatorType, vol: number) {
+  function tone(freq: number, dur: number, type: OscillatorType, vol: number, delay = 0) {
+    glide(freq, freq, dur, type, vol, delay)
+  }
+  /** A tone sliding from `from` to `to` Hz; `delay` seconds from now. */
+  function glide(from: number, to: number, dur: number, type: OscillatorType, vol: number, delay = 0) {
     const gainValue = vol * volume()
     if (gainValue <= 0) return
     const ctx = audioContext()
@@ -22,11 +26,13 @@ export function createSounds(volume: () => number) {
     osc.connect(gain)
     gain.connect(ctx.destination)
     osc.type = type
-    osc.frequency.value = freq
-    gain.gain.setValueAtTime(gainValue, ctx.currentTime)
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur)
-    osc.start()
-    osc.stop(ctx.currentTime + dur)
+    const start = ctx.currentTime + delay
+    osc.frequency.setValueAtTime(from, start)
+    if (to !== from) osc.frequency.exponentialRampToValueAtTime(to, start + dur)
+    gain.gain.setValueAtTime(gainValue, start)
+    gain.gain.exponentialRampToValueAtTime(0.001, start + dur)
+    osc.start(start)
+    osc.stop(start + dur)
   }
 
   return {
@@ -34,5 +40,11 @@ export function createSounds(volume: () => number) {
     miss: () => tone(200, 0.18, 'sawtooth', 0.18),
     switchPlayer: () => tone(440, 0.08, 'sine', 0.2),
     bust: () => tone(150, 0.35, 'square', 0.16),
+    /** The ball knocking into a rail, bumper or ball. */
+    knock: () => tone(1400, 0.035, 'triangle', 0.25),
+    /** The ball dropping into the cup: a falling plop. */
+    cup: () => glide(700, 180, 0.22, 'sine', 0.35),
+    /** A short rising fanfare. */
+    win: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, i === 3 ? 0.45 : 0.16, 'triangle', 0.25, i * 0.13)),
   }
 }
