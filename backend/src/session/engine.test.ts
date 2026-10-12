@@ -353,7 +353,7 @@ describe('onUserAction', () => {
       visit_id: 'v',
       index: 0,
       source_seq: 1,
-      dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } },
+      dart: { segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 }, score: 20, polar: { r, theta_deg: 0 } },
     })
     for (const r of [0.2, 0.05]) {
       await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' })
@@ -383,7 +383,7 @@ describe('onUserAction', () => {
       visit_id: 'v',
       index: 0,
       source_seq: 1,
-      dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } },
+      dart: { segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 }, score: 20, polar: { r, theta_deg: 0 } },
     })
     for (const r of [0.2, 0.05]) {
       await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'v' })
@@ -1018,7 +1018,7 @@ describe('bull off across boards', () => {
     visit_id: 'v',
     index: 0,
     source_seq: 1,
-    dart: { segment: { number: 25, bed: 'Single', multiplier: 1, name: '25' }, score: 25, polar: { r, theta_deg: 0 } },
+    dart: { segment: { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 }, score: 20, polar: { r, theta_deg: 0 } },
   })
 
   async function bullOffGame(boards: string[], notify = vi.fn()) {

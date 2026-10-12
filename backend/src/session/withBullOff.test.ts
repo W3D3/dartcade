@@ -26,19 +26,24 @@ const game = withBullOff(countGame, {
 const players: Player[] = [{ name: 'A' }, { name: 'B' }]
 const opened: BoardEvent = { kind: 'visit.opened', data: { visit_id: 'v' } }
 const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
-const dartAt = (mm: number): BoardEvent => ({
-  kind: 'dart.detected',
-  data: {
-    visit_id: 'v',
-    index: 0,
-    source_seq: 1,
-    dart: {
-      segment: { name: '25', number: 25, bed: 'Single', multiplier: 1 },
-      score: 25,
-      polar: { r: mm / 170, theta_deg: 0 },
-    },
-  } as any,
-})
+// A dart at `mm` from the centre, in the segment the cameras would call it
+const dartAt = (mm: number): BoardEvent => {
+  const segment =
+    mm <= 6.35
+      ? { name: 'Bull', number: 50, bed: 'Double', multiplier: 2 }
+      : mm <= 15.9
+        ? { name: '25', number: 25, bed: 'Single', multiplier: 1 }
+        : { name: 'S20', number: 20, bed: 'SingleInner', multiplier: 1 }
+  return {
+    kind: 'dart.detected',
+    data: {
+      visit_id: 'v',
+      index: 0,
+      source_seq: 1,
+      dart: { segment, score: segment.number * segment.multiplier, polar: { r: mm / 170, theta_deg: 0 } },
+    } as any,
+  }
+}
 
 function play(s: ReturnType<typeof game.init>, ...events: BoardEvent[]) {
   return events.reduce((acc, e) => game.onBoardEvent(acc, e).state, s)
