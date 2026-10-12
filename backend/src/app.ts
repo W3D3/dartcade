@@ -20,6 +20,7 @@ import { meApiPlugin } from './api/me.js'
 import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { friendsApiPlugin } from './api/friends.js'
+import { envFlagsOn, setupFlags } from './flags/index.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
@@ -67,6 +68,8 @@ const swaggerUiConfig = {
 export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
   const app = createFastify()
   if (onRoute) app.addHook('onRoute', onRoute)
+  // Feature flags (OpenFeature): the provider is set before any route evaluates one
+  await setupFlags(envFlagsOn())
 
   await app.register(fastifyWebsocket)
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })

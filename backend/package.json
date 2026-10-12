@@ -20,6 +20,7 @@
     "@fastify/swagger-ui": "4.2.0",
     "@fastify/websocket": "8.3.1",
     "@newkrok/nape-js": "3.43.5",
+    "@openfeature/server-sdk": "1.23.0",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "better-auth": "1.7.6",
