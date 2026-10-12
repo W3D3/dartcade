@@ -3,7 +3,7 @@ import type { Page } from '@playwright/test'
 
 export { expect }
 
-export const test = base.extend<{ authedPage: Page }>({
+export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
   authedPage: async ({ page }, use, testInfo) => {
     const ts = Date.now()
     const email = `e2e-${testInfo.workerIndex}-${ts}@test.local`
@@ -24,6 +24,17 @@ export const test = base.extend<{ authedPage: Page }>({
     })
     expect(signIn.ok(), `sign-in failed: ${signIn.status()} ${await signIn.text()}`).toBeTruthy()
 
+    await use(page)
+  },
+  /** Signed in as the e2e admin (ADMIN_EMAILS in docker-compose.e2e.yaml): sees admin pages and flagged-on modes. */
+  adminPage: async ({ page }, use) => {
+    const email = 'e2e-admin@test.local'
+    const password = 'TestPass1!'
+    const headers = { Origin: 'http://localhost:5174' }
+    // Signing up again in a later test fails (the user exists): only the sign-in must succeed
+    await page.request.post('http://localhost:5174/api/auth/sign-up/email', { data: { name: 'e2eadmin', email, password }, headers })
+    const signIn = await page.request.post('http://localhost:5174/api/auth/sign-in/email', { data: { email, password }, headers })
+    expect(signIn.ok(), `admin sign-in failed: ${signIn.status()}`).toBeTruthy()
     await use(page)
   },
 })

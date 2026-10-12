@@ -43,6 +43,7 @@ corrected dart replays the open visit cleanly.
 | WebSocket gateways | `backend/src/bridge-gw/` (bridge), `backend/src/browser-gw/` (browser) |
 | Auth, DB (Kysely + Postgres, migrations) | `backend/src/auth/`, `backend/src/db/` |
 | Code shared by backend and frontend (`$shared/...`) | `backend/src/shared/` (dependency-free, except `minigolf/`, which uses nape-js pinned to the same version in both packages) |
+| Feature flags (OpenFeature): definitions and per-user rules, OFREP for the SPA | `backend/src/flags/` (`definitions.ts`: add a flag there; `gamemode.<id>.enabled` gates a game mode), `backend/src/api/ofrep.ts`; SPA `backend/frontend/src/lib/flags.ts` (`flag(key)` store), a mode's `flag` in `lib/gameModes.ts`; `FLAGS_ON` turns flags on per deployment |
 | Minigolf core: holes, dart → shot, physics (nape-js), courses | `backend/src/shared/minigolf/`; admin test bench `#/admin/minigolf` (`routes/MinigolfBench.svelte`, `lib/minigolf/`, `lib/components/minigolf/`) |
 | Frontend pages (svelte-spa-router, hash routes) | `backend/frontend/src/routes/`; the match screen is `GameDisplay.svelte`; the Play page (picks the game, not the players) is `CreateSession.svelte` |
 | Per-game UI (stats, board highlights) | `backend/frontend/src/lib/gameViews/` |
