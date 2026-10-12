@@ -178,10 +178,19 @@ describe('minigolf', () => {
     expect(M.view(kept, two).lastStroke?.path.at(-1)).toEqual(kept.balls[0].at.map(Math.round))
   })
 
-  it('shows tries right away with shot preview', () => {
+  it('shows only the way to the first contact with shot preview, never where the try ends', () => {
     const one = play(M.init(cfg({ shotPreview: true }), two), [opened, dart({ x: 0, y: 0.3 })])
-    expect(M.view(one, two).shotHidden).toBe(false)
-    expect(M.view(one, two).tries[0].path.length).toBeGreaterThan(1)
+    const v = M.view(one, two)
+    expect(v.shotHidden).toBe(true)
+    expect(v.tries[0].path).toEqual([])
+    expect(v.tries[0].preview.length).toBeGreaterThan(1)
+    // Revealed once the tries are used up: the full path, no preview line
+    const three = M.view(play(one, [dart({ x: 0, y: 0.3 }, 1), dart({ x: 0, y: 0.3 }, 2)]), two)
+    expect(three.tries[2].path.length).toBeGreaterThan(1)
+    expect(three.tries[2].preview).toEqual([])
+    // Without shot preview, no line at all
+    const off = M.view(play(M.init(cfg({ shotPreview: false }), two), [opened, dart({ x: 0, y: 0.3 })]), two)
+    expect(off.tries[0].preview).toEqual([])
   })
 
   it('pulls a putt near the cup line with aim assist, not without', () => {

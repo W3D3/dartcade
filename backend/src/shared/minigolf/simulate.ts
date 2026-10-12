@@ -175,6 +175,8 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
   const sampleEvery = Math.max(1, Math.round(1 / 60 / dt))
   const maxSteps = Math.ceil(physics.maxTime / dt)
 
+  const own = balls[0]
+  let preview: Pt[] | null = null
   for (let i = 1; i <= maxSteps; i++) {
     let moving = false
     for (const b of balls) if (!b.holed && roll(b, hole, physics)) moving = true
@@ -182,6 +184,11 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
     space.step(dt, 10, 10)
     for (const b of balls) if (!b.holed) kick(b, hole, dt)
     if (i % sampleEvery === 0) for (const b of balls) if (!b.holed) b.path.push([b.body.position.x, b.body.position.y])
+    // The putted ball's first contact: a collision this step, or reaching the cup's rim
+    if (!preview && !own.holed) {
+      const hit = own.body.normalImpulse()
+      if (hit.x !== 0 || hit.y !== 0 || own.overCup > 0) preview = [...own.path, [own.body.position.x, own.body.position.y]]
+    }
   }
 
   const done = balls.map(b => {
@@ -199,8 +206,8 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
     return { id: b.id, path: b.path, rest, holed: b.holed, moved: b.holed || Math.hypot(rest[0] - b.start[0], rest[1] - b.start[1]) > 0.5 }
   })
   space.clear()
-  const [own, ...rest] = done
-  const result: ShotResult = { path: own.path, rest: own.rest, holed: own.holed }
+  const [mine, ...rest] = done
+  const result: ShotResult = { path: mine.path, rest: mine.rest, holed: mine.holed, preview: preview ?? mine.path }
   if (others.length > 0) result.others = rest.filter(b => b.moved).map(({ id, path, rest: at, holed }) => ({ id, path, rest: at, holed }))
   return result
 }

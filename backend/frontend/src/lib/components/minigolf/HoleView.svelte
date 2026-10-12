@@ -3,8 +3,11 @@
   felt, cream rails, red bumpers, slopes with arrows along their push, the tee, the cup and flag,
   and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `debug` draws the cup's
   capture radius, rail normals, slope outlines and the last shot's samples; `preview` a putt's line.
+  In a game: `aim` draws the design's aim dial and reach rings around the ball, `previews` the shot
+  preview's lines, and `camera` zooms onto a point (t = 0: the whole hole, 1: CAMERA_SHARE of it).
 -->
 <script lang="ts">
+  import { HALF, SEGS, segAngle } from '$shared/board'
   import { bounds } from '$shared/minigolf/geometry'
   import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
   import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
@@ -12,24 +15,35 @@
   let {
     hole,
     ball,
+    ballColor = '#c6f24e',
     wallThickness = DEFAULT_PHYSICS.wallThickness,
     onPlace,
     others = [],
     debug = false,
     lastPath = null,
     preview = null,
+    aim = null,
+    previews = [],
+    camera = null,
   }: {
     hole: Hole
     ball: Pt
+    /** The putter's colour: its ball and halo (lime on the bench). */
+    ballColor?: string
     wallThickness?: number
     /** Set to let the ball be dragged; called with each new spot in course space. */
     onPlace?: (at: Pt) => void
     /** Other players' balls, drawn faded with their initial. */
-    others?: { seat: number; at: Pt; label: string }[]
+    others?: { seat: number; at: Pt; label: string; color?: string }[]
     debug?: boolean
     lastPath?: readonly Pt[] | null
     /** The putt the pointer would make: a dashed line as long as it would roll on flat felt. */
     preview?: { from: Pt; dir: Pt; power: number; roll: number } | null
+    /** The aim dial and reach rings (flat-felt roll, mm, for a treble and a double) around `at`. */
+    aim?: { at: Pt; treble: number; double: number } | null
+    /** Shot preview lines; the current try's is bright, replaced ones faint. */
+    previews?: { path: Pt[]; current: boolean }[]
+    camera?: { focus: Pt; t: number } | null
   } = $props()
 
   /** Each rail segment's midpoint and a short tick along its normal. */
@@ -71,7 +85,25 @@
 
   const PAD = 120
   const box = $derived(bounds(hole.outline))
-  const viewBox = $derived(`${box.minX - PAD} ${box.minY - PAD} ${box.maxX - box.minX + 2 * PAD} ${box.maxY - box.minY + 2 * PAD}`)
+  const full = $derived({ x: box.minX - PAD, y: box.minY - PAD, w: box.maxX - box.minX + 2 * PAD, h: box.maxY - box.minY + 2 * PAD })
+  /** How much of the hole the camera shows zoomed in: enough around the ball to follow it. */
+  const CAMERA_SHARE = 0.45
+  /** The whole hole, or with `camera` a box CAMERA_SHARE its size around the focus (kept on the hole). */
+  const view = $derived.by(() => {
+    if (!camera || camera.t <= 0) return full
+    const w = full.w * CAMERA_SHARE
+    const h = full.h * CAMERA_SHARE
+    const x = Math.min(full.x + full.w - w, Math.max(full.x, camera.focus[0] - w / 2))
+    const y = Math.min(full.y + full.h - h, Math.max(full.y, camera.focus[1] - h / 2))
+    const t = camera.t
+    return { x: full.x + (x - full.x) * t, y: full.y + (y - full.y) * t, w: full.w + (w - full.w) * t, h: full.h + (h - full.h) * t }
+  })
+  const viewBox = $derived(`${view.x} ${view.y} ${view.w} ${view.h}`)
+
+  // The aim dial keeps its size on screen: a share of the hole's view
+  const dial = $derived(Math.max(full.w, full.h) * 0.06)
+  /** A point at `len` from `at` in board direction `a` (radians, y up, 0 = right). */
+  const toward = (at: Pt, a: number, len: number): Pt => [at[0] + Math.cos(a) * len, at[1] - Math.sin(a) * len]
   const pts = (p: readonly Pt[]) => p.map(([x, y]) => `${x},${y}`).join(' ')
   const centroid = (p: readonly Pt[]): Pt => [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length]
 
@@ -213,8 +245,8 @@
     </g>
   {/if}
   {#each others as o (o.seat)}
-    <g opacity="0.55" pointer-events="none" data-testid="other-ball">
-      <circle cx={o.at[0]} cy={o.at[1]} r={BALL_R} fill="#efeee6" stroke="#0a0b09" stroke-width="5" />
+    <g opacity="0.8" pointer-events="none" data-testid="other-ball">
+      <circle cx={o.at[0]} cy={o.at[1]} r={BALL_R} fill={o.color ?? '#efeee6'} stroke="#0a0b09" stroke-width="5" />
       <text
         x={o.at[0]}
         y={o.at[1] - BALL_R - 14}
@@ -228,6 +260,68 @@
       >
     </g>
   {/each}
+  {#each previews as line, i (i)}
+    <polyline
+      points={pts(line.path)}
+      fill="none"
+      stroke="#c6f24e"
+      stroke-opacity={line.current ? 0.9 : 0.3}
+      stroke-width={dial * 0.06}
+      stroke-dasharray="{dial * 0.18} {dial * 0.12}"
+      stroke-linecap="round"
+      pointer-events="none"
+      data-testid="shot-preview-line"
+    />
+  {/each}
+  {#if aim}
+    <g pointer-events="none" data-testid="aim-overlay">
+      {#each [{ r: aim.treble, label: 'TREBLE' }, { r: aim.double, label: 'DOUBLE · MAX' }] as ring (ring.label)}
+        {@const tag = toward(aim.at, (3 * Math.PI) / 4, ring.r)}
+        <circle
+          cx={aim.at[0]}
+          cy={aim.at[1]}
+          r={ring.r}
+          fill="none"
+          stroke="#efeee6"
+          stroke-opacity="0.32"
+          stroke-width={dial * 0.03}
+          stroke-dasharray="{dial * 0.12} {dial * 0.12}"
+        />
+        <text x={tag[0]} y={tag[1]} fill="#efeee6" fill-opacity="0.75" font-size={dial * 0.24} font-weight="700" text-anchor="end"
+          >{ring.label}</text
+        >
+      {/each}
+      <circle
+        cx={aim.at[0]}
+        cy={aim.at[1]}
+        r={dial}
+        fill="#0f100e"
+        fill-opacity="0.62"
+        stroke="#efeee6"
+        stroke-opacity="0.55"
+        stroke-width={dial * 0.03}
+      />
+      {#each SEGS as n, i (n)}
+        {@const a = segAngle(i)}
+        {@const from = toward(aim.at, a + HALF, dial * 0.3)}
+        {@const to = toward(aim.at, a + HALF, dial)}
+        {@const label = toward(aim.at, a, dial * 1.36)}
+        <line x1={from[0]} y1={from[1]} x2={to[0]} y2={to[1]} stroke="#efeee6" stroke-opacity="0.35" stroke-width={dial * 0.02} />
+        <text
+          x={label[0]}
+          y={label[1]}
+          fill="#efeee6"
+          font-size={dial * 0.3}
+          font-weight="700"
+          text-anchor="middle"
+          dominant-baseline="central"
+          stroke="#0a0b09"
+          stroke-width={dial * 0.07}
+          paint-order="stroke">{n}</text
+        >
+      {/each}
+    </g>
+  {/if}
   {#if onPlace}
     <circle
       cx={ball[0]}
@@ -253,6 +347,15 @@
     role="presentation"
   />
   <!-- The ball is true to scale (4.3 cm): a halo keeps it findable from across the room -->
-  <circle cx={ball[0]} cy={ball[1]} r={BALL_R * 2.6} fill="#c6f24e" fill-opacity="0.18" pointer-events="none" />
-  <circle cx={ball[0]} cy={ball[1]} r={BALL_R} fill="#c6f24e" stroke="#0a0b09" stroke-width="5" pointer-events="none" data-testid="ball" />
+  <circle cx={ball[0]} cy={ball[1]} r={BALL_R * 2.6} fill={ballColor} fill-opacity="0.22" pointer-events="none" />
+  <circle
+    cx={ball[0]}
+    cy={ball[1]}
+    r={BALL_R}
+    fill={ballColor}
+    stroke="#0a0b09"
+    stroke-width="5"
+    pointer-events="none"
+    data-testid="ball"
+  />
 </svg>

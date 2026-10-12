@@ -25,8 +25,9 @@ the core (holes, dart → putt, `simulateShot`). Designs: `project/Minigolf.dc.h
   faded. On: the resting balls of everyone still on the hole are in the simulation and can be knocked
   around; a ball knocked into the cup is holed with no extra stroke for its owner (and its strokes so
   far are its score).
-- **Shot delay** (`shotDelay`, seconds, 0 = off, default 3): purely presentation; the match screen
-  starts the ball rolling once no new dart has landed for that long. With 1 try it is ignored.
+- **Shot preview** (`shotPreview`, default off) and **aim assist** (`aimAssist`, default on): see
+  `shared/minigolf/shot.ts` and the module. Tries are revealed once they're used up or the darts are
+  pulled; with shot preview, each try shows its way up to the first contact meanwhile.
 - **Positions only.** A dart without coords is a miss; manual entry is clicking a spot on the board.
   The keypad is not offered, and the server rejects `add_dart`/`correct_dart` without coords for this
   game.
@@ -40,11 +41,12 @@ type MinigolfConfig = {
   tries: 1 | 3
   maxStrokes: number      // 3..10
   ballContact: boolean
-  shotDelay: number       // 0..5 s
+  aimAssist: boolean
+  shotPreview: boolean
 }
 ```
 
-Defaults: the first course, `tries: 3`, `maxStrokes: 6`, `ballContact: false`, `shotDelay: 3`. `configMeta`
+Defaults: the first course, `tries: 3`, `maxStrokes: 6`, `ballContact: false`, `aimAssist: true`, `shotPreview: false`. `configMeta`
 labels them for the setup form; `validate` rejects an unknown course.
 
 ## Architecture

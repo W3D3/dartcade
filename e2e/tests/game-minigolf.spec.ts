@@ -17,6 +17,7 @@ test('minigolf: a putt clicked on the board counts once the darts are pulled', a
   await page.getByRole('button', { name: /Next player|Skip to next/ }).click()
   // Rows keep the hole's turn order
   await expect(rows.nth(1)).toContainText('Lena')
-  await expect(rows.nth(1)).toContainText('Putting')
+  // The stroke rolls first (slow motion near the cup); only then is the next player up
+  await expect(rows.nth(1)).toContainText('Putting', { timeout: 20_000 })
   await expect(rows.first().getByTestId('hole-strokes')).toHaveText('1')
 })

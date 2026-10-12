@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import type { MinigolfGame } from '$lib/api'
-import { fmtToPar, otherBalls, ownBall, rollFor, rows, trySlots } from '$lib/minigolf/match'
+import { PLAYBACK, SLOW_MO, fmtToPar, otherBalls, ownBall, previewLines, rollFor, rollRate, rows, trySlots } from '$lib/minigolf/match'
 
 const hole = {
   id: 'h',
@@ -26,7 +26,7 @@ function game(over: Partial<MinigolfGame> = {}): MinigolfGame {
     finished: false,
     currentPlayer: 1,
     visitLocked: false,
-    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, shotDelay: 3, aimAssist: true, shotPreview: true },
+    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: true },
     courseName: 'Test',
     holeIdx: 1,
     holeCount: 3,
@@ -48,6 +48,7 @@ function game(over: Partial<MinigolfGame> = {}): MinigolfGame {
     toPar: [1, 0, 0],
     tries: [],
     shotHidden: false,
+    reach: { treble: 1700, double: 4500 },
     lastHole: null,
     lastStroke: null,
     currentVisitDarts: [],
@@ -68,6 +69,7 @@ const tryOf = (label: string, o: Partial<MinigolfGame['tries'][number]> = {}): M
     [250, 2000],
   ],
   others: [],
+  preview: [],
   ...o,
 })
 
@@ -105,7 +107,6 @@ describe('minigolf match', () => {
     const b = rollFor(game({ tries: [tryOf('S20', { coords: { x: 0.1, y: 0.5 } })] }))
     expect(a).toMatchObject({
       seat: 1,
-      delayMs: 3000,
       kept: false,
       own: [
         [250, 2750],
@@ -127,8 +128,45 @@ describe('minigolf match', () => {
       ],
       others: [],
     }
-    expect(rollFor(game({ currentPlayer: 0, lastStroke }))).toMatchObject({ seat: 1, delayMs: 0, kept: true })
+    expect(rollFor(game({ currentPlayer: 0, lastStroke }))).toMatchObject({ seat: 1, kept: true })
     // A stroke that ended the last hole shows on the scorecard instead
     expect(rollFor(game({ lastStroke: { ...lastStroke, hole: 0 } }))).toBeNull()
+  })
+
+  it('draws preview lines only while results are hidden, the latest bright', () => {
+    const line = [
+      [250, 2750],
+      [250, 2000],
+    ]
+    const tries = [tryOf('S20', { path: [], preview: line }), tryOf('S1', { path: [], preview: line })]
+    expect(previewLines(game({ shotHidden: true, tries })).map(l => l.current)).toEqual([false, true])
+    expect(previewLines(game({ shotHidden: false, tries }))).toEqual([])
+  })
+
+  it('slows a roll down near the cup', () => {
+    expect(rollRate([250, 400], [250, 300])).toBe(SLOW_MO)
+    expect(rollRate([250, 1000], [250, 300])).toBe(PLAYBACK)
+    // In between it eases, no jump
+    const mid = rollRate([250, 525], [250, 300])
+    expect(mid).toBeLessThan(PLAYBACK)
+    expect(mid).toBeGreaterThan(SLOW_MO)
+  })
+
+  it('rolls the stroke that ended a hole on that hole, and keeps its player up meanwhile', () => {
+    const lastStroke = {
+      hole: 0,
+      seat: 2,
+      stroke: 2,
+      path: [
+        [250, 2750],
+        [250, 300],
+      ],
+      others: [],
+    }
+    const lastHole = { index: 0, scores: [3, 2, 2], paths: [[], [], []], hole }
+    expect(rollFor(game({ holeIdx: 1, lastHole, lastStroke }))).toMatchObject({ hole: 0, seat: 2, kept: true })
+    // Two holes back: nothing to roll
+    expect(rollFor(game({ holeIdx: 2, lastHole, lastStroke }))).toBeNull()
+    expect(rows(game(), players, 0).find(r => r.active)?.name).toBe('Anna')
   })
 })

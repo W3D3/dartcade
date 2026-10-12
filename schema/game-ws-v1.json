@@ -975,7 +975,8 @@
         "totalDarts",
         "totalVisits",
         "shotHidden",
-        "lastStroke"
+        "lastStroke",
+        "reach"
       ],
       "additionalProperties": false,
       "properties": {
@@ -995,7 +996,7 @@
         },
         "config": {
           "type": "object",
-          "required": ["course", "tries", "maxStrokes", "ballContact", "shotDelay", "aimAssist", "shotPreview"],
+          "required": ["course", "tries", "maxStrokes", "ballContact", "aimAssist", "shotPreview"],
           "additionalProperties": false,
           "properties": {
             "course": {
@@ -1009,9 +1010,6 @@
             },
             "ballContact": {
               "type": "boolean"
-            },
-            "shotDelay": {
-              "type": "number"
             },
             "aimAssist": {
               "type": "boolean"
@@ -1103,7 +1101,7 @@
           "description": "The open visit's tries; the last one counts at takeout.",
           "items": {
             "type": "object",
-            "required": ["label", "coords", "power", "holed", "missed", "path", "others"],
+            "required": ["label", "coords", "power", "holed", "missed", "path", "others", "preview"],
             "additionalProperties": false,
             "properties": {
               "label": {
@@ -1156,6 +1154,13 @@
                     }
                   }
                 }
+              },
+              "preview": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/MinigolfPt"
+                },
+                "description": "With shot preview, while darts are left: the try's way up to its first contact."
               }
             }
           }
@@ -1222,7 +1227,7 @@
         },
         "shotHidden": {
           "type": "boolean",
-          "description": "Shot preview is off and darts are left: the tries carry no paths or outcome."
+          "description": "Darts are left: the tries carry no outcome (only, with shot preview, the way to their first contact)."
         },
         "lastStroke": {
           "anyOf": [
@@ -1279,6 +1284,22 @@
             }
           ],
           "description": "The stroke kept at the last takeout: rolled on the match screen when its tries were hidden."
+        },
+        "reach": {
+          "type": "object",
+          "required": ["treble", "double"],
+          "additionalProperties": false,
+          "description": "How far a putt rolls on flat felt (mm) for a dart in the middle of the treble ring and at the double wire: the aim overlay's rings.",
+          "properties": {
+            "treble": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "double": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
         }
       }
     },

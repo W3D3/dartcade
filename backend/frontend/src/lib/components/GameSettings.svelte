@@ -2,7 +2,7 @@
   // A game mode's settings (the Play page's setup, the lobby's next-game card): X01's start
   // score, check-in, check-out, bull off, bull value, max rounds and first to; Around the
   // Clock's fields as the backend describes them; Minigolf's course cards, tries, max strokes,
-  // ball contact and shot delay. Bull off also drives the lobby's throw
+  // ball contact, aim assist and shot preview. Bull off also drives the lobby's throw
   // order (the server keeps them in sync): picking WDC/PDC here turns the throw order to
   // Bull-off, and picking Off there turns this back off.
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
@@ -70,7 +70,6 @@
   ]
   const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
   const setMaxStrokes = (n: number) => set('maxStrokes', clamp(n, 3, 10))
-  const setShotDelay = (n: number) => set('shotDelay', clamp(n, 0, 5))
 
   // ATC config fields in display order — populated from backend configMeta
   const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
@@ -279,22 +278,6 @@
         onchange={setMaxStrokes}
       />
     </div>
-    {#if config.tries !== 1}
-      <div class="flex justify-between items-center">
-        <span class="flex items-center gap-2 field-label"
-          >Shot delay{#if meta.shotDelay?.tooltip}<Tooltip text={meta.shotDelay.tooltip} />{/if}</span
-        >
-        <Stepper
-          value={num(config.shotDelay, 3)}
-          label="seconds"
-          unit={n => (n === 0 ? 'off' : 's')}
-          min={0}
-          highlight={isNonDefault('shotDelay')}
-          disabled={readonly}
-          onchange={setShotDelay}
-        />
-      </div>
-    {/if}
   </div>
 {:else}
   <div

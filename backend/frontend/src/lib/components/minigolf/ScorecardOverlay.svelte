@@ -7,7 +7,8 @@
   import { onDestroy } from 'svelte'
   import type { MinigolfGame } from '$lib/api'
   import Scorecard from './Scorecard.svelte'
-  import { SEAT_COLOURS, teeOffLine } from '$lib/minigolf/scorecard'
+  import { seatColor } from '$lib/details/chartColors'
+  import { teeOffLine } from '$lib/minigolf/scorecard'
   import { bounds } from '$shared/minigolf/geometry'
   import type { Pt } from '$shared/minigolf/types'
 
@@ -61,7 +62,7 @@
                 <polyline
                   points={pts(path)}
                   fill="none"
-                  stroke={SEAT_COLOURS[seat % SEAT_COLOURS.length]}
+                  stroke={seatColor(seat)}
                   stroke-width="14"
                   stroke-opacity="0.8"
                   stroke-linecap="round"
@@ -72,7 +73,7 @@
           <figcaption class="flex flex-wrap gap-3 text-[13px]">
             {#each players as p, seat (seat)}
               <span class="flex items-center gap-1">
-                <span class="inline-block size-3 rounded-full" style:background={SEAT_COLOURS[seat % SEAT_COLOURS.length]}></span>
+                <span class="inline-block size-3 rounded-full" style:background={seatColor(seat)}></span>
                 {p.name} · {last.scores[seat]}
               </span>
             {/each}

@@ -34,6 +34,3 @@ export function holeJustFinished(prevHoleIdx: number | null, holeIdx: number): b
 export function teeOffLine(name: string, byScore: boolean): string {
   return byScore ? `${name} tees off first: best score on the last hole.` : `${name} tees off first.`
 }
-
-/** The colour of each seat's paths on the finished hole. */
-export const SEAT_COLOURS = ['#c6f24e', '#4ec6f2', '#f2a54e', '#e46bd8', '#efeee6', '#8f7cf2']

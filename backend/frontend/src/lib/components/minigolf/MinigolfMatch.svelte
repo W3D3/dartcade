@@ -5,14 +5,17 @@
 -->
 <script lang="ts">
   import { untrack } from 'svelte'
+  import { cubicOut } from 'svelte/easing'
+  import { Tween } from 'svelte/motion'
   import type { MinigolfGame, Segment } from '$lib/api'
   import ControlBar from '$lib/components/ControlBar.svelte'
   import DartBoard from '$lib/components/DartBoard.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import ScorecardOverlay from '$lib/components/minigolf/ScorecardOverlay.svelte'
+  import { seatColor } from '$lib/details/chartColors'
   import { holeJustFinished } from '$lib/minigolf/scorecard'
   import { playFrames } from '$lib/minigolf/animate'
-  import { otherBalls, ownBall, pathSig, rollFor, rows, toHole, trySlots } from '$lib/minigolf/match'
+  import { otherBalls, pathSig, previewLines, rollFor, rollRate, rows, toHole, trySlots } from '$lib/minigolf/match'
   import type { Pt } from '$shared/minigolf/types'
 
   let {
@@ -26,6 +29,7 @@
     onUndo,
     onNext,
     onBoardClick,
+    rolling: busy = $bindable(false),
   }: {
     game: MinigolfGame
     players: { name: string }[]
@@ -38,20 +42,24 @@
     onUndo: () => void
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
+    /** A stroke is still rolling: the match screen holds the turn (and the win screen) until it's done. */
+    rolling?: boolean
   } = $props()
 
-  const playerRows = $derived(rows(game, players))
   const slots = $derived(trySlots(game))
   const roll = $derived(rollFor(game))
-  const current = $derived(game.balls[game.currentPlayer])
 
   // Where the balls are drawn: at rest from the snapshot, or along the roll while it plays
   let frame = $state<number | null>(null)
   let rolled = ''
   // Only a new roll restarts the animation: other snapshot changes must not cancel one in play
   const rollKey = $derived(roll?.key ?? null)
-  $effect(() => {
-    if (rollKey === null) {
+  const zoom = new Tween(0, { duration: 450, easing: cubicOut })
+  let playing = $state(false)
+  // Opening the page (or a reload) shows the game at rest: a stroke rolled before isn't rolled again
+  const openedOn = untrack(() => rollKey)
+  $effect.pre(() => {
+    if (rollKey === null || rollKey === openedOn) {
       frame = null
       return
     }
@@ -63,34 +71,63 @@
       return
     }
     rolled = pathSig(r.own)
-    // The ball waits on its spot until no newer dart lands for the shot delay
     frame = 0
     const frames = Math.max(r.own.length, ...r.others.map(o => o.path.length))
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const cup = untrack(() => game.hole.cup.at)
+    let zoomOut: ReturnType<typeof setTimeout> | undefined
+    // Zoom in on the ball while it rolls, slow motion near the cup, zoom back out once it's done
+    playing = true
     let stop = () => {}
-    const timer = setTimeout(() => {
-      stop = playFrames(frames, i => (frame = i), reduced)
-    }, r.delayMs)
+    let cancelled = false
+    const play = () => {
+      if (cancelled) return
+      stop = playFrames(frames, i => (frame = i), reduced, {
+        rate: i => rollRate(at(r.own, i), cup),
+        onDone: () => {
+          playing = false
+          zoomOut = setTimeout(() => void zoom.set(0), 700)
+        },
+      })
+    }
+    // The camera settles on the ball before it starts to roll
+    if (reduced) play()
+    else void zoom.set(1).then(play)
     return () => {
-      clearTimeout(timer)
+      cancelled = true
+      clearTimeout(zoomOut)
       stop()
+      playing = false
+      void zoom.set(0, { duration: 0 })
     }
   })
 
   // The scorecard between holes: opens when the game moves on to a new hole, closes on its own,
   // or as soon as the new hole's first dart lands
+  // (after the hole's last stroke has rolled)
   let prevHole: number | null = null
-  let scorecard = $state(false)
+  let scorecardDue = $state(false)
   $effect(() => {
     const h = game.holeIdx
-    if (holeJustFinished(prevHole, h)) scorecard = true
+    if (holeJustFinished(prevHole, h)) scorecardDue = true
     prevHole = h
   })
   $effect(() => {
-    if (game.tries.length > 0 || game.finished) scorecard = false
+    if (game.tries.length > 0 || game.finished) scorecardDue = false
+  })
+  const scorecard = $derived(scorecardDue && !playing)
+  $effect(() => {
+    busy = playing
   })
 
-  const at = (path: Pt[], i: number): Pt => path[Math.min(i, path.length - 1)]
+  /** The point at fractional frame `i` of a path: between two samples it glides, so slow motion stays smooth. */
+  function at(path: Pt[], i: number): Pt {
+    const k = Math.min(Math.floor(i), path.length - 1)
+    const a = path[k]
+    const b = path[Math.min(k + 1, path.length - 1)]
+    const t = Math.min(1, i - k)
+    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+  }
   /** A seat's ball while the roll plays; undefined when the roll doesn't move it. */
   function rolling(seat: number): Pt | undefined {
     if (!roll || frame === null) return undefined
@@ -98,16 +135,28 @@
     const moved = roll.others.find(m => m.seat === seat)
     return moved && at(moved.path, frame)
   }
-  const ball = $derived(rolling(game.currentPlayer) ?? ownBall(game))
-  const others = $derived.by(() => {
-    const resting = otherBalls(game, players).map(o => ({ ...o, at: rolling(o.seat) ?? o.at }))
-    // The ball of a kept stroke rolls on even though the next player is up (and it may be in the cup by now)
-    const seat = roll?.seat
-    if (seat === undefined || seat === game.currentPlayer || resting.some(o => o.seat === seat)) return resting
-    const at_ = rolling(seat)
-    const label = (players[seat]?.name ?? '?').slice(0, 1).toUpperCase()
-    return at_ && frame !== null && frame < (roll?.own.length ?? 0) - 1 ? [...resting, { seat, at: at_, label }] : resting
-  })
+  const initial = (seat: number) => (players[seat]?.name ?? '?').slice(0, 1).toUpperCase()
+  const pt = (p: number[]): Pt => [p[0] ?? 0, p[1] ?? 0]
+  // While a stroke rolls, its player stays up: the snapshot has moved on to the next one already
+  const up = $derived(playing && roll ? roll.seat : game.currentPlayer)
+  // The stroke that ended a hole rolls on that hole, before the scorecard
+  const pastHole = $derived(playing && roll && roll.hole !== game.holeIdx ? game.lastHole : null)
+  const shownHole = $derived(toHole(pastHole?.hole ?? game.hole))
+  const playerRows = $derived(rows(game, players, up))
+  const ball = $derived(rolling(up) ?? pt(game.balls[up]?.at ?? game.hole.tee))
+  const others = $derived(
+    pastHole
+      ? (roll?.others ?? []).map(o => ({
+          seat: o.seat,
+          at: rolling(o.seat) ?? at(o.path, 0),
+          label: initial(o.seat),
+          color: seatColor(o.seat),
+        }))
+      : otherBalls(game, players, up).map(o => ({ ...o, at: rolling(o.seat) ?? o.at, color: seatColor(o.seat) })),
+  )
+  const current = $derived(game.balls[up])
+  // The dial only while the putter can still aim: nothing rolling, tries left, the ball still in play
+  const aiming = $derived(!playing && !game.finished && !game.visitLocked && (current.status === 'waiting' || current.status === 'playing'))
 </script>
 
 <main
@@ -117,14 +166,16 @@
   <section aria-label="Players" class="flex flex-col gap-2 lg:overflow-y-auto">
     {#each playerRows as r (r.seat)}
       <div
-        class="flex items-center gap-3 rounded-[14px] border px-4 py-3 {r.active
-          ? 'border-accent bg-accent-tint'
-          : 'border-line bg-surface-1'}"
+        class="flex items-center gap-3 rounded-[14px] border px-4 py-3 {r.active ? '' : 'border-line bg-surface-1'}"
+        style:border-color={r.active ? seatColor(r.seat) : undefined}
+        style:background={r.active ? `color-mix(in srgb, ${seatColor(r.seat)} 14%, transparent)` : undefined}
         data-testid="minigolf-player"
       >
         <div class="flex min-w-0 flex-col">
           <span class="truncate text-[17px] font-semibold">{r.name}</span>
-          <span class="text-[13px] {r.active ? 'text-accent' : 'text-text-muted'}">{r.status}</span>
+          <span class="text-[13px] {r.active ? '' : 'text-text-muted'}" style:color={r.active ? seatColor(r.seat) : undefined}
+            >{r.status}</span
+          >
         </div>
         <div class="ml-auto flex items-baseline gap-3 text-right">
           <span class="flex flex-col">
@@ -142,7 +193,15 @@
 
   <!-- The hole -->
   <section aria-label="Hole" class="min-h-[45vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
-    <HoleView hole={toHole(game.hole)} {ball} {others} />
+    <HoleView
+      hole={shownHole}
+      {ball}
+      ballColor={seatColor(up)}
+      {others}
+      previews={previewLines(game)}
+      aim={aiming ? { at: ball, ...game.reach } : null}
+      camera={roll && zoom.current > 0 ? { focus: rolling(roll.seat) ?? ball, t: zoom.current } : null}
+    />
   </section>
 
   <!-- The hole card, the board to aim on, the tries -->
@@ -183,5 +242,5 @@
 </main>
 
 {#if scorecard}
-  <ScorecardOverlay {game} {players} onclose={() => (scorecard = false)} />
+  <ScorecardOverlay {game} {players} onclose={() => (scorecardDue = false)} />
 {/if}
