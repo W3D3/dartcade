@@ -382,6 +382,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/ofrep/v1/evaluate/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Every flag for the signed-in user (signed out, an anonymous user: every flag off)
+         * @description The request's context is ignored; flags are evaluated for the session's user. An ETag comes with the result; a matching If-None-Match answers 304.
+         */
+        post: operations["ofrepEvaluateFlags"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/ofrep/v1/evaluate/flags/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** One flag for the signed-in user */
+        post: operations["ofrepEvaluateFlag"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/me": {
         parameters: {
             query?: never;
@@ -1033,6 +1070,27 @@ export interface components {
                     bust: boolean;
                 }[];
             }[];
+        };
+        /** @description OFREP's request body. Its context is accepted and ignored. */
+        OfrepRequest: {
+            context?: {
+                [key: string]: unknown;
+            };
+        };
+        OfrepEvaluation: {
+            key: string;
+            value: boolean;
+            /** @description OpenFeature resolution reason, e.g. TARGETING_MATCH */
+            reason: string;
+            variant: string;
+        };
+        OfrepBulkResponse: {
+            flags: components["schemas"]["OfrepEvaluation"][];
+        };
+        OfrepFailure: {
+            key: string;
+            /** @enum {string} */
+            errorCode: "FLAG_NOT_FOUND";
         };
         MinigolfDetail: {
             /**
@@ -2317,6 +2375,74 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    ofrepEvaluateFlags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OfrepRequest"];
+            };
+        };
+        responses: {
+            /** @description The flags */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfrepBulkResponse"];
+                };
+            };
+            /** @description Unchanged since the ETag sent in If-None-Match */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    ofrepEvaluateFlag: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OfrepRequest"];
+            };
+        };
+        responses: {
+            /** @description The flag */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfrepEvaluation"];
+                };
+            };
+            /** @description No such flag */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OfrepFailure"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };

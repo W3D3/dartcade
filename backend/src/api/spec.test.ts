@@ -23,7 +23,9 @@ async function registeredRoutes() {
   })
   await app.ready()
   await app.close()
-  return routes.filter(r => (r.path.startsWith('/api/') || r.path === '/health') && !EXCLUDED.some(x => x.test(r.path)))
+  return routes.filter(
+    r => (r.path.startsWith('/api/') || r.path.startsWith('/ofrep/') || r.path === '/health') && !EXCLUDED.some(x => x.test(r.path)),
+  )
 }
 
 const key = (r: { method: string; path: string }) => `${r.method} ${r.path}`

@@ -21,6 +21,7 @@ import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { friendsApiPlugin } from './api/friends.js'
 import { envFlagsOn, setupFlags } from './flags/index.js'
+import { ofrepApiPlugin } from './api/ofrep.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
@@ -130,6 +131,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
+  await app.register(ofrepApiPlugin, { db })
   await app.register(boardsApiPlugin, {
     db,
     releaseBoard: boardId => lobbies.releaseBoard(boardId),
