@@ -57,7 +57,6 @@ export function chosenGame(games: { id: string }[], selectedMode: string, config
           tries: config.tries,
           maxStrokes: config.maxStrokes,
           ballContact: config.ballContact,
-          shotDelay: config.shotDelay,
           aimAssist: config.aimAssist,
           shotPreview: config.shotPreview,
         }

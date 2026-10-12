@@ -20,19 +20,30 @@ export function playPath<P = Pt>(path: P[], onFrame: (p: P) => void, reducedMoti
   })
 }
 
-/** Steps through `frames` 60 Hz frames in real time, calling `onFrame` with each index; returns a
- *  function that stops it. With reduced motion it jumps to the last frame. */
-export function playFrames(frames: number, onFrame: (i: number) => void, reducedMotion: boolean): () => void {
+/** Steps through `frames` 60 Hz frames in real time, calling `onFrame` with the (fractional, for
+ *  smooth slow motion) position on every animation frame, then
+ *  `onDone`; `rate` slows playback at a frame (0.5 = half speed). Returns a function that stops it.
+ *  With reduced motion it jumps to the last frame. */
+export function playFrames(
+  frames: number,
+  onFrame: (i: number) => void,
+  reducedMotion: boolean,
+  { rate = () => 1, onDone = () => {} }: { rate?: (i: number) => number; onDone?: () => void } = {},
+): () => void {
   if (reducedMotion || frames < 2) {
     onFrame(Math.max(0, frames - 1))
+    onDone()
     return () => {}
   }
   let raf = 0
-  const start = performance.now()
+  let at = 0
+  let last = performance.now()
   const tick = (now: number) => {
-    const i = Math.min(frames - 1, Math.floor(((now - start) / 1000) * 60))
-    onFrame(i)
-    if (i < frames - 1) raf = requestAnimationFrame(tick)
+    at = Math.min(frames - 1, at + ((now - last) / 1000) * 60 * rate(at))
+    last = now
+    onFrame(at)
+    if (at < frames - 1) raf = requestAnimationFrame(tick)
+    else onDone()
   }
   raf = requestAnimationFrame(tick)
   return () => cancelAnimationFrame(raf)

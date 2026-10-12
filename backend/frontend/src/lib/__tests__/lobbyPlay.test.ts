@@ -67,14 +67,13 @@ describe('chosenGame', () => {
       tries: 1,
       maxStrokes: 5,
       ballContact: true,
-      shotDelay: 2,
       aimAssist: false,
       shotPreview: true,
       startScore: 501,
     }
     expect(chosenGame(games, 'minigolf', config)).toEqual({
       gameId: 'minigolf',
-      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, shotDelay: 2, aimAssist: false, shotPreview: true },
+      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, aimAssist: false, shotPreview: true },
     })
   })
 

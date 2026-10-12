@@ -470,7 +470,6 @@ export interface MinigolfGame {
     tries: 1 | 3
     maxStrokes: number
     ballContact: boolean
-    shotDelay: number
     aimAssist: boolean
     shotPreview: boolean
   }
@@ -513,6 +512,10 @@ export interface MinigolfGame {
       path: MinigolfPt[]
       holed: boolean
     }[]
+    /**
+     * With shot preview, while darts are left: the try's way up to its first contact.
+     */
+    preview: MinigolfPt[]
   }[]
   /**
    * The hole just finished: scores and every stroke's path per seat, for the scorecard.
@@ -527,7 +530,7 @@ export interface MinigolfGame {
   totalDarts: number[]
   totalVisits: number[]
   /**
-   * Shot preview is off and darts are left: the tries carry no paths or outcome.
+   * Darts are left: the tries carry no outcome (only, with shot preview, the way to their first contact).
    */
   shotHidden: boolean
   /**
@@ -544,6 +547,13 @@ export interface MinigolfGame {
       holed: boolean
     }[]
   } | null
+  /**
+   * How far a putt rolls on flat felt (mm) for a dart in the middle of the treble ring and at the double wire: the aim overlay's rings.
+   */
+  reach: {
+    treble: number
+    double: number
+  }
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

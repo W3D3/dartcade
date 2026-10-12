@@ -6,7 +6,8 @@ import type { MinigolfView } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
 import { COURSES, getCourse, mixedHoles } from '../shared/minigolf/courses/index.js'
 import { DEFAULT_PHYSICS, type Physics } from '../shared/minigolf/physics.js'
-import { shotFromDart } from '../shared/minigolf/shot.js'
+import { R } from '../shared/board.js'
+import { powerAt, shotFromDart } from '../shared/minigolf/shot.js'
 import type { Hole, OtherBall, Pt, ShotResult } from '../shared/minigolf/types.js'
 import { cachedShot } from './minigolfShots.js'
 import { row, values } from './matchStats.js'
@@ -18,11 +19,9 @@ export type MinigolfConfig = {
   tries: 1 | 3
   maxStrokes: number
   ballContact: boolean
-  /** Seconds the match screen waits for another dart before the ball rolls (presentation only). */
-  shotDelay: number
   /** A putt close to a clear line to the cup is pulled onto it (see shared/minigolf/shot.ts). */
   aimAssist: boolean
-  /** Show where a try goes while darts are left to replace it; off: only once the stroke is kept. */
+  /** While darts are left to replace a try, show its way up to the first contact. */
   shotPreview: boolean
 }
 
@@ -88,15 +87,12 @@ const configMeta: Record<string, ConfigFieldMeta> = {
   },
   shotPreview: {
     label: 'Shot preview',
-    tooltip: 'Show where each try goes while you still have darts to replace it. Off: the ball rolls once you pull the darts.',
+    tooltip:
+      'While you still have darts to replace a try, show its way up to the first wall, ball or the cup. The ball rolls once you pull the darts.',
     options: [
       { value: false, label: 'Off' },
       { value: true, label: 'On' },
     ],
-  },
-  shotDelay: {
-    label: 'Shot delay',
-    tooltip: 'The ball rolls once no new dart has landed for this long, so you see the shot play out before you pull the darts.',
   },
 }
 
@@ -214,9 +210,10 @@ function locked(s: MinigolfState): boolean {
   return s.finished || s.tries.length >= s.cfg.tries
 }
 
-/** Without shot preview, tries stay hidden while darts are left to replace them. */
+/** While darts are left to replace a try, where it ends stays hidden (shot preview shows the
+ *  first part of its way); it's revealed once the tries are used up or the darts are pulled. */
 function hidden(s: MinigolfState): boolean {
-  return !s.cfg.shotPreview && !locked(s)
+  return !locked(s)
 }
 
 /** The winner once the game is over: the lowest total (the lower seat on a tie). */
@@ -229,7 +226,7 @@ function winnerOf(s: MinigolfState): number | null {
 export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfView, 'minigolf', MinigolfDetail> = {
   id: 'minigolf',
   version: 1,
-  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, shotDelay: 3, aimAssist: true, shotPreview: false },
+  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: false },
   configMeta,
   positionalDarts: true,
 
@@ -239,9 +236,17 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
     return null
   },
 
-  init(saved: MinigolfConfig, players: Player[], rng: Rng = Math.random): MinigolfState {
-    // A config saved before an option existed plays with its default
-    const cfg = { ...minigolfModule.defaultConfig, ...saved }
+  init(saved: Partial<MinigolfConfig>, players: Player[], rng: Rng = Math.random): MinigolfState {
+    // A config saved before an option existed plays with its default; one gone since is dropped
+    const d = minigolfModule.defaultConfig
+    const cfg: MinigolfConfig = {
+      course: saved.course ?? d.course,
+      tries: saved.tries ?? d.tries,
+      maxStrokes: saved.maxStrokes ?? d.maxStrokes,
+      ballContact: saved.ballContact ?? d.ballContact,
+      aimAssist: saved.aimAssist ?? d.aimAssist,
+      shotPreview: saved.shotPreview ?? d.shotPreview,
+    }
     const course = getCourse(cfg.course)
     const holes = course ? course.holes : mixedHoles(rng)
     const order = players.map((_, i) => i)
@@ -302,6 +307,11 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       totals: totals(s),
       toPar: toPar(s),
       shotHidden: hidden(s),
+      // How far a dart in the middle of the treble ring and one at the double wire roll on flat felt
+      reach: {
+        treble: Math.round(powerAt((R.si + R.tr) / 2, s.physics) * s.physics.maxRoll),
+        double: Math.round(powerAt(1, s.physics) * s.physics.maxRoll),
+      },
       // Hidden tries keep only what the board shows anyway: the dart and its power
       tries: s.tries.map(t => {
         const result = hidden(s) ? null : t.result
@@ -312,6 +322,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
           holed: result?.holed ?? false,
           missed: t.result === null,
           path: result ? roundPath(result.path) : [],
+          preview: hidden(s) && s.cfg.shotPreview && t.result ? roundPath(t.result.preview) : [],
           others: (result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
         }
       }),

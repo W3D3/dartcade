@@ -26,11 +26,11 @@ const STATUS: Record<MinigolfGame['balls'][number]['status'], string> = {
   done: 'Done',
 }
 
-/** Everyone in this hole's turn order. */
-export function rows(g: MinigolfGame, players: { name: string }[]): Row[] {
+/** Everyone in this hole's turn order; `up` is who's shown putting (the one whose stroke still rolls). */
+export function rows(g: MinigolfGame, players: { name: string }[], up = g.currentPlayer): Row[] {
   return g.order.map(seat => {
     const b = g.balls[seat]
-    const active = !g.finished && seat === g.currentPlayer
+    const active = !g.finished && seat === up
     return {
       seat,
       name: players[seat]?.name ?? `Player ${seat + 1}`,
@@ -83,21 +83,19 @@ export function ownBall(g: MinigolfGame): Pt {
   return pt(g.balls[g.currentPlayer]?.at ?? g.hole.tee)
 }
 
-/** The other balls on the felt: played and not in the cup. */
-export function otherBalls(g: MinigolfGame, players: { name: string }[]): { seat: number; at: Pt; label: string }[] {
+/** The other balls on the felt: played and not in the cup (`up`: the ball drawn as the putter's). */
+export function otherBalls(g: MinigolfGame, players: { name: string }[], up = g.currentPlayer): { seat: number; at: Pt; label: string }[] {
   return g.balls.flatMap((b, seat) =>
-    seat !== g.currentPlayer && b.status === 'playing'
-      ? [{ seat, at: pt(b.at), label: (players[seat]?.name ?? '?').slice(0, 1).toUpperCase() }]
-      : [],
+    seat !== up && b.status === 'playing' ? [{ seat, at: pt(b.at), label: (players[seat]?.name ?? '?').slice(0, 1).toUpperCase() }] : [],
   )
 }
 
-/** A shot to roll on the hole: whose ball, its path, the balls it knocked, and how long to wait. */
-export type Roll = { key: string; seat: number; own: Pt[]; others: { seat: number; path: Pt[] }[]; delayMs: number; kept: boolean }
+/** A shot to roll: on which hole, whose ball, its path, the balls it knocked. */
+export type Roll = { key: string; hole: number; seat: number; own: Pt[]; others: { seat: number; path: Pt[] }[]; kept: boolean }
 
 /**
- * What to roll: the latest try while it's shown (after the shot delay, so a quick retry replaces
- * it first), else the stroke just kept when its tries were hidden. null for nothing new.
+ * What to roll: the latest try once it's revealed (the tries are used up), else the stroke just
+ * kept when its tries were hidden. null for nothing new.
  */
 export function rollFor(g: MinigolfGame): Roll | null {
   const t = g.tries.at(-1)
@@ -105,25 +103,47 @@ export function rollFor(g: MinigolfGame): Roll | null {
     return {
       // A new try, or a correction of the latest, changes the key
       key: `try:${g.holeIdx}:${g.currentPlayer}:${g.tries.length}:${t.label}:${t.coords?.x ?? ''}:${t.coords?.y ?? ''}`,
+      hole: g.holeIdx,
       seat: g.currentPlayer,
       own: t.path.map(pt),
       others: t.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
-      delayMs: g.config.tries === 1 ? 0 : g.config.shotDelay * 1000,
       kept: false,
     }
   }
   const k = g.lastStroke
-  // A stroke that finished the hole shows on the scorecard instead
-  if (g.tries.length > 0 || !k || k.hole !== g.holeIdx || k.path.length < 2) return null
+  // This hole's, or the one that just ended (it rolls on that hole before the scorecard)
+  const onHole = k?.hole === g.holeIdx || (k?.hole === g.lastHole?.index && k?.hole === g.holeIdx - 1)
+  if (g.tries.length > 0 || !k || !onHole || k.path.length < 2) return null
   return {
     key: `stroke:${k.hole}:${k.seat}:${k.stroke}`,
+    hole: k.hole,
     seat: k.seat,
     own: k.path.map(pt),
     others: k.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
-    delayMs: 0,
     kept: true,
   }
 }
 
 /** Identifies a rolled path, so a kept stroke that already rolled as its last try isn't rolled again. */
 export const pathSig = (path: Pt[]): string => `${path.length}:${path.at(-1)?.join(',') ?? ''}`
+
+/** The shot preview's lines while darts are left: the latest try's bright, the ones it replaced faint. */
+export function previewLines(g: MinigolfGame): { path: Pt[]; current: boolean }[] {
+  if (!g.shotHidden) return []
+  const last = g.tries.length - 1
+  return g.tries.flatMap((t, i) => (t.preview.length > 1 ? [{ path: t.preview.map(pt), current: i === last }] : []))
+}
+
+/** Playback speed at a frame of a roll: a bit slower than real time to follow it, and slow motion
+ *  near the cup, where it gets exciting. */
+export function rollRate(at: Pt, cup: number[]): number {
+  const d = Math.hypot(at[0] - (cup[0] ?? 0), at[1] - (cup[1] ?? 0))
+  // Eases from PLAYBACK at SLOW_MO_RANGE down to SLOW_MO at half of it, so it never lurches
+  const t = Math.min(1, Math.max(0, (SLOW_MO_RANGE - d) / (SLOW_MO_RANGE / 2)))
+  return PLAYBACK + (SLOW_MO - PLAYBACK) * t * t * (3 - 2 * t)
+}
+/** Real balls roll too fast to follow on a zoomed-in screen. */
+export const PLAYBACK = 0.6
+/** Within this far of the cup (mm) a roll slows down, reaching SLOW_MO at half the distance. */
+export const SLOW_MO_RANGE = 300
+export const SLOW_MO = 0.25

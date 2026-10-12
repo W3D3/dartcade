@@ -192,4 +192,35 @@ describe('simulateShot', () => {
     const steps = r.path.slice(1).map((p, i) => Math.hypot(p[0] - r.path[i][0], p[1] - r.path[i][1]))
     expect(Math.max(...steps.slice(-8))).toBeLessThan(25)
   })
+
+  it('previews the path up to the first contact', () => {
+    const walled: Hole = {
+      ...lane,
+      walls: [
+        {
+          points: [
+            [0, 2000],
+            [400, 2000],
+          ],
+        },
+      ],
+    }
+    const r = simulateShot(walled, P, lane.tee, up(0.6))
+    const end = r.preview.at(-1)!
+    // Stops at the wall (its face plus the ball's radius), well before the ball comes to rest
+    expect(end[1]).toBeGreaterThan(2000 + P.wallThickness / 2 + 21.35 - 3)
+    expect(end[1]).toBeLessThan(2000 + P.wallThickness / 2 + 21.35 + 25)
+    expect(r.preview.length).toBeLessThan(r.path.length)
+  })
+
+  it('stops the preview at the cup, without saying whether it drops', () => {
+    const r = simulateShot(lane, P, lane.tee, up((lane.tee[1] - lane.cup.at[1]) / P.maxRoll))
+    const end = r.preview.at(-1)!
+    expect(Math.hypot(end[0] - lane.cup.at[0], end[1] - lane.cup.at[1])).toBeGreaterThan(lane.cup.r - 30)
+  })
+
+  it('previews the whole path when nothing is in the way', () => {
+    const r = simulateShot(lane, P, lane.tee, up(0.2))
+    expect(r.preview).toEqual(r.path)
+  })
 })
