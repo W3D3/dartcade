@@ -244,7 +244,8 @@ export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>,
   },
   bullOff: {
     label: 'Bull off',
-    tooltip: 'Who throws first. Off: player 1 starts. WDC/PDC: one dart each, closest to bull goes first.',
+    tooltip:
+      'Who throws first. Off: player 1 starts. One dart each, closest to the bull goes first. The same bull segment twice is thrown again. If nobody hits a bull, WDC measures the distance and PDC throws again.',
     options: [
       { value: 'off', label: 'Off' },
       { value: 'wdc', label: 'WDC' },

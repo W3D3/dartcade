@@ -65,7 +65,7 @@ export interface BullOffThrow {
 export interface BullOffResult {
   order: number[]
   rethrow: boolean
-  reason?: 'tie' | 'bullseye' | 'all_missed'
+  reason?: 'tie' | 'bullseye' | 'outer_bull' | 'no_bull' | 'all_missed'
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
