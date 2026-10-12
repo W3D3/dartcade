@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { applyInput, awaitsFinish, type GameInput } from './apply.js'
 import { atcModule } from '../games/atc.js'
+import { minigolfModule, type MinigolfState } from '../games/minigolf.js'
 import { x01Module } from '../games/x01.js'
 import { seededRng } from './rng.js'
 import type { AnyGameModule, Session, Segment } from './types.js'
@@ -177,6 +178,27 @@ describe('applyInput', () => {
       const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 40, firstTo: 1 }, 2)
       applyInput(s, add(D20), t(0))
       applyInput(s, { source: 'user', action: { type: 'correct_dart', visitIndex: 0, segment: S20 } }, t(1))
+      expect(awaitsFinish(s)).toBe(false)
+    })
+
+    it('Minigolf: the putt that ends the game commits without a Finish (it would give the drop away)', () => {
+      const s = session(minigolfModule, { ...minigolfModule.defaultConfig, course: 'test' })
+      // On the last hole, the ball right in front of the cup: a bull drops it and ends the game
+      const st = s.committedState as MinigolfState
+      const last = st.holes.length - 1
+      const [cx, cy] = st.holes[last].cup.at
+      s.committedState = { ...st, holeIdx: last, balls: [{ at: [cx, cy + 120], strokes: 1, status: 'playing', paths: [] }] }
+      s.currentState = s.committedState
+      applyInput(
+        s,
+        {
+          source: 'user',
+          action: { type: 'add_dart', segment: { name: 'Bull', number: 50, bed: 'Double', multiplier: 2 }, coords: { x: 0, y: 0 } },
+        },
+        t(0),
+      )
+      const after = minigolfModule.onBoardEvent(s.currentState as MinigolfState, { kind: 'takeout.finished', data: {} }).state
+      expect(minigolfModule.view(after, s.players).winner).toBe(0)
       expect(awaitsFinish(s)).toBe(false)
     })
 

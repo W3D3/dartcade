@@ -36,6 +36,7 @@ function hasWinner(session: Session, state: unknown): boolean {
  * be corrected; the engine drops the board's takeout, new visits and darts until then.
  */
 export function awaitsFinish(session: Session): boolean {
+  if (session.module.noFinishHold) return false
   if (!session.openVisitEvents.some(isDart) || inBullOff(session, session.currentState)) return false
   const after = session.module.onBoardEvent(session.currentState, { kind: 'takeout.finished', data: {} }).state
   return hasWinner(session, after)

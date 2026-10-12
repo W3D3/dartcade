@@ -10,6 +10,7 @@
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
+  import { rollFor } from '$lib/minigolf/match'
   import BoardLegend from '../lib/components/BoardLegend.svelte'
   import VisitBand from '../lib/components/VisitBand.svelte'
   import DartSlots from '../lib/components/DartSlots.svelte'
@@ -483,9 +484,14 @@
       })
       .catch(() => undefined)
   })
-  // Minigolf's last stroke rolls before the win screen
-  let minigolfRolling = $state(false)
-  const win = $derived(minigolfRolling ? null : winView(snapshot, savedGame?.game.id === snapshot?.sessionId ? savedGame : null))
+  // Minigolf's last stroke rolls before the win screen: it waits until the match screen says that roll is done
+  let minigolfRolled = $state<string | null>(null)
+  const minigolfLastRoll = $derived(minigolf?.finished ? (rollFor(minigolf)?.key ?? null) : null)
+  const minigolfHold = $derived(minigolfLastRoll !== null && minigolfLastRoll !== minigolfRolled)
+  function minigolfRolledKey(key: string): void {
+    minigolfRolled = key
+  }
+  const win = $derived(minigolfHold ? null : winView(snapshot, savedGame?.game.id === snapshot?.sessionId ? savedGame : null))
   // The win fanfare, once, when a game played here is won (not when opening a finished one)
   let sawPlay = false
   let fanfare = false
@@ -762,7 +768,7 @@
           onUndo={undo}
           onNext={advance}
           onBoardClick={addBoardDart}
-          bind:rolling={minigolfRolling}
+          onrolled={minigolfRolledKey}
           {settings}
         />
       {:else if !game}

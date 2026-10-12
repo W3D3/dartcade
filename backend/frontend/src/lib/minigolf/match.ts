@@ -98,6 +98,8 @@ export type Roll = {
   own: Pt[]
   others: { seat: number; path: Pt[] }[]
   kept: boolean
+  /** The stroke it is (hole:seat:stroke number): a kept stroke whose last try already rolled isn't rolled again. */
+  stroke: string
   /** When the ball knocks into something, in path samples; and whether it drops (for its sounds). */
   hits: number[]
   holed: boolean
@@ -118,6 +120,7 @@ export function rollFor(g: MinigolfGame): Roll | null {
       own: t.path.map(pt),
       others: t.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
       kept: false,
+      stroke: `${g.holeIdx}:${g.currentPlayer}:${(g.balls[g.currentPlayer]?.strokes ?? 0) + 1}`,
       hits: t.hits,
       holed: t.holed,
     }
@@ -133,13 +136,26 @@ export function rollFor(g: MinigolfGame): Roll | null {
     own: k.path.map(pt),
     others: k.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
     kept: true,
+    stroke: `${k.hole}:${k.seat}:${k.stroke}`,
     hits: k.hits,
     holed: k.holed,
   }
 }
 
-/** Identifies a rolled path, so a kept stroke that already rolled as its last try isn't rolled again. */
-export const pathSig = (path: Pt[]): string => `${path.length}:${path.at(-1)?.join(',') ?? ''}`
+/**
+ * What the match screen does with what rollFor gives it: animate it or not, and the stroke it then
+ * remembers as rolled. Not the roll already there when the page opened (it shows the game at rest),
+ * and not a kept stroke whose last try already rolled. No roll means the tries went back to hidden
+ * (an undo): a stroke kept after that has never rolled, so it's forgotten.
+ */
+export function nextRoll(roll: Roll | null, openedOn: string | null, rolledStroke: string): { animate: boolean; rolledStroke: string } {
+  if (!roll) return { animate: false, rolledStroke: '' }
+  if (roll.key === openedOn || (roll.kept && roll.stroke === rolledStroke)) return { animate: false, rolledStroke }
+  return { animate: true, rolledStroke: roll.stroke }
+}
+
+/** A pause before a stroke rolls, for the suspense (and to look up from the board). */
+export const ROLL_DELAY_MS = 3000
 
 /** The shot preview's lines while darts are left: the latest try's bright, the ones it replaced faint. */
 export function previewLines(g: MinigolfGame): { path: Pt[]; current: boolean }[] {

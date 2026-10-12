@@ -140,6 +140,9 @@ export interface GameModule<
   /** Darts count by where they landed (Minigolf): manual darts and corrections without a spot
    *  on the board are refused. */
   positionalDarts?: true
+  /** The visit that wins the game commits like any other, without waiting for a Finish button
+   *  (see awaitsFinish): in Minigolf that button would give away that the putt drops. */
+  noFinishHold?: true
   /** Reject a config that can't be played with these players; returns the reason. */
   validate?(cfg: Cfg, players: Player[]): string | null
   /** `rng` drives any random setup; the engine passes one seeded per game. */

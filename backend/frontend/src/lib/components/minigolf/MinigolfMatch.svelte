@@ -17,7 +17,18 @@
   import { playFrames } from '$lib/minigolf/animate'
   import type { GameSettings } from '$lib/gameSettings'
   import { createSounds } from '$lib/sounds'
-  import { PLAYBACK, otherBalls, pathSig, previewLines, rollFor, rollRate, rows, toHole, trySlots } from '$lib/minigolf/match'
+  import {
+    PLAYBACK,
+    ROLL_DELAY_MS,
+    nextRoll,
+    otherBalls,
+    previewLines,
+    rollFor,
+    rollRate,
+    rows,
+    toHole,
+    trySlots,
+  } from '$lib/minigolf/match'
   import type { Pt } from '$shared/minigolf/types'
 
   let {
@@ -31,7 +42,7 @@
     onUndo,
     onNext,
     onBoardClick,
-    rolling: busy = $bindable(false),
+    onrolled,
     settings,
   }: {
     game: MinigolfGame
@@ -45,8 +56,9 @@
     onUndo: () => void
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    /** A stroke is still rolling: the match screen holds the turn (and the win screen) until it's done. */
-    rolling?: boolean
+    /** A roll (its key from rollFor) is done, or there was nothing to roll: the page holds the win
+     *  screen until the game's last stroke has rolled. */
+    onrolled?: (key: string) => void
     /** The viewer's display and sound settings (direction wheel, slow motion, sounds). */
     settings: GameSettings
   } = $props()
@@ -56,7 +68,8 @@
 
   // Where the balls are drawn: at rest from the snapshot, or along the roll while it plays
   let frame = $state<number | null>(null)
-  let rolled = ''
+  /** The stroke last rolled (see Roll.stroke and nextRoll). */
+  let rolledStroke = ''
   // Only a new roll restarts the animation: other snapshot changes must not cancel one in play
   const rollKey = $derived(roll?.key ?? null)
   const zoom = new Tween(0, { duration: 450, easing: cubicOut })
@@ -67,19 +80,15 @@
   // Opening the page (or a reload) shows the game at rest: a stroke rolled before isn't rolled again
   const openedOn = untrack(() => rollKey)
   $effect.pre(() => {
-    if (rollKey === null || rollKey === openedOn) {
+    const current = rollKey === null ? null : untrack(() => roll)
+    const step = nextRoll(current, openedOn, rolledStroke)
+    rolledStroke = step.rolledStroke
+    if (!current || !step.animate) {
       frame = null
+      if (current) onrolled?.(current.key)
       return
     }
-    const current = untrack(() => roll)
-    if (!current) return
     const r = current
-    // A kept stroke that already rolled as its last try stays put
-    if (r.kept && pathSig(r.own) === rolled) {
-      frame = null
-      return
-    }
-    rolled = pathSig(r.own)
     frame = 0
     const frames = Math.max(r.own.length, ...r.others.map(o => o.path.length))
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -97,6 +106,7 @@
         rate: i => (settings.slowMotion ? rollRate(at(r.own, i), cup) : PLAYBACK),
         onDone: () => {
           playing = false
+          onrolled?.(r.key)
           zoomOut = setTimeout(() => void zoom.set(0), 700)
         },
       })
@@ -110,11 +120,14 @@
         if (settings.soundBall) sounds.cup()
       }
     }
-    // The camera settles on the ball before it starts to roll
-    if (reduced) play()
-    else void zoom.set(1).then(play)
+    // A pause for the suspense, then the camera settles on the ball before it starts to roll
+    const pause = setTimeout(() => {
+      if (reduced) play()
+      else void zoom.set(1).then(play)
+    }, ROLL_DELAY_MS)
     return () => {
       cancelled = true
+      clearTimeout(pause)
       clearTimeout(zoomOut)
       stop()
       playing = false
@@ -147,9 +160,6 @@
       if (!last.missed && settings.soundHit) sounds.hit()
     }
     triesHeard = n
-  })
-  $effect(() => {
-    busy = playing
   })
 
   /** The point at fractional frame `i` of a path: between two samples it glides, so slow motion stays smooth. */
@@ -276,7 +286,16 @@
       <span>This hole</span>
       <span><strong class="text-text">{current.strokes}</strong> / max {game.config.maxStrokes}</span>
     </div>
-    <ControlBar {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
+    <!-- With darts in: Shoot keeps the last try and rolls it; the next player comes up after the roll -->
+    <ControlBar
+      canUndo={canUndo && !playing}
+      label={darts.length > 0 ? 'Shoot' : next.label}
+      prominent={next.prominent}
+      primary={darts.length > 0}
+      enabled={next.enabled && !playing}
+      {onUndo}
+      {onNext}
+    />
   </section>
 </main>
 

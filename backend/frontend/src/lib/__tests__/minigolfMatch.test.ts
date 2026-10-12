@@ -1,6 +1,18 @@
 import { describe, it, expect } from 'vitest'
 import type { MinigolfGame } from '$lib/api'
-import { PLAYBACK, SLOW_MO, fmtToPar, otherBalls, ownBall, previewLines, rollFor, rollRate, rows, trySlots } from '$lib/minigolf/match'
+import {
+  PLAYBACK,
+  SLOW_MO,
+  fmtToPar,
+  nextRoll,
+  otherBalls,
+  ownBall,
+  previewLines,
+  rollFor,
+  rollRate,
+  rows,
+  trySlots,
+} from '$lib/minigolf/match'
 
 const hole = {
   id: 'h',
@@ -173,5 +185,63 @@ describe('minigolf match', () => {
     // Two holes back: nothing to roll
     expect(rollFor(game({ holeIdx: 2, lastHole, lastStroke }))).toBeNull()
     expect(rows(game(), players, 0).find(r => r.active)?.name).toBe('Anna')
+  })
+
+  it('names the stroke a try belongs to the same as the stroke it becomes', () => {
+    // Ben (seat 1) has no strokes on hole 2 yet: his try is stroke 1, kept as hole 1, seat 1, stroke 1
+    const t = rollFor(game({ tries: [tryOf('S20')] }))
+    const k = rollFor(
+      game({
+        currentPlayer: 0,
+        lastStroke: {
+          hole: 1,
+          seat: 1,
+          stroke: 1,
+          path: [
+            [250, 2750],
+            [250, 2000],
+          ],
+          others: [],
+          hits: [],
+          holed: false,
+        },
+      }),
+    )
+    expect(t?.stroke).toBe('1:1:1')
+    expect(k?.stroke).toBe(t?.stroke)
+  })
+
+  it('rolls a stroke once: not again when kept after its last try rolled, but after an undo it does', () => {
+    const tryRoll = rollFor(game({ tries: [tryOf('S1'), tryOf('S5'), tryOf('S20')] }))!
+    const kept = rollFor(
+      game({
+        currentPlayer: 0,
+        lastStroke: {
+          hole: 1,
+          seat: 1,
+          stroke: 1,
+          path: [
+            [250, 2750],
+            [250, 2000],
+          ],
+          others: [],
+          hits: [],
+          holed: false,
+        },
+      }),
+    )!
+    // The third try is revealed and rolls
+    let step = nextRoll(tryRoll, null, '')
+    expect(step.animate).toBe(true)
+    // Shoot: the kept stroke is that try, already rolled
+    expect(nextRoll(kept, null, step.rolledStroke).animate).toBe(false)
+    // Undo instead (the tries hide again: no roll), then Shoot: the kept stroke rolls
+    step = nextRoll(null, null, step.rolledStroke)
+    expect(nextRoll(kept, null, step.rolledStroke).animate).toBe(true)
+  })
+
+  it('does not roll what was already there when the page opened', () => {
+    const tryRoll = rollFor(game({ tries: [tryOf('S20')] }))!
+    expect(nextRoll(tryRoll, tryRoll.key, '').animate).toBe(false)
   })
 })
