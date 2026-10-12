@@ -33,6 +33,10 @@
       "description": "Available game modes"
     },
     {
+      "name": "flags",
+      "description": "Feature flags over the OpenFeature Remote Evaluation Protocol (OFREP v1), for the SPA's OFREP web provider"
+    },
+    {
       "name": "boards",
       "description": "Paired boards and their Board Manager"
     },
@@ -5671,6 +5675,258 @@
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ofrep/v1/evaluate/flags": {
+      "post": {
+        "operationId": "ofrepEvaluateFlags",
+        "summary": "Every flag for the signed-in user (signed out, an anonymous user: every flag off)",
+        "description": "The request's context is ignored; flags are evaluated for the session's user. An ETag comes with the result; a matching If-None-Match answers 304.",
+        "tags": [
+          "flags"
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "OFREP's request body. Its context is accepted and ignored.",
+                "properties": {
+                  "context": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The flags",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "flags"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "flags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "value",
+                          "reason",
+                          "variant"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "value": {
+                            "type": "boolean"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "OpenFeature resolution reason, e.g. TARGETING_MATCH"
+                          },
+                          "variant": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Unchanged since the ETag sent in If-None-Match"
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/ofrep/v1/evaluate/flags/{key}": {
+      "post": {
+        "operationId": "ofrepEvaluateFlag",
+        "summary": "One flag for the signed-in user",
+        "tags": [
+          "flags"
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "OFREP's request body. Its context is accepted and ignored.",
+                "properties": {
+                  "context": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The flag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "key",
+                    "value",
+                    "reason",
+                    "variant"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "value": {
+                      "type": "boolean"
+                    },
+                    "reason": {
+                      "type": "string",
+                      "description": "OpenFeature resolution reason, e.g. TARGETING_MATCH"
+                    },
+                    "variant": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No such flag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "key",
+                    "errorCode"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "errorCode": {
+                      "type": "string",
+                      "enum": [
+                        "FLAG_NOT_FOUND"
+                      ]
                     }
                   }
                 }
@@ -14616,6 +14872,97 @@
                 }
               }
             }
+          }
+        }
+      },
+      "OfrepRequest": {
+        "type": "object",
+        "description": "OFREP's request body. Its context is accepted and ignored.",
+        "properties": {
+          "context": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "OfrepEvaluation": {
+        "type": "object",
+        "required": [
+          "key",
+          "value",
+          "reason",
+          "variant"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "value": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "description": "OpenFeature resolution reason, e.g. TARGETING_MATCH"
+          },
+          "variant": {
+            "type": "string"
+          }
+        }
+      },
+      "OfrepBulkResponse": {
+        "type": "object",
+        "required": [
+          "flags"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "value",
+                "reason",
+                "variant"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "value": {
+                  "type": "boolean"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "OpenFeature resolution reason, e.g. TARGETING_MATCH"
+                },
+                "variant": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      },
+      "OfrepFailure": {
+        "type": "object",
+        "required": [
+          "key",
+          "errorCode"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "errorCode": {
+            "type": "string",
+            "enum": [
+              "FLAG_NOT_FOUND"
+            ]
           }
         }
       },

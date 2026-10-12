@@ -26,6 +26,7 @@ export default defineConfig({
     allowedHosts,
     proxy: {
       '/api': { target: `http://${backendHost}:3000`, changeOrigin: true },
+      '/ofrep': { target: `http://${backendHost}:3000`, changeOrigin: true },
       '/ws': { target: `ws://${backendHost}:3000`, ws: true },
       '/bridge': { target: `ws://${backendHost}:3000`, ws: true },
     },
