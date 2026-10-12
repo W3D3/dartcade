@@ -230,6 +230,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
   defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: false },
   configMeta,
   positionalDarts: true,
+  noFinishHold: true,
 
   validate(cfg) {
     if (cfg.course !== 'mixed' && !getCourse(cfg.course)) return 'Unknown course'

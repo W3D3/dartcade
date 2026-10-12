@@ -10,6 +10,7 @@
     onUndo,
     onNext,
     compact = false,
+    primary = false,
   }: {
     canUndo: boolean
     label: string
@@ -20,6 +21,8 @@
     onNext: () => void
     /** Phones: 44 px instead of 52 px. */
     compact?: boolean
+    /** The main action, filled in the accent colour (Minigolf's Shoot). */
+    primary?: boolean
   } = $props()
 </script>
 
@@ -40,9 +43,11 @@
     onclick={onNext}
     disabled={!enabled}
     class="{compact ? 'h-11' : 'h-12'} flex items-center gap-1 rounded-[10px] cursor-pointer disabled:opacity-40 disabled:cursor-default
-           {prominent
-      ? 'px-4 border border-line-strong bg-transparent text-text text-[15px] font-medium'
-      : 'px-2 border-0 bg-transparent text-text-muted text-[14px]'}"
+           {primary
+      ? 'px-6 border-0 bg-accent text-accent-fg hover:bg-accent-hover font-display font-bold text-[20px] uppercase tracking-[0.02em]'
+      : prominent
+        ? 'px-4 border border-line-strong bg-transparent text-text text-[15px] font-medium'
+        : 'px-2 border-0 bg-transparent text-text-muted text-[14px]'}"
   >
     {label}
     <ChevronRight size={16} />
