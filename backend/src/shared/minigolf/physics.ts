@@ -5,8 +5,11 @@ export interface Physics {
   friction: number
   /** Below this speed (mm/s) the ball stops, unless a slope is stronger than friction. */
   restSpeed: number
-  /** The fastest the ball may roll over the cup's rim and still drop, mm/s; over its centre twice that. */
-  captureSpeed: number
+  /** The cup's pull towards its middle while the ball is over it (its edge slopes in), mm/s². */
+  cupPull: number
+  /** How long the ball must stay over the cup to fall in, s: a fast ball, or one clipping the rim
+   *  (a shorter way across), escapes first. */
+  dropTime: number
   /** How far a full-power putt rolls on flat felt, mm. Power is a share of this distance, so the
    *  distance from the bull maps linearly to how far the ball rolls. */
   maxRoll: number
@@ -30,7 +33,8 @@ export interface Physics {
 export const DEFAULT_PHYSICS: Physics = {
   friction: 1200,
   restSpeed: 8,
-  captureSpeed: 1100,
+  cupPull: 6000,
+  dropTime: 0.045,
   maxRoll: 4500,
   minPutt: 0.05,
   wallRestitution: 0.7,
