@@ -167,11 +167,29 @@ describe('simulateShot', () => {
   })
 
   it('drops a ball crossing the middle of the cup faster than one clipping its rim', () => {
-    // Crosses the cup at about 1.5 × the capture speed: straight over its centre, then 45 mm off it
-    const roll = (1.5 * P.captureSpeed) ** 2 / (2 * P.friction)
+    // Crosses the cup at 1.6 m/s: straight over its middle, then 45 mm off it (a short way across)
+    const roll = 1600 ** 2 / (2 * P.friction)
     const power = (lane.tee[1] - lane.cup.at[1] + roll) / P.maxRoll
     const dead = { ...P, wallRestitution: 0 } // no second pass after the rail behind the cup
     expect(simulateShot(lane, dead, lane.tee, up(power)).holed).toBe(true)
     expect(simulateShot(lane, dead, [lane.tee[0] + 45, lane.tee[1]], up(power)).holed).toBe(false)
+  })
+
+  it('bends a ball clipping the rim towards the cup', () => {
+    const roll = 1600 ** 2 / (2 * P.friction)
+    const power = (lane.tee[1] - lane.cup.at[1] + roll) / P.maxRoll
+    const r = simulateShot(lane, { ...P, wallRestitution: 0 }, [lane.tee[0] + 45, lane.tee[1]], up(power))
+    // It went in straight at x = 245 and left the cup pulled towards its middle (x = 200)
+    const past = r.path.find(p => p[1] < lane.cup.at[1] - lane.cup.r - 30)
+    expect(past![0]).toBeLessThan(lane.tee[0] + 45 - 2)
+  })
+
+  it('pulls a ball that stops on the rim into the cup, without a jump', () => {
+    // Just enough to stop 40 mm short of the cup's middle, inside its rim
+    const power = (lane.tee[1] - lane.cup.at[1] - 40) / P.maxRoll
+    const r = simulateShot(lane, P, lane.tee, up(power))
+    expect(r.holed).toBe(true)
+    const steps = r.path.slice(1).map((p, i) => Math.hypot(p[0] - r.path[i][0], p[1] - r.path[i][1]))
+    expect(Math.max(...steps.slice(-8))).toBeLessThan(25)
   })
 })

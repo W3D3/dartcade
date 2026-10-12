@@ -6,6 +6,8 @@ import { pointInPolygon } from './geometry.js'
 import type { Physics } from './physics.js'
 import { BALL_R, type Hole, type OtherBall, type Pt, type Shot, type ShotResult } from './types.js'
 
+/** Frames a dropped ball takes to sink to the middle of the cup. */
+const SINK_FRAMES = 6
 /** Ball on ball bounce, as golf balls do. */
 const BALL_BOUNCE = 0.9
 /** nape takes the mean of both materials' elasticity (negative values work too): a surface gets
@@ -73,7 +75,8 @@ function slopeForce(hole: Hole, p: Pt): Pt {
 }
 
 /** A ball on the move during a shot: the putted ball (id -1) or another player's (ball contact). */
-type Rolling = { id: number; body: Body; start: Pt; path: Pt[]; holed: boolean; kicked: Set<number> }
+/** `overCup`: how long the ball has been over the cup without leaving it, s. */
+type Rolling = { id: number; body: Body; start: Pt; path: Pt[]; holed: boolean; overCup: number; kicked: Set<number> }
 
 function addBall(space: Space, at: Pt): Body {
   const body = new Body(BodyType.DYNAMIC, new Vec2(at[0], at[1]))
@@ -91,22 +94,31 @@ function roll(b: Rolling, hole: Hole, physics: Physics): boolean {
   let vy = b.body.velocity.y
   let speed = Math.sqrt(vx * vx + vy * vy)
 
-  const dc = Math.sqrt((pos[0] - hole.cup.at[0]) ** 2 + (pos[1] - hole.cup.at[1]) ** 2)
-  // A ball over the middle of the cup drops at up to twice the speed of one clipping its rim
-  if (dc < hole.cup.r && speed < physics.captureSpeed * (2 - dc / hole.cup.r)) {
+  const dt = physics.step
+  const cx = hole.cup.at[0] - pos[0]
+  const cy = hole.cup.at[1] - pos[1]
+  const dc = Math.sqrt(cx * cx + cy * cy)
+  const overCup = dc < hole.cup.r
+  b.overCup = overCup ? b.overCup + dt : 0
+  // Over the cup long enough to fall in: a fast ball, or one clipping the rim, is across first
+  if (b.overCup >= physics.dropTime) {
     b.holed = true
     b.body.space = null
     return false
   }
 
-  const [sx, sy] = slopeForce(hole, pos)
+  // The cup's edge slopes in: over it, the ball is pulled towards the middle (lip-outs curl)
+  let [sx, sy] = slopeForce(hole, pos)
+  if (overCup && dc > 0) {
+    sx += (cx / dc) * physics.cupPull
+    sy += (cy / dc) * physics.cupPull
+  }
   const slope = Math.sqrt(sx * sx + sy * sy)
   if (speed < physics.restSpeed && slope <= physics.friction) {
     if (speed > 0) b.body.velocity = new Vec2(0, 0)
     return false
   }
 
-  const dt = physics.step
   vx += sx * dt
   vy += sy * dt
   speed = Math.sqrt(vx * vx + vy * vy)
@@ -152,6 +164,7 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
     start: o.at,
     path: [o.at],
     holed: false,
+    overCup: 0,
     kicked: new Set<number>(),
   }))
   // Constant friction: a ball rolls v² / 2a, so the speed for `power × maxRoll` is a square root
@@ -173,6 +186,14 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
 
   const done = balls.map(b => {
     const rest: Pt = b.holed ? hole.cup.at : [b.body.position.x, b.body.position.y]
+    if (b.holed) {
+      // No teleport: the dropped ball sinks the rest of the way to the middle over a few frames
+      const from: Pt = [b.body.position.x, b.body.position.y]
+      for (let k = 1; k <= SINK_FRAMES; k++) {
+        const t = k / SINK_FRAMES
+        b.path.push([from[0] + (rest[0] - from[0]) * t, from[1] + (rest[1] - from[1]) * t])
+      }
+    }
     const last = b.path[b.path.length - 1]
     if (last[0] !== rest[0] || last[1] !== rest[1]) b.path.push(rest)
     return { id: b.id, path: b.path, rest, holed: b.holed, moved: b.holed || Math.hypot(rest[0] - b.start[0], rest[1] - b.start[1]) > 0.5 }
