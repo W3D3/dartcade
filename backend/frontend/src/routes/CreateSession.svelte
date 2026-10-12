@@ -25,7 +25,7 @@
     type PlayAction,
   } from '$lib/lobby/play'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
-  import { GAME_MODES, gameModes, withDefaults } from '$lib/gameModes'
+  import { GAME_MODES, gameModes, listedMode, withDefaults } from '$lib/gameModes'
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const X01_DEFAULTS: Record<string, unknown> = {
@@ -81,6 +81,8 @@
     if (!modesLoaded || defaultsApplied) return
     defaultsApplied = true
     untrack(() => {
+      // A saved mode that's no longer offered (its flag is off for you) falls back to one that is
+      selectedMode = listedMode(selectedMode, games)
       config = { ...(gameDefaults[selectedMode] ?? {}), ...(savedConfigs[selectedMode] ?? {}) }
     })
   })

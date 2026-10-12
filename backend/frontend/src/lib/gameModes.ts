@@ -3,7 +3,8 @@
 import { api, type GameInfo } from '$lib/api'
 import { loadOnce } from './loadOnce.js'
 
-export type GameMode = { id: string; glyph: string; name: string; desc: string; available: boolean }
+/** `flag`: the feature flag that has to be on for the mode to show (see lib/flags.ts). */
+export type GameMode = { id: string; glyph: string; name: string; desc: string; available: boolean; flag?: string }
 
 export const GAME_MODES: GameMode[] = [
   {
@@ -26,10 +27,21 @@ export const GAME_MODES: GameMode[] = [
     name: 'Minigolf',
     desc: 'Your dart is the putter. Angle sets direction, distance sets power.',
     available: true,
+    flag: 'gamemode.minigolf.enabled',
   },
   { id: 'soccer', glyph: 'Soccer', name: 'Dart Soccer', desc: 'Coming soon.', available: false },
   { id: 'tournament', glyph: 'R16', name: 'Tournament', desc: 'Coming soon.', available: false },
 ]
+
+/** The modes to show: those without a flag, and those whose flag is on. */
+export function visibleModes(modes: readonly GameMode[], isOn: (flag: string) => boolean): GameMode[] {
+  return modes.filter(m => m.flag === undefined || isOn(m.flag))
+}
+
+/** The saved mode if the backend lists it (it leaves out modes whose flag is off), else its first. */
+export function listedMode(saved: string, games: readonly { id: string }[]): string {
+  return games.some(g => g.id === saved) ? saved : (games[0]?.id ?? saved)
+}
 
 /** The modes the backend has, with their defaults and settings meta; [] until loaded. */
 export const gameModes = loadOnce<GameInfo[]>(async () => {
