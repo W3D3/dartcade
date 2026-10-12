@@ -14,8 +14,9 @@ export interface Physics {
   minPutt: number
   wallRestitution: number
   bumperRestitution: number
-  /** How distance from the bull maps to power. */
-  powerCurve: 'linear' | 'ease-in'
+  /** How distance from the bull maps to power: power grows with distance^powerExponent (1: linear;
+   *  higher keeps short putts further from the bull, where the angle is easier to hit). */
+  powerExponent: number
   /** Fixed simulation step, s. */
   step: number
   /** A shot stops where it is after this long, s. */
@@ -34,7 +35,7 @@ export const DEFAULT_PHYSICS: Physics = {
   minPutt: 0.05,
   wallRestitution: 0.7,
   bumperRestitution: 0.85,
-  powerCurve: 'linear',
+  powerExponent: 2,
   step: 1 / 240,
   maxTime: 20,
   wallThickness: 20,

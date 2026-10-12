@@ -44,10 +44,11 @@ describe('powerAt', () => {
   it('runs from the softest putt at the centre to full power at the double wire', () => {
     expect(powerAt(0, P)).toBeCloseTo(P.minPutt)
     expect(powerAt(1, P)).toBeCloseTo(1)
-    expect(powerAt(0.5, P)).toBeCloseTo(P.minPutt + (1 - P.minPutt) * 0.5)
   })
-  it('bends with the ease-in curve', () => {
-    expect(powerAt(0.5, { ...P, powerCurve: 'ease-in' })).toBeCloseTo(P.minPutt + (1 - P.minPutt) * 0.25)
+  it('bends with the power curve: linear at 1, softer near the bull above it', () => {
+    expect(powerAt(0.5, { ...P, powerExponent: 1 })).toBeCloseTo(P.minPutt + (1 - P.minPutt) * 0.5)
+    expect(powerAt(0.5, { ...P, powerExponent: 2 })).toBeCloseTo(P.minPutt + (1 - P.minPutt) * 0.25)
+    expect(powerAt(1, { ...P, powerExponent: 3 })).toBeCloseTo(1)
   })
 })
 

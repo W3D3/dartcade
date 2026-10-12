@@ -9,7 +9,7 @@ import type { Hole, Pt, Shot } from './types.js'
 /** Power for a dart at distance r from the bull: the softest putt at the centre, 1 at the double wire. */
 export function powerAt(r: number, physics: Physics): number {
   const t = Math.min(1, Math.max(0, r))
-  const curved = physics.powerCurve === 'ease-in' ? t * t : t
+  const curved = t ** physics.powerExponent
   return physics.minPutt + (1 - physics.minPutt) * curved
 }
 

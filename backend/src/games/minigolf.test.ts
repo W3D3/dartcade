@@ -129,8 +129,9 @@ describe('minigolf', () => {
   it('knocks a ball with contact on; a knocked ball that drops counts', () => {
     let s = M.init(cfg({ ballContact: true }), two)
     s = at(at(s, 1, [250, 420]), 0, [250, 900])
-    // Straight up, rolling ~700 mm on its own (power 0.05 + 0.95 r of the 4.5 m full roll)
-    s = visit(s, dart({ x: 0, y: (700 / DEFAULT_PHYSICS.maxRoll - DEFAULT_PHYSICS.minPutt) / (1 - DEFAULT_PHYSICS.minPutt) }))
+    // Straight up, rolling ~700 mm on its own: power = minPutt + (1 − minPutt) · r^powerExponent of the full roll
+    const { maxRoll, minPutt, powerExponent } = DEFAULT_PHYSICS
+    s = visit(s, dart({ x: 0, y: ((700 / maxRoll - minPutt) / (1 - minPutt)) ** (1 / powerExponent) }))
     expect(s.balls[1].status).toBe('holed')
     expect(s.balls[1].strokes).toBe(0)
     expect(s.balls[1].at).toEqual(straight.cup.at)
