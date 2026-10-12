@@ -6,14 +6,7 @@ test('a non-admin is sent away from the bench', async ({ authedPage: page }) => 
   await expect(page.getByTestId('hole-view')).toHaveCount(0)
 })
 
-test('an admin putts once on the bench', async ({ page }) => {
-  const email = 'e2e-admin@test.local' // ADMIN_EMAILS in docker-compose.e2e.yaml
-  const password = 'TestPass1!'
-  const headers = { Origin: 'http://localhost:5174' }
-  await page.request.post('http://localhost:5174/api/auth/sign-up/email', { data: { name: 'e2eadmin', email, password }, headers })
-  const signIn = await page.request.post('http://localhost:5174/api/auth/sign-in/email', { data: { email, password }, headers })
-  expect(signIn.ok()).toBeTruthy()
-
+test('an admin putts once on the bench', async ({ adminPage: page }) => {
   await page.goto('/#/admin/minigolf')
   await expect(page.getByTestId('hole-view')).toBeVisible()
   await expect(page.getByTestId('strokes')).toHaveText('Strokes 0')

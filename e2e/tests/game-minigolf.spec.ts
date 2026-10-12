@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/auth.js'
 import { startGame } from '../fixtures/lobby.js'
 
-test('minigolf: a putt clicked on the board counts once shot', async ({ authedPage: page }) => {
+test('minigolf: a putt clicked on the board counts once shot', async ({ adminPage: page }) => {
   await startGame(page, { mode: 'Minigolf', guests: ['Lena'] })
   await expect(page.getByLabel('Hole', { exact: true })).toBeVisible()
   const rows = page.getByTestId('minigolf-player')
@@ -20,4 +20,11 @@ test('minigolf: a putt clicked on the board counts once shot', async ({ authedPa
   // A 3 s pause, then the roll (slow motion near the cup); only then is the next player up
   await expect(rows.nth(1)).toContainText('Putting', { timeout: 25_000 })
   await expect(rows.first().getByTestId('hole-strokes')).toHaveText('1')
+})
+
+test('minigolf is not offered to players without its flag (admins only for now)', async ({ authedPage: page }) => {
+  await page.goto('/#/')
+  const main = page.locator('main')
+  await expect(main.locator('button:has-text("X01")').first()).toBeVisible()
+  await expect(main.locator('button:has-text("Minigolf")')).toHaveCount(0)
 })
