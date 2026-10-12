@@ -1972,7 +1972,18 @@ components:
         code:
           {
             type: string,
-            enum: [in_lobby, not_ready, board_offline, board_busy, active_session, game_running, already_member, already_invited],
+            enum:
+              [
+                in_lobby,
+                not_ready,
+                board_offline,
+                board_busy,
+                active_session,
+                game_running,
+                already_member,
+                already_invited,
+                game_unavailable,
+              ],
           }
         lobbyId: { type: string, description: 'in_lobby: the lobby you are in; leave it first' }
         sessionId: { type: string, description: "game_running: the lobby's game. active_session: your own running game" }

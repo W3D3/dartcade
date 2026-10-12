@@ -15,7 +15,11 @@ vi.mock('../db/queries.js', () => ({
   getBoardsByOwner: vi.fn().mockResolvedValue([{ id: 'b1' }]),
 }))
 
+vi.mock('../db/users.js', () => ({ getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }) }))
+
 import * as queries from '../db/queries.js'
+import { getRoleAndEmail } from '../db/users.js'
+import { setupFlags } from '../flags/index.js'
 import * as middleware from '../auth/middleware.js'
 
 function makeApp() {
@@ -78,6 +82,18 @@ describe('POST /api/sessions with a userId on a player', () => {
 })
 
 describe('POST /api/sessions', () => {
+  it('refuses a game mode whose flag is off for the user, and starts it for whom it is on', async () => {
+    await setupFlags(new Set())
+    const { app, engine } = makeApp()
+    const minigolf = { boardId: 'b1', gameId: 'minigolf', config: { course: 'test' }, players: [{ name: 'Alice' }] }
+    const refused = await app.inject({ method: 'POST', url: '/api/sessions', payload: minigolf })
+    expect(refused.statusCode).toBe(403)
+    expect(JSON.parse(refused.body)).toEqual({ error: "That game isn't available" })
+    expect(engine.create).not.toHaveBeenCalled()
+    vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
+    expect((await app.inject({ method: 'POST', url: '/api/sessions', payload: minigolf })).statusCode).toBe(201)
+  })
+
   it('returns 201 with sessionId on success', async () => {
     const { app } = makeApp()
     const res = await app.inject({

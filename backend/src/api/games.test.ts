@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { gamesApiPlugin } from './games.js'
 import type { HistoryGame } from '../db/history.js'
+import { setupFlags } from '../flags/index.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -15,9 +16,13 @@ vi.mock('../db/history.js', () => ({
   getViewableGame: vi.fn(),
 }))
 vi.mock('../db/queries.js', () => ({ getSessionEvents: vi.fn().mockResolvedValue([]) }))
+vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
+vi.mock('../db/users.js', () => ({ getRoleAndEmail: vi.fn() }))
 
 import * as history from '../db/history.js'
 import * as queries from '../db/queries.js'
+import { getAuthUser } from '../auth/session.js'
+import { getRoleAndEmail } from '../db/users.js'
 
 const game = (o: Partial<HistoryGame> = {}): HistoryGame => ({
   id: 'g1',
@@ -62,14 +67,22 @@ function makeApp() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('GET /api/gamemodes', () => {
-  it('lists the game modes', async () => {
+  it('lists the game modes (signed out: without flagged-off Minigolf)', async () => {
+    await setupFlags(new Set())
     const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
     expect(res.statusCode).toBe(200)
     expect(res.json().modes.map((m: any) => ({ id: m.id, teams: m.teams, supportsBots: m.supportsBots }))).toEqual([
       { id: 'atc', teams: false, supportsBots: false },
       { id: 'x01', teams: true, supportsBots: true },
-      { id: 'minigolf', teams: false, supportsBots: false },
     ])
+  })
+
+  it('lists Minigolf only for whom its flag is on (admins)', async () => {
+    await setupFlags(new Set())
+    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1' })
+    vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
+    const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
+    expect(res.json().modes.map((m: { id: string }) => m.id)).toEqual(['atc', 'x01', 'minigolf'])
   })
 })
 

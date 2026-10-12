@@ -1,4 +1,5 @@
 import { join, dirname } from 'path'
+import { loadFlagUser, modeAvailable } from './flags/index.js'
 import { fileURLToPath } from 'url'
 import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
@@ -64,6 +65,7 @@ const lobbies: LobbyService = new LobbyService({
   engine,
   hub,
   isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
+  gameAvailable: async (userId, gameId) => modeAvailable(gameId, await loadFlagUser(db, userId)),
   warn: (message, details) => {
     warn(message, details)
   },

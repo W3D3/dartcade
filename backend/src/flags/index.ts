@@ -53,3 +53,9 @@ export async function loadFlagUser(db: Kysely<Database>, userId: string | null):
   const u = await getRoleAndEmail(db, userId)
   return u ? { id: userId, ...u } : null
 }
+
+/** Whether a game mode may be picked: modes without a flag always, flagged ones when it's on. */
+export async function modeAvailable(modeId: string, user: FlagUser): Promise<boolean> {
+  const key = modeFlag(modeId)
+  return key === null || flagEnabled(key, user)
+}
