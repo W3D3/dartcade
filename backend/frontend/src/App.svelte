@@ -19,6 +19,8 @@
   import PickName from './routes/PickName.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
+  import { setFlagUser, startFlags } from '$lib/flags'
+  import { gameModes } from '$lib/gameModes'
   import { me } from '$lib/lobby/sockets'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
 
@@ -60,16 +62,30 @@
   onMount(async () => {
     const currentHash = window.location.hash
     if (currentHash.startsWith('#/login') || currentHash.startsWith('#/register')) {
+      void startFlags(null)
       checked = true
       return
     }
     await currentUser.refresh()
+    void startFlags(get(currentUser)?.id ?? null)
     if (!get(currentUser)) {
       // A join link or QR code opened while signed out comes back here after signing in
       rememberReturn(sessionStore(), currentHash)
       void push('/login')
     }
     checked = true
+  })
+
+  // Flags follow the signed-in user (sign-in, sign-out, the dev user switch): the provider refetches
+  let flagUser: string | null | undefined
+  $effect(() => {
+    const id = $currentUser?.id ?? null
+    // The game modes on offer depend on the user's flags too
+    if (flagUser !== undefined && id !== flagUser) {
+      void setFlagUser(id)
+      void gameModes.refresh()
+    }
+    flagUser = id
   })
 
   // Every 401 handler (API, sockets, voice import) sends the user to the login page by setting

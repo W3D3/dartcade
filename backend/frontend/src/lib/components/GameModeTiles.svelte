@@ -1,8 +1,10 @@
 <script lang="ts">
   // The game mode tiles (Play page, the lobby's Change game dialog): pick one; the ones that
-  // are coming soon can't be picked.
+  // are coming soon can't be picked, and ones behind a feature flag that's off aren't shown.
   import { Check } from '@lucide/svelte'
-  import { GAME_MODES } from '$lib/gameModes'
+  import { derived } from 'svelte/store'
+  import { GAME_MODES, visibleModes } from '$lib/gameModes'
+  import { flag } from '$lib/flags'
 
   let {
     selected,
@@ -21,10 +23,18 @@
   // The big screen's sizes come on top of the phone's, unless compact: compact cards on
   // tablets (md up to xl), the large tiles on desktops
   const md = (cls: string) => (compact ? '' : cls)
+
+  // Modes behind a feature flag show only when it's on (off until the flags have loaded)
+  const flagKeys = GAME_MODES.flatMap(m => (m.flag ? [m.flag] : []))
+  const flagsOn = derived(
+    flagKeys.map(k => flag(k)),
+    values => new Set(flagKeys.filter((_, i) => values[i])),
+  )
+  const modes = $derived(visibleModes(GAME_MODES, k => $flagsOn.has(k)))
 </script>
 
 <div class="grid grid-cols-2 gap-[10px] {md('md:flex-grow md:grid-rows-2 md:gap-3 xl:gap-4')}">
-  {#each GAME_MODES as mode (mode.id)}
+  {#each modes as mode (mode.id)}
     {@const active = mode.id === selected}
     {@const unavailable = !mode.available}
     <button
