@@ -10,6 +10,8 @@ import { decodeCursor, encodeCursor } from '../history/cursor.js'
 import { aggregateStats } from '../history/stats.js'
 import { buildDetail } from '../history/detail.js'
 import { fromSpec } from './spec.js'
+import { getAuthUser } from '../auth/session.js'
+import { loadFlagUser, modeAvailable } from '../flags/index.js'
 import type { Route } from './route.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
@@ -43,15 +45,22 @@ function toSummary(g: HistoryGame): GameSummary {
 export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
-  app.get<Route<'listGameModes'>>('/api/gamemodes', { schema: fromSpec('listGameModes') }, () => ({
-    modes: gameList.map(m => ({
-      id: m.id,
-      defaultConfig: m.defaultConfig,
-      configMeta: m.configMeta ?? {},
-      teams: m.teams === true,
-      supportsBots: m.botTarget !== undefined,
-    })),
-  }))
+  // A mode behind a feature flag is listed only for whom it's on (signed out: off)
+  app.get<Route<'listGameModes'>>('/api/gamemodes', { schema: fromSpec('listGameModes') }, async req => {
+    const user = await loadFlagUser(db, (await getAuthUser(req))?.userId ?? null)
+    const on = await Promise.all(gameList.map(m => modeAvailable(m.id, user)))
+    return {
+      modes: gameList
+        .filter((_, i) => on[i])
+        .map(m => ({
+          id: m.id,
+          defaultConfig: m.defaultConfig,
+          configMeta: m.configMeta ?? {},
+          teams: m.teams === true,
+          supportsBots: m.botTarget !== undefined,
+        })),
+    }
+  })
 
   app.get<Route<'listGames'>>('/api/games', { preValidation: requireAuth, schema: fromSpec('listGames') }, async (req, reply) => {
     const { mode, limit = 25, cursor } = req.query

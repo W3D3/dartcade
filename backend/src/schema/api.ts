@@ -1506,7 +1506,7 @@ export interface components {
         LobbyConflict: {
             error: string;
             /** @enum {string} */
-            code?: "in_lobby" | "not_ready" | "board_offline" | "board_busy" | "active_session" | "game_running" | "already_member" | "already_invited";
+            code?: "in_lobby" | "not_ready" | "board_offline" | "board_busy" | "active_session" | "game_running" | "already_member" | "already_invited" | "game_unavailable";
             /** @description in_lobby: the lobby you are in; leave it first */
             lobbyId?: string;
             /** @description game_running: the lobby's game. active_session: your own running game */

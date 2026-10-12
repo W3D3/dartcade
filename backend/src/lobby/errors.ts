@@ -9,6 +9,7 @@ export type ConflictCode =
   | 'game_running'
   | 'already_member'
   | 'already_invited'
+  | 'game_unavailable'
 
 /** A lobby error's body (LobbyConflict in schema/api-v1.yaml); only 409s carry more than `error`. */
 export type LobbyErrorBody = {

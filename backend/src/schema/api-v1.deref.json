@@ -7392,7 +7392,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -8376,7 +8377,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -8766,7 +8768,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -9112,7 +9115,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -9448,7 +9452,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -10158,7 +10163,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -10442,7 +10448,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -10820,7 +10827,8 @@
                         "active_session",
                         "game_running",
                         "already_member",
-                        "already_invited"
+                        "already_invited",
+                        "game_unavailable"
                       ]
                     },
                     "lobbyId": {
@@ -13875,7 +13883,8 @@
                     "active_session",
                     "game_running",
                     "already_member",
-                    "already_invited"
+                    "already_invited",
+                    "game_unavailable"
                   ]
                 },
                 "lobbyId": {
@@ -18082,7 +18091,8 @@
               "active_session",
               "game_running",
               "already_member",
-              "already_invited"
+              "already_invited",
+              "game_unavailable"
             ]
           },
           "lobbyId": {

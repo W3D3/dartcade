@@ -992,6 +992,28 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(engine.getSession(sessionId)).toBeDefined()
     })
 
+    it('refuses a game mode that is off for the host: picking it, and starting it once it went off', async () => {
+      let minigolfOn = false
+      lobbies = new LobbyService({
+        db,
+        engine,
+        hub,
+        isBoardOnline: b => online.has(b),
+        gameAvailable: (_u, g) => Promise.resolve(g !== 'minigolf' || minigolfOn),
+      })
+      const solo = await lobbies.create('max')
+      const minigolf = { nextGame: { gameId: 'minigolf', config: { course: 'test' } } }
+      await expect(lobbies.update('max', solo.id, minigolf)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_unavailable' } })
+      // Picked while it was on (say the host was an admin then), started once it's off
+      minigolfOn = true
+      await lobbies.update('max', solo.id, minigolf)
+      minigolfOn = false
+      await expect(lobbies.start('max', solo.id, true)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_unavailable' } })
+      // Other modes are unaffected
+      await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+      await expect(lobbies.start('max', solo.id, true)).resolves.toHaveProperty('sessionId')
+    })
+
     it('a solo lobby starts without being ready, and the game carries the lobby name', async () => {
       const solo = await lobbies.create('max')
       await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
