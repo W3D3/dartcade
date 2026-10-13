@@ -66,6 +66,13 @@ describe('3D physics', () => {
     expect(r.path.at(-1)).not.toEqual(r.path.at(-2)) // the path ends once
   })
 
+  it('puts a ball that leaves the course back where it was putted from', () => {
+    // Off the lane, over no ground: it falls, and comes back
+    const r = simulateShot3d(lane, P, [600, 2000], up(0.3))
+    expect(r.rest).toEqual([600, 2000])
+    expect(r.holed).toBe(false)
+  })
+
   // The cup halfway up the lane, so a putt through it has room to roll on
   const mid: Hole = { ...lane, cup: { at: [200, 2000], r: 80 } }
   /** A putt from 1500 mm short of the cup, `dx` off its line, that would roll `past` beyond it on flat felt. */
@@ -79,16 +86,17 @@ describe('3D physics', () => {
       }
   })
 
-  it('never lifts a ball off the felt at the cup, unless it clips the rim at speed', () => {
+  it('never lifts a slow ball off the felt at the cup; a fast one only hops off the far wall', () => {
     let missed = 0
-    for (const past of [300, 500, 1000])
+    for (const past of [300, 500, 1000, 2000, 2500])
       for (const dx of [0, 20, 30, 40, 50, 65, 75]) {
         const r = through(dx, past)
-        // A fast ball whose centre only crosses the cup's outer 15 mm drops a little and hops off the far rim: a real lip-out
-        if (r.holed || (dx >= 65 && past >= 1000)) continue
+        if (r.holed) continue
         missed++
         const near = r.path.filter(p => Math.hypot(p[0] - 200, p[1] - 2000) < 150)
-        expect(Math.max(...near.map(p => p[2]!)), `${past} mm past, ${dx} off`).toBeLessThanOrEqual(BALL_R + 5)
+        // From 1000 mm past, a ball that dipped in meets the top of the cup's far wall hard enough to hop (measured up to 46 mm), as a real ball does off the back of the cup
+        const hop = past >= 1000 ? 50 : 2
+        expect(Math.max(...near.map(p => p[2]!)), `${past} mm past, ${dx} off`).toBeLessThanOrEqual(BALL_R + hop)
       }
     expect(missed).toBeGreaterThan(0)
   })

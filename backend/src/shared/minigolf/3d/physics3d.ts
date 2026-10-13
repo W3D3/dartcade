@@ -4,6 +4,7 @@
 // it's on the ground. Rapier works in metres; everything going in and out is mm.
 import RAPIER, { type Collider, type ColliderDesc, type RigidBody } from '@dimforge/rapier3d-deterministic-compat'
 import type { Physics } from '../physics.js'
+import { pointInPolygon } from '../geometry.js'
 import { BALL_R, type Bumper, type Hole, type OtherBall, type PathPt, type Pt, type Shot, type ShotResult } from '../types.js'
 import { CUP_DEPTH, G, heightAt, heightGrid } from './ground.js'
 
@@ -11,8 +12,13 @@ const M = 1 / 1000
 /** The heightfield's grid, mm. */
 const GRID = 20
 const RAIL_HEIGHT = 70
+/** Rails stop a ball this far above the highest ground along them, mm: drawn low, they never let one fly out. */
+const RAIL_REACH = 1000
 /** Ball on ball bounce, as golf balls do (and as in 2D). */
 const BALL_BOUNCE = 0.9
+/** How far a ball may sink into the felt before it's put back on it, mm: deeper than the
+ *  heightfield ever sits below heightAt (9 mm at the Mesa's cliffs). */
+const SUNK = 12
 // Groups (membership << 16 | filter) let a ball over the cup pass the ground, and one that hasn't
 // dropped pass the cup's walls (their tops give it ghost knocks); a contact hook doubles a step's cost
 const GROUND = 0x0002_ffff
@@ -61,7 +67,7 @@ export function buildWorld(hole: Hole, physics: Physics) {
       .setCollisionGroups(GROUND),
   )
 
-  /** A block along the segment ab (mm) as tall as a rail, standing on the ground. */
+  /** A block along the segment ab (mm), from below the ground to well above it all along. */
   const block = (a: Pt, b: Pt, thick: number, restitution: number) => {
     const len = Math.hypot(b[0] - a[0], b[1] - a[1])
     if (len === 0) return
@@ -69,9 +75,12 @@ export function buildWorld(hole: Hole, physics: Physics) {
     const angle = Math.atan2(b[1] - a[1], b[0] - a[0])
     // Turn about y so the block's x runs along ab (course y is Rapier's z, hence the minus)
     const q = { x: 0, y: Math.sin(-angle / 2), z: 0, w: Math.cos(-angle / 2) }
+    const n = Math.ceil(len / GRID)
+    const hs = Array.from({ length: n + 1 }, (_, i) => heightAt(hole, [a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n]))
+    const [lo, hi] = [Math.min(...hs) - RAIL_HEIGHT, Math.max(...hs) + RAIL_REACH]
     const c = bouncy(
-      R.ColliderDesc.cuboid(((len + thick) / 2) * M, RAIL_HEIGHT * M, (thick / 2) * M)
-        .setTranslation(mid[0] * M, heightAt(hole, mid) * M, mid[1] * M)
+      R.ColliderDesc.cuboid(((len + thick) / 2) * M, ((hi - lo) / 2) * M, (thick / 2) * M)
+        .setTranslation(mid[0] * M, ((hi + lo) / 2) * M, mid[1] * M)
         .setRotation(q),
       restitution,
     )
@@ -126,6 +135,8 @@ type Rolling = {
   start: Pt
   path: PathPt[]
   holed: boolean
+  /** Left the course: it goes back to where the shot found it. */
+  out: boolean
   /** At rest: held without gravity (so it can't creep down a gentle slope) until a ball knocks it. */
   resting: boolean
   overCup: boolean
@@ -160,7 +171,19 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
           .setActiveEvents(R.ActiveEvents.COLLISION_EVENTS),
         body,
       )
-      return { id: o.id, body, collider, start: o.at, path: [], holed: false, resting: false, overCup: false, group: ON_FELT, kicks: [] }
+      return {
+        id: o.id,
+        body,
+        collider,
+        start: o.at,
+        path: [],
+        holed: false,
+        out: false,
+        resting: false,
+        overCup: false,
+        group: ON_FELT,
+        kicks: [],
+      }
     })
     const own = balls[0]
     const byCollider = new Map(balls.map(b => [b.collider.handle, b]))
@@ -185,7 +208,7 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
     const roll = (b: Rolling, sample: boolean): boolean => {
       const [x, y, z] = at(b)
       if (sample) b.path.push([x, y, z])
-      const v = b.body.linvel()
+      let v = b.body.linvel()
       const speed = Math.hypot(v.x, v.y, v.z) / M
       if (b.resting) {
         if (speed < physics.restSpeed) {
@@ -200,7 +223,8 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
       // The ground has no hole: over the cup the ball passes through it, down into the cup. A ball
       // that dipped in stays off the ground until it's back up at the felt, or the ground would
       // shove it up and over the edge; till then the cup's wall decides
-      const low = z < heightAt(hole, [x, y]) + BALL_R - 1
+      const ground = heightAt(hole, [x, y])
+      const low = z < ground + BALL_R - 1
       const overCup = inCup || (b.overCup && low)
       const group = overCup ? (low ? DROPPED : OVER_CUP) : ON_FELT
       if (group !== b.group) b.collider.setCollisionGroups(group)
@@ -212,7 +236,18 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
         world.removeRigidBody(b.body)
         return false
       }
-      if (overCup || z - BALL_R - heightAt(hole, [x, y]) >= 2) return true
+      // Out of bounds: off the course or fallen through it, the ball goes back to where it was
+      if (!overCup && (z < ground - CUP_DEPTH || !pointInPolygon([x, y], hole.outline))) {
+        b.out = true
+        world.removeRigidBody(b.body)
+        return false
+      }
+      if (!overCup && z < ground + BALL_R - SUNK) {
+        // The felt is solid: Rapier's internal-edge fix drops contacts at a steep crease (the Mesa's cliff foot) and a ball sinks
+        b.body.setTranslation({ x: x * M, y: (ground + BALL_R) * M, z: y * M }, true)
+        if (v.y < 0) b.body.setLinvel((v = { ...v, y: 0 }), true)
+      }
+      if (overCup || z - BALL_R - ground >= 2) return true
       // The rounded lip: within half a ball of the rim the felt falls toward the cup, so a ball never stops hanging over it
       const onLip = dc < hole.cup.r + BALL_R / 2
       if (speed < physics.restSpeed && !onLip && pull([x, y]) <= physics.friction) {
@@ -240,7 +275,7 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
     const steps = Math.ceil(physics.maxTime / dt)
     for (let i = 0; i < steps; i++) {
       let moving = false
-      for (const b of balls) if (!b.holed && roll(b, i % sampleEvery === 0)) moving = true
+      for (const b of balls) if (!b.holed && !b.out && roll(b, i % sampleEvery === 0)) moving = true
       if (!moving) break
       world.step(events)
       events.drainCollisionEvents((h1, h2, started) => {
@@ -258,7 +293,7 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
       })
       // Kick off a bumper once Rapier has bounced the ball away from it, along the normal
       for (const b of balls) {
-        if (b.holed) continue
+        if (b.holed || b.out) continue
         b.kicks = b.kicks.filter(k => {
           const t = b.body.translation()
           const dx = t.x / M - k.at[0]
@@ -274,7 +309,8 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
     }
 
     const done = balls.map(b => {
-      const end = b.holed ? b.path[b.path.length - 1] : at(b)
+      // One out of bounds goes back to its start
+      const end: PathPt = b.holed ? b.path[b.path.length - 1] : b.out ? [...b.start, heightAt(hole, b.start) + BALL_R] : at(b)
       if (!b.holed) b.path.push(end)
       const rest: Pt = [end[0], end[1]]
       return { id: b.id, path: b.path, rest, holed: b.holed, moved: b.holed || Math.hypot(rest[0] - b.start[0], rest[1] - b.start[1]) > 1 }

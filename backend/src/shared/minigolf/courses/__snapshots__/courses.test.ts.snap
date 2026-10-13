@@ -172,13 +172,13 @@ exports[`courses > test/test-mesa 3D golden shots 1`] = `
   {
     "hits": [
       18.75,
-      110.75,
+      111,
     ],
     "holed": false,
-    "length": 3048.6,
+    "length": 3038.1,
     "rest": [
-      1420.994,
-      1693.308,
+      1432.631,
+      1697.576,
     ],
   },
   {
