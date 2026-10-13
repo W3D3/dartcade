@@ -209,7 +209,7 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
       b.group = group
       if (inCup && z < cupH - BALL_R * 2) {
         b.holed = true
-        b.path.push([x, y, z])
+        if (!sample) b.path.push([x, y, z])
         world.removeRigidBody(b.body)
         return false
       }

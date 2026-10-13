@@ -14,8 +14,8 @@
   import { Toggle } from '$lib/components/ui/toggle/index.js'
   import { heightAt } from '$shared/minigolf/3d/ground'
   import { initPhysics3d, simulateShot3d } from '$shared/minigolf/3d/physics3d'
-  import { playFrames } from '$lib/minigolf/animate'
-  import { canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
+  import { playFrames, playPath } from '$lib/minigolf/animate'
+  import { benchBall, canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
   import { COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { R } from '$shared/board'
@@ -43,8 +43,7 @@
   /** Where the ball is drawn (and its height, for 3D): follows the path while a shot rolls. */
   let shown3 = $state<Pt3>([...COURSES[0].holes[0].tee, BALL_R])
   const shown = $derived<Pt>([shown3[0], shown3[1]])
-  /** On the ground at p: one radius above it. */
-  const show = (p: Pt) => (shown3 = [p[0], p[1], heightAt(hole, p) + BALL_R])
+  const show = () => (shown3 = benchBall(bench, hole))
   /** Experiments: draw the hole in 3D, and play it with 3D physics (Rapier, loaded on first use). */
   let view3d = $state<boolean>(true)
   let physics3d = $state<boolean>(true)
@@ -54,6 +53,12 @@
   let debug = $state(false)
   let forces = $state(false)
   let assist = $state<boolean>(true)
+  let freeCamera = $state<boolean>(false)
+  let replaying = $state(false)
+  // Free camera is a 3D-only toggle: leaving the 2D view switches it off, so it starts off next time
+  $effect(() => {
+    if (!view3d) freeCamera = false
+  })
   let lastPath = $state<Pt[] | null>(null)
   let hover = $state<{ x: number; y: number } | null>(null)
   /** The 3D view's chase camera: the rolling path and the playback frame. */
@@ -75,11 +80,11 @@
 
   function undo(): void {
     bench = undoShot(bench)
-    show(bench.ball)
+    show()
   }
   function place(at: Pt): void {
     bench = placeBall(bench, at)
-    show(bench.ball)
+    show()
   }
 
   function onHoleEdit(h: Hole): void {
@@ -93,14 +98,14 @@
 
   function toTee(): void {
     bench = initBench(hole)
-    show(hole.tee)
+    show()
     lastPath = null
   }
 
   const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
   async function shoot(coords: { x: number; y: number }): Promise<void> {
-    if (!canShoot(bench)) return
+    if (!canShoot(bench) || replaying) return
     const shot = shotFromDart(coords, bench.ball, hole.cup.at, physics, assist ? hole : null)
     const from = bench.ball
     bench = startShot(bench)
@@ -126,8 +131,27 @@
       )
       chase = null
     }
-    bench = finishShot(bench, result)
-    show(bench.ball)
+    bench = finishShot(bench, result, from)
+    show()
+  }
+
+  /** Plays the last shot's path again, in either view, then puts the ball back where it rests. */
+  async function replay(): Promise<void> {
+    const shot = bench.lastShot
+    if (bench.rolling || replaying || !shot) return
+    replaying = true
+    const path: Pt3[] = shot.path.map(p => [p[0], p[1], p[2] ?? heightAt(hole, [p[0], p[1]]) + BALL_R])
+    await playPath(
+      path,
+      p => {
+        shown3 = p
+        chase = { path, at: path.indexOf(p) }
+      },
+      reducedMotion(),
+    )
+    chase = null
+    replaying = false
+    show()
   }
 
   function onBoardHover(coords: { x: number; y: number } | null): void {
@@ -179,6 +203,7 @@
         <div class="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0 [&>*]:shrink-0">
           <button type="button" class={BUTTON} onclick={toTee} disabled={bench.rolling}>Reset to tee</button>
           <button type="button" class={BUTTON} onclick={undo} disabled={bench.rolling || bench.history.length === 0}>Undo</button>
+          <button type="button" class={BUTTON} onclick={replay} disabled={bench.rolling || replaying || !bench.lastShot}> Replay </button>
           <Toggle bind:pressed={placing} disabled={bench.rolling}>Place ball</Toggle>
           <Toggle bind:pressed={debug}>Debug</Toggle>
           <Toggle bind:pressed={forces}>Forces</Toggle>
@@ -208,6 +233,7 @@
               Relief ×{relief}
               <input type="range" min="1" max="5" step="0.5" bind:value={relief} class="w-24" />
             </label>
+            <Toggle bind:pressed={freeCamera}>Free camera</Toggle>
           {/if}
           <Toggle bind:pressed={assist}>Aim assist</Toggle>
         </div>
@@ -217,7 +243,17 @@
         <div class="h-[34dvh] lg:h-auto lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
           {#if view3d}
             {#await import('$lib/components/minigolf/Hole3D.svelte') then { default: Hole3D }}
-              <Hole3D {hole} ball={shown3} follow={chase} wallThickness={physics.wallThickness} {felt} {relief} aim={aim3d} aims={aims3d} />
+              <Hole3D
+                {hole}
+                ball={shown3}
+                follow={chase}
+                {freeCamera}
+                wallThickness={physics.wallThickness}
+                {felt}
+                {relief}
+                aim={aim3d}
+                aims={aims3d}
+              />
             {/await}
           {:else}
             <HoleView

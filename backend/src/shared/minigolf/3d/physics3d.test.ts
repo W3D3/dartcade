@@ -63,6 +63,7 @@ describe('3D physics', () => {
     const r = simulateShot3d(lane, P, [200, 600], up(320 / P.maxRoll))
     expect(r.holed).toBe(true)
     expect(r.path[r.path.length - 1][2]).toBeLessThan(0)
+    expect(r.path.at(-1)).not.toEqual(r.path.at(-2)) // the path ends once
   })
 
   // The cup halfway up the lane, so a putt through it has room to roll on

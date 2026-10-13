@@ -4,11 +4,14 @@
   their colours, the aim dial and reach rings (`aim`) and the shot preview's lines (`aims`) on the
   ground. The camera looks over the whole hole, tilted; with `follow` it frames the ball and the
   next stretch of its roll from behind and above (chaseStep), and glides back when it's over.
-  Course mm are scene units: x stays x, the course's y is three's z, heights go up in y.
+  `freeCamera` hands the camera to OrbitControls (drag to orbit, wheel to zoom) and glides it back
+  on once that's switched off. Course mm are scene units: x stays x, the course's y is three's z,
+  heights go up in y.
 -->
 <script lang="ts">
   import * as THREE from 'three'
   import { onMount } from 'svelte'
+  import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { groundMesh, heightAt } from '$shared/minigolf/3d/ground'
   import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
@@ -22,6 +25,7 @@
     aim = null,
     aims = [],
     follow = null,
+    freeCamera = false,
     wallThickness = 20,
     felt = 'checker',
     relief = 1,
@@ -39,6 +43,8 @@
     aims?: { from: Pt; dir: Pt; roll: number; current: boolean }[]
     /** Chase the ball along its rolling path, at playback frame `at` (fractional, 60 Hz). */
     follow?: { path: PathPt[]; at: number } | null
+    /** Bench only: mouse/touch (OrbitControls) drives the camera instead of the automatic one. */
+    freeCamera?: boolean
     wallThickness?: number
     /** Bench only: the ground's pattern, the 2D view's diagonal stripes or a checkerboard. */
     felt?: 'stripes' | 'checker'
@@ -261,6 +267,11 @@
     const scene = new THREE.Scene()
     scene.background = new THREE.Color('#0a0b09')
     const camera = new THREE.PerspectiveCamera(CHASE_FOV, 1, 10, 40000)
+    // Drives the camera only while `freeCamera` is on; disabled otherwise so the automatic camera owns it
+    const controls = new OrbitControls(camera, canvas)
+    controls.enableDamping = true
+    controls.enabled = false
+    let controlsOn = false
     scene.add(new THREE.HemisphereLight('#ffffff', '#4a5a40', 1.6))
     const sun = new THREE.DirectionalLight('#ffffff', 2.2)
     sun.castShadow = true
@@ -400,40 +411,55 @@
       }
       placeBalls()
 
-      if (follow) {
-        if (chased?.path !== follow.path) chased = { path: follow.path, drawn: follow.path.map(p => [p[0], p[1], drawnY(p)]) }
-        // The chase eases on from wherever the camera is (in course space: x, y, height)
-        const from = new THREE.Vector3().subVectors(look, eye)
-        const flat = new THREE.Vector2(from.x, from.z).normalize()
-        chaseCam ??= first
-          ? null
-          : { look: [look.x, look.z, look.y], dir: [flat.x, flat.y], pitch: Math.asin(-from.y / from.length()), dist: from.length() }
-        const step = chaseStep(chaseCam, chased.drawn, follow.at, dt, camera.aspect)
-        chaseCam = step.cam
-        eye.set(step.eye[0], step.eye[2], step.eye[1])
-        look.set(step.look[0], step.look[2], step.look[1])
-      } else {
+      if (freeCamera) {
+        // Orbiting owns the camera; seed its pivot on the ball the moment it's switched on
+        if (!controlsOn) {
+          controls.target.set(ball[0], drawnY(ball), ball[1])
+          controls.enabled = controlsOn = true
+        }
+        controls.update()
+        // Kept live so the automatic camera glides on from here once free camera switches off
+        eye.copy(camera.position)
+        look.copy(controls.target)
         chaseCam = null
-        const wantEye = new THREE.Vector3()
-        const wantLook = new THREE.Vector3()
-        // From above and a little behind the tee's end (the course's y runs down the screen, as
-        // in 2D), tilted enough that the ground's ups and downs show
-        const fit = Math.max(box.d, box.w / camera.aspect) * 1.12
-        const dist = fit / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
-        wantEye.set(box.cx, dist * Math.cos(TILT), box.cz + dist * Math.sin(TILT))
-        wantLook.set(box.cx, 0, box.cz)
-        const k = first ? 1 : 1 - Math.exp(-dt * 3)
-        eye.lerp(wantEye, k)
-        look.lerp(wantLook, k)
+      } else {
+        if (controlsOn) controls.enabled = controlsOn = false
+        if (follow) {
+          if (chased?.path !== follow.path) chased = { path: follow.path, drawn: follow.path.map(p => [p[0], p[1], drawnY(p)]) }
+          // The chase eases on from wherever the camera is (in course space: x, y, height)
+          const from = new THREE.Vector3().subVectors(look, eye)
+          const flat = new THREE.Vector2(from.x, from.z).normalize()
+          chaseCam ??= first
+            ? null
+            : { look: [look.x, look.z, look.y], dir: [flat.x, flat.y], pitch: Math.asin(-from.y / from.length()), dist: from.length() }
+          const step = chaseStep(chaseCam, chased.drawn, follow.at, dt, camera.aspect)
+          chaseCam = step.cam
+          eye.set(step.eye[0], step.eye[2], step.eye[1])
+          look.set(step.look[0], step.look[2], step.look[1])
+        } else {
+          chaseCam = null
+          const wantEye = new THREE.Vector3()
+          const wantLook = new THREE.Vector3()
+          // From above and a little behind the tee's end (the course's y runs down the screen, as
+          // in 2D), tilted enough that the ground's ups and downs show
+          const fit = Math.max(box.d, box.w / camera.aspect) * 1.12
+          const dist = fit / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+          wantEye.set(box.cx, dist * Math.cos(TILT), box.cz + dist * Math.sin(TILT))
+          wantLook.set(box.cx, 0, box.cz)
+          const k = first ? 1 : 1 - Math.exp(-dt * 3)
+          eye.lerp(wantEye, k)
+          look.lerp(wantLook, k)
+        }
+        camera.position.copy(eye)
+        camera.lookAt(look)
       }
       first = false
-      camera.position.copy(eye)
-      camera.lookAt(look)
       renderer.render(scene, camera)
     })
 
     return () => {
       renderer.setAnimationLoop(null)
+      controls.dispose()
       canvas.removeEventListener('webglcontextlost', lost)
       observer.disconnect()
       dispose(course)
