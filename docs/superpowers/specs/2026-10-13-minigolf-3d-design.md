@@ -152,3 +152,18 @@ on through `FLAGS_ON`, brings them back:
 - **Rapier's size.** A few MB of WebAssembly in the backend, and in the browser on Minigolf screens
   only.
 - **Phones.** The match screen hasn't been tried in 3D on a real phone or the TV next to the board.
+
+## Simulating off the main thread
+
+A 3D shot is CPU work on Node's one JavaScript thread: while it runs, the backend serves nobody
+(measured: a 280 ms shot delayed a 10 ms timer by 280 ms). Live shots move to a pool of worker
+threads ([Piscina](https://github.com/piscinajs/piscina)); no new caches.
+
+- The game stays a pure, synchronous reducer. During a live input, a shot missing from the
+  in-memory shot cache doesn't simulate inline: it signals that it's needed (with its inputs). The
+  engine runs it in the pool, stores the result in the in-memory cache and applies the input again,
+  which now finds it. Repeat until nothing is missing (normally once per dart).
+- The startup rebuild runs before the server listens, so it keeps simulating inline.
+- Workers load Rapier once and run the same `simulateShot3d`; their results must equal a direct call
+  bit for bit. 2D shots may stay inline (they're cheap), or go through the same path if simpler.
+- The bench (browser) keeps simulating directly.
