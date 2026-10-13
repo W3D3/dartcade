@@ -1,39 +1,51 @@
 <!--
-  A minigolf hole in 3D (a bench experiment), drawn with three.js in a light cartoon look: toon
-  shading in a few flat tones, the ground's real heights ($shared/minigolf/3d/ground.ts), soft shadows.
-  The camera looks straight down while aiming; with `follow` it chases the ball from behind and
-  above, and glides back when the ball stops. Course mm are scene units: x stays x, the course's y
-  is three's z, heights go up in y.
+  A minigolf hole in 3D, drawn with three.js in a light cartoon look: toon shading in a few flat
+  tones, the ground's real heights ($shared/minigolf/3d/ground.ts), soft shadows. Draws the balls in
+  their colours, the aim dial and reach rings (`aim`) and the shot preview's lines (`aims`) on the
+  ground. The camera looks over the whole hole, tilted; with `follow` it frames the ball and the
+  next stretch of its roll from behind and above (chaseStep), and glides back when it's over.
+  Course mm are scene units: x stays x, the course's y is three's z, heights go up in y.
 -->
 <script lang="ts">
   import * as THREE from 'three'
-  import { untrack } from 'svelte'
+  import { onMount } from 'svelte'
+  import { HALF, SEGS, segAngle } from '$shared/board'
   import { groundMesh, heightAt } from '$shared/minigolf/3d/ground'
-  import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
+  import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
+  import { CHASE_FOV, chaseStep, startRenderer, type ChaseCam } from '$lib/minigolf/view3d'
 
   let {
     hole,
     ball,
     ballColor = '#c6f24e',
-    follow = false,
-    wallThickness = 20,
-    felt = 'stripes',
-    relief = 1,
+    others = [],
     aim = null,
+    aims = [],
+    follow = null,
+    wallThickness = 20,
+    felt = 'checker',
+    relief = 1,
+    onfail,
   }: {
     hole: Hole
-    /** The ball's centre: course x, y and its height, mm. */
-    ball: readonly [number, number, number]
+    /** The ball's centre: course x, y and its height, mm (on the ground when left out). */
+    ball: PathPt
     ballColor?: string
-    /** Chase the ball (while it rolls); otherwise look down on the whole hole. */
-    follow?: boolean
+    /** Other players' balls, in their colours. */
+    others?: { seat: number; at: PathPt; color: string }[]
+    /** The aim dial and reach rings (flat-felt roll, mm, for a treble and a double) around `at`. */
+    aim?: { at: Pt; treble: number; double: number } | null
+    /** Shot preview lines: dots as far as each putt would roll on flat felt; the current one bright. */
+    aims?: { from: Pt; dir: Pt; roll: number; current: boolean }[]
+    /** Chase the ball along its rolling path, at playback frame `at` (fractional, 60 Hz). */
+    follow?: { path: PathPt[]; at: number } | null
     wallThickness?: number
-    /** The ground's pattern: the 2D view's diagonal stripes, or a checkerboard. */
+    /** Bench only: the ground's pattern, the 2D view's diagonal stripes or a checkerboard. */
     felt?: 'stripes' | 'checker'
-    /** How much taller than true the ground is drawn (the physics keeps true heights). */
+    /** Bench only: how much taller than true the ground is drawn (the physics keeps true heights). */
     relief?: number
-    /** The putt the pointer would make: dots along the ground as far as it would roll on flat felt. */
-    aim?: { from: Pt; dir: Pt; roll: number } | null
+    /** WebGL couldn't start, or lost its context. */
+    onfail?: () => void
   } = $props()
 
   const RAIL_HEIGHT = 70
@@ -47,6 +59,7 @@
 
   let host: HTMLDivElement
   let canvas: HTMLCanvasElement
+  let failed = $state(false)
 
   /** Three tones and no blending between them: the cartoon look. */
   function toonRamp(): THREE.DataTexture {
@@ -81,6 +94,69 @@
     // The 2D felt's stripes run at 35°
     if (kind === 'stripes') tex.rotation = THREE.MathUtils.degToRad(35)
     return tex
+  }
+
+  /** How far out the dial's numbers reach, in dial radii: the dial's plane is this big. */
+  const DIAL_REACH = 1.6
+  /** The 2D view's aim dial (HoleView), drawn once onto a texture: up the texture is -y on the course. */
+  function dialTexture(): THREE.CanvasTexture {
+    const c = document.createElement('canvas')
+    c.width = c.height = 512
+    const g = c.getContext('2d')
+    const d = 256 / DIAL_REACH
+    const toward = (a: number, len: number) => [Math.cos(a) * len, -Math.sin(a) * len] as const
+    if (g) {
+      g.translate(256, 256)
+      g.beginPath()
+      g.arc(0, 0, d, 0, Math.PI * 2)
+      g.fillStyle = 'rgba(15, 16, 14, 0.62)'
+      g.fill()
+      g.lineWidth = d * 0.03
+      g.strokeStyle = 'rgba(239, 238, 230, 0.55)'
+      g.stroke()
+      g.font = `700 ${d * 0.3}px ${getComputedStyle(document.body).fontFamily}`
+      g.textAlign = 'center'
+      g.textBaseline = 'middle'
+      g.lineJoin = 'round'
+      SEGS.forEach((n, i) => {
+        const a = segAngle(i)
+        g.beginPath()
+        g.moveTo(...toward(a + HALF, d * 0.3))
+        g.lineTo(...toward(a + HALF, d))
+        g.lineWidth = d * 0.02
+        g.strokeStyle = 'rgba(239, 238, 230, 0.35)'
+        g.stroke()
+        const [x, y] = toward(a, d * 1.36)
+        g.lineWidth = d * 0.07
+        g.strokeStyle = '#0a0b09'
+        g.strokeText(String(n), x, y)
+        g.fillStyle = '#efeee6'
+        g.fillText(String(n), x, y)
+      })
+    }
+    const tex = new THREE.CanvasTexture(c)
+    tex.colorSpace = THREE.SRGBColorSpace
+    tex.anisotropy = 8
+    return tex
+  }
+
+  /** Lays a flat geometry (already in place on x/z) onto the ground, `lift` mm above it. */
+  function hug(geo: THREE.BufferGeometry, lift: number): THREE.BufferGeometry {
+    const pos = geo.getAttribute('position')
+    for (let k = 0; k < pos.count; k++) pos.setY(k, heightAt(hole, [pos.getX(k), pos.getZ(k)]) * relief + lift)
+    return geo
+  }
+  /** The aim guides (dial, reach rings, aim dots): drawn after everything else and through it, so a
+   *  rail or bumper standing in front never cuts them off. */
+  const GUIDES = 10
+  const overlay = (o: THREE.MeshBasicMaterialParameters) =>
+    new THREE.MeshBasicMaterial({ transparent: true, depthWrite: false, depthTest: false, ...o })
+  const guide = <T extends THREE.Object3D>(m: T): T => ((m.renderOrder = GUIDES), m)
+
+  /** A ball's height as drawn: its own, or resting on the ground; raised with the ground's relief. */
+  const drawnY = (p: PathPt) => {
+    const ground = heightAt(hole, [p[0], p[1]])
+    return (p[2] ?? ground + BALL_R) + (relief - 1) * ground
   }
 
   /** A block along ab, standing on the ground (rails and walls). */
@@ -168,15 +244,23 @@
     })
   }
 
-  $effect(() => {
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true })
+  // Set up once, untracked: the loop reads the props every frame, and a re-run would rebuild the scene and snap the camera
+  onMount(() => {
+    const renderer = startRenderer(canvas)
+    if (!renderer) {
+      failed = true
+      onfail?.()
+      return
+    }
+    const lost = () => onfail?.()
+    canvas.addEventListener('webglcontextlost', lost)
     renderer.setPixelRatio(Math.min(2, window.devicePixelRatio))
     renderer.shadowMap.enabled = true
     renderer.shadowMap.type = THREE.PCFShadowMap
 
     const scene = new THREE.Scene()
     scene.background = new THREE.Color('#0a0b09')
-    const camera = new THREE.PerspectiveCamera(32, 1, 10, 40000)
+    const camera = new THREE.PerspectiveCamera(CHASE_FOV, 1, 10, 40000)
     scene.add(new THREE.HemisphereLight('#ffffff', '#4a5a40', 1.6))
     const sun = new THREE.DirectionalLight('#ffffff', 2.2)
     sun.castShadow = true
@@ -184,34 +268,83 @@
     sun.shadow.radius = 4
     scene.add(sun, sun.target)
 
-    // The aim line: up to AIM_DOTS dots, AIM_GAP mm apart, drawn just above the ground
+    // Shot preview lines: up to AIM_DOTS dots each, AIM_GAP mm apart; the current one bright, replaced ones faint
     const AIM_DOTS = 120
     const AIM_GAP = 50
-    const dots = new THREE.InstancedMesh(new THREE.CircleGeometry(9, 12), new THREE.MeshBasicMaterial({ color: '#c6f24e' }), AIM_DOTS)
-    dots.frustumCulled = false
-    scene.add(dots)
+    const dotLine = (opacity: number) => {
+      const m = guide(new THREE.InstancedMesh(new THREE.CircleGeometry(9, 12), overlay({ color: '#c6f24e', opacity }), AIM_DOTS * 3))
+      m.frustumCulled = false
+      scene.add(m)
+      return m
+    }
+    const bright = dotLine(0.9)
+    const faint = dotLine(0.35)
     const dot = new THREE.Object3D()
     dot.rotation.x = -Math.PI / 2
     function placeDots(): void {
-      const n = aim ? Math.min(AIM_DOTS, Math.floor(aim.roll / AIM_GAP)) : 0
-      for (let k = 0; k < n && aim; k++) {
-        const p: Pt = [aim.from[0] + aim.dir[0] * AIM_GAP * (k + 1), aim.from[1] + aim.dir[1] * AIM_GAP * (k + 1)]
-        dot.position.set(p[0], heightAt(hole, p) * relief + 3, p[1])
-        dot.updateMatrix()
-        dots.setMatrixAt(k, dot.matrix)
+      bright.count = faint.count = 0
+      for (const line of aims) {
+        const dots = line.current ? bright : faint
+        for (let k = 0; k < Math.min(AIM_DOTS, Math.floor(line.roll / AIM_GAP)) && dots.count < AIM_DOTS * 3; k++) {
+          const p: Pt = [line.from[0] + line.dir[0] * AIM_GAP * (k + 1), line.from[1] + line.dir[1] * AIM_GAP * (k + 1)]
+          dot.position.set(p[0], heightAt(hole, p) * relief + 3, p[1])
+          dot.updateMatrix()
+          dots.setMatrixAt(dots.count++, dot.matrix)
+        }
       }
-      dots.count = n
-      dots.instanceMatrix.needsUpdate = true
+      bright.instanceMatrix.needsUpdate = faint.instanceMatrix.needsUpdate = true
     }
 
-    const ballMesh = new THREE.Mesh(new THREE.SphereGeometry(BALL_R, 24, 16), toon(ballColor))
+    // The aim dial and the reach rings, laid on the ground around the ball
+    const dialMat = overlay({ map: dialTexture() })
+    const ringMat = overlay({ color: '#efeee6', opacity: 0.45 })
+    let aimGroup = new THREE.Group()
+    function placeAim(): void {
+      scene.remove(aimGroup)
+      // Its materials are kept for the next layout
+      for (const m of aimGroup.children) if (isMesh(m)) m.geometry.dispose()
+      aimGroup = new THREE.Group()
+      scene.add(aimGroup)
+      if (!aim) return
+      const [x, z] = aim.at
+      // The dial keeps the 2D view's size: a share of the hole
+      const dial = (Math.max(box.w, box.d) + 240) * 0.06
+      const flat = (geo: THREE.BufferGeometry) => hug(geo.rotateX(-Math.PI / 2).translate(x, 0, z), 2)
+      for (const r of [aim.treble, aim.double]) {
+        aimGroup.add(guide(new THREE.Mesh(flat(new THREE.RingGeometry(r - dial * 0.025, r + dial * 0.025, 128)), ringMat)))
+      }
+      const size = dial * DIAL_REACH * 2
+      aimGroup.add(guide(new THREE.Mesh(flat(new THREE.PlaneGeometry(size, size, 16, 16)), dialMat)))
+    }
+
+    const sphere = new THREE.SphereGeometry(BALL_R, 24, 16)
+    const ballMesh = new THREE.Mesh(sphere, toon(ballColor))
     ballMesh.castShadow = true
     scene.add(ballMesh)
+    const otherMeshes: THREE.Mesh<THREE.SphereGeometry, THREE.MeshToonMaterial>[] = []
+    function placeBalls(): void {
+      ballMesh.material.color.set(ballColor)
+      // While aiming the ball sits on top of its dial, as in 2D; rolling, walls hide it as they should
+      ballMesh.renderOrder = aim ? GUIDES + 1 : 0
+      ballMesh.material.depthTest = !aim
+      ballMesh.position.set(ball[0], drawnY(ball), ball[1])
+      others.forEach((o, i) => {
+        if (!otherMeshes[i]) {
+          otherMeshes[i] = new THREE.Mesh(sphere, toon(o.color))
+          otherMeshes[i].castShadow = true
+          scene.add(otherMeshes[i])
+        }
+        otherMeshes[i].material.color.set(o.color)
+        // A ball below the rim is drawn down in the cup: its height says so
+        otherMeshes[i].position.set(o.at[0], drawnY(o.at), o.at[1])
+      })
+      otherMeshes.forEach((m, i) => (m.visible = i < others.length))
+    }
 
     let course = new THREE.Group()
     let built: Hole | null = null
-    let builtFelt = untrack(() => felt)
-    let builtRelief = untrack(() => relief)
+    let builtFelt = felt
+    let builtRelief = relief
     const box = { cx: 0, cz: 0, w: 1, d: 1 }
     function rebuild(h: Hole): void {
       scene.remove(course)
@@ -233,7 +366,12 @@
       sun.target.position.set(box.cx, 0, box.cz)
       Object.assign(sun.shadow.camera, { left: -reach, right: reach, top: reach, bottom: -reach, near: 10, far: reach * 4 })
       sun.shadow.camera.updateProjectionMatrix()
+      placed = null
     }
+    /** What the overlays were last laid out for: they're redone when it changes. */
+    let placed: { aim: typeof aim; aims: typeof aims } | null = null
+    // The chase camera's path, as drawn (with the relief), worked out once a roll
+    let chased: { path: PathPt[]; drawn: PathPt[] } | null = null
 
     const resize = () => {
       const { clientWidth: w, clientHeight: h } = host
@@ -248,63 +386,67 @@
     // The camera glides between where it should be, rather than jumping
     const eye = new THREE.Vector3()
     const look = new THREE.Vector3()
-    const up = new THREE.Vector3(0, 1, 0)
-    const heading = new THREE.Vector3(0, 0, -1)
-    const last = new THREE.Vector3()
     let first = true
+    let chaseCam: ChaseCam | null = null
     let then = performance.now()
     renderer.setAnimationLoop(now => {
       const dt = Math.min(0.1, (now - then) / 1000)
       then = now
       if (built !== hole || builtFelt !== felt || builtRelief !== relief) rebuild(hole)
-      // The ball keeps its height above the ground, which is drawn `relief` times taller
-      const at = new THREE.Vector3(ball[0], ball[2] + (relief - 1) * heightAt(hole, [ball[0], ball[1]]), ball[1])
-      ballMesh.position.copy(at)
-      placeDots()
-      const moved = at.clone().sub(last).setY(0)
-      if (moved.lengthSq() > 1) heading.lerp(moved.normalize(), 1 - Math.exp(-dt * 6)).normalize()
-      last.copy(at)
+      if (!placed || placed.aim !== aim || placed.aims !== aims) {
+        placeAim()
+        placeDots()
+        placed = { aim, aims }
+      }
+      placeBalls()
 
-      const wantEye = new THREE.Vector3()
-      const wantLook = new THREE.Vector3()
-      const wantUp = new THREE.Vector3()
       if (follow) {
-        wantEye
-          .copy(at)
-          .addScaledVector(heading, -650)
-          .setY(at.y + 420)
-        wantLook.copy(at).addScaledVector(heading, 350)
-        wantUp.set(0, 1, 0)
+        if (chased?.path !== follow.path) chased = { path: follow.path, drawn: follow.path.map(p => [p[0], p[1], drawnY(p)]) }
+        // The chase eases on from wherever the camera is (in course space: x, y, height)
+        const from = new THREE.Vector3().subVectors(look, eye)
+        const flat = new THREE.Vector2(from.x, from.z).normalize()
+        chaseCam ??= first
+          ? null
+          : { look: [look.x, look.z, look.y], dir: [flat.x, flat.y], pitch: Math.asin(-from.y / from.length()), dist: from.length() }
+        const step = chaseStep(chaseCam, chased.drawn, follow.at, dt, camera.aspect)
+        chaseCam = step.cam
+        eye.set(step.eye[0], step.eye[2], step.eye[1])
+        look.set(step.look[0], step.look[2], step.look[1])
       } else {
+        chaseCam = null
+        const wantEye = new THREE.Vector3()
+        const wantLook = new THREE.Vector3()
         // From above and a little behind the tee's end (the course's y runs down the screen, as
         // in 2D), tilted enough that the ground's ups and downs show
         const fit = Math.max(box.d, box.w / camera.aspect) * 1.12
         const dist = fit / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
         wantEye.set(box.cx, dist * Math.cos(TILT), box.cz + dist * Math.sin(TILT))
         wantLook.set(box.cx, 0, box.cz)
-        wantUp.set(0, 1, 0)
+        const k = first ? 1 : 1 - Math.exp(-dt * 3)
+        eye.lerp(wantEye, k)
+        look.lerp(wantLook, k)
       }
-      const k = first ? 1 : 1 - Math.exp(-dt * 3)
       first = false
-      eye.lerp(wantEye, k)
-      look.lerp(wantLook, k)
-      up.lerp(wantUp, k).normalize()
       camera.position.copy(eye)
-      camera.up.copy(up)
       camera.lookAt(look)
       renderer.render(scene, camera)
     })
 
     return () => {
       renderer.setAnimationLoop(null)
+      canvas.removeEventListener('webglcontextlost', lost)
       observer.disconnect()
       dispose(course)
-      dispose(ballMesh)
-      dots.geometry.dispose()
-      dots.material.dispose()
+      for (const m of aimGroup.children) if (isMesh(m)) m.geometry.dispose()
+      dialMat.map?.dispose()
+      dialMat.dispose()
+      ringMat.dispose()
+      for (const o of [ballMesh, bright, faint, ...otherMeshes]) dispose(o)
       renderer.dispose()
     }
   })
 </script>
 
-<div bind:this={host} class="h-full w-full" data-testid="hole-3d"><canvas bind:this={canvas} class="block h-full w-full"></canvas></div>
+<div bind:this={host} class="h-full w-full" data-testid="hole-3d">
+  <canvas bind:this={canvas} hidden={failed} class="block h-full w-full"></canvas>
+</div>

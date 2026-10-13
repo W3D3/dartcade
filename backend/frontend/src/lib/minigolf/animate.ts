@@ -39,7 +39,8 @@ export function playFrames(
   let at = 0
   let last = performance.now()
   const tick = (now: number) => {
-    at = Math.min(frames - 1, at + ((now - last) / 1000) * 60 * rate(at))
+    // A frame can be stamped a moment before `last`
+    at = Math.min(frames - 1, at + (Math.max(0, now - last) / 1000) * 60 * rate(at))
     last = now
     onFrame(at)
     if (at < frames - 1) raf = requestAnimationFrame(tick)

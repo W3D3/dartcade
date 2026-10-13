@@ -13,11 +13,12 @@
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
   import { heightAt } from '$shared/minigolf/3d/ground'
   import { initPhysics3d, simulateShot3d } from '$shared/minigolf/3d/physics3d'
-  import { playPath } from '$lib/minigolf/animate'
+  import { playFrames } from '$lib/minigolf/animate'
   import { canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
   import { COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
-  import { shotFromDart } from '$shared/minigolf/shot'
+  import { R } from '$shared/board'
+  import { powerAt, shotFromDart } from '$shared/minigolf/shot'
   import { simulateShot } from '$shared/minigolf/simulate'
   import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
 
@@ -54,11 +55,22 @@
   let assist = $state(true)
   let lastPath = $state<Pt[] | null>(null)
   let hover = $state<{ x: number; y: number } | null>(null)
+  /** The 3D view's chase camera: the rolling path and the playback frame. */
+  let chase = $state<{ path: Pt3[]; at: number } | null>(null)
+  /** The 3D view's aim dial; its reach rings as the game works them out: a dart mid-treble, one on the double wire. */
+  const aim3d = $derived(
+    canShoot(bench)
+      ? { at: bench.ball, treble: powerAt((R.si + R.tr) / 2, physics) * physics.maxRoll, double: powerAt(1, physics) * physics.maxRoll }
+      : null,
+  )
   const preview = $derived.by(() => {
     if (!hover || !canShoot(bench)) return null
     const shot = shotFromDart(hover, bench.ball, hole.cup.at, physics, assist ? hole : null)
     return shot && { from: bench.ball, ...shot, roll: shot.power * physics.maxRoll }
   })
+
+  // Derived, so the 3D view lays the line out again only when it changes
+  const aims3d = $derived(preview ? [{ ...preview, current: true }] : [])
 
   function undo(): void {
     bench = undoShot(bench)
@@ -98,7 +110,21 @@
       result = { ...r, path: r.path.map((p: PathPt) => [p[0], p[1], p[2] ?? heightAt(hole, [p[0], p[1]]) + BALL_R]) }
     }
     lastPath = result?.path.map(p => [p[0], p[1]]) ?? null
-    if (result) await playPath(result.path, p => (shown3 = p), reducedMotion())
+    if (result) {
+      const path = result.path
+      await new Promise<void>(onDone =>
+        playFrames(
+          path.length,
+          at => {
+            shown3 = path[Math.floor(at)]
+            chase = { path, at }
+          },
+          reducedMotion(),
+          { onDone },
+        ),
+      )
+      chase = null
+    }
     bench = finishShot(bench, result)
     show(bench.ball)
   }
@@ -216,7 +242,7 @@
         <div class="h-[34dvh] lg:h-auto lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
           {#if view3d}
             {#await import('$lib/components/minigolf/Hole3D.svelte') then { default: Hole3D }}
-              <Hole3D {hole} ball={shown3} follow={bench.rolling} wallThickness={physics.wallThickness} {felt} {relief} aim={preview} />
+              <Hole3D {hole} ball={shown3} follow={chase} wallThickness={physics.wallThickness} {felt} {relief} aim={aim3d} aims={aims3d} />
             {/await}
           {:else}
             <HoleView
