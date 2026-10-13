@@ -2,14 +2,16 @@
   // A game mode's settings (the Play page's setup, the lobby's next-game card): X01's start
   // score, check-in, check-out, bull off, bull value, max rounds and first to; Around the
   // Clock's fields as the backend describes them; Minigolf's course cards, tries, max strokes,
-  // ball contact, aim assist and shot preview. Bull off also drives the lobby's throw
-  // order (the server keeps them in sync): picking WDC/PDC here turns the throw order to
-  // Bull-off, and picking Off there turns this back off.
+  // ball contact, aim assist, shot preview and physics (behind a flag). Bull off also drives
+  // the lobby's throw order (the server keeps them in sync): picking WDC/PDC here turns the
+  // throw order to Bull-off, and picking Off there turns this back off.
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import Stepper from '$lib/components/Stepper.svelte'
   import Tooltip from '$lib/components/Tooltip.svelte'
   import type { ConfigFieldMeta } from '$lib/api'
   import { GAME_MODES } from '$lib/gameModes'
+  import { flag } from '$lib/flags'
+  import { derived } from 'svelte/store'
   import { COURSES } from '$shared/minigolf/courses/index'
 
   let {
@@ -77,6 +79,16 @@
   // A numeric config field, or its default when missing or not a number
   const num = (v: unknown, d: number) => (typeof v === 'number' ? v : d)
   const isNonDefault = (key: string) => key in defaults && config[key] !== defaults[key]
+
+  // A field behind a feature flag is only offered while the flag is on (the server checks it too)
+  const fieldFlags = $derived(Object.values(meta).flatMap(f => (f?.flag ? [f.flag] : [])))
+  const flagsOn = $derived(
+    derived(
+      fieldFlags.map(k => flag(k)),
+      on => new Set(fieldFlags.filter((_, i) => on[i])),
+    ),
+  )
+  const offered = (field: ConfigFieldMeta) => !field.flag || $flagsOn.has(field.flag)
 </script>
 
 {#if gameId === 'x01'}
@@ -206,7 +218,7 @@
   <div class="flex flex-col gap-[18px]">
     {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
-      {#if field?.options}
+      {#if field?.options && offered(field)}
         <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
           <legend class="flex items-center gap-2 field-label mb-2">
             {field.label}
@@ -247,9 +259,9 @@
         {/each}
       </div>
     </fieldset>
-    {#each ['tries', 'aimAssist', 'shotPreview', 'ballContact'] as fieldKey (fieldKey)}
+    {#each ['tries', 'aimAssist', 'shotPreview', 'ballContact', 'physics'] as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
-      {#if field?.options}
+      {#if field?.options && offered(field)}
         <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
           <legend class="flex items-center gap-2 field-label mb-2">
             {field.label}

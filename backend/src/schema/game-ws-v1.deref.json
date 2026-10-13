@@ -2712,7 +2712,8 @@
             "maxStrokes",
             "ballContact",
             "aimAssist",
-            "shotPreview"
+            "shotPreview",
+            "physics"
           ],
           "additionalProperties": false,
           "properties": {
@@ -2736,6 +2737,12 @@
             },
             "shotPreview": {
               "type": "boolean"
+            },
+            "physics": {
+              "enum": [
+                "3d",
+                "2d"
+              ]
             }
           }
         },
@@ -4055,7 +4062,8 @@
                 "maxStrokes",
                 "ballContact",
                 "aimAssist",
-                "shotPreview"
+                "shotPreview",
+                "physics"
               ],
               "additionalProperties": false,
               "properties": {
@@ -4079,6 +4087,12 @@
                 },
                 "shotPreview": {
                   "type": "boolean"
+                },
+                "physics": {
+                  "enum": [
+                    "3d",
+                    "2d"
+                  ]
                 }
               }
             },
@@ -6721,7 +6735,8 @@
                     "maxStrokes",
                     "ballContact",
                     "aimAssist",
-                    "shotPreview"
+                    "shotPreview",
+                    "physics"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -6745,6 +6760,12 @@
                     },
                     "shotPreview": {
                       "type": "boolean"
+                    },
+                    "physics": {
+                      "enum": [
+                        "3d",
+                        "2d"
+                      ]
                     }
                   }
                 },

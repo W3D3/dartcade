@@ -38,7 +38,7 @@ function game(over: Partial<MinigolfGame> = {}): MinigolfGame {
     finished: false,
     currentPlayer: 1,
     visitLocked: false,
-    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: true },
+    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: true, physics: '3d' },
     courseName: 'Test',
     holeIdx: 1,
     holeCount: 3,

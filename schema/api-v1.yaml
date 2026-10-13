@@ -1455,6 +1455,9 @@ components:
                   - { type: number }
                   - { type: boolean }
               label: { type: string }
+        flag:
+          type: string
+          description: "A feature flag: the field is only offered, and only takes a non-default value, while it's on"
     GameInfo:
       type: object
       required: [id, defaultConfig, configMeta, teams, supportsBots]

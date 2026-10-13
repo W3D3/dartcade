@@ -1,5 +1,5 @@
 import { join, dirname } from 'path'
-import { loadFlagUser, modeAvailable } from './flags/index.js'
+import { gameAvailable, loadFlagUser } from './flags/index.js'
 import { fileURLToPath } from 'url'
 import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
@@ -12,6 +12,7 @@ import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { FriendsService } from './friends/service.js'
 import { seatedGame } from './friends/status.js'
+import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -24,6 +25,8 @@ const PORT = parseInt(process.env.PORT ?? '3000', 10)
 
 if (!DATABASE_URL) throw new Error('DATABASE_URL or PG* env vars are required')
 
+// Rapier's WASM: Minigolf's 3D shots are simulated synchronously, from the rebuild below on
+await initPhysics3d()
 await runMigrations(db)
 await seedDev()
 
@@ -65,7 +68,7 @@ const lobbies: LobbyService = new LobbyService({
   engine,
   hub,
   isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
-  gameAvailable: async (userId, gameId) => modeAvailable(gameId, await loadFlagUser(db, userId)),
+  gameAvailable: async (userId, gameId, config) => gameAvailable(gameId, config, await loadFlagUser(db, userId)),
   warn: (message, details) => {
     warn(message, details)
   },

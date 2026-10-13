@@ -94,6 +94,18 @@ describe('POST /api/sessions', () => {
     expect((await app.inject({ method: 'POST', url: '/api/sessions', payload: minigolf })).statusCode).toBe(201)
   })
 
+  it('refuses flat Minigolf without its flag, and starts it with the flag on', async () => {
+    await setupFlags(new Set(['gamemode.minigolf.enabled']))
+    const { app, engine } = makeApp()
+    const flat = { boardId: 'b1', gameId: 'minigolf', config: { course: 'test', physics: '2d' }, players: [{ name: 'Alice' }] }
+    const refused = await app.inject({ method: 'POST', url: '/api/sessions', payload: flat })
+    expect(refused.statusCode).toBe(403)
+    expect(engine.create).not.toHaveBeenCalled()
+    await setupFlags(new Set(['gamemode.minigolf.enabled', 'gamemode.minigolf.flat']))
+    expect((await app.inject({ method: 'POST', url: '/api/sessions', payload: flat })).statusCode).toBe(201)
+    await setupFlags(new Set())
+  })
+
   it('returns 201 with sessionId on success', async () => {
     const { app } = makeApp()
     const res = await app.inject({

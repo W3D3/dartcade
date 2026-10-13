@@ -20,6 +20,14 @@ describe('flags', () => {
     await setupFlags(new Set())
   })
 
+  it('keeps the flat Minigolf off for everyone, admins too, unless FLAGS_ON turns it on', async () => {
+    expect(await flagEnabled('gamemode.minigolf.flat', admin)).toBe(false)
+    expect(await flagEnabled('gamemode.minigolf.flat', player)).toBe(false)
+    await setupFlags(new Set(['gamemode.minigolf.flat']))
+    expect(await flagEnabled('gamemode.minigolf.flat', player)).toBe(true)
+    await setupFlags(new Set())
+  })
+
   it('reads FLAGS_ON from the environment', () => {
     process.env.FLAGS_ON = ' gamemode.minigolf.enabled , other '
     expect([...envFlagsOn()]).toEqual(['gamemode.minigolf.enabled', 'other'])
@@ -32,7 +40,10 @@ describe('flags', () => {
   })
 
   it('evaluates every flag', async () => {
-    expect(await evaluateAll(admin)).toEqual([{ key: 'gamemode.minigolf.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' }])
+    expect(await evaluateAll(admin)).toEqual([
+      { key: 'gamemode.minigolf.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'gamemode.minigolf.flat', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
+    ])
   })
 
   it('knows which modes have a flag', () => {

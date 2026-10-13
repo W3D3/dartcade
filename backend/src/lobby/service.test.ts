@@ -6,6 +6,7 @@ import { insertBoard } from '../db/queries.js'
 import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { LobbyHub } from './hub.js'
 import { LobbyService } from './service.js'
+import { gameAvailable, loadFlagUser, setupFlags } from '../flags/index.js'
 
 const makeStore = () =>
   ({
@@ -1012,6 +1013,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       // Other modes are unaffected
       await lobbies.update('max', solo.id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
       await expect(lobbies.start('max', solo.id, true)).resolves.toHaveProperty('sessionId')
+    })
+
+    it('refuses flat Minigolf without its flag, and takes it with the flag on', async () => {
+      lobbies = new LobbyService({
+        db,
+        engine,
+        hub,
+        isBoardOnline: b => online.has(b),
+        gameAvailable: async (userId, gameId, config) => gameAvailable(gameId, config, await loadFlagUser(db, userId)),
+      })
+      await setupFlags(new Set(['gamemode.minigolf.enabled']))
+      const solo = await lobbies.create('max')
+      const flat = { nextGame: { gameId: 'minigolf', config: { course: 'test', physics: '2d' } } }
+      await expect(lobbies.update('max', solo.id, flat)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_unavailable' } })
+      await lobbies.update('max', solo.id, { nextGame: { gameId: 'minigolf', config: { course: 'test', physics: '3d' } } })
+      await setupFlags(new Set(['gamemode.minigolf.enabled', 'gamemode.minigolf.flat']))
+      await lobbies.update('max', solo.id, flat)
+      await setupFlags(new Set())
     })
 
     it('a solo lobby starts without being ready, and the game carries the lobby name', async () => {
