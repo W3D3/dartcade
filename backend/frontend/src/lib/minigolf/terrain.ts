@@ -3,7 +3,9 @@
 // same shape, a capsule (a circle is a ridge with both ends at one point), so both are shaded as
 // stacked translucent capsules, strongest at the top and fading out at the edge, with contour
 // lines at regular heights.
-import type { Pt, Slope } from '$shared/minigolf/types'
+import { pointInPolygon } from '$shared/minigolf/geometry'
+import { slopeForce } from '$shared/minigolf/simulate'
+import type { Hole, Pt, Slope } from '$shared/minigolf/types'
 
 /** Contour spacing (mm): closer on steeper slopes, like a map. */
 export function contourSpacing(strength: number): number {
@@ -47,4 +49,21 @@ export function slopeLook(s: Slope): SlopeLook {
   for (let d = step; d < reach; d += step) contours.push(capsule(from, to, d))
   const bands = Array.from({ length: BANDS }, (_, k) => capsule(from, to, (reach * (BANDS - k)) / BANDS))
   return { raised: strength > 0, bands, contours }
+}
+
+/** The bench's force arrows: the slopes' push on a grid `spacing` apart, inside the course, each
+ *  as long as its push compared with the strongest (at most most of a grid cell). */
+export function forceArrows(hole: Hole, spacing: number): { at: Pt; end: Pt }[] {
+  const xs = hole.outline.map(p => p[0])
+  const ys = hole.outline.map(p => p[1])
+  const pushes: { at: Pt; f: Pt }[] = []
+  for (let x = Math.min(...xs) + spacing / 2; x < Math.max(...xs); x += spacing)
+    for (let y = Math.min(...ys) + spacing / 2; y < Math.max(...ys); y += spacing) {
+      const at: Pt = [x, y]
+      const f = slopeForce(hole, at)
+      if ((f[0] || f[1]) && pointInPolygon(at, hole.outline)) pushes.push({ at, f })
+    }
+  const max = Math.max(...pushes.map(({ f }) => Math.hypot(f[0], f[1])))
+  const scale = (spacing * 0.8) / max
+  return pushes.map(({ at, f }) => ({ at, end: [at[0] + f[0] * scale, at[1] + f[1] * scale] }))
 }

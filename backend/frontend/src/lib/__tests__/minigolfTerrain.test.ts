@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { capsule, contourSpacing, slopeLook } from '$lib/minigolf/terrain'
-import type { Slope } from '$shared/minigolf/types'
+import { capsule, contourSpacing, forceArrows, slopeLook } from '$lib/minigolf/terrain'
+import type { Hole, Slope } from '$shared/minigolf/types'
 
 const summit: Slope = { radial: { center: [900, 600], radius: 400, strength: 1500 } }
 const bump: Slope = { bump: { from: [1000, 2000], to: [1000, 2800], width: 300, strength: 250 } }
@@ -40,5 +40,32 @@ describe('minigolf terrain', () => {
 
   it('packs contours closer on steeper slopes', () => {
     expect(contourSpacing(1500)).toBeLessThan(contourSpacing(300))
+  })
+
+  it('points force arrows downhill, only on slopes and inside the course', () => {
+    const hole: Hole = {
+      id: 'h',
+      name: 'H',
+      par: 3,
+      outline: [
+        [0, 0],
+        [1800, 0],
+        [1800, 1200],
+        [0, 1200],
+      ],
+      walls: [],
+      bumpers: [],
+      slopes: [summit],
+      tee: [100, 1100],
+      cup: { at: [900, 600], r: 54 },
+    }
+    const arrows = forceArrows(hole, 150)
+    expect(arrows.length).toBeGreaterThan(4)
+    for (const { at, end } of arrows) {
+      // Within the hill, pointing away from its top
+      expect(Math.hypot(at[0] - 900, at[1] - 600)).toBeLessThan(400)
+      expect(Math.hypot(end[0] - 900, end[1] - 600)).toBeGreaterThan(Math.hypot(at[0] - 900, at[1] - 600))
+    }
+    expect(forceArrows({ ...hole, slopes: [] }, 150)).toEqual([])
   })
 })
