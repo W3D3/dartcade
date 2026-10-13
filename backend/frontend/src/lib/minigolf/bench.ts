@@ -21,7 +21,7 @@ export function startShot(s: BenchState): BenchState {
 }
 
 /** The shot's result, or null for a miss (the stroke counts, the ball stays). */
-export function finishShot(s: BenchState, result: ShotResult | null): BenchState {
+export function finishShot(s: BenchState, result: Pick<ShotResult, 'rest' | 'holed'> | null): BenchState {
   if (!result) return { ...s, rolling: false }
   return { ...s, ball: result.rest, holed: result.holed, rolling: false }
 }
@@ -53,6 +53,14 @@ const holeSchema = z.object({
       ]),
     )
     .default([]),
+  // The 3D lab's terrain (lib/minigolf/3d/ground.ts)
+  terrain: z
+    .array(
+      z.object({
+        mesa: z.object({ from: pt, to: pt, height: z.number(), edges: z.tuple([z.number(), z.number(), z.number(), z.number()]) }),
+      }),
+    )
+    .optional(),
   tee: pt,
   cup: z.object({ at: pt, r: z.number() }),
 }) satisfies z.ZodType<Hole>
