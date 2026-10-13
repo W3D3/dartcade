@@ -100,67 +100,76 @@
 
 <Layout title="Minigolf bench">
   {#if $currentUser?.isAdmin}
-    <main class="flex min-h-0 flex-grow flex-col gap-4 box-border p-4 md:p-[28px_32px]">
-      <header class="flex flex-wrap items-center gap-3">
-        <h1 class="m-0 mr-2 font-display font-bold text-[36px] leading-none uppercase tracking-[0.02em]">Minigolf bench</h1>
-        <label class="flex items-center gap-2 text-[15px] text-text-muted">
-          Course
-          <select
-            class={SELECT}
-            bind:value={courseId}
-            onchange={() => {
-              holeIdx = 0
-              pickHole()
-            }}
+    <main class="flex min-h-0 flex-grow flex-col gap-4 box-border overflow-y-auto p-4 md:p-[28px_32px] lg:overflow-hidden">
+      <header class="flex flex-col gap-3">
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- On phones the app's header already shows the title -->
+          <h1 class="m-0 mr-2 hidden font-display font-bold text-[36px] leading-none uppercase tracking-[0.02em] md:block">
+            Minigolf bench
+          </h1>
+          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+            <span class="sr-only md:not-sr-only">Course</span>
+            <select
+              class={SELECT}
+              bind:value={courseId}
+              onchange={() => {
+                holeIdx = 0
+                pickHole()
+              }}
+            >
+              {#each COURSES as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+            </select>
+          </label>
+          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+            <span class="sr-only md:not-sr-only">Hole</span>
+            <select class="{SELECT} min-w-0 max-w-[46vw] md:max-w-none" bind:value={holeIdx} onchange={pickHole}>
+              {#each course.holes as h, i (h.id)}<option value={i}>{i + 1}. {h.name} · par {h.par}</option>{/each}
+            </select>
+          </label>
+          <span class="ml-auto font-display font-bold text-[24px] uppercase md:text-[28px]" data-testid="strokes" aria-live="polite">
+            {#if bench.holed}Holed in {bench.strokes}{:else}Strokes {bench.strokes}{/if}
+          </span>
+        </div>
+        <!-- One row to swipe through on phones, wrapping on wider screens -->
+        <div class="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0 [&>*]:shrink-0">
+          <button type="button" class={BUTTON} onclick={toTee} disabled={bench.rolling}>Reset to tee</button>
+          <button type="button" class={BUTTON} onclick={undo} disabled={bench.rolling || bench.history.length === 0}>Undo</button>
+          <button
+            type="button"
+            class="{BUTTON} {placing ? 'border-accent text-accent' : ''}"
+            aria-pressed={placing}
+            onclick={() => (placing = !placing)}
+            disabled={bench.rolling}>Place ball</button
           >
-            {#each COURSES as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
-          </select>
-        </label>
-        <label class="flex items-center gap-2 text-[15px] text-text-muted">
-          Hole
-          <select class={SELECT} bind:value={holeIdx} onchange={pickHole}>
-            {#each course.holes as h, i (h.id)}<option value={i}>{i + 1}. {h.name} · par {h.par}</option>{/each}
-          </select>
-        </label>
-        <button type="button" class={BUTTON} onclick={toTee} disabled={bench.rolling}>Reset to tee</button>
-        <button type="button" class={BUTTON} onclick={undo} disabled={bench.rolling || bench.history.length === 0}>Undo</button>
-        <button
-          type="button"
-          class="{BUTTON} {placing ? 'border-accent text-accent' : ''}"
-          aria-pressed={placing}
-          onclick={() => (placing = !placing)}
-          disabled={bench.rolling}>Place ball</button
-        >
-        <button
-          type="button"
-          class="{BUTTON} {debug ? 'border-accent text-accent' : ''}"
-          aria-pressed={debug}
-          onclick={() => (debug = !debug)}
-        >
-          Debug
-        </button>
-        <button
-          type="button"
-          class="{BUTTON} {forces ? 'border-accent text-accent' : ''}"
-          aria-pressed={forces}
-          onclick={() => (forces = !forces)}
-        >
-          Forces
-        </button>
-        <button
-          type="button"
-          class="{BUTTON} {assist ? 'border-accent text-accent' : ''}"
-          aria-pressed={assist}
-          onclick={() => (assist = !assist)}
-        >
-          Aim assist
-        </button>
-        <span class="ml-auto font-display font-bold text-[28px] uppercase" data-testid="strokes" aria-live="polite">
-          {#if bench.holed}Holed in {bench.strokes}{:else}Strokes {bench.strokes}{/if}
-        </span>
+          <button
+            type="button"
+            class="{BUTTON} {debug ? 'border-accent text-accent' : ''}"
+            aria-pressed={debug}
+            onclick={() => (debug = !debug)}
+          >
+            Debug
+          </button>
+          <button
+            type="button"
+            class="{BUTTON} {forces ? 'border-accent text-accent' : ''}"
+            aria-pressed={forces}
+            onclick={() => (forces = !forces)}
+          >
+            Forces
+          </button>
+          <button
+            type="button"
+            class="{BUTTON} {assist ? 'border-accent text-accent' : ''}"
+            aria-pressed={assist}
+            onclick={() => (assist = !assist)}
+          >
+            Aim assist
+          </button>
+        </div>
       </header>
-      <div class="grid min-h-0 flex-grow gap-6 grid-cols-1 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-        <div class="min-h-[50vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
+      <div class="grid gap-4 grid-cols-1 lg:min-h-0 lg:flex-grow lg:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <!-- On phones the hole and the board share the screen, so aiming and the roll both show -->
+        <div class="h-[34dvh] lg:h-auto lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
           <HoleView
             {hole}
             ball={shown}
@@ -172,8 +181,8 @@
             {preview}
           />
         </div>
-        <div class="flex min-h-0 flex-col items-center gap-3 overflow-y-auto">
-          <div class="w-full max-w-[520px]">
+        <div class="flex flex-col items-center gap-3 lg:min-h-0 lg:overflow-y-auto">
+          <div class="w-full max-w-[min(520px,34dvh)] lg:max-w-[520px]">
             <DartBoard {onBoardClick} {onBoardHover} />
           </div>
           <p class="m-0 text-[14px] text-text-muted text-center">
