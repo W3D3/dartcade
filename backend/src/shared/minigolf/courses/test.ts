@@ -19,7 +19,7 @@ export const testCourse = {
       bumpers: [],
       slopes: [],
       tee: [250, 2750],
-      cup: { at: [250, 300], r: 54 },
+      cup: { at: [250, 300], r: 80 },
     },
     {
       id: 'test-dogleg',
@@ -43,7 +43,7 @@ export const testCourse = {
         { bump: { from: [1000, 2000], to: [1000, 2800], width: 300, strength: 250 } },
       ],
       tee: [300, 2500],
-      cup: { at: [2150, 400], r: 54 },
+      cup: { at: [2150, 400], r: 80 },
     },
     {
       id: 'test-summit',
@@ -69,7 +69,7 @@ export const testCourse = {
       ],
       slopes: [{ radial: { center: [900, 600], radius: 400, strength: 1500 } }],
       tee: [900, 2350],
-      cup: { at: [900, 600], r: 54 },
+      cup: { at: [900, 600], r: 80 },
     },
   ],
 } satisfies Course
