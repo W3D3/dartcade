@@ -4,13 +4,13 @@
 // it's on the ground. Rapier works in metres; everything going in and out is mm.
 import type { ColliderDesc } from '@dimforge/rapier3d-deterministic-compat'
 import type { Physics } from '$shared/minigolf/physics'
-import { BALL_R, type Pt, type Shot } from '$shared/minigolf/types'
-import { G, groundMesh, heightAt, type Hole3d } from './ground'
+import { BALL_R, type Hole, type Pt, type Shot } from '$shared/minigolf/types'
+import { G, groundMesh, heightAt } from '$shared/minigolf/3d/ground'
 
 /** A point in the course (x, y) with its height (z), mm. */
 export type Pt3 = [number, number, number]
 export type Result3d = { path: Pt3[]; rest: Pt; holed: boolean }
-export type Simulate3d = (hole: Hole3d, physics: Physics, ball: Pt, shot: Shot) => Result3d
+export type Simulate3d = (hole: Hole, physics: Physics, ball: Pt, shot: Shot) => Result3d
 
 const M = 1 / 1000
 /** The ground mesh's grid, mm: fine enough for a round-ish cup. */
@@ -27,7 +27,7 @@ export async function loadPhysics3d(): Promise<Simulate3d> {
 
 type Rapier = (typeof import('@dimforge/rapier3d-deterministic-compat'))['default']
 
-function simulate(R: Rapier, hole: Hole3d, physics: Physics, start: Pt, shot: Shot): Result3d {
+function simulate(R: Rapier, hole: Hole, physics: Physics, start: Pt, shot: Shot): Result3d {
   const world = new R.World({ x: 0, y: -G * M, z: 0 })
   world.timestep = physics.step
   const fixed = world.createRigidBody(R.RigidBodyDesc.fixed())

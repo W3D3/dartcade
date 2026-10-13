@@ -937,6 +937,38 @@
             ]
           }
         },
+        "terrain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["mesa"],
+            "additionalProperties": false,
+            "properties": {
+              "mesa": {
+                "type": "object",
+                "required": ["from", "to", "height", "edges"],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "$ref": "#/$defs/MinigolfPt"
+                  },
+                  "to": {
+                    "$ref": "#/$defs/MinigolfPt"
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "edges": {
+                    "type": "array",
+                    "items": [{ "type": "number" }, { "type": "number" }, { "type": "number" }, { "type": "number" }],
+                    "minItems": 4,
+                    "maxItems": 4
+                  }
+                }
+              }
+            }
+          }
+        },
         "tee": {
           "$ref": "#/$defs/MinigolfPt"
         },
