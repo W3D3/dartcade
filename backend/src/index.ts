@@ -13,6 +13,7 @@ import { bridgeConnections } from './bridge-gw/connections.js'
 import { FriendsService } from './friends/service.js'
 import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
+import { closePool, warmPool } from './games/minigolfPool.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -27,6 +28,7 @@ if (!DATABASE_URL) throw new Error('DATABASE_URL or PG* env vars are required')
 
 // Rapier's WASM: Minigolf's 3D shots are simulated synchronously, from the rebuild below on
 await initPhysics3d()
+warmPool()
 await runMigrations(db)
 await seedDev()
 
@@ -95,10 +97,10 @@ const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: jo
 warn = (message, details) => {
   app.log.warn({ details }, message)
 }
-// Stopping: no idle sweep, friends pushes, grace or debounce timers left running
-app.addHook('onClose', (_instance, done) => {
+// Stopping: no idle sweep, friends pushes, grace or debounce timers or shot workers left running
+app.addHook('onClose', async () => {
   clearInterval(idleSweep)
   friends.close()
-  done()
+  await closePool()
 })
 await app.listen({ port: PORT, host: '0.0.0.0' })

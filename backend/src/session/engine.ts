@@ -13,6 +13,8 @@ import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
+import { liveShots, ShotNeeded, storeShot } from '../games/minigolfShots.js'
+import { simulateInPool } from '../games/minigolfPool.js'
 
 type PushFn = (sessionId: string) => void
 
@@ -65,6 +67,29 @@ export type SnapshotView = {
   disconnectedAt: (userId: string) => Date | null
   isBoardOnline: (boardId: string) => boolean
 }
+// Plays the input on a scratch copy of the session first: each live 3D shot it needs runs in the
+// worker pool, so the real apply finds them cached and doesn't block the thread. Any other error is
+// left for the real apply to raise.
+async function prefetchShots(session: Session, input: GameInput, at: Date): Promise<void> {
+  for (;;) {
+    const { openVisitEvents, openDarts, totalDarts, totalVisits } = session
+    const scratch = {
+      ...session,
+      openVisitEvents: [...openVisitEvents],
+      openDarts: [...openDarts],
+      totalDarts: [...totalDarts],
+      totalVisits: [...totalVisits],
+    }
+    try {
+      liveShots(() => applyInput(scratch, input, at))
+      return
+    } catch (err) {
+      if (!(err instanceof ShotNeeded)) return
+      storeShot(err.inputs, await simulateInPool(err.inputs))
+    }
+  }
+}
+
 const NO_VIEWER: SnapshotView = { viewerUserId: null, connectedUserIds: new Set(), disconnectedAt: () => null, isBoardOnline: () => false }
 
 // Where an input came from: the bridge event it was, and the board it was thrown on
@@ -355,6 +380,7 @@ export class SessionEngine {
     // before it's logged, so logs from before this rule replay as they were played)
     if (input.source === 'board' && HELD.has(input.event.kind) && awaitsFinish(session)) return false
     const at = new Date()
+    await prefetchShots(session, input, at)
     await this.logInput(session, input, raw, origin, at)
     const outcome = applyInput(session, input, at)
     if (outcome.reopened !== undefined) await this.store.deleteDarts(session.id, outcome.reopened)
