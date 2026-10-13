@@ -11,6 +11,7 @@
   import HoleEditor from '$lib/components/minigolf/HoleEditor.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
+  import { Toggle } from '$lib/components/ui/toggle/index.js'
   import { heightAt } from '$shared/minigolf/3d/ground'
   import { initPhysics3d, simulateShot3d } from '$shared/minigolf/3d/physics3d'
   import { playFrames } from '$lib/minigolf/animate'
@@ -45,14 +46,14 @@
   /** On the ground at p: one radius above it. */
   const show = (p: Pt) => (shown3 = [p[0], p[1], heightAt(hole, p) + BALL_R])
   /** Experiments: draw the hole in 3D, and play it with 3D physics (Rapier, loaded on first use). */
-  let view3d = $state(false)
-  let physics3d = $state(false)
-  let felt = $state<'stripes' | 'checker'>('stripes')
+  let view3d = $state<boolean>(true)
+  let physics3d = $state<boolean>(true)
+  let felt = $state<'stripes' | 'checker'>('checker')
   let relief = $state(1)
   let placing = $state(false)
   let debug = $state(false)
   let forces = $state(false)
-  let assist = $state(true)
+  let assist = $state<boolean>(true)
   let lastPath = $state<Pt[] | null>(null)
   let hover = $state<{ x: number; y: number } | null>(null)
   /** The 3D view's chase camera: the rolling path and the playback frame. */
@@ -178,63 +179,37 @@
         <div class="-mx-4 flex items-center gap-2 overflow-x-auto px-4 pb-1 md:mx-0 md:flex-wrap md:px-0 [&>*]:shrink-0">
           <button type="button" class={BUTTON} onclick={toTee} disabled={bench.rolling}>Reset to tee</button>
           <button type="button" class={BUTTON} onclick={undo} disabled={bench.rolling || bench.history.length === 0}>Undo</button>
-          <button
-            type="button"
-            class="{BUTTON} {placing ? 'border-accent text-accent' : ''}"
-            aria-pressed={placing}
-            onclick={() => (placing = !placing)}
-            disabled={bench.rolling}>Place ball</button
-          >
-          <button
-            type="button"
-            class="{BUTTON} {debug ? 'border-accent text-accent' : ''}"
-            aria-pressed={debug}
-            onclick={() => (debug = !debug)}
-          >
-            Debug
-          </button>
-          <button
-            type="button"
-            class="{BUTTON} {forces ? 'border-accent text-accent' : ''}"
-            aria-pressed={forces}
-            onclick={() => (forces = !forces)}
-          >
-            Forces
-          </button>
-          <button
-            type="button"
-            class="{BUTTON} {view3d ? 'border-accent text-accent' : ''}"
-            aria-pressed={view3d}
-            onclick={() => (view3d = !view3d)}
-          >
-            View {view3d ? '3D' : '2D'}
-          </button>
-          <button
-            type="button"
-            class="{BUTTON} {physics3d ? 'border-accent text-accent' : ''}"
-            aria-pressed={physics3d}
-            disabled={bench.rolling}
-            onclick={() => (physics3d = !physics3d)}
-          >
-            Physics {physics3d ? '3D' : '2D'}
-          </button>
+          <Toggle bind:pressed={placing} disabled={bench.rolling}>Place ball</Toggle>
+          <Toggle bind:pressed={debug}>Debug</Toggle>
+          <Toggle bind:pressed={forces}>Forces</Toggle>
+          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+            <span class="sr-only md:not-sr-only">View</span>
+            <select class={SELECT} bind:value={view3d}>
+              <option value={true}>3D</option>
+              <option value={false}>2D</option>
+            </select>
+          </label>
+          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+            <span class="sr-only md:not-sr-only">Physics</span>
+            <select class={SELECT} bind:value={physics3d} disabled={bench.rolling}>
+              <option value={true}>3D</option>
+              <option value={false}>2D</option>
+            </select>
+          </label>
           {#if view3d}
-            <button type="button" class={BUTTON} onclick={() => (felt = felt === 'stripes' ? 'checker' : 'stripes')}>
-              Felt: {felt}
-            </button>
+            <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+              <span class="sr-only md:not-sr-only">Felt</span>
+              <select class={SELECT} bind:value={felt}>
+                <option value="checker">Checker</option>
+                <option value="stripes">Stripes</option>
+              </select>
+            </label>
             <label class="flex items-center gap-2 text-[15px] text-text-muted">
               Relief ×{relief}
               <input type="range" min="1" max="5" step="0.5" bind:value={relief} class="w-24" />
             </label>
           {/if}
-          <button
-            type="button"
-            class="{BUTTON} {assist ? 'border-accent text-accent' : ''}"
-            aria-pressed={assist}
-            onclick={() => (assist = !assist)}
-          >
-            Aim assist
-          </button>
+          <Toggle bind:pressed={assist}>Aim assist</Toggle>
         </div>
       </header>
       <div class="grid gap-4 grid-cols-1 lg:min-h-0 lg:flex-grow lg:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
