@@ -11,19 +11,24 @@
   import HoleEditor from '$lib/components/minigolf/HoleEditor.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
+  import { heightAt } from '$lib/minigolf/3d/ground'
+  import { LAB_COURSE } from '$lib/minigolf/3d/lab'
+  import { loadPhysics3d, type Pt3, type Simulate3d } from '$lib/minigolf/3d/physics3d'
   import { playPath } from '$lib/minigolf/animate'
   import { canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
-  import { COURSES } from '$shared/minigolf/courses/index'
+  import { COURSES as SHARED_COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { shotFromDart } from '$shared/minigolf/shot'
   import { simulateShot } from '$shared/minigolf/simulate'
-  import type { Hole, Pt } from '$shared/minigolf/types'
+  import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
   $effect(() => {
     if ($currentUser && !$currentUser.isAdmin) void push('/')
   })
 
+  /** The shared courses, and the 3D lab's holes for trying out 3D physics. */
+  const COURSES = [...SHARED_COURSES, LAB_COURSE]
   let courseId = $state(COURSES[0].id)
   let holeIdx = $state(0)
   const course = $derived(COURSES.find(c => c.id === courseId) ?? COURSES[0])
@@ -33,8 +38,17 @@
   const hole = $derived(edited ?? picked)
   let physics = $state<Physics>({ ...DEFAULT_PHYSICS })
   let bench = $state<BenchState>(initBench(COURSES[0].holes[0]))
-  /** Where the ball is drawn: follows the path while a shot rolls. */
-  let shown = $state<Pt>(COURSES[0].holes[0].tee)
+  /** Where the ball is drawn (and its height, for 3D): follows the path while a shot rolls. */
+  let shown3 = $state<Pt3>([...COURSES[0].holes[0].tee, BALL_R])
+  const shown = $derived<Pt>([shown3[0], shown3[1]])
+  /** On the ground at p: one radius above it. */
+  const show = (p: Pt) => (shown3 = [p[0], p[1], heightAt(hole, p) + BALL_R])
+  /** Experiments: draw the hole in 3D, and play it with 3D physics (Rapier, loaded on first use). */
+  let view3d = $state(false)
+  let physics3d = $state(false)
+  let felt = $state<'stripes' | 'checker'>('stripes')
+  let relief = $state(1)
+  let simulate3d: Simulate3d | null = null
   let placing = $state(false)
   let debug = $state(false)
   let forces = $state(false)
@@ -49,11 +63,11 @@
 
   function undo(): void {
     bench = undoShot(bench)
-    shown = bench.ball
+    show(bench.ball)
   }
   function place(at: Pt): void {
     bench = placeBall(bench, at)
-    shown = bench.ball
+    show(bench.ball)
   }
 
   function onHoleEdit(h: Hole): void {
@@ -67,7 +81,7 @@
 
   function toTee(): void {
     bench = initBench(hole)
-    shown = hole.tee
+    show(hole.tee)
     lastPath = null
   }
 
@@ -78,11 +92,18 @@
     const shot = shotFromDart(coords, bench.ball, hole.cup.at, physics, assist ? hole : null)
     const from = bench.ball
     bench = startShot(bench)
-    const result = shot ? simulateShot(hole, physics, from, shot) : null
-    lastPath = result?.path ?? null
-    if (result) await playPath(result.path, p => (shown = p), reducedMotion())
+    let result: { path: Pt3[]; rest: Pt; holed: boolean } | null = null
+    if (shot && physics3d) {
+      simulate3d ??= await loadPhysics3d()
+      result = simulate3d(hole, physics, from, shot)
+    } else if (shot) {
+      const flat = simulateShot(hole, physics, from, shot)
+      result = { ...flat, path: flat.path.map(p => [p[0], p[1], heightAt(hole, p) + BALL_R]) }
+    }
+    lastPath = result?.path.map(p => [p[0], p[1]]) ?? null
+    if (result) await playPath(result.path, p => (shown3 = p), reducedMotion())
     bench = finishShot(bench, result)
-    shown = bench.ball
+    show(bench.ball)
   }
 
   function onBoardHover(coords: { x: number; y: number } | null): void {
@@ -159,6 +180,32 @@
           </button>
           <button
             type="button"
+            class="{BUTTON} {view3d ? 'border-accent text-accent' : ''}"
+            aria-pressed={view3d}
+            onclick={() => (view3d = !view3d)}
+          >
+            View {view3d ? '3D' : '2D'}
+          </button>
+          <button
+            type="button"
+            class="{BUTTON} {physics3d ? 'border-accent text-accent' : ''}"
+            aria-pressed={physics3d}
+            disabled={bench.rolling}
+            onclick={() => (physics3d = !physics3d)}
+          >
+            Physics {physics3d ? '3D' : '2D'}
+          </button>
+          {#if view3d}
+            <button type="button" class={BUTTON} onclick={() => (felt = felt === 'stripes' ? 'checker' : 'stripes')}>
+              Felt: {felt}
+            </button>
+            <label class="flex items-center gap-2 text-[15px] text-text-muted">
+              Relief ×{relief}
+              <input type="range" min="1" max="5" step="0.5" bind:value={relief} class="w-24" />
+            </label>
+          {/if}
+          <button
+            type="button"
             class="{BUTTON} {assist ? 'border-accent text-accent' : ''}"
             aria-pressed={assist}
             onclick={() => (assist = !assist)}
@@ -170,16 +217,22 @@
       <div class="grid gap-4 grid-cols-1 lg:min-h-0 lg:flex-grow lg:gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
         <!-- On phones the hole and the board share the screen, so aiming and the roll both show -->
         <div class="h-[34dvh] lg:h-auto lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
-          <HoleView
-            {hole}
-            ball={shown}
-            wallThickness={physics.wallThickness}
-            onPlace={placing ? place : undefined}
-            {debug}
-            {forces}
-            {lastPath}
-            {preview}
-          />
+          {#if view3d}
+            {#await import('$lib/components/minigolf/Hole3D.svelte') then { default: Hole3D }}
+              <Hole3D {hole} ball={shown3} follow={bench.rolling} wallThickness={physics.wallThickness} {felt} {relief} aim={preview} />
+            {/await}
+          {:else}
+            <HoleView
+              {hole}
+              ball={shown}
+              wallThickness={physics.wallThickness}
+              onPlace={placing ? place : undefined}
+              {debug}
+              {forces}
+              {lastPath}
+              {preview}
+            />
+          {/if}
         </div>
         <div class="flex flex-col items-center gap-3 lg:min-h-0 lg:overflow-y-auto">
           <div class="w-full max-w-[min(520px,34dvh)] lg:max-w-[520px]">
