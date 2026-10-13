@@ -102,8 +102,8 @@ on through `FLAGS_ON`, brings them back:
 
 `Hole3D.svelte` grows into the match screen's hole view, with what `HoleView` does today:
 
-- **Balls.** Each player's ball in their colour; the other players' balls with their initial over
-  them. A ball in the cup is drawn in it.
+- **Balls.** Each player's ball in their colour, the colour of the ball next to them in the player
+  list; that's how balls are told apart, with no initials on them. A ball in the cup is drawn in it.
 - **Aim.** While a player can aim: the reach rings (how far a treble and a double roll on flat
   felt) and the aim dial around the ball, lying on the ground.
 - **The shot preview** (the game option): for each try of the turn, a dotted line from the ball in
