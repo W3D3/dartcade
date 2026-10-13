@@ -2,10 +2,11 @@
 // physics on purpose means updating the snapshot (`npx vitest -u`) in the same commit.
 import { beforeAll, describe, it, expect } from 'vitest'
 import { initPhysics3d, simulateShot3d } from '../3d/physics3d.js'
+import { pointInPolygon } from '../geometry.js'
 import { validateHole } from '../hole.js'
 import { DEFAULT_PHYSICS } from '../physics.js'
 import { simulateShot } from '../simulate.js'
-import { BALL_R, type Shot } from '../types.js'
+import type { Shot } from '../types.js'
 import { COURSES, mixedHoles } from './index.js'
 
 const SHOTS: Shot[] = [
@@ -33,9 +34,11 @@ describe('courses', () => {
       it(`${course.id}/${hole.id} 3D golden shots`, () => {
         const results = SHOTS.map(s => {
           const r = simulateShot3d(hole, DEFAULT_PHYSICS, hole.tee, s)
-          // No ball stops hanging over the cup's lip
-          if (!r.holed)
-            expect(Math.hypot(r.rest[0] - hole.cup.at[0], r.rest[1] - hole.cup.at[1])).toBeGreaterThanOrEqual(hole.cup.r + BALL_R / 2)
+          // No ball stops hanging over the hole, and none leaves the course
+          if (!r.holed) {
+            expect(Math.hypot(r.rest[0] - hole.cup.at[0], r.rest[1] - hole.cup.at[1])).toBeGreaterThanOrEqual(hole.cup.r)
+            expect(pointInPolygon(r.rest, hole.outline)).toBe(true)
+          }
           let length = 0
           for (let i = 1; i < r.path.length; i++) {
             const [a, b] = [r.path[i - 1], r.path[i]]

@@ -177,7 +177,7 @@
 
   function build(h: Hole): THREE.Group {
     const g = new THREE.Group()
-    const { positions, indices } = groundMesh(h, 20)
+    const { positions, indices } = groundMesh(h)
     for (let k = 1; k < positions.length; k += 3) positions[k] *= relief
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
@@ -207,13 +207,13 @@
       g.add(m)
     }
 
-    // The cup: a dark tube down into the hole, and the flag
+    // The cup: a dark tube down into the hole (48 sides, on the ground's rim points), and the flag
     const [cx, cy] = h.cup.at
     const cupH = heightAt(h, h.cup.at) * relief
-    const tube = new THREE.Mesh(new THREE.CylinderGeometry(h.cup.r, h.cup.r, CUP_DEPTH, 32, 1, true), toon('#15170f', THREE.BackSide))
+    const tube = new THREE.Mesh(new THREE.CylinderGeometry(h.cup.r, h.cup.r, CUP_DEPTH, 48, 1, true), toon('#15170f', THREE.BackSide))
     tube.position.set(cx, cupH - CUP_DEPTH / 2, cy)
     g.add(tube)
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(h.cup.r, 32), toon('#0a0b07'))
+    const floor = new THREE.Mesh(new THREE.CircleGeometry(h.cup.r, 48), toon('#0a0b07'))
     floor.rotation.x = -Math.PI / 2
     floor.position.set(cx, cupH - CUP_DEPTH, cy)
     g.add(floor)
