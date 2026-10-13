@@ -13,10 +13,9 @@
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
   import { heightAt } from '$shared/minigolf/3d/ground'
   import { initPhysics3d, simulateShot3d } from '$shared/minigolf/3d/physics3d'
-  import { LAB_COURSE } from '$lib/minigolf/3d/lab'
   import { playPath } from '$lib/minigolf/animate'
   import { canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
-  import { COURSES as SHARED_COURSES } from '$shared/minigolf/courses/index'
+  import { COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { shotFromDart } from '$shared/minigolf/shot'
   import { simulateShot } from '$shared/minigolf/simulate'
@@ -30,8 +29,6 @@
     if ($currentUser && !$currentUser.isAdmin) void push('/')
   })
 
-  /** The shared courses, and the 3D lab's holes for trying out 3D physics. */
-  const COURSES = [...SHARED_COURSES, LAB_COURSE]
   let courseId = $state(COURSES[0].id)
   let holeIdx = $state(0)
   const course = $derived(COURSES.find(c => c.id === courseId) ?? COURSES[0])

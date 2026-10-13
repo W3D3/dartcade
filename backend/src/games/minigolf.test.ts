@@ -159,7 +159,7 @@ describe('minigolf', () => {
     s = visit(at(s, 0, nearCup), bull())
     s = visit(at(s, 1, nearCup), bull())
     const [a] = M.summarize(s, { totalDarts: [], totalVisits: [] })
-    expect(a.stats.strokes).toBe(1 + 2 * (M.defaultConfig.maxStrokes + 1))
+    expect(a.stats.strokes).toBe(1 + (testCourse.holes.length - 1) * (M.defaultConfig.maxStrokes + 1))
     expect(a.stats.holesInOne).toBe(1)
   })
 

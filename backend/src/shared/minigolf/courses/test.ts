@@ -71,5 +71,24 @@ export const testCourse = {
       tee: [900, 2350],
       cup: { at: [900, 600], r: 80 },
     },
+    {
+      id: 'test-mesa',
+      name: 'Mesa',
+      par: 3,
+      outline: [
+        [0, 0],
+        [1600, 0],
+        [1600, 3200],
+        [0, 3200],
+      ],
+      walls: [],
+      bumpers: [],
+      slopes: [],
+      // A plateau 15 cm up with the cup on it: a long ramp up from the tee's side, cliffs elsewhere.
+      // Too soft and the ball rolls back down; too hard and it drops off the back. Flat in 2D.
+      terrain: [{ mesa: { from: [300, 300], to: [1300, 1100], height: 150, edges: [90, 90, 90, 900] } }],
+      tee: [800, 2950],
+      cup: { at: [800, 600], r: 80 },
+    },
   ],
 } satisfies Course
