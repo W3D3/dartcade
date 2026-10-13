@@ -136,6 +136,17 @@ describe('3D physics', () => {
     expect(simulateShot3d(steep, P, [200, 1800], up(P.minPutt)).rest[1]).toBeGreaterThan(2400)
   })
 
+  it('rests a ball that stopped at the foot of a ramp, though the ramp under its centre is steep', () => {
+    // Up the Mesa's ramp, too soft: it rolls back and stops on flat felt, its centre still over the ramp
+    const mesa = testCourse.holes.find(h => h.id === 'test-mesa')!
+    const r = simulateShot3d(mesa, P, mesa.tee, up(0.22))
+    expect(r.path.length).toBeLessThan(3 * 60)
+    let still = 0
+    for (let i = r.path.length - 1; i > 0 && Math.hypot(r.path[i][0] - r.path[i - 1][0], r.path[i][1] - r.path[i - 1][1]) < 0.2; i--)
+      still++
+    expect(still).toBeLessThanOrEqual(0.25 * 60)
+  })
+
   it('knocks another ball, and reports where it went', () => {
     const r = simulateShot3d(lane, P, [200, 3000], up(0.3), [{ id: 1, at: [200, 2600] }])
     expect(r.others?.[0].id).toBe(1)
