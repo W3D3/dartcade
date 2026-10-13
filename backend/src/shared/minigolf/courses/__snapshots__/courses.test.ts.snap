@@ -1,5 +1,81 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`courses > test/test-dogleg 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      17.5,
+    ],
+    "holed": false,
+    "length": 880.8,
+    "rest": [
+      300,
+      2458.501,
+    ],
+  },
+  {
+    "hits": [
+      10.5,
+      39,
+    ],
+    "holed": false,
+    "length": 1513.3,
+    "rest": [
+      300,
+      2438.498,
+    ],
+  },
+  {
+    "hits": [
+      9.5,
+      33.75,
+    ],
+    "holed": false,
+    "length": 1668.9,
+    "rest": [
+      300,
+      2272.93,
+    ],
+  },
+  {
+    "hits": [
+      14.75,
+      61.75,
+    ],
+    "holed": false,
+    "length": 1915.1,
+    "rest": [
+      1656.291,
+      2627.665,
+    ],
+  },
+  {
+    "hits": [
+      6.5,
+      15,
+      59.75,
+    ],
+    "holed": false,
+    "length": 2345.7,
+    "rest": [
+      1634.665,
+      2565.695,
+    ],
+  },
+  {
+    "hits": [
+      78.25,
+    ],
+    "holed": false,
+    "length": 1952.8,
+    "rest": [
+      2084.87,
+      2500,
+    ],
+  },
+]
+`;
+
 exports[`courses > test/test-dogleg golden shots 1`] = `
 [
   {
@@ -9,6 +85,14 @@ exports[`courses > test/test-dogleg golden shots 1`] = `
       2458.296,
     ],
     "samples": 69,
+  },
+  {
+    "holed": false,
+    "rest": [
+      300,
+      2438.698,
+    ],
+    "samples": 85,
   },
   {
     "holed": false,
@@ -45,6 +129,194 @@ exports[`courses > test/test-dogleg golden shots 1`] = `
 ]
 `;
 
+exports[`courses > test/test-mesa 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1398,
+    "rest": [
+      800,
+      2115.908,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": false,
+    "length": 2121.8,
+    "rest": [
+      800,
+      841.708,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2435.3,
+    "rest": [
+      800,
+      548.269,
+    ],
+  },
+  {
+    "hits": [
+      34.25,
+    ],
+    "holed": false,
+    "length": 1924.9,
+    "rest": [
+      1530.712,
+      1519.401,
+    ],
+  },
+  {
+    "hits": [
+      18.75,
+      110.75,
+    ],
+    "holed": false,
+    "length": 3048.6,
+    "rest": [
+      1420.994,
+      1693.308,
+    ],
+  },
+  {
+    "hits": [
+      23.25,
+    ],
+    "holed": false,
+    "length": 1360.3,
+    "rest": [
+      956.915,
+      2950,
+    ],
+  },
+]
+`;
+
+exports[`courses > test/test-mesa golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      800,
+      1603.75,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": true,
+    "rest": [
+      800,
+      600,
+    ],
+    "samples": 70,
+  },
+  {
+    "holed": true,
+    "rest": [
+      800,
+      600,
+    ],
+    "samples": 62,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1034.785,
+      907.2,
+    ],
+    "samples": 120,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1518.795,
+      648.704,
+    ],
+    "samples": 136,
+  },
+  {
+    "holed": false,
+    "rest": [
+      957.116,
+      2950,
+    ],
+    "samples": 85,
+  },
+]
+`;
+
+exports[`courses > test/test-straight 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1346.3,
+    "rest": [
+      250,
+      1403.738,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2546.2,
+    "rest": [
+      243.74,
+      242.384,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2557.7,
+    "rest": [
+      241.913,
+      242.179,
+    ],
+  },
+  {
+    "hits": [
+      8.75,
+      38.5,
+    ],
+    "holed": false,
+    "length": 2159.9,
+    "rest": [
+      324.794,
+      822.308,
+    ],
+  },
+  {
+    "hits": [
+      5,
+      21,
+      48.5,
+    ],
+    "holed": false,
+    "length": 2453.4,
+    "rest": [
+      336.833,
+      769.089,
+    ],
+  },
+  {
+    "hits": [
+      6.25,
+      27.25,
+    ],
+    "holed": false,
+    "length": 850.5,
+    "rest": [
+      246.73,
+      2750,
+    ],
+  },
+]
+`;
+
 exports[`courses > test/test-straight golden shots 1`] = `
 [
   {
@@ -54,6 +326,14 @@ exports[`courses > test/test-straight golden shots 1`] = `
       1403.75,
     ],
     "samples": 91,
+  },
+  {
+    "holed": true,
+    "rest": [
+      250,
+      300,
+    ],
+    "samples": 74,
   },
   {
     "holed": true,
@@ -90,6 +370,79 @@ exports[`courses > test/test-straight golden shots 1`] = `
 ]
 `;
 
+exports[`courses > test/test-summit 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      23.75,
+    ],
+    "holed": false,
+    "length": 966.3,
+    "rest": [
+      900,
+      2089.002,
+    ],
+  },
+  {
+    "hits": [
+      13.5,
+      48.75,
+    ],
+    "holed": false,
+    "length": 1682.2,
+    "rest": [
+      900,
+      2325.632,
+    ],
+  },
+  {
+    "hits": [
+      12.5,
+      42.25,
+    ],
+    "holed": false,
+    "length": 1831.3,
+    "rest": [
+      900,
+      2166.752,
+    ],
+  },
+  {
+    "hits": [
+      40.25,
+    ],
+    "holed": false,
+    "length": 2462.3,
+    "rest": [
+      1296.604,
+      290.517,
+    ],
+  },
+  {
+    "hits": [
+      21.25,
+    ],
+    "holed": false,
+    "length": 3316.9,
+    "rest": [
+      1747.032,
+      321.454,
+    ],
+  },
+  {
+    "hits": [
+      27,
+    ],
+    "holed": false,
+    "length": 1431.9,
+    "rest": [
+      1205.393,
+      2350,
+    ],
+  },
+]
+`;
+
 exports[`courses > test/test-summit golden shots 1`] = `
 [
   {
@@ -99,6 +452,14 @@ exports[`courses > test/test-summit golden shots 1`] = `
       2084.967,
     ],
     "samples": 71,
+  },
+  {
+    "holed": false,
+    "rest": [
+      900,
+      2321.286,
+    ],
+    "samples": 88,
   },
   {
     "holed": false,

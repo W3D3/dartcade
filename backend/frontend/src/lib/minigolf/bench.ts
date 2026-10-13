@@ -53,7 +53,7 @@ const holeSchema = z.object({
       ]),
     )
     .default([]),
-  // The 3D lab's terrain (lib/minigolf/3d/ground.ts)
+  // Terrain shaped by height ($shared/minigolf/3d/ground.ts)
   terrain: z
     .array(
       z.object({

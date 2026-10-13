@@ -53,10 +53,10 @@ describe('rulesLine', () => {
   })
   it('names the course for Minigolf', () => {
     expect(rulesLine(game({ mode: 'minigolf', config: { course: 'test', tries: 3, ballContact: false } }))).toBe(
-      'Test · 3 holes · 3 tries per stroke',
+      'Test · 4 holes · 3 tries per stroke',
     )
     expect(rulesLine(game({ mode: 'minigolf', config: { course: 'mixed', tries: 1, ballContact: true } }))).toBe(
-      'Mixed course · 3 holes · 1 dart per stroke · ball contact',
+      'Mixed course · 4 holes · 1 dart per stroke · ball contact',
     )
   })
   it('empty for an unknown mode or an unreadable config', () => {
