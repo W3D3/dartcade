@@ -1,7 +1,8 @@
 // The minigolf match screen's model: player rows, the try slots, which balls are on the felt,
 // and which try to animate. Pure, from the snapshot's game.
 import type { MinigolfGame, MinigolfHole } from '$lib/api'
-import type { Hole, Pt } from '$shared/minigolf/types'
+import { CUP_DEPTH, heightAt } from '$shared/minigolf/3d/ground'
+import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
 
 export type Row = {
   seat: number
@@ -84,10 +85,24 @@ export function ownBall(g: MinigolfGame): Pt {
   return pt(g.balls[g.currentPlayer]?.at ?? g.hole.tee)
 }
 
-/** The other balls on the felt: played and not in the cup (`up`: the ball drawn as the putter's). */
-export function otherBalls(g: MinigolfGame, players: { name: string }[], up = g.currentPlayer): { seat: number; at: Pt; label: string }[] {
+/** A seat's ball at rest; one that's holed lies on the cup's floor (3D draws it down there). */
+export function restingAt(g: MinigolfGame, seat: number, hole: Hole = toHole(g.hole)): PathPt {
+  const b = g.balls[seat]
+  const p = pt(b.at)
+  return b.status === 'holed' ? [...p, heightAt(hole, hole.cup.at) - CUP_DEPTH + BALL_R] : p
+}
+
+/** The other balls played on this hole, on the felt or in the cup (`up`: the ball drawn as the putter's). */
+export function otherBalls(
+  g: MinigolfGame,
+  players: { name: string }[],
+  up = g.currentPlayer,
+): { seat: number; at: PathPt; label: string }[] {
+  const hole = toHole(g.hole)
   return g.balls.flatMap((b, seat) =>
-    seat !== up && b.status === 'playing' ? [{ seat, at: pt(b.at), label: (players[seat]?.name ?? '?').slice(0, 1).toUpperCase() }] : [],
+    seat !== up && (b.status === 'playing' || b.status === 'holed')
+      ? [{ seat, at: restingAt(g, seat, hole), label: (players[seat]?.name ?? '?').slice(0, 1).toUpperCase() }]
+      : [],
   )
 }
 
@@ -96,8 +111,9 @@ export type Roll = {
   key: string
   hole: number
   seat: number
-  own: Pt[]
-  others: { seat: number; path: Pt[] }[]
+  /** The paths keep the 3D physics' heights. */
+  own: PathPt[]
+  others: { seat: number; path: PathPt[] }[]
   kept: boolean
   /** The stroke it is (hole:seat:stroke number): a kept stroke whose last try already rolled isn't rolled again. */
   stroke: string
@@ -118,8 +134,8 @@ export function rollFor(g: MinigolfGame): Roll | null {
       key: `try:${g.holeIdx}:${g.currentPlayer}:${g.tries.length}:${t.label}:${t.coords?.x ?? ''}:${t.coords?.y ?? ''}`,
       hole: g.holeIdx,
       seat: g.currentPlayer,
-      own: t.path.map(pt),
-      others: t.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
+      own: t.path,
+      others: t.others.map(o => ({ seat: o.seat, path: o.path })),
       kept: false,
       stroke: `${g.holeIdx}:${g.currentPlayer}:${(g.balls[g.currentPlayer]?.strokes ?? 0) + 1}`,
       hits: t.hits,
@@ -134,8 +150,8 @@ export function rollFor(g: MinigolfGame): Roll | null {
     key: `stroke:${k.hole}:${k.seat}:${k.stroke}`,
     hole: k.hole,
     seat: k.seat,
-    own: k.path.map(pt),
-    others: k.others.map(o => ({ seat: o.seat, path: o.path.map(pt) })),
+    own: k.path,
+    others: k.others.map(o => ({ seat: o.seat, path: o.path })),
     kept: true,
     stroke: `${k.hole}:${k.seat}:${k.stroke}`,
     hits: k.hits,
@@ -169,7 +185,7 @@ export function aimLines(g: MinigolfGame, ball: Pt): { from: Pt; dir: Pt; roll: 
 
 /** Playback speed at a frame of a roll: a bit slower than real time to follow it, and slow motion
  *  near the cup, where it gets exciting. */
-export function rollRate(at: Pt, cup: number[]): number {
+export function rollRate(at: PathPt, cup: number[]): number {
   const d = Math.hypot(at[0] - (cup[0] ?? 0), at[1] - (cup[1] ?? 0))
   // Eases from PLAYBACK at SLOW_MO_RANGE down to SLOW_MO at half of it, so it never lurches
   const t = Math.min(1, Math.max(0, (SLOW_MO_RANGE - d) / (SLOW_MO_RANGE / 2)))

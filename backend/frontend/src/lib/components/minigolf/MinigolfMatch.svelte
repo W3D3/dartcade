@@ -1,7 +1,8 @@
 <!--
   The minigolf match screen (Minigolf.dc.html, Minigolf-Shot.dc.html): players in turn order, the
-  hole, and the hole card with the dartboard to aim on, the try slots and Undo / Next. A new try
-  rolls once no newer dart has landed for the shot delay.
+  hole (in 3D where the game plays 3D and WebGL works, else flat), and the hole card with the
+  dartboard to aim on, the try slots and Undo / Next. A new try rolls once no newer dart has
+  landed for the shot delay.
 -->
 <script lang="ts">
   import { untrack } from 'svelte'
@@ -24,13 +25,15 @@
     nextRoll,
     otherBalls,
     ownBall,
+    restingAt,
     rollFor,
     rollRate,
     rows,
     toHole,
     trySlots,
   } from '$lib/minigolf/match'
-  import type { Pt } from '$shared/minigolf/types'
+  import type { Hole, PathPt, Pt } from '$shared/minigolf/types'
+  import { webglAvailable } from '$lib/webgl'
 
   let {
     game,
@@ -63,6 +66,17 @@
     /** The viewer's display and sound settings (direction wheel, slow motion, sounds). */
     settings: GameSettings
   } = $props()
+
+  // 3D where the game plays 3D physics and the device can draw it; else the flat view
+  const webgl = untrack(() => game.config.physics) === '3d' && webglAvailable()
+  let failed = $state(false)
+  const view3d = $derived(game.config.physics === '3d' && webgl && !failed)
+  // A stale chunk after a deploy or a flaky network: play on in the flat view
+  const loadHole3D = () =>
+    import('$lib/components/minigolf/Hole3D.svelte').catch((e: unknown) => {
+      failed = true
+      throw e
+    })
 
   const slots = $derived(trySlots(game))
   const roll = $derived(rollFor(game))
@@ -123,7 +137,8 @@
     }
     // A pause for the suspense, then the camera settles on the ball before it starts to roll
     const pause = setTimeout(() => {
-      if (reduced) play()
+      // The 3D chase camera glides onto the ball by itself
+      if (reduced || untrack(() => view3d)) play()
       else void zoom.set(1).then(play)
     }, ROLL_DELAY_MS)
     return () => {
@@ -164,29 +179,36 @@
   })
 
   /** The point at fractional frame `i` of a path: between two samples it glides, so slow motion stays smooth. */
-  function at(path: Pt[], i: number): Pt {
+  function at(path: readonly PathPt[], i: number): PathPt {
     const k = Math.min(Math.floor(i), path.length - 1)
     const a = path[k]
     const b = path[Math.min(k + 1, path.length - 1)]
     const t = Math.min(1, i - k)
-    return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+    const xy: Pt = [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+    return a[2] === undefined || b[2] === undefined ? xy : [...xy, a[2] + (b[2] - a[2]) * t]
   }
   /** A seat's ball while the roll plays; undefined when the roll doesn't move it. */
-  function rolling(seat: number): Pt | undefined {
+  function rolling(seat: number): PathPt | undefined {
     if (!roll || frame === null) return undefined
     if (seat === roll.seat) return at(roll.own, frame)
     const moved = roll.others.find(m => m.seat === seat)
     return moved && at(moved.path, frame)
   }
   const initial = (seat: number) => (players[seat]?.name ?? '?').slice(0, 1).toUpperCase()
-  const pt = (p: number[]): Pt => [p[0] ?? 0, p[1] ?? 0]
+  const pt = (p: readonly (number | undefined)[]): Pt => [p[0] ?? 0, p[1] ?? 0]
   // While a stroke rolls, its player stays up: the snapshot has moved on to the next one already
   const up = $derived(playing && roll ? roll.seat : game.currentPlayer)
   // The stroke that ended a hole rolls on that hole, before the scorecard
   const pastHole = $derived(playing && roll && roll.hole !== game.holeIdx ? game.lastHole : null)
-  const shownHole = $derived(toHole(pastHole?.hole ?? game.hole))
+  // The same object for the same hole: a new one (every snapshot) would rebuild the 3D course on every dart
+  let holeMemo: { key: string; hole: Hole } | null = null
+  const shownHole = $derived.by(() => {
+    const key = pastHole ? `past:${pastHole.index}` : `${game.holeIdx}`
+    if (holeMemo?.key !== key) holeMemo = { key, hole: toHole(pastHole?.hole ?? game.hole) }
+    return holeMemo.hole
+  })
   const playerRows = $derived(rows(game, players, up))
-  const ball = $derived(rolling(up) ?? pt(game.balls[up]?.at ?? game.hole.tee))
+  const ball = $derived(rolling(up) ?? restingAt(game, up, shownHole))
   const others = $derived(
     pastHole
       ? (roll?.others ?? []).map(o => ({
@@ -206,6 +228,7 @@
   })
   // The dial only while the putter can still aim: nothing rolling, tries left, the ball still in play
   const aiming = $derived(!playing && !game.finished && !game.visitLocked && (current.status === 'waiting' || current.status === 'playing'))
+  const aim = $derived(aiming && settings.aimDial ? { at: pt(ball), ...game.reach } : null)
 </script>
 
 <main
@@ -241,17 +264,43 @@
   </section>
 
   <!-- The hole -->
-  <section aria-label="Hole" class="min-h-[45vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden">
-    <HoleView
-      hole={shownHole}
-      {ball}
-      ballColor={seatColor(up)}
-      {others}
-      aims={aimLines(game, ownBall(game))}
-      aim={aiming && settings.aimDial ? { at: ball, ...game.reach } : null}
-      halo={!playing}
-      camera={roll && zoom.current > 0 ? { focus: rolling(roll.seat) ?? ball, t: zoom.current } : null}
-    />
+  <section
+    aria-label="Hole"
+    class="relative min-h-[45vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden"
+    data-view={view3d ? '3d' : '2d'}
+  >
+    {#if view3d}
+      <div class="absolute inset-0">
+        {#await loadHole3D() then { default: Hole3D }}
+          <Hole3D
+            hole={shownHole}
+            {ball}
+            ballColor={seatColor(up)}
+            {others}
+            aims={aimLines(game, ownBall(game))}
+            {aim}
+            follow={playing && roll && frame !== null ? { path: roll.own, at: frame } : null}
+            onfail={() => (failed = true)}
+          />
+        {/await}
+      </div>
+    {:else}
+      <HoleView
+        hole={shownHole}
+        ball={pt(ball)}
+        ballColor={seatColor(up)}
+        others={others.map(o => ({ ...o, at: pt(o.at) }))}
+        aims={aimLines(game, ownBall(game))}
+        {aim}
+        halo={!playing}
+        camera={roll && zoom.current > 0 ? { focus: pt(rolling(roll.seat) ?? ball), t: zoom.current } : null}
+      />
+      {#if game.config.physics === '3d'}
+        <p class="absolute left-3 top-3 m-0 rounded-full bg-surface-1/90 px-3 py-1 text-[12px] text-text-muted">
+          3D isn't available on this device; showing the flat view
+        </p>
+      {/if}
+    {/if}
   </section>
 
   <!-- The hole card, the board to aim on, the tries -->

@@ -5,12 +5,11 @@
 import RAPIER, { type Collider, type ColliderDesc, type RigidBody } from '@dimforge/rapier3d-deterministic-compat'
 import type { Physics } from '../physics.js'
 import { BALL_R, type Bumper, type Hole, type OtherBall, type PathPt, type Pt, type Shot, type ShotResult } from '../types.js'
-import { G, heightAt, heightGrid } from './ground.js'
+import { CUP_DEPTH, G, heightAt, heightGrid } from './ground.js'
 
 const M = 1 / 1000
 /** The heightfield's grid, mm. */
 const GRID = 20
-export const CUP_DEPTH = 120
 const RAIL_HEIGHT = 70
 /** Ball on ball bounce, as golf balls do (and as in 2D). */
 const BALL_BOUNCE = 0.9
