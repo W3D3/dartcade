@@ -13,7 +13,7 @@
   import { onMount } from 'svelte'
   import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
   import { HALF, SEGS, segAngle } from '$shared/board'
-  import { groundMesh, heightAt } from '$shared/minigolf/3d/ground'
+  import { CUP_DEPTH, groundMesh, heightAt } from '$shared/minigolf/3d/ground'
   import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
   import { CHASE_FOV, chaseStep, startRenderer, type ChaseCam } from '$lib/minigolf/view3d'
 
@@ -57,7 +57,6 @@
   const RAIL_HEIGHT = 70
   /** The aiming camera's tilt from straight down. */
   const TILT = THREE.MathUtils.degToRad(35)
-  const CUP_DEPTH = 120
   const FELT = '#2e7d4c'
   const FELT_DARK = '#28703f'
   const RAIL = '#efe6cc'

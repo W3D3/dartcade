@@ -6,6 +6,8 @@ import type { Hole, Pt } from '../types.js'
 
 /** Gravity, mm/s². */
 export const G = 9810
+/** How deep the cup is, mm, from the ground at its centre. */
+export const CUP_DEPTH = 120
 
 /** How far past [lo, hi] v is, in units of the side's width (0 inside). */
 const past = (v: number, lo: number, hi: number, below: number, above: number) =>

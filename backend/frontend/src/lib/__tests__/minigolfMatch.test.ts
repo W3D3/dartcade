@@ -1,5 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
+import { render } from 'svelte/server'
 import type { MinigolfGame } from '$lib/api'
+import { defaultSettings } from '$lib/gameSettings'
+import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
 import {
   PLAYBACK,
   SLOW_MO,
@@ -13,6 +16,9 @@ import {
   rows,
   trySlots,
 } from '$lib/minigolf/match'
+
+const webgl = vi.hoisted(() => ({ ok: true }))
+vi.mock('$lib/webgl', () => ({ webglAvailable: () => webgl.ok }))
 
 const hole = {
   id: 'h',
@@ -111,7 +117,11 @@ describe('minigolf match', () => {
 
   it('draws the putter on the tee and the other played balls', () => {
     expect(ownBall(game())).toEqual([250, 2750])
-    expect(otherBalls(game(), players)).toEqual([{ seat: 0, at: [100, 1000], label: 'A' }])
+    const [anna, cleo] = otherBalls(game(), players)
+    expect(anna).toEqual({ seat: 0, at: [100, 1000], label: 'A' })
+    // Cleo's ball is in the cup: drawn there, below the rim (the felt is flat at 0 here)
+    expect(cleo).toMatchObject({ seat: 2, label: 'C', at: [250, 300, expect.any(Number)] })
+    expect(cleo.at[2]).toBeLessThan(0)
   })
 
   it('rolls the latest shown try after the delay, with a new key for a new try or a correction', () => {
@@ -127,6 +137,33 @@ describe('minigolf match', () => {
       ],
     })
     expect(a?.key).not.toBe(b?.key)
+  })
+
+  it('keeps the heights of a 3D roll', () => {
+    const r = rollFor(
+      game({
+        tries: [
+          tryOf('S20', {
+            path: [
+              [250, 2750, 21],
+              [250, 300, -80],
+            ],
+            others: [
+              {
+                seat: 0,
+                holed: true,
+                path: [
+                  [100, 1000, 21],
+                  [250, 300, -90],
+                ],
+              },
+            ],
+          }),
+        ],
+      }),
+    )
+    expect(r?.own[1][2]).toBe(-80)
+    expect(r?.others[0].path[1][2]).toBe(-90)
   })
 
   it('rolls nothing for a hidden try, then the kept stroke once the darts are pulled', () => {
@@ -242,5 +279,47 @@ describe('minigolf match', () => {
   it('does not roll what was already there when the page opened', () => {
     const tryRoll = rollFor(game({ tries: [tryOf('S20')] }))!
     expect(nextRoll(tryRoll, tryRoll.key, '').animate).toBe(false)
+  })
+})
+
+describe('minigolf match screen', () => {
+  const show = (g: MinigolfGame) =>
+    render(MinigolfMatch, {
+      props: {
+        game: g,
+        players,
+        darts: [],
+        canThrow: true,
+        locked: false,
+        canUndo: false,
+        next: { label: 'Next', prominent: false, enabled: true },
+        onUndo: () => {},
+        onNext: () => {},
+        onBoardClick: () => {},
+        settings: defaultSettings,
+      },
+    }).body
+  // Hole3D loads lazily, so the server render has only the section's choice; HoleView is hole-view
+  const is3d = (body: string) => body.includes('data-view="3d"') && !body.includes('data-testid="hole-view"')
+  const is2d = (body: string) => body.includes('data-view="2d"') && body.includes('data-testid="hole-view"')
+
+  it('plays a 3D game in 3D where WebGL works', () => {
+    webgl.ok = true
+    const body = show(game())
+    expect([is3d(body), is2d(body)]).toEqual([true, false])
+  })
+
+  it('shows the flat view for a 2D game', () => {
+    webgl.ok = true
+    const g = game()
+    const body = show(game({ config: { ...g.config, physics: '2d' } }))
+    expect([is3d(body), is2d(body)]).toEqual([false, true])
+  })
+
+  it('falls back to the flat view, with a note, without WebGL', () => {
+    webgl.ok = false
+    const body = show(game())
+    expect([is3d(body), is2d(body)]).toEqual([false, true])
+    expect(body).toContain("3D isn't available on this device; showing the flat view")
   })
 })
