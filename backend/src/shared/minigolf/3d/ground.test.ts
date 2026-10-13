@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { G, groundMesh, heightAt, heightGrid } from './ground.js'
+import { CUP_DEPTH, G, cupMesh, groundMesh, heightAt } from './ground.js'
+import { testCourse } from '../courses/test.js'
 import type { Hole } from '../types.js'
 
 const hole: Hole = {
@@ -33,7 +34,7 @@ describe('minigolf ground', () => {
   })
 
   it('covers the course, leaving the cup open', () => {
-    const { positions, indices } = groundMesh(hole, 50)
+    const { positions, indices } = groundMesh(hole)
     const tris = indices.length / 3
     let area = 0
     for (let t = 0; t < tris; t++) {
@@ -57,13 +58,56 @@ describe('minigolf ground', () => {
     expect(positions[i! * 3 + 1]).toBeCloseTo(heightAt(hole, [500, 300]))
   })
 
-  it('cuts the cup out round: every ground point stays on or outside its rim', () => {
-    const { positions } = groundMesh(hole, 20)
+  it('cuts the cup out round: every ground point stays on or outside its rim, and the rim is a ring of points', () => {
+    const { positions } = groundMesh(hole)
     const d = (k: number) => Math.hypot(positions[k * 3] - 200, positions[k * 3 + 2] - 200)
     const ds = [...Array(positions.length / 3).keys()].map(d)
     expect(Math.min(...ds)).toBeGreaterThanOrEqual(54 - 1e-3)
-    // ... and the rim is lined with points, not left ragged
-    expect(ds.filter(x => x < 54 + 1e-3).length).toBeGreaterThan(12)
+    expect(ds.filter(x => x < 54 + 1e-3).length).toBe(48)
+  })
+
+  it('follows the heights closely with big triangles on flat felt and small ones where it bends', () => {
+    for (const h of [hole, ...testCourse.holes]) {
+      const { positions: p, indices } = groundMesh(h)
+      let worst = 0
+      let biggest = 0
+      for (let t = 0; t < indices.length; t += 3) {
+        const v = [0, 1, 2].map(k => indices[t + k] * 3)
+        // The middle and the edges' midpoints of every triangle
+        for (const w of [
+          [1, 1, 1],
+          [1, 1, 0],
+          [0, 1, 1],
+          [1, 0, 1],
+        ]) {
+          const n = w[0] + w[1] + w[2]
+          const at = (o: number) => (w[0] * p[v[0] + o] + w[1] * p[v[1] + o] + w[2] * p[v[2] + o]) / n
+          worst = Math.max(worst, Math.abs(at(1) - heightAt(h, [at(0), at(2)])))
+        }
+        biggest = Math.max(biggest, Math.abs(p[v[1]] - p[v[0]]), Math.abs(p[v[2]] - p[v[0]]))
+      }
+      // A terrain crease inside one FINE cell is cut off: up to 10 mm at the Mesa's cliffs, under 1 mm elsewhere
+      expect(worst, h.id).toBeLessThan(h.terrain ? 10 : 1)
+      if (h !== hole) expect(biggest, h.id).toBeGreaterThanOrEqual(160)
+      expect(indices.length / 3, h.id).toBeLessThan(6000)
+    }
+  })
+
+  it('sinks the cup from its rim to a floor CUP_DEPTH below its middle, walls facing in', () => {
+    const { positions: p, indices } = cupMesh(hole)
+    const floor = heightAt(hole, [200, 200]) - CUP_DEPTH
+    for (let t = 0; t < indices.length; t += 3) {
+      const [a, b, c] = [0, 1, 2].map(k => indices[t + k] * 3)
+      const e1 = [p[b] - p[a], p[b + 1] - p[a + 1], p[b + 2] - p[a + 2]]
+      const e2 = [p[c] - p[a], p[c + 1] - p[a + 1], p[c + 2] - p[a + 2]]
+      const n = [e1[1] * e2[2] - e1[2] * e2[1], e1[2] * e2[0] - e1[0] * e2[2], e1[0] * e2[1] - e1[1] * e2[0]]
+      const mid = [(p[a] + p[b] + p[c]) / 3, (p[a + 2] + p[b + 2] + p[c + 2]) / 3]
+      // A wall faces the cup's middle, the floor faces up
+      if (Math.abs(n[1]) < 1e-6) expect(n[0] * (200 - mid[0]) + n[2] * (200 - mid[1])).toBeGreaterThan(0)
+      else expect(n[1]).toBeGreaterThan(0)
+    }
+    const ys = [...Array(p.length / 3).keys()].map(k => p[k * 3 + 1])
+    expect(Math.min(...ys)).toBeCloseTo(floor)
   })
 
   it('raises a mesa, falling away over each side’s own width: a ramp on one, cliffs on the rest', () => {
@@ -78,12 +122,5 @@ describe('minigolf ground', () => {
     expect(heightAt(mesa, [250, 400])).toBeCloseTo(0)
     expect(heightAt(mesa, [275, 400])).toBeCloseTo(75)
     expect(heightAt(mesa, [500, 950])).toBe(0)
-  })
-
-  it('lays the heights out on a grid, row by row', () => {
-    const g = heightGrid(hole, 50)
-    expect([g.x0, g.y0, g.nx, g.ny]).toEqual([0, 0, 20, 20])
-    // Row 6 (y = 300), column 10 (x = 500): the hill's top
-    expect(g.heights[6 * 21 + 10]).toBeCloseTo(heightAt(hole, [500, 300]))
   })
 })

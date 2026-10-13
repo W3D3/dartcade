@@ -1,7 +1,7 @@
 import RAPIER from '@dimforge/rapier3d-deterministic-compat'
 import { beforeAll, describe, it, expect, vi } from 'vitest'
 import { buildWorld, initPhysics3d, simulateShot3d } from './physics3d.js'
-import { heightAt } from './ground.js'
+import { CUP_DEPTH, G, heightAt } from './ground.js'
 import { DEFAULT_PHYSICS as P } from '../physics.js'
 import { testCourse } from '../courses/test.js'
 import { BALL_R, type Hole, type Pt } from '../types.js'
@@ -27,7 +27,7 @@ const up = (power: number) => ({ dir: [0, -1] as const, power })
 beforeAll(() => initPhysics3d())
 
 describe('3D physics', () => {
-  it('lays the heightfield out where the ground is', () => {
+  it('lays the ground out where heightAt says', () => {
     const hill: Hole = { ...lane, slopes: [{ radial: { center: [200, 2000], radius: 800, strength: 2 * P.friction } }] }
     const { world } = buildWorld(hill, P)
     world.step() // ray casts see colliders only after a step
@@ -62,8 +62,33 @@ describe('3D physics', () => {
   it('drops a gentle putt into the cup', () => {
     const r = simulateShot3d(lane, P, [200, 600], up(320 / P.maxRoll))
     expect(r.holed).toBe(true)
-    expect(r.path[r.path.length - 1][2]).toBeLessThan(0)
+    // It lies on the cup's floor
+    expect(r.path[r.path.length - 1][2]).toBeCloseTo(-CUP_DEPTH + BALL_R, 0)
     expect(r.path.at(-1)).not.toEqual(r.path.at(-2)) // the path ends once
+  })
+
+  it('tips a slow putt over the rim and lets it fall, by gravity alone', () => {
+    const r = simulateShot3d(lane, P, [200, 600], up(320 / P.maxRoll))
+    const over = r.path.findIndex(p => Math.hypot(p[0] - 200, p[1] - 300) < 54)
+    expect(over).toBeGreaterThan(0)
+    const dt = 1 / 60
+    for (let i = over + 1; i < r.path.length; i++) {
+      const drop = r.path[i - 1][2]! - r.path[i][2]!
+      // Down only, and never faster than falling from the rim since crossing it
+      expect(drop, `sample ${i}`).toBeGreaterThan(-0.01)
+      expect(drop, `sample ${i}`).toBeLessThanOrEqual(G * (i - over + 1) * dt * dt + 0.5)
+    }
+  })
+
+  it('never changes what a ball collides with', () => {
+    const set = vi.spyOn(RAPIER.Collider.prototype, 'setCollisionGroups')
+    const desc = vi.spyOn(RAPIER.ColliderDesc.prototype, 'setCollisionGroups')
+    simulateShot3d(lane, P, [200, 600], up(320 / P.maxRoll))
+    simulateShot3d(lane, P, [200, 1500], up(0.6))
+    expect(set).not.toHaveBeenCalled()
+    expect(desc).not.toHaveBeenCalled()
+    set.mockRestore()
+    desc.mockRestore()
   })
 
   it('puts a ball that leaves the course back where it was putted from', () => {
@@ -78,36 +103,30 @@ describe('3D physics', () => {
   /** A putt from 1500 mm short of the cup, `dx` off its line, that would roll `past` beyond it on flat felt. */
   const through = (dx: number, past: number) => simulateShot3d(mid, P, [200 + dx, 3500], up((1500 + past) / P.maxRoll))
 
-  it('stops a fast putt at the far edge once it has dropped', () => {
-    for (const past of [500, 1000, 2000, 2500])
-      for (const dx of [0, 20, 30, 40]) {
-        const r = through(dx, past)
-        if (!r.holed) expect(2000 - r.rest[1], `${past} mm past, ${dx} off`).toBeLessThan(past / 2)
-      }
-  })
-
-  it('never lifts a slow ball off the felt at the cup; a fast one only hops off the far wall', () => {
+  it('drops a putt rolling past the cup, or lets it out the far side with at most a small hop', () => {
     let missed = 0
-    for (const past of [300, 500, 1000, 2000, 2500])
+    for (const past of [500, 1000, 2000, 2500])
       for (const dx of [0, 20, 30, 40, 50, 65, 75]) {
         const r = through(dx, past)
         if (r.holed) continue
         missed++
         const near = r.path.filter(p => Math.hypot(p[0] - 200, p[1] - 2000) < 150)
-        // From 1000 mm past, a ball that dipped in meets the top of the cup's far wall hard enough to hop (measured up to 46 mm), as a real ball does off the back of the cup
-        const hop = past >= 1000 ? 50 : 2
+        // A ball that dipped meets the far rim's edge below its middle, and the edge turns some of
+        // its speed upward: a few mm at a walk, up to about 2 cm racing through (measured 18 mm)
+        const hop = past <= 1000 ? 5 : 20
         expect(Math.max(...near.map(p => p[2]!)), `${past} mm past, ${dx} off`).toBeLessThanOrEqual(BALL_R + hop)
       }
     expect(missed).toBeGreaterThan(0)
   })
 
-  it('rolls a ball that stops at the lip into the cup, and leaves one clear of it alone', () => {
-    // On flat felt these would stop 5 mm and a radius plus 20 mm outside the rim
-    expect(through(0, -85).holed).toBe(true)
-    const clear = through(0, -(80 + BALL_R + 20))
-    const noCup = simulateShot3d({ ...mid, cup: { at: [200, 300], r: 80 } }, P, [200, 3500], up((1500 - 80 - BALL_R - 20) / P.maxRoll))
-    expect(clear.holed).toBe(false)
-    expect(clear.rest).toEqual(noCup.rest)
+  it('leaves a ball that stops short of the rim on the felt, and drops one that stops over the hole', () => {
+    // On flat felt these would stop 5 mm outside the rim, and 10 mm inside it
+    const noCup = { ...mid, cup: { at: [200, 300] as Pt, r: 80 } }
+    const short = through(0, -85)
+    expect(short.holed).toBe(false)
+    const flat = simulateShot3d(noCup, P, [200, 3500], up((1500 - 85) / P.maxRoll))
+    expect(Math.hypot(short.rest[0] - flat.rest[0], short.rest[1] - flat.rest[1])).toBeLessThan(1)
+    expect(through(0, -70).holed).toBe(true)
   })
 
   it('rolls a putt too soft for a ramp back down it, and a firm one up onto the mesa', () => {
