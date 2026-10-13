@@ -3,11 +3,11 @@ import type { MinigolfGame } from '$lib/api'
 import {
   PLAYBACK,
   SLOW_MO,
+  aimLines,
   fmtToPar,
   nextRoll,
   otherBalls,
   ownBall,
-  previewLines,
   rollFor,
   rollRate,
   rows,
@@ -81,7 +81,7 @@ const tryOf = (label: string, o: Partial<MinigolfGame['tries'][number]> = {}): M
     [250, 2000],
   ],
   others: [],
-  preview: [],
+  aim: null,
   hits: [],
   ...o,
 })
@@ -148,14 +148,13 @@ describe('minigolf match', () => {
     expect(rollFor(game({ lastStroke: { ...lastStroke, hole: 0 } }))).toBeNull()
   })
 
-  it('draws preview lines only while results are hidden, the latest bright', () => {
-    const line = [
-      [250, 2750],
-      [250, 2000],
-    ]
-    const tries = [tryOf('S20', { path: [], preview: line }), tryOf('S1', { path: [], preview: line })]
-    expect(previewLines(game({ shotHidden: true, tries })).map(l => l.current)).toEqual([false, true])
-    expect(previewLines(game({ shotHidden: false, tries }))).toEqual([])
+  it('draws aim lines from the putter’s ball only while results are hidden, the latest bright', () => {
+    const aim = { dir: [0, -1], roll: 500 }
+    const tries = [tryOf('S20', { path: [], aim }), tryOf('S1', { path: [], aim })]
+    const lines = aimLines(game({ shotHidden: true, tries }), [250, 2750])
+    expect(lines.map(l => l.current)).toEqual([false, true])
+    expect(lines[1]).toEqual({ from: [250, 2750], dir: [0, -1], roll: 500, current: true })
+    expect(aimLines(game({ shotHidden: false, tries }), [250, 2750])).toEqual([])
   })
 
   it('slows a roll down near the cup', () => {

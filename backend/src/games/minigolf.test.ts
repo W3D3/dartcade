@@ -178,19 +178,26 @@ describe('minigolf', () => {
     expect(M.view(kept, two).lastStroke?.path.at(-1)).toEqual(kept.balls[0].at.map(Math.round))
   })
 
-  it('shows only the way to the first contact with shot preview, never where the try ends', () => {
+  it('shows a straight aim line, not simulated, with shot preview while darts are left', () => {
     const one = play(M.init(cfg({ shotPreview: true }), two), [opened, dart({ x: 0, y: 0.3 })])
     const v = M.view(one, two)
     expect(v.shotHidden).toBe(true)
-    expect(v.tries[0].path).toEqual([])
-    expect(v.tries[0].preview.length).toBeGreaterThan(1)
-    // Revealed once the tries are used up: the full path, no preview line
+    const t = v.tries[0]
+    expect(t.path).toEqual([])
+    expect(t.aim).not.toBeNull()
+    expect(t.aim?.roll).toBeCloseTo((t.power ?? 0) * DEFAULT_PHYSICS.maxRoll)
+    const [dx, dy] = t.aim?.dir ?? [0, 0]
+    expect(Math.hypot(dx, dy)).toBeCloseTo(1)
+    // Revealed once the tries are used up: the full path, no aim line
     const three = M.view(play(one, [dart({ x: 0, y: 0.3 }, 1), dart({ x: 0, y: 0.3 }, 2)]), two)
     expect(three.tries[2].path.length).toBeGreaterThan(1)
-    expect(three.tries[2].preview).toEqual([])
+    expect(three.tries[2].aim).toBeNull()
     // Without shot preview, no line at all
     const off = M.view(play(M.init(cfg({ shotPreview: false }), two), [opened, dart({ x: 0, y: 0.3 })]), two)
-    expect(off.tries[0].preview).toEqual([])
+    expect(off.tries[0].aim).toBeNull()
+    // A miss carries no direction to aim with
+    const missed = M.view(play(M.init(cfg({ shotPreview: true }), two), [opened, dart(null)]), two)
+    expect(missed.tries[0].aim).toBeNull()
   })
 
   it('pulls a putt near the cup line with aim assist, not without', () => {

@@ -1140,7 +1140,7 @@
           "description": "The open visit's tries; the last one counts at takeout.",
           "items": {
             "type": "object",
-            "required": ["label", "coords", "power", "holed", "missed", "path", "others", "preview", "hits"],
+            "required": ["label", "coords", "power", "holed", "missed", "path", "others", "aim", "hits"],
             "additionalProperties": false,
             "properties": {
               "label": {
@@ -1194,12 +1194,27 @@
                   }
                 }
               },
-              "preview": {
-                "type": "array",
-                "items": {
-                  "$ref": "#/$defs/MinigolfPt"
-                },
-                "description": "With shot preview, while darts are left: the try's way up to its first contact."
+              "aim": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "required": ["dir", "roll"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "dir": {
+                        "$ref": "#/$defs/MinigolfPt"
+                      },
+                      "roll": {
+                        "type": "number",
+                        "minimum": 0
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "description": "With shot preview, while darts are left and the try isn't a miss: a straight line in the putt's direction, as long as it would roll on flat felt."
               },
               "hits": {
                 "type": "array",
@@ -1274,7 +1289,7 @@
         },
         "shotHidden": {
           "type": "boolean",
-          "description": "Darts are left: the tries carry no outcome (only, with shot preview, the way to their first contact)."
+          "description": "Darts are left: the tries carry no outcome (only, with shot preview, an aim line)."
         },
         "lastStroke": {
           "anyOf": [
