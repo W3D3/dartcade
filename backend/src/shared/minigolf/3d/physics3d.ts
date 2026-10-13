@@ -14,10 +14,13 @@ export const CUP_DEPTH = 120
 const RAIL_HEIGHT = 70
 /** Ball on ball bounce, as golf balls do (and as in 2D). */
 const BALL_BOUNCE = 0.9
-// Groups (membership << 16 | filter) let a ball over the cup pass the ground; a contact hook doubles a step's cost
+// Groups (membership << 16 | filter) let a ball over the cup pass the ground, and one that hasn't
+// dropped pass the cup's walls (their tops give it ghost knocks); a contact hook doubles a step's cost
 const GROUND = 0x0002_ffff
-const OVER_CUP = 0x0001_fffd
-const ON_FELT = 0x0001_ffff
+const CUP_WALL = 0x0004_ffff
+const DROPPED = 0x0001_fffd
+const OVER_CUP = 0x0001_fff9
+const ON_FELT = 0x0001_fffb
 
 let R: typeof RAPIER | null = null
 /** Loads Rapier's WebAssembly, once. Await it before the first simulateShot3d. */
@@ -91,8 +94,8 @@ export function buildWorld(hole: Hole, physics: Physics) {
     bumpers.set(c.handle, b)
   }
 
-  // The cup: a floor and a ring of thin walls under the hole in the ground, their tops a ball's
-  // radius down (any closer and the ball snags on them before it reaches the lip)
+  // The cup: a floor and a ring of thin walls under the hole in the ground, up to the felt so the
+  // far edge catches a ball that has dropped at all
   const cupH = heightAt(hole, hole.cup.at)
   const [cx, cy] = hole.cup.at
   dead(R.ColliderDesc.cuboid(hole.cup.r * 1.5 * M, 5 * M, hole.cup.r * 1.5 * M).setTranslation(cx * M, (cupH - CUP_DEPTH) * M, cy * M))
@@ -105,10 +108,12 @@ export function buildWorld(hole: Hole, physics: Physics) {
     const [pa, pb] = [p(a), p(b)]
     const mid: Pt = [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2]
     const angle = Math.atan2(pb[1] - pa[1], pb[0] - pa[0])
+    const [top, bottom] = [heightAt(hole, mid), cupH - CUP_DEPTH]
     dead(
-      R.ColliderDesc.cuboid((Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) / 2 + 2) * M, ((CUP_DEPTH - BALL_R) / 2) * M, 3 * M)
-        .setTranslation(mid[0] * M, (cupH - (CUP_DEPTH + BALL_R) / 2) * M, mid[1] * M)
-        .setRotation({ x: 0, y: Math.sin(-angle / 2), z: 0, w: Math.cos(-angle / 2) }),
+      R.ColliderDesc.cuboid((Math.hypot(pb[0] - pa[0], pb[1] - pa[1]) / 2 + 2) * M, ((top - bottom) / 2) * M, 3 * M)
+        .setTranslation(mid[0] * M, ((top + bottom) / 2) * M, mid[1] * M)
+        .setRotation({ x: 0, y: Math.sin(-angle / 2), z: 0, w: Math.cos(-angle / 2) })
+        .setCollisionGroups(CUP_WALL),
     )
   }
   return { world, solid, bumpers }
@@ -125,6 +130,7 @@ type Rolling = {
   /** At rest: held without gravity (so it can't creep down a gentle slope) until a ball knocks it. */
   resting: boolean
   overCup: boolean
+  group: number
   /** Bumpers (with a kick) it just hit, to kick off once it moves away. */
   kicks: Bumper[]
 }
@@ -155,7 +161,7 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
           .setActiveEvents(R.ActiveEvents.COLLISION_EVENTS),
         body,
       )
-      return { id: o.id, body, collider, start: o.at, path: [], holed: false, resting: false, overCup: false, kicks: [] }
+      return { id: o.id, body, collider, start: o.at, path: [], holed: false, resting: false, overCup: false, group: ON_FELT, kicks: [] }
     })
     const own = balls[0]
     const byCollider = new Map(balls.map(b => [b.collider.handle, b]))
@@ -190,26 +196,42 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
         b.resting = false // knocked
         b.body.setGravityScale(1, true)
       }
-      const overCup = Math.hypot(x - cx, y - cy) < hole.cup.r
-      // The ground has no hole: over the cup the ball passes through it, down into the cup
-      if (overCup !== b.overCup) b.collider.setCollisionGroups(overCup ? OVER_CUP : ON_FELT)
+      const dc = Math.hypot(x - cx, y - cy)
+      const inCup = dc < hole.cup.r
+      // The ground has no hole: over the cup the ball passes through it, down into the cup. A ball
+      // that dipped in stays off the ground until it's back up at the felt, or the ground would
+      // shove it up and over the edge; till then the cup's wall decides
+      const low = z < heightAt(hole, [x, y]) + BALL_R - 1
+      const overCup = inCup || (b.overCup && low)
+      const group = overCup ? (low ? DROPPED : OVER_CUP) : ON_FELT
+      if (group !== b.group) b.collider.setCollisionGroups(group)
       b.overCup = overCup
-      if (overCup && z < cupH - BALL_R * 2) {
+      b.group = group
+      if (inCup && z < cupH - BALL_R * 2) {
         b.holed = true
         b.path.push([x, y, z])
         world.removeRigidBody(b.body)
         return false
       }
       if (overCup || z - BALL_R - heightAt(hole, [x, y]) >= 2) return true
-      if (speed < physics.restSpeed && pull([x, y]) <= physics.friction) {
+      // The rounded lip: within half a ball of the rim the felt falls toward the cup, so a ball never stops hanging over it
+      const onLip = dc < hole.cup.r + BALL_R / 2
+      if (speed < physics.restSpeed && !onLip && pull([x, y]) <= physics.friction) {
         b.body.setLinvel({ x: 0, y: 0, z: 0 }, true)
         b.body.setGravityScale(0, true)
         b.resting = true
+        b.kicks = [] // guards against a stale kick firing when it's knocked later
         return false
       }
       if (speed > 0) {
         const slow = Math.min(speed, physics.friction * dt) / speed
         b.body.setLinvel({ x: v.x * (1 - slow), y: v.y * (1 - slow), z: v.z * (1 - slow) }, true)
+      }
+      if (onLip) {
+        // Twice friction: a ball stopping there rolls in at a walk, one passing by barely curls
+        const lip = (2 * physics.friction * dt * M) / dc
+        const w = b.body.linvel()
+        b.body.setLinvel({ x: w.x + (cx - x) * lip, y: w.y, z: w.z + (cy - y) * lip }, true)
       }
       return true
     }

@@ -4,7 +4,7 @@ import { buildWorld, initPhysics3d, simulateShot3d } from './physics3d.js'
 import { heightAt } from './ground.js'
 import { DEFAULT_PHYSICS as P } from '../physics.js'
 import { testCourse } from '../courses/test.js'
-import type { Hole, Pt } from '../types.js'
+import { BALL_R, type Hole, type Pt } from '../types.js'
 
 const lane: Hole = {
   id: 'lane',
@@ -65,6 +65,42 @@ describe('3D physics', () => {
     expect(r.path[r.path.length - 1][2]).toBeLessThan(0)
   })
 
+  // The cup halfway up the lane, so a putt through it has room to roll on
+  const mid: Hole = { ...lane, cup: { at: [200, 2000], r: 80 } }
+  /** A putt from 1500 mm short of the cup, `dx` off its line, that would roll `past` beyond it on flat felt. */
+  const through = (dx: number, past: number) => simulateShot3d(mid, P, [200 + dx, 3500], up((1500 + past) / P.maxRoll))
+
+  it('stops a fast putt at the far edge once it has dropped', () => {
+    for (const past of [500, 1000, 2000, 2500])
+      for (const dx of [0, 20, 30, 40]) {
+        const r = through(dx, past)
+        if (!r.holed) expect(2000 - r.rest[1], `${past} mm past, ${dx} off`).toBeLessThan(past / 2)
+      }
+  })
+
+  it('never lifts a ball off the felt at the cup, unless it clips the rim at speed', () => {
+    let missed = 0
+    for (const past of [300, 500, 1000])
+      for (const dx of [0, 20, 30, 40, 50, 65, 75]) {
+        const r = through(dx, past)
+        // A fast ball whose centre only crosses the cup's outer 15 mm drops a little and hops off the far rim: a real lip-out
+        if (r.holed || (dx >= 65 && past >= 1000)) continue
+        missed++
+        const near = r.path.filter(p => Math.hypot(p[0] - 200, p[1] - 2000) < 150)
+        expect(Math.max(...near.map(p => p[2]!)), `${past} mm past, ${dx} off`).toBeLessThanOrEqual(BALL_R + 5)
+      }
+    expect(missed).toBeGreaterThan(0)
+  })
+
+  it('rolls a ball that stops at the lip into the cup, and leaves one clear of it alone', () => {
+    // On flat felt these would stop 5 mm and a radius plus 20 mm outside the rim
+    expect(through(0, -85).holed).toBe(true)
+    const clear = through(0, -(80 + BALL_R + 20))
+    const noCup = simulateShot3d({ ...mid, cup: { at: [200, 300], r: 80 } }, P, [200, 3500], up((1500 - 80 - BALL_R - 20) / P.maxRoll))
+    expect(clear.holed).toBe(false)
+    expect(clear.rest).toEqual(noCup.rest)
+  })
+
   it('rolls a putt too soft for a ramp back down it, and a firm one up onto the mesa', () => {
     // A mesa 150 mm up across the lane's top, its ramp running 900 mm down towards the tee
     const ramp: Hole = {
@@ -116,15 +152,17 @@ describe('3D physics', () => {
   })
 
   it('records a hit on the rail, and carries heights in the path', () => {
-    const r = simulateShot3d(lane, P, [200, 600], up(0.4))
+    const r = simulateShot3d(lane, P, [100, 600], up(0.4)) // beside the cup
     expect(r.hits.length).toBeGreaterThan(0)
     expect(r.path.every(p => p.length === 3)).toBe(true)
   })
 
   it('plays the same shot the same way twice, bit for bit', () => {
-    const a = simulateShot3d(testCourse.holes[2], P, testCourse.holes[2].tee, { dir: [0.3, -0.95], power: 0.8 })
-    const b = simulateShot3d(testCourse.holes[2], P, testCourse.holes[2].tee, { dir: [0.3, -0.95], power: 0.8 })
-    expect(b).toEqual(a)
+    const hole = testCourse.holes[2]
+    const shot = () => simulateShot3d(hole, P, hole.tee, { dir: [0.3, -0.95], power: 0.8 }, [{ id: 1, at: [960, 2160] }])
+    const a = shot()
+    expect(a.others?.length).toBe(1) // the putt knocks it
+    expect(shot()).toEqual(a)
   })
 
   it('throws before Rapier is loaded', async () => {
