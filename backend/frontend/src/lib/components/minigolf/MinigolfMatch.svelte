@@ -20,9 +20,10 @@
   import {
     PLAYBACK,
     ROLL_DELAY_MS,
+    aimLines,
     nextRoll,
     otherBalls,
-    previewLines,
+    ownBall,
     rollFor,
     rollRate,
     rows,
@@ -246,7 +247,7 @@
       {ball}
       ballColor={seatColor(up)}
       {others}
-      previews={previewLines(game)}
+      aims={aimLines(game, ownBall(game))}
       aim={aiming && settings.aimDial ? { at: ball, ...game.reach } : null}
       halo={!playing}
       camera={roll && zoom.current > 0 ? { focus: rolling(roll.seat) ?? ball, t: zoom.current } : null}

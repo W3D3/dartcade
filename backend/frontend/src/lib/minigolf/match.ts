@@ -158,11 +158,13 @@ export function nextRoll(roll: Roll | null, openedOn: string | null, rolledStrok
 /** A pause before a stroke rolls, for the suspense (and to look up from the board). */
 export const ROLL_DELAY_MS = 3000
 
-/** The shot preview's lines while darts are left: the latest try's bright, the ones it replaced faint. */
-export function previewLines(g: MinigolfGame): { path: Pt[]; current: boolean }[] {
+/** The shot preview's aim lines while darts are left, from the putter's ball (`ownBall`): the
+ *  latest try's bright, the ones it replaced faint. Not simulated: a straight line in the putt's
+ *  direction, as long as it would roll on flat felt. */
+export function aimLines(g: MinigolfGame, ball: Pt): { from: Pt; dir: Pt; roll: number; current: boolean }[] {
   if (!g.shotHidden) return []
   const last = g.tries.length - 1
-  return g.tries.flatMap((t, i) => (t.preview.length > 1 ? [{ path: t.preview.map(pt), current: i === last }] : []))
+  return g.tries.flatMap((t, i) => (t.aim ? [{ from: ball, dir: pt(t.aim.dir), roll: t.aim.roll, current: i === last }] : []))
 }
 
 /** Playback speed at a frame of a roll: a bit slower than real time to follow it, and slow motion

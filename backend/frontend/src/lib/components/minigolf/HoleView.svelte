@@ -3,8 +3,8 @@
   felt, cream rails, red bumpers, hills, bowls and bumps shaded by height with contour lines, the tee, the cup and flag,
   and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `forces` draws the slopes' push as arrows, `debug` the cup's
   capture radius, rail normals, slope outlines and the last shot's samples; `preview` a putt's line.
-  In a game: `aim` draws the design's aim dial and reach rings around the ball, `previews` the shot
-  preview's lines, and `camera` zooms onto a point (t = 0: the whole hole, 1: CAMERA_SHARE of it).
+  In a game: `aim` draws the design's aim dial and reach rings around the ball, `aims` the shot
+  preview's aim lines, and `camera` zooms onto a point (t = 0: the whole hole, 1: CAMERA_SHARE of it).
 -->
 <script lang="ts">
   import { HALF, SEGS, segAngle } from '$shared/board'
@@ -26,7 +26,7 @@
     lastPath = null,
     preview = null,
     aim = null,
-    previews = [],
+    aims = [],
     camera = null,
   }: {
     hole: Hole
@@ -48,8 +48,8 @@
     preview?: { from: Pt; dir: Pt; power: number; roll: number } | null
     /** The aim dial and reach rings (flat-felt roll, mm, for a treble and a double) around `at`. */
     aim?: { at: Pt; treble: number; double: number } | null
-    /** Shot preview lines; the current try's is bright, replaced ones faint. */
-    previews?: { path: Pt[]; current: boolean }[]
+    /** Shot preview aim lines; the current try's is bright, replaced ones faint. */
+    aims?: { from: Pt; dir: Pt; roll: number; current: boolean }[]
     camera?: { focus: Pt; t: number } | null
   } = $props()
 
@@ -259,10 +259,13 @@
       >
     </g>
   {/each}
-  {#each previews as line, i (i)}
-    <polyline
-      points={pts(line.path)}
-      fill="none"
+  {#each aims as line, i (i)}
+    {@const end = [line.from[0] + line.dir[0] * line.roll, line.from[1] + line.dir[1] * line.roll]}
+    <line
+      x1={line.from[0]}
+      y1={line.from[1]}
+      x2={end[0]}
+      y2={end[1]}
       stroke="#c6f24e"
       stroke-opacity={line.current ? 0.9 : 0.3}
       stroke-width={dial * 0.06}

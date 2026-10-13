@@ -21,14 +21,20 @@ export type MinigolfConfig = {
   ballContact: boolean
   /** A putt close to a clear line to the cup is pulled onto it (see shared/minigolf/shot.ts). */
   aimAssist: boolean
-  /** While darts are left to replace a try, show its way up to the first contact. */
+  /** While darts are left to replace a try, show a straight aim line as far as it would roll on flat felt. */
   shotPreview: boolean
 }
 
 /** `waiting`: not putted yet on this hole (the ball is in hand, not on the felt). */
 export type BallStatus = 'waiting' | 'playing' | 'holed' | 'done'
 type BallState = { at: Pt; strokes: number; status: BallStatus; paths: PathPt[][] }
-type Try = { label: string; coords: { x: number; y: number } | null; power: number | null; result: ShotResult | null }
+type Try = {
+  label: string
+  coords: { x: number; y: number } | null
+  power: number | null
+  dir: Pt | null
+  result: ShotResult | null
+}
 
 export type MinigolfState = {
   cfg: MinigolfConfig
@@ -88,7 +94,7 @@ const configMeta: Record<string, ConfigFieldMeta> = {
   shotPreview: {
     label: 'Shot preview',
     tooltip:
-      'While you still have darts to replace a try, show its way up to the first wall, ball or the cup. The ball rolls once you pull the darts.',
+      'While you still have darts to replace a try, show a straight aim line as far as the putt would roll on flat felt. The ball rolls once you pull the darts.',
     options: [
       { value: false, label: 'Off' },
       { value: true, label: 'On' },
@@ -166,6 +172,7 @@ function playTry(s: MinigolfState, data: Extract<BoardEvent, { kind: 'dart.detec
     label: data.dart.segment.name,
     coords,
     power: shot?.power ?? null,
+    dir: shot?.dir ?? null,
     result: shot ? cachedShot(hole, s.physics, ball, shot, others) : null,
   }
 }
@@ -212,8 +219,8 @@ function locked(s: MinigolfState): boolean {
   return s.finished || s.tries.length >= s.cfg.tries
 }
 
-/** While darts are left to replace a try, where it ends stays hidden (shot preview shows the
- *  first part of its way); it's revealed once the tries are used up or the darts are pulled. */
+/** While darts are left to replace a try, where it ends stays hidden (shot preview shows a
+ *  straight aim line instead); it's revealed once the tries are used up or the darts are pulled. */
 function hidden(s: MinigolfState): boolean {
   return !locked(s)
 }
@@ -326,7 +333,8 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
           missed: t.result === null,
           path: result ? roundPath(result.path) : [],
           hits: result?.hits.map(roundHit) ?? [],
-          preview: hidden(s) && s.cfg.shotPreview && t.result ? roundPath(t.result.preview) : [],
+          // Not simulated: a straight line in the putt's direction, as long as it would roll on flat felt
+          aim: hidden(s) && s.cfg.shotPreview && t.dir && t.power !== null ? { dir: pt(t.dir), roll: t.power * s.physics.maxRoll } : null,
           others: (result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
         }
       }),

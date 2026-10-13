@@ -529,9 +529,12 @@ export interface MinigolfGame {
       holed: boolean
     }[]
     /**
-     * With shot preview, while darts are left: the try's way up to its first contact.
+     * With shot preview, while darts are left and the try isn't a miss: a straight line in the putt's direction, as long as it would roll on flat felt.
      */
-    preview: MinigolfPt[]
+    aim: {
+      dir: MinigolfPt
+      roll: number
+    } | null
     /**
      * When the ball knocked into something, in path samples (for its sound).
      */
@@ -550,7 +553,7 @@ export interface MinigolfGame {
   totalDarts: number[]
   totalVisits: number[]
   /**
-   * Darts are left: the tries carry no outcome (only, with shot preview, the way to their first contact).
+   * Darts are left: the tries carry no outcome (only, with shot preview, an aim line).
    */
   shotHidden: boolean
   /**
