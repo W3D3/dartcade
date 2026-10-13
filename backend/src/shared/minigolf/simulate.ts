@@ -53,7 +53,7 @@ function buildSpace(hole: Hole, physics: Physics): Space {
 }
 
 /** The slopes' pull on a ball at p, mm/s²: away from a hill's centre or a bump's ridge. */
-function slopeForce(hole: Hole, p: Pt): Pt {
+export function slopeForce(hole: Hole, p: Pt): Pt {
   let fx = 0
   let fy = 0
   for (const s of hole.slopes) {

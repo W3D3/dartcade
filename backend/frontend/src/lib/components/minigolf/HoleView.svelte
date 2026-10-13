@@ -1,7 +1,7 @@
 <!--
   A minigolf hole drawn in course space (mm, y down) in the design's look (Minigolf.dc.html):
   felt, cream rails, red bumpers, hills, bowls and bumps shaded by height with contour lines, the tee, the cup and flag,
-  and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `debug` draws the cup's
+  and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `forces` draws the slopes' push as arrows, `debug` the cup's
   capture radius, rail normals, slope outlines and the last shot's samples; `preview` a putt's line.
   In a game: `aim` draws the design's aim dial and reach rings around the ball, `previews` the shot
   preview's lines, and `camera` zooms onto a point (t = 0: the whole hole, 1: CAMERA_SHARE of it).
@@ -9,7 +9,7 @@
 <script lang="ts">
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { bounds } from '$shared/minigolf/geometry'
-  import { slopeLook } from '$lib/minigolf/terrain'
+  import { forceArrows, slopeLook } from '$lib/minigolf/terrain'
   import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
   import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
 
@@ -22,6 +22,7 @@
     onPlace,
     others = [],
     debug = false,
+    forces = false,
     lastPath = null,
     preview = null,
     aim = null,
@@ -40,6 +41,8 @@
     /** Other players' balls, drawn faded with their initial. */
     others?: { seat: number; at: Pt; label: string; color?: string }[]
     debug?: boolean
+    /** Bench aid: arrows showing which way and how hard the slopes push. */
+    forces?: boolean
     lastPath?: readonly Pt[] | null
     /** The putt the pointer would make: a dashed line as long as it would roll on flat felt. */
     preview?: { from: Pt; dir: Pt; power: number; roll: number } | null
@@ -111,6 +114,7 @@
   const pts = (p: readonly Pt[]) => p.map(([x, y]) => `${x},${y}`).join(' ')
   const looks = $derived(hole.slopes.map(slopeLook))
   const uid = $props.id()
+  const arrows = $derived(forces ? forceArrows(hole, 150) : [])
 </script>
 
 <svg
@@ -126,6 +130,9 @@
       <rect width="56" height="56" fill="#2a7045" />
       <rect width="28" height="56" fill="#2e784a" />
     </pattern>
+    <marker id="{uid}-head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+      <path d="M0 0 L10 5 L0 10 z" fill="#4ec6f2" />
+    </marker>
     <clipPath id="{uid}-course"><polygon points={pts(hole.outline)} /></clipPath>
   </defs>
   <polygon
@@ -187,6 +194,13 @@
     stroke-linecap="round"
   />
   <path d="M{hole.cup.at[0]} {hole.cup.at[1] - 240} l110 34 l-110 34 z" fill="#c6f24e" stroke="#0a0b09" stroke-width="4" />
+  {#if arrows.length}
+    <g pointer-events="none" stroke="#4ec6f2" stroke-width="8" stroke-linecap="round" data-testid="force-arrows">
+      {#each arrows as { at, end }, i (i)}
+        <line x1={at[0]} y1={at[1]} x2={end[0]} y2={end[1]} marker-end="url(#{uid}-head)" />
+      {/each}
+    </g>
+  {/if}
   {#if debug}
     <g pointer-events="none" data-testid="debug-overlay">
       {#each looks as look, i (i)}

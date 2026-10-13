@@ -37,6 +37,7 @@
   let shown = $state<Pt>(COURSES[0].holes[0].tee)
   let placing = $state(false)
   let debug = $state(false)
+  let forces = $state(false)
   let assist = $state(true)
   let lastPath = $state<Pt[] | null>(null)
   let hover = $state<{ x: number; y: number } | null>(null)
@@ -140,6 +141,14 @@
         </button>
         <button
           type="button"
+          class="{BUTTON} {forces ? 'border-accent text-accent' : ''}"
+          aria-pressed={forces}
+          onclick={() => (forces = !forces)}
+        >
+          Forces
+        </button>
+        <button
+          type="button"
           class="{BUTTON} {assist ? 'border-accent text-accent' : ''}"
           aria-pressed={assist}
           onclick={() => (assist = !assist)}
@@ -158,6 +167,7 @@
             wallThickness={physics.wallThickness}
             onPlace={placing ? place : undefined}
             {debug}
+            {forces}
             {lastPath}
             {preview}
           />
