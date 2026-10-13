@@ -11,7 +11,7 @@
   import HoleEditor from '$lib/components/minigolf/HoleEditor.svelte'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
-  import { heightAt } from '$lib/minigolf/3d/ground'
+  import { heightAt } from '$shared/minigolf/3d/ground'
   import { LAB_COURSE } from '$lib/minigolf/3d/lab'
   import { loadPhysics3d, type Pt3, type Simulate3d } from '$lib/minigolf/3d/physics3d'
   import { playPath } from '$lib/minigolf/animate'

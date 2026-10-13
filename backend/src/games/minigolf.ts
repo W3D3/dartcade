@@ -116,6 +116,7 @@ function holeView(h: Hole): MinigolfView['hole'] {
         ? { radial: { ...sl.radial, center: pt(sl.radial.center) } }
         : { bump: { ...sl.bump, from: pt(sl.bump.from), to: pt(sl.bump.to) } },
     ),
+    terrain: h.terrain?.map(t => ({ mesa: { ...t.mesa, from: pt(t.mesa.from), to: pt(t.mesa.to) } })),
     tee: pt(h.tee),
     cup: { at: pt(h.cup.at), r: h.cup.r },
   }

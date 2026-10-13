@@ -53,5 +53,12 @@ export function validateHole(hole: Hole): string[] {
       else if (!(width > 0)) errors.push(`${name} width must be positive`)
     }
   })
+  ;(hole.terrain ?? []).forEach(({ mesa }, i) => {
+    const name = `terrain ${i + 1}`
+    if (!finite([mesa.from, mesa.to, [mesa.height, 0], [mesa.edges[0], mesa.edges[1]], [mesa.edges[2], mesa.edges[3]]]))
+      errors.push(`${name} has a non-finite number`)
+    else if (mesa.from[0] === mesa.to[0] || mesa.from[1] === mesa.to[1]) errors.push(`${name} needs an area`)
+    else if (!mesa.edges.every(e => e > 0)) errors.push(`${name} edges must be positive`)
+  })
   return errors
 }

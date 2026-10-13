@@ -1,9 +1,8 @@
 // Holes for trying out 3D physics on the bench: shaped by height, so they only make sense in 3D
 // (in 2D they play flat). Not shared with the server.
-import type { Course } from '$shared/minigolf/types'
-import type { Hole3d } from './ground'
+import type { Course, Hole } from '$shared/minigolf/types'
 
-const mesa: Hole3d = {
+const mesa: Hole = {
   id: 'lab-mesa',
   name: 'Mesa',
   par: 3,

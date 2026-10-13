@@ -1,18 +1,11 @@
 // The ground in 3D (a bench experiment): heights from the slopes and a mesh of it, in mm. A slope's
 // push in 2D is `strength` mm/s², so it rises strength / g per mm: gravity on it then pushes the
 // ball just as hard, and a hole plays the same in 3D as in 2D.
-import { closestOnSegment, pointInPolygon } from '$shared/minigolf/geometry'
-import type { Hole, Pt } from '$shared/minigolf/types'
+import { closestOnSegment, pointInPolygon } from '../geometry.js'
+import type { Hole, Pt } from '../types.js'
 
 /** Gravity, mm/s². */
 export const G = 9810
-
-/** Ground shaped by height rather than by push, for 3D only: a mesa is a raised rectangle from
- *  `from` to `to`, falling to the felt over each side's own width (left, top, right, bottom). A
- *  wide side is a ramp, a narrow one a cliff. */
-export type Terrain = { mesa: { from: Pt; to: Pt; height: number; edges: [number, number, number, number] } }
-/** A hole with 3D terrain (the bench's lab holes). */
-export type Hole3d = Hole & { terrain?: Terrain[] }
 
 /** How far past [lo, hi] v is, in units of the side's width (0 inside). */
 const past = (v: number, lo: number, hi: number, below: number, above: number) =>
@@ -20,7 +13,7 @@ const past = (v: number, lo: number, hi: number, below: number, above: number) =
 
 /** The ground's height at p, mm: a hill's cone or a bump's ridge (negative: a bowl, a trench),
  *  plus any terrain. */
-export function heightAt(hole: Hole3d, p: Pt): number {
+export function heightAt(hole: Hole, p: Pt): number {
   let h = 0
   for (const { mesa } of hole.terrain ?? []) {
     const [left, top, right, bottom] = mesa.edges
@@ -38,9 +31,21 @@ export function heightAt(hole: Hole3d, p: Pt): number {
   return h
 }
 
+/** The ground's heights on a grid `step` mm apart over the outline's bounds, row by row. */
+export function heightGrid(hole: Hole, step: number): { x0: number; y0: number; nx: number; ny: number; heights: Float32Array } {
+  const xs = hole.outline.map(p => p[0])
+  const ys = hole.outline.map(p => p[1])
+  const [x0, y0] = [Math.min(...xs), Math.min(...ys)]
+  const nx = Math.ceil((Math.max(...xs) - x0) / step)
+  const ny = Math.ceil((Math.max(...ys) - y0) / step)
+  const heights = new Float32Array((nx + 1) * (ny + 1))
+  for (let j = 0; j <= ny; j++) for (let i = 0; i <= nx; i++) heights[j * (nx + 1) + i] = heightAt(hole, [x0 + i * step, y0 + j * step])
+  return { x0, y0, nx, ny, heights }
+}
+
 /** The course's ground as triangles on a grid `step` mm apart, the cup left open. Positions are
  *  three.js-style x, y (up: the height), z (the course's y). */
-export function groundMesh(hole: Hole3d, step: number): { positions: Float32Array; indices: Uint32Array } {
+export function groundMesh(hole: Hole, step: number): { positions: Float32Array; indices: Uint32Array } {
   const xs = hole.outline.map(p => p[0])
   const ys = hole.outline.map(p => p[1])
   const [x0, y0] = [Math.min(...xs), Math.min(...ys)]

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { G, groundMesh, heightAt, type Hole3d } from '$lib/minigolf/3d/ground'
-import type { Hole } from '$shared/minigolf/types'
+import { G, groundMesh, heightAt, heightGrid } from './ground.js'
+import type { Hole } from '../types.js'
 
 const hole: Hole = {
   id: 'h',
@@ -67,7 +67,7 @@ describe('minigolf ground', () => {
   })
 
   it('raises a mesa, falling away over each side’s own width: a ramp on one, cliffs on the rest', () => {
-    const mesa: Hole3d = {
+    const mesa: Hole = {
       ...hole,
       slopes: [],
       terrain: [{ mesa: { from: [300, 300], to: [700, 500], height: 150, edges: [50, 50, 50, 400] } }],
@@ -78,5 +78,12 @@ describe('minigolf ground', () => {
     expect(heightAt(mesa, [250, 400])).toBeCloseTo(0)
     expect(heightAt(mesa, [275, 400])).toBeCloseTo(75)
     expect(heightAt(mesa, [500, 950])).toBe(0)
+  })
+
+  it('lays the heights out on a grid, row by row', () => {
+    const g = heightGrid(hole, 50)
+    expect([g.x0, g.y0, g.nx, g.ny]).toEqual([0, 0, 20, 20])
+    // Row 6 (y = 300), column 10 (x = 500): the hill's top
+    expect(g.heights[6 * 21 + 10]).toBeCloseTo(heightAt(hole, [500, 300]))
   })
 })

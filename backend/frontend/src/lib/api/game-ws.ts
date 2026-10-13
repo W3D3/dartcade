@@ -449,6 +449,18 @@ export interface MinigolfHole {
         }
       }
   )[]
+  terrain?: {
+    mesa: {
+      from: MinigolfPt
+      to: MinigolfPt
+      height: number
+      /**
+       * @minItems 4
+       * @maxItems 4
+       */
+      edges: [number, number, number, number]
+    }
+  }[]
   tee: MinigolfPt
   cup: {
     at: MinigolfPt

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateHole } from './hole.js'
-import type { Hole } from './types.js'
+import type { Hole, Pt } from './types.js'
 
 const ok: Hole = {
   id: 'h',
@@ -61,5 +61,11 @@ describe('validateHole', () => {
     expect(validateHole({ ...ok, cup: { at: [200, 150], r: 0 } })).toContain('cup radius must be positive')
     expect(validateHole({ ...ok, bumpers: [{ at: [200, 600], r: -1 }] })).toContain('bumper 1 radius must be positive')
     expect(validateHole({ ...ok, walls: [{ points: [[10, 10]] }] })).toContain('wall 1 needs at least 2 points')
+  })
+  it('rejects terrain that cannot be built', () => {
+    const mesa = { from: [0, 0] as Pt, to: [100, 100] as Pt, height: 100, edges: [50, 50, 50, 50] as [number, number, number, number] }
+    expect(validateHole({ ...ok, terrain: [{ mesa: { ...mesa, height: NaN } }] })).toContain('terrain 1 has a non-finite number')
+    expect(validateHole({ ...ok, terrain: [{ mesa: { ...mesa, edges: [50, 0, 50, 50] } }] })).toContain('terrain 1 edges must be positive')
+    expect(validateHole({ ...ok, terrain: [{ mesa: { ...mesa, to: [0, 100] } }] })).toContain('terrain 1 needs an area')
   })
 })

@@ -1,7 +1,6 @@
 import { beforeAll, describe, it, expect } from 'vitest'
 import { loadPhysics3d, type Simulate3d } from '$lib/minigolf/3d/physics3d'
 import { DEFAULT_PHYSICS as P } from '$shared/minigolf/physics'
-import type { Hole3d } from '$lib/minigolf/3d/ground'
 import type { Hole } from '$shared/minigolf/types'
 
 const lane: Hole = {
@@ -51,7 +50,7 @@ describe('3D physics', () => {
 
   it('rolls a putt too soft for a ramp back down it, and a firm one up onto the mesa', () => {
     // A mesa 150 mm up across the lane's top, its ramp running 900 mm down towards the tee
-    const ramp: Hole3d = {
+    const ramp: Hole = {
       ...lane,
       terrain: [{ mesa: { from: [0, 0], to: [400, 1500], height: 150, edges: [1, 1, 1, 900] } }],
     }

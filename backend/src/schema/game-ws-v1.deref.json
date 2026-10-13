@@ -2527,6 +2527,68 @@
             ]
           }
         },
+        "terrain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "mesa"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mesa": {
+                "type": "object",
+                "required": [
+                  "from",
+                  "to",
+                  "height",
+                  "edges"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "from": {
+                    "title": "MinigolfPt",
+                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "to": {
+                    "title": "MinigolfPt",
+                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                    "type": "array",
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "height": {
+                    "type": "number"
+                  },
+                  "edges": {
+                    "type": "array",
+                    "items": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
+                    "minItems": 4,
+                    "maxItems": 4
+                  }
+                }
+              }
+            }
+          }
+        },
         "tee": {
           "title": "MinigolfPt",
           "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -2832,6 +2894,68 @@
                     }
                   }
                 ]
+              }
+            },
+            "terrain": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "mesa"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mesa": {
+                    "type": "object",
+                    "required": [
+                      "from",
+                      "to",
+                      "height",
+                      "edges"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "from": {
+                        "title": "MinigolfPt",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "to": {
+                        "title": "MinigolfPt",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "height": {
+                        "type": "number"
+                      },
+                      "edges": {
+                        "type": "array",
+                        "items": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 4,
+                        "maxItems": 4
+                      }
+                    }
+                  }
+                }
               }
             },
             "tee": {
@@ -3287,6 +3411,68 @@
                             }
                           }
                         ]
+                      }
+                    },
+                    "terrain": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "mesa"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "mesa": {
+                            "type": "object",
+                            "required": [
+                              "from",
+                              "to",
+                              "height",
+                              "edges"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "from": {
+                                "title": "MinigolfPt",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "to": {
+                                "title": "MinigolfPt",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "height": {
+                                "type": "number"
+                              },
+                              "edges": {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 4,
+                                "maxItems": 4
+                              }
+                            }
+                          }
+                        }
                       }
                     },
                     "tee": {
@@ -3900,6 +4086,68 @@
                     ]
                   }
                 },
+                "terrain": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "mesa"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "mesa": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "height",
+                          "edges"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "title": "MinigolfPt",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "to": {
+                            "title": "MinigolfPt",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "height": {
+                            "type": "number"
+                          },
+                          "edges": {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "minItems": 4,
+                            "maxItems": 4
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
                 "tee": {
                   "title": "MinigolfPt",
                   "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -4353,6 +4601,68 @@
                                 }
                               }
                             ]
+                          }
+                        },
+                        "terrain": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "mesa"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mesa": {
+                                "type": "object",
+                                "required": [
+                                  "from",
+                                  "to",
+                                  "height",
+                                  "edges"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "from": {
+                                    "title": "MinigolfPt",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "to": {
+                                    "title": "MinigolfPt",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "height": {
+                                    "type": "number"
+                                  },
+                                  "edges": {
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      }
+                                    ],
+                                    "minItems": 4,
+                                    "maxItems": 4
+                                  }
+                                }
+                              }
+                            }
                           }
                         },
                         "tee": {
@@ -6289,6 +6599,68 @@
                         ]
                       }
                     },
+                    "terrain": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "mesa"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "mesa": {
+                            "type": "object",
+                            "required": [
+                              "from",
+                              "to",
+                              "height",
+                              "edges"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "from": {
+                                "title": "MinigolfPt",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "to": {
+                                "title": "MinigolfPt",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "height": {
+                                "type": "number"
+                              },
+                              "edges": {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 4,
+                                "maxItems": 4
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
                     "tee": {
                       "title": "MinigolfPt",
                       "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -6742,6 +7114,68 @@
                                     }
                                   }
                                 ]
+                              }
+                            },
+                            "terrain": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "mesa"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "mesa": {
+                                    "type": "object",
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "height",
+                                      "edges"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "title": "MinigolfPt",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "to": {
+                                        "title": "MinigolfPt",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "height": {
+                                        "type": "number"
+                                      },
+                                      "edges": {
+                                        "type": "array",
+                                        "items": [
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          },
+                                          {
+                                            "type": "number"
+                                          }
+                                        ],
+                                        "minItems": 4,
+                                        "maxItems": 4
+                                      }
+                                    }
+                                  }
+                                }
                               }
                             },
                             "tee": {

@@ -73,6 +73,7 @@ export function toHole(h: MinigolfHole): Hole {
         ? { radial: { ...s.radial, center: pt(s.radial.center) } }
         : { bump: { ...s.bump, from: pt(s.bump.from), to: pt(s.bump.to) } },
     ),
+    terrain: h.terrain?.map(t => ({ mesa: { ...t.mesa, from: pt(t.mesa.from), to: pt(t.mesa.to) } })),
     tee: pt(h.tee),
     cup: { at: pt(h.cup.at), r: h.cup.r },
   }

@@ -1,6 +1,6 @@
 <!--
   A minigolf hole in 3D (a bench experiment), drawn with three.js in a light cartoon look: toon
-  shading in a few flat tones, the ground's real heights (lib/minigolf/3d/ground.ts), soft shadows.
+  shading in a few flat tones, the ground's real heights ($shared/minigolf/3d/ground.ts), soft shadows.
   The camera looks straight down while aiming; with `follow` it chases the ball from behind and
   above, and glides back when the ball stops. Course mm are scene units: x stays x, the course's y
   is three's z, heights go up in y.
@@ -8,9 +8,9 @@
 <script lang="ts">
   import * as THREE from 'three'
   import { untrack } from 'svelte'
-  import { groundMesh, heightAt, type Hole3d } from '$lib/minigolf/3d/ground'
+  import { groundMesh, heightAt } from '$shared/minigolf/3d/ground'
   import type { Pt3 } from '$lib/minigolf/3d/physics3d'
-  import { BALL_R, type Pt } from '$shared/minigolf/types'
+  import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
 
   let {
     hole,
@@ -22,7 +22,7 @@
     relief = 1,
     aim = null,
   }: {
-    hole: Hole3d
+    hole: Hole
     /** The ball's centre: course x, y and its height, mm. */
     ball: Pt3
     ballColor?: string
@@ -95,7 +95,7 @@
     return mesh
   }
 
-  function build(h: Hole3d): THREE.Group {
+  function build(h: Hole): THREE.Group {
     const g = new THREE.Group()
     const { positions, indices } = groundMesh(h, 20)
     for (let k = 1; k < positions.length; k += 3) positions[k] *= relief
@@ -210,11 +210,11 @@
     scene.add(ballMesh)
 
     let course = new THREE.Group()
-    let built: Hole3d | null = null
+    let built: Hole | null = null
     let builtFelt = untrack(() => felt)
     let builtRelief = untrack(() => relief)
     const box = { cx: 0, cz: 0, w: 1, d: 1 }
-    function rebuild(h: Hole3d): void {
+    function rebuild(h: Hole): void {
       scene.remove(course)
       dispose(course)
       course = build(h)
