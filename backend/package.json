@@ -8,12 +8,14 @@
     "start": "node dist/index.js",
     "dev": "tsx watch src/index.ts",
     "test": "vitest run",
+    "test:perf": "vitest run --config vitest.perf.config.ts",
     "typecheck": "tsc --noEmit",
     "gen:types": "json2ts ../schema/adbridge-v1.json -o src/schema/types.ts --no-additionalProperties",
     "lint": "oxlint",
     "calibrate:bots": "tsx src/bots/calibrate.ts"
   },
   "dependencies": {
+    "@dimforge/rapier3d-deterministic-compat": "0.21.0",
     "@fastify/rate-limit": "^9.1.0",
     "@fastify/static": "7.0.4",
     "@fastify/swagger": "8.15.0",

@@ -8,7 +8,7 @@ import { COURSES, getCourse, mixedHoles } from '../shared/minigolf/courses/index
 import { DEFAULT_PHYSICS, type Physics } from '../shared/minigolf/physics.js'
 import { R } from '../shared/board.js'
 import { powerAt, shotFromDart } from '../shared/minigolf/shot.js'
-import type { Hole, OtherBall, Pt, ShotResult } from '../shared/minigolf/types.js'
+import type { Hole, OtherBall, PathPt, Pt, ShotResult } from '../shared/minigolf/types.js'
 import { cachedShot } from './minigolfShots.js'
 import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
@@ -27,7 +27,7 @@ export type MinigolfConfig = {
 
 /** `waiting`: not putted yet on this hole (the ball is in hand, not on the felt). */
 export type BallStatus = 'waiting' | 'playing' | 'holed' | 'done'
-type BallState = { at: Pt; strokes: number; status: BallStatus; paths: Pt[][] }
+type BallState = { at: Pt; strokes: number; status: BallStatus; paths: PathPt[][] }
 type Try = { label: string; coords: { x: number; y: number } | null; power: number | null; result: ShotResult | null }
 
 export type MinigolfState = {
@@ -48,7 +48,7 @@ export type MinigolfState = {
   /** Where the balls lay when the open visit started: every try starts from here. */
   visitStart: Pt[] | null
   tries: Try[]
-  lastHole: { index: number; scores: number[]; paths: Pt[][][] } | null
+  lastHole: { index: number; scores: number[]; paths: PathPt[][][] } | null
   /** The stroke kept at the last takeout, for the match screen to roll when tries were hidden. */
   lastStroke: { hole: number; seat: number; stroke: number; result: ShotResult | null } | null
   finished: boolean
@@ -99,8 +99,8 @@ const configMeta: Record<string, ConfigFieldMeta> = {
 // The view carries points as plain [x, y] arrays (the snapshot schema's MinigolfPt)
 type ViewPt = number[]
 const pt = (p: Pt): ViewPt => [p[0], p[1]]
-const roundPt = (p: Pt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
-const roundPath = (path: readonly Pt[]): ViewPt[] => path.map(roundPt)
+const roundPt = (p: PathPt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
+const roundPath = (path: readonly PathPt[]): ViewPt[] => path.map(roundPt)
 const roundHit = (sample: number) => Math.round(sample * 100) / 100
 
 function holeView(h: Hole): MinigolfView['hole'] {

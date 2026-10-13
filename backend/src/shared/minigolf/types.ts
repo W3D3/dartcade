@@ -2,6 +2,8 @@
 // Design: docs/superpowers/specs/2026-10-09-minigolf-core-bench-design.md
 
 export type Pt = readonly [number, number]
+/** A point on a shot's path: x, y and, in 3D, the ball centre's height, mm. */
+export type PathPt = readonly [number, number, number?]
 
 /** A rail: a polyline, or a closed polygon when `closed` (an obstacle block). */
 export interface Wall {
@@ -66,7 +68,7 @@ export interface OtherBall {
 /** Another player's ball a putt moved: its path (same timeline as the putt's), where it stopped. */
 export interface MovedBall {
   id: number
-  path: Pt[]
+  path: PathPt[]
   rest: Pt
   holed: boolean
 }
@@ -74,7 +76,7 @@ export interface MovedBall {
 /** `path` is the ball sampled at 60 Hz for animation, starting at the ball and ending at `rest`.
  *  `others`: the balls it knocked, when other balls were on the hole. */
 export interface ShotResult {
-  path: Pt[]
+  path: PathPt[]
   rest: Pt
   holed: boolean
   others?: MovedBall[]
