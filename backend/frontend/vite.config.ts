@@ -17,9 +17,9 @@ export default defineConfig({
       $lib: path.resolve('./src/lib'),
       $shared: path.resolve('../src/shared'),
     },
-    // $shared/minigolf imports nape-js, but $shared sits outside this package (and outside /app in
+    // $shared/minigolf imports nape-js and Rapier, but $shared sits outside this package (and outside /app in
     // the dev container and the Docker build): resolve it from here, where it's installed too
-    dedupe: ['@newkrok/nape-js'],
+    dedupe: ['@newkrok/nape-js', '@dimforge/rapier3d-deterministic-compat'],
   },
   server: {
     fs: { allow: [path.resolve('..')] },

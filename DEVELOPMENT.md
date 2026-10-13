@@ -106,6 +106,8 @@ docker run -d --name dartcade-test-pg \
 cd backend && npm install && npm test
 ```
 
+Benchmarks (`*.perf.test.ts`, e.g. the 3D minigolf shot timing) stay out of `npm test`; run them alone with `npm run test:perf`.
+
 Migrations in `backend/src/db/migrations/` are never edited once they're on `main`: add a new,
 higher-numbered file instead. CI checks both that a PR only adds migrations and that upgrading a
 database from `main` gives the same schema as a fresh one (`scripts/check-migrations.sh`,

@@ -12,15 +12,18 @@
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
   import { heightAt } from '$shared/minigolf/3d/ground'
+  import { initPhysics3d, simulateShot3d } from '$shared/minigolf/3d/physics3d'
   import { LAB_COURSE } from '$lib/minigolf/3d/lab'
-  import { loadPhysics3d, type Pt3, type Simulate3d } from '$lib/minigolf/3d/physics3d'
   import { playPath } from '$lib/minigolf/animate'
   import { canShoot, finishShot, initBench, placeBall, startShot, undoShot, type BenchState } from '$lib/minigolf/bench'
   import { COURSES as SHARED_COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { shotFromDart } from '$shared/minigolf/shot'
   import { simulateShot } from '$shared/minigolf/simulate'
-  import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
+  import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
+
+  /** A point in the course (x, y) with its height (z), mm. */
+  type Pt3 = [number, number, number]
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
   $effect(() => {
@@ -48,7 +51,6 @@
   let physics3d = $state(false)
   let felt = $state<'stripes' | 'checker'>('stripes')
   let relief = $state(1)
-  let simulate3d: Simulate3d | null = null
   let placing = $state(false)
   let debug = $state(false)
   let forces = $state(false)
@@ -93,12 +95,10 @@
     const from = bench.ball
     bench = startShot(bench)
     let result: { path: Pt3[]; rest: Pt; holed: boolean } | null = null
-    if (shot && physics3d) {
-      simulate3d ??= await loadPhysics3d()
-      result = simulate3d(hole, physics, from, shot)
-    } else if (shot) {
-      const flat = simulateShot(hole, physics, from, shot)
-      result = { ...flat, path: flat.path.map(p => [p[0], p[1], heightAt(hole, p) + BALL_R]) }
+    if (shot) {
+      if (physics3d) await initPhysics3d()
+      const r = (physics3d ? simulateShot3d : simulateShot)(hole, physics, from, shot)
+      result = { ...r, path: r.path.map((p: PathPt) => [p[0], p[1], p[2] ?? heightAt(hole, [p[0], p[1]]) + BALL_R]) }
     }
     lastPath = result?.path.map(p => [p[0], p[1]]) ?? null
     if (result) await playPath(result.path, p => (shown3 = p), reducedMotion())

@@ -9,7 +9,6 @@
   import * as THREE from 'three'
   import { untrack } from 'svelte'
   import { groundMesh, heightAt } from '$shared/minigolf/3d/ground'
-  import type { Pt3 } from '$lib/minigolf/3d/physics3d'
   import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
 
   let {
@@ -24,7 +23,7 @@
   }: {
     hole: Hole
     /** The ball's centre: course x, y and its height, mm. */
-    ball: Pt3
+    ball: readonly [number, number, number]
     ballColor?: string
     /** Chase the ball (while it rolls); otherwise look down on the whole hole. */
     follow?: boolean

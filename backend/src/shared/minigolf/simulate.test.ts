@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { DEFAULT_PHYSICS as P } from './physics.js'
 import { simulateShot } from './simulate.js'
-import type { Hole } from './types.js'
+import type { Hole, PathPt } from './types.js'
 
 // A long, empty lane: 400 wide, 4000 long
 const lane: Hole = {
@@ -21,7 +21,7 @@ const lane: Hole = {
   cup: { at: [200, 300], r: 54 },
 }
 const up = (power: number) => ({ dir: [0, -1] as const, power })
-const dist = (a: readonly number[], b: readonly number[]) => Math.hypot(a[0] - b[0], a[1] - b[1])
+const dist = (a: PathPt, b: PathPt) => Math.hypot(a[0] - b[0], a[1] - b[1])
 
 describe('simulateShot', () => {
   it('rolls its share of the full-power distance', () => {
@@ -110,7 +110,7 @@ describe('simulateShot', () => {
     const a = simulateShot(bumped, P, lane.tee, up(0.4))
     const b = simulateShot(kicked, P, lane.tee, up(0.4))
     // How far the ball gets in the quarter second after it turns at the bumper
-    const backAfterTurn = (r: { path: readonly (readonly number[])[] }) => {
+    const backAfterTurn = (r: { path: readonly PathPt[] }) => {
       const turn = r.path.findIndex((p, i) => i > 0 && i + 1 < r.path.length && r.path[i + 1][1] > p[1])
       return r.path[turn + 15][1] - r.path[turn][1]
     }
