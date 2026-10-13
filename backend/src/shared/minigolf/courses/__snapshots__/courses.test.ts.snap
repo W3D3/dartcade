@@ -21,23 +21,23 @@ exports[`courses > test/test-dogleg golden shots 1`] = `
   {
     "holed": false,
     "rest": [
-      1781.91,
-      2600.541,
+      1654.317,
+      2629.445,
     ],
-    "samples": 108,
+    "samples": 103,
   },
   {
     "holed": false,
     "rest": [
-      1770.905,
-      2542.1,
+      1643.478,
+      2569.468,
     ],
-    "samples": 119,
+    "samples": 115,
   },
   {
     "holed": false,
     "rest": [
-      2033.48,
+      2095.062,
       2500,
     ],
     "samples": 103,
@@ -119,10 +119,10 @@ exports[`courses > test/test-summit golden shots 1`] = `
   {
     "holed": false,
     "rest": [
-      1745.467,
-      255.115,
+      1748.134,
+      312.823,
     ],
-    "samples": 141,
+    "samples": 140,
   },
   {
     "holed": false,

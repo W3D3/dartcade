@@ -46,20 +46,15 @@ describe('validateHole', () => {
         ],
       }),
     ).toContain('outline crosses itself')
-    expect(
-      validateHole({
-        ...ok,
-        slopes: [
-          {
-            area: [
-              [0, 0],
-              [1, 0],
-            ],
-            force: [0, 1],
-          },
-        ],
-      }),
-    ).toContain('slope 1 needs at least 3 points')
+    expect(validateHole({ ...ok, slopes: [{ radial: { center: [200, 600], radius: 0, strength: 500 } }] })).toContain(
+      'slope 1 radius must be positive',
+    )
+    expect(validateHole({ ...ok, slopes: [{ bump: { from: [100, 600], to: [100, 600], width: 100, strength: 300 } }] })).toContain(
+      'slope 1 ridge needs two different ends',
+    )
+    expect(validateHole({ ...ok, slopes: [{ bump: { from: [0, 600], to: [400, 600], width: -1, strength: 300 } }] })).toContain(
+      'slope 1 width must be positive',
+    )
   })
   it('rejects non-finite numbers and bad sizes', () => {
     expect(validateHole({ ...ok, tee: [Number.NaN, 0] })).toContain('tee has a non-finite number')

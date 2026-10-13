@@ -2,7 +2,7 @@
 // walls, bumpers); rolling friction, slopes, bumper kicks and the cup are ours, applied each step.
 // Pure: a fresh Space per call, freed before returning, so the same input gives the same output.
 import { Body, BodyType, Circle, Material, Polygon, Space, Vec2 } from '@newkrok/nape-js'
-import { pointInPolygon } from './geometry.js'
+import { closestOnSegment } from './geometry.js'
 import type { Physics } from './physics.js'
 import { BALL_R, type Hole, type OtherBall, type Pt, type Shot, type ShotResult } from './types.js'
 
@@ -52,23 +52,21 @@ function buildSpace(hole: Hole, physics: Physics): Space {
   return space
 }
 
-/** The slopes' pull on a ball at p, mm/s². */
+/** The slopes' pull on a ball at p, mm/s²: away from a hill's centre or a bump's ridge. */
 function slopeForce(hole: Hole, p: Pt): Pt {
   let fx = 0
   let fy = 0
   for (const s of hole.slopes) {
-    if (!pointInPolygon(p, s.area)) continue
-    if ('force' in s) {
-      fx += s.force[0]
-      fy += s.force[1]
-    } else {
-      const dx = p[0] - s.radial.center[0]
-      const dy = p[1] - s.radial.center[1]
-      const len = Math.sqrt(dx * dx + dy * dy)
-      if (len > 0) {
-        fx += (dx / len) * s.radial.strength
-        fy += (dy / len) * s.radial.strength
-      }
+    const { strength, reach, from } =
+      'radial' in s
+        ? { ...s.radial, reach: s.radial.radius, from: s.radial.center }
+        : { ...s.bump, reach: s.bump.width, from: closestOnSegment(p, s.bump.from, s.bump.to) }
+    const dx = p[0] - from[0]
+    const dy = p[1] - from[1]
+    const len = Math.sqrt(dx * dx + dy * dy)
+    if (len > 0 && len < reach) {
+      fx += (dx / len) * strength
+      fy += (dy / len) * strength
     }
   }
   return [fx, fy]

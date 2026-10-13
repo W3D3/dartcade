@@ -2450,55 +2450,15 @@
               {
                 "type": "object",
                 "required": [
-                  "area",
-                  "force"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                  "area": {
-                    "type": "array",
-                    "items": {
-                      "title": "MinigolfPt",
-                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                      "type": "array",
-                      "items": {
-                        "type": "number"
-                      }
-                    }
-                  },
-                  "force": {
-                    "title": "MinigolfPt",
-                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
-                  }
-                }
-              },
-              {
-                "type": "object",
-                "required": [
-                  "area",
                   "radial"
                 ],
                 "additionalProperties": false,
                 "properties": {
-                  "area": {
-                    "type": "array",
-                    "items": {
-                      "title": "MinigolfPt",
-                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                      "type": "array",
-                      "items": {
-                        "type": "number"
-                      }
-                    }
-                  },
                   "radial": {
                     "type": "object",
                     "required": [
                       "center",
+                      "radius",
                       "strength"
                     ],
                     "additionalProperties": false,
@@ -2510,6 +2470,52 @@
                         "items": {
                           "type": "number"
                         }
+                      },
+                      "radius": {
+                        "type": "number"
+                      },
+                      "strength": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "bump"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "bump": {
+                    "type": "object",
+                    "required": [
+                      "from",
+                      "to",
+                      "width",
+                      "strength"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "from": {
+                        "title": "MinigolfPt",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "to": {
+                        "title": "MinigolfPt",
+                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                        "type": "array",
+                        "items": {
+                          "type": "number"
+                        }
+                      },
+                      "width": {
+                        "type": "number"
                       },
                       "strength": {
                         "type": "number"
@@ -2751,55 +2757,15 @@
                   {
                     "type": "object",
                     "required": [
-                      "area",
-                      "force"
-                    ],
-                    "additionalProperties": false,
-                    "properties": {
-                      "area": {
-                        "type": "array",
-                        "items": {
-                          "title": "MinigolfPt",
-                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                          "type": "array",
-                          "items": {
-                            "type": "number"
-                          }
-                        }
-                      },
-                      "force": {
-                        "title": "MinigolfPt",
-                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                        "type": "array",
-                        "items": {
-                          "type": "number"
-                        }
-                      }
-                    }
-                  },
-                  {
-                    "type": "object",
-                    "required": [
-                      "area",
                       "radial"
                     ],
                     "additionalProperties": false,
                     "properties": {
-                      "area": {
-                        "type": "array",
-                        "items": {
-                          "title": "MinigolfPt",
-                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                          "type": "array",
-                          "items": {
-                            "type": "number"
-                          }
-                        }
-                      },
                       "radial": {
                         "type": "object",
                         "required": [
                           "center",
+                          "radius",
                           "strength"
                         ],
                         "additionalProperties": false,
@@ -2811,6 +2777,52 @@
                             "items": {
                               "type": "number"
                             }
+                          },
+                          "radius": {
+                            "type": "number"
+                          },
+                          "strength": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "bump"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "bump": {
+                        "type": "object",
+                        "required": [
+                          "from",
+                          "to",
+                          "width",
+                          "strength"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "from": {
+                            "title": "MinigolfPt",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "to": {
+                            "title": "MinigolfPt",
+                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                            "type": "array",
+                            "items": {
+                              "type": "number"
+                            }
+                          },
+                          "width": {
+                            "type": "number"
                           },
                           "strength": {
                             "type": "number"
@@ -3200,55 +3212,15 @@
                           {
                             "type": "object",
                             "required": [
-                              "area",
-                              "force"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "area": {
-                                "type": "array",
-                                "items": {
-                                  "title": "MinigolfPt",
-                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                  "type": "array",
-                                  "items": {
-                                    "type": "number"
-                                  }
-                                }
-                              },
-                              "force": {
-                                "title": "MinigolfPt",
-                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                }
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "area",
                               "radial"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                              "area": {
-                                "type": "array",
-                                "items": {
-                                  "title": "MinigolfPt",
-                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                  "type": "array",
-                                  "items": {
-                                    "type": "number"
-                                  }
-                                }
-                              },
                               "radial": {
                                 "type": "object",
                                 "required": [
                                   "center",
+                                  "radius",
                                   "strength"
                                 ],
                                 "additionalProperties": false,
@@ -3260,6 +3232,52 @@
                                     "items": {
                                       "type": "number"
                                     }
+                                  },
+                                  "radius": {
+                                    "type": "number"
+                                  },
+                                  "strength": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "bump"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "bump": {
+                                "type": "object",
+                                "required": [
+                                  "from",
+                                  "to",
+                                  "width",
+                                  "strength"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "from": {
+                                    "title": "MinigolfPt",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "to": {
+                                    "title": "MinigolfPt",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "width": {
+                                    "type": "number"
                                   },
                                   "strength": {
                                     "type": "number"
@@ -3805,55 +3823,15 @@
                       {
                         "type": "object",
                         "required": [
-                          "area",
-                          "force"
-                        ],
-                        "additionalProperties": false,
-                        "properties": {
-                          "area": {
-                            "type": "array",
-                            "items": {
-                              "title": "MinigolfPt",
-                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                              "type": "array",
-                              "items": {
-                                "type": "number"
-                              }
-                            }
-                          },
-                          "force": {
-                            "title": "MinigolfPt",
-                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                            "type": "array",
-                            "items": {
-                              "type": "number"
-                            }
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "required": [
-                          "area",
                           "radial"
                         ],
                         "additionalProperties": false,
                         "properties": {
-                          "area": {
-                            "type": "array",
-                            "items": {
-                              "title": "MinigolfPt",
-                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                              "type": "array",
-                              "items": {
-                                "type": "number"
-                              }
-                            }
-                          },
                           "radial": {
                             "type": "object",
                             "required": [
                               "center",
+                              "radius",
                               "strength"
                             ],
                             "additionalProperties": false,
@@ -3865,6 +3843,52 @@
                                 "items": {
                                   "type": "number"
                                 }
+                              },
+                              "radius": {
+                                "type": "number"
+                              },
+                              "strength": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "bump"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "bump": {
+                            "type": "object",
+                            "required": [
+                              "from",
+                              "to",
+                              "width",
+                              "strength"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "from": {
+                                "title": "MinigolfPt",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "to": {
+                                "title": "MinigolfPt",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "type": "array",
+                                "items": {
+                                  "type": "number"
+                                }
+                              },
+                              "width": {
+                                "type": "number"
                               },
                               "strength": {
                                 "type": "number"
@@ -4254,55 +4278,15 @@
                               {
                                 "type": "object",
                                 "required": [
-                                  "area",
-                                  "force"
-                                ],
-                                "additionalProperties": false,
-                                "properties": {
-                                  "area": {
-                                    "type": "array",
-                                    "items": {
-                                      "title": "MinigolfPt",
-                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                      "type": "array",
-                                      "items": {
-                                        "type": "number"
-                                      }
-                                    }
-                                  },
-                                  "force": {
-                                    "title": "MinigolfPt",
-                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                    "type": "array",
-                                    "items": {
-                                      "type": "number"
-                                    }
-                                  }
-                                }
-                              },
-                              {
-                                "type": "object",
-                                "required": [
-                                  "area",
                                   "radial"
                                 ],
                                 "additionalProperties": false,
                                 "properties": {
-                                  "area": {
-                                    "type": "array",
-                                    "items": {
-                                      "title": "MinigolfPt",
-                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                      "type": "array",
-                                      "items": {
-                                        "type": "number"
-                                      }
-                                    }
-                                  },
                                   "radial": {
                                     "type": "object",
                                     "required": [
                                       "center",
+                                      "radius",
                                       "strength"
                                     ],
                                     "additionalProperties": false,
@@ -4314,6 +4298,52 @@
                                         "items": {
                                           "type": "number"
                                         }
+                                      },
+                                      "radius": {
+                                        "type": "number"
+                                      },
+                                      "strength": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "bump"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "bump": {
+                                    "type": "object",
+                                    "required": [
+                                      "from",
+                                      "to",
+                                      "width",
+                                      "strength"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "from": {
+                                        "title": "MinigolfPt",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "to": {
+                                        "title": "MinigolfPt",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "type": "array",
+                                        "items": {
+                                          "type": "number"
+                                        }
+                                      },
+                                      "width": {
+                                        "type": "number"
                                       },
                                       "strength": {
                                         "type": "number"
@@ -6182,55 +6212,15 @@
                           {
                             "type": "object",
                             "required": [
-                              "area",
-                              "force"
-                            ],
-                            "additionalProperties": false,
-                            "properties": {
-                              "area": {
-                                "type": "array",
-                                "items": {
-                                  "title": "MinigolfPt",
-                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                  "type": "array",
-                                  "items": {
-                                    "type": "number"
-                                  }
-                                }
-                              },
-                              "force": {
-                                "title": "MinigolfPt",
-                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                }
-                              }
-                            }
-                          },
-                          {
-                            "type": "object",
-                            "required": [
-                              "area",
                               "radial"
                             ],
                             "additionalProperties": false,
                             "properties": {
-                              "area": {
-                                "type": "array",
-                                "items": {
-                                  "title": "MinigolfPt",
-                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                  "type": "array",
-                                  "items": {
-                                    "type": "number"
-                                  }
-                                }
-                              },
                               "radial": {
                                 "type": "object",
                                 "required": [
                                   "center",
+                                  "radius",
                                   "strength"
                                 ],
                                 "additionalProperties": false,
@@ -6242,6 +6232,52 @@
                                     "items": {
                                       "type": "number"
                                     }
+                                  },
+                                  "radius": {
+                                    "type": "number"
+                                  },
+                                  "strength": {
+                                    "type": "number"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "bump"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "bump": {
+                                "type": "object",
+                                "required": [
+                                  "from",
+                                  "to",
+                                  "width",
+                                  "strength"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "from": {
+                                    "title": "MinigolfPt",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "to": {
+                                    "title": "MinigolfPt",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "type": "array",
+                                    "items": {
+                                      "type": "number"
+                                    }
+                                  },
+                                  "width": {
+                                    "type": "number"
                                   },
                                   "strength": {
                                     "type": "number"
@@ -6631,55 +6667,15 @@
                                   {
                                     "type": "object",
                                     "required": [
-                                      "area",
-                                      "force"
-                                    ],
-                                    "additionalProperties": false,
-                                    "properties": {
-                                      "area": {
-                                        "type": "array",
-                                        "items": {
-                                          "title": "MinigolfPt",
-                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                          "type": "array",
-                                          "items": {
-                                            "type": "number"
-                                          }
-                                        }
-                                      },
-                                      "force": {
-                                        "title": "MinigolfPt",
-                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                        "type": "array",
-                                        "items": {
-                                          "type": "number"
-                                        }
-                                      }
-                                    }
-                                  },
-                                  {
-                                    "type": "object",
-                                    "required": [
-                                      "area",
                                       "radial"
                                     ],
                                     "additionalProperties": false,
                                     "properties": {
-                                      "area": {
-                                        "type": "array",
-                                        "items": {
-                                          "title": "MinigolfPt",
-                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                          "type": "array",
-                                          "items": {
-                                            "type": "number"
-                                          }
-                                        }
-                                      },
                                       "radial": {
                                         "type": "object",
                                         "required": [
                                           "center",
+                                          "radius",
                                           "strength"
                                         ],
                                         "additionalProperties": false,
@@ -6691,6 +6687,52 @@
                                             "items": {
                                               "type": "number"
                                             }
+                                          },
+                                          "radius": {
+                                            "type": "number"
+                                          },
+                                          "strength": {
+                                            "type": "number"
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "bump"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "bump": {
+                                        "type": "object",
+                                        "required": [
+                                          "from",
+                                          "to",
+                                          "width",
+                                          "strength"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "from": {
+                                            "title": "MinigolfPt",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "type": "array",
+                                            "items": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "to": {
+                                            "title": "MinigolfPt",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "type": "array",
+                                            "items": {
+                                              "type": "number"
+                                            }
+                                          },
+                                          "width": {
+                                            "type": "number"
                                           },
                                           "strength": {
                                             "type": "number"

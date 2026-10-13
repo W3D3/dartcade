@@ -69,9 +69,9 @@ export function toHole(h: MinigolfHole): Hole {
     walls: h.walls.map(w => ({ ...w, points: w.points.map(pt) })),
     bumpers: h.bumpers.map(b => ({ ...b, at: pt(b.at) })),
     slopes: h.slopes.map(s =>
-      'force' in s
-        ? { area: s.area.map(pt), force: pt(s.force) }
-        : { area: s.area.map(pt), radial: { ...s.radial, center: pt(s.radial.center) } },
+      'radial' in s
+        ? { radial: { ...s.radial, center: pt(s.radial.center) } }
+        : { bump: { ...s.bump, from: pt(s.bump.from), to: pt(s.bump.to) } },
     ),
     tee: pt(h.tee),
     cup: { at: pt(h.cup.at), r: h.cup.r },

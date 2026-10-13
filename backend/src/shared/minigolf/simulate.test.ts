@@ -66,46 +66,30 @@ describe('simulateShot', () => {
     expect(r.path.every(p => p[1] > 2000)).toBe(true)
   })
 
-  it('bends the path on a slope', () => {
-    const sloped: Hole = {
-      ...lane,
-      slopes: [
-        {
-          area: [
-            [0, 1000],
-            [400, 1000],
-            [400, 3000],
-            [0, 3000],
-          ],
-          force: [300, 0],
-        },
-      ],
-    }
-    const r = simulateShot(sloped, P, lane.tee, up(0.5))
+  it('bends the path along a bump: the ball rolls off its side', () => {
+    // A ridge running up the lane just left of the ball: it's pushed to the right
+    const bumped: Hole = { ...lane, slopes: [{ bump: { from: [150, 1000], to: [150, 3900], width: 200, strength: 300 } }] }
+    const r = simulateShot(bumped, P, lane.tee, up(0.5))
     expect(r.rest[0]).toBeGreaterThan(220)
   })
 
-  it('keeps rolling on a slope stronger than friction', () => {
-    const steep: Hole = {
-      ...lane,
-      slopes: [
-        {
-          area: [
-            [0, 0],
-            [400, 0],
-            [400, 4000],
-            [0, 4000],
-          ],
-          force: [0, -2 * P.friction],
-        },
-      ],
-    }
+  it('slows a ball climbing a bump', () => {
+    // On flat felt the putt would end 600 mm up, in the bump's uphill half
+    const across: Hole = { ...lane, slopes: [{ bump: { from: [0, 3000], to: [400, 3000], width: 300, strength: 400 } }] }
+    const putt = up(600 / P.maxRoll)
+    const flat = simulateShot(lane, P, lane.tee, putt).rest[1]
+    expect(flat).toBeGreaterThan(3000)
+    expect(simulateShot(across, P, lane.tee, putt).rest[1]).toBeGreaterThan(flat + 20)
+  })
+
+  it('keeps rolling down a hill steeper than friction, and stops once off it', () => {
+    const steep: Hole = { ...lane, slopes: [{ radial: { center: [200, 3400], radius: 2000, strength: 2 * P.friction } }] }
     const r = simulateShot(steep, P, [200, 3000], up(0.01))
-    expect(r.rest[1]).toBeLessThan(2000)
+    expect(r.rest[1]).toBeLessThan(1400)
   })
 
   it('rolls a ball off a summit steeper than friction', () => {
-    const summit: Hole = { ...lane, slopes: [{ area: lane.outline, radial: { center: [200, 2000], strength: 2 * P.friction } }] }
+    const summit: Hole = { ...lane, slopes: [{ radial: { center: [200, 2000], radius: 1000, strength: 2 * P.friction } }] }
     const r = simulateShot(summit, P, [200, 2100], up(P.minPutt))
     expect(r.rest[1]).toBeGreaterThan(2100)
   })

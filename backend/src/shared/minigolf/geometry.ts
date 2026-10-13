@@ -46,13 +46,17 @@ export function lineClear(hole: Hole, from: Pt, to: Pt): boolean {
   return hole.bumpers.every(b => distanceToSegment(b.at, from, to) > b.r + BALL_R)
 }
 
-/** The distance from p to the segment ab. */
-export function distanceToSegment(p: Pt, a: Pt, b: Pt): number {
+/** The point on the segment ab closest to p. */
+export function closestOnSegment(p: Pt, a: Pt, b: Pt): Pt {
   const dx = b[0] - a[0]
   const dy = b[1] - a[1]
   const len2 = dx * dx + dy * dy
   const t = len2 === 0 ? 0 : Math.max(0, Math.min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / len2))
-  const x = a[0] + t * dx - p[0]
-  const y = a[1] + t * dy - p[1]
-  return Math.sqrt(x * x + y * y)
+  return [a[0] + t * dx, a[1] + t * dy]
+}
+
+/** The distance from p to the segment ab. */
+export function distanceToSegment(p: Pt, a: Pt, b: Pt): number {
+  const [x, y] = closestOnSegment(p, a, b)
+  return Math.hypot(x - p[0], y - p[1])
 }

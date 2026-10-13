@@ -48,8 +48,8 @@ const holeSchema = z.object({
   slopes: z
     .array(
       z.union([
-        z.object({ area: z.array(pt), force: pt }),
-        z.object({ area: z.array(pt), radial: z.object({ center: pt, strength: z.number() }) }),
+        z.object({ radial: z.object({ center: pt, radius: z.number(), strength: z.number() }) }),
+        z.object({ bump: z.object({ from: pt, to: pt, width: z.number(), strength: z.number() }) }),
       ]),
     )
     .default([]),

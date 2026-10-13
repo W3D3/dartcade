@@ -40,6 +40,18 @@ export function validateHole(hole: Hole): string[] {
     if (!finite([b.at])) errors.push(`bumper ${i + 1} has a non-finite number`)
     if (!(b.r > 0)) errors.push(`bumper ${i + 1} radius must be positive`)
   })
-  hole.slopes.forEach((s, i) => checkPolygon(errors, `slope ${i + 1}`, s.area))
+  hole.slopes.forEach((s, i) => {
+    const name = `slope ${i + 1}`
+    if ('radial' in s) {
+      const { center, radius, strength } = s.radial
+      if (!finite([center, [radius, strength]])) errors.push(`${name} has a non-finite number`)
+      else if (!(radius > 0)) errors.push(`${name} radius must be positive`)
+    } else {
+      const { from, to, width, strength } = s.bump
+      if (!finite([from, to, [width, strength]])) errors.push(`${name} has a non-finite number`)
+      else if (from[0] === to[0] && from[1] === to[1]) errors.push(`${name} ridge needs two different ends`)
+      else if (!(width > 0)) errors.push(`${name} width must be positive`)
+    }
+  })
   return errors
 }

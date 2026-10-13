@@ -19,9 +19,12 @@ export interface Bumper {
   kick?: number
 }
 
-/** An area that pushes the ball while it's inside: a constant force (mm/s²), or radial around
- *  a centre (strength > 0 pushes away, a summit; < 0 pulls in, a bowl). */
-export type Slope = { area: Pt[]; force: Pt } | { area: Pt[]; radial: { center: Pt; strength: number } }
+/** Ground that isn't flat, pushing the ball with `strength` (mm/s²) while it's on it. A radial
+ *  slope is a round hill (strength > 0 pushes away from its centre) or bowl (< 0 pulls in) out to
+ *  `radius`; a bump is a ridge from `from` to `to`, falling away on both sides out to `width`. */
+export type Slope =
+  | { radial: { center: Pt; radius: number; strength: number } }
+  | { bump: { from: Pt; to: Pt; width: number; strength: number } }
 
 export interface Hole {
   id: string
