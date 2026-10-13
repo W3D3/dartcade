@@ -19,6 +19,8 @@ const BALL_BOUNCE = 0.9
 /** How far a ball may sink into the felt before it's put back on it, mm: deeper than the
  *  heightfield ever sits below heightAt (9 mm at the Mesa's cliffs). */
 const SUNK = 12
+/** A ball slower than restSpeed this long rests, s, even where the slope under its centre is steep. */
+const STILL = 0.2
 // Groups (membership << 16 | filter) let a ball over the cup pass the ground, and one that hasn't
 // dropped pass the cup's walls (their tops give it ghost knocks); a contact hook doubles a step's cost
 const GROUND = 0x0002_ffff
@@ -137,6 +139,8 @@ type Rolling = {
   holed: boolean
   /** Left the course: it goes back to where the shot found it. */
   out: boolean
+  /** Steps it has been slower than restSpeed on the ground. */
+  still: number
   /** At rest: held without gravity (so it can't creep down a gentle slope) until a ball knocks it. */
   resting: boolean
   overCup: boolean
@@ -179,6 +183,7 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
         path: [],
         holed: false,
         out: false,
+        still: 0,
         resting: false,
         overCup: false,
         group: ON_FELT,
@@ -247,10 +252,15 @@ export function simulateShot3d(hole: Hole, physics: Physics, start: Pt, shot: Sh
         b.body.setTranslation({ x: x * M, y: (ground + BALL_R) * M, z: y * M }, true)
         if (v.y < 0) b.body.setLinvel((v = { ...v, y: 0 }), true)
       }
-      if (overCup || z - BALL_R - ground >= 2) return true
+      if (overCup || z - BALL_R - ground >= 2) {
+        b.still = 0
+        return true
+      }
       // The rounded lip: within half a ball of the rim the felt falls toward the cup, so a ball never stops hanging over it
       const onLip = dc < hole.cup.r + BALL_R / 2
-      if (speed < physics.restSpeed && !onLip && pull([x, y]) <= physics.friction) {
+      b.still = speed < physics.restSpeed ? b.still + 1 : 0
+      // Rests where gravity can't beat friction, or once it's stayed still: a kink or a rail holds it on a steep slope
+      if (b.still > 0 && !onLip && (pull([x, y]) <= physics.friction || b.still * dt >= STILL)) {
         b.body.setLinvel({ x: 0, y: 0, z: 0 }, true)
         b.body.setGravityScale(0, true)
         b.resting = true
