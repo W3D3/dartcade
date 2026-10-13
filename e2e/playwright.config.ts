@@ -28,6 +28,8 @@ export default defineConfig({
     trace: 'on-first-retry',
     launchOptions: {
       executablePath: resolveExecutablePath(),
+      // Minigolf's 3D view needs WebGL; CI/headless Chromium has no real GPU
+      args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
     },
   },
   // CI: inline annotations on the PR (github) plus a real HTML report to upload as an
