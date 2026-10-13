@@ -174,7 +174,6 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
   const maxSteps = Math.ceil(physics.maxTime / dt)
 
   const own = balls[0]
-  let preview: Pt[] | null = null
   // When the putted ball knocks into something, in path samples (for the ball's sound)
   const hits: number[] = []
   let touching = false
@@ -191,8 +190,6 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
       // A new knock, not the same contact lasting a few steps
       if (contact && !touching) hits.push(i / sampleEvery)
       touching = contact
-      // The first contact (or reaching the cup's rim) ends the shot preview's line
-      if (!preview && (contact || own.overCup > 0)) preview = [...own.path, [own.body.position.x, own.body.position.y]]
     }
   }
 
@@ -212,7 +209,7 @@ export function simulateShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot,
   })
   space.clear()
   const [mine, ...rest] = done
-  const result: ShotResult = { path: mine.path, rest: mine.rest, holed: mine.holed, preview: preview ?? mine.path, hits }
+  const result: ShotResult = { path: mine.path, rest: mine.rest, holed: mine.holed, hits }
   if (others.length > 0) result.others = rest.filter(b => b.moved).map(({ id, path, rest: at, holed }) => ({ id, path, rest: at, holed }))
   return result
 }

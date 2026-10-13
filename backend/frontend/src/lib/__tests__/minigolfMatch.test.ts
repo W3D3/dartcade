@@ -131,7 +131,7 @@ describe('minigolf match', () => {
 
   it('rolls nothing for a hidden try, then the kept stroke once the darts are pulled', () => {
     expect(rollFor(game({ shotHidden: true, tries: [tryOf('S20', { path: [], holed: false })] }))).toBeNull()
-    const lastStroke = {
+    const lastStroke: NonNullable<MinigolfGame['lastStroke']> = {
       hole: 1,
       seat: 1,
       stroke: 1,
@@ -167,7 +167,7 @@ describe('minigolf match', () => {
   })
 
   it('rolls the stroke that ended a hole on that hole, and keeps its player up meanwhile', () => {
-    const lastStroke = {
+    const lastStroke: NonNullable<MinigolfGame['lastStroke']> = {
       hole: 0,
       seat: 2,
       stroke: 2,

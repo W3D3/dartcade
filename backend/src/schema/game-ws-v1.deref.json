@@ -2346,6 +2346,41 @@
         "type": "number"
       }
     },
+    "MinigolfPathPt": {
+      "title": "MinigolfPathPt",
+      "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+      "anyOf": [
+        {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        }
+      ]
+    },
     "MinigolfHole": {
       "title": "MinigolfHole",
       "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
@@ -3130,12 +3165,39 @@
               "path": {
                 "type": "array",
                 "items": {
-                  "title": "MinigolfPt",
-                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                  "type": "array",
-                  "items": {
-                    "type": "number"
-                  }
+                  "title": "MinigolfPathPt",
+                  "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                  "anyOf": [
+                    {
+                      "type": "array",
+                      "items": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "minItems": 2,
+                      "maxItems": 2
+                    },
+                    {
+                      "type": "array",
+                      "items": [
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "minItems": 3,
+                      "maxItems": 3
+                    }
+                  ]
                 }
               },
               "others": {
@@ -3156,12 +3218,39 @@
                     "path": {
                       "type": "array",
                       "items": {
-                        "title": "MinigolfPt",
-                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                        "type": "array",
-                        "items": {
-                          "type": "number"
-                        }
+                        "title": "MinigolfPathPt",
+                        "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "minItems": 3,
+                            "maxItems": 3
+                          }
+                        ]
                       }
                     },
                     "holed": {
@@ -3240,12 +3329,39 @@
                     "items": {
                       "type": "array",
                       "items": {
-                        "title": "MinigolfPt",
-                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                        "type": "array",
-                        "items": {
-                          "type": "number"
-                        }
+                        "title": "MinigolfPathPt",
+                        "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "minItems": 3,
+                            "maxItems": 3
+                          }
+                        ]
                       }
                     }
                   }
@@ -3680,12 +3796,39 @@
                 "path": {
                   "type": "array",
                   "items": {
-                    "title": "MinigolfPt",
-                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                    "type": "array",
-                    "items": {
-                      "type": "number"
-                    }
+                    "title": "MinigolfPathPt",
+                    "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                    "anyOf": [
+                      {
+                        "type": "array",
+                        "items": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 2,
+                        "maxItems": 2
+                      },
+                      {
+                        "type": "array",
+                        "items": [
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          },
+                          {
+                            "type": "number"
+                          }
+                        ],
+                        "minItems": 3,
+                        "maxItems": 3
+                      }
+                    ]
                   }
                 },
                 "others": {
@@ -3706,12 +3849,39 @@
                       "path": {
                         "type": "array",
                         "items": {
-                          "title": "MinigolfPt",
-                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                          "type": "array",
-                          "items": {
-                            "type": "number"
-                          }
+                          "title": "MinigolfPathPt",
+                          "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                          "anyOf": [
+                            {
+                              "type": "array",
+                              "items": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            {
+                              "type": "array",
+                              "items": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "minItems": 3,
+                              "maxItems": 3
+                            }
+                          ]
                         }
                       },
                       "holed": {
@@ -4338,12 +4508,39 @@
                   "path": {
                     "type": "array",
                     "items": {
-                      "title": "MinigolfPt",
-                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                      "type": "array",
-                      "items": {
-                        "type": "number"
-                      }
+                      "title": "MinigolfPathPt",
+                      "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                      "anyOf": [
+                        {
+                          "type": "array",
+                          "items": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        {
+                          "type": "array",
+                          "items": [
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            },
+                            {
+                              "type": "number"
+                            }
+                          ],
+                          "minItems": 3,
+                          "maxItems": 3
+                        }
+                      ]
                     }
                   },
                   "others": {
@@ -4364,12 +4561,39 @@
                         "path": {
                           "type": "array",
                           "items": {
-                            "title": "MinigolfPt",
-                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                            "type": "array",
-                            "items": {
-                              "type": "number"
-                            }
+                            "title": "MinigolfPathPt",
+                            "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                            "anyOf": [
+                              {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 3,
+                                "maxItems": 3
+                              }
+                            ]
                           }
                         },
                         "holed": {
@@ -4448,12 +4672,39 @@
                         "items": {
                           "type": "array",
                           "items": {
-                            "title": "MinigolfPt",
-                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                            "type": "array",
-                            "items": {
-                              "type": "number"
-                            }
+                            "title": "MinigolfPathPt",
+                            "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                            "anyOf": [
+                              {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 3,
+                                "maxItems": 3
+                              }
+                            ]
                           }
                         }
                       }
@@ -4888,12 +5139,39 @@
                     "path": {
                       "type": "array",
                       "items": {
-                        "title": "MinigolfPt",
-                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                        "type": "array",
-                        "items": {
-                          "type": "number"
-                        }
+                        "title": "MinigolfPathPt",
+                        "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                        "anyOf": [
+                          {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          {
+                            "type": "array",
+                            "items": [
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ],
+                            "minItems": 3,
+                            "maxItems": 3
+                          }
+                        ]
                       }
                     },
                     "others": {
@@ -4914,12 +5192,39 @@
                           "path": {
                             "type": "array",
                             "items": {
-                              "title": "MinigolfPt",
-                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                              "type": "array",
-                              "items": {
-                                "type": "number"
-                              }
+                              "title": "MinigolfPathPt",
+                              "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                              "anyOf": [
+                                {
+                                  "type": "array",
+                                  "items": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                {
+                                  "type": "array",
+                                  "items": [
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    },
+                                    {
+                                      "type": "number"
+                                    }
+                                  ],
+                                  "minItems": 3,
+                                  "maxItems": 3
+                                }
+                              ]
                             }
                           },
                           "holed": {
@@ -6869,12 +7174,39 @@
                       "path": {
                         "type": "array",
                         "items": {
-                          "title": "MinigolfPt",
-                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                          "type": "array",
-                          "items": {
-                            "type": "number"
-                          }
+                          "title": "MinigolfPathPt",
+                          "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                          "anyOf": [
+                            {
+                              "type": "array",
+                              "items": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            {
+                              "type": "array",
+                              "items": [
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                },
+                                {
+                                  "type": "number"
+                                }
+                              ],
+                              "minItems": 3,
+                              "maxItems": 3
+                            }
+                          ]
                         }
                       },
                       "others": {
@@ -6895,12 +7227,39 @@
                             "path": {
                               "type": "array",
                               "items": {
-                                "title": "MinigolfPt",
-                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                }
+                                "title": "MinigolfPathPt",
+                                "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      }
+                                    ],
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      }
+                                    ],
+                                    "minItems": 3,
+                                    "maxItems": 3
+                                  }
+                                ]
                               }
                             },
                             "holed": {
@@ -6979,12 +7338,39 @@
                             "items": {
                               "type": "array",
                               "items": {
-                                "title": "MinigolfPt",
-                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                "type": "array",
-                                "items": {
-                                  "type": "number"
-                                }
+                                "title": "MinigolfPathPt",
+                                "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                                "anyOf": [
+                                  {
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      }
+                                    ],
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  {
+                                    "type": "array",
+                                    "items": [
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      },
+                                      {
+                                        "type": "number"
+                                      }
+                                    ],
+                                    "minItems": 3,
+                                    "maxItems": 3
+                                  }
+                                ]
                               }
                             }
                           }
@@ -7419,12 +7805,39 @@
                         "path": {
                           "type": "array",
                           "items": {
-                            "title": "MinigolfPt",
-                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                            "type": "array",
-                            "items": {
-                              "type": "number"
-                            }
+                            "title": "MinigolfPathPt",
+                            "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                            "anyOf": [
+                              {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 2,
+                                "maxItems": 2
+                              },
+                              {
+                                "type": "array",
+                                "items": [
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  },
+                                  {
+                                    "type": "number"
+                                  }
+                                ],
+                                "minItems": 3,
+                                "maxItems": 3
+                              }
+                            ]
                           }
                         },
                         "others": {
@@ -7445,12 +7858,39 @@
                               "path": {
                                 "type": "array",
                                 "items": {
-                                  "title": "MinigolfPt",
-                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
-                                  "type": "array",
-                                  "items": {
-                                    "type": "number"
-                                  }
+                                  "title": "MinigolfPathPt",
+                                  "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+                                  "anyOf": [
+                                    {
+                                      "type": "array",
+                                      "items": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "number"
+                                        }
+                                      ],
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    {
+                                      "type": "array",
+                                      "items": [
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "number"
+                                        },
+                                        {
+                                          "type": "number"
+                                        }
+                                      ],
+                                      "minItems": 3,
+                                      "maxItems": 3
+                                    }
+                                  ]
                                 }
                               },
                               "holed": {

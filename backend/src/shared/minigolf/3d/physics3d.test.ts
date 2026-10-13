@@ -3,6 +3,7 @@ import { beforeAll, describe, it, expect, vi } from 'vitest'
 import { buildWorld, initPhysics3d, simulateShot3d } from './physics3d.js'
 import { heightAt } from './ground.js'
 import { DEFAULT_PHYSICS as P } from '../physics.js'
+import { testCourse } from '../courses/test.js'
 import type { Hole, Pt } from '../types.js'
 
 const lane: Hole = {
@@ -88,6 +89,42 @@ describe('3D physics', () => {
     expect(Math.abs(r.rest[1] - (2300 - (P.minPutt * P.maxRoll) / 1.5))).toBeLessThan(40)
     const steep: Hole = { ...lane, terrain: [{ mesa: { from: [0, 0], to: [400, 1500], height: 300, edges: [1, 1, 1, 900] } }] }
     expect(simulateShot3d(steep, P, [200, 1800], up(P.minPutt)).rest[1]).toBeGreaterThan(2400)
+  })
+
+  it('knocks another ball, and reports where it went', () => {
+    const r = simulateShot3d(lane, P, [200, 3000], up(0.3), [{ id: 1, at: [200, 2600] }])
+    expect(r.others?.[0].id).toBe(1)
+    expect(r.others?.[0].rest[1]).toBeLessThan(2600)
+    expect(r.hits.length).toBeGreaterThan(0)
+  })
+
+  it('drops a knocked ball into the cup', () => {
+    const r = simulateShot3d(lane, P, [200, 600], up(500 / P.maxRoll), [{ id: 1, at: [200, 420] }])
+    expect(r.others?.[0].holed).toBe(true)
+  })
+
+  it('lists only the balls a putt moved', () => {
+    const r = simulateShot3d(lane, P, [200, 3000], up(0.1), [{ id: 1, at: [100, 1000] }])
+    expect(r.others).toEqual([])
+  })
+
+  it('kicks the ball off a bumper faster than it came', () => {
+    const kicker: Hole = { ...lane, bumpers: [{ at: [200, 2500], r: 60, kick: 800 }] }
+    const plain: Hole = { ...lane, bumpers: [{ at: [200, 2500], r: 60 }] }
+    const shot = up(0.25)
+    expect(simulateShot3d(kicker, P, [200, 3000], shot).rest[1]).toBeGreaterThan(simulateShot3d(plain, P, [200, 3000], shot).rest[1])
+  })
+
+  it('records a hit on the rail, and carries heights in the path', () => {
+    const r = simulateShot3d(lane, P, [200, 600], up(0.4))
+    expect(r.hits.length).toBeGreaterThan(0)
+    expect(r.path.every(p => p.length === 3)).toBe(true)
+  })
+
+  it('plays the same shot the same way twice, bit for bit', () => {
+    const a = simulateShot3d(testCourse.holes[2], P, testCourse.holes[2].tee, { dir: [0.3, -0.95], power: 0.8 })
+    const b = simulateShot3d(testCourse.holes[2], P, testCourse.holes[2].tee, { dir: [0.3, -0.95], power: 0.8 })
+    expect(b).toEqual(a)
   })
 
   it('throws before Rapier is loaded', async () => {

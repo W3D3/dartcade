@@ -3,6 +3,7 @@
 // Design: docs/superpowers/specs/2026-10-10-minigolf-game-design.md
 import type { BoardEvent, ConfigFieldMeta, GameModule, MinigolfDetail, Player, SeatResult } from '../session/types.js'
 import type { MinigolfView } from '../session/views.js'
+import type { MinigolfPathPt } from '../schema/game-ws.js'
 import type { Rng } from '../session/rng.js'
 import { COURSES, getCourse, mixedHoles } from '../shared/minigolf/courses/index.js'
 import { DEFAULT_PHYSICS, type Physics } from '../shared/minigolf/physics.js'
@@ -105,8 +106,10 @@ const configMeta: Record<string, ConfigFieldMeta> = {
 // The view carries points as plain [x, y] arrays (the snapshot schema's MinigolfPt)
 type ViewPt = number[]
 const pt = (p: Pt): ViewPt => [p[0], p[1]]
-const roundPt = (p: PathPt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
-const roundPath = (path: readonly PathPt[]): ViewPt[] => path.map(roundPt)
+const roundPt = (p: Pt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
+// 3D paths carry the ball's height; 2D ones stay [x, y]
+const roundPath = (path: readonly PathPt[]): MinigolfPathPt[] =>
+  path.map(([x, y, z]) => (z === undefined ? [Math.round(x), Math.round(y)] : [Math.round(x), Math.round(y), Math.round(z)]))
 const roundHit = (sample: number) => Math.round(sample * 100) / 100
 
 function holeView(h: Hole): MinigolfView['hole'] {
