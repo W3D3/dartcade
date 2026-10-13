@@ -39,15 +39,8 @@ export const testCourse = {
       walls: [],
       bumpers: [],
       slopes: [
-        {
-          area: [
-            [700, 2000],
-            [1300, 2000],
-            [1300, 2800],
-            [700, 2800],
-          ],
-          force: [250, 0],
-        },
+        // A ridge across the lane: putt too soft and the ball rolls back
+        { bump: { from: [1000, 2000], to: [1000, 2800], width: 300, strength: 250 } },
       ],
       tee: [300, 2500],
       cup: { at: [2150, 400], r: 54 },
@@ -74,17 +67,7 @@ export const testCourse = {
         { at: [450, 900], r: 60, kick: 600 },
         { at: [1350, 900], r: 60, kick: 600 },
       ],
-      slopes: [
-        {
-          area: [
-            [600, 300],
-            [1200, 300],
-            [1200, 900],
-            [600, 900],
-          ],
-          radial: { center: [900, 600], strength: 1500 },
-        },
-      ],
+      slopes: [{ radial: { center: [900, 600], radius: 400, strength: 1500 } }],
       tee: [900, 2350],
       cup: { at: [900, 600], r: 54 },
     },

@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "game-ws/v1",
   "title": "GameWs",
-  "description": "Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.",
+  "description": "Messages on the game WebSocket (/ws?sessionId=\u2026) between the browser and the backend. Server \u2192 client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client \u2192 server: ClientMessage. The server closes the socket with a WsCloseCode.",
   "$defs": {
     "WsCloseCode": {
       "title": "WsCloseCode",
@@ -887,38 +887,45 @@
             "anyOf": [
               {
                 "type": "object",
-                "required": ["area", "force"],
+                "required": ["radial"],
                 "additionalProperties": false,
                 "properties": {
-                  "area": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/MinigolfPt"
+                  "radial": {
+                    "type": "object",
+                    "required": ["center", "radius", "strength"],
+                    "additionalProperties": false,
+                    "properties": {
+                      "center": {
+                        "$ref": "#/$defs/MinigolfPt"
+                      },
+                      "radius": {
+                        "type": "number"
+                      },
+                      "strength": {
+                        "type": "number"
+                      }
                     }
-                  },
-                  "force": {
-                    "$ref": "#/$defs/MinigolfPt"
                   }
                 }
               },
               {
                 "type": "object",
-                "required": ["area", "radial"],
+                "required": ["bump"],
                 "additionalProperties": false,
                 "properties": {
-                  "area": {
-                    "type": "array",
-                    "items": {
-                      "$ref": "#/$defs/MinigolfPt"
-                    }
-                  },
-                  "radial": {
+                  "bump": {
                     "type": "object",
-                    "required": ["center", "strength"],
+                    "required": ["from", "to", "width", "strength"],
                     "additionalProperties": false,
                     "properties": {
-                      "center": {
+                      "from": {
                         "$ref": "#/$defs/MinigolfPt"
+                      },
+                      "to": {
+                        "$ref": "#/$defs/MinigolfPt"
+                      },
+                      "width": {
+                        "type": "number"
                       },
                       "strength": {
                         "type": "number"

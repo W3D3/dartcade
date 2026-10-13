@@ -434,13 +434,17 @@ export interface MinigolfHole {
   }[]
   slopes: (
     | {
-        area: MinigolfPt[]
-        force: MinigolfPt
-      }
-    | {
-        area: MinigolfPt[]
         radial: {
           center: MinigolfPt
+          radius: number
+          strength: number
+        }
+      }
+    | {
+        bump: {
+          from: MinigolfPt
+          to: MinigolfPt
+          width: number
           strength: number
         }
       }

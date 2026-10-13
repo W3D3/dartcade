@@ -112,9 +112,9 @@ function holeView(h: Hole): MinigolfView['hole'] {
     walls: h.walls.map(w => ({ ...w, points: w.points.map(pt) })),
     bumpers: h.bumpers.map(b => ({ ...b, at: pt(b.at) })),
     slopes: h.slopes.map(sl =>
-      'force' in sl
-        ? { area: sl.area.map(pt), force: pt(sl.force) }
-        : { area: sl.area.map(pt), radial: { center: pt(sl.radial.center), strength: sl.radial.strength } },
+      'radial' in sl
+        ? { radial: { ...sl.radial, center: pt(sl.radial.center) } }
+        : { bump: { ...sl.bump, from: pt(sl.bump.from), to: pt(sl.bump.to) } },
     ),
     tee: pt(h.tee),
     cup: { at: pt(h.cup.at), r: h.cup.r },

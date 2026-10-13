@@ -1,6 +1,6 @@
 <!--
   A minigolf hole drawn in course space (mm, y down) in the design's look (Minigolf.dc.html):
-  felt, cream rails, red bumpers, slopes with arrows along their push, the tee, the cup and flag,
+  felt, cream rails, red bumpers, hills, bowls and bumps shaded by height with contour lines, the tee, the cup and flag,
   and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `debug` draws the cup's
   capture radius, rail normals, slope outlines and the last shot's samples; `preview` a putt's line.
   In a game: `aim` draws the design's aim dial and reach rings around the ball, `previews` the shot
@@ -9,6 +9,7 @@
 <script lang="ts">
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { bounds } from '$shared/minigolf/geometry'
+  import { slopeLook } from '$lib/minigolf/terrain'
   import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
   import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
 
@@ -108,31 +109,8 @@
   /** A point at `len` from `at` in board direction `a` (radians, y up, 0 = right). */
   const toward = (at: Pt, a: number, len: number): Pt => [at[0] + Math.cos(a) * len, at[1] - Math.sin(a) * len]
   const pts = (p: readonly Pt[]) => p.map(([x, y]) => `${x},${y}`).join(' ')
-  const centroid = (p: readonly Pt[]): Pt => [p.reduce((s, q) => s + q[0], 0) / p.length, p.reduce((s, q) => s + q[1], 0) / p.length]
-
-  /** A 180 mm arrow centred on `at`, pointing along `dir`. */
-  function arrow(at: Pt, dir: Pt): string {
-    const len = Math.hypot(dir[0], dir[1]) || 1
-    const ux = dir[0] / len
-    const uy = dir[1] / len
-    const tip: Pt = [at[0] + ux * 90, at[1] + uy * 90]
-    const back: Pt = [tip[0] - ux * 40, tip[1] - uy * 40]
-    return (
-      `M${at[0] - ux * 90} ${at[1] - uy * 90} L${tip[0]} ${tip[1]} ` +
-      `M${back[0] - uy * 40} ${back[1] + ux * 40} L${tip[0]} ${tip[1]} L${back[0] + uy * 40} ${back[1] - ux * 40}`
-    )
-  }
-
-  /** Arrows around a radial slope's centre: outward for a summit, inward for a bowl. */
-  function radialArrows(center: Pt, strength: number): string[] {
-    const s = Math.sign(strength) || 1
-    return [
-      [1, 0],
-      [0, 1],
-      [-1, 0],
-      [0, -1],
-    ].map(([dx, dy]) => arrow([center[0] + dx * 200, center[1] + dy * 200], [dx * s, dy * s]))
-  }
+  const looks = $derived(hole.slopes.map(slopeLook))
+  const uid = $props.id()
 </script>
 
 <svg
@@ -148,6 +126,7 @@
       <rect width="56" height="56" fill="#2a7045" />
       <rect width="28" height="56" fill="#2e784a" />
     </pattern>
+    <clipPath id="{uid}-course"><polygon points={pts(hole.outline)} /></clipPath>
   </defs>
   <polygon
     points={pts(hole.outline)}
@@ -159,11 +138,14 @@
     stroke-linejoin="round"
   />
   <polygon points={pts(hole.outline)} fill="url(#mg-felt)" stroke="#e9dfc4" stroke-width={wallThickness} stroke-linejoin="round" />
-  {#each hole.slopes as s, i (i)}
-    <polygon points={pts(s.area)} fill="#e9dfc4" fill-opacity="0.07" />
-    {#each 'force' in s ? [arrow(centroid(s.area), s.force)] : radialArrows(s.radial.center, s.radial.strength) as d, k (k)}
-      <path {d} fill="none" stroke="#e9dfc4" stroke-opacity="0.32" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
-    {/each}
+  <!-- Slopes: lighter the higher (a hill, a bump), darker the deeper (a bowl), fading into the felt at the edge and cut off at the rails -->
+  {#each looks as look, i (i)}
+    <g pointer-events="none" clip-path="url(#{uid}-course)" data-testid="slope">
+      {#each look.bands as d, k (k)}<path {d} fill={look.raised ? '#ffffff' : '#000000'} fill-opacity={look.raised ? 0.03 : 0.045} />{/each}
+      <g fill="none" stroke="#e9dfc4" stroke-opacity="0.2" stroke-width="5">
+        {#each look.contours as d, k (k)}<path {d} />{/each}
+      </g>
+    </g>
   {/each}
   {#each hole.walls as w, i (i)}
     {#if w.closed}
@@ -207,8 +189,8 @@
   <path d="M{hole.cup.at[0]} {hole.cup.at[1] - 240} l110 34 l-110 34 z" fill="#c6f24e" stroke="#0a0b09" stroke-width="4" />
   {#if debug}
     <g pointer-events="none" data-testid="debug-overlay">
-      {#each hole.slopes as sl, i (i)}
-        <polygon points={pts(sl.area)} fill="none" stroke="#e9dfc4" stroke-dasharray="16 12" stroke-width="4" />
+      {#each looks as look, i (i)}
+        <path d={look.bands[0]} fill="none" stroke="#e9dfc4" stroke-dasharray="16 12" stroke-width="4" />
       {/each}
       {#each normals as n, i (i)}
         <line x1={n.mid[0]} y1={n.mid[1]} x2={n.end[0]} y2={n.end[1]} stroke="#4ec6f2" stroke-width="6" stroke-linecap="round" />
