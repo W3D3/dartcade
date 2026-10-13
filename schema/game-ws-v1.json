@@ -814,6 +814,14 @@
         "type": "number"
       }
     },
+    "MinigolfPathPt": {
+      "title": "MinigolfPathPt",
+      "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
+      "anyOf": [
+        { "type": "array", "items": [{ "type": "number" }, { "type": "number" }], "minItems": 2, "maxItems": 2 },
+        { "type": "array", "items": [{ "type": "number" }, { "type": "number" }, { "type": "number" }], "minItems": 3, "maxItems": 3 }
+      ]
+    },
     "MinigolfHole": {
       "title": "MinigolfHole",
       "description": "A hole's geometry (see backend/src/shared/minigolf/types.ts).",
@@ -1168,7 +1176,7 @@
               "path": {
                 "type": "array",
                 "items": {
-                  "$ref": "#/$defs/MinigolfPt"
+                  "$ref": "#/$defs/MinigolfPathPt"
                 }
               },
               "others": {
@@ -1185,7 +1193,7 @@
                     "path": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/$defs/MinigolfPt"
+                        "$ref": "#/$defs/MinigolfPathPt"
                       }
                     },
                     "holed": {
@@ -1251,7 +1259,7 @@
                     "items": {
                       "type": "array",
                       "items": {
-                        "$ref": "#/$defs/MinigolfPt"
+                        "$ref": "#/$defs/MinigolfPathPt"
                       }
                     }
                   }
@@ -1313,7 +1321,7 @@
                 "path": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/$defs/MinigolfPt"
+                    "$ref": "#/$defs/MinigolfPathPt"
                   }
                 },
                 "others": {
@@ -1330,7 +1338,7 @@
                       "path": {
                         "type": "array",
                         "items": {
-                          "$ref": "#/$defs/MinigolfPt"
+                          "$ref": "#/$defs/MinigolfPathPt"
                         }
                       },
                       "holed": {

@@ -14,6 +14,13 @@ export type SessionStatus = 'active' | 'finished' | 'aborted'
  */
 export type MinigolfPt = number[]
 /**
+ * A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "MinigolfPathPt".
+ */
+export type MinigolfPathPt = [number, number] | [number, number, number]
+/**
  * Full session state, pushed after every change.
  *
  * This interface was referenced by `GameWs`'s JSON-Schema
@@ -522,10 +529,10 @@ export interface MinigolfGame {
     power: number | null
     holed: boolean
     missed: boolean
-    path: MinigolfPt[]
+    path: MinigolfPathPt[]
     others: {
       seat: number
-      path: MinigolfPt[]
+      path: MinigolfPathPt[]
       holed: boolean
     }[]
     /**
@@ -546,7 +553,7 @@ export interface MinigolfGame {
   lastHole: {
     index: number
     scores: number[]
-    paths: MinigolfPt[][][]
+    paths: MinigolfPathPt[][][]
     hole: MinigolfHole
   } | null
   currentVisitDarts: Dart[]
@@ -563,10 +570,10 @@ export interface MinigolfGame {
     hole: number
     seat: number
     stroke: number
-    path: MinigolfPt[]
+    path: MinigolfPathPt[]
     others: {
       seat: number
-      path: MinigolfPt[]
+      path: MinigolfPathPt[]
       holed: boolean
     }[]
     /**

@@ -80,9 +80,6 @@ export interface ShotResult {
   rest: Pt
   holed: boolean
   others?: MovedBall[]
-  /** The start of `path` up to the ball's first contact (rail, wall, bumper, another ball, the
-   *  cup's rim), or all of it without one: the shot preview's line. */
-  preview: Pt[]
   /** When the ball knocked into a rail, wall, bumper or ball, in (fractional) path samples. */
   hits: number[]
 }
