@@ -7,7 +7,7 @@ import { requireAuth } from '../auth/middleware.js'
 import { canAccessSession, canWatchSession, isHost, noLobbies, type IsLobbyMember } from '../session/access.js'
 import { findOwnBoard } from '../boards/own.js'
 import { fromSpec } from './spec.js'
-import { loadFlagUser, modeAvailable } from '../flags/index.js'
+import { gameAvailable, loadFlagUser } from '../flags/index.js'
 import { engineApiError } from './engineErrors.js'
 import type { Route } from './route.js'
 
@@ -35,8 +35,8 @@ export function sessionsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
     { preValidation: requireAuth, schema: fromSpec('createSession') },
     async (req, reply) => {
       const { boardId, gameId, config, players } = req.body
-      // A mode behind a feature flag that's off for the user can't be started (as in the lobby)
-      if (!(await modeAvailable(gameId, await loadFlagUser(db, req.userId))))
+      // A mode or setting behind a feature flag that's off for the user can't be started (as in the lobby)
+      if (!(await gameAvailable(gameId, config, await loadFlagUser(db, req.userId))))
         return reply.code(403).send({ error: "That game isn't available" })
       const resolvedBoardId = boardId || null
       // The seats show the board's name, as they do after a restart (read from the boards table)

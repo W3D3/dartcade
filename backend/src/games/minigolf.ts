@@ -24,6 +24,8 @@ export type MinigolfConfig = {
   aimAssist: boolean
   /** While darts are left to replace a try, show a straight aim line as far as it would roll on flat felt. */
   shotPreview: boolean
+  /** '2d': the flat game, behind the gamemode.minigolf.flat flag. */
+  physics: '3d' | '2d'
 }
 
 /** `waiting`: not putted yet on this hole (the ball is in hand, not on the felt). */
@@ -101,6 +103,14 @@ const configMeta: Record<string, ConfigFieldMeta> = {
       { value: true, label: 'On' },
     ],
   },
+  physics: {
+    label: 'Physics',
+    flag: 'gamemode.minigolf.flat',
+    options: [
+      { value: '3d', label: '3D' },
+      { value: '2d', label: '2D' },
+    ],
+  },
 }
 
 // The view carries points as plain [x, y] arrays (the snapshot schema's MinigolfPt)
@@ -176,7 +186,7 @@ function playTry(s: MinigolfState, data: Extract<BoardEvent, { kind: 'dart.detec
     coords,
     power: shot?.power ?? null,
     dir: shot?.dir ?? null,
-    result: shot ? cachedShot(hole, s.physics, ball, shot, others) : null,
+    result: shot ? cachedShot(hole, s.physics, ball, shot, others, s.cfg.physics) : null,
   }
 }
 
@@ -238,7 +248,7 @@ function winnerOf(s: MinigolfState): number | null {
 export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfView, 'minigolf', MinigolfDetail> = {
   id: 'minigolf',
   version: 1,
-  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: false },
+  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: false, physics: '3d' },
   configMeta,
   positionalDarts: true,
   noFinishHold: true,
@@ -246,6 +256,8 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
   validate(cfg) {
     if (cfg.course !== 'mixed' && !getCourse(cfg.course)) return 'Unknown course'
     if (!(cfg.maxStrokes >= 3 && cfg.maxStrokes <= 10)) return 'Max strokes must be between 3 and 10'
+    // Missing (saved before the option existed) plays 3D, as init does
+    if (!['3d', '2d', undefined].includes(cfg.physics)) return 'Unknown physics'
     return null
   },
 
@@ -259,6 +271,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       ballContact: saved.ballContact ?? d.ballContact,
       aimAssist: saved.aimAssist ?? d.aimAssist,
       shotPreview: saved.shotPreview ?? d.shotPreview,
+      physics: saved.physics ?? d.physics,
     }
     const course = getCourse(cfg.course)
     const holes = course ? course.holes : mixedHoles(rng)

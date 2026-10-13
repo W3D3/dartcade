@@ -45,6 +45,20 @@ describe('minigolf', () => {
     expect(M.getCurrentPlayer(s)).toBe(0)
   })
 
+  it('plays 3D by default, 2D when the config asks for it', () => {
+    expect(M.defaultConfig.physics).toBe('3d')
+    expect(M.init(cfg({ physics: '2d' }), two).cfg.physics).toBe('2d')
+    const path = (physics: MinigolfConfig['physics']) => visit(M.init(cfg({ physics }), two), bull()).balls[0].paths[0]
+    expect(path('3d').every(p => p.length === 3)).toBe(true)
+    expect(path('2d').every(p => p.length === 2)).toBe(true)
+  })
+
+  it('refuses physics it does not know', () => {
+    expect(M.validate!(cfg({ physics: '2d' }), two)).toBeNull()
+    expect(M.validate!({ ...cfg(), physics: undefined } as unknown as MinigolfConfig, two)).toBeNull()
+    expect(M.validate!(cfg({ physics: '4d' as '3d' }), two)).toBe('Unknown physics')
+  })
+
   it('draws the same mixed holes for the same seed', () => {
     const a = M.init(cfg({ course: 'mixed' }), two, seededRng(7))
     const b = M.init(cfg({ course: 'mixed' }), two, seededRng(7))
@@ -61,7 +75,7 @@ describe('minigolf', () => {
     const s = M.onBoardEvent(open, takeout).state
     expect(s.balls[0].strokes).toBe(1)
     const third = M.view(open, two).tries[2]
-    expect(s.balls[0].at.map(Math.round)).toEqual(third.path.at(-1))
+    expect(s.balls[0].at.map(Math.round)).toEqual(third.path.at(-1)?.slice(0, 2))
     expect(M.getCurrentPlayer(s)).toBe(1)
   })
 
@@ -134,7 +148,7 @@ describe('minigolf', () => {
     s = visit(s, dart({ x: 0, y: ((700 / maxRoll - minPutt) / (1 - minPutt)) ** (1 / powerExponent) }))
     expect(s.balls[1].status).toBe('holed')
     expect(s.balls[1].strokes).toBe(0)
-    expect(s.balls[1].at).toEqual(straight.cup.at)
+    expect(Math.hypot(s.balls[1].at[0] - straight.cup.at[0], s.balls[1].at[1] - straight.cup.at[1])).toBeLessThan(straight.cup.r)
   })
 
   it('leaves balls not yet played out of the simulation', () => {
@@ -175,7 +189,7 @@ describe('minigolf', () => {
     expect(M.view(three, two).tries[2].path.length).toBeGreaterThan(1)
     const kept = M.onBoardEvent(one, takeout).state
     expect(M.view(kept, two).lastStroke).toMatchObject({ hole: 0, seat: 0, stroke: 1 })
-    expect(M.view(kept, two).lastStroke?.path.at(-1)).toEqual(kept.balls[0].at.map(Math.round))
+    expect(M.view(kept, two).lastStroke?.path.at(-1)?.slice(0, 2)).toEqual(kept.balls[0].at.map(Math.round))
   })
 
   it('shows a straight aim line, not simulated, with shot preview while darts are left', () => {

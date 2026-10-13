@@ -72,6 +72,8 @@ export type ConfigFieldMeta = {
   label: string
   tooltip?: string
   options?: { value: string | number | boolean; label: string }[]
+  /** A feature flag: the field is only offered, and only takes a non-default value, while it's on. */
+  flag?: string
 }
 
 /** A dart of a committed visit, as the history keeps it. */

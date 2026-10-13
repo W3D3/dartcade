@@ -15,5 +15,12 @@ export function flagDefinitions(flagsOn: ReadonlySet<string>) {
       disabled: false,
       contextEvaluator: on('gamemode.minigolf.enabled', isAdmin),
     },
+    // The 2D Minigolf (physics and view), kept behind 3D: off for everyone, admins too
+    'gamemode.minigolf.flat': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('gamemode.minigolf.flat', () => false),
+    },
   } as const
 }

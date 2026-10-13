@@ -49,7 +49,7 @@ export type LobbyDeps = {
   /** Members' status changed for their friends (joined, left, lobby closed or its access changed, a game started or ended). */
   onStatusChange?: (userIds: string[]) => void
   /** Whether the user may pick and start this game mode (its feature flag); every mode when left out. */
-  gameAvailable?: (userId: string, gameId: string) => Promise<boolean>
+  gameAvailable?: (userId: string, gameId: string, config: Record<string, unknown>) => Promise<boolean>
 }
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
@@ -569,7 +569,7 @@ export class LobbyService {
       if (patch.nextGame !== undefined && patch.nextGame !== null && !games[patch.nextGame.gameId]) {
         throw LobbyError.badRequest(`unknown game: ${patch.nextGame.gameId}`)
       }
-      if (patch.nextGame) await this.checkAvailable(userId, patch.nextGame.gameId)
+      if (patch.nextGame) await this.checkAvailable(userId, patch.nextGame.gameId, patch.nextGame.config)
       // A bot seat can only be driven by a module that defines botTarget (see addGuest's same
       // guard): a bot already seated blocks switching to a game that doesn't, not just adding
       // one to such a lobby. Without this, a running game with a bot seat but no botTarget
@@ -805,9 +805,9 @@ export class LobbyService {
     })
   }
 
-  /** A game mode that's off for the user (its feature flag) can't be picked or started. */
-  private async checkAvailable(userId: string, gameId: string): Promise<void> {
-    if (this.deps.gameAvailable && !(await this.deps.gameAvailable(userId, gameId))) {
+  /** A game mode or setting that's off for the user (its feature flag) can't be picked or started. */
+  private async checkAvailable(userId: string, gameId: string, config: Record<string, unknown>): Promise<void> {
+    if (this.deps.gameAvailable && !(await this.deps.gameAvailable(userId, gameId, config))) {
       throw LobbyError.conflict({ error: "That game isn't available", code: 'game_unavailable' })
     }
   }
@@ -816,7 +816,7 @@ export class LobbyService {
   private async launch(lobby: LobbyState, hostUserId: string, game: StartGame, force: boolean): Promise<{ sessionId: string }> {
     const running = this.deps.engine.getLobbySession(lobby.id)
     if (running) throw LobbyError.conflict({ error: 'a game is running already', code: 'game_running', sessionId: running.id })
-    await this.checkAvailable(hostUserId, game.gameId)
+    await this.checkAvailable(hostUserId, game.gameId, game.config)
     lobby = await this.markHostReady(lobby, hostUserId)
     const planned = planGame(lobby, game, { force, isBoardOnline: this.deps.isBoardOnline, starterUserId: hostUserId })
     if (!planned.ok) throw planError(planned.problem)
