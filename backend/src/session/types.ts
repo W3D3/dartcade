@@ -147,6 +147,14 @@ export interface GameModule<
   noFinishHold?: true
   /** Reject a config that can't be played with these players; returns the reason. */
   validate?(cfg: Cfg, players: Player[]): string | null
+  /**
+   * Fills in what the game needs from outside it (Minigolf: the published course) just before it
+   * starts; the result is the config stored and replayed, so `init` stays pure. Throws
+   * InvalidConfigError when the config can't be played. `rng` is seeded per game.
+   */
+  prepareConfig?(cfg: Cfg, rng: Rng): Promise<Cfg>
+  /** Options for a config field read at request time (Minigolf's courses), in place of configMeta's; null keeps those. */
+  liveOptions?(field: string): Promise<{ value: string; label: string }[] | null>
   /** `rng` drives any random setup; the engine passes one seeded per game. */
   init(cfg: Cfg, players: Player[], rng?: Rng): S
   getCurrentPlayer(s: S): number

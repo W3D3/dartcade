@@ -51,10 +51,17 @@ export function atcMeta(game: AtcGame, playerCount: number): string {
 const triesLabel = (tries: number) => (tries === 1 ? '1 dart per stroke' : `${tries} tries per stroke`)
 
 /** The Minigolf rules as one line, e.g. "Canal Street · 9 holes · 3 tries per stroke". */
-export function minigolfRules(r: { tries: number; ballContact: boolean }, course: string, holes: number, playerCount: number): string {
+export function minigolfRules(
+  r: { tries: number; ballContact: boolean },
+  course: string,
+  holes: number | null,
+  playerCount: number,
+): string {
   const parts: string[] = []
   if (playerCount > 2) parts.push(`${playerCount} players`)
-  parts.push(course, `${holes} ${holes === 1 ? 'hole' : 'holes'}`, triesLabel(r.tries))
+  parts.push(course)
+  if (holes !== null) parts.push(`${holes} ${holes === 1 ? 'hole' : 'holes'}`)
+  parts.push(triesLabel(r.tries))
   if (r.ballContact) parts.push('ball contact')
   return parts.join(' · ')
 }

@@ -245,19 +245,17 @@ export class SessionEngine {
   private async start(spec: NewSessionSpec, sessionBoardId: string | null): Promise<{ sessionId: string }> {
     const mod = games[spec.gameId]
     if (!mod) throw new UnknownGameError(spec.gameId)
-    for (const userId of distinct([spec.ownerUserId, ...spec.seats.map(s => s.controllerUserId)])) {
-      const running = this.byUser.get(userId)
-      if (running) throw new ActiveSessionError('active session already exists for user', running.id, userId)
-    }
-    for (const boardId of distinct(spec.seats.map(s => s.boardId))) {
-      if (this.byBoard.has(boardId)) throw new BoardBusyError(boardId)
-    }
+    this.assertFree(spec)
     const players = spec.seats.map(s => ({ name: s.name }))
     const invalid = mod.validate?.(spec.config, players)
     if (invalid) throw new InvalidConfigError(invalid)
 
     const sessionId = ulid()
     const seed = newSeed()
+    // What's stored is what restarts and history replay, so they never prepare it again
+    const config = mod.prepareConfig ? await mod.prepareConfig(spec.config, seededRng(seed ^ 0x9e3779b9)) : spec.config
+    // Another create may have claimed a player or board while that ran
+    if (mod.prepareConfig) this.assertFree(spec)
     // Stored in this order, so a replay needs no shuffle of its own
     const seats = spec.shuffleSeats === true ? shuffle(spec.seats, seededRng(seed)) : spec.seats
     const lobbyId = spec.lobbyId ?? null
@@ -266,14 +264,14 @@ export class SessionEngine {
       ownerUserId: spec.ownerUserId,
       boardId: sessionBoardId,
       module: mod,
-      config: spec.config,
+      config,
       seats,
       seed,
       createdAt: new Date(),
       lobbyId,
       lobbyName: spec.lobbyName ?? null,
     })
-    // Claim the players and boards before the first await, so a second create running
+    // Claim the players and boards before the next await, so a second create running
     // at the same time sees them taken; give them back if the session can't be stored
     this.index(session)
     try {
@@ -284,7 +282,7 @@ export class SessionEngine {
         game_id: spec.gameId,
         game_version: mod.version,
         rng_seed: seed,
-        config: spec.config,
+        config,
         lobby_id: lobbyId,
         players: seats.map(s => ({
           name: s.name,
@@ -304,6 +302,17 @@ export class SessionEngine {
     // this to get its first turn scheduled — the scheduler only ever runs from push.
     this.push(sessionId)
     return { sessionId }
+  }
+
+  /** Throws if a player or board of the new game is in a running one. */
+  private assertFree(spec: NewSessionSpec): void {
+    for (const userId of distinct([spec.ownerUserId, ...spec.seats.map(s => s.controllerUserId)])) {
+      const running = this.byUser.get(userId)
+      if (running) throw new ActiveSessionError('active session already exists for user', running.id, userId)
+    }
+    for (const boardId of distinct(spec.seats.map(s => s.boardId))) {
+      if (this.byBoard.has(boardId)) throw new BoardBusyError(boardId)
+    }
   }
 
   private index(session: Session): void {

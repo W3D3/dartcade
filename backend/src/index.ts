@@ -3,7 +3,8 @@ import { gameAvailable, loadFlagUser } from './flags/index.js'
 import { fileURLToPath } from 'url'
 import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
-import { seedOfficialCourses } from './db/minigolfCourses.js'
+import { listCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
+import { setCourseSource } from './games/minigolfCourseSource.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
 import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
@@ -25,6 +26,12 @@ await initPhysics3d()
 warmPool()
 await runMigrations(db)
 await seedOfficialCourses(db)
+setCourseSource({
+  course: id => publishedCourse(db, id),
+  officialHoles: () => publishedOfficialHoles(db),
+  officialCourses: async () =>
+    (await listCourses(db, { drafts: false })).flatMap(c => (c.published ? [{ id: c.id, name: c.published.name }] : [])),
+})
 await seedDev()
 
 const hub = new LobbyHub()

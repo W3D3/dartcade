@@ -12,7 +12,6 @@
   import { GAME_MODES } from '$lib/gameModes'
   import { flag } from '$lib/flags'
   import { derived } from 'svelte/store'
-  import { COURSES } from '$shared/minigolf/courses/index'
 
   let {
     gameId,
@@ -65,11 +64,10 @@
     { value: '50_50', label: '50 / 50' },
   ]
 
-  // Minigolf's courses as cards: name, holes and par; plus the mixed course
-  const courseCards = [
-    ...COURSES.map(c => ({ id: c.id, name: c.name, sub: `${c.holes.length} holes · par ${c.holes.reduce((n, h) => n + h.par, 0)}` })),
-    { id: 'mixed', name: 'Mixed course', sub: '9 random holes from all courses' },
-  ]
+  // Minigolf's courses as cards, as the server lists them (the published ones, plus the mixed
+  // course); a course's holes are only known once a game copies them at start
+  const courseSub = (id: unknown) => (id === 'mixed' ? '9 random holes from all courses' : '')
+  const courseCards = $derived((meta.course?.options ?? []).map(o => ({ id: o.value, name: o.label, sub: courseSub(o.value) })))
   const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n))
   const setMaxStrokes = (n: number) => set('maxStrokes', clamp(n, 3, 10))
 
@@ -242,7 +240,7 @@
     <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
       <legend class="field-label mb-2">Course</legend>
       <div class="grid gap-2" role="radiogroup" aria-label="Course">
-        {#each courseCards as c (c.id)}
+        {#each courseCards as c (String(c.id))}
           {@const on = config.course === c.id}
           <button
             type="button"
@@ -254,7 +252,7 @@
               {on ? 'border-accent bg-accent-tint text-text' : 'border-line-2 bg-surface-2 text-text hover:bg-surface-hover'}"
           >
             <span class="text-[15px] font-semibold">{c.name}</span>
-            <span class="text-[13px] text-text-muted">{c.sub}</span>
+            {#if c.sub}<span class="text-[13px] text-text-muted">{c.sub}</span>{/if}
           </button>
         {/each}
       </div>

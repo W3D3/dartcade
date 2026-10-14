@@ -1041,6 +1041,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(engine.getSession(sessionId)).toMatchObject({ lobbyId: solo.id, lobbyName: "Max's lobby" })
     })
 
+    it("refuses, as a normal start problem, a Minigolf course that can't be played", async () => {
+      const solo = await lobbies.create('max')
+      await lobbies.update('max', solo.id, { nextGame: { gameId: 'minigolf', config: { course: 'deleted-course' } } })
+      await expect(lobbies.start('max', solo.id, false)).rejects.toMatchObject({ statusCode: 400 })
+      expect(engine.getSessionByUser('max')).toBeUndefined()
+    })
+
     it('seats a guest with their adder as controller, and leaves out who sits out', async () => {
       await lobbies.join('max', id, code)
       await lobbies.addGuest('lena', id, { name: 'Guest 1' })

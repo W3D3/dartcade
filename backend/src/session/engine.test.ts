@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { SessionEngine, type SnapshotView } from './engine.js'
-import { ActiveSessionError, BoardBusyError } from './errors.js'
+import { ActiveSessionError, BoardBusyError, InvalidConfigError } from './errors.js'
 import type { EngineStore } from './engine.js'
 import type { StoredGameSession } from '../db/queries.js'
 import type { X01Game } from '../schema/game-ws.js'
@@ -8,6 +8,10 @@ import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
 import type { Seat } from './types.js'
 import { seededRng, shuffle } from './rng.js'
+import { minigolfModule, type MinigolfState } from '../games/minigolf.js'
+import { courseSource, setCourseSource } from '../games/minigolfCourseSource.js'
+import { testCourse } from '../shared/minigolf/courses/test.js'
+import type { Hole } from '../shared/minigolf/types.js'
 
 const seat = (name: string, controllerUserId: string, boardId: string | null, userId: string | null = controllerUserId): Seat => ({
   name,
@@ -1431,5 +1435,87 @@ describe('forgetting ended games', () => {
     await expect(engine.createWithSeats(lobbyGame)).rejects.toThrow('db down')
     expect(engine.getLobbySession('l1')).toBeUndefined()
     await expect(engine.createWithSeats(lobbyGame)).resolves.toBeDefined()
+  })
+})
+
+describe('a config prepared at start (Minigolf: the published course)', () => {
+  const code = courseSource()
+  afterEach(() => setCourseSource(code))
+  let published: Record<string, { name: string; holes: Hole[] }> = {}
+  let gate: Promise<void> = Promise.resolve()
+  beforeEach(() => {
+    published = { c1: { name: 'Canal Street', holes: testCourse.holes.slice(0, 2) } }
+    gate = Promise.resolve()
+    setCourseSource({
+      course: async id => {
+        await gate
+        return published[id]
+      },
+      officialHoles: () => Promise.resolve([]),
+      officialCourses: () => Promise.resolve([]),
+    })
+  })
+  const config = { ...minigolfModule.defaultConfig, course: 'c1' }
+  const holesOf = (engine: SessionEngine, id: string) => (engine.getSession(id)!.currentState as MinigolfState).holes
+
+  it('stores and plays the prepared config; a later publish changes neither the game nor its restart', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'minigolf', { ...config, holes: [] }, [{ name: 'Alice' }])
+    const stored = store.insertSession.mock.calls[0][0].config
+    expect(stored).toEqual({ ...config, holes: testCourse.holes.slice(0, 2), courseName: 'Canal Street' })
+    expect(holesOf(engine, sessionId)).toEqual(testCourse.holes.slice(0, 2))
+
+    published = { c1: { name: 'Canal Street', holes: testCourse.holes } }
+    expect(holesOf(engine, sessionId)).toHaveLength(2)
+    const restarted = makeStore()
+    restarted.getActiveSessions.mockResolvedValue([
+      {
+        id: sessionId,
+        owner_user_id: 'user-1',
+        board_db_id: 'board-1',
+        game_id: 'minigolf',
+        game_version: minigolfModule.version,
+        rng_seed: 1,
+        config: stored,
+        created_at: new Date(),
+        players: [
+          { name: 'Alice', user_id: 'user-1', controller_user_id: 'user-1', board_db_id: 'board-1', board_name: null, bot_level: null },
+        ],
+        lobby_id: null,
+        lobby_name: null,
+      } satisfies StoredGameSession,
+    ])
+    const after = new SessionEngine(restarted, push)
+    await after.rebuild()
+    expect(holesOf(after, sessionId)).toHaveLength(2)
+  })
+
+  it("refuses a course that can't be played, without storing or claiming anything", async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const err = await engine
+      .create('user-1', 'board-1', 'minigolf', { ...config, course: 'gone' }, [{ name: 'Alice' }])
+      .catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(InvalidConfigError)
+    expect(store.insertSession).not.toHaveBeenCalled()
+    expect(engine.getSessionByUser('user-1')).toBeUndefined()
+    expect(engine.getSessionByBoard('board-1')).toBeUndefined()
+  })
+
+  it('lets only one of two creates by the same user through while the course loads', async () => {
+    let open = () => {}
+    gate = new Promise(r => (open = r))
+    const engine = makeEngine()
+    const both = Promise.allSettled([
+      engine.create('user-1', null, 'minigolf', config, [{ name: 'Alice' }]),
+      engine.create('user-1', null, 'minigolf', config, [{ name: 'Alice' }]),
+    ])
+    open()
+    const results = await both
+    expect(results.map(r => r.status).sort()).toEqual(['fulfilled', 'rejected'])
+    const rejected = results.find(r => r.status === 'rejected')
+    expect(rejected?.status === 'rejected' && rejected.reason).toBeInstanceOf(ActiveSessionError)
+    expect(engine.getAllSessions()).toHaveLength(1)
   })
 })

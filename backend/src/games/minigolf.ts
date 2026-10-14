@@ -6,6 +6,8 @@ import type { MinigolfView } from '../session/views.js'
 import type { MinigolfPathPt } from '../schema/game-ws.js'
 import type { Rng } from '../session/rng.js'
 import { COURSES, getCourse, mixedHoles } from '../shared/minigolf/courses/index.js'
+import { InvalidConfigError } from '../session/errors.js'
+import { courseSource } from './minigolfCourseSource.js'
 import { DEFAULT_PHYSICS, type Physics } from '../shared/minigolf/physics.js'
 import { R } from '../shared/board.js'
 import { powerAt, shotFromDart } from '../shared/minigolf/shot.js'
@@ -26,6 +28,10 @@ export type MinigolfConfig = {
   shotPreview: boolean
   /** '2d': the flat game, behind the gamemode.minigolf.flat flag. */
   physics: '3d' | '2d'
+  /** The course's holes and name, read from the published course at start (prepareConfig). A game
+   *  stored before them plays the code course. */
+  holes?: Hole[]
+  courseName?: string
 }
 
 /** `waiting`: not putted yet on this hole (the ball is in hand, not on the felt). */
@@ -255,12 +261,28 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
   positionalDarts: true,
   noFinishHold: true,
 
+  // Whether the course can be played is only known at start (prepareConfig)
   validate(cfg) {
-    if (cfg.course !== 'mixed' && !getCourse(cfg.course)) return 'Unknown course'
+    if (typeof cfg.course !== 'string' || cfg.course === '') return 'Unknown course'
     if (!(cfg.maxStrokes >= 3 && cfg.maxStrokes <= 10)) return 'Max strokes must be between 3 and 10'
     // Missing (saved before the option existed) plays 3D, as init does
     if (!['3d', '2d', undefined].includes(cfg.physics)) return 'Unknown physics'
     return null
+  },
+
+  // Always from the course, over anything the config brings along (a client's, or a rematch's)
+  async prepareConfig(cfg, rng) {
+    const src = courseSource()
+    const course =
+      cfg.course === 'mixed' ? { name: 'Mixed course', holes: mixedHoles(rng, await src.officialHoles()) } : await src.course(cfg.course)
+    if (!course || course.holes.length === 0) throw new InvalidConfigError("That course can't be played")
+    return { ...cfg, holes: course.holes, courseName: course.name }
+  },
+
+  async liveOptions(field) {
+    if (field !== 'course') return null
+    const courses = await courseSource().officialCourses()
+    return [...courses.map(c => ({ value: c.id, label: c.name })), { value: 'mixed', label: 'Mixed course' }]
   },
 
   init(saved: Partial<MinigolfConfig>, players: Player[], rng: Rng = Math.random): MinigolfState {
@@ -275,7 +297,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       shotPreview: saved.shotPreview ?? d.shotPreview,
       physics: saved.physics ?? d.physics,
     }
-    const course = getCourse(cfg.course)
+    const course = saved.holes ? { name: saved.courseName ?? '', holes: saved.holes } : getCourse(cfg.course)
     const holes = course ? course.holes : mixedHoles(rng)
     const order = players.map((_, i) => i)
     return {

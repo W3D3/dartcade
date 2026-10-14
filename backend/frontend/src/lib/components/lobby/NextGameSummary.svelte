@@ -36,6 +36,6 @@
     <h3 class="m-0 font-display font-bold leading-none uppercase {size === 'lg' ? 'text-[24px] md:text-[32px]' : 'text-[20px]'}">
       {game ? gameName(game.gameId) : 'No game yet'}
     </h3>
-    {#if game}<span class="text-[13px] md:text-[15px] text-ink-2">{nextGameSummary(game, defaults, teamSizes)}</span>{/if}
+    {#if game}<span class="text-[13px] md:text-[15px] text-ink-2">{nextGameSummary(game, defaults, teamSizes, info?.configMeta)}</span>{/if}
   </div>
 </div>
