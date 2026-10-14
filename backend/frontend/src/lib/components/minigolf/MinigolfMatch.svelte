@@ -22,10 +22,10 @@
     PLAYBACK,
     ROLL_DELAY_MS,
     aimLines,
-    nextRoll,
     otherBalls,
     ownBall,
     restingAt,
+    rollCup,
     rollFor,
     rollRate,
     rows,
@@ -83,8 +83,6 @@
 
   // Where the balls are drawn: at rest from the snapshot, or along the roll while it plays
   let frame = $state<number | null>(null)
-  /** The stroke last rolled (see Roll.stroke and nextRoll). */
-  let rolledStroke = ''
   // Only a new roll restarts the animation: other snapshot changes must not cancel one in play
   const rollKey = $derived(roll?.key ?? null)
   const zoom = new Tween(0, { duration: 450, easing: cubicOut })
@@ -96,9 +94,7 @@
   const openedOn = untrack(() => rollKey)
   $effect.pre(() => {
     const current = rollKey === null ? null : untrack(() => roll)
-    const step = nextRoll(current, openedOn, rolledStroke)
-    rolledStroke = step.rolledStroke
-    if (!current || !step.animate) {
+    if (!current || current.key === openedOn) {
       frame = null
       if (current) onrolled?.(current.key)
       return
@@ -107,7 +103,7 @@
     frame = 0
     const frames = Math.max(r.own.length, ...r.others.map(o => o.path.length))
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const cup = untrack(() => game.hole.cup.at)
+    const cup = untrack(() => rollCup(game, r))
     let zoomOut: ReturnType<typeof setTimeout> | undefined
     // Zoom in on the ball while it rolls, slow motion near the cup, zoom back out once it's done
     playing = true
@@ -120,6 +116,8 @@
       stop = playFrames(frames, onFrame, reduced, {
         rate: i => (settings.slowMotion ? rollRate(at(r.own, i), cup) : PLAYBACK),
         onDone: () => {
+          // From now on the snapshot places the balls (after a hole's last stroke: on the next tee)
+          frame = null
           playing = false
           onrolled?.(r.key)
           zoomOut = setTimeout(() => void zoom.set(0), 700)
