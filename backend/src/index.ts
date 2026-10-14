@@ -17,14 +17,7 @@ import { closePool, warmPool } from './games/minigolfPool.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const DATABASE_URL =
-  process.env.DATABASE_URL ??
-  (process.env.PGHOST
-    ? `postgres://${process.env.PGUSER}:${process.env.PGPASSWORD}@${process.env.PGHOST}:${process.env.PGPORT ?? 5432}/${process.env.PGDATABASE}`
-    : undefined)
 const PORT = parseInt(process.env.PORT ?? '3000', 10)
-
-if (!DATABASE_URL) throw new Error('DATABASE_URL or PG* env vars are required')
 
 // Rapier's WASM: Minigolf's 3D shots are simulated synchronously, from the rebuild below on
 await initPhysics3d()
