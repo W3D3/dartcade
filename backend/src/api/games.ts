@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { components } from '../schema/api.js'
 import { gameList } from '../games/index.js'
+import type { AnyGameModule } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
 import { listFinishedGames, getStatRows, getViewableGame, type HistoryGame } from '../db/history.js'
 import { getSessionEvents } from '../db/queries.js'
@@ -18,6 +19,13 @@ type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 type GameSummary = components['schemas']['GameSummary']
 
 const DAY_MS = 86_400_000
+
+/** The mode's configMeta, with each field's options read now where the mode has live ones (Minigolf's courses). */
+async function liveConfigMeta(m: AnyGameModule): Promise<NonNullable<AnyGameModule['configMeta']>> {
+  const meta = m.configMeta ?? {}
+  const live = await Promise.all(Object.keys(meta).map(async key => [key, await m.liveOptions?.(key)] as const))
+  return Object.fromEntries(live.map(([key, options]) => [key, options ? { ...meta[key], options } : meta[key]]))
+}
 
 /** The API shape of a game; account ids only for someone who holds a seat. */
 function toSummary(g: HistoryGame): GameSummary {
@@ -50,15 +58,17 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     const user = await loadFlagUser(db, (await getAuthUser(req))?.userId ?? null)
     const on = await Promise.all(gameList.map(m => modeAvailable(m.id, user)))
     return {
-      modes: gameList
-        .filter((_, i) => on[i])
-        .map(m => ({
-          id: m.id,
-          defaultConfig: m.defaultConfig,
-          configMeta: m.configMeta ?? {},
-          teams: m.teams === true,
-          supportsBots: m.botTarget !== undefined,
-        })),
+      modes: await Promise.all(
+        gameList
+          .filter((_, i) => on[i])
+          .map(async m => ({
+            id: m.id,
+            defaultConfig: m.defaultConfig,
+            configMeta: await liveConfigMeta(m),
+            teams: m.teams === true,
+            supportsBots: m.botTarget !== undefined,
+          })),
+      ),
     }
   })
 

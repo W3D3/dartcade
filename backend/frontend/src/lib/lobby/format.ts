@@ -1,7 +1,7 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
 import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
+import type { ConfigFieldMeta } from '../api'
 import { minigolfRules, x01Rules, type Mode } from '../gameViews/meta.js'
-import { minigolfCourse } from '../history.js'
 import { teamSizesLabel } from '../teams.js'
 import { dayMonth, pad2, startOfDay } from '../fmt.js'
 
@@ -43,12 +43,17 @@ const mode = (v: unknown, fallback: Mode): Mode => (v === 'straight' || v === 'd
  * game's defaults (the server's), so they read as what the game will actually play. In a
  * team game `teamSizes` (Team A's, then Team B's) puts the format first: "Teams 2v2 · 501 · …".
  */
-export function nextGameSummary(game: NextGame | null, defaults: Record<string, unknown> = {}, teamSizes: number[] | null = null): string {
-  const rules = rulesLine(game, defaults)
+export function nextGameSummary(
+  game: NextGame | null,
+  defaults: Record<string, unknown> = {},
+  teamSizes: number[] | null = null,
+  meta: Partial<Record<string, ConfigFieldMeta>> = {},
+): string {
+  const rules = rulesLine(game, defaults, meta)
   return teamSizes && rules ? `${teamSizesLabel(teamSizes)} · ${rules}` : rules
 }
 
-function rulesLine(game: NextGame | null, defaults: Record<string, unknown>): string {
+function rulesLine(game: NextGame | null, defaults: Record<string, unknown>, meta: Partial<Record<string, ConfigFieldMeta>>): string {
   if (!game) return ''
   const c = { ...defaults, ...game.config }
   if (game.gameId === 'x01') {
@@ -64,8 +69,9 @@ function rulesLine(game: NextGame | null, defaults: Record<string, unknown>): st
   }
   if (game.gameId === 'atc') return [ATC_ORDER[str(c.order)], ATC_FINISH[str(c.finishOn)]].filter(Boolean).join(' · ')
   if (game.gameId === 'minigolf') {
-    const course = minigolfCourse(str(c.course))
-    return minigolfRules({ tries: int(c.tries) ?? 3, ballContact: c.ballContact === true }, course.name, course.holes, 2)
+    // Its holes are only known once the game copies them at start
+    const course = meta.course?.options?.find(o => o.value === c.course)?.label ?? 'Course'
+    return minigolfRules({ tries: int(c.tries) ?? 3, ballContact: c.ballContact === true }, course, null, 2)
   }
   return ''
 }

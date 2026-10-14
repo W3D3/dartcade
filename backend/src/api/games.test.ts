@@ -3,6 +3,7 @@ import { createFastify } from './fastify.js'
 import { gamesApiPlugin } from './games.js'
 import type { HistoryGame } from '../db/history.js'
 import { setupFlags } from '../flags/index.js'
+import { courseSource, setCourseSource } from '../games/minigolfCourseSource.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -83,6 +84,33 @@ describe('GET /api/gamemodes', () => {
     vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
     const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
     expect(res.json().modes.map((m: { id: string }) => m.id)).toEqual(['atc', 'x01', 'minigolf'])
+  })
+
+  it("lists Minigolf's published courses plus Mixed", async () => {
+    const code = courseSource()
+    setCourseSource({
+      ...code,
+      officialCourses: () =>
+        Promise.resolve([
+          { id: 'c1', name: 'Canal Street' },
+          { id: 'c2', name: 'Mesa' },
+        ]),
+    })
+    try {
+      await setupFlags(new Set())
+      vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1' })
+      vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
+      const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
+      const minigolf = res.json().modes.find((m: { id: string }) => m.id === 'minigolf')
+      expect(minigolf.configMeta.course.options).toEqual([
+        { value: 'c1', label: 'Canal Street' },
+        { value: 'c2', label: 'Mesa' },
+        { value: 'mixed', label: 'Mixed course' },
+      ])
+      expect(minigolf.configMeta.tries.options).toHaveLength(2)
+    } finally {
+      setCourseSource(code)
+    }
   })
 })
 

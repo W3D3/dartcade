@@ -40,7 +40,18 @@ describe('lobby text', () => {
   })
 
   it('sums up the next game', () => {
-    expect(nextGameSummary({ gameId: 'minigolf', config: { course: 'test', tries: 3 } })).toBe('Test · 4 holes · 3 tries per stroke')
+    // A course is named by the server's option, its hole count unknown until start (an editor may
+    // have changed it since the code's version, and Mixed deals from every published course)
+    const options = [
+      { value: '01J9', label: 'Canal Street' },
+      { value: 'test', label: 'Test' },
+      { value: 'mixed', label: 'Mixed course' },
+    ]
+    const meta = { course: { label: 'Course', options } }
+    const line = (course: string) => nextGameSummary({ gameId: 'minigolf', config: { course, tries: 3 } }, {}, null, meta)
+    expect(line('01J9')).toBe('Canal Street · 3 tries per stroke')
+    expect(line('test')).toBe('Test · 3 tries per stroke')
+    expect(line('mixed')).toBe('Mixed course · 3 tries per stroke')
     expect(nextGameSummary({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 2 } })).toBe(
       '501 · Double out · First to 2 legs',
     )

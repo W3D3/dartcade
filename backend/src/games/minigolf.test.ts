@@ -1,11 +1,13 @@
-import { describe, it, expect } from 'vitest'
+import { afterEach, describe, it, expect } from 'vitest'
 import { minigolfModule as M, type MinigolfConfig, type MinigolfState } from './minigolf.js'
 import type { BoardEvent, Player } from '../session/types.js'
 import { refoldVisit } from '../session/refold.js'
 import { seededRng } from '../session/rng.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
 import { DEFAULT_PHYSICS } from '../shared/minigolf/physics.js'
-import type { Pt } from '../shared/minigolf/types.js'
+import type { Hole, Pt } from '../shared/minigolf/types.js'
+import { courseSource, setCourseSource, type CourseSource } from './minigolfCourseSource.js'
+import { InvalidConfigError } from '../session/errors.js'
 
 const two: Player[] = [{ name: 'A' }, { name: 'B' }]
 const cfg = (over: Partial<MinigolfConfig> = {}): MinigolfConfig => ({ ...M.defaultConfig, course: 'test', ...over })
@@ -245,5 +247,70 @@ describe('minigolf', () => {
     const { aimAssist: _a, shotPreview: _p, ...old } = cfg()
     const s = M.init(old as MinigolfConfig, two)
     expect(s.cfg).toMatchObject({ aimAssist: true, shotPreview: false })
+  })
+})
+
+describe('minigolf courses from the course source', () => {
+  const code = courseSource()
+  afterEach(() => setCourseSource(code))
+  const hole = (id: string): Hole => ({ ...straight, id })
+  const pool = (n: number) => Array.from({ length: n }, (_, i) => hole(`h${i}`))
+  const use = (officialHoles: Hole[], courses: Record<string, { name: string; holes: Hole[] }> = {}) =>
+    setCourseSource({
+      course: id => Promise.resolve(courses[id]),
+      officialHoles: () => Promise.resolve(officialHoles),
+      officialCourses: () => Promise.resolve(Object.entries(courses).map(([id, c]) => ({ id, name: c.name }))),
+    } satisfies CourseSource)
+
+  it('fills in the course name and holes, over any the config brings along', async () => {
+    use([], { c1: { name: 'Canal Street', holes: testCourse.holes } })
+    const out = await M.prepareConfig!(cfg({ course: 'c1', holes: [hole('injected')], courseName: 'Fake' }), seededRng(1))
+    expect(out.holes).toEqual(testCourse.holes)
+    expect(out.courseName).toBe('Canal Street')
+    expect(out.tries).toBe(3)
+  })
+
+  it('picks 9 of the official holes for the mixed course with the given rng, or all if fewer', async () => {
+    use(pool(12))
+    const a = await M.prepareConfig!(cfg({ course: 'mixed' }), seededRng(5))
+    const b = await M.prepareConfig!(cfg({ course: 'mixed' }), seededRng(5))
+    expect(a.holes).toHaveLength(9)
+    expect(new Set(a.holes!.map(h => h.id)).size).toBe(9)
+    expect(a.holes).toEqual(b.holes)
+    expect(a.courseName).toBe('Mixed course')
+    use(pool(4))
+    expect((await M.prepareConfig!(cfg({ course: 'mixed' }), seededRng(5))).holes).toHaveLength(4)
+  })
+
+  it('refuses a course that is unknown, unpublished or has no holes', async () => {
+    use([], { empty: { name: 'Empty', holes: [] } })
+    await expect(M.prepareConfig!(cfg({ course: 'nope' }), seededRng(1))).rejects.toThrow(InvalidConfigError)
+    await expect(M.prepareConfig!(cfg({ course: 'empty' }), seededRng(1))).rejects.toThrow(InvalidConfigError)
+    await expect(M.prepareConfig!(cfg({ course: 'mixed' }), seededRng(1))).rejects.toThrow(InvalidConfigError)
+  })
+
+  it('plays the holes in the config; an old config without them plays the code course', () => {
+    const s = M.init(cfg({ course: 'c1', holes: [hole('a'), hole('b')], courseName: 'Canal Street' }), two)
+    expect(s.holes.map(h => h.id)).toEqual(['a', 'b'])
+    expect(s.courseName).toBe('Canal Street')
+    expect(s.cfg).not.toHaveProperty('holes')
+    const old = M.init(cfg({ course: 'test' }), two)
+    expect(old.holes).toEqual(testCourse.holes)
+    expect(old.courseName).toBe(testCourse.name)
+  })
+
+  it('takes any course id at setup (the course is checked at start), but not an empty one', () => {
+    expect(M.validate!(cfg({ course: 'made-in-the-editor' }), two)).toBeNull()
+    expect(M.validate!(cfg({ course: '' }), two)).toBe('Unknown course')
+  })
+
+  it('offers the official courses plus Mixed', async () => {
+    use([], { c1: { name: 'Canal Street', holes: [] }, c2: { name: 'Mesa', holes: [] } })
+    expect(await M.liveOptions!('course')).toEqual([
+      { value: 'c1', label: 'Canal Street' },
+      { value: 'c2', label: 'Mesa' },
+      { value: 'mixed', label: 'Mixed course' },
+    ])
+    expect(await M.liveOptions!('tries')).toBeNull()
   })
 })

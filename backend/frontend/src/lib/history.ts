@@ -13,17 +13,29 @@ const AtcConfigSchema = z.object({
   finishOn: z.enum(['twenty', 'single_bull', 'bull']),
   multiplierAdvances: z.boolean(),
 })
-const MinigolfConfigSchema = z.object({ course: z.string(), tries: z.number(), ballContact: z.boolean() })
+const MinigolfConfigSchema = z.object({
+  course: z.string(),
+  tries: z.number(),
+  ballContact: z.boolean(),
+  courseName: z.string().optional(),
+  holes: z.array(z.unknown()).optional(),
+})
 
-/** A minigolf config's course: its name and hole count ("Mixed course": 9 of all holes). */
-export function minigolfCourse(id: string): { name: string; holes: number } {
-  const course = COURSES.find(c => c.id === id)
-  if (course) return { name: course.name, holes: course.holes.length }
+/**
+ * A finished minigolf game's course: its name and hole count. Its config carries both (copied
+ * from the published course); a game from before courses moved to the database has only the
+ * code course's id ("Mixed course": 9 of all its holes).
+ */
+export function minigolfCourse(c: { course: string; courseName?: string; holes?: unknown[] }): { name: string; holes: number } {
+  const code = COURSES.find(x => x.id === c.course)
+  const name = c.courseName ?? code?.name ?? (c.course === 'mixed' ? 'Mixed course' : 'Course')
+  if (c.holes) return { name, holes: c.holes.length }
+  if (code) return { name, holes: code.holes.length }
   return {
-    name: 'Mixed course',
+    name,
     holes: Math.min(
       9,
-      COURSES.reduce((n, c) => n + c.holes.length, 0),
+      COURSES.reduce((n, x) => n + x.holes.length, 0),
     ),
   }
 }
@@ -51,7 +63,7 @@ export function rulesLine(game: GameSummary): string {
   if (game.mode === 'minigolf') {
     const c = MinigolfConfigSchema.safeParse(game.config)
     if (!c.success) return ''
-    const course = minigolfCourse(c.data.course)
+    const course = minigolfCourse(c.data)
     return minigolfRules(c.data, course.name, course.holes, n)
   }
   return ''

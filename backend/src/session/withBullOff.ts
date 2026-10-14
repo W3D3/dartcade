@@ -92,6 +92,9 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
       },
     },
 
+    prepareConfig: game.prepareConfig?.bind(game),
+    liveOptions: game.liveOptions?.bind(game),
+
     validate(cfg, players) {
       if (enabled(cfg) && players.length < 2) return 'bull off needs at least two players'
       return game.validate?.(cfg, players) ?? null

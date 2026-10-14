@@ -58,6 +58,9 @@ describe('rulesLine', () => {
     expect(rulesLine(game({ mode: 'minigolf', config: { course: 'mixed', tries: 1, ballContact: true } }))).toBe(
       'Mixed course · 4 holes · 1 dart per stroke · ball contact',
     )
+    // A game started from a published course carries its name and holes
+    const config = { course: '01J9', courseName: 'Canal Street', holes: [{}, {}, {}], tries: 3, ballContact: false }
+    expect(rulesLine(game({ mode: 'minigolf', config }))).toBe('Canal Street · 3 holes · 3 tries per stroke')
   })
   it('empty for an unknown mode or an unreadable config', () => {
     expect(rulesLine(game({ mode: 'soccer' }))).toBe('')
