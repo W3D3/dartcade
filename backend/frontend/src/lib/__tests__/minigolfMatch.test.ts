@@ -168,13 +168,14 @@ describe('minigolf match', () => {
     expect(rollFor(game({ lastStroke: { ...lastStroke, hole: 0 } }))).toBeNull()
   })
 
-  it('draws aim lines from the putter’s ball only while results are hidden, the latest bright', () => {
+  it('draws aim lines from the putter’s ball while the tries are on the board, the latest bright', () => {
     const aim = { dir: [0, -1], roll: 500 }
     const tries = [tryOf('S20', { path: [], aim }), tryOf('S1', { path: [], aim })]
     const lines = aimLines(game({ shotHidden: true, tries }), [250, 2750])
     expect(lines.map(l => l.current)).toEqual([false, true])
     expect(lines[1]).toEqual({ from: [250, 2750], dir: [0, -1], roll: 500, current: true })
-    expect(aimLines(game({ shotHidden: false, tries }), [250, 2750])).toEqual([])
+    // Still there once the last dart shows the tries, until Shoot keeps the stroke
+    expect(aimLines(game({ shotHidden: false, tries }), [250, 2750])).toHaveLength(2)
   })
 
   it('slows a roll down near the cup', () => {

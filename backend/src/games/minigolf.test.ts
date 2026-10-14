@@ -192,7 +192,7 @@ describe('minigolf', () => {
     expect(M.view(kept, two).lastStroke?.path.at(-1)?.slice(0, 2)).toEqual(kept.balls[0].at.map(Math.round))
   })
 
-  it('shows a straight aim line, not simulated, with shot preview while darts are left', () => {
+  it('shows a straight aim line, not simulated, with shot preview until the stroke is kept', () => {
     const one = play(M.init(cfg({ shotPreview: true }), two), [opened, dart({ x: 0, y: 0.3 })])
     const v = M.view(one, two)
     expect(v.shotHidden).toBe(true)
@@ -202,10 +202,10 @@ describe('minigolf', () => {
     expect(t.aim?.roll).toBeCloseTo((t.power ?? 0) * DEFAULT_PHYSICS.maxRoll)
     const [dx, dy] = t.aim?.dir ?? [0, 0]
     expect(Math.hypot(dx, dy)).toBeCloseTo(1)
-    // Revealed once the tries are used up: the full path, no aim line
+    // Once the tries are used up they're revealed, and the aim line stays until the stroke is kept (Shoot)
     const three = M.view(play(one, [dart({ x: 0, y: 0.3 }, 1), dart({ x: 0, y: 0.3 }, 2)]), two)
     expect(three.tries[2].path.length).toBeGreaterThan(1)
-    expect(three.tries[2].aim).toBeNull()
+    expect(three.tries[2].aim).not.toBeNull()
     // Without shot preview, no line at all
     const off = M.view(play(M.init(cfg({ shotPreview: false }), two), [opened, dart({ x: 0, y: 0.3 })]), two)
     expect(off.tries[0].aim).toBeNull()

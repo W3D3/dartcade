@@ -224,8 +224,8 @@
     if (up !== upHeard && settings.soundSwitch) sounds.switchPlayer()
     upHeard = up
   })
-  // The dial only while the putter can still aim: nothing rolling, tries left, the ball still in play
-  const aiming = $derived(!playing && !game.finished && !game.visitLocked && (current.status === 'waiting' || current.status === 'playing'))
+  // The dial while the putter aims, until the stroke is kept: nothing rolling, the ball still in play
+  const aiming = $derived(!playing && !game.finished && (current.status === 'waiting' || current.status === 'playing'))
   const aim = $derived(aiming && settings.aimDial ? { at: pt(ball), ...game.reach } : null)
 </script>
 
