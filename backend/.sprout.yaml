@@ -7,6 +7,7 @@ preview:
     BETTER_AUTH_SECRET:
       generate: stable_per_pr
     BRIDGE_SECRET: preview-only
+    NODE_ENV: development
 health:
   path: /health
   interval: 2s
