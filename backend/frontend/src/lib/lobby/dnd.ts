@@ -14,11 +14,11 @@ export function reorder(ids: string[], id: string, index: number): string[] {
   return rest
 }
 
-const indexOf = (people: LobbyPerson[], id: string): number => people.findIndex(p => p.id === id)
-const without = (people: LobbyPerson[], id: string): string[] => people.map(p => p.id).filter(x => x !== id)
+const indexOf = (people: { id: string }[], id: string): number => people.findIndex(p => p.id === id)
+const without = (people: { id: string }[], id: string): string[] => people.map(p => p.id).filter(x => x !== id)
 
 /** The people list: dropped before `beforeId` (null: at the bottom). */
-export function listPlacement(people: LobbyPerson[], id: string, beforeId: string | null): Placement {
+export function listPlacement(people: { id: string }[], id: string, beforeId: string | null): Placement {
   const rest = without(people, id)
   const at = beforeId === null ? -1 : rest.indexOf(beforeId)
   return { position: at === -1 ? rest.length : at }
@@ -51,7 +51,7 @@ export function teamPlacement(people: LobbyPerson[], id: string, team: TeamId, b
 }
 
 /** The people in their new order, with the new team: what the screen shows until the server answers. */
-export function placed(people: LobbyPerson[], id: string, placement: Placement): LobbyPerson[] {
+export function placed<T extends { id: string; team?: TeamId | null }>(people: T[], id: string, placement: Placement): T[] {
   const byId = new Map(people.map(p => [p.id, p]))
   return reorder(
     people.map(p => p.id),
@@ -65,13 +65,13 @@ export function placed(people: LobbyPerson[], id: string, placement: Placement):
 }
 
 /** Nothing would change: no need to ask the server. */
-export function samePlace(people: LobbyPerson[], id: string, placement: Placement): boolean {
+export function samePlace(people: { id: string; team?: TeamId | null }[], id: string, placement: Placement): boolean {
   const team = people.find(p => p.id === id)?.team
   return placement.position === indexOf(people, id) && (placement.team === undefined || placement.team === team)
 }
 
 /** The people list's arrow keys: one place up or down. */
-export function listKeyMove(people: LobbyPerson[], id: string, dir: Direction): Placement | null {
+export function listKeyMove(people: { id: string }[], id: string, dir: Direction): Placement | null {
   const i = indexOf(people, id)
   if (i === -1) return null
   if (dir === 'up') return i > 0 ? { position: i - 1 } : null

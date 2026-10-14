@@ -5,9 +5,11 @@
 
   let {
     name,
+    label = `Reorder ${name}`,
     describedby,
   }: {
     name: string
+    label?: string
     /** The hint naming the keys. */
     describedby?: string
   } = $props()
@@ -16,7 +18,7 @@
 <button
   type="button"
   data-sortable-handle
-  aria-label="Reorder {name}"
+  aria-label={label}
   aria-describedby={describedby}
   class="w-8 h-11 md:h-9 shrink-0 flex items-center justify-center p-0 rounded-[8px] border-0 bg-transparent
          text-text-muted cursor-grab touch-none select-none"

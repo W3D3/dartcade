@@ -13,10 +13,12 @@ const allowedHosts = (process.env.VITE_ALLOWED_HOSTS ?? '')
 export default defineConfig({
   plugins: [tailwindcss(), svelte()],
   resolve: {
-    alias: {
-      $lib: path.resolve('./src/lib'),
-      $shared: path.resolve('../src/shared'),
-    },
+    alias: [
+      { find: '$lib', replacement: path.resolve('./src/lib') },
+      { find: '$shared', replacement: path.resolve('../src/shared') },
+      // What its "svelte" export condition points at: Vitest's own Vite resolves without that condition
+      { find: /^svelte-spa-router$/, replacement: path.resolve('./node_modules/svelte-spa-router/Router.svelte') },
+    ],
     // $shared/minigolf imports nape-js, Rapier and zod, but $shared sits outside this package (and outside /app in
     // the dev container and the Docker build): resolve them from here, where they're installed too
     dedupe: ['@newkrok/nape-js', '@dimforge/rapier3d-deterministic-compat', 'zod'],

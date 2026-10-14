@@ -8,6 +8,7 @@
     detail,
     checked,
     danger = false,
+    disabled = false,
     leading,
     onclick,
   }: {
@@ -16,6 +17,7 @@
     /** Set for a choice: whether it's the current one. */
     checked?: boolean
     danger?: boolean
+    disabled?: boolean
     /** Shown before the label, e.g. an avatar preview. */
     leading?: Snippet
     onclick: () => void
@@ -27,7 +29,8 @@
   role={checked === undefined ? 'menuitem' : 'menuitemradio'}
   aria-checked={checked}
   {onclick}
-  class="min-h-11 flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer font-[inherit]
+  {disabled}
+  class="min-h-11 disabled:opacity-50 disabled:cursor-default flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer font-[inherit]
          {checked ? 'bg-accent-tint' : 'bg-transparent hover:bg-surface-hover'} {danger ? 'text-live-text' : 'text-text'}"
 >
   {@render leading?.()}
