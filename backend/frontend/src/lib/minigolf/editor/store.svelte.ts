@@ -25,7 +25,7 @@ export class HttpError extends Error {
 // A Hole is the API's MinigolfHole with readonly points; the generated type has plain number[]
 // (the same JSON), so a hole comes in through holeSchema (which checks it) and goes out cast.
 /** The API's hole as the editor's Hole (ops.ts, history.ts). */
-const toHole = (h: ApiHole): Hole => holeSchema.parse(h)
+export const toHole = (h: ApiHole): Hole => holeSchema.parse(h)
 // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the same JSON, only Pt's readonly differs
 const fromHole = (h: Hole) => h as unknown as ApiHole
 

@@ -1,9 +1,9 @@
 <script lang="ts">
   // The account badge and its menu (User-Badge board): who you are, your status (Online /
-  // Invisible), Friends, Settings, Sign out. Phones: the avatar in the header (menu below it).
-  // Tablets: the avatar at the foot of the rail (menu beside it). Desktops: a row with your name
-  // and status at the foot of the side nav (menu above it).
-  import { ChevronUp, Flag, LogOut, Settings, UsersRound } from '@lucide/svelte'
+  // Invisible), Friends, the admin pages (admins only), Settings, Sign out. Phones: the avatar
+  // in the header (menu below it). Tablets: the avatar at the foot of the rail (menu beside
+  // it). Desktops: a row with your name and status at the foot of the side nav (menu above it).
+  import { ChevronDown, ChevronUp, Flag, LogOut, Map as MapIcon, Settings, ShieldCheck, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
@@ -25,6 +25,7 @@
   const requestsText = $derived(friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '')
   const triggerLabel = $derived(`Account${name ? `: ${name}` : ''}, ${invisible ? 'Invisible' : 'Online'}${requestsText}`)
   let open = $state(false)
+  let adminOpen = $state(false)
   let statusError = $state('')
   let triggerEl: HTMLButtonElement | undefined = $state()
   let menuEl: HTMLDivElement | undefined = $state()
@@ -151,10 +152,29 @@
           />{/if}
       </a>
       {#if $currentUser?.isAdmin}
-        <a href="#/admin/minigolf" role="menuitem" onclick={closeMenu} class={ITEM}>
-          <Flag size={18} strokeWidth={1.8} />
-          Minigolf bench
-        </a>
+        <button
+          type="button"
+          role="menuitem"
+          aria-expanded={adminOpen}
+          onclick={() => (adminOpen = !adminOpen)}
+          class="{ITEM} w-full bg-transparent border-0 cursor-pointer font-[inherit] text-left"
+        >
+          <ShieldCheck size={18} strokeWidth={1.8} />
+          Admin
+          <ChevronDown size={16} class="ml-auto text-text-muted transition-transform {adminOpen ? 'rotate-180' : ''}" />
+        </button>
+        {#if adminOpen}
+          <div role="group" aria-label="Admin" class="flex flex-col gap-1 pl-6">
+            <a href="#/admin/minigolf" role="menuitem" onclick={closeMenu} class={ITEM}>
+              <Flag size={18} strokeWidth={1.8} />
+              Minigolf bench
+            </a>
+            <a href="#/admin/minigolf/courses" role="menuitem" onclick={closeMenu} class={ITEM}>
+              <MapIcon size={18} strokeWidth={1.8} />
+              Minigolf courses
+            </a>
+          </div>
+        {/if}
       {/if}
       <a href="#/settings" role="menuitem" onclick={closeMenu} class={ITEM}>
         <Settings size={18} strokeWidth={1.8} />

@@ -14,6 +14,7 @@
   import { me } from '$lib/lobby/sockets'
   import { initialGameSelection } from '$lib/lobby/start'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { currentUser } from '$lib/auth'
   import {
     chosenGame as pickChosenGame,
     lobbyPath,
@@ -225,6 +226,9 @@
               hasBot={lobbyHasBot}
               onchange={(key: string, value: unknown) => (config = { ...config, [key]: value })}
             />
+            {#if selectedMode === 'minigolf' && $currentUser?.isAdmin}
+              <a href="#/admin/minigolf/courses" class="self-start text-[14px] font-semibold">Edit courses</a>
+            {/if}
           {/if}
         </div>
         <!-- end scrollable body -->

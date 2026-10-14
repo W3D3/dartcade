@@ -41,6 +41,12 @@
   const loadMinigolfBench = Object.assign(() => import('./routes/MinigolfBench.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
   })
+  // One wrapped component for both course editor routes, so picking another course keeps the page (and its lists)
+  const minigolfCourses = wrap({
+    asyncComponent: Object.assign(() => import('./routes/MinigolfCourses.svelte').catch(() => ({ default: RouteLoadFailed })), {
+      loading: RouteLoading,
+    }),
+  })
 
   const routes = {
     '/': CreateSession,
@@ -59,6 +65,8 @@
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
+    '/admin/minigolf/courses': minigolfCourses,
+    '/admin/minigolf/courses/:id': minigolfCourses,
   }
 
   let checked = $state(false)
