@@ -207,6 +207,35 @@ export interface FriendshipsTable {
   responded_at: ColumnType<Date | null, Date | null | undefined, Date | null>
 }
 
+/** A player's rating in one ranked mode (migration 020). */
+export interface RankedRatingsTable {
+  user_id: string
+  mode: '1v1' | '2v2'
+  rating: ColumnType<number, number | undefined, number>
+  /** The stage held (0 = Wood I … 29 = Elite V); null while still placing. */
+  rank_index: ColumnType<number | null, number | null | undefined, number | null>
+  matches: ColumnType<number, number | undefined, number>
+  wins: ColumnType<number, number | undefined, number>
+  /** Positive: wins in a row; negative: losses in a row. */
+  streak: ColumnType<number, number | undefined, number>
+  updated_at: ColumnType<Date, Date | undefined, Date>
+}
+
+/** What one ranked game did to one player's rating (migration 020). */
+export interface RankedResultsTable {
+  session_id: string
+  user_id: string
+  mode: '1v1' | '2v2'
+  won: boolean
+  /** One of the player's placement matches: its ratings stay hidden. */
+  placement: boolean
+  rating_before: number
+  rating_after: number
+  /** The player's 3-dart average in the game. */
+  average: number | null
+  created_at: ColumnType<Date, Date | undefined, never>
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -224,4 +253,6 @@ export interface Database {
   voice_packs: VoicePacksTable
   voice_pack_clips: VoicePackClipsTable
   friendships: FriendshipsTable
+  ranked_ratings: RankedRatingsTable
+  ranked_results: RankedResultsTable
 }
