@@ -86,8 +86,9 @@ describe('minigolf ground', () => {
         }
         biggest = Math.max(biggest, Math.abs(p[v[1]] - p[v[0]]), Math.abs(p[v[2]] - p[v[0]]))
       }
-      // A terrain crease inside one FINE cell is cut off: up to 10 mm at the Mesa's cliffs, under 1 mm elsewhere
-      expect(worst, h.id).toBeLessThan(h.terrain ? 10 : 1)
+      // A crease inside one FINE cell is cut off: up to 10 mm at the Mesa's cliffs; under 2 mm at a
+      // slope's foot or ridge (a 20 % slope cuts about 1.3 mm), within the 2 mm the physics allows
+      expect(worst, h.id).toBeLessThan(h.terrain ? 10 : 2)
       if (h !== hole) expect(biggest, h.id).toBeGreaterThanOrEqual(160)
       expect(indices.length / 3, h.id).toBeLessThan(6000)
     }
