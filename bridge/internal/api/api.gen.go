@@ -70,6 +70,12 @@ type LobbyCode = string
 // LobbyId defines model for LobbyId.
 type LobbyId = string
 
+// MinigolfCourseId defines model for MinigolfCourseId.
+type MinigolfCourseId = string
+
+// MinigolfHoleId defines model for MinigolfHoleId.
+type MinigolfHoleId = string
+
 // PersonId defines model for PersonId.
 type PersonId = string
 
