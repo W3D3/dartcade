@@ -48,6 +48,7 @@
   let view3d = $state<boolean>(true)
   let physics3d = $state<boolean>(true)
   let felt = $state<'stripes' | 'checker'>('checker')
+  let shading = $state<'toon' | 'smooth'>('toon')
   let relief = $state(1)
   let placing = $state(false)
   let debug = $state(false)
@@ -229,6 +230,13 @@
                 <option value="stripes">Stripes</option>
               </select>
             </label>
+            <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
+              <span class="sr-only md:not-sr-only">Shading</span>
+              <select class={SELECT} bind:value={shading}>
+                <option value="toon">Toon</option>
+                <option value="smooth">Smooth</option>
+              </select>
+            </label>
             <label class="flex items-center gap-2 text-[15px] text-text-muted">
               Relief ×{relief}
               <input type="range" min="1" max="5" step="0.5" bind:value={relief} class="w-24" />
@@ -250,6 +258,7 @@
                 {freeCamera}
                 wallThickness={physics.wallThickness}
                 {felt}
+                {shading}
                 {relief}
                 aim={aim3d}
                 aims={aims3d}
