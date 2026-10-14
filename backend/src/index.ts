@@ -3,6 +3,7 @@ import { gameAvailable, loadFlagUser } from './flags/index.js'
 import { fileURLToPath } from 'url'
 import { db } from './db/index.js'
 import { runMigrations } from './db/queries.js'
+import { seedOfficialCourses } from './db/minigolfCourses.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
 import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
@@ -23,6 +24,7 @@ const PORT = parseInt(process.env.PORT ?? '3000', 10)
 await initPhysics3d()
 warmPool()
 await runMigrations(db)
+await seedOfficialCourses(db)
 await seedDev()
 
 const hub = new LobbyHub()
