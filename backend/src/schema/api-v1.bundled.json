@@ -73,6 +73,10 @@
       "description": "Friends and friend requests (live on /ws/me as the friends message)"
     },
     {
+      "name": "ranked",
+      "description": "Ranked matchmaking (ratings and ranks per mode)"
+    },
+    {
       "name": "bridge",
       "description": "Operations the Go bridge depends on"
     }
@@ -2186,6 +2190,33 @@
         }
       }
     },
+    "/api/ranked/me": {
+      "get": {
+        "operationId": "getMyRanked",
+        "summary": "Your ranked ratings in both modes, online average and last ranked games",
+        "tags": [
+          "ranked"
+        ],
+        "responses": {
+          "200": {
+            "description": "Your ranked profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RankedProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/friends": {
       "get": {
         "operationId": "listFriends",
@@ -2859,6 +2890,150 @@
           }
         }
       },
+      "RankedMode": {
+        "type": "string",
+        "enum": [
+          "1v1",
+          "2v2"
+        ]
+      },
+      "RankedRating": {
+        "type": "object",
+        "required": [
+          "mode",
+          "rating",
+          "rankIndex",
+          "matches",
+          "wins",
+          "streak",
+          "change30d"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/RankedMode"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Rating points (RP); null (hidden) during the placement matches"
+          },
+          "rankIndex": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 29,
+            "nullable": true,
+            "description": "The stage held, 0 (Wood I) to 29 (Elite V); null during the placement matches"
+          },
+          "matches": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streak": {
+            "type": "integer",
+            "description": "Positive: wins in a row; negative: losses in a row"
+          },
+          "change30d": {
+            "type": "integer",
+            "description": "RP gained (or lost) in the last 30 days, placement matches left out"
+          }
+        }
+      },
+      "RankedOpponent": {
+        "type": "object",
+        "required": [
+          "userId",
+          "name",
+          "rating"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "integer",
+            "nullable": true,
+            "description": "Their rating going into the game; null while they were placing"
+          }
+        }
+      },
+      "RankedGame": {
+        "type": "object",
+        "required": [
+          "sessionId",
+          "mode",
+          "won",
+          "change",
+          "at",
+          "opponents"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "sessionId": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/RankedMode"
+          },
+          "won": {
+            "type": "boolean"
+          },
+          "change": {
+            "type": "integer",
+            "nullable": true,
+            "description": "RP the game moved your rating by; null for a placement match"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "opponents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RankedOpponent"
+            }
+          }
+        }
+      },
+      "RankedProfile": {
+        "type": "object",
+        "required": [
+          "ratings",
+          "onlineAverage",
+          "recent"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "ratings": {
+            "type": "array",
+            "description": "One per mode, 1v1 first",
+            "items": {
+              "$ref": "#/components/schemas/RankedRating"
+            }
+          },
+          "onlineAverage": {
+            "type": "number",
+            "nullable": true,
+            "description": "3-dart average over the last 20 ranked games; null before the first"
+          },
+          "recent": {
+            "type": "array",
+            "description": "Last ranked games, newest first",
+            "items": {
+              "$ref": "#/components/schemas/RankedGame"
+            }
+          }
+        }
+      },
       "HistoryDart": {
         "type": "object",
         "required": [
@@ -3039,7 +3214,15 @@
             "type": "string"
           },
           "value": {
-            "type": "boolean"
+            "description": "On/off for most flags; a number for number flags (matchmaking.visitSeconds)",
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              }
+            ]
           },
           "reason": {
             "type": "string",

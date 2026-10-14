@@ -39,6 +39,11 @@ describe('OFREP', () => {
     expect(minigolf((await bulk({}, { context: { admin: true, targetingKey: 'admin-1' } })).body).value).toBe(false)
   })
 
+  it('sends number flags as numbers', async () => {
+    const flags = JSON.parse((await bulk()).body).flags
+    expect(flags.find((f: { key: string }) => f.key === 'matchmaking.visitSeconds')).toMatchObject({ value: 60 })
+  })
+
   it('evaluates one flag, and 404s an unknown one', async () => {
     signedIn('admin')
     const one = await app().inject({ method: 'POST', url: '/ofrep/v1/evaluate/flags/gamemode.minigolf.enabled', payload: {} })

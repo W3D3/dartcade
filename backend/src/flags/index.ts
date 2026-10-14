@@ -10,7 +10,13 @@ import { games } from '../games/index.js'
 
 export type FlagUser = { id: string; email: string; role: string | null } | null
 
-export const FLAG_KEYS: readonly string[] = Object.keys(flagDefinitions(new Set()))
+const DEFINITIONS: Record<string, { variants: Record<string, unknown>; defaultVariant: string }> = flagDefinitions(new Set())
+export const FLAG_KEYS: readonly string[] = Object.keys(DEFINITIONS)
+/** The flags whose value is a number rather than on/off. */
+export const NUMBER_FLAG_KEYS: readonly string[] = FLAG_KEYS.filter(k => {
+  const d = DEFINITIONS[k]
+  return typeof d.variants[d.defaultVariant] === 'number'
+})
 
 export function envFlagsOn(): Set<string> {
   return new Set(
@@ -21,8 +27,25 @@ export function envFlagsOn(): Set<string> {
   )
 }
 
-export async function setupFlags(flagsOn: ReadonlySet<string>): Promise<void> {
-  await OpenFeature.setProviderAndWait(new TypedInMemoryProvider(flagDefinitions(flagsOn)))
+/** FLAG_VALUES: number flags set per deployment, as `key=value` pairs separated by commas. */
+export function envFlagValues(): Map<string, number> {
+  const out = new Map<string, number>()
+  for (const pair of (process.env.FLAG_VALUES ?? '').split(',')) {
+    if (!pair.trim()) continue
+    const eq = pair.indexOf('=')
+    const key = pair.slice(0, eq).trim()
+    const raw = pair.slice(eq + 1).trim()
+    const value = Number(raw)
+    if (eq < 0 || raw === '' || !Number.isFinite(value) || !NUMBER_FLAG_KEYS.includes(key)) {
+      throw new Error(`FLAG_VALUES: bad entry "${pair.trim()}"`)
+    }
+    out.set(key, value)
+  }
+  return out
+}
+
+export async function setupFlags(flagsOn: ReadonlySet<string>, values: ReadonlyMap<string, number> = new Map()): Promise<void> {
+  await OpenFeature.setProviderAndWait(new TypedInMemoryProvider(flagDefinitions(flagsOn, values)))
 }
 
 export function contextFor(user: FlagUser): EvaluationContext {
@@ -33,11 +56,19 @@ export async function flagEnabled(key: string, user: FlagUser): Promise<boolean>
   return OpenFeature.getClient().getBooleanValue(key, false, contextFor(user))
 }
 
+/** A number flag's value for this user. */
+export async function flagNumber(key: string, fallback: number, user: FlagUser): Promise<number> {
+  return OpenFeature.getClient().getNumberValue(key, fallback, contextFor(user))
+}
+
 export async function evaluateAll(user: FlagUser) {
   const client = OpenFeature.getClient()
+  const ctx = contextFor(user)
   return Promise.all(
     FLAG_KEYS.map(async key => {
-      const d = await client.getBooleanDetails(key, false, contextFor(user))
+      const d = NUMBER_FLAG_KEYS.includes(key)
+        ? await client.getNumberDetails(key, 0, ctx)
+        : await client.getBooleanDetails(key, false, ctx)
       return { key, value: d.value, reason: d.reason ?? 'UNKNOWN', variant: d.variant ?? '' }
     }),
   )

@@ -847,6 +847,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ranked/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your ranked ratings in both modes, online average and last ranked games */
+        get: operations["getMyRanked"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/friends": {
         parameters: {
             query?: never;
@@ -1029,6 +1046,45 @@ export interface components {
             /** @enum {string} */
             code?: "already_friends" | "already_requested";
         };
+        /** @enum {string} */
+        RankedMode: "1v1" | "2v2";
+        RankedRating: {
+            mode: components["schemas"]["RankedMode"];
+            /** @description Rating points (RP); null (hidden) during the placement matches */
+            rating: number | null;
+            /** @description The stage held, 0 (Wood I) to 29 (Elite V); null during the placement matches */
+            rankIndex: number | null;
+            matches: number;
+            wins: number;
+            /** @description Positive: wins in a row; negative: losses in a row */
+            streak: number;
+            /** @description RP gained (or lost) in the last 30 days, placement matches left out */
+            change30d: number;
+        };
+        RankedOpponent: {
+            userId: string;
+            name: string;
+            /** @description Their rating going into the game; null while they were placing */
+            rating: number | null;
+        };
+        RankedGame: {
+            sessionId: string;
+            mode: components["schemas"]["RankedMode"];
+            won: boolean;
+            /** @description RP the game moved your rating by; null for a placement match */
+            change: number | null;
+            /** Format: date-time */
+            at: string;
+            opponents: components["schemas"]["RankedOpponent"][];
+        };
+        RankedProfile: {
+            /** @description One per mode, 1v1 first */
+            ratings: components["schemas"]["RankedRating"][];
+            /** @description 3-dart average over the last 20 ranked games; null before the first */
+            onlineAverage: number | null;
+            /** @description Last ranked games, newest first */
+            recent: components["schemas"]["RankedGame"][];
+        };
         HistoryDart: {
             /** @description Position in the visit */
             index: number;
@@ -1079,7 +1135,8 @@ export interface components {
         };
         OfrepEvaluation: {
             key: string;
-            value: boolean;
+            /** @description On/off for most flags; a number for number flags (matchmaking.visitSeconds) */
+            value: boolean | number;
             /** @description OpenFeature resolution reason, e.g. TARGETING_MATCH */
             reason: string;
             variant: string;
@@ -3210,6 +3267,28 @@ export interface operations {
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getMyRanked: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Your ranked profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RankedProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
             429: components["responses"]["TooManyRequests"];
         };
     };

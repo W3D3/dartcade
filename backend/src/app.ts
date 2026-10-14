@@ -20,7 +20,8 @@ import { meApiPlugin } from './api/me.js'
 import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { friendsApiPlugin } from './api/friends.js'
-import { envFlagsOn, setupFlags } from './flags/index.js'
+import { rankedApiPlugin } from './api/ranked.js'
+import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { createFastify } from './api/fastify.js'
 import { auth } from './auth/index.js'
@@ -70,7 +71,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   const app = createFastify()
   if (onRoute) app.addHook('onRoute', onRoute)
   // Feature flags (OpenFeature): the provider is set before any route evaluates one
-  await setupFlags(envFlagsOn())
+  await setupFlags(envFlagsOn(), envFlagValues())
 
   await app.register(fastifyWebsocket)
   await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
@@ -141,6 +142,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   await app.register(pairingApiPlugin, { db })
   await app.register(voicesApiPlugin, { db })
   await app.register(friendsApiPlugin, { friends })
+  await app.register(rankedApiPlugin, { db })
 
   // Any unmatched method+path under our reserved prefixes gets our ErrorResponse 404
   // (not Fastify's default `{ message, error: 'Not Found', statusCode }`); an unmatched
