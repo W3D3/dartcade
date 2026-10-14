@@ -60,3 +60,8 @@ export function distanceToSegment(p: Pt, a: Pt, b: Pt): number {
   const [x, y] = closestOnSegment(p, a, b)
   return Math.hypot(x - p[0], y - p[1])
 }
+
+/** A polyline's edges, [a, b] each; a closed one's last edge wraps back to its first point. */
+export function edgesOf(points: readonly Pt[], closed: boolean): [Pt, Pt][] {
+  return points.slice(0, closed ? points.length : points.length - 1).map((p, i) => [p, points[(i + 1) % points.length]])
+}

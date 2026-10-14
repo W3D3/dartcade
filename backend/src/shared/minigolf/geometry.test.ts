@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bounds, pointInPolygon, segmentsIntersect } from './geometry.js'
+import { bounds, edgesOf, pointInPolygon, segmentsIntersect } from './geometry.js'
 
 const square = [
   [0, 0],
@@ -9,6 +9,16 @@ const square = [
 ] as const
 
 describe('geometry', () => {
+  it("lists a polyline's edges, wrapping round a closed one", () => {
+    expect(edgesOf(square, false)).toEqual([
+      [square[0], square[1]],
+      [square[1], square[2]],
+      [square[2], square[3]],
+    ])
+    expect(edgesOf(square, true).at(-1)).toEqual([square[3], square[0]])
+    expect(edgesOf([square[0]], false)).toEqual([])
+  })
+
   it('finds points inside and outside a polygon', () => {
     expect(pointInPolygon([50, 50], square)).toBe(true)
     expect(pointInPolygon([150, 50], square)).toBe(false)
