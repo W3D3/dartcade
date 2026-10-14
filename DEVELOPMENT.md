@@ -92,6 +92,7 @@ Backend-only (set automatically by the dev compose, documented here for manual r
 | `TEST_DATABASE_URL` | Override DB URL for `npm test`                                                                                                                                                                                                                                |
 | `ADMIN_EMAILS`      | Comma-separated emails that are admins (the minigolf test bench at `#/admin/minigolf`). The dev compose names `admin@dartcade.local`, which the dev seed also gives `role = 'admin'`; setting `role = 'admin'` on a user in the DB works too                  |
 | `FLAGS_ON`          | Comma-separated feature flags turned on for everyone (e.g. `gamemode.minigolf.enabled` once Minigolf ships; `gamemode.minigolf.flat` brings back the flat 2D game instead of 3D); otherwise each flag's own rule decides (`backend/src/flags/definitions.ts`) |
+| `FLAG_VALUES`       | Comma-separated `key=number` pairs for number flags, e.g. `matchmaking.visitSeconds=45,matchmaking.reserveSeconds=120` (the ranked time limit; defaults 60 and 180). An unknown key or a value that isn't a number stops the backend from starting            |
 
 ## Running backend tests
 
