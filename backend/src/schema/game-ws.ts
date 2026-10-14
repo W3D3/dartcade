@@ -537,7 +537,7 @@ export interface MinigolfGame {
       holed: boolean
     }[]
     /**
-     * With shot preview, while darts are left and the try isn't a miss: a straight line in the putt's direction, as long as it would roll on flat felt.
+     * With shot preview, until the stroke is kept, and the try isn't a miss: a straight line in the putt's direction, as long as it would roll on flat felt.
      */
     aim: {
       dir: MinigolfPt

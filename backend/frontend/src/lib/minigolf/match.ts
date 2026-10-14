@@ -147,11 +147,10 @@ export function rollCup(g: MinigolfGame, roll: Roll): number[] {
 /** A pause before a stroke rolls, for the suspense (and to look up from the board). */
 export const ROLL_DELAY_MS = 3000
 
-/** The shot preview's aim lines while darts are left, from the putter's ball (`ownBall`): the
+/** The shot preview's aim lines until the stroke is kept, from the putter's ball (`ownBall`): the
  *  latest try's bright, the ones it replaced faint. Not simulated: a straight line in the putt's
  *  direction, as long as it would roll on flat felt. */
 export function aimLines(g: MinigolfGame, ball: Pt): { from: Pt; dir: Pt; roll: number; current: boolean }[] {
-  if (!g.shotHidden) return []
   const last = g.tries.length - 1
   return g.tries.flatMap((t, i) => (t.aim ? [{ from: ball, dir: pt(t.aim.dir), roll: t.aim.roll, current: i === last }] : []))
 }

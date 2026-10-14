@@ -350,7 +350,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
           path: result ? roundPath(result.path) : [],
           hits: result?.hits.map(roundHit) ?? [],
           // Not simulated: a straight line in the putt's direction, as long as it would roll on flat felt
-          aim: hidden(s) && s.cfg.shotPreview && t.dir && t.power !== null ? { dir: pt(t.dir), roll: t.power * s.physics.maxRoll } : null,
+          aim: s.cfg.shotPreview && t.dir && t.power !== null ? { dir: pt(t.dir), roll: t.power * s.physics.maxRoll } : null,
           others: (result?.others ?? []).map(o => ({ seat: o.id, path: roundPath(o.path), holed: o.holed })),
         }
       }),
