@@ -177,3 +177,9 @@ export const PLAYBACK = 0.6
 /** Within this far of the cup (mm) a roll slows down, reaching SLOW_MO at half the distance. */
 export const SLOW_MO_RANGE = 300
 export const SLOW_MO = 0.25
+
+/** Whether the shot panel (board, tries, controls) starts open: as last left on this device, else
+ *  open for darts entered by hand and shut when a board scores (Shoot stays in reach either way). */
+export function shotPanelOpen(saved: string | null, manual: boolean): boolean {
+  return saved === 'open' || saved === 'closed' ? saved === 'open' : manual
+}

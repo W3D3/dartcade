@@ -6,6 +6,8 @@
 -->
 <script lang="ts">
   import { untrack } from 'svelte'
+  import { MediaQuery } from 'svelte/reactivity'
+  import { ChevronDown, ChevronUp } from '@lucide/svelte'
   import { cubicOut } from 'svelte/easing'
   import { Tween } from 'svelte/motion'
   import type { MinigolfGame, Segment } from '$lib/api'
@@ -27,6 +29,7 @@
     ORBIT_MS,
     endsHole,
     rollCup,
+    shotPanelOpen,
     rollFor,
     rollRate,
     rows,
@@ -48,6 +51,7 @@
     onNext,
     onBoardClick,
     host,
+    manual,
     onNextHole,
     onrolled,
     settings,
@@ -65,6 +69,8 @@
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
     /** The viewer is the host: they start the next hole (the game waits between holes). */
     host: boolean
+    /** Darts come in by hand (no board scores): the shot panel with the board starts open. */
+    manual: boolean
     onNextHole: () => void
     /** A roll (its key from rollFor) is done, or there was nothing to roll: the page holds the win
      *  screen until the game's last stroke has rolled. */
@@ -234,46 +240,80 @@
   // The dial while the putter aims, until the stroke is kept: nothing rolling, the ball still in play
   const aiming = $derived(!playing && !game.finished && (current.status === 'waiting' || current.status === 'playing'))
   const aim = $derived(aiming && settings.aimDial ? { at: pt(ball), ...game.reach } : null)
+
+  // The game fills the screen; the players and the shot panel float over it. The shot panel docks
+  // (tries and controls only) for board play; the choice is remembered on this device.
+  const PANEL_KEY = 'dartcade.minigolf.shotPanel'
+  const savedPanel = (): string | null => {
+    try {
+      return localStorage.getItem(PANEL_KEY)
+    } catch {
+      return null
+    }
+  }
+  let panelOpen = $state(
+    shotPanelOpen(
+      typeof localStorage === 'undefined' ? null : savedPanel(),
+      untrack(() => manual),
+    ),
+  )
+  function togglePanel(): void {
+    panelOpen = !panelOpen
+    try {
+      localStorage.setItem(PANEL_KEY, panelOpen ? 'open' : 'closed')
+    } catch {
+      // Not remembered then (a private window): still toggles
+    }
+  }
+  // Side panels from lg up; a top strip and a bottom sheet below
+  const wide = new MediaQuery('min-width: 1024px')
+  let playersW = $state(0)
+  let playersH = $state(0)
+  let shotW = $state(0)
+  let shotH = $state(0)
+  /** What the panels cover of the hole's canvas: the hole is framed in the rest. */
+  const insets = $derived(
+    wide.current
+      ? // Docked, the shot sits in a corner: the hole keeps the whole width and height
+        { left: playersW + 16, right: panelOpen ? shotW + 16 : 0, top: 0, bottom: 0 }
+      : { left: 0, right: 0, top: playersH + 12, bottom: shotH },
+  )
 </script>
 
-<main
-  class="flex-grow min-h-0 overflow-y-auto lg:overflow-hidden box-border p-4 lg:p-6 flex flex-col lg:grid lg:grid-cols-[260px_minmax(0,1fr)_minmax(300px,400px)] gap-4 lg:gap-6"
->
-  <!-- Players, in this hole's turn order -->
-  <section aria-label="Players" class="flex flex-col gap-2 lg:overflow-y-auto">
-    {#each playerRows as r (r.seat)}
+{#snippet tries(compact: boolean)}
+  <div class="grid gap-2" style:grid-template-columns="repeat({slots.length}, minmax(0, 1fr))" aria-label="Tries">
+    {#each slots as slot, i (i)}
       <div
-        class="flex items-center gap-3 rounded-[14px] border px-4 py-3 {r.active ? '' : 'border-line bg-surface-1'}"
-        style:border-color={r.active ? seatColor(r.seat) : undefined}
-        style:background={r.active ? `color-mix(in srgb, ${seatColor(r.seat)} 14%, transparent)` : undefined}
-        data-testid="minigolf-player"
+        class="flex flex-col rounded-[10px] border {compact ? 'px-2 py-1' : 'px-3 py-2'} {slot.state === 'kept'
+          ? 'border-accent text-text'
+          : slot.state === 'replaced'
+            ? 'border-line text-text-muted line-through decoration-1'
+            : 'border-dashed border-line-dashed text-text-muted'}"
       >
-        <div class="flex min-w-0 flex-col">
-          <span class="truncate text-[17px] font-semibold">{r.name}</span>
-          <span class="text-[13px] {r.active ? '' : 'text-text-muted'}" style:color={r.active ? seatColor(r.seat) : undefined}
-            >{r.status}</span
-          >
-        </div>
-        <div class="ml-auto flex items-baseline gap-3 text-right">
-          <span class="flex flex-col">
-            <strong class="font-display text-[28px] leading-none" data-testid="hole-strokes">{r.strokes}</strong>
-            <span class="text-[11px] uppercase tracking-[0.08em] text-text-muted">Strokes</span>
-          </span>
-          <span class="flex flex-col">
-            <strong class="font-display text-[20px] leading-none">{r.total}</strong>
-            <span class="text-[11px] uppercase tracking-[0.08em] text-text-muted">{r.toPar}</span>
-          </span>
-        </div>
+        <strong class="font-display {compact ? 'text-[16px]' : 'text-[20px]'} leading-tight">{slot.label || '·'}</strong>
+        {#if !compact}<span class="text-[12px] no-underline">{slot.note}</span>{/if}
       </div>
     {/each}
-  </section>
+  </div>
+{/snippet}
 
-  <!-- The hole -->
-  <section
-    aria-label="Hole"
-    class="relative min-h-[45vh] lg:min-h-0 rounded-2xl bg-bg-deep overflow-hidden"
-    data-view={view3d ? '3d' : '2d'}
-  >
+{#snippet controls()}
+  <!-- With darts in: Shoot keeps the last try and rolls it; the next player comes up after the roll.
+       Without: the stroke counts as a miss (one stroke more, the ball stays) -->
+  <ControlBar
+    canUndo={canUndo && !playing}
+    label={darts.length > 0 ? 'Shoot' : 'Skip stroke'}
+    prominent={next.prominent}
+    primary={darts.length > 0}
+    enabled={next.enabled && !playing}
+    {onUndo}
+    {onNext}
+  />
+{/snippet}
+
+<main class="relative flex-grow min-h-0 overflow-hidden">
+  <!-- The hole: the whole stage, the panels float over it -->
+  <section aria-label="Hole" class="absolute inset-0 bg-bg-deep" data-view={view3d ? '3d' : '2d'}>
     {#if view3d}
       <div class="absolute inset-0">
         {#await loadHole3D() then { default: Hole3D }}
@@ -284,6 +324,7 @@
             {others}
             aims={aimLines(game, ownBall(game))}
             {aim}
+            {insets}
             follow={playing && !orbiting && roll && frame !== null ? { path: roll.own, at: frame } : null}
             orbit={orbiting}
             onfail={() => (failed = true)}
@@ -291,68 +332,106 @@
         {/await}
       </div>
     {:else}
-      <HoleView
-        hole={shownHole}
-        ball={pt(ball)}
-        ballColor={seatColor(up)}
-        others={others.map(o => ({ ...o, at: pt(o.at) }))}
-        aims={aimLines(game, ownBall(game))}
-        {aim}
-        halo={!playing}
-        camera={roll && zoom.current > 0 ? { focus: pt(rolling(roll.seat) ?? ball), t: zoom.current } : null}
-      />
+      <div class="absolute inset-0 box-border" style:padding="{insets.top}px {insets.right}px {insets.bottom}px {insets.left}px">
+        <HoleView
+          hole={shownHole}
+          ball={pt(ball)}
+          ballColor={seatColor(up)}
+          others={others.map(o => ({ ...o, at: pt(o.at) }))}
+          aims={aimLines(game, ownBall(game))}
+          {aim}
+          halo={!playing}
+          camera={roll && zoom.current > 0 ? { focus: pt(rolling(roll.seat) ?? ball), t: zoom.current } : null}
+        />
+      </div>
       {#if game.config.physics === '3d'}
-        <p class="absolute left-3 top-3 m-0 rounded-full bg-surface-1/90 px-3 py-1 text-[12px] text-text-muted">
+        <p class="absolute left-1/2 -translate-x-1/2 bottom-3 m-0 rounded-full bg-surface-1/90 px-3 py-1 text-[12px] text-text-muted">
           3D isn't available on this device; showing the flat view
         </p>
       {/if}
     {/if}
   </section>
 
-  <!-- The hole card, the board to aim on, the tries -->
-  <section aria-label="Your shot" class="flex min-h-0 flex-col gap-3 lg:overflow-y-auto">
-    <div class="flex items-baseline justify-between rounded-[14px] bg-surface-1 px-4 py-3">
-      <span class="flex flex-col">
-        <span class="text-[12px] uppercase tracking-[0.12em] text-text-muted">Hole {game.holeIdx + 1} of {game.holeCount}</span>
-        <span class="font-display text-[26px] font-bold uppercase leading-tight">{game.hole.name}</span>
-      </span>
-      <span class="font-display text-[26px] font-bold">Par {game.hole.par}</span>
-    </div>
-    <div class="mx-auto w-full max-w-[380px]">
-      <DartBoard {darts} onBoardClick={canThrow && !locked ? onBoardClick : undefined} />
-    </div>
-    <p class="m-0 text-center text-[13px] text-text-muted">
-      Angle from the bull = direction · Distance from the bull = power · Bull putts at the cup
-    </p>
-    <div class="grid gap-2" style:grid-template-columns="repeat({slots.length}, minmax(0, 1fr))" aria-label="Tries">
-      {#each slots as slot, i (i)}
-        <div
-          class="flex flex-col rounded-[10px] border px-3 py-2 {slot.state === 'kept'
-            ? 'border-accent text-text'
-            : slot.state === 'replaced'
-              ? 'border-line text-text-muted line-through decoration-1'
-              : 'border-dashed border-line-dashed text-text-muted'}"
-        >
-          <strong class="font-display text-[20px] leading-tight">{slot.label || '·'}</strong>
-          <span class="text-[12px] no-underline">{slot.note}</span>
+  <!-- Players, in this hole's turn order: a column on the left, a strip along the top on small screens -->
+  <section
+    aria-label="Players"
+    bind:offsetWidth={playersW}
+    bind:offsetHeight={playersH}
+    class="absolute left-3 right-3 top-3 z-10 flex gap-2 overflow-x-auto lg:right-auto lg:left-4 lg:top-4 lg:w-[250px] lg:max-h-[calc(100%-32px)] lg:flex-col lg:overflow-y-auto"
+  >
+    {#each playerRows as r (r.seat)}
+      <div
+        class="flex shrink-0 items-center gap-3 rounded-[14px] border px-3 py-2 backdrop-blur-md lg:px-4 lg:py-3 {r.active
+          ? ''
+          : 'border-line bg-surface-1/75'}"
+        style:border-color={r.active ? seatColor(r.seat) : undefined}
+        style:background={r.active ? `color-mix(in srgb, ${seatColor(r.seat)} 22%, rgb(20 21 19 / 0.8))` : undefined}
+        data-testid="minigolf-player"
+      >
+        <div class="flex min-w-0 flex-col">
+          <span class="truncate text-[15px] font-semibold lg:text-[17px]">{r.name}</span>
+          <span
+            class="text-[12px] lg:text-[13px] {r.active ? '' : 'text-text-muted'}"
+            style:color={r.active ? seatColor(r.seat) : undefined}>{r.status}</span
+          >
         </div>
-      {/each}
+        <div class="ml-auto flex items-baseline gap-3 text-right">
+          <span class="flex flex-col">
+            <strong class="font-display text-[22px] leading-none lg:text-[28px]" data-testid="hole-strokes">{r.strokes}</strong>
+            <span class="text-[10px] uppercase tracking-[0.08em] text-text-muted lg:text-[11px]">Strokes</span>
+          </span>
+          <span class="hidden flex-col lg:flex">
+            <strong class="font-display text-[20px] leading-none">{r.total}</strong>
+            <span class="text-[11px] uppercase tracking-[0.08em] text-text-muted">{r.toPar}</span>
+          </span>
+        </div>
+      </div>
+    {/each}
+  </section>
+
+  <!-- The shot: the hole card, the board to aim on, the tries and the controls. Docked to the tries
+       and the controls for board play; a bottom sheet on small screens -->
+  <section
+    aria-label="Your shot"
+    bind:offsetWidth={shotW}
+    bind:offsetHeight={shotH}
+    class="absolute inset-x-0 bottom-0 z-10 flex flex-col gap-3 overflow-y-auto rounded-t-2xl border border-line bg-surface-1/85 p-3 pb-[calc(12px+env(safe-area-inset-bottom))] backdrop-blur-md lg:inset-x-auto lg:right-4 lg:w-[360px] lg:rounded-2xl lg:p-4 {panelOpen
+      ? 'max-h-[62%] lg:top-4 lg:bottom-4 lg:max-h-none'
+      : 'lg:bottom-4'}"
+  >
+    <div class="flex items-center gap-3">
+      <span class="flex min-w-0 flex-col">
+        <span class="text-[11px] uppercase tracking-[0.12em] text-text-muted">Hole {game.holeIdx + 1} of {game.holeCount}</span>
+        <span class="truncate font-display text-[20px] font-bold uppercase leading-tight lg:text-[24px]">{game.hole.name}</span>
+      </span>
+      <span class="ml-auto font-display text-[20px] font-bold lg:text-[24px]">Par {game.hole.par}</span>
+      <button
+        type="button"
+        class="grid h-9 w-9 shrink-0 place-items-center rounded-[10px] border border-line-2 bg-surface-2 text-text cursor-pointer hover:bg-surface-hover"
+        aria-expanded={panelOpen}
+        aria-label={panelOpen ? 'Hide the shot panel' : 'Show the shot panel'}
+        title={panelOpen ? 'Hide the shot panel' : 'Show the shot panel'}
+        onclick={togglePanel}
+      >
+        {#if panelOpen}<ChevronDown size={18} class="lg:-rotate-90" />{:else}<ChevronUp size={18} class="lg:rotate-90" />{/if}
+      </button>
     </div>
-    <div class="flex items-center justify-between text-[14px] text-text-muted">
-      <span>This hole</span>
-      <span><strong class="text-text">{current.strokes}</strong> / max {game.config.maxStrokes}</span>
-    </div>
-    <!-- With darts in: Shoot keeps the last try and rolls it; the next player comes up after the roll.
-         Without: the stroke counts as a miss (one stroke more, the ball stays) -->
-    <ControlBar
-      canUndo={canUndo && !playing}
-      label={darts.length > 0 ? 'Shoot' : 'Skip stroke'}
-      prominent={next.prominent}
-      primary={darts.length > 0}
-      enabled={next.enabled && !playing}
-      {onUndo}
-      {onNext}
-    />
+    {#if panelOpen}
+      <div class="mx-auto w-full max-w-[min(340px,30vh)] lg:max-w-[340px]">
+        <DartBoard {darts} onBoardClick={canThrow && !locked ? onBoardClick : undefined} />
+      </div>
+      <p class="m-0 hidden text-center text-[12px] text-text-muted lg:block">
+        Angle from the bull = direction · Distance from the bull = power · Bull putts at the cup
+      </p>
+      {@render tries(false)}
+      <div class="hidden items-center justify-between text-[14px] text-text-muted lg:flex">
+        <span>This hole</span>
+        <span><strong class="text-text">{current.strokes}</strong> / max {game.config.maxStrokes}</span>
+      </div>
+    {:else}
+      {@render tries(true)}
+    {/if}
+    {@render controls()}
   </section>
 </main>
 

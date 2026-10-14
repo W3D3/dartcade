@@ -771,6 +771,7 @@
           onrolled={minigolfRolledKey}
           {settings}
           host={snapshot?.ownerUserId === viewerId}
+          manual={boardId === null}
           onNextHole={() => send({ type: 'minigolf_next_hole' })}
         />
       {:else if !game}
