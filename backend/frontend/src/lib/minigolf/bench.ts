@@ -1,8 +1,15 @@
-// The test bench's state: where the ball is, strokes, and whether a shot is still rolling.
+// The test bench's state: where the ball is, strokes, and whether a shot is still rolling. Also
+// the 3D putt, aim dial/preview and shot-playback helpers shared by the bench and Playtest
+// (bench.svelte keeps its own 2D-physics path; everything here is framework-free).
 import { validateHole } from '$shared/minigolf/hole'
 import { holeSchema } from '$shared/minigolf/holeSchema'
 import { heightAt } from '$shared/minigolf/3d/ground'
+import { initPhysics3d, simulateShot3d } from '$shared/minigolf/3d/physics3d'
+import { R } from '$shared/board'
+import type { Physics } from '$shared/minigolf/physics'
+import { powerAt, shotFromDart } from '$shared/minigolf/shot'
 import { BALL_R, type Hole, type PathPt, type Pt, type ShotResult } from '$shared/minigolf/types'
+import { playFrames, playPath } from './animate.js'
 
 export interface BenchState {
   ball: Pt
@@ -75,3 +82,79 @@ export function parseHole(text: string): { hole: Hole } | { errors: string[] } {
   const errors = validateHole(parsed.data)
   return errors.length ? { errors } : { hole: parsed.data }
 }
+
+/** A point in the course (x, y) with its height (z), mm. */
+export type Pt3 = [number, number, number]
+
+/** A path point's drawn height: its own, or the ground's height here plus the ball's radius. */
+export function withHeight(hole: Hole, p: PathPt): Pt3 {
+  return [p[0], p[1], p[2] ?? heightAt(hole, [p[0], p[1]]) + BALL_R]
+}
+
+/** A dart's putt, simulated with 3D physics (loading Rapier on first use): the rolled path, with
+ *  heights filled in for drawing, where it ends and whether it holed — or null for a miss (off
+ *  the board). `assist` snaps the aim onto the cup within the physics's assist angle. */
+export async function putt3d(
+  hole: Hole,
+  physics: Physics,
+  from: Pt,
+  coords: { x: number; y: number } | null,
+  assist: boolean,
+): Promise<{ path: Pt3[]; rest: Pt; holed: boolean } | null> {
+  const shot = shotFromDart(coords, from, hole.cup.at, physics, assist ? hole : null)
+  if (!shot) return null
+  await initPhysics3d()
+  const r = simulateShot3d(hole, physics, from, shot)
+  return { ...r, path: r.path.map(p => withHeight(hole, p)) }
+}
+
+/** The aim dial and reach rings around the ball: its reach worked out, a dart mid-treble, one on
+ *  the double wire. Null while a shot is rolling or the hole is already holed. */
+export function aimDial(s: BenchState, physics: Physics): { at: Pt; treble: number; double: number } | null {
+  return canShoot(s)
+    ? { at: s.ball, treble: powerAt((R.si + R.tr) / 2, physics) * physics.maxRoll, double: powerAt(1, physics) * physics.maxRoll }
+    : null
+}
+
+/** The putt the pointer would make: as long as it would roll on flat felt. Null while not
+ *  hovering, mid-roll or holed. `assist` snaps it onto the cup, as in `putt3d`. */
+export function aimPreview(
+  s: BenchState,
+  hole: Hole,
+  physics: Physics,
+  hover: { x: number; y: number } | null,
+  assist: boolean,
+): { from: Pt; dir: Pt; power: number; roll: number } | null {
+  if (!hover || !canShoot(s)) return null
+  const shot = shotFromDart(hover, s.ball, hole.cup.at, physics, assist ? hole : null)
+  return shot && { from: s.ball, ...shot, roll: shot.power * physics.maxRoll }
+}
+
+/** `aimPreview`'s result as the 3D/2D views' `aims` line list: the current try's putt, bright. */
+export function aimLines(preview: ReturnType<typeof aimPreview>): { from: Pt; dir: Pt; roll: number; current: boolean }[] {
+  return preview ? [{ ...preview, current: true }] : []
+}
+
+/** Plays a 3D path once, frame by frame (or jumps to the end with reduced motion), calling
+ *  `onFrame` with the ball's position and the chase camera's frame (the whole path and how far
+ *  along it, for `Hole3D`'s `follow`) on each one. */
+export function playShot(
+  path: Pt3[],
+  onFrame: (ball: Pt3, chase: { path: Pt3[]; at: number }) => void,
+  reducedMotion: boolean,
+): Promise<void> {
+  return new Promise<void>(onDone => playFrames(path.length, at => onFrame(path[Math.floor(at)], { path, at }), reducedMotion, { onDone }))
+}
+
+/** Plays a stored shot's path again, in real time, calling `onFrame` the same way as `playShot`. */
+export function playReplay(
+  path: Pt3[],
+  onFrame: (ball: Pt3, chase: { path: Pt3[]; at: number }) => void,
+  reducedMotion: boolean,
+): Promise<void> {
+  return playPath(path, p => onFrame(p, { path, at: path.indexOf(p) }), reducedMotion)
+}
+
+/** The bench's and Playtest's shared button style. */
+export const BUTTON =
+  'h-9 rounded-[10px] border border-line-2 bg-surface-2 px-3 text-text text-[15px] font-medium font-[inherit] cursor-pointer hover:bg-surface-hover disabled:opacity-50 disabled:cursor-default'
