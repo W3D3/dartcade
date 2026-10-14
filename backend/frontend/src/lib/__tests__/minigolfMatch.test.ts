@@ -15,6 +15,7 @@ import {
   rollFor,
   rollRate,
   rows,
+  shotPanelOpen,
   trySlots,
 } from '$lib/minigolf/match'
 
@@ -95,6 +96,14 @@ const tryOf = (label: string, o: Partial<MinigolfGame['tries'][number]> = {}): M
 })
 
 describe('minigolf match', () => {
+  it('opens the shot panel for darts entered by hand, keeps it shut on a board, and remembers a choice', () => {
+    expect(shotPanelOpen(null, true)).toBe(true)
+    expect(shotPanelOpen(null, false)).toBe(false)
+    expect(shotPanelOpen('closed', true)).toBe(false)
+    expect(shotPanelOpen('open', false)).toBe(true)
+    expect(shotPanelOpen('nonsense', false)).toBe(false)
+  })
+
   it('formats the score to par', () => {
     expect([fmtToPar(2), fmtToPar(-1), fmtToPar(0)]).toEqual(['+2', '−1', '±0'])
   })
@@ -230,7 +239,7 @@ describe('minigolf match', () => {
 })
 
 describe('minigolf match screen', () => {
-  const show = (g: MinigolfGame, host = true) =>
+  const show = (g: MinigolfGame, host = true, manual = true) =>
     render(MinigolfMatch, {
       props: {
         game: g,
@@ -245,6 +254,7 @@ describe('minigolf match screen', () => {
         onBoardClick: () => {},
         settings: defaultSettings,
         host,
+        manual,
         onNextHole: () => {},
       },
     }).body
@@ -286,5 +296,18 @@ describe('minigolf match screen', () => {
     expect(show(paused, false)).toContain('Waiting for the host to start the next hole')
     expect(show(paused, false)).not.toContain('>Next hole<')
     expect(show(game({ holeIdx: 1, lastHole }))).not.toContain('Next hole')
+  })
+
+  it('lays the game out full screen, the shot panel open for hand entry and docked on a board', () => {
+    webgl.ok = true
+    const open = show(game(), true, true)
+    expect(open).toContain('aria-label="Dartboard"')
+    expect(open).toContain('Hide the shot panel')
+    const docked = show(game(), true, false)
+    expect(docked).not.toContain('aria-label="Dartboard"')
+    expect(docked).toContain('Show the shot panel')
+    // Shoot (or skipping the stroke) and the tries stay in reach when it's docked
+    expect(docked).toContain('Skip stroke')
+    expect(docked).toContain('aria-label="Tries"')
   })
 })
