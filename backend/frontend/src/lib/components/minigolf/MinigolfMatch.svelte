@@ -56,7 +56,7 @@
     canThrow: boolean
     locked: boolean
     canUndo: boolean
-    next: { label: string; prominent: boolean; enabled: boolean }
+    next: { prominent: boolean; enabled: boolean }
     onUndo: () => void
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
@@ -334,10 +334,11 @@
       <span>This hole</span>
       <span><strong class="text-text">{current.strokes}</strong> / max {game.config.maxStrokes}</span>
     </div>
-    <!-- With darts in: Shoot keeps the last try and rolls it; the next player comes up after the roll -->
+    <!-- With darts in: Shoot keeps the last try and rolls it; the next player comes up after the roll.
+         Without: the stroke counts as a miss (one stroke more, the ball stays) -->
     <ControlBar
       canUndo={canUndo && !playing}
-      label={darts.length > 0 ? 'Shoot' : next.label}
+      label={darts.length > 0 ? 'Shoot' : 'Skip stroke'}
       prominent={next.prominent}
       primary={darts.length > 0}
       enabled={next.enabled && !playing}

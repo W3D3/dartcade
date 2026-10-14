@@ -220,7 +220,7 @@ describe('minigolf match screen', () => {
         canThrow: true,
         locked: false,
         canUndo: false,
-        next: { label: 'Next', prominent: false, enabled: true },
+        next: { prominent: false, enabled: true },
         onUndo: () => {},
         onNext: () => {},
         onBoardClick: () => {},
@@ -249,5 +249,11 @@ describe('minigolf match screen', () => {
     const body = show(game())
     expect([is3d(body), is2d(body)]).toEqual([false, true])
     expect(body).toContain("3D isn't available on this device; showing the flat view")
+  })
+
+  it('offers Shoot with darts in, and skipping the stroke (a miss, one stroke more) without', () => {
+    webgl.ok = true
+    expect(show(game())).toContain('Skip stroke')
+    expect(show(game())).not.toContain('Next player')
   })
 })
