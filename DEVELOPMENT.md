@@ -67,6 +67,11 @@ window. Invite `@Luke` to your lobby, switch to the other window and accept the 
 start the game — Luke throws his own turns from the other window. The passwords are in
 `backend/src/auth/seed.ts`.
 
+**Minigolf's official courses** are seeded into the DB at startup (`seedOfficialCourses`,
+`backend/src/db/minigolfCourses.ts`) from the code course in `backend/src/shared/minigolf/courses/`;
+the course editor (`#/admin/minigolf/courses`) edits and publishes them from there. Tests and the
+bench (`#/admin/minigolf`) still play the code course directly, unseeded.
+
 ## Environment variables
 
 `.env` (copied from `.env.example`):
