@@ -14,7 +14,6 @@
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import ScorecardOverlay from '$lib/components/minigolf/ScorecardOverlay.svelte'
   import { seatColor } from '$lib/details/chartColors'
-  import { holeJustFinished } from '$lib/minigolf/scorecard'
   import { playFrames } from '$lib/minigolf/animate'
   import type { GameSettings } from '$lib/gameSettings'
   import { createSounds } from '$lib/sounds'
@@ -25,6 +24,8 @@
     otherBalls,
     ownBall,
     restingAt,
+    ORBIT_MS,
+    endsHole,
     rollCup,
     rollFor,
     rollRate,
@@ -46,6 +47,8 @@
     onUndo,
     onNext,
     onBoardClick,
+    host,
+    onNextHole,
     onrolled,
     settings,
   }: {
@@ -60,6 +63,9 @@
     onUndo: () => void
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
+    /** The viewer is the host: they start the next hole (the game waits between holes). */
+    host: boolean
+    onNextHole: () => void
     /** A roll (its key from rollFor) is done, or there was nothing to roll: the page holds the win
      *  screen until the game's last stroke has rolled. */
     onrolled?: (key: string) => void
@@ -90,6 +96,8 @@
   /** The last samples of a dropped ball's path: it sinking into the cup. */
   const SINKING = 8
   let playing = $state(false)
+  /** The hole just played out: the camera circles its cup before the scorecard (or the win screen). */
+  let orbiting = $state<Pt | null>(null)
   // Opening the page (or a reload) shows the game at rest: a stroke rolled before isn't rolled again
   const openedOn = untrack(() => rollKey)
   $effect.pre(() => {
@@ -105,6 +113,7 @@
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     const cup = untrack(() => rollCup(game, r))
     let zoomOut: ReturnType<typeof setTimeout> | undefined
+    let orbitEnd: ReturnType<typeof setTimeout> | undefined
     // Zoom in on the ball while it rolls, slow motion near the cup, zoom back out once it's done
     playing = true
     let stop = () => {}
@@ -116,11 +125,19 @@
       stop = playFrames(frames, onFrame, reduced, {
         rate: i => (settings.slowMotion ? rollRate(at(r.own, i), cup) : PLAYBACK),
         onDone: () => {
-          // From now on the snapshot places the balls (after a hole's last stroke: on the next tee)
-          frame = null
-          playing = false
-          onrolled?.(r.key)
-          zoomOut = setTimeout(() => void zoom.set(0), 700)
+          const done = () => {
+            // From now on the snapshot places the balls (after a hole's last stroke: on the next tee)
+            orbiting = null
+            frame = null
+            playing = false
+            onrolled?.(r.key)
+            zoomOut = setTimeout(() => void zoom.set(0), 700)
+          }
+          // A played-out hole: a few seconds round its cup first
+          const ended = untrack(() => endsHole(game, r))
+          if (!ended || reduced) return done()
+          orbiting = untrack(() => pt(rollCup(game, r)))
+          orbitEnd = setTimeout(done, ORBIT_MS)
         },
       })
     }
@@ -143,26 +160,16 @@
       cancelled = true
       clearTimeout(pause)
       clearTimeout(zoomOut)
+      clearTimeout(orbitEnd)
       stop()
+      orbiting = null
       playing = false
       void zoom.set(0, { duration: 0 })
     }
   })
 
-  // The scorecard between holes: opens when the game moves on to a new hole, closes on its own,
-  // or as soon as the new hole's first dart lands
-  // (after the hole's last stroke has rolled)
-  let prevHole: number | null = null
-  let scorecardDue = $state(false)
-  $effect(() => {
-    const h = game.holeIdx
-    if (holeJustFinished(prevHole, h)) scorecardDue = true
-    prevHole = h
-  })
-  $effect(() => {
-    if (game.tries.length > 0 || game.finished) scorecardDue = false
-  })
-  const scorecard = $derived(scorecardDue && !playing)
+  // The scorecard between holes: the game waits on it until the host starts the next hole
+  const scorecard = $derived(game.paused && !playing)
 
   // A dart lands: hit, or a miss off the board
   let triesHeard = untrack(() => game.tries.length)
@@ -277,7 +284,8 @@
             {others}
             aims={aimLines(game, ownBall(game))}
             {aim}
-            follow={playing && roll && frame !== null ? { path: roll.own, at: frame } : null}
+            follow={playing && !orbiting && roll && frame !== null ? { path: roll.own, at: frame } : null}
+            orbit={orbiting}
             onfail={() => (failed = true)}
           />
         {/await}
@@ -349,5 +357,5 @@
 </main>
 
 {#if scorecard}
-  <ScorecardOverlay {game} {players} onclose={() => (scorecardDue = false)} />
+  <ScorecardOverlay {game} {players} {host} onnext={onNextHole} />
 {/if}

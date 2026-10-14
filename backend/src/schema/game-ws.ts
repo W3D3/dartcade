@@ -40,6 +40,7 @@ export type UserAction =
   | BullOffRethrowAction
   | BullOffStartAction
   | ForfeitAction
+  | MinigolfNextHoleAction
 
 /**
  * Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.
@@ -590,6 +591,10 @@ export interface MinigolfGame {
     treble: number
     double: number
   }
+  /**
+   * Between holes: the game waits for the host to start the next hole (minigolf_next_hole); darts change nothing meanwhile.
+   */
+  paused: boolean
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
@@ -682,6 +687,12 @@ export interface BullOffStartAction {
 export interface ForfeitAction {
   type: 'forfeit'
   seats?: number[]
+}
+/**
+ * Minigolf, between holes: the host starts the next hole.
+ */
+export interface MinigolfNextHoleAction {
+  type: 'minigolf_next_hole'
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

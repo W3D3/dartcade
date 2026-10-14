@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { holeJustFinished, scorecardRows, teeOffLine } from '$lib/minigolf/scorecard'
+import { scorecardRows, teeOffLine } from '$lib/minigolf/scorecard'
 
 const players = [{ name: 'Anna' }, { name: 'Ben' }]
 
@@ -24,12 +24,6 @@ describe('minigolf scorecard', () => {
       { text: '·', tone: 'none', ace: false },
     ])
     expect(rows[1].cells[0]).toEqual({ text: '3', tone: 'over', ace: false })
-  })
-
-  it('opens when the game moves to a new hole, not on the first snapshot', () => {
-    expect(holeJustFinished(null, 1)).toBe(false)
-    expect(holeJustFinished(0, 0)).toBe(false)
-    expect(holeJustFinished(0, 1)).toBe(true)
   })
 
   it('says who tees off and why', () => {

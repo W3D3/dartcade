@@ -818,8 +818,35 @@
       "title": "MinigolfPathPt",
       "description": "A point on a ball's path, [x, y] or, in 3D, [x, y, height]: millimetres, the height the ball centre's.",
       "anyOf": [
-        { "type": "array", "items": [{ "type": "number" }, { "type": "number" }], "minItems": 2, "maxItems": 2 },
-        { "type": "array", "items": [{ "type": "number" }, { "type": "number" }, { "type": "number" }], "minItems": 3, "maxItems": 3 }
+        {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 2,
+          "maxItems": 2
+        },
+        {
+          "type": "array",
+          "items": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "number"
+            }
+          ],
+          "minItems": 3,
+          "maxItems": 3
+        }
       ]
     },
     "MinigolfHole": {
@@ -968,7 +995,20 @@
                   },
                   "edges": {
                     "type": "array",
-                    "items": [{ "type": "number" }, { "type": "number" }, { "type": "number" }, { "type": "number" }],
+                    "items": [
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      },
+                      {
+                        "type": "number"
+                      }
+                    ],
                     "minItems": 4,
                     "maxItems": 4
                   }
@@ -1023,7 +1063,8 @@
         "totalVisits",
         "shotHidden",
         "lastStroke",
-        "reach"
+        "reach",
+        "paused"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1384,6 +1425,10 @@
               "minimum": 0
             }
           }
+        },
+        "paused": {
+          "type": "boolean",
+          "description": "Between holes: the game waits for the host to start the next hole (minigolf_next_hole); darts change nothing meanwhile."
         }
       }
     },
@@ -1612,6 +1657,18 @@
               }
             }
           }
+        },
+        {
+          "title": "MinigolfNextHoleAction",
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "minigolf_next_hole"
+            }
+          },
+          "description": "Minigolf, between holes: the host starts the next hole."
         }
       ]
     },

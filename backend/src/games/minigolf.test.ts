@@ -23,6 +23,7 @@ function dart(coords: { x: number; y: number } | null, index = 0): BoardEvent {
 const play = (s: MinigolfState, events: BoardEvent[]) => events.reduce((st, e) => M.onBoardEvent(st, e).state, s)
 const visit = (s: MinigolfState, ...darts: BoardEvent[]) => play(s, [opened, ...darts, takeout])
 /** The engine's takeout with no darts thrown: three misses. */
+const nextHole = (s: MinigolfState) => M.onUserAction(s, { type: 'minigolf_next_hole' }).state
 const emptyTakeout = (s: MinigolfState) => visit(s, dart(null, 0), dart(null, 1), dart(null, 2))
 const at = (s: MinigolfState, seat: number, p: Pt, status: 'playing' | 'waiting' = 'playing'): MinigolfState => ({
   ...s,
@@ -121,6 +122,20 @@ describe('minigolf', () => {
     expect(s.balls.every(b => b.status === 'waiting' && b.at === testCourse.holes[1].tee)).toBe(true)
   })
 
+  it('waits between holes until the host moves on: darts and takeouts change nothing meanwhile', () => {
+    let s = M.init(cfg(), [{ name: 'A' }])
+    s = visit(at(s, 0, nearCup), bull())
+    expect(s.holeIdx).toBe(1)
+    expect(M.view(s, [{ name: 'A' }]).paused).toBe(true)
+    expect(M.view(s, [{ name: 'A' }]).visitLocked).toBe(true)
+    expect(visit(s, bull())).toBe(s)
+    s = nextHole(s)
+    expect(M.view(s, [{ name: 'A' }]).paused).toBe(false)
+    expect(visit(s, bull()).balls[0].strokes).toBe(1)
+    // Moving on when not paused changes nothing
+    expect(nextHole(s)).toBe(s)
+  })
+
   it('keeps the order on a tied hole', () => {
     let s = M.init(cfg(), two)
     s = visit(at(s, 0, nearCup), bull())
@@ -134,8 +149,11 @@ describe('minigolf', () => {
       const [cx, cy] = testCourse.holes[h].cup.at
       s = visit(at(s, s.current, [cx, cy + 120]), bull())
       s = visit(at(s, s.current, [cx, cy + 120]), bull())
+      // The last hole ends the game without a pause
+      if (h < testCourse.holes.length - 1) s = nextHole(s)
     }
     expect(s.finished).toBe(true)
+    expect(M.view(s, two).paused).toBe(false)
     expect(M.view(s, two).winner).toBe(0)
     expect(M.summarize(s, { totalDarts: [], totalVisits: [] }).map(r => r.placement)).toEqual([1, 1])
   })

@@ -2683,7 +2683,8 @@
         "totalVisits",
         "shotHidden",
         "lastStroke",
-        "reach"
+        "reach",
+        "paused"
       ],
       "additionalProperties": false,
       "properties": {
@@ -3934,6 +3935,10 @@
               "minimum": 0
             }
           }
+        },
+        "paused": {
+          "type": "boolean",
+          "description": "Between holes: the game waits for the host to start the next hole (minigolf_next_hole); darts change nothing meanwhile."
         }
       }
     },
@@ -4033,7 +4038,8 @@
             "totalVisits",
             "shotHidden",
             "lastStroke",
-            "reach"
+            "reach",
+            "paused"
           ],
           "additionalProperties": false,
           "properties": {
@@ -5284,6 +5290,10 @@
                   "minimum": 0
                 }
               }
+            },
+            "paused": {
+              "type": "boolean",
+              "description": "Between holes: the game waits for the host to start the next hole (minigolf_next_hole); darts change nothing meanwhile."
             }
           }
         },
@@ -6706,7 +6716,8 @@
                 "totalVisits",
                 "shotHidden",
                 "lastStroke",
-                "reach"
+                "reach",
+                "paused"
               ],
               "additionalProperties": false,
               "properties": {
@@ -7957,6 +7968,10 @@
                       "minimum": 0
                     }
                   }
+                },
+                "paused": {
+                  "type": "boolean",
+                  "description": "Between holes: the game waits for the host to start the next hole (minigolf_next_hole); darts change nothing meanwhile."
                 }
               }
             },
@@ -8354,6 +8369,20 @@
               }
             }
           }
+        },
+        {
+          "title": "MinigolfNextHoleAction",
+          "type": "object",
+          "required": [
+            "type"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "minigolf_next_hole"
+            }
+          },
+          "description": "Minigolf, between holes: the host starts the next hole."
         }
       ]
     },
@@ -8610,6 +8639,20 @@
                   }
                 }
               }
+            },
+            {
+              "title": "MinigolfNextHoleAction",
+              "type": "object",
+              "required": [
+                "type"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "type": {
+                  "const": "minigolf_next_hole"
+                }
+              },
+              "description": "Minigolf, between holes: the host starts the next hole."
             }
           ]
         }

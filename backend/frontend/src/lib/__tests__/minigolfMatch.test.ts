@@ -3,7 +3,20 @@ import { render } from 'svelte/server'
 import type { MinigolfGame } from '$lib/api'
 import { defaultSettings } from '$lib/gameSettings'
 import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
-import { PLAYBACK, SLOW_MO, aimLines, fmtToPar, otherBalls, ownBall, rollCup, rollFor, rollRate, rows, trySlots } from '$lib/minigolf/match'
+import {
+  PLAYBACK,
+  SLOW_MO,
+  aimLines,
+  endsHole,
+  fmtToPar,
+  otherBalls,
+  ownBall,
+  rollCup,
+  rollFor,
+  rollRate,
+  rows,
+  trySlots,
+} from '$lib/minigolf/match'
 
 const webgl = vi.hoisted(() => ({ ok: true }))
 vi.mock('$lib/webgl', () => ({ webglAvailable: () => webgl.ok }))
@@ -32,6 +45,7 @@ function game(over: Partial<MinigolfGame> = {}): MinigolfGame {
     finished: false,
     currentPlayer: 1,
     visitLocked: false,
+    paused: false,
     config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: true, physics: '3d' },
     courseName: 'Test',
     holeIdx: 1,
@@ -205,6 +219,10 @@ describe('minigolf match', () => {
     expect(r).toMatchObject({ hole: 0, seat: 2 })
     // It slows down near that hole's cup, not the next one's
     expect(rollCup(game({ holeIdx: 1, lastHole, lastStroke, hole: { ...hole, cup: { at: [999, 999], r: 80 } } }), r!)).toEqual(hole.cup.at)
+    // It ended its hole: the camera circles that cup before the scorecard
+    expect(endsHole(game({ holeIdx: 1, lastHole, lastStroke }), r!)).toBe(true)
+    expect(endsHole(game({ holeIdx: 0, lastStroke: { ...lastStroke, hole: 0 } }), { ...r!, hole: 0 })).toBe(false)
+    expect(endsHole(game({ holeIdx: 0, finished: true }), { ...r!, hole: 0 })).toBe(true)
     // Two holes back: nothing to roll
     expect(rollFor(game({ holeIdx: 2, lastHole, lastStroke }))).toBeNull()
     expect(rows(game(), players, 0).find(r => r.active)?.name).toBe('Anna')
@@ -212,7 +230,7 @@ describe('minigolf match', () => {
 })
 
 describe('minigolf match screen', () => {
-  const show = (g: MinigolfGame) =>
+  const show = (g: MinigolfGame, host = true) =>
     render(MinigolfMatch, {
       props: {
         game: g,
@@ -226,6 +244,8 @@ describe('minigolf match screen', () => {
         onNext: () => {},
         onBoardClick: () => {},
         settings: defaultSettings,
+        host,
+        onNextHole: () => {},
       },
     }).body
   // Hole3D loads lazily, so the server render has only the section's choice; HoleView is hole-view
@@ -256,5 +276,15 @@ describe('minigolf match screen', () => {
     webgl.ok = true
     expect(show(game())).toContain('Skip stroke')
     expect(show(game())).not.toContain('Next player')
+  })
+
+  it('waits between holes: the host starts the next hole, everyone else waits for them', () => {
+    webgl.ok = true
+    const lastHole = { index: 0, scores: [3, 2, 2], paths: [[], [], []], hole }
+    const paused = game({ holeIdx: 1, paused: true, lastHole })
+    expect(show(paused, true)).toContain('Next hole')
+    expect(show(paused, false)).toContain('Waiting for the host to start the next hole')
+    expect(show(paused, false)).not.toContain('>Next hole<')
+    expect(show(game({ holeIdx: 1, lastHole }))).not.toContain('Next hole')
   })
 })

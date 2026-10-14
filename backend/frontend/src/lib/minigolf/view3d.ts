@@ -103,3 +103,17 @@ export function chaseStep(
   const eye: V = [look[0] - dir[0] * back, look[1] - dir[1] * back, look[2] + dist * Math.sin(pitch)]
   return { cam: { look, dir, pitch, dist }, eye, look }
 }
+
+/** The circle round the cup once a hole is played out: how far across and how high, mm. */
+export const ORBIT_RADIUS = 1100
+const ORBIT_HEIGHT = 650
+/** How fast it goes round, radians a second (a full turn in about 10 s). */
+export const ORBIT_SPEED = (2 * Math.PI) / 10
+
+/** The camera at `angle` on its circle round the cup (course space: x, y, height). */
+export function orbitPose(cup: V, angle: number): { eye: V; look: V } {
+  return {
+    eye: [cup[0] + Math.cos(angle) * ORBIT_RADIUS, cup[1] + Math.sin(angle) * ORBIT_RADIUS, cup[2] + ORBIT_HEIGHT],
+    look: cup,
+  }
+}

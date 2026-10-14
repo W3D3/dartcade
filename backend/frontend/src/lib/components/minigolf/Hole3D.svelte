@@ -2,7 +2,8 @@
   A minigolf hole in 3D, drawn with three.js in a light cartoon look: toon shading in a few flat
   tones, the ground's real heights ($shared/minigolf/3d/ground.ts), soft shadows. Draws the balls in
   their colours, the aim dial and reach rings (`aim`) and the shot preview's lines (`aims`) on the
-  ground. The camera looks over the whole hole, tilted; with `follow` it frames the ball and the
+  ground. The camera looks over the whole hole, tilted; with `orbit` it circles a cup (a hole just
+  played out); with `follow` it frames the ball and the
   next stretch of its roll from behind and above (chaseStep), and glides back when it's over.
   `freeCamera` hands the camera to OrbitControls (drag to orbit, wheel to zoom) and glides it back
   on once that's switched off. Course mm are scene units: x stays x, the course's y is three's z,
@@ -15,7 +16,7 @@
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { CUP_DEPTH, groundMesh, heightAt } from '$shared/minigolf/3d/ground'
   import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
-  import { CHASE_FOV, chaseStep, startRenderer, type ChaseCam } from '$lib/minigolf/view3d'
+  import { CHASE_FOV, ORBIT_SPEED, chaseStep, orbitPose, startRenderer, type ChaseCam } from '$lib/minigolf/view3d'
 
   let {
     hole,
@@ -25,6 +26,7 @@
     aim = null,
     aims = [],
     follow = null,
+    orbit = null,
     freeCamera = false,
     wallThickness = 20,
     felt = 'checker',
@@ -43,6 +45,8 @@
     aims?: { from: Pt; dir: Pt; roll: number; current: boolean }[]
     /** Chase the ball along its rolling path, at playback frame `at` (fractional, 60 Hz). */
     follow?: { path: PathPt[]; at: number } | null
+    /** Circle the camera round this cup (a hole just played out). */
+    orbit?: Pt | null
     /** Bench only: mouse/touch (OrbitControls) drives the camera instead of the automatic one. */
     freeCamera?: boolean
     wallThickness?: number
@@ -398,6 +402,7 @@
     const look = new THREE.Vector3()
     let first = true
     let chaseCam: ChaseCam | null = null
+    let orbitAngle: number | null = null
     let then = performance.now()
     renderer.setAnimationLoop(now => {
       const dt = Math.min(0.1, (now - then) / 1000)
@@ -423,7 +428,18 @@
         chaseCam = null
       } else {
         if (controlsOn) controls.enabled = controlsOn = false
-        if (follow) {
+        if (orbit) {
+          chaseCam = null
+          const cup: [number, number, number] = [orbit[0], orbit[1], heightAt(hole, orbit) * relief]
+          // Round from wherever the camera is, gliding onto the circle
+          orbitAngle ??= Math.atan2(eye.z - cup[1], eye.x - cup[0])
+          orbitAngle += ORBIT_SPEED * dt
+          const pose = orbitPose(cup, orbitAngle)
+          const k = 1 - Math.exp(-dt * 2)
+          eye.lerp(new THREE.Vector3(pose.eye[0], pose.eye[2], pose.eye[1]), k)
+          look.lerp(new THREE.Vector3(cup[0], cup[2], cup[1]), k)
+        } else if (follow) {
+          orbitAngle = null
           if (chased?.path !== follow.path) chased = { path: follow.path, drawn: follow.path.map(p => [p[0], p[1], drawnY(p)]) }
           // The chase eases on from wherever the camera is (in course space: x, y, height)
           const from = new THREE.Vector3().subVectors(look, eye)
@@ -437,6 +453,7 @@
           look.set(step.look[0], step.look[2], step.look[1])
         } else {
           chaseCam = null
+          orbitAngle = null
           const wantEye = new THREE.Vector3()
           const wantLook = new THREE.Vector3()
           // From above and a little behind the tee's end (the course's y runs down the screen, as
