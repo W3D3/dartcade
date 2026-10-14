@@ -3,7 +3,7 @@ import type { PathPt } from '$shared/minigolf/types'
 
 const WebGLRenderer = vi.fn()
 vi.mock('three', () => ({ WebGLRenderer }))
-const { chaseStep, chaseTarget, heightTint, orbitPose, startRenderer, CHASE_FOV, MIN_DIST, ORBIT_RADIUS } =
+const { chaseStep, chaseTarget, framing, heightTint, orbitPose, startRenderer, CHASE_FOV, MIN_DIST, ORBIT_RADIUS } =
   await import('$lib/minigolf/view3d')
 
 describe('startRenderer', () => {
@@ -148,5 +148,23 @@ describe('heightTint', () => {
     // Never washed out or black
     expect(heightTint(1000)).toBeLessThanOrEqual(1.7)
     expect(heightTint(-1000)).toBeGreaterThanOrEqual(0.55)
+  })
+})
+
+describe('framing', () => {
+  it('centres the view on the part of the screen the panels leave free', () => {
+    // No panels: the whole canvas, no shift
+    expect(framing(1200, 800, { left: 0, right: 0, top: 0, bottom: 0 })).toEqual({ offsetX: 0, offsetY: 0, aspect: 1.5, scale: 1 })
+    // A 300 px panel on the right: the hole moves left by half of it, into a 900 x 800 view
+    const right = framing(1200, 800, { left: 0, right: 300, top: 0, bottom: 0 })
+    expect(right).toEqual({ offsetX: 150, offsetY: 0, aspect: 900 / 800, scale: 1 })
+    // A bottom sheet over half the height: the hole fits the top half, so the camera backs off twice as far
+    const sheet = framing(400, 800, { left: 0, right: 0, top: 0, bottom: 400 })
+    expect(sheet).toEqual({ offsetX: 0, offsetY: 200, aspect: 1, scale: 2 })
+  })
+
+  it('never divides by nothing when the panels cover everything', () => {
+    const f = framing(300, 300, { left: 200, right: 200, top: 0, bottom: 0 })
+    expect(Number.isFinite(f.aspect) && Number.isFinite(f.scale)).toBe(true)
   })
 })
