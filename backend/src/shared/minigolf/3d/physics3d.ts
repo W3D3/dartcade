@@ -89,7 +89,8 @@ export function buildWorld(hole: Hole, physics: Physics) {
   for (let i = 1; i < rails.length; i++) block(rails[i - 1], rails[i], physics.wallThickness, physics.wallRestitution)
   for (const w of hole.walls) {
     const pts = ring(w.points, w.closed ?? false)
-    for (let i = 1; i < pts.length; i++) block(pts[i - 1], pts[i], physics.wallThickness, w.restitution ?? physics.wallRestitution)
+    for (let i = 1; i < pts.length; i++)
+      block(pts[i - 1], pts[i], w.thickness ?? physics.wallThickness, w.restitution ?? physics.wallRestitution)
   }
   for (const b of hole.bumpers) {
     const c = bouncy(

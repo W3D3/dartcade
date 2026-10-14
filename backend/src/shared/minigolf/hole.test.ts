@@ -61,6 +61,20 @@ describe('validateHole', () => {
     expect(validateHole({ ...ok, cup: { at: [200, 150], r: 0 } })).toContain('cup radius must be positive')
     expect(validateHole({ ...ok, bumpers: [{ at: [200, 600], r: -1 }] })).toContain('bumper 1 radius must be positive')
     expect(validateHole({ ...ok, walls: [{ points: [[10, 10]] }] })).toContain('wall 1 needs at least 2 points')
+    expect(
+      validateHole({
+        ...ok,
+        walls: [
+          {
+            points: [
+              [0, 0],
+              [100, 0],
+            ],
+            thickness: 0,
+          },
+        ],
+      }),
+    ).toContain('wall 1 thickness must be positive')
   })
   it('rejects terrain that cannot be built', () => {
     const mesa = { from: [0, 0] as Pt, to: [100, 100] as Pt, height: 100, edges: [50, 50, 50, 50] as [number, number, number, number] }

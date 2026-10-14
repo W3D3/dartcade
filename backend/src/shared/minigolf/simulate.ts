@@ -45,7 +45,7 @@ function buildSpace(hole: Hole, physics: Physics): Space {
   const rails = new Body(BodyType.STATIC)
   addPolyline(rails, hole.outline, true, physics.wallThickness, surface(physics.wallRestitution))
   for (const w of hole.walls)
-    addPolyline(rails, w.points, !!w.closed, physics.wallThickness, surface(w.restitution ?? physics.wallRestitution))
+    addPolyline(rails, w.points, !!w.closed, w.thickness ?? physics.wallThickness, surface(w.restitution ?? physics.wallRestitution))
   for (const b of hole.bumpers)
     rails.shapes.add(new Circle(b.r, new Vec2(b.at[0], b.at[1]), surface(b.restitution ?? physics.bumperRestitution)))
   rails.space = space

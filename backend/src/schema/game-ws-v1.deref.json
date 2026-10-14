@@ -2444,6 +2444,10 @@
               },
               "restitution": {
                 "type": "number"
+              },
+              "thickness": {
+                "type": "number",
+                "description": "mm; the default wall thickness when absent"
               }
             }
           }
@@ -2821,6 +2825,10 @@
                   },
                   "restitution": {
                     "type": "number"
+                  },
+                  "thickness": {
+                    "type": "number",
+                    "description": "mm; the default wall thickness when absent"
                   }
                 }
               }
@@ -3437,6 +3445,10 @@
                           },
                           "restitution": {
                             "type": "number"
+                          },
+                          "thickness": {
+                            "type": "number",
+                            "description": "mm; the default wall thickness when absent"
                           }
                         }
                       }
@@ -4176,6 +4188,10 @@
                       },
                       "restitution": {
                         "type": "number"
+                      },
+                      "thickness": {
+                        "type": "number",
+                        "description": "mm; the default wall thickness when absent"
                       }
                     }
                   }
@@ -4792,6 +4808,10 @@
                               },
                               "restitution": {
                                 "type": "number"
+                              },
+                              "thickness": {
+                                "type": "number",
+                                "description": "mm; the default wall thickness when absent"
                               }
                             }
                           }
@@ -6854,6 +6874,10 @@
                           },
                           "restitution": {
                             "type": "number"
+                          },
+                          "thickness": {
+                            "type": "number",
+                            "description": "mm; the default wall thickness when absent"
                           }
                         }
                       }
@@ -7470,6 +7494,10 @@
                                   },
                                   "restitution": {
                                     "type": "number"
+                                  },
+                                  "thickness": {
+                                    "type": "number",
+                                    "description": "mm; the default wall thickness when absent"
                                   }
                                 }
                               }

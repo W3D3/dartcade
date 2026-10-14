@@ -11,6 +11,8 @@ export interface Wall {
   closed?: boolean
   /** Bounce, 0..1; Physics.wallRestitution when absent. */
   restitution?: number
+  /** mm; Physics.wallThickness when absent. */
+  thickness?: number
 }
 
 /** A round obstacle the ball bounces off. `kick` (mm/s) is added along the normal on each hit. */

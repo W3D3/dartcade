@@ -189,10 +189,10 @@
   }
 
   /** A block along ab, standing on the ground (rails and walls). */
-  function block(a: Pt, b: Pt, material: THREE.Material): THREE.Mesh {
-    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) + wallThickness
+  function block(a: Pt, b: Pt, material: THREE.Material, thickness = wallThickness): THREE.Mesh {
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]) + thickness
     const mid: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, RAIL_HEIGHT * 2, wallThickness), material)
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(len, RAIL_HEIGHT * 2, thickness), material)
     mesh.position.set(mid[0], heightAt(hole, mid) * relief, mid[1])
     mesh.rotation.y = -Math.atan2(b[1] - a[1], b[0] - a[0])
     mesh.castShadow = mesh.receiveShadow = true
@@ -229,7 +229,7 @@
     for (let i = 1; i < edges.length; i++) g.add(block(edges[i - 1], edges[i], rail))
     for (const w of h.walls) {
       const pts = ring(w.points, w.closed ?? false)
-      for (let i = 1; i < pts.length; i++) g.add(block(pts[i - 1], pts[i], rail))
+      for (let i = 1; i < pts.length; i++) g.add(block(pts[i - 1], pts[i], rail, w.thickness))
     }
     for (const b of h.bumpers) {
       const m = new THREE.Mesh(new THREE.CylinderGeometry(b.r, b.r, RAIL_HEIGHT * 2, 32), toon(BUMPER))
