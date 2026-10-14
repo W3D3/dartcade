@@ -236,6 +236,33 @@ export interface RankedResultsTable {
   created_at: ColumnType<Date, Date | undefined, never>
 }
 
+/** A hole an editor can draft and publish; shared across courses (migration 021). */
+export interface MinigolfHolesTable {
+  id: string
+  /** null for official holes (v2: the author). */
+  owner_user_id: string | null
+  published: unknown
+  draft: unknown
+  version: ColumnType<number, number | undefined, number>
+  created_at: ColumnType<Date, never, never>
+  updated_at: ColumnType<Date, never, Date>
+  published_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+}
+
+/** A course an editor can draft and publish; holes are shared, referenced by id (migration 021). */
+export interface MinigolfCoursesTable {
+  id: string
+  /** null for official courses. */
+  owner_user_id: string | null
+  visibility: ColumnType<string, string | undefined, string>
+  published: unknown
+  draft: unknown
+  version: ColumnType<number, number | undefined, number>
+  created_at: ColumnType<Date, never, never>
+  updated_at: ColumnType<Date, never, Date>
+  published_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -255,4 +282,6 @@ export interface Database {
   friendships: FriendshipsTable
   ranked_ratings: RankedRatingsTable
   ranked_results: RankedResultsTable
+  minigolf_holes: MinigolfHolesTable
+  minigolf_courses: MinigolfCoursesTable
 }
