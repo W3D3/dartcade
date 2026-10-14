@@ -30,6 +30,8 @@ async function onCanvas(page: Page, x: number, y: number): Promise<{ x: number; 
 }
 
 test('an admin draws on a hole, undoes, and test-putts it', async ({ adminPage: page }, testInfo) => {
+  // The putting bot alone plays 20 rounds of 3D physics, ~20 s on a loaded machine
+  test.setTimeout(90_000)
   const hole = await page.request.post('/api/minigolf/holes', { data: { hole: lane } })
   expect(hole.ok()).toBeTruthy()
   const { id } = (await hole.json()) as { id: string }
@@ -79,7 +81,22 @@ test('an admin draws on a hole, undoes, and test-putts it', async ({ adminPage: 
   await page.screenshot({ path: testInfo.outputPath('test-putt.png') })
   await dialog.getByRole('button', { name: 'Close' }).click()
 
-  // The draft survives a reload
+  // Test the hole: the bot plays it in a worker while the editor stays usable (a par change keeps the test)
+  const bot = page.getByRole('region', { name: 'Test the hole' })
+  await bot.getByRole('button', { name: 'Test the hole' }).click()
+  await expect(bot.getByRole('progressbar')).toBeVisible()
+  await page.getByRole('button', { name: 'Lower par' }).click()
+  await expect(page.getByTestId('par')).toHaveText('1')
+  await expect(bot.getByTestId('bot-reached')).toHaveText(/^Cup reachable · \d+ of 20$/, { timeout: 60_000 })
+  await bot.screenshot({ path: testInfo.outputPath('test-the-hole.png') })
+  const suggested = (await bot.getByTestId('bot-par').textContent())?.replace(/\D/g, '')
+  await bot.getByRole('button', { name: 'Use as par' }).click()
+  await expect(page.getByTestId('par')).toHaveText(suggested ?? '')
+  await page.keyboard.press('Control+z')
+  await expect(page.getByTestId('par')).toHaveText('1')
+
+  // The draft survives a reload, once the par edits are saved
+  await expect(page.getByText(/^Saved /)).toBeVisible({ timeout: 10_000 })
   await page.reload()
   await expect(elements.getByText('Wall 1')).toBeVisible()
   await expect(elements.getByText('Bumper 1')).toBeVisible()
