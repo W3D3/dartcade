@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { get } from 'svelte/store'
 import { OpenFeature, TypedInMemoryProvider } from '@openfeature/web-sdk'
-import { flag } from '$lib/flags'
+import { flag, numberFlag } from '$lib/flags'
 
 const config = (on: boolean) => ({
   'gamemode.minigolf.enabled': {
@@ -26,5 +26,17 @@ describe('flag()', () => {
     await provider.putConfiguration(config(true))
     stop()
     expect(values).toEqual([false, true])
+  })
+})
+
+describe('numberFlag()', () => {
+  afterEach(() => OpenFeature.clearProviders())
+
+  it("is the fallback until loaded, then the provider's number", async () => {
+    expect(get(numberFlag('matchmaking.visitSeconds', 60))).toBe(60)
+    await OpenFeature.setProviderAndWait(
+      new TypedInMemoryProvider({ 'matchmaking.visitSeconds': { variants: { default: 45 }, defaultVariant: 'default', disabled: false } }),
+    )
+    expect(get(numberFlag('matchmaking.visitSeconds', 60))).toBe(45)
   })
 })

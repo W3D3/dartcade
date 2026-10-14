@@ -6,13 +6,15 @@
   import { navTabs, isActiveRoute, railLobby } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'
   import { me } from '$lib/lobby/sockets'
+  import { flag } from '$lib/flags'
   import { createLobby } from '$lib/lobby/create'
   import AccountMenu from './AccountMenu.svelte'
   import BrandMark from './BrandMark.svelte'
   import FriendsNavItem from './friends/FriendsNavItem.svelte'
   import NavTabItem from './NavTabItem.svelte'
 
-  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0))
+  const matchmaking = flag('matchmaking.enabled')
+  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking))
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))
   const lobbyLink = $derived(lobby && lobby.kind !== 'create' ? lobby : null)
   let error = $state('')

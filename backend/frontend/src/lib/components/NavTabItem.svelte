@@ -1,6 +1,6 @@
 <script lang="ts">
   // One item of the phone tab bar and the tablet rail: icon over label, the Live dot, the invites badge.
-  import { Clock, Monitor, Radio, Target } from '@lucide/svelte'
+  import { Clock, Monitor, Radio, Swords, Target } from '@lucide/svelte'
   import type { NavTab } from '$lib/nav'
   import NavBadge from './NavBadge.svelte'
 
@@ -10,6 +10,7 @@
 <a
   href={`#${tab.href}`}
   aria-current={active ? 'page' : undefined}
+  aria-label={tab.aria}
   class="relative flex flex-col items-center justify-center gap-1 rounded-[10px] no-underline text-[11px]
          {active ? 'bg-surface-paused text-text font-semibold' : 'text-text-muted font-medium'} {className}"
 >
@@ -24,6 +25,7 @@
     />
   {/if}
   {#if tab.icon === 'play'}<Target size={22} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
+  {:else if tab.icon === 'ranked'}<Swords size={22} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
   {:else if tab.icon === 'live'}<Radio size={22} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
   {:else if tab.icon === 'boards'}<Monitor size={22} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
   {:else}<Clock size={22} strokeWidth={1.8} class={active ? 'text-accent' : ''} />{/if}

@@ -17,6 +17,8 @@
   import Settings from './routes/Settings.svelte'
   import Friends from './routes/Friends.svelte'
   import PickName from './routes/PickName.svelte'
+  import Matchmaking from './routes/Matchmaking.svelte'
+  import Ranks from './routes/Ranks.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { setFlagUser, startFlags } from '$lib/flags'
@@ -54,6 +56,8 @@
     '/invites': Invites,
     '/settings': Settings,
     '/friends': Friends,
+    '/matchmaking': Matchmaking,
+    '/matchmaking/ranks': Ranks,
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
   }
 

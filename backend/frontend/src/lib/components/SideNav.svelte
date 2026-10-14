@@ -1,6 +1,6 @@
 <script lang="ts">
   import BrandMark from './BrandMark.svelte'
-  import { Clock, Mail, Monitor, Settings, Target, Trophy } from '@lucide/svelte'
+  import { Clock, Mail, Monitor, Settings, Swords, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import AccountMenu from './AccountMenu.svelte'
   import FriendsButton from './friends/FriendsButton.svelte'
@@ -9,20 +9,20 @@
   import NavLink from './NavLink.svelte'
   import { isActiveRoute } from '$lib/nav'
   import { me } from '$lib/lobby/sockets'
+  import { flag } from '$lib/flags'
 
   const inviteCount = $derived($me?.invites.length ?? 0)
 
-  const links = [
+  const matchmaking = flag('matchmaking.enabled')
+
+  const links = $derived([
     { href: '/', label: 'Play', icon: 'play' },
+    ...($matchmaking ? [{ href: '/matchmaking', label: 'Matchmaking', icon: 'swords' }] : []),
     { href: '/boards', label: 'Boards', icon: 'boards' },
     { href: '/tournaments', label: 'Tournaments', icon: 'trophy', soon: true },
     { href: '/history', label: 'History', icon: 'clock' },
     { href: '/settings', label: 'Settings', icon: 'settings' },
-  ]
-
-  function isActive(href: string) {
-    return isActiveRoute($location, href)
-  }
+  ])
 </script>
 
 <nav
@@ -38,10 +38,12 @@
   <!-- Nav links -->
   <div class="flex flex-col gap-1">
     {#each links as link (link.href)}
-      {@const active = isActive(link.href)}
+      {@const active = isActiveRoute($location, link.href)}
       <NavLink href={`#${link.href}`} {active} disabled={link.soon}>
         {#if link.icon === 'play'}
           <Target size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
+        {:else if link.icon === 'swords'}
+          <Swords size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'boards'}
           <Monitor size={20} strokeWidth={1.8} />
         {:else if link.icon === 'trophy'}
@@ -62,7 +64,7 @@
       </NavLink>
     {/each}
     {#if inviteCount > 0}
-      {@const active = isActive('/invites')}
+      {@const active = isActiveRoute($location, '/invites')}
       <NavLink href="#/invites" {active}>
         <Mail size={20} strokeWidth={1.8} />Invites
         <NavBadge count={inviteCount} label="{inviteCount} pending" class="ml-auto" />
