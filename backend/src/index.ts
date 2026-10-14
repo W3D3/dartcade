@@ -86,7 +86,7 @@ const idleSweep = setInterval(
 )
 idleSweep.unref()
 
-const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../../frontend/dist') })
+const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../frontend/dist') })
 warn = (message, details) => {
   app.log.warn({ details }, message)
 }
