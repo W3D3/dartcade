@@ -61,6 +61,8 @@ export type MinigolfState = {
   /** The stroke kept at the last takeout, for the match screen to roll when tries were hidden. */
   lastStroke: { hole: number; seat: number; stroke: number; result: ShotResult | null } | null
   finished: boolean
+  /** Between holes: waits for the host to start the next one (darts change nothing meanwhile). */
+  paused: boolean
   playerCount: number
 }
 
@@ -199,7 +201,7 @@ function endHole(s: MinigolfState): MinigolfState {
   // Best score on the hole tees off first; ties keep their order (sort is stable)
   const order = [...s.order].sort((a, b) => holeScores[a] - holeScores[b])
   const holeIdx = s.holeIdx + 1
-  return { ...s, scores, lastHole, holeIdx, order, current: order[0], balls: freshBalls(s.holes[holeIdx], s.playerCount) }
+  return { ...s, scores, lastHole, holeIdx, order, current: order[0], balls: freshBalls(s.holes[holeIdx], s.playerCount), paused: true }
 }
 
 /** Takeout: the last try is the stroke. */
@@ -229,7 +231,7 @@ function commitStroke(s: MinigolfState): MinigolfState {
 }
 
 function locked(s: MinigolfState): boolean {
-  return s.finished || s.tries.length >= s.cfg.tries
+  return s.finished || s.paused || s.tries.length >= s.cfg.tries
 }
 
 /** While darts are left to replace a try, where it ends stays hidden (shot preview shows a
@@ -291,6 +293,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       lastHole: null,
       lastStroke: null,
       finished: false,
+      paused: false,
       playerCount: players.length,
     }
   },
@@ -298,6 +301,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
   getCurrentPlayer: s => s.current,
 
   onBoardEvent(s: MinigolfState, e: BoardEvent) {
+    if (s.paused) return { state: s }
     switch (e.kind) {
       case 'visit.opened':
         return { state: { ...s, visitStart: s.balls.map(b => b.at), tries: [] } }
@@ -312,7 +316,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
     }
   },
 
-  onUserAction: s => ({ state: s }),
+  onUserAction: (s, a) => ({ state: a.type === 'minigolf_next_hole' && s.paused ? { ...s, paused: false } : s }),
 
   view(s: MinigolfState): MinigolfView {
     return {
@@ -320,6 +324,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       finished: s.finished,
       currentPlayer: s.current,
       visitLocked: locked(s),
+      paused: s.paused,
       config: s.cfg,
       courseName: s.courseName,
       holeIdx: s.holeIdx,

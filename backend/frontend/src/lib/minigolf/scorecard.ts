@@ -22,14 +22,6 @@ export function scorecardRows(scores: (number | null)[][], pars: number[], playe
   return rows.sort((a, b) => a.total - b.total || a.seat - b.seat)
 }
 
-/**
- * Whether the scorecard opens: the game moved on to a new hole since the last snapshot (not on
- * the first one this page sees, so a reload doesn't bring it back).
- */
-export function holeJustFinished(prevHoleIdx: number | null, holeIdx: number): boolean {
-  return prevHoleIdx !== null && holeIdx > prevHoleIdx
-}
-
 /** "Lena tees off first: best score on the last hole." (just "… first." when it's still the seat order). */
 export function teeOffLine(name: string, byScore: boolean): string {
   return byScore ? `${name} tees off first: best score on the last hole.` : `${name} tees off first.`

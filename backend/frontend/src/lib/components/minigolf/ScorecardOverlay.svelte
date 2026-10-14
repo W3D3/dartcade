@@ -1,10 +1,8 @@
 <!--
   Between holes (Minigolf-Scorecard.dc.html): the scorecard so far, everyone's strokes on the hole
-  just finished, and who tees off next. Closes after 8 seconds, on "Next hole now", or as soon as
-  the next hole's first dart lands (the game is already on it).
+  just finished, and who tees off next. The game waits on it: the host starts the next hole.
 -->
 <script lang="ts">
-  import { onDestroy } from 'svelte'
   import type { MinigolfGame } from '$lib/api'
   import Scorecard from './Scorecard.svelte'
   import { seatColor } from '$lib/details/chartColors'
@@ -12,15 +10,9 @@
   import { bounds } from '$shared/minigolf/geometry'
   import type { Pt } from '$shared/minigolf/types'
 
-  let { game, players, onclose }: { game: MinigolfGame; players: { name: string }[]; onclose: () => void } = $props()
+  let { game, players, host, onnext }: { game: MinigolfGame; players: { name: string }[]; host: boolean; onnext: () => void } = $props()
 
   const last = $derived(game.lastHole)
-  let seconds = $state(8)
-  const timer = setInterval(() => {
-    seconds -= 1
-    if (seconds <= 0) onclose()
-  }, 1000)
-  onDestroy(() => clearInterval(timer))
 
   const pt = (p: number[]): Pt => [p[0] ?? 0, p[1] ?? 0]
   const pts = (p: number[][]) => p.map(q => `${q[0] ?? 0},${q[1] ?? 0}`).join(' ')
@@ -86,12 +78,15 @@
           <strong class="font-display text-[22px] uppercase">{game.hole.name} · Par {game.hole.par}</strong>
           <span class="text-[14px] text-text-muted">{teeOffLine(players[first]?.name ?? '', byScore)}</span>
         </span>
-        <span class="ml-auto text-text-muted" aria-live="polite">Starting in 0:0{Math.max(0, seconds)}</span>
-        <button
-          type="button"
-          class="h-11 rounded-[10px] border-0 bg-accent px-5 font-display text-[18px] font-bold uppercase text-accent-fg cursor-pointer hover:bg-accent-hover"
-          onclick={onclose}>Next hole now</button
-        >
+        {#if host}
+          <button
+            type="button"
+            class="ml-auto h-11 rounded-[10px] border-0 bg-accent px-5 font-display text-[18px] font-bold uppercase text-accent-fg cursor-pointer hover:bg-accent-hover"
+            onclick={onnext}>Next hole</button
+          >
+        {:else}
+          <span class="ml-auto text-text-muted" aria-live="polite">Waiting for the host to start the next hole</span>
+        {/if}
       </footer>
     </div>
   </div>

@@ -144,6 +144,15 @@ export function rollCup(g: MinigolfGame, roll: Roll): number[] {
   return roll.hole === g.holeIdx || !g.lastHole ? g.hole.cup.at : g.lastHole.hole.cup.at
 }
 
+/** Whether a roll played its hole out (the last ball in, or the game over): the camera then circles
+ *  that hole's cup for ORBIT_MS before the scorecard or the win screen. */
+export function endsHole(g: MinigolfGame, roll: Roll): boolean {
+  return roll.hole !== g.holeIdx || g.finished
+}
+
+/** How long the camera circles a played-out hole. */
+export const ORBIT_MS = 4500
+
 /** A pause before a stroke rolls, for the suspense (and to look up from the board). */
 export const ROLL_DELAY_MS = 3000
 

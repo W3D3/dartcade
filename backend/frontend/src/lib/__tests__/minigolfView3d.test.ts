@@ -3,7 +3,7 @@ import type { PathPt } from '$shared/minigolf/types'
 
 const WebGLRenderer = vi.fn()
 vi.mock('three', () => ({ WebGLRenderer }))
-const { chaseStep, chaseTarget, startRenderer, CHASE_FOV, MIN_DIST } = await import('$lib/minigolf/view3d')
+const { chaseStep, chaseTarget, orbitPose, startRenderer, CHASE_FOV, MIN_DIST, ORBIT_RADIUS } = await import('$lib/minigolf/view3d')
 
 describe('startRenderer', () => {
   it('is null when WebGL cannot start', () => {
@@ -117,5 +117,22 @@ describe('the chase camera', () => {
       expect(Math.abs(now - before)).toBeLessThan(3)
       before = now
     }
+  })
+})
+
+describe('orbitPose', () => {
+  it('circles the cup at a fixed distance, looking down at it', () => {
+    const cup: [number, number, number] = [900, 600, 40]
+    for (const angle of [0, 1, 2.5, 4]) {
+      const { eye, look } = orbitPose(cup, angle)
+      expect(look).toEqual(cup)
+      // Course space: x, y, height; the eye is above the cup, ORBIT_RADIUS away across the ground
+      expect(Math.hypot(eye[0] - cup[0], eye[1] - cup[1])).toBeCloseTo(ORBIT_RADIUS)
+      expect(eye[2]).toBeGreaterThan(cup[2])
+    }
+    // A quarter turn later the eye has moved round, not along
+    const a = orbitPose(cup, 0).eye
+    const b = orbitPose(cup, Math.PI / 2).eye
+    expect(Math.hypot(a[0] - b[0], a[1] - b[1])).toBeCloseTo(ORBIT_RADIUS * Math.SQRT2)
   })
 })

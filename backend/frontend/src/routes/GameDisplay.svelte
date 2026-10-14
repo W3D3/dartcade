@@ -770,6 +770,8 @@
           onBoardClick={addBoardDart}
           onrolled={minigolfRolledKey}
           {settings}
+          host={snapshot?.ownerUserId === viewerId}
+          onNextHole={() => send({ type: 'minigolf_next_hole' })}
         />
       {:else if !game}
         <main class="flex-grow flex items-center justify-center">
