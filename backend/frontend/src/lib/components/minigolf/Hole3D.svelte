@@ -16,7 +16,7 @@
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { CUP_DEPTH, groundMesh, heightAt } from '$shared/minigolf/3d/ground'
   import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
-  import { CHASE_FOV, ORBIT_SPEED, chaseStep, orbitPose, startRenderer, type ChaseCam } from '$lib/minigolf/view3d'
+  import { CHASE_FOV, ORBIT_SPEED, chaseStep, heightTint, orbitPose, startRenderer, type ChaseCam } from '$lib/minigolf/view3d'
 
   let {
     hole,
@@ -191,7 +191,11 @@
     const uv = new Float32Array((positions.length / 3) * 2)
     for (let k = 0; k < positions.length / 3; k++) uv.set([positions[k * 3] / tile, positions[k * 3 + 2] / tile], k * 2)
     geo.setAttribute('uv', new THREE.BufferAttribute(uv, 2))
-    const feltMat = new THREE.MeshToonMaterial({ map: feltTexture(felt), gradientMap: ramp })
+    // Lighter up, darker down (from the true heights, before relief): the ground's shape shows from above
+    const tint = new Float32Array(positions.length)
+    for (let k = 0; k < positions.length / 3; k++) tint.fill(heightTint(positions[k * 3 + 1] / relief), k * 3, k * 3 + 3)
+    geo.setAttribute('color', new THREE.BufferAttribute(tint, 3))
+    const feltMat = new THREE.MeshToonMaterial({ map: feltTexture(felt), gradientMap: ramp, vertexColors: true })
     const ground = new THREE.Mesh(geo, feltMat)
     ground.receiveShadow = true
     g.add(ground)

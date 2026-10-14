@@ -3,7 +3,8 @@ import type { PathPt } from '$shared/minigolf/types'
 
 const WebGLRenderer = vi.fn()
 vi.mock('three', () => ({ WebGLRenderer }))
-const { chaseStep, chaseTarget, orbitPose, startRenderer, CHASE_FOV, MIN_DIST, ORBIT_RADIUS } = await import('$lib/minigolf/view3d')
+const { chaseStep, chaseTarget, heightTint, orbitPose, startRenderer, CHASE_FOV, MIN_DIST, ORBIT_RADIUS } =
+  await import('$lib/minigolf/view3d')
 
 describe('startRenderer', () => {
   it('is null when WebGL cannot start', () => {
@@ -134,5 +135,18 @@ describe('orbitPose', () => {
     const a = orbitPose(cup, 0).eye
     const b = orbitPose(cup, Math.PI / 2).eye
     expect(Math.hypot(a[0] - b[0], a[1] - b[1])).toBeCloseTo(ORBIT_RADIUS * Math.SQRT2)
+  })
+})
+
+describe('heightTint', () => {
+  it('draws higher ground lighter and lower ground darker, within bounds', () => {
+    expect(heightTint(0)).toBe(1)
+    // A 5 cm ridge clearly lighter than the felt, a 10 cm cone lighter still
+    expect(heightTint(50)).toBeGreaterThan(1.3)
+    expect(heightTint(100)).toBeGreaterThan(heightTint(50))
+    expect(heightTint(-50)).toBeLessThan(0.8)
+    // Never washed out or black
+    expect(heightTint(1000)).toBeLessThanOrEqual(1.7)
+    expect(heightTint(-1000)).toBeGreaterThanOrEqual(0.55)
   })
 })
