@@ -117,3 +117,12 @@ export function orbitPose(cup: V, angle: number): { eye: V; look: V } {
     look: cup,
   }
 }
+
+/** How much lighter (or darker) the felt is drawn per mm of height: a relief map's shading, so a
+ *  few centimetres of ridge or cone show from above. */
+const TINT_PER_MM = 1 / 130
+
+/** The felt's brightness at a height (mm): 1 on the flat, lighter up, darker down, kept in bounds. */
+export function heightTint(h: number): number {
+  return Math.min(1.7, Math.max(0.55, 1 + h * TINT_PER_MM))
+}
