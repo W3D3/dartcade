@@ -30,6 +30,7 @@
     freeCamera = false,
     wallThickness = 20,
     felt = 'checker',
+    shading = 'toon',
     relief = 1,
     onfail,
   }: {
@@ -52,6 +53,8 @@
     wallThickness?: number
     /** Bench only: the ground's pattern, the 2D view's diagonal stripes or a checkerboard. */
     felt?: 'stripes' | 'checker'
+    /** The felt's shading: a few flat tones (the cartoon look), or smooth, which shows gentle slopes. */
+    shading?: 'toon' | 'smooth'
     /** Bench only: how much taller than true the ground is drawn (the physics keeps true heights). */
     relief?: number
     /** WebGL couldn't start, or lost its context. */
@@ -195,7 +198,10 @@
     const tint = new Float32Array(positions.length)
     for (let k = 0; k < positions.length / 3; k++) tint.fill(heightTint(positions[k * 3 + 1] / relief), k * 3, k * 3 + 3)
     geo.setAttribute('color', new THREE.BufferAttribute(tint, 3))
-    const feltMat = new THREE.MeshToonMaterial({ map: feltTexture(felt), gradientMap: ramp, vertexColors: true })
+    const feltMat =
+      shading === 'smooth'
+        ? new THREE.MeshLambertMaterial({ map: feltTexture(felt), vertexColors: true })
+        : new THREE.MeshToonMaterial({ map: feltTexture(felt), gradientMap: ramp, vertexColors: true })
     const ground = new THREE.Mesh(geo, feltMat)
     ground.receiveShadow = true
     g.add(ground)
@@ -362,6 +368,7 @@
     let course = new THREE.Group()
     let built: Hole | null = null
     let builtFelt = felt
+    let builtShading = shading
     let builtRelief = relief
     const box = { cx: 0, cz: 0, w: 1, d: 1 }
     function rebuild(h: Hole): void {
@@ -371,6 +378,7 @@
       scene.add(course)
       built = h
       builtFelt = felt
+      builtShading = shading
       builtRelief = relief
       const xs = h.outline.map(p => p[0])
       const ys = h.outline.map(p => p[1])
@@ -411,7 +419,7 @@
     renderer.setAnimationLoop(now => {
       const dt = Math.min(0.1, (now - then) / 1000)
       then = now
-      if (built !== hole || builtFelt !== felt || builtRelief !== relief) rebuild(hole)
+      if (built !== hole || builtFelt !== felt || builtShading !== shading || builtRelief !== relief) rebuild(hole)
       if (!placed || placed.aim !== aim || placed.aims !== aims) {
         placeAim()
         placeDots()
