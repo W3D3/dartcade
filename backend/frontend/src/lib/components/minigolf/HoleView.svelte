@@ -293,16 +293,9 @@
           >{ring.label}</text
         >
       {/each}
-      <circle
-        cx={aim.at[0]}
-        cy={aim.at[1]}
-        r={dial}
-        fill="#0f100e"
-        fill-opacity="0.62"
-        stroke="#efeee6"
-        stroke-opacity="0.55"
-        stroke-width={dial * 0.03}
-      />
+      <!-- A dark ring under the spokes, clear in the middle so the ball shows -->
+      <circle cx={aim.at[0]} cy={aim.at[1]} r={dial * 0.65} fill="none" stroke="#0f100e" stroke-opacity="0.62" stroke-width={dial * 0.7} />
+      <circle cx={aim.at[0]} cy={aim.at[1]} r={dial} fill="none" stroke="#efeee6" stroke-opacity="0.55" stroke-width={dial * 0.03} />
       {#each SEGS as n, i (n)}
         {@const a = segAngle(i)}
         {@const from = toward(aim.at, a + HALF, dial * 0.3)}

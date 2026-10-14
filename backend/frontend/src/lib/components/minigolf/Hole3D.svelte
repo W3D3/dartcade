@@ -119,10 +119,14 @@
     const toward = (a: number, len: number) => [Math.cos(a) * len, -Math.sin(a) * len] as const
     if (g) {
       g.translate(256, 256)
+      // A dark ring under the spokes, clear in the middle so the ball shows
       g.beginPath()
       g.arc(0, 0, d, 0, Math.PI * 2)
+      g.arc(0, 0, d * 0.3, 0, Math.PI * 2, true)
       g.fillStyle = 'rgba(15, 16, 14, 0.62)'
-      g.fill()
+      g.fill('evenodd')
+      g.beginPath()
+      g.arc(0, 0, d, 0, Math.PI * 2)
       g.lineWidth = d * 0.03
       g.strokeStyle = 'rgba(239, 238, 230, 0.55)'
       g.stroke()
