@@ -126,3 +126,17 @@ const TINT_PER_MM = 1 / 130
 export function heightTint(h: number): number {
   return Math.min(1.7, Math.max(0.55, 1 + h * TINT_PER_MM))
 }
+
+/** How much of the canvas the panels over it cover on each side, px. */
+export type Insets = { left: number; right: number; top: number; bottom: number }
+
+/**
+ * Framing the hole in the part of the canvas the panels leave free: the camera's centre shifted
+ * there (setViewOffset's x and y, px), the free part's aspect, and how much further back the camera
+ * goes so what fit the whole canvas fits the free part (it keeps the canvas's field of view).
+ */
+export function framing(w: number, h: number, i: Insets): { offsetX: number; offsetY: number; aspect: number; scale: number } {
+  const fw = Math.max(1, w - i.left - i.right)
+  const fh = Math.max(1, h - i.top - i.bottom)
+  return { offsetX: (i.right - i.left) / 2, offsetY: (i.bottom - i.top) / 2, aspect: fw / fh, scale: h / fh }
+}

@@ -16,7 +16,17 @@
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { CUP_DEPTH, groundMesh, heightAt } from '$shared/minigolf/3d/ground'
   import { BALL_R, type Hole, type PathPt, type Pt } from '$shared/minigolf/types'
-  import { CHASE_FOV, ORBIT_SPEED, chaseStep, heightTint, orbitPose, startRenderer, type ChaseCam } from '$lib/minigolf/view3d'
+  import {
+    CHASE_FOV,
+    ORBIT_SPEED,
+    chaseStep,
+    framing,
+    heightTint,
+    orbitPose,
+    startRenderer,
+    type ChaseCam,
+    type Insets,
+  } from '$lib/minigolf/view3d'
 
   let {
     hole,
@@ -31,6 +41,7 @@
     wallThickness = 20,
     felt = 'checker',
     shading = 'toon',
+    insets = { left: 0, right: 0, top: 0, bottom: 0 },
     relief = 1,
     onfail,
   }: {
@@ -55,6 +66,8 @@
     felt?: 'stripes' | 'checker'
     /** The felt's shading: a few flat tones (the cartoon look), or smooth, which shows gentle slopes. */
     shading?: 'toon' | 'smooth'
+    /** How much of the canvas panels over it cover (px): the hole is framed in the rest. */
+    insets?: Insets
     /** Bench only: how much taller than true the ground is drawn (the physics keeps true heights). */
     relief?: number
     /** WebGL couldn't start, or lost its context. */
@@ -403,11 +416,14 @@
     // The chase camera's path, as drawn (with the relief), worked out once a roll
     let chased: { path: PathPt[]; drawn: PathPt[] } | null = null
 
+    let size = { w: 1, h: 1 }
+    let framed = ''
     const resize = () => {
       const { clientWidth: w, clientHeight: h } = host
+      size = { w: Math.max(1, w), h: Math.max(1, h) }
       renderer.setSize(w, h, false)
-      camera.aspect = w / Math.max(1, h)
-      camera.updateProjectionMatrix()
+      camera.aspect = size.w / size.h
+      framed = ''
     }
     const observer = new ResizeObserver(resize)
     observer.observe(host)
@@ -430,6 +446,14 @@
         placed = { aim, aims }
       }
       placeBalls()
+      // The hole is framed where the panels leave the canvas free: the camera's centre goes there
+      const view = framing(size.w, size.h, insets)
+      const key = `${size.w}:${size.h}:${view.offsetX}:${view.offsetY}`
+      if (key !== framed) {
+        camera.setViewOffset(size.w, size.h, view.offsetX, view.offsetY, size.w, size.h)
+        camera.updateProjectionMatrix()
+        framed = key
+      }
 
       if (freeCamera) {
         // Orbiting owns the camera; seed its pivot on the ball the moment it's switched on
@@ -462,11 +486,17 @@
           const flat = new THREE.Vector2(from.x, from.z).normalize()
           chaseCam ??= first
             ? null
-            : { look: [look.x, look.z, look.y], dir: [flat.x, flat.y], pitch: Math.asin(-from.y / from.length()), dist: from.length() }
-          const step = chaseStep(chaseCam, chased.drawn, follow.at, dt, camera.aspect)
+            : {
+                look: [look.x, look.z, look.y],
+                dir: [flat.x, flat.y],
+                pitch: Math.asin(-from.y / from.length()),
+                dist: from.length() / view.scale,
+              }
+          const step = chaseStep(chaseCam, chased.drawn, follow.at, dt, view.aspect)
           chaseCam = step.cam
-          eye.set(step.eye[0], step.eye[2], step.eye[1])
           look.set(step.look[0], step.look[2], step.look[1])
+          // Backed off so what the chase frames fits the free part of the canvas
+          eye.set(step.eye[0], step.eye[2], step.eye[1]).sub(look).multiplyScalar(view.scale).add(look)
         } else {
           chaseCam = null
           orbitAngle = null
@@ -474,8 +504,8 @@
           const wantLook = new THREE.Vector3()
           // From above and a little behind the tee's end (the course's y runs down the screen, as
           // in 2D), tilted enough that the ground's ups and downs show
-          const fit = Math.max(box.d, box.w / camera.aspect) * 1.12
-          const dist = fit / 2 / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
+          const fit = Math.max(box.d, box.w / view.aspect) * 1.12
+          const dist = ((fit / 2) * view.scale) / Math.tan(THREE.MathUtils.degToRad(camera.fov / 2))
           wantEye.set(box.cx, dist * Math.cos(TILT), box.cz + dist * Math.sin(TILT))
           wantLook.set(box.cx, 0, box.cz)
           const k = first ? 1 : 1 - Math.exp(-dt * 3)
