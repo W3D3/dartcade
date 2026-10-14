@@ -20,6 +20,7 @@
   import EditorCanvas from '$lib/components/minigolf/editor/EditorCanvas.svelte'
   import ElementList from '$lib/components/minigolf/editor/ElementList.svelte'
   import Properties from '$lib/components/minigolf/editor/Properties.svelte'
+  import TestHole from '$lib/components/minigolf/editor/TestHole.svelte'
   import ToolRail from '$lib/components/minigolf/editor/ToolRail.svelte'
   import { holeOf, type HoleRow } from '$lib/minigolf/editor/course'
   import { createHistory, type History } from '$lib/minigolf/editor/history'
@@ -120,6 +121,7 @@
     const kind = selection.kind
     if (kind === 'bumper' || kind === 'wall' || kind === 'slope' || kind === 'terrain') selection = { kind, index: count[kind] - 1 }
   }
+  const setPar = (par: number) => hole && commit({ ...hole, par })
   const pickTool = (t: Tool) => (tool = t)
   const selectOnCanvas = (ref: ElementRef | null) => (selection = ref && hole && exists(hole, ref) ? ref : null)
   /** A row in the lists picks the tool that edits it too: Outline for the corners, else Select. */
@@ -358,6 +360,7 @@
             </div>
             <ElementList {hole} {selection} onselect={pickFromList} />
             <CheckList {checks} onselect={pickFromList} />
+            <TestHole {hole} physics={DEFAULT_PHYSICS} onpar={setPar} />
           </aside>
         </div>
       {/if}
