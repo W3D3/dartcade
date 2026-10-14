@@ -35,6 +35,7 @@ export function validateHole(hole: Hole): string[] {
   hole.walls.forEach((w, i) => {
     if (w.points.length < 2) errors.push(`wall ${i + 1} needs at least 2 points`)
     else if (!finite(w.points)) errors.push(`wall ${i + 1} has a non-finite number`)
+    else if (w.thickness !== undefined && !(w.thickness > 0)) errors.push(`wall ${i + 1} thickness must be positive`)
   })
   hole.bumpers.forEach((b, i) => {
     if (!finite([b.at])) errors.push(`bumper ${i + 1} has a non-finite number`)

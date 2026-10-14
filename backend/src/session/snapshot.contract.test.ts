@@ -75,6 +75,24 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     expect(e.getSnapshot(sessionId)?.game.currentVisitDarts).toHaveLength(1)
   })
 
+  it("Minigolf keeps a wall's own thickness", async () => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', 'minigolf', { ...minigolfModule.defaultConfig, course: 'test' }, players)
+    const snap = structuredClone(e.getSnapshot(sessionId)) as any
+    snap.game.hole.walls = [
+      {
+        points: [
+          [100, 100],
+          [300, 100],
+        ],
+        thickness: 12,
+      },
+    ]
+    expectValid(snap)
+    const parsed = SnapshotSchema.parse(snap)
+    expect(parsed.gameId === 'minigolf' && parsed.game.hole.walls[0]?.thickness).toBe(12)
+  })
+
   it('X01 without bull off, after a visit', async () => {
     const e = engine()
     const { sessionId } = await e.create('u1', 'board-1', 'x01', x01Module.defaultConfig, players)

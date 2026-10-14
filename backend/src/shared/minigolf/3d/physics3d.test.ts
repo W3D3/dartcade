@@ -190,6 +190,25 @@ describe('3D physics', () => {
     expect(simulateShot3d(kicker, P, [200, 3000], shot).rest[1]).toBeGreaterThan(simulateShot3d(plain, P, [200, 3000], shot).rest[1])
   })
 
+  it('bounces off a thicker wall sooner than a thin one', () => {
+    const start: Pt = [200, 3800]
+    const wallY = start[1] - 300 // 300 mm away along the lane
+    const wallAt = (thickness: number): Hole => ({
+      ...lane,
+      walls: [
+        {
+          points: [
+            [0, wallY],
+            [400, wallY],
+          ],
+          thickness,
+        },
+      ],
+    })
+    const turnY = (thickness: number) => Math.min(...simulateShot3d(wallAt(thickness), P, start, up(0.3)).path.map(p => p[1]))
+    expect(turnY(200)).toBeGreaterThan(turnY(12) + 50)
+  })
+
   it('records a hit on the rail, and carries heights in the path', () => {
     const r = simulateShot3d(lane, P, [100, 600], up(0.4)) // beside the cup
     expect(r.hits.length).toBeGreaterThan(0)

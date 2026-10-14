@@ -433,6 +433,10 @@ export interface MinigolfHole {
     points: MinigolfPt[]
     closed?: boolean
     restitution?: number
+    /**
+     * mm; the default wall thickness when absent
+     */
+    thickness?: number
   }[]
   bumpers: {
     at: MinigolfPt

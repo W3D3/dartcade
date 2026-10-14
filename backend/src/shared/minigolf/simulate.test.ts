@@ -177,6 +177,25 @@ describe('simulateShot', () => {
     expect(Math.max(...steps.slice(-8))).toBeLessThan(25)
   })
 
+  it('bounces off a thicker wall sooner than a thin one', () => {
+    const start = lane.tee
+    const wallY = start[1] - 300 // 300 mm away along the lane
+    const wallAt = (thickness: number): Hole => ({
+      ...lane,
+      walls: [
+        {
+          points: [
+            [0, wallY],
+            [400, wallY],
+          ],
+          thickness,
+        },
+      ],
+    })
+    const turnY = (thickness: number) => Math.min(...simulateShot(wallAt(thickness), P, start, up(0.3)).path.map(p => p[1]))
+    expect(turnY(200)).toBeGreaterThan(turnY(12) + 50)
+  })
+
   it('records when the ball knocks into something, once per knock', () => {
     const walled: Hole = {
       ...lane,

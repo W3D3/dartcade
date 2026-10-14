@@ -156,13 +156,13 @@
   {/each}
   {#each hole.walls as w, i (i)}
     {#if w.closed}
-      <polygon points={pts(w.points)} fill="#e9dfc4" stroke="#e9dfc4" stroke-width={wallThickness} stroke-linejoin="round" />
+      <polygon points={pts(w.points)} fill="#e9dfc4" stroke="#e9dfc4" stroke-width={w.thickness ?? wallThickness} stroke-linejoin="round" />
     {:else}
       <polyline
         points={pts(w.points)}
         fill="none"
         stroke="#e9dfc4"
-        stroke-width={wallThickness}
+        stroke-width={w.thickness ?? wallThickness}
         stroke-linecap="round"
         stroke-linejoin="round"
       />

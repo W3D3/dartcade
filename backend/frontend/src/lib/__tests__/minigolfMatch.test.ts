@@ -311,3 +311,16 @@ describe('minigolf match screen', () => {
     expect(docked).toContain('aria-label="Tries"')
   })
 })
+
+describe('HoleView', () => {
+  it('draws each wall at its own thickness, else the default', async () => {
+    const { default: HoleView } = await import('$lib/components/minigolf/HoleView.svelte')
+    const walls = [
+      { points: [[100, 100] as const, [300, 100] as const], thickness: 12 },
+      { points: [[100, 200] as const, [300, 200] as const] },
+    ]
+    const { body } = render(HoleView, { props: { hole: { ...hole, walls } as never, ball: [250, 2750] } })
+    const lines = body.match(/<polyline[^>]*>/g) ?? []
+    expect(lines.map(l => l.match(/stroke-width="(\d+)"/)?.[1])).toEqual(['12', '20'])
+  })
+})
