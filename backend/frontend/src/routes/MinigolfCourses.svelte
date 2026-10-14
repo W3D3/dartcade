@@ -20,7 +20,7 @@
   import { sortable, type SortableDrop } from '$lib/actions/sortable'
   import { listKeyMove, listPlacement, reorder, type Direction, type Placement } from '$lib/lobby/dnd'
   import { createReorder } from '$lib/lobby/reorder.svelte'
-  import { createCourseStore, type CourseContent } from '$lib/minigolf/editor/store.svelte'
+  import { createCourseStore, isUnsaved, type CourseContent } from '$lib/minigolf/editor/store.svelte'
   import { plural } from '$lib/fmt'
   import { courseStatus, courseTotals, holeOf, newHole, publishOutcome, type CourseRow, type HoleRow } from '$lib/minigolf/editor/course'
 
@@ -198,7 +198,7 @@
   const parOf = (holeIds: string[]) => courseTotals(holeIds.map(id => ({ par: holeAt(id)?.par ?? 0 }))).par
 
   function onbeforeunload(e: BeforeUnloadEvent): void {
-    if (store && (store.status === 'unsaved' || store.status === 'saving' || store.status === 'error')) e.preventDefault()
+    if (store?.content && isUnsaved(store.status)) e.preventDefault()
   }
 </script>
 

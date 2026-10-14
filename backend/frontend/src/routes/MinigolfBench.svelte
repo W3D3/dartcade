@@ -1,10 +1,12 @@
 <!--
   Admin test bench for minigolf holes: pick a hole, click the dartboard to putt, watch the ball.
-  Runs the shared core (shot, simulation) in the browser; nothing is stored.
+  Runs the shared core (shot, simulation) in the browser; nothing is stored. With
+  `?course=<id>&draft=1` (the course editor's Preview round) it plays that course's draft holes.
   Design: docs/superpowers/specs/2026-10-09-minigolf-core-bench-design.md
 -->
 <script lang="ts">
-  import { push } from 'svelte-spa-router'
+  import { untrack } from 'svelte'
+  import { push, querystring } from 'svelte-spa-router'
   import { currentUser } from '$lib/auth'
   import DartBoard from '$lib/components/DartBoard.svelte'
   import Layout from '$lib/components/Layout.svelte'
@@ -32,20 +34,50 @@
     type BenchState,
     type Pt3,
   } from '$lib/minigolf/bench'
+  import { apiLoadCourse, apiLoadHole } from '$lib/minigolf/editor/store.svelte'
   import { COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { shotFromDart } from '$shared/minigolf/shot'
   import { simulateShot } from '$shared/minigolf/simulate'
-  import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
+  import { BALL_R, type Course, type Hole, type Pt } from '$shared/minigolf/types'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
   $effect(() => {
     if ($currentUser && !$currentUser.isAdmin) void push('/')
   })
 
+  let courses = $state.raw<readonly Course[]>(COURSES)
+  let previewError = $state('')
   let courseId = $state(COURSES[0].id)
   let holeIdx = $state(0)
-  const course = $derived(COURSES.find(c => c.id === courseId) ?? COURSES[0])
+  const course = $derived(courses.find(c => c.id === courseId) ?? courses[0])
+
+  // Preview round: the draft course (its draft holes, else what's published) instead of the code's courses
+  const draftOf = $derived.by(() => {
+    const q = new URLSearchParams($querystring ?? '')
+    return q.get('draft') === '1' ? q.get('course') : null
+  })
+  $effect(() => {
+    const id = draftOf
+    if (!id || !$currentUser?.isAdmin) return
+    untrack(() => void loadDraft(id))
+  })
+  async function loadDraft(id: string): Promise<void> {
+    try {
+      const { value } = await apiLoadCourse(id)
+      const holes = await Promise.all(value.holeIds.map(async h => (await apiLoadHole(h)).value))
+      if (holes.length === 0) {
+        previewError = 'This course has no holes yet.'
+        return
+      }
+      courses = [{ id, name: `${value.name} (draft)`, holes }]
+      courseId = id
+      holeIdx = 0
+      pickHole()
+    } catch {
+      previewError = "Couldn't load the draft course."
+    }
+  }
   const picked = $derived(course.holes[Math.min(holeIdx, course.holes.length - 1)])
   /** The hole as edited in the JSON editor; picking a hole drops the edit. */
   let edited = $state<Hole | null>(null)
@@ -178,7 +210,7 @@
                 pickHole()
               }}
             >
-              {#each COURSES as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
+              {#each courses as c (c.id)}<option value={c.id}>{c.name}</option>{/each}
             </select>
           </label>
           <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
@@ -241,6 +273,7 @@
           <Toggle bind:pressed={assist}>Aim assist</Toggle>
         </div>
       </header>
+      {#if previewError}<p role="alert" class="m-0 text-[14px] text-live-text">{previewError}</p>{/if}
       {#if playtest}
         <Playtest {hole} {physics} {assist} {felt} {shading} {freeCamera} {relief} />
       {:else}

@@ -3,6 +3,7 @@
 // ($shared/minigolf/checks) reports that, live, as the editor applies these.
 import { G } from '$shared/minigolf/3d/ground'
 import type { ElementRef } from '$shared/minigolf/checks'
+import { distanceToSegment, edgesOf, pointInPolygon } from '$shared/minigolf/geometry'
 import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
 import { BOUNCE, BUMPER_R, CUP, GRID, WALL } from '$shared/minigolf/presets'
 import type { Bumper, Hole, Pt, Slope, Terrain, Wall } from '$shared/minigolf/types'
@@ -26,6 +27,16 @@ export function snap(p: Pt, opts: { grid: boolean; angle45From?: Pt }): Pt {
     y = Math.round(y / GRID) * GRID
   }
   return [x, y]
+}
+
+/** Where a dragged point goes: `orig` moved by the pointer's travel since `grab` (so an off-centre
+ *  grab doesn't make it jump), then snapped. Null while the pointer hasn't gone past `threshold` mm
+ *  from `grab`: a click selects, it doesn't move (or snap) anything. */
+export function dragTo(orig: Pt, grab: Pt, pointer: Pt, opts: { threshold: number; grid: boolean; angle45From?: Pt }): Pt | null {
+  const dx = pointer[0] - grab[0]
+  const dy = pointer[1] - grab[1]
+  if (Math.hypot(dx, dy) <= opts.threshold) return null
+  return snap([orig[0] + dx, orig[1] + dy], opts)
 }
 
 // --- Outline corners ---
@@ -89,13 +100,45 @@ export function addRidge(h: Hole, from: Pt, to: Pt, width: number, heightMm: num
 
 const RAMP_EDGE_INDEX = { W: 0, N: 1, E: 2, S: 3 } as const
 
-/** A mesa from `from` to `to`: the ramp side's edge is 600 mm (a long, gentle slope down), the
- *  other three are 60 mm (a near-cliff), so the plateau stands in flat felt without a step. */
-export function addPlateau(h: Hole, from: Pt, to: Pt, heightMm: number, rampSide: 'N' | 'E' | 'S' | 'W'): Hole {
+/** A mesa's edges with `rampSide` 600 mm (a long, gentle slope down) and the other three 60 mm
+ *  (a near-cliff), so the plateau stands in flat felt without a step. */
+export function plateauEdges(rampSide: 'N' | 'E' | 'S' | 'W'): [number, number, number, number] {
   const edges: [number, number, number, number] = [60, 60, 60, 60]
   edges[RAMP_EDGE_INDEX[rampSide]] = 600
-  const terrain: Terrain = { mesa: { from, to, height: heightMm, edges } }
+  return edges
+}
+
+/** A mesa from `from` to `to`, ramping down on `rampSide` (see `plateauEdges`). */
+export function addPlateau(h: Hole, from: Pt, to: Pt, heightMm: number, rampSide: 'N' | 'E' | 'S' | 'W'): Hole {
+  const terrain: Terrain = { mesa: { from, to, height: heightMm, edges: plateauEdges(rampSide) } }
   return { ...h, terrain: [...(h.terrain ?? []), terrain] }
+}
+
+// --- Change one element's fields (the Properties panel) ---
+
+export function updateBumper(h: Hole, i: number, patch: Partial<Bumper>): Hole {
+  return { ...h, bumpers: h.bumpers.map((b, k) => (k === i ? { ...b, ...patch } : b)) }
+}
+
+export function updateWall(h: Hole, i: number, patch: Partial<Wall>): Hole {
+  return { ...h, walls: h.walls.map((w, k) => (k === i ? { ...w, ...patch } : w)) }
+}
+
+export function updateSlope(h: Hole, i: number, slope: Slope): Hole {
+  return { ...h, slopes: h.slopes.map((s, k) => (k === i ? slope : s)) }
+}
+
+/** A hill's height or a dip's depth (mm, the Properties field) set to `mm`. Only a positive
+ *  `mm` counts: at 0 the slope's sign, and with it hill or dip, would be lost. */
+export function setRadialHeight(h: Hole, i: number, mm: number): Hole {
+  const s = h.slopes.at(i)
+  if (!s || !('radial' in s) || !Number.isFinite(mm) || mm <= 0) return h
+  const sign = s.radial.strength < 0 ? -1 : 1
+  return updateSlope(h, i, { radial: { ...s.radial, strength: (sign * mm * G) / s.radial.radius } })
+}
+
+export function updateTerrain(h: Hole, i: number, terrain: Terrain): Hole {
+  return { ...h, terrain: (h.terrain ?? []).map((t, k) => (k === i ? terrain : t)) }
 }
 
 // --- Move/remove/duplicate any element by ref ---
@@ -222,4 +265,42 @@ export function elementsOf(h: Hole): { ref: ElementRef; label: string; detail: s
   })
 
   return items
+}
+
+// --- Picking ---
+
+/** Half the tee box's side, mm (HoleView draws it 140 mm across). */
+const TEE_HALF = 70
+
+/** The element under p, topmost first: tee, cup, bumpers, walls, then the ground's shapes.
+ *  `slack` (mm) widens every target so thin things stay clickable; `groundOnly` looks through to
+ *  the terrain shapes (Flatten). The outline isn't picked here: its corners have their own handles. */
+export function hitTest(h: Hole, p: Pt, slack = 20, groundOnly = false): ElementRef | null {
+  const near = (q: Pt, r: number) => Math.hypot(p[0] - q[0], p[1] - q[1]) <= r + slack
+  if (groundOnly) return hitGround(h, p, slack, near)
+  if (Math.abs(p[0] - h.tee[0]) <= TEE_HALF + slack && Math.abs(p[1] - h.tee[1]) <= TEE_HALF + slack) return { kind: 'tee', index: 0 }
+  if (near(h.cup.at, h.cup.r)) return { kind: 'cup', index: 0 }
+  for (let i = h.bumpers.length - 1; i >= 0; i--) if (near(h.bumpers[i].at, h.bumpers[i].r)) return { kind: 'bumper', index: i }
+  for (let i = h.walls.length - 1; i >= 0; i--) {
+    const w = h.walls[i]
+    const half = (w.thickness ?? DEFAULT_PHYSICS.wallThickness) / 2 + slack
+    if (edgesOf(w.points, !!w.closed).some(([a, b]) => distanceToSegment(p, a, b) <= half)) return { kind: 'wall', index: i }
+    if (w.closed && pointInPolygon(p, w.points)) return { kind: 'wall', index: i }
+  }
+  return hitGround(h, p, slack, near)
+}
+
+function hitGround(h: Hole, p: Pt, slack: number, near: (q: Pt, r: number) => boolean): ElementRef | null {
+  for (let i = h.slopes.length - 1; i >= 0; i--) {
+    const s = h.slopes[i]
+    const hit = 'radial' in s ? near(s.radial.center, s.radial.radius) : distanceToSegment(p, s.bump.from, s.bump.to) <= s.bump.width
+    if (hit) return { kind: 'slope', index: i }
+  }
+  const terrain = h.terrain ?? []
+  for (let i = terrain.length - 1; i >= 0; i--) {
+    const { from, to } = terrain[i].mesa
+    const inside = (v: number, a: number, b: number) => v >= Math.min(a, b) - slack && v <= Math.max(a, b) + slack
+    if (inside(p[0], from[0], to[0]) && inside(p[1], from[1], to[1])) return { kind: 'terrain', index: i }
+  }
+  return null
 }

@@ -1,15 +1,18 @@
 <!--
   A minigolf hole drawn in course space (mm, y down) in the design's look (Minigolf.dc.html):
-  felt, cream rails, red bumpers, hills, bowls and bumps shaded by height with contour lines, the tee, the cup and flag,
+  felt, cream rails, red bumpers, plateaus, hills, bowls and bumps shaded by height with contour lines, the tee, the cup and flag,
   and the ball. With `onPlace`, the ball can be dragged anywhere. Bench aids: `forces` draws the slopes' push as arrows, `debug` the cup's
   capture radius, rail normals, slope outlines and the last shot's samples; `preview` a putt's line.
+  The hole editor draws on it: `underlay` over the felt (under everything else), `children` on top,
+  both in course mm; `frame` holds the view still while it drags the outline.
   In a game: `aim` draws the design's aim dial and reach rings around the ball, `aims` the shot
   preview's aim lines, and `camera` zooms onto a point (t = 0: the whole hole, 1: CAMERA_SHARE of it).
 -->
 <script lang="ts">
+  import type { Snippet } from 'svelte'
   import { HALF, SEGS, segAngle } from '$shared/board'
   import { bounds } from '$shared/minigolf/geometry'
-  import { forceArrows, slopeLook } from '$lib/minigolf/terrain'
+  import { forceArrows, mesaLook, slopeLook, type SlopeLook } from '$lib/minigolf/terrain'
   import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
   import { BALL_R, type Hole, type Pt } from '$shared/minigolf/types'
 
@@ -28,6 +31,9 @@
     aim = null,
     aims = [],
     camera = null,
+    frame,
+    underlay,
+    children,
   }: {
     hole: Hole
     ball: Pt
@@ -51,6 +57,10 @@
     /** Shot preview aim lines; the current try's is bright, replaced ones faint. */
     aims?: { from: Pt; dir: Pt; roll: number; current: boolean }[]
     camera?: { focus: Pt; t: number } | null
+    /** The points the view frames (the outline when left out). */
+    frame?: readonly Pt[]
+    underlay?: Snippet
+    children?: Snippet
   } = $props()
 
   /** Each rail segment's midpoint and a short tick along its normal. */
@@ -91,7 +101,7 @@
   }
 
   const PAD = 120
-  const box = $derived(bounds(hole.outline))
+  const box = $derived(bounds(frame ?? hole.outline))
   const full = $derived({ x: box.minX - PAD, y: box.minY - PAD, w: box.maxX - box.minX + 2 * PAD, h: box.maxY - box.minY + 2 * PAD })
   /** How much of the hole the camera shows zoomed in: enough around the ball to follow it. */
   const CAMERA_SHARE = 0.45
@@ -113,6 +123,7 @@
   const toward = (at: Pt, a: number, len: number): Pt => [at[0] + Math.cos(a) * len, at[1] - Math.sin(a) * len]
   const pts = (p: readonly Pt[]) => p.map(([x, y]) => `${x},${y}`).join(' ')
   const looks = $derived(hole.slopes.map(slopeLook))
+  const shaded: (SlopeLook & { top?: string })[] = $derived([...(hole.terrain ?? []).map(mesaLook), ...looks])
   const uid = $props.id()
   const arrows = $derived(forces ? forceArrows(hole, 150) : [])
 </script>
@@ -145,13 +156,15 @@
     stroke-linejoin="round"
   />
   <polygon points={pts(hole.outline)} fill="url(#mg-felt)" stroke="#e9dfc4" stroke-width={wallThickness} stroke-linejoin="round" />
-  <!-- Slopes: lighter the higher (a hill, a bump), darker the deeper (a bowl), fading into the felt at the edge and cut off at the rails -->
-  {#each looks as look, i (i)}
-    <g pointer-events="none" clip-path="url(#{uid}-course)" data-testid="slope">
+  {@render underlay?.()}
+  <!-- Terrain and slopes: lighter the higher (a plateau, a hill, a bump), darker the deeper (a pit, a bowl), fading into the felt at the edge and cut off at the rails -->
+  {#each shaded as look, i (i)}
+    <g pointer-events="none" clip-path="url(#{uid}-course)" data-testid={look.top ? 'mesa' : 'slope'}>
       {#each look.bands as d, k (k)}<path {d} fill={look.raised ? '#ffffff' : '#000000'} fill-opacity={look.raised ? 0.03 : 0.045} />{/each}
       <g fill="none" stroke="#e9dfc4" stroke-opacity="0.2" stroke-width="5">
         {#each look.contours as d, k (k)}<path {d} />{/each}
       </g>
+      {#if look.top}<path d={look.top} fill="none" stroke="#e9dfc4" stroke-opacity="0.45" stroke-width="6" />{/if}
     </g>
   {/each}
   {#each hole.walls as w, i (i)}
@@ -355,4 +368,5 @@
     pointer-events="none"
     data-testid="ball"
   />
+  {@render children?.()}
 </svg>

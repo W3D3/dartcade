@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { capsule, contourSpacing, forceArrows, slopeLook } from '$lib/minigolf/terrain'
-import type { Hole, Slope } from '$shared/minigolf/types'
+import { capsule, contourSpacing, forceArrows, mesaLook, mesaRing, slopeLook } from '$lib/minigolf/terrain'
+import type { Hole, Slope, Terrain } from '$shared/minigolf/types'
 
 const summit: Slope = { radial: { center: [900, 600], radius: 400, strength: 1500 } }
 const bump: Slope = { bump: { from: [1000, 2000], to: [1000, 2800], width: 300, strength: 250 } }
@@ -40,6 +40,20 @@ describe('minigolf terrain', () => {
 
   it('packs contours closer on steeper slopes', () => {
     expect(contourSpacing(1500)).toBeLessThan(contourSpacing(300))
+  })
+
+  it("rings a plateau out to each side's own edge, round its corners on ellipses", () => {
+    // Top 1000..2000 x 500..800, a 600 mm ramp south, 60 mm cliffs elsewhere; from/to either way round
+    const plateau: Terrain = { mesa: { from: [2000, 800], to: [1000, 500], height: 40, edges: [60, 60, 60, 600] } }
+    expect(mesaRing(plateau, 0.5)).toBe(
+      'M 1000 470 L 2000 470 A 30 30 0 0 1 2030 500 L 2030 800 A 30 300 0 0 1 2000 1100 L 1000 1100 A 30 300 0 0 1 970 800 L 970 500 A 30 30 0 0 1 1000 470 Z',
+    )
+    const look = mesaLook(plateau)
+    expect(look.raised).toBe(true)
+    expect(look.top).toBe(mesaRing(plateau, 0))
+    expect(look.bands[0]).toBe(mesaRing(plateau, 1))
+    expect(look.contours).toHaveLength(3)
+    expect(mesaLook({ mesa: { ...plateau.mesa, height: -40 } }).raised).toBe(false)
   })
 
   it('points force arrows downhill, only on slopes and inside the course', () => {
