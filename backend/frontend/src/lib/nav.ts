@@ -2,20 +2,33 @@ import type { LobbySummary } from './api/lobby-ws'
 import type { FriendList } from './lobby/sockets'
 import { indicatorView } from './lobby/format.js'
 
-export type NavTab = { href: string; label: string; icon: 'play' | 'live' | 'boards' | 'history'; badge?: number }
+export type NavTab = {
+  href: string
+  label: string
+  icon: 'play' | 'ranked' | 'live' | 'boards' | 'history'
+  badge?: number
+  /** When the label alone doesn't say it ('Ranked' is the Matchmaking page). */
+  aria?: string
+}
 
-/** The phone tab bar and the tablet rail: Live only while a game is running; pending invites as a badge on Play. */
-export function navTabs(liveSessionId: string | null, invites = 0): NavTab[] {
+/**
+ * The phone tab bar and the tablet rail: Ranked after Play while matchmaking is on (MM-Phone),
+ * Live only while a game is running; pending invites as a badge on Play.
+ */
+export function navTabs(liveSessionId: string | null, invites = 0, ranked = false): NavTab[] {
   return [
     { href: '/', label: 'Play', icon: 'play', ...(invites > 0 ? { badge: invites } : {}) },
+    ...(ranked ? [{ href: '/matchmaking', label: 'Ranked', icon: 'ranked' as const, aria: 'Matchmaking' }] : []),
     ...(liveSessionId ? [{ href: `/session/${liveSessionId}`, label: 'Live', icon: 'live' as const }] : []),
     { href: '/boards', label: 'Boards', icon: 'boards' },
     { href: '/history', label: 'History', icon: 'history' },
   ]
 }
 
+/** The route itself or a page under it (`/matchmaking/ranks` is still Matchmaking). */
 export function isActiveRoute(location: string, href: string): boolean {
-  return location === href || (location === '' && href === '/')
+  if (href === '/') return location === '/' || location === ''
+  return location === href || location.startsWith(`${href}/`)
 }
 
 /** The tablet rail's Lobby item: create one, or the lobby you're in by name. */

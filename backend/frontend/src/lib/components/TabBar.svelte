@@ -1,12 +1,14 @@
 <script lang="ts">
-  // The phone's main navigation (below md): Play, Live while a game runs, Boards, History.
+  // The phone's main navigation (below md): Play, Ranked with matchmaking on, Live while a game runs, Boards, History.
   import { location } from 'svelte-spa-router'
   import { navTabs, isActiveRoute } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'
   import { me } from '$lib/lobby/sockets'
+  import { flag } from '$lib/flags'
   import NavTabItem from './NavTabItem.svelte'
 
-  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0))
+  const matchmaking = flag('matchmaking.enabled')
+  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking))
 </script>
 
 <nav

@@ -11,6 +11,11 @@ describe('navTabs', () => {
     expect(tabs[1]).toEqual({ href: '/session/s1', label: 'Live', icon: 'live' })
   })
 
+  it('puts Ranked after Play while matchmaking is on', () => {
+    expect(navTabs('s1', 0, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Boards', 'History'])
+    expect(navTabs(null, 0, true)[1]).toEqual({ href: '/matchmaking', label: 'Ranked', icon: 'ranked', aria: 'Matchmaking' })
+  })
+
   it('puts the pending invites on the Play tab', () => {
     expect(navTabs(null, 2)[0]).toEqual({ href: '/', label: 'Play', icon: 'play', badge: 2 })
     expect(navTabs(null, 0)[0]).toEqual({ href: '/', label: 'Play', icon: 'play' })
@@ -23,6 +28,11 @@ describe('isActiveRoute', () => {
     expect(isActiveRoute('', '/')).toBe(true)
     expect(isActiveRoute('/boards', '/')).toBe(false)
     expect(isActiveRoute('/session/s1', '/session/s1')).toBe(true)
+  })
+  it('keeps a section active on the pages under it', () => {
+    expect(isActiveRoute('/matchmaking/ranks', '/matchmaking')).toBe(true)
+    expect(isActiveRoute('/matchmakingx', '/matchmaking')).toBe(false)
+    expect(isActiveRoute('/matchmaking', '/')).toBe(false)
   })
 })
 

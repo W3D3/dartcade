@@ -21,7 +21,17 @@ export async function setFlagUser(userId: string | null): Promise<void> {
 /** A flag's value, kept up to date; `fallback` (off) until the flags have loaded. */
 export function flag(key: string, fallback = false): Readable<boolean> {
   const client = OpenFeature.getClient()
-  const read = () => client.getBooleanValue(key, fallback)
+  return watch(() => client.getBooleanValue(key, fallback))
+}
+
+/** A number flag's value (matchmaking.visitSeconds), kept up to date; `fallback` until the flags have loaded. */
+export function numberFlag(key: string, fallback: number): Readable<number> {
+  const client = OpenFeature.getClient()
+  return watch(() => client.getNumberValue(key, fallback))
+}
+
+function watch<T>(read: () => T): Readable<T> {
+  const client = OpenFeature.getClient()
   return readable(read(), set => {
     const update = () => set(read())
     const events = [ProviderEvents.Ready, ProviderEvents.ConfigurationChanged, ProviderEvents.ContextChanged]
