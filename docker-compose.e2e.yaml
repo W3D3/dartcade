@@ -27,7 +27,8 @@ services:
     environment:
       DATABASE_URL: postgres://dartgames:dev@postgres:5432/dartgames
       NODE_ENV: test
-      ADMIN_EMAILS: e2e-admin@test.local
+      # One per Playwright worker (e2e/fixtures/auth.ts): workers > 8 need more
+      ADMIN_EMAILS: e2e-admin-0@test.local,e2e-admin-1@test.local,e2e-admin-2@test.local,e2e-admin-3@test.local,e2e-admin-4@test.local,e2e-admin-5@test.local,e2e-admin-6@test.local,e2e-admin-7@test.local
       PORT: '3000'
       BETTER_AUTH_URL: http://localhost:3000
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5174
