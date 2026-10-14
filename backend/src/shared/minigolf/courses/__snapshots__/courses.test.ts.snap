@@ -40,37 +40,37 @@ exports[`courses > test/test-dogleg 3D golden shots 1`] = `
   {
     "hits": [
       14.5,
-      60.75,
+      63.75,
     ],
     "holed": false,
-    "length": 1917,
+    "length": 1928.7,
     "rest": [
-      1658.212,
-      2629.171,
+      1630.907,
+      2633.035,
     ],
   },
   {
     "hits": [
       6.25,
       14.75,
-      59.75,
+      60.75,
     ],
     "holed": false,
-    "length": 2357.5,
+    "length": 2365.8,
     "rest": [
-      1646.451,
-      2563.259,
+      1628.941,
+      2568.036,
     ],
   },
   {
     "hits": [
-      78.75,
+      80.25,
     ],
     "holed": false,
-    "length": 1934.1,
+    "length": 1955.8,
     "rest": [
-      2096.689,
-      2500.005,
+      2090.02,
+      2505.628,
     ],
   },
 ]
@@ -105,26 +105,26 @@ exports[`courses > test/test-dogleg golden shots 1`] = `
   {
     "holed": false,
     "rest": [
-      1654.317,
-      2629.445,
+      1648.729,
+      2630.101,
     ],
-    "samples": 103,
+    "samples": 113,
   },
   {
     "holed": false,
     "rest": [
-      1643.478,
-      2569.468,
+      1650.621,
+      2570.017,
     ],
-    "samples": 115,
+    "samples": 124,
   },
   {
     "holed": false,
     "rest": [
-      2095.062,
+      2098.548,
       2500,
     ],
-    "samples": 103,
+    "samples": 105,
   },
 ]
 `;
@@ -413,22 +413,22 @@ exports[`courses > test/test-summit 3D golden shots 1`] = `
       40,
     ],
     "holed": false,
-    "length": 2460.9,
+    "length": 2415.7,
     "rest": [
-      1297.724,
-      291.857,
+      1353.676,
+      319.167,
     ],
   },
   {
     "hits": [
       21,
-      134.5,
+      121.5,
     ],
     "holed": false,
-    "length": 3338.5,
+    "length": 3272,
     "rest": [
-      1758.488,
-      297.858,
+      1721.815,
+      691.643,
     ],
   },
   {
@@ -474,18 +474,18 @@ exports[`courses > test/test-summit golden shots 1`] = `
   {
     "holed": false,
     "rest": [
-      1296.803,
-      291.997,
+      1326.869,
+      280.221,
     ],
     "samples": 120,
   },
   {
     "holed": false,
     "rest": [
-      1748.134,
-      312.823,
+      1699.278,
+      649.309,
     ],
-    "samples": 140,
+    "samples": 142,
   },
   {
     "holed": false,
