@@ -114,34 +114,16 @@ export type Roll = {
   /** The paths keep the 3D physics' heights. */
   own: PathPt[]
   others: { seat: number; path: PathPt[] }[]
-  kept: boolean
-  /** The stroke it is (hole:seat:stroke number): a kept stroke whose last try already rolled isn't rolled again. */
-  stroke: string
   /** When the ball knocks into something, in path samples; and whether it drops (for its sounds). */
   hits: number[]
   holed: boolean
 }
 
 /**
- * What to roll: the latest try once it's revealed (the tries are used up), else the stroke just
- * kept when its tries were hidden. null for nothing new.
+ * What to roll: the stroke just kept (Shoot, or pulling the darts), on its hole. Tries never roll,
+ * not even once the last dart shows them: the stroke rolls when it's kept. null for nothing.
  */
 export function rollFor(g: MinigolfGame): Roll | null {
-  const t = g.tries.at(-1)
-  if (t && !g.shotHidden && t.path.length > 0) {
-    return {
-      // A new try, or a correction of the latest, changes the key
-      key: `try:${g.holeIdx}:${g.currentPlayer}:${g.tries.length}:${t.label}:${t.coords?.x ?? ''}:${t.coords?.y ?? ''}`,
-      hole: g.holeIdx,
-      seat: g.currentPlayer,
-      own: t.path,
-      others: t.others.map(o => ({ seat: o.seat, path: o.path })),
-      kept: false,
-      stroke: `${g.holeIdx}:${g.currentPlayer}:${(g.balls[g.currentPlayer]?.strokes ?? 0) + 1}`,
-      hits: t.hits,
-      holed: t.holed,
-    }
-  }
   const k = g.lastStroke
   // This hole's, or the one that just ended (it rolls on that hole before the scorecard)
   const onHole = k?.hole === g.holeIdx || (k?.hole === g.lastHole?.index && k?.hole === g.holeIdx - 1)
@@ -152,23 +134,14 @@ export function rollFor(g: MinigolfGame): Roll | null {
     seat: k.seat,
     own: k.path,
     others: k.others.map(o => ({ seat: o.seat, path: o.path })),
-    kept: true,
-    stroke: `${k.hole}:${k.seat}:${k.stroke}`,
     hits: k.hits,
     holed: k.holed,
   }
 }
 
-/**
- * What the match screen does with what rollFor gives it: animate it or not, and the stroke it then
- * remembers as rolled. Not the roll already there when the page opened (it shows the game at rest),
- * and not a kept stroke whose last try already rolled. No roll means the tries went back to hidden
- * (an undo): a stroke kept after that has never rolled, so it's forgotten.
- */
-export function nextRoll(roll: Roll | null, openedOn: string | null, rolledStroke: string): { animate: boolean; rolledStroke: string } {
-  if (!roll) return { animate: false, rolledStroke: '' }
-  if (roll.key === openedOn || (roll.kept && roll.stroke === rolledStroke)) return { animate: false, rolledStroke }
-  return { animate: true, rolledStroke: roll.stroke }
+/** The cup a roll slows down near: its own hole's, which isn't the shown one once the stroke ended it. */
+export function rollCup(g: MinigolfGame, roll: Roll): number[] {
+  return roll.hole === g.holeIdx || !g.lastHole ? g.hole.cup.at : g.lastHole.hole.cup.at
 }
 
 /** A pause before a stroke rolls, for the suspense (and to look up from the board). */

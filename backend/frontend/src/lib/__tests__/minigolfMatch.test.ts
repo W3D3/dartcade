@@ -3,19 +3,7 @@ import { render } from 'svelte/server'
 import type { MinigolfGame } from '$lib/api'
 import { defaultSettings } from '$lib/gameSettings'
 import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
-import {
-  PLAYBACK,
-  SLOW_MO,
-  aimLines,
-  fmtToPar,
-  nextRoll,
-  otherBalls,
-  ownBall,
-  rollFor,
-  rollRate,
-  rows,
-  trySlots,
-} from '$lib/minigolf/match'
+import { PLAYBACK, SLOW_MO, aimLines, fmtToPar, otherBalls, ownBall, rollCup, rollFor, rollRate, rows, trySlots } from '$lib/minigolf/match'
 
 const webgl = vi.hoisted(() => ({ ok: true }))
 vi.mock('$lib/webgl', () => ({ webglAvailable: () => webgl.ok }))
@@ -124,42 +112,37 @@ describe('minigolf match', () => {
     expect(cleo.at[2]).toBeLessThan(0)
   })
 
-  it('rolls the latest shown try after the delay, with a new key for a new try or a correction', () => {
+  it('rolls nothing while the darts are still on the board, shown or hidden', () => {
     expect(rollFor(game())).toBeNull()
-    const a = rollFor(game({ tries: [tryOf('S20')] }))
-    const b = rollFor(game({ tries: [tryOf('S20', { coords: { x: 0.1, y: 0.5 } })] }))
-    expect(a).toMatchObject({
-      seat: 1,
-      kept: false,
-      own: [
-        [250, 2750],
-        [250, 2000],
-      ],
-    })
-    expect(a?.key).not.toBe(b?.key)
+    // The third dart shows the tries, but the stroke rolls only once it's kept (Shoot or pulling the darts)
+    expect(rollFor(game({ tries: [tryOf('S1'), tryOf('S5'), tryOf('S20')] }))).toBeNull()
   })
 
   it('keeps the heights of a 3D roll', () => {
     const r = rollFor(
       game({
-        tries: [
-          tryOf('S20', {
-            path: [
-              [250, 2750, 21],
-              [250, 300, -80],
-            ],
-            others: [
-              {
-                seat: 0,
-                holed: true,
-                path: [
-                  [100, 1000, 21],
-                  [250, 300, -90],
-                ],
-              },
-            ],
-          }),
-        ],
+        currentPlayer: 0,
+        lastStroke: {
+          hole: 1,
+          seat: 1,
+          stroke: 1,
+          path: [
+            [250, 2750, 21],
+            [250, 300, -80],
+          ],
+          others: [
+            {
+              seat: 0,
+              holed: true,
+              path: [
+                [100, 1000, 21],
+                [250, 300, -90],
+              ],
+            },
+          ],
+          hits: [],
+          holed: true,
+        },
       }),
     )
     expect(r?.own[1][2]).toBe(-80)
@@ -180,7 +163,7 @@ describe('minigolf match', () => {
       hits: [],
       holed: false,
     }
-    expect(rollFor(game({ currentPlayer: 0, lastStroke }))).toMatchObject({ seat: 1, kept: true })
+    expect(rollFor(game({ currentPlayer: 0, lastStroke }))).toMatchObject({ seat: 1 })
     // A stroke that ended the last hole shows on the scorecard instead
     expect(rollFor(game({ lastStroke: { ...lastStroke, hole: 0 } }))).toBeNull()
   })
@@ -217,68 +200,13 @@ describe('minigolf match', () => {
       holed: false,
     }
     const lastHole = { index: 0, scores: [3, 2, 2], paths: [[], [], []], hole }
-    expect(rollFor(game({ holeIdx: 1, lastHole, lastStroke }))).toMatchObject({ hole: 0, seat: 2, kept: true })
+    const r = rollFor(game({ holeIdx: 1, lastHole, lastStroke }))
+    expect(r).toMatchObject({ hole: 0, seat: 2 })
+    // It slows down near that hole's cup, not the next one's
+    expect(rollCup(game({ holeIdx: 1, lastHole, lastStroke, hole: { ...hole, cup: { at: [999, 999], r: 80 } } }), r!)).toEqual(hole.cup.at)
     // Two holes back: nothing to roll
     expect(rollFor(game({ holeIdx: 2, lastHole, lastStroke }))).toBeNull()
     expect(rows(game(), players, 0).find(r => r.active)?.name).toBe('Anna')
-  })
-
-  it('names the stroke a try belongs to the same as the stroke it becomes', () => {
-    // Ben (seat 1) has no strokes on hole 2 yet: his try is stroke 1, kept as hole 1, seat 1, stroke 1
-    const t = rollFor(game({ tries: [tryOf('S20')] }))
-    const k = rollFor(
-      game({
-        currentPlayer: 0,
-        lastStroke: {
-          hole: 1,
-          seat: 1,
-          stroke: 1,
-          path: [
-            [250, 2750],
-            [250, 2000],
-          ],
-          others: [],
-          hits: [],
-          holed: false,
-        },
-      }),
-    )
-    expect(t?.stroke).toBe('1:1:1')
-    expect(k?.stroke).toBe(t?.stroke)
-  })
-
-  it('rolls a stroke once: not again when kept after its last try rolled, but after an undo it does', () => {
-    const tryRoll = rollFor(game({ tries: [tryOf('S1'), tryOf('S5'), tryOf('S20')] }))!
-    const kept = rollFor(
-      game({
-        currentPlayer: 0,
-        lastStroke: {
-          hole: 1,
-          seat: 1,
-          stroke: 1,
-          path: [
-            [250, 2750],
-            [250, 2000],
-          ],
-          others: [],
-          hits: [],
-          holed: false,
-        },
-      }),
-    )!
-    // The third try is revealed and rolls
-    let step = nextRoll(tryRoll, null, '')
-    expect(step.animate).toBe(true)
-    // Shoot: the kept stroke is that try, already rolled
-    expect(nextRoll(kept, null, step.rolledStroke).animate).toBe(false)
-    // Undo instead (the tries hide again: no roll), then Shoot: the kept stroke rolls
-    step = nextRoll(null, null, step.rolledStroke)
-    expect(nextRoll(kept, null, step.rolledStroke).animate).toBe(true)
-  })
-
-  it('does not roll what was already there when the page opened', () => {
-    const tryRoll = rollFor(game({ tries: [tryOf('S20')] }))!
-    expect(nextRoll(tryRoll, tryRoll.key, '').animate).toBe(false)
   })
 })
 
