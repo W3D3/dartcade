@@ -5,7 +5,7 @@
 // lines at regular heights.
 import { pointInPolygon } from '$shared/minigolf/geometry'
 import { slopeForce } from '$shared/minigolf/simulate'
-import type { Hole, Pt, Slope } from '$shared/minigolf/types'
+import type { Hole, Pt, Slope, Terrain } from '$shared/minigolf/types'
 
 /** Contour spacing (mm): closer on steeper slopes, like a map. */
 export function contourSpacing(strength: number): number {
@@ -49,6 +49,36 @@ export function slopeLook(s: Slope): SlopeLook {
   for (let d = step; d < reach; d += step) contours.push(capsule(from, to, d))
   const bands = Array.from({ length: BANDS }, (_, k) => capsule(from, to, (reach * (BANDS - k)) / BANDS))
   return { raised: strength > 0, bands, contours }
+}
+
+/** The outline of a mesa where it has fallen `f` of the way (0: the flat top, 1: its foot): as
+ *  heightAt (shared/minigolf/3d/ground.ts) has it, the top grown by f times each side's edge, round
+ *  each corner on an ellipse. */
+export function mesaRing({ mesa }: Terrain, f: number): string {
+  const [x0, x1] = [Math.min(mesa.from[0], mesa.to[0]), Math.max(mesa.from[0], mesa.to[0])]
+  const [y0, y1] = [Math.min(mesa.from[1], mesa.to[1]), Math.max(mesa.from[1], mesa.to[1])]
+  const [l, t, r, b] = mesa.edges.map(e => e * f)
+  const arc = (rx: number, ry: number, p: Pt) => `A ${n(rx)} ${n(ry)} 0 0 1 ${at(p)}`
+  return (
+    `M ${at([x0, y0 - t])} L ${at([x1, y0 - t])} ${arc(r, t, [x1 + r, y0])} L ${at([x1 + r, y1])} ${arc(r, b, [x1, y1 + b])} ` +
+    `L ${at([x0, y1 + b])} ${arc(l, b, [x0 - l, y1])} L ${at([x0 - l, y0])} ${arc(l, t, [x0, y0 - t])} Z`
+  )
+}
+
+export type MesaLook = SlopeLook & {
+  /** The flat top's edge. */
+  top: string
+}
+
+/** A mesa shaded like a slope: lighter up the plateau (darker down a pit), contours at each
+ *  quarter of its height, so a ramp's lines spread out and a cliff's crowd together. */
+export function mesaLook(t: Terrain): MesaLook {
+  return {
+    raised: t.mesa.height > 0,
+    bands: Array.from({ length: BANDS }, (_, k) => mesaRing(t, (BANDS - k) / BANDS)),
+    contours: [0.75, 0.5, 0.25].map(f => mesaRing(t, f)),
+    top: mesaRing(t, 0),
+  }
 }
 
 /** The bench's force arrows: the slopes' push on a grid `spacing` apart, inside the course, each

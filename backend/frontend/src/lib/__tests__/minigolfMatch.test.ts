@@ -323,4 +323,12 @@ describe('HoleView', () => {
     const lines = body.match(/<polyline[^>]*>/g) ?? []
     expect(lines.map(l => l.match(/stroke-width="(\d+)"/)?.[1])).toEqual(['12', '20'])
   })
+
+  it('draws a plateau as well as the slopes', async () => {
+    const { default: HoleView } = await import('$lib/components/minigolf/HoleView.svelte')
+    const terrain = [{ mesa: { from: [100, 500] as const, to: [400, 900] as const, height: 40, edges: [60, 60, 60, 600] } }]
+    const { body } = render(HoleView, { props: { hole: { ...hole, terrain } as never, ball: [250, 2750] } })
+    expect(body.match(/data-testid="mesa"/g)).toHaveLength(1)
+    expect(render(HoleView, { props: { hole: hole as never, ball: [250, 2750] } }).body).not.toContain('data-testid="mesa"')
+  })
 })

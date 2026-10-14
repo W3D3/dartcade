@@ -1,7 +1,7 @@
 <!--
   A minigolf hole played in 3D: the dartboard to aim, a 3D-physics putt, stroke count, and
-  Reset/Undo/Replay. Shared by the admin bench (its default 3D view + 3D physics) and, later, the
-  hole editor's "Test putt" panel. Picking a different hole (or editing the current one) resets
+  Reset/Undo/Replay. Shared by the admin bench (its default 3D view + 3D physics) and the hole
+  editor's "Test putt" panel. Picking a different hole (or editing the current one) resets
   the ball to its tee.
 -->
 <script lang="ts">

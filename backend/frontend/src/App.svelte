@@ -47,6 +47,10 @@
       loading: RouteLoading,
     }),
   })
+  const loadMinigolfHoleEditor = Object.assign(
+    () => import('./routes/MinigolfHoleEditor.svelte').catch(() => ({ default: RouteLoadFailed })),
+    { loading: RouteLoading },
+  )
 
   const routes = {
     '/': CreateSession,
@@ -67,6 +71,7 @@
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,
+    '/admin/minigolf/holes/:id': wrap({ asyncComponent: loadMinigolfHoleEditor }),
   }
 
   let checked = $state(false)

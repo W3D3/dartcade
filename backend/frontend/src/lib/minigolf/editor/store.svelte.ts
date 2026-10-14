@@ -14,6 +14,10 @@ export type PublishProblem = components['schemas']['MinigolfPublishProblem']
 
 export type DraftStatus = 'loading' | 'saved' | 'saving' | 'unsaved' | 'error' | 'rejected' | 'conflict' | 'missing'
 
+/** Edits that aren't on the server yet: leaving the page now would lose them, so it warns. */
+export const isUnsaved = (status: DraftStatus | undefined) =>
+  status === 'unsaved' || status === 'saving' || status === 'error' || status === 'rejected'
+
 /** Thrown by the network calls below; the store tells a conflict (409) and a deletion (404)
  *  apart from any other failure by this. */
 export class HttpError extends Error {

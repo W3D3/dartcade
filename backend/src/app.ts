@@ -76,7 +76,8 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   await setupFlags(envFlagsOn(), envFlagValues())
 
   await app.register(fastifyWebsocket)
-  await app.register(rateLimit, { max: 200, timeWindow: '1 minute' })
+  // RATE_LIMIT_MAX: the e2e stack raises it, since every test browser shares one IP
+  await app.register(rateLimit, { max: Number(process.env.RATE_LIMIT_MAX) || 200, timeWindow: '1 minute' })
 
   // API docs: our spec plus better-auth's generated one, in one Swagger UI
   if (!isOpenApiDocument(bundledSpec)) throw new Error('schema/api-v1.bundled.json is not an OpenAPI document')
