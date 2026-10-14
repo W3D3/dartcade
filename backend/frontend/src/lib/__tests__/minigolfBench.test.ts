@@ -1,10 +1,29 @@
-import { describe, it, expect } from 'vitest'
-import { benchBall, canShoot, finishShot, initBench, parseHole, placeBall, startShot, undoShot } from '$lib/minigolf/bench'
+import { afterEach, describe, it, expect, vi } from 'vitest'
+import {
+  aimDial,
+  aimLines,
+  aimPreview,
+  benchBall,
+  canShoot,
+  finishShot,
+  initBench,
+  parseHole,
+  placeBall,
+  playReplay,
+  playShot,
+  putt3d,
+  startShot,
+  undoShot,
+  withHeight,
+  type Pt3,
+} from '$lib/minigolf/bench'
 import { testCourse } from '$shared/minigolf/courses/test'
 import { heightAt } from '$shared/minigolf/3d/ground'
+import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
 import { BALL_R, type PathPt } from '$shared/minigolf/types'
 
 const hole = testCourse.holes[0]
+const physics = DEFAULT_PHYSICS
 
 describe('bench', () => {
   it('starts on the tee with no strokes', () => {
@@ -81,5 +100,73 @@ describe('bench', () => {
     })
     expect(parseHole(JSON.stringify({ ...hole, outline: 5 }))).toMatchObject({ errors: [expect.stringMatching(/^outline:/)] })
     expect(parseHole(JSON.stringify({ ...hole, tee: [9999, 9999] }))).toEqual({ errors: ['tee is outside the outline'] })
+  })
+
+  it("fills in a path point's height from the ground, keeping one it already has", () => {
+    expect(withHeight(hole, [hole.tee[0], hole.tee[1], -40])).toEqual([hole.tee[0], hole.tee[1], -40])
+    expect(withHeight(hole, [hole.tee[0], hole.tee[1]])).toEqual([hole.tee[0], hole.tee[1], heightAt(hole, hole.tee) + BALL_R])
+  })
+
+  it('dials the aim rings around the ball, and nothing while rolling or holed', () => {
+    const s = initBench(hole)
+    const dial = aimDial(s, physics)
+    expect(dial?.at).toEqual(hole.tee)
+    expect(dial?.treble).toBeGreaterThan(0)
+    expect(dial!.double).toBeGreaterThan(dial!.treble)
+    expect(aimDial(startShot(s), physics)).toBeNull()
+    const holed = finishShot(startShot(s), { rest: hole.cup.at, holed: true, path: [hole.tee, hole.cup.at] }, hole.tee)
+    expect(aimDial(holed, physics)).toBeNull()
+  })
+
+  it('previews the putt the pointer would make, and none while not hovering, rolling or holed', () => {
+    const s = initBench(hole)
+    expect(aimPreview(s, hole, physics, null, true)).toBeNull()
+    const preview = aimPreview(s, hole, physics, { x: 0, y: 0.5 }, true)
+    expect(preview).toMatchObject({ from: hole.tee })
+    expect(preview!.roll).toBeGreaterThan(0)
+    expect(aimPreview(startShot(s), hole, physics, { x: 0, y: 0.5 }, true)).toBeNull()
+  })
+
+  it('turns a preview into a bright aim line, or none without one', () => {
+    expect(aimLines(null)).toEqual([])
+    const preview = aimPreview(initBench(hole), hole, physics, { x: 0, y: 0.5 }, true)!
+    expect(aimLines(preview)).toEqual([{ ...preview, current: true }])
+  })
+
+  it('misses without simulating anything for coords off the board, or none', async () => {
+    await expect(putt3d(hole, physics, hole.tee, { x: 2, y: 2 }, true)).resolves.toBeNull()
+    await expect(putt3d(hole, physics, hole.tee, null, true)).resolves.toBeNull()
+  })
+})
+
+describe('playShot and playReplay', () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  it('plays a 3D path frame by frame, from its start to its end', async () => {
+    const path: Pt3[] = [
+      [0, 0, 21],
+      [10, 10, 21],
+      [20, 20, 21],
+    ]
+    let t = performance.now() - 25
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb((t += 20)), 0))
+    const seen: Array<[Pt3, number]> = []
+    await playShot(path, (ball, chase) => seen.push([ball, chase.at]), false)
+    expect(seen[0][0]).toEqual(path[0])
+    expect(seen.at(-1)![0]).toEqual(path.at(-1))
+    expect(seen.every(([, at]) => at >= 0)).toBe(true)
+  })
+
+  it('replays a stored path in real time, the same way', async () => {
+    const path: Pt3[] = [
+      [0, 0, 21],
+      [10, 10, 21],
+    ]
+    let t = performance.now() - 25
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => setTimeout(() => cb((t += 20)), 0))
+    const seen: Pt3[] = []
+    await playReplay(path, ball => seen.push(ball), false)
+    expect(seen[0]).toEqual(path[0])
+    expect(seen.at(-1)).toEqual(path.at(-1))
   })
 })
