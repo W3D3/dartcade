@@ -4946,7 +4946,8 @@
           "nameNeedsChange",
           "suggestedName",
           "invisible",
-          "isAdmin"
+          "isAdmin",
+          "createdAt"
         ],
         "additionalProperties": false,
         "properties": {
@@ -4976,6 +4977,11 @@
           "isAdmin": {
             "type": "boolean",
             "description": "May open admin pages (the minigolf test bench)"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the account was made (Member since)"
           }
         }
       },

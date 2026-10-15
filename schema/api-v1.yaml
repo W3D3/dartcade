@@ -2161,7 +2161,7 @@ components:
           items: { $ref: '#/components/schemas/UserSummary' }
     Me:
       type: object
-      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin]
+      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, createdAt]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -2175,6 +2175,7 @@ components:
         suggestedName: { type: string, nullable: true, description: 'A free name close to yours, while nameNeedsChange' }
         invisible: { type: boolean, description: 'Friends see you as offline' }
         isAdmin: { type: boolean, description: 'May open admin pages (the minigolf test bench)' }
+        createdAt: { type: string, format: date-time, description: 'When the account was made (Member since)' }
     UpdateMeRequest:
       type: object
       minProperties: 1
