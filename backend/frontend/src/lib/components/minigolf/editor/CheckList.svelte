@@ -1,20 +1,32 @@
 <script lang="ts">
   // The hole's checks (holeChecks), live: errors block Publish, warnings are advice. Clicking one
-  // selects the element it's about.
+  // selects the element it's about. Above them: why the last edit was refused (a circle or curve
+  // that would break the shape), and a notice when the hole's shape was dropped on load.
   import type { Check, ElementRef } from '$shared/minigolf/checks'
 
-  let { checks, onselect }: { checks: Check[]; onselect: (ref: ElementRef) => void } = $props()
+  let {
+    checks,
+    refused = null,
+    shapeDropped = false,
+    onselect,
+  }: { checks: Check[]; refused?: string | null; shapeDropped?: boolean; onselect: (ref: ElementRef) => void } = $props()
 
   const sentence = (m: string) => m.charAt(0).toUpperCase() + m.slice(1)
+  const all = $derived<Check[]>(refused ? [{ level: 'error', message: refused }, ...checks] : checks)
 </script>
 
 <section aria-label="Checks" class="flex flex-col gap-2">
   <h2 class="m-0 text-[11px] label-caps text-text-dim">Checks</h2>
-  {#if checks.length === 0}
+  {#if shapeDropped}
+    <p role="status" class="m-0 rounded-[8px] border border-warn-line bg-warn-soft px-2 py-1 text-[14px] text-warn">
+      This hole's circles were changed elsewhere and are now plain corners.
+    </p>
+  {/if}
+  {#if all.length === 0}
     <p class="m-0 flex items-center gap-2 text-[14px]"><span class="h-2 w-2 rounded-full bg-accent"></span>No problems</p>
   {:else}
     <ul class="m-0 flex list-none flex-col gap-1 p-0" aria-live="polite">
-      {#each checks as c, i (i)}
+      {#each all as c, i (i)}
         {@const element = c.element}
         <li>
           <button

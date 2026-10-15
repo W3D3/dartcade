@@ -1,11 +1,17 @@
 // The hole editor's tools (routes/MinigolfHoleEditor.svelte): the rail's order, keys and hints,
 // and the options the Properties panel sets for placing new elements.
 
-export type Tool = 'select' | 'outline' | 'tee' | 'cup' | 'bumper' | 'wall' | 'terrain'
+export type Tool = 'select' | 'outline' | 'circle' | 'tee' | 'cup' | 'bumper' | 'wall' | 'terrain'
 
 export const TOOLS: { id: Tool; label: string; key: string; hint: string }[] = [
   { id: 'select', label: 'Select', key: 'V', hint: 'Click anything to select it · drag to move · Delete removes' },
-  { id: 'outline', label: 'Outline', key: 'O', hint: 'Drag corners · click ● to add a corner · Shift draws freely' },
+  {
+    id: 'outline',
+    label: 'Outline',
+    key: 'O',
+    hint: 'Drag corners · click ● to add a corner · click an edge to curve it · Shift draws freely',
+  },
+  { id: 'circle', label: 'Circle', key: 'I', hint: 'Drag from the centre for a round area · Shift draws freely' },
   { id: 'tee', label: 'Tee', key: 'T', hint: 'Drag the tee box · one tee per hole' },
   { id: 'cup', label: 'Cup', key: 'C', hint: 'Drag the cup · one cup per hole' },
   { id: 'bumper', label: 'Bumper', key: 'B', hint: 'Click on the felt to place a bumper' },

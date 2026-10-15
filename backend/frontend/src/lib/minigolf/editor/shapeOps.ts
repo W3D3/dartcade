@@ -3,6 +3,7 @@
 // Design: docs/superpowers/specs/2026-10-15-minigolf-outline-shapes-design.md
 import { bakeOutline, outlinesMatch } from '$shared/minigolf/bake'
 import type { Curve, Hole, Pt, Shape } from '$shared/minigolf/types'
+import { createHistory, type History } from './history'
 
 export type ShapeResult = { ok: true; hole: Hole } | { ok: false; reason: string }
 
@@ -137,4 +138,13 @@ export function loadShape(h: Hole): { hole: Hole; dropped: boolean } {
   if (baked.ok && outlinesMatch(baked.outline, h.outline)) return { hole: h, dropped: false }
   const { shape: _, ...plain } = h
   return { hole: plain, dropped: true }
+}
+
+/** The hole the editor opens and its undo history. A dropped shape is an edit like any other: one
+ *  undo brings the hole as loaded back, circles and curves included. */
+export function openHole(h: Hole): { hole: Hole; history: History; dropped: boolean } {
+  const { hole, dropped } = loadShape(h)
+  const history = createHistory(h)
+  if (dropped) history.push(hole)
+  return { hole, history, dropped }
 }
