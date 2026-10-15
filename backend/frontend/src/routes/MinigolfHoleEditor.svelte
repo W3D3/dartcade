@@ -23,8 +23,9 @@
   import TestHole from '$lib/components/minigolf/editor/TestHole.svelte'
   import ToolRail from '$lib/components/minigolf/editor/ToolRail.svelte'
   import { holeOf, type HoleRow } from '$lib/minigolf/editor/course'
-  import { createHistory, type History } from '$lib/minigolf/editor/history'
+  import type { History } from '$lib/minigolf/editor/history'
   import { duplicateElement, removeElement } from '$lib/minigolf/editor/ops'
+  import { curveEdge, openHole, removeCircle, removeShapeCorner, straightenEdge, type ShapeResult } from '$lib/minigolf/editor/shapeOps'
   import {
     apiLoadCourse,
     createHoleStore,
@@ -59,12 +60,20 @@
   let options = $state<ToolOptions>({ ...DEFAULT_OPTIONS })
   let heightMap = $state(false)
   let testPutt = $state(false)
+  /** Why the last shape edit was refused, shown with the checks until the next edit. */
+  let refused = $state<string | null>(null)
+  /** The hole's shape didn't bake into its outline on load and was dropped. */
+  let shapeDropped = $state(false)
 
   async function load(s: ReturnType<typeof createHoleStore>): Promise<void> {
     await s.load()
     if (store !== s) return
-    history = s.value ? createHistory(s.value) : null
+    const opened = s.value && openHole(s.value)
+    if (opened && opened.dropped) s.edit(opened.hole)
+    shapeDropped = !!opened?.dropped
+    history = opened?.history ?? null
     selection = null
+    refused = null
     sync()
   }
   $effect(() => {
@@ -89,13 +98,20 @@
   }
   /** One edit, one undo step; an edit that changes nothing is dropped. */
   function commit(h: Hole): void {
+    refused = null
     if (!store?.value || !history || readOnly || JSON.stringify(h) === JSON.stringify(store.value)) return
     history.push(h)
     store.edit(h)
     sync()
   }
+  /** A shape edit: committed, or its refusal shown. */
+  function apply(r: ShapeResult): void {
+    if (r.ok) commit(r.hole)
+    else refused = r.reason
+  }
   function step(h: Hole | null | undefined): void {
     if (!h || !store) return
+    refused = null
     store.edit(h)
     sync()
     if (selection && !exists(h, selection)) selection = null
@@ -105,7 +121,8 @@
 
   function exists(h: Hole, ref: ElementRef): boolean {
     const list = {
-      outline: h.outline,
+      outline: h.shape?.corners ?? h.outline,
+      edge: h.shape?.corners ?? h.outline,
       bumper: h.bumpers,
       wall: h.walls,
       slope: h.slopes,
@@ -116,9 +133,19 @@
   }
 
   function remove(): void {
-    if (!hole || !selection || selection.kind === 'tee' || selection.kind === 'cup') return
-    commit(removeElement(hole, selection))
-    selection = null
+    if (!hole || !selection || selection.kind === 'tee' || selection.kind === 'cup' || selection.kind === 'edge') return
+    const { kind, index } = selection
+    // Shape edits can be refused (a circle holding another to the course): say why
+    if (kind === 'circle') apply(removeCircle(hole, index))
+    else if (kind === 'outline' && hole.shape) apply(removeShapeCorner(hole, index))
+    else commit(removeElement(hole, selection))
+    if (!refused) selection = null
+  }
+  /** Curves the selected edge, or straightens it. */
+  function curve(): void {
+    if (!hole || selection?.kind !== 'edge') return
+    const i = selection.index
+    apply(hole.shape?.curves[i] ? straightenEdge(hole, i) : curveEdge(hole, i))
   }
   function duplicate(): void {
     if (!hole || !selection) return
@@ -133,7 +160,7 @@
   const selectOnCanvas = (ref: ElementRef | null) => (selection = ref && hole && exists(hole, ref) ? ref : null)
   /** A row in the lists picks the tool that edits it too: Outline for the corners, else Select. */
   function pickFromList(ref: ElementRef): void {
-    tool = ref.kind === 'outline' ? 'outline' : 'select'
+    tool = ref.kind === 'outline' || ref.kind === 'edge' ? 'outline' : 'select'
     selection = ref
   }
 
@@ -161,6 +188,8 @@
       remove()
     } else if (e.key === 'Escape') {
       selection = null
+    } else if (e.key.toLowerCase() === 'k' && selection?.kind === 'edge') {
+      curve()
     } else {
       const picked = TOOLS.find(x => x.key === e.key.toUpperCase())
       if (picked) tool = picked.id
@@ -330,7 +359,16 @@
               </label>
             </div>
             <div class="h-[60dvh] min-h-[360px] rounded-2xl bg-bg-deep p-2 xl:h-[calc(100dvh-260px)]">
-              <EditorCanvas {hole} {tool} {selection} {options} {heightMap} onselect={selectOnCanvas} oncommit={commit} />
+              <EditorCanvas
+                {hole}
+                {tool}
+                {selection}
+                {options}
+                {heightMap}
+                onselect={selectOnCanvas}
+                oncommit={commit}
+                onrefuse={(reason: string) => (refused = reason)}
+              />
             </div>
             {#if courseId && holeIds.length > 0}
               <ol aria-label="Holes on this course" class="m-0 flex list-none gap-2 overflow-x-auto p-0 pb-1">
@@ -356,7 +394,17 @@
           </section>
 
           <aside class="flex flex-col gap-5 md:col-span-2 xl:col-span-1">
-            <Properties {hole} {tool} {selection} bind:options onedit={commit} onduplicate={duplicate} ondelete={remove} />
+            <Properties
+              {hole}
+              {tool}
+              {selection}
+              bind:options
+              onedit={commit}
+              onshape={apply}
+              oncurve={curve}
+              onduplicate={duplicate}
+              ondelete={remove}
+            />
             <div class="h-[200px] overflow-hidden rounded-2xl bg-bg-deep" aria-label="3D preview" role="img">
               <!-- Off while Test putt is open: a second WebGL view rendering behind it halves the putt's frame rate -->
               {#if !testPutt}
@@ -366,7 +414,7 @@
               {/if}
             </div>
             <ElementList {hole} {selection} onselect={pickFromList} />
-            <CheckList {checks} onselect={pickFromList} />
+            <CheckList {checks} {refused} {shapeDropped} onselect={pickFromList} />
             <TestHole {hole} physics={DEFAULT_PHYSICS} onpar={setPar} />
           </aside>
         </div>

@@ -188,15 +188,18 @@ export function moveElement(h: Hole, ref: ElementRef, delta: Pt): Hole {
       return { ...h, terrain: (h.terrain ?? []).map((t, i) => (i === ref.index ? movedTerrain(t, shift) : t)) }
     case 'circle':
       return h.shape ? orSame(h, moveCircle(h, ref.index, shift(h.shape.circles[ref.index].center))) : h
+    case 'edge':
+      return h
   }
 }
 
-/** A hole always has one tee and one cup, so those refs (and the outline, addressed by corner
- *  index) are refused here; use `removeCorner` for the outline. */
+/** A hole always has one tee and one cup, and an edge always joins two corners, so those refs are
+ *  refused here; `outline` removes a corner. */
 export function removeElement(h: Hole, ref: ElementRef): Hole {
   switch (ref.kind) {
     case 'outline':
       return removeCorner(h, ref.index)
+    case 'edge':
     case 'tee':
     case 'cup':
       return h

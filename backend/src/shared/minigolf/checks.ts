@@ -3,7 +3,8 @@ import { distanceToSegment, edgesOf, pointInPolygon } from './geometry.js'
 import { validateHole } from './hole.js'
 import { BALL_R, type Hole, type Pt } from './types.js'
 
-export type ElementRef = { kind: 'outline' | 'tee' | 'cup' | 'bumper' | 'wall' | 'slope' | 'terrain' | 'circle'; index: number }
+/** `outline` addresses a corner, `edge` the edge from that corner to the next (the editor selects it to curve it). */
+export type ElementRef = { kind: 'outline' | 'edge' | 'tee' | 'cup' | 'bumper' | 'wall' | 'slope' | 'terrain' | 'circle'; index: number }
 
 export type Check = { level: 'error' | 'warning'; message: string; element?: ElementRef }
 

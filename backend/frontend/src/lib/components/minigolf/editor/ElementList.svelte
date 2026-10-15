@@ -8,14 +8,15 @@
 
   const at = (p: readonly [number, number]) => `${Math.round(p[0])}, ${Math.round(p[1])}`
   const rows = $derived<{ ref: ElementRef; label: string; detail: string }[]>([
-    { ref: { kind: 'outline', index: 0 }, label: 'Outline', detail: `${hole.outline.length} corners` },
+    { ref: { kind: 'outline', index: 0 }, label: 'Outline', detail: `${(hole.shape?.corners ?? hole.outline).length} corners` },
     { ref: { kind: 'tee', index: 0 }, label: 'Tee', detail: at(hole.tee) },
     { ref: { kind: 'cup', index: 0 }, label: 'Cup', detail: at(hole.cup.at) },
     ...elementsOf(hole),
   ])
-  // The outline row stands for every corner
+  // The outline row stands for every corner and edge
   const isSelected = (ref: ElementRef) =>
-    !!selection && selection.kind === ref.kind && (ref.kind === 'outline' || selection.index === ref.index)
+    !!selection &&
+    (ref.kind === 'outline' ? ['outline', 'edge'].includes(selection.kind) : selection.kind === ref.kind && selection.index === ref.index)
 </script>
 
 <section aria-label="Elements" class="flex flex-col gap-2">

@@ -2,7 +2,7 @@
   // The hole editor's Properties panel: the selection's fields (with Duplicate and Delete) under
   // the Select tool, otherwise the active tool's options for what it places next.
   import type { Snippet } from 'svelte'
-  import { Copy, Trash } from '@lucide/svelte'
+  import { Copy, Spline, Trash } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { G } from '$shared/minigolf/3d/ground'
   import type { ElementRef } from '$shared/minigolf/checks'
@@ -22,6 +22,7 @@
     updateTerrain,
     updateWall,
   } from '$lib/minigolf/editor/ops'
+  import { moveCircle, moveShapeCorner, resizeCircle, type ShapeResult } from '$lib/minigolf/editor/shapeOps'
   import { MAX_HEIGHT, TOOLS, type ToolOptions, type Tool } from '$lib/minigolf/editor/tools'
 
   let {
@@ -30,6 +31,8 @@
     selection,
     options = $bindable(),
     onedit,
+    onshape,
+    oncurve,
     onduplicate,
     ondelete,
   }: {
@@ -39,6 +42,10 @@
     options: ToolOptions
     /** One edit: one undo step. */
     onedit: (h: Hole) => void
+    /** An edit to the hole's shape: one undo step, or the reason it was refused. */
+    onshape: (r: ShapeResult) => void
+    /** Curves the selected edge, or straightens it. */
+    oncurve: () => void
     onduplicate: () => void
     ondelete: () => void
   } = $props()
@@ -79,9 +86,16 @@
   const presetOf = <K extends string>(items: readonly { value: K }[], presets: Record<K, number>, value: number): K | null =>
     items.find(it => presets[it.value] === value)?.value ?? null
 
-  const showSelection = $derived(!!selection && (tool === 'select' || (tool === 'outline' && selection.kind === 'outline')))
+  const corners = $derived(hole.shape?.corners ?? hole.outline)
+  const showSelection = $derived(
+    !!selection &&
+      (tool === 'select' ||
+        (tool === 'outline' && (selection.kind === 'outline' || selection.kind === 'edge')) ||
+        (tool === 'circle' && selection.kind === 'circle')),
+  )
   const canDuplicate = $derived(!!selection && ['bumper', 'wall', 'slope', 'terrain'].includes(selection.kind))
-  const canDelete = $derived(canDuplicate || (selection?.kind === 'outline' && hole.outline.length > 3))
+  const canDelete = $derived(canDuplicate || selection?.kind === 'circle' || (selection?.kind === 'outline' && corners.length > 3))
+  const circle = $derived(selection?.kind === 'circle' ? hole.shape?.circles[selection.index] : undefined)
 
   // The page drops a selection its element is gone from (undo), so indices here are valid
   const slope = $derived(selection?.kind === 'slope' ? hole.slopes[selection.index] : null)
@@ -94,13 +108,15 @@
     const i = selection.index
     switch (selection.kind) {
       case 'outline':
-        return hole.outline[i]
+        return corners[i]
       case 'tee':
         return hole.tee
       case 'cup':
         return hole.cup.at
       case 'bumper':
         return hole.bumpers[i].at
+      case 'circle':
+        return circle?.center ?? null
       default:
         return radial?.center ?? null
     }
@@ -108,7 +124,9 @@
   function moveTo(axis: 0 | 1, v: number): void {
     if (!selection || !anchor || !Number.isFinite(v)) return
     const p: Pt = axis === 0 ? [v, anchor[1]] : [anchor[0], v]
-    if (selection.kind === 'outline') onedit(moveCorner(hole, selection.index, p))
+    if (selection.kind === 'outline' && hole.shape) onshape(moveShapeCorner(hole, selection.index, p))
+    else if (selection.kind === 'outline') onedit(moveCorner(hole, selection.index, p))
+    else if (selection.kind === 'circle') onshape(moveCircle(hole, selection.index, p))
     else if (selection.kind === 'tee') onedit(moveTee(hole, p))
     else if (selection.kind === 'cup') onedit(moveCup(hole, p))
     else onedit(moveElement(hole, selection, [p[0] - anchor[0], p[1] - anchor[1]]))
@@ -116,6 +134,7 @@
 
   const TITLES: Record<ElementRef['kind'], string> = {
     outline: 'Corner',
+    edge: 'Edge',
     tee: 'Tee',
     cup: 'Cup',
     bumper: 'Bumper',
@@ -127,7 +146,7 @@
   const title = $derived.by(() => {
     if (!selection) return ''
     if (selection.kind === 'slope') return bump ? 'Ridge' : radial && radial.strength < 0 ? 'Dip' : 'Hill'
-    const numbered = ['outline', 'bumper', 'wall'].includes(selection.kind)
+    const numbered = ['outline', 'edge', 'bumper', 'wall', 'circle'].includes(selection.kind)
     return numbered ? `${TITLES[selection.kind]} ${selection.index + 1}` : TITLES[selection.kind]
   })
 
@@ -164,7 +183,11 @@
     <input
       type="number"
       value={Math.round(value)}
-      onchange={e => onset(num(e))}
+      onchange={e => {
+        onset(num(e))
+        // A refused edit leaves the hole as it was: show its value, not what was typed
+        e.currentTarget.value = String(Math.round(value))
+      }}
       class="h-9 w-full rounded-[8px] border border-line-2 bg-bg px-2 text-[14px] text-text outline-none focus-visible:[outline:2px_solid_var(--color-accent)]"
     />
   </label>
@@ -186,7 +209,16 @@
         {@render field('Y', anchor[1], v => moveTo(1, v))}
       </div>
     {/if}
-    {#if selection.kind === 'cup'}
+    {#if selection.kind === 'circle' && circle}
+      {@render field('Radius (mm)', circle.r, v => {
+        if (positive(v)) onshape(resizeCircle(hole, i, v))
+      })}
+    {:else if selection.kind === 'edge'}
+      <p class="m-0 text-[14px] text-text-muted">From corner {i + 1} to corner {((i + 1) % corners.length) + 1}.</p>
+      <Button variant="outline" title="Curve or straighten (K)" onclick={oncurve}
+        ><Spline size={16} />{hole.shape?.curves[i] ? 'Straighten' : 'Curve'}</Button
+      >
+    {:else if selection.kind === 'cup'}
       {@render segmented('Cup size', CUP_SIZES, presetOf(CUP_SIZES, CUP, hole.cup.r), v => onedit(setCupSize(hole, v)))}
     {:else if selection.kind === 'bumper' && hole.bumpers[i]}
       {@const b = hole.bumpers[i]}
@@ -248,8 +280,13 @@
     <p class="m-0 text-[14px] text-text-muted">Click anything on the hole, or in the list below, to change it.</p>
   {:else if tool === 'outline'}
     <p class="m-0 text-[14px] text-text-muted">
-      {hole.outline.length} corners. Drag a corner to move it, click ● on an edge to add one, click a corner to select it. Snaps to a 50 mm grid
-      and 45°; hold Shift to draw freely.
+      {corners.length} corners. Drag a corner to move it, click ● on an edge to add one, click a corner to select it. Click an edge to curve it
+      (K), then drag its handles. Snaps to a 50 mm grid and 45°; hold Shift to draw freely.
+    </p>
+  {:else if tool === 'circle'}
+    <p class="m-0 text-[14px] text-text-muted">
+      A round area merged into the outline, like a green round the cup. Drag from its centre to set the radius; it must overlap the course.
+      Snaps to a 50 mm grid and 10 mm; hold Shift to draw freely.
     </p>
   {:else if tool === 'tee'}
     <p class="m-0 text-[14px] text-text-muted">

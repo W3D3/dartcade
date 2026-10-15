@@ -17,6 +17,7 @@ import {
   updateTerrain,
   updateWall,
 } from '$lib/minigolf/editor/ops'
+import { addCircle, curveEdge, openHole } from '$lib/minigolf/editor/shapeOps'
 import { DEFAULT_OPTIONS, type Tool } from '$lib/minigolf/editor/tools'
 import { holeChecks, type ElementRef } from '$shared/minigolf/checks'
 import { testCourse } from '$shared/minigolf/courses/test'
@@ -24,6 +25,12 @@ import type { Hole } from '$shared/minigolf/types'
 
 const hole1 = testCourse.holes[0] as Hole // test-straight: [0,0]-[500,0]-[500,3000]-[0,3000]
 const noop = () => {}
+const ok = (r: ReturnType<typeof addCircle>): Hole => {
+  if (!r.ok) throw new Error(r.reason)
+  return r.hole
+}
+// The lane opening into a round green round the cup
+const keyhole = ok(addCircle(hole1, [250, 300], 450))
 
 describe('hitTest', () => {
   const h = addRadial(addWall(addBumper(hole1, [250, 1500], 'M', 'normal'), [100, 1000], [400, 1000], 'normal'), [250, 2000], 300, 80)
@@ -107,11 +114,12 @@ describe('setRadialHeight', () => {
 })
 
 describe('ToolRail', () => {
-  it('lists the seven tools with their keys and marks the active one', () => {
+  it('lists the eight tools with their keys and marks the active one', () => {
     const { body } = render(ToolRail, { props: { tool: 'wall', ontool: noop } })
     for (const [label, key] of [
       ['Select', 'V'],
       ['Outline', 'O'],
+      ['Circle', 'I'],
       ['Tee', 'T'],
       ['Cup', 'C'],
       ['Bumper', 'B'],
@@ -132,6 +140,8 @@ describe('Properties', () => {
     selection: null as ElementRef | null,
     options: { ...DEFAULT_OPTIONS },
     onedit: noop,
+    onshape: noop,
+    oncurve: noop,
     onduplicate: noop,
     ondelete: noop,
     ...over,
@@ -146,6 +156,23 @@ describe('Properties', () => {
     expect(body).toContain('Duplicate')
     expect(body).toContain('Delete')
   })
+  it("shows a selected circle's centre and radius", () => {
+    const { body } = render(Properties, { props: { ...props({ selection: { kind: 'circle', index: 0 } }), hole: keyhole } })
+    expect(body).toContain('Circle')
+    expect(body).toContain('value="250"')
+    expect(body).toContain('value="300"')
+    expect(body).toContain('Radius (mm)')
+    expect(body).toContain('value="450"')
+    expect(body).toContain('Delete')
+  })
+  it('offers to curve a selected straight edge, and to straighten a curved one', () => {
+    const edge = { tool: 'outline' as Tool, selection: { kind: 'edge', index: 1 } as ElementRef }
+    const straight = render(Properties, { props: props(edge) }).body
+    expect(straight).toContain('Edge 2')
+    expect(straight).toMatch(/>\s*Curve\s*</)
+    const curved = render(Properties, { props: { ...props(edge), hole: ok(curveEdge(hole1, 1)) } }).body
+    expect(curved).toMatch(/>\s*Straighten\s*</)
+  })
   it("shows the bumper tool's size and bounce for placing", () => {
     const { body } = render(Properties, { props: props({ tool: 'bumper' }) })
     expect(body).toContain('Size')
@@ -156,6 +183,30 @@ describe('Properties', () => {
 })
 
 describe('CheckList and ElementList', () => {
+  it('shows why an edit was refused', () => {
+    const { body } = render(CheckList, { props: { checks: [], refused: 'The circle must overlap the course', onselect: noop } })
+    expect(body).toContain('The circle must overlap the course')
+    expect(body).not.toContain('No problems')
+  })
+  it('says so when a hole loads with a shape its outline no longer matches, and one undo brings it back', () => {
+    const changed: Hole = { ...keyhole, outline: hole1.outline }
+    const { hole, history, dropped } = openHole(changed)
+    expect(hole.shape).toBeUndefined()
+    const { body } = render(CheckList, { props: { checks: [], shapeDropped: dropped, onselect: noop } })
+    expect(body).toContain("This hole's circles were changed elsewhere and are now plain corners.")
+    expect(history.undo()).toEqual(changed)
+    expect(history.canUndo).toBe(false)
+  })
+  it('opens a hole whose shape still matches with nothing to undo', () => {
+    const { hole, history, dropped } = openHole(keyhole)
+    expect([hole, dropped, history.canUndo]).toEqual([keyhole, false, false])
+  })
+  it('lists circles with their radius', () => {
+    const { body } = render(ElementList, { props: { hole: keyhole, selection: null, onselect: noop } })
+    expect(body).toContain('Circle 1')
+    expect(body).toContain('r 450 mm')
+    expect(body).toContain('4 corners')
+  })
   it('shows the outline error for a crossing outline', () => {
     const crossed: Hole = {
       ...hole1,
