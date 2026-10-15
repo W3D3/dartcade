@@ -1,15 +1,18 @@
 <script lang="ts">
+  // Settings' Boards section (Boards, Tablet-Boards, Mobile-Boards boards): your boards, the
+  // selected one's cameras, controls and live events, and pairing. With none yet, the
+  // Settings-Boards-Empty onboarding.
   import { ExternalLink, LoaderCircle, Pencil, Play, Plus, RotateCcw, Square, Sun } from '@lucide/svelte'
   import { onMount, onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { hasBoards } from '$lib/hasBoards'
-  import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
   import BoardCard from '$lib/components/boards/BoardCard.svelte'
   import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
+  import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
   import SelectedBoardBar from '$lib/components/boards/SelectedBoardBar.svelte'
   import { bmHost, fmtDate, fmtVersion } from '$lib/boards'
   import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
@@ -25,6 +28,8 @@
   let bmStatus = $state<BoardStatus | null>(null)
   let bmStatusInterval: ReturnType<typeof setInterval> | null = null
   let busy = $state<string | null>(null)
+  // The list has come back: until then neither the boards nor the empty state show
+  let loaded = $state(false)
 
   async function loadBmStatus(boardId: string) {
     try {
@@ -163,6 +168,8 @@
 
   // The nav's Connect your board card links here with ?pair
   let pairOpen = $state($querystring === 'pair')
+  // A code typed into the empty state's field, carried into the pairing dialog
+  let pairCode = $state('')
   let justPairedId = $state<string | null>(null)
   let toast = $state<{ name: string; boardId: string } | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -170,6 +177,7 @@
 
   async function onPaired(info: { boardId: string; name: string }) {
     pairOpen = false
+    pairCode = ''
     hasBoards.set(true)
     // The board is already paired server-side; refresh the list, but still
     // surface success even if the refetch fails (e.g. session expired).
@@ -196,6 +204,7 @@
     const { data } = await api.GET('/api/boards')
     if (!data) return // 401 is redirected to login by the client
     boards = data.boards
+    loaded = true
     hasBoards.set(boards.length > 0)
     if (boards.length) selectedId = boards[0].id
     cameraInterval = setInterval(() => {
@@ -438,17 +447,21 @@
   </button>
 {/snippet}
 
-<Layout title="Boards">
-  <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_32px] xl:p-[40px_44px]">
+<div class="flex flex-grow flex-col gap-4 md:gap-7 min-w-0">
+  {#if loaded && boards.length === 0}
+    <BoardsEmpty
+      onpair={(code: string) => {
+        pairCode = code
+        pairOpen = true
+      }}
+    />
+  {:else if loaded}
     <!-- Header -->
-    <header class="flex items-end justify-between">
-      <div class="hidden md:flex flex-col gap-[6px]">
-        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Boards</h1>
-        <p class="m-0 text-[15px] text-text-muted">
-          Autodarts boards linked through your Dartcade bridge ·
-          <span class="text-text">{onlineCount} online</span> · {boards.length - onlineCount} offline
-        </p>
-      </div>
+    <header class="flex items-center justify-between gap-4">
+      <p class="hidden md:block m-0 text-[15px] text-text-muted">
+        Autodarts boards linked through your Dartcade bridge ·
+        <span class="text-text">{onlineCount} online</span> · {boards.length - onlineCount} offline
+      </p>
       <Button
         variant="primary"
         class="h-12 text-[18px]"
@@ -471,13 +484,6 @@
             justPaired={board.id === justPairedId}
             onselect={() => (selectedId = board.id)}
           />
-        {:else}
-          <div
-            class="col-span-2 flex items-center justify-center h-40 rounded-[14px]
-                      border border-dashed border-line-2 text-text-muted text-[15px]"
-          >
-            No boards yet — pair one to get started
-          </div>
         {/each}
         {#if $isTablet}<PairBoardCard
             onpair={() => {
@@ -512,44 +518,46 @@
         </aside>
       {/if}
     </div>
+  {/if}
 
-    {#if confirmUnpair && selected}
-      <ConfirmModal
-        title="Unpair {selected.name}?"
-        body="The bridge will be disconnected. You can pair it again later with a new code."
-        confirmLabel="Unpair"
-        cancelLabel="Cancel"
-        danger
-        onconfirm={unpair}
-        oncancel={() => {
-          confirmUnpair = false
-        }}
-      />
-    {/if}
+  {#if confirmUnpair && selected}
+    <ConfirmModal
+      title="Unpair {selected.name}?"
+      body="The bridge will be disconnected. You can pair it again later with a new code."
+      confirmLabel="Unpair"
+      cancelLabel="Cancel"
+      danger
+      onconfirm={unpair}
+      oncancel={() => {
+        confirmUnpair = false
+      }}
+    />
+  {/if}
 
-    {#if pairOpen}
-      <PairBoardModal
-        onclose={() => {
-          pairOpen = false
-        }}
-        onpaired={onPaired}
-      />
-    {/if}
+  {#if pairOpen}
+    <PairBoardModal
+      initialCode={pairCode}
+      onclose={() => {
+        pairOpen = false
+        pairCode = ''
+      }}
+      onpaired={onPaired}
+    />
+  {/if}
 
-    <!-- Success toast -->
-    {#if toast}
-      <Toast
-        actionLabel="Play on it"
-        onaction={() => {
-          if (toast) selectedId = toast.boardId
-          toast = null
-        }}
-        onclose={() => {
-          toast = null
-        }}
-      >
-        <span class="text-text font-semibold">{toast.name}</span> is paired. It shows as online once all cameras report in.
-      </Toast>
-    {/if}
-  </main>
-</Layout>
+  <!-- Success toast -->
+  {#if toast}
+    <Toast
+      actionLabel="Play on it"
+      onaction={() => {
+        if (toast) selectedId = toast.boardId
+        toast = null
+      }}
+      onclose={() => {
+        toast = null
+      }}
+    >
+      <span class="text-text font-semibold">{toast.name}</span> is paired. It shows as online once all cameras report in.
+    </Toast>
+  {/if}
+</div>

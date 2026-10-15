@@ -11,12 +11,15 @@
     packs,
     builtins,
     labelledby,
+    class: triggerClass,
   }: {
     /** A pack id or `builtin:<id>`; null for the default built-in voice. */
     value: string | null
     packs: VoicePackSummary[]
     builtins: BuiltinVoice[]
     labelledby: string
+    /** The trigger's width (OptionSelect's default otherwise). */
+    class?: string
   } = $props()
 
   const builtinValue = (id: string) => `${BUILTIN_PREFIX}${id}`
@@ -33,6 +36,7 @@
   value={shown}
   {groups}
   {labelledby}
+  class={triggerClass}
   empty="No voices yet"
   onchange={(v: string) => {
     value = v

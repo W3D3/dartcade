@@ -207,7 +207,7 @@
         />
       </div>
       <div class="flex flex-col gap-1">
-        <a href="#/settings" class="self-start min-h-10 inline-flex items-center gap-[6px] text-[14px] font-semibold no-underline">
+        <a href="#/settings/caller" class="self-start min-h-10 inline-flex items-center gap-[6px] text-[14px] font-semibold no-underline">
           Manage voices<ChevronRight size={14} strokeWidth={2.2} />
         </a>
         <span class="text-[12px] text-text-dim">Import packs and delete them in Settings.</span>

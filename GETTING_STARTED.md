@@ -27,7 +27,7 @@ dartcade-bridge --board-url http://<board-ip>:3180 --backend-url wss://<your-dar
 ```
 
 With no token configured yet, it prints a pairing code such as `7KQ4-M2XD`. In dartcade, open
-**Boards → Pair a board**, enter the code and give the board a name. The bridge saves its token
+**Settings → Boards**, enter the code and give the board a name. The bridge saves its token
 and reconnects automatically from then on — run `dartcade-bridge --help` for all options.
 
 ## Next

@@ -5,22 +5,27 @@
   import { Chip } from '$lib/components/ui/chip/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
   import CodeInput from '$lib/components/CodeInput.svelte'
-  import { CODE_LENGTH } from '$lib/pairing'
+  import { CODE_LENGTH, normalizePairingCode } from '$lib/pairing'
   import { api } from '$lib/api'
 
   let {
+    initialCode = '',
     onclose,
     onpaired,
   }: {
+    /** A code already typed elsewhere (the Boards empty state's field). */
+    initialCode?: string
     onclose: () => void
     onpaired: (info: { boardId: string; name: string }) => void
   } = $props()
 
   const CHIPS = ['Living room', 'Garage', 'Basement', 'Club']
 
-  let code = $state('')
+  // svelte-ignore state_referenced_locally
+  let code = $state(normalizePairingCode(initialCode))
   let name = $state('')
-  let helpExpanded = $state(true)
+  // svelte-ignore state_referenced_locally
+  let helpExpanded = $state(initialCode === '')
   let loading = $state(false)
   let copied = $state(false)
   let errorKind = $state<null | 'expired' | 'notfound' | 'used' | 'network'>(null)
