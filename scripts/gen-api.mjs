@@ -30,6 +30,8 @@ async function genHttp() {
   const redocly = r('node_modules/.bin/redocly')
   const bundled = join(BACKEND_SCHEMA, 'api-v1.bundled.json')
   const deref = join(BACKEND_SCHEMA, 'api-v1.deref.json')
+  // Fail here, not in CI, when the spec isn't valid OpenAPI 3.0
+  run(redocly, ['lint', 'schema/api-v1.yaml'])
   // bundled: $refs kept (Swagger UI, openapi-typescript, oapi-codegen); deref: fully inlined (runtime validation)
   run(redocly, ['bundle', 'schema/api-v1.yaml', '-o', bundled])
   run(redocly, ['bundle', 'schema/api-v1.yaml', '--dereferenced', '-o', deref])
