@@ -6,12 +6,39 @@ import { heightAt } from './ground.js'
 import { pointInPolygon } from '../geometry.js'
 import { DEFAULT_PHYSICS as P } from '../physics.js'
 import { testCourse } from '../courses/test.js'
-import { BALL_R, type Pt } from '../types.js'
+import { bakeOutline } from '../bake.js'
+import { BALL_R, type Hole, type Pt, type Shape } from '../types.js'
 
 beforeAll(() => initPhysics3d())
 
+// A baked outline: a circle's many short rails round the cup, and a curved long edge
+const shape: Shape = {
+  corners: [
+    [0, 0],
+    [600, 0],
+    [600, 2000],
+    [0, 2000],
+  ],
+  curves: [null, { c1: [800, 600], c2: [800, 1400] }, null, null],
+  circles: [{ center: [300, 0], r: 450 }],
+}
+const baked = bakeOutline(shape)
+if (!baked.ok) throw new Error(baked.reason)
+const keyhole: Hole = {
+  id: 'keyhole',
+  name: 'Keyhole',
+  par: 2,
+  outline: baked.outline,
+  shape,
+  walls: [],
+  bumpers: [],
+  slopes: [],
+  tee: [300, 1700],
+  cup: { at: [300, -150], r: 80 },
+}
+
 describe('3D putts stay on the course', () => {
-  for (const hole of testCourse.holes)
+  for (const hole of [...testCourse.holes, keyhole])
     it(hole.id, { timeout: 30_000 }, () => {
       const [cx, cy] = hole.cup.at
       const d = Math.hypot(hole.tee[0] - cx, hole.tee[1] - cy)

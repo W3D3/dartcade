@@ -19,9 +19,9 @@ export default defineConfig({
       // What its "svelte" export condition points at: Vitest's own Vite resolves without that condition
       { find: /^svelte-spa-router$/, replacement: path.resolve('./node_modules/svelte-spa-router/Router.svelte') },
     ],
-    // $shared/minigolf imports nape-js, Rapier and zod, but $shared sits outside this package (and outside /app in
+    // $shared/minigolf imports nape-js, Rapier, polyclip-ts and zod, but $shared sits outside this package (and outside /app in
     // the dev container and the Docker build): resolve them from here, where they're installed too
-    dedupe: ['@newkrok/nape-js', '@dimforge/rapier3d-deterministic-compat', 'zod'],
+    dedupe: ['@newkrok/nape-js', '@dimforge/rapier3d-deterministic-compat', 'polyclip-ts', 'zod'],
   },
   server: {
     fs: { allow: [path.resolve('..')] },
