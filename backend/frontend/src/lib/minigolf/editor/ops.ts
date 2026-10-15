@@ -1,12 +1,15 @@
 // Pure editing operations on a Hole: every op returns a new Hole, nothing here mutates the one
-// it's given. They don't enforce validity (e.g. a corner may cross another edge); `holeChecks`
-// ($shared/minigolf/checks) reports that, live, as the editor applies these.
+// it's given. On a plain outline they don't enforce validity (e.g. a corner may cross another
+// edge); `holeChecks` ($shared/minigolf/checks) reports that, live, as the editor applies these.
+// On a hole with a shape they go through shapeOps.ts, which refuses a shape that doesn't bake
+// (the hole comes back unchanged).
 import { G } from '$shared/minigolf/3d/ground'
 import type { ElementRef } from '$shared/minigolf/checks'
 import { distanceToSegment, edgesOf, pointInPolygon } from '$shared/minigolf/geometry'
 import { DEFAULT_PHYSICS } from '$shared/minigolf/physics'
 import { BOUNCE, BUMPER_R, CUP, GRID, WALL } from '$shared/minigolf/presets'
 import type { Bumper, Hole, Pt, Slope, Terrain, Wall } from '$shared/minigolf/types'
+import { addShapeCorner, moveCircle, moveShapeCorner, removeCircle, removeShapeCorner, type ShapeResult } from './shapeOps'
 
 /** Snaps p to the editor's grid and/or to a 45° step in direction from an anchor (distance kept).
  *  Angle snapping runs first, then grid snapping, matching how the outline and wall tools draw. */
@@ -41,12 +44,19 @@ export function dragTo(orig: Pt, grab: Pt, pointer: Pt, opts: { threshold: numbe
 
 // --- Outline corners ---
 
+/** A shape op's hole, or `h` unchanged when it refused. */
+const orSame = (h: Hole, r: ShapeResult): Hole => (r.ok ? r.hole : h)
+
+// With a shape, the corner ops edit its corners and rebake (shapeOps.ts); a refused edit is a no-op.
+
 export function moveCorner(h: Hole, i: number, p: Pt): Hole {
+  if (h.shape) return orSame(h, moveShapeCorner(h, i, p))
   return { ...h, outline: h.outline.map((c, k) => (k === i ? p : c)) }
 }
 
 /** Adds a corner at the middle of the edge after `afterIndex` (wrapping past the last corner). */
 export function addCorner(h: Hole, afterIndex: number): Hole {
+  if (h.shape) return orSame(h, addShapeCorner(h, afterIndex))
   const { outline } = h
   const a = outline[afterIndex]
   const b = outline[(afterIndex + 1) % outline.length]
@@ -56,6 +66,7 @@ export function addCorner(h: Hole, afterIndex: number): Hole {
 
 /** Refuses below 3 corners: a hole always needs an outline. */
 export function removeCorner(h: Hole, i: number): Hole {
+  if (h.shape) return orSame(h, removeShapeCorner(h, i))
   if (h.outline.length <= 3) return h
   return { ...h, outline: h.outline.filter((_, k) => k !== i) }
 }
@@ -162,7 +173,7 @@ export function moveElement(h: Hole, ref: ElementRef, delta: Pt): Hole {
   const shift = shiftBy(delta)
   switch (ref.kind) {
     case 'outline':
-      return moveCorner(h, ref.index, shift(h.outline[ref.index]))
+      return moveCorner(h, ref.index, shift((h.shape?.corners ?? h.outline)[ref.index]))
     case 'tee':
       return moveTee(h, shift(h.tee))
     case 'cup':
@@ -176,9 +187,7 @@ export function moveElement(h: Hole, ref: ElementRef, delta: Pt): Hole {
     case 'terrain':
       return { ...h, terrain: (h.terrain ?? []).map((t, i) => (i === ref.index ? movedTerrain(t, shift) : t)) }
     case 'circle':
-      return h.shape
-        ? { ...h, shape: { ...h.shape, circles: h.shape.circles.map((c, i) => (i === ref.index ? { ...c, center: shift(c.center) } : c)) } }
-        : h
+      return h.shape ? orSame(h, moveCircle(h, ref.index, shift(h.shape.circles[ref.index].center))) : h
   }
 }
 
@@ -200,7 +209,7 @@ export function removeElement(h: Hole, ref: ElementRef): Hole {
     case 'terrain':
       return { ...h, terrain: (h.terrain ?? []).filter((_, i) => i !== ref.index) }
     case 'circle':
-      return h.shape ? { ...h, shape: { ...h.shape, circles: h.shape.circles.filter((_, i) => i !== ref.index) } } : h
+      return h.shape ? orSame(h, removeCircle(h, ref.index)) : h
   }
 }
 
@@ -264,6 +273,10 @@ export function elementsOf(h: Hole): { ref: ElementRef; label: string; detail: s
     }
   })
 
+  h.shape?.circles.forEach((c, i) => {
+    items.push({ ref: { kind: 'circle', index: i }, label: `Circle ${i + 1}`, detail: `r ${Math.round(c.r)} mm` })
+  })
+
   ;(h.terrain ?? []).forEach((t, i) => {
     const [left, top, right, bottom] = t.mesa.edges
     const rampIndex = [left, top, right, bottom].indexOf(Math.max(left, top, right, bottom))
@@ -278,7 +291,7 @@ export function elementsOf(h: Hole): { ref: ElementRef; label: string; detail: s
 /** Half the tee box's side, mm (HoleView draws it 140 mm across). */
 const TEE_HALF = 70
 
-/** The element under p, topmost first: tee, cup, bumpers, walls, then the ground's shapes.
+/** The element under p, topmost first: tee, cup, bumpers, walls, circles (by rim or centre), then the ground's shapes.
  *  `slack` (mm) widens every target so thin things stay clickable; `groundOnly` looks through to
  *  the terrain shapes (Flatten). The outline isn't picked here: its corners have their own handles. */
 export function hitTest(h: Hole, p: Pt, slack = 20, groundOnly = false): ElementRef | null {
@@ -292,6 +305,11 @@ export function hitTest(h: Hole, p: Pt, slack = 20, groundOnly = false): Element
     const half = (w.thickness ?? DEFAULT_PHYSICS.wallThickness) / 2 + slack
     if (edgesOf(w.points, !!w.closed).some(([a, b]) => distanceToSegment(p, a, b) <= half)) return { kind: 'wall', index: i }
     if (w.closed && pointInPolygon(p, w.points)) return { kind: 'wall', index: i }
+  }
+  const circles = h.shape?.circles ?? []
+  for (let i = circles.length - 1; i >= 0; i--) {
+    const { center, r } = circles[i]
+    if (near(center, 0) || Math.abs(Math.hypot(p[0] - center[0], p[1] - center[1]) - r) <= slack) return { kind: 'circle', index: i }
   }
   return hitGround(h, p, slack, near)
 }
