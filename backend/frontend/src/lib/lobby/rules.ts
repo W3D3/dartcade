@@ -52,6 +52,17 @@ export function canRemove(lobby: Lobby, p: LobbyPerson, viewerId: string | null)
   return p.userId === null && p.addedByUserId === viewerId
 }
 
+/**
+ * Leave from your own row's ⋯ menu, as with the header's Leave lobby: the host only once
+ * someone else could take over, and not while the game runs.
+ */
+export const canLeave = (lobby: Lobby, p: LobbyPerson, viewerId: string | null): boolean =>
+  viewerId !== null && p.userId === viewerId && (!isHost(lobby, viewerId) || (!lobby.solo && lobby.currentSessionId === null))
+
+/** The names of your guests: they leave with you. */
+export const guestNames = (lobby: Lobby, viewerId: string | null): string[] =>
+  lobby.people.filter(p => p.userId === null && p.addedByUserId === viewerId).map(p => p.name)
+
 /** An entry in a person's board menu; boardId null is manual entry. */
 /** online: null for manual entry. */
 export type BoardChoice = { boardId: string | null; label: string; detail: string; current: boolean; online: boolean | null }

@@ -48,7 +48,16 @@ const lobbyOf = (people: LobbyPerson[], solo: boolean): Lobby => ({
 })
 
 const noop = () => Promise.resolve(true)
-const props = { viewerId: 'chris', ownBoards: [], onupdate: noop, onremove: noop, onguest: noop, onbot: noop, oninvite: noop }
+const props = {
+  viewerId: 'chris',
+  ownBoards: [],
+  onupdate: noop,
+  onremove: noop,
+  onleave: noop,
+  onguest: noop,
+  onbot: noop,
+  oninvite: noop,
+}
 const page = (lobby: Lobby) => render(LobbyPeople, { props: { ...props, lobby } }).body
 const READY = /\bready\b|Ready\?/i
 

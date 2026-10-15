@@ -50,6 +50,7 @@ const props = {
   ownBoards: [],
   onupdate: noop,
   onremove: noop,
+  onleave: noop,
   onguest: noop,
   onbot: noop,
   oninvite: noop,

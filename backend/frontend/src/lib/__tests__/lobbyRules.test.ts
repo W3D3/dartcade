@@ -4,11 +4,13 @@ import {
   boardChoices,
   boardSummary,
   hasBullOff,
+  canLeave,
   canMove,
   canRemove,
   canSetPlays,
   canSetReady,
   counts,
+  guestNames,
   isHost,
   isMine,
   isTeamFormat,
@@ -122,6 +124,17 @@ describe('lobby rules for the screens', () => {
     expect(canRemove(lobby, chris, 'chris')).toBe(false)
     expect(canRemove(lobby, pia, 'lena')).toBe(true)
     expect(canRemove(lobby, max, 'lena')).toBe(false)
+  })
+
+  it('leave: your own row only; the host once someone could take over and no game runs', () => {
+    expect(canLeave(lobby, lena, 'lena')).toBe(true)
+    expect(canLeave(lobby, pia, 'lena')).toBe(false)
+    expect(canLeave(lobby, max, 'lena')).toBe(false)
+    expect(canLeave(lobby, chris, 'chris')).toBe(true)
+    expect(canLeave({ ...lobby, solo: true }, chris, 'chris')).toBe(false)
+    expect(canLeave({ ...lobby, currentSessionId: 's1' }, chris, 'chris')).toBe(false)
+    expect(canLeave({ ...lobby, currentSessionId: 's1' }, lena, 'lena')).toBe(true)
+    expect(guestNames(lobby, 'lena')).toEqual(['Pia'])
   })
 
   it('board menu: your own boards for someone on Manual', () => {

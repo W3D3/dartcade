@@ -17,6 +17,7 @@
     ownBoards,
     onupdate,
     onremove,
+    onleave,
     onguest,
     onbot,
     oninvite,
@@ -27,6 +28,7 @@
     ownBoards: OwnBoard[]
     onupdate: (personId: string, patch: PersonPatch) => Promise<boolean>
     onremove: (personId: string) => Promise<boolean>
+    onleave: () => void
     onguest: (name: string) => Promise<boolean>
     onbot: (level: number) => Promise<boolean>
     oninvite: (userId: string) => Promise<boolean>
@@ -51,7 +53,7 @@
     />
   {/snippet}
   {#snippet controlsOf(p: LobbyPerson, i: number)}
-    <PersonControls {lobby} person={p} index={i} {viewerId} {onupdate} {onremove} />
+    <PersonControls {lobby} person={p} index={i} {viewerId} {onupdate} {onremove} {onleave} />
   {/snippet}
   {#snippet footer()}
     <div class="flex flex-col gap-2 md:flex-row md:items-start">
