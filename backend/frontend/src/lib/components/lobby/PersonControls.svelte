@@ -4,9 +4,10 @@
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import PersonStatus from './PersonStatus.svelte'
+  import LeaveLobbyConfirm from './LeaveLobbyConfirm.svelte'
   import RowMenu from './RowMenu.svelte'
   import ToggleChip from './ToggleChip.svelte'
-  import { canMove, canRemove, canSetReady, isMine, type PersonPatch } from '$lib/lobby/rules'
+  import { canLeave, canMove, canRemove, canSetReady, guestNames, isHost, isMine, type PersonPatch } from '$lib/lobby/rules'
 
   let {
     lobby,
@@ -15,6 +16,7 @@
     viewerId,
     onupdate,
     onremove,
+    onleave,
   }: {
     lobby: Lobby
     person: LobbyPerson
@@ -22,6 +24,7 @@
     viewerId: string | null
     onupdate: (personId: string, patch: PersonPatch) => Promise<boolean>
     onremove: (personId: string) => Promise<boolean>
+    onleave: () => void
   } = $props()
 
   // Your own rows only: the host sits others out with the who-plays chips on the next-game card
@@ -34,6 +37,7 @@
   const mover = $derived(canMove(lobby, viewerId))
   const last = $derived(lobby.people.length - 1)
   let removing = $state(false)
+  let leaving = $state(false)
 </script>
 
 {#if mine}
@@ -70,6 +74,11 @@
         removing = true
       }
     : undefined}
+  onleave={canLeave(lobby, person, viewerId)
+    ? () => {
+        leaving = true
+      }
+    : undefined}
 />
 
 {#if removing}
@@ -86,5 +95,17 @@
       void onremove(person.id)
     }}
     oncancel={() => (removing = false)}
+  />
+{/if}
+{#if leaving}
+  <LeaveLobbyConfirm
+    name={lobby.name}
+    guestNames={guestNames(lobby, viewerId)}
+    nextHostName={isHost(lobby, viewerId) ? lobby.nextHostName : null}
+    onconfirm={() => {
+      leaving = false
+      onleave()
+    }}
+    oncancel={() => (leaving = false)}
   />
 {/if}

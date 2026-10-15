@@ -1,5 +1,6 @@
 <script lang="ts">
-  // The ⋯ on a person's row: move up or down (the host), remove (the host; members for their guests).
+  // The ⋯ on a person's row: move up or down (the host), remove (the host; members for their guests);
+  // leave (your own row).
   import { Ellipsis } from '@lucide/svelte'
   import MenuItem from './MenuItem.svelte'
   import PopoverMenu from './PopoverMenu.svelte'
@@ -9,16 +10,18 @@
     onup,
     ondown,
     onremove,
+    onleave,
   }: {
     name: string
     /** Absent: that's not possible (first or last, not the host, not yours). */
     onup?: () => void
     ondown?: () => void
     onremove?: () => void
+    onleave?: () => void
   } = $props()
 </script>
 
-{#if onup || ondown || onremove}
+{#if onup || ondown || onremove || onleave}
   <PopoverMenu
     label="More for {name}"
     triggerLabel="More for {name}"
@@ -44,6 +47,14 @@
         />{/if}
       {#if onremove}{@const f = onremove}<MenuItem
           label="Remove from lobby"
+          danger
+          onclick={() => {
+            close()
+            f()
+          }}
+        />{/if}
+      {#if onleave}{@const f = onleave}<MenuItem
+          label="Leave lobby"
           danger
           onclick={() => {
             close()

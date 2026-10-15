@@ -7,7 +7,7 @@
   import IconButton from '$lib/components/IconButton.svelte'
   import JoinCodeCard from './JoinCodeCard.svelte'
   import LeaveLobbyConfirm from './LeaveLobbyConfirm.svelte'
-  import { boardSummary, counts, isHost } from '$lib/lobby/rules'
+  import { boardSummary, counts, guestNames, isHost } from '$lib/lobby/rules'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
 
   let {
@@ -33,7 +33,7 @@
   const gameRunning = $derived(lobby.currentSessionId !== null)
   const c = $derived(counts(lobby))
   const boards = $derived(boardSummary(lobby))
-  const myGuests = $derived(lobby.people.filter(p => p.userId === null && p.addedByUserId === viewerId).map(p => p.name))
+  const myGuests = $derived(guestNames(lobby, viewerId))
 
   let renaming = $state(false)
   let draft = $state('')

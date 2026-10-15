@@ -249,6 +249,7 @@
             {ownBoards}
             onupdate={updatePerson}
             onremove={removePerson}
+            onleave={() => void leave()}
             onguest={addGuest}
             onbot={addBot}
             oninvite={invite}
