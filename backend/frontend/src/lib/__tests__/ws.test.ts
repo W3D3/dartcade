@@ -141,6 +141,28 @@ describe('createSessionStore', () => {
     }
   })
 
+  it('marks the tab stale when a snapshot does not parse', () => {
+    const sockets = stubWebSocket()
+    vi.useFakeTimers()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
+    try {
+      const store = createSessionStore('s1')
+      const send = (m: unknown) => sockets[0].onmessage?.({ data: JSON.stringify(m) })
+      send(fixture)
+      send({ type: 'camera', boardId: 'b1', cam: 0, version: 5 })
+      expect(get(store.stale)).toBe(false)
+      send({ ...fixture, game: {} })
+      expect(get(store.stale)).toBe(true)
+      // The last good snapshot stays
+      expect(get(store.snapshot)?.gameId).toBe('x01')
+      store.destroy()
+    } finally {
+      warn.mockRestore()
+      vi.useRealTimers()
+      vi.unstubAllGlobals()
+    }
+  })
+
   describe('a dead session (NotFound/Forbidden close)', () => {
     beforeEach(() => {
       vi.stubGlobal('window', { location: { hash: '' } })

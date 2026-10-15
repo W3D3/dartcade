@@ -63,6 +63,7 @@
   import WaitingCard from '../lib/components/WaitingCard.svelte'
   import NotTurnToast from '../lib/components/NotTurnToast.svelte'
   import { createToast } from '$lib/toast'
+  import { Toast } from '$lib/components/ui/toast/index.js'
   import { cameraStillUrl, type CameraVersions } from '$lib/camera'
   import BoardViewToggle from '../lib/components/BoardViewToggle.svelte'
   import WinScreen from '../lib/components/WinScreen.svelte'
@@ -117,6 +118,9 @@
   let unsubError: (() => void) | null = null
   let unsubConnected: (() => void) | null = null
   let unsubCameras: (() => void) | null = null
+  let unsubStale: (() => void) | null = null
+  // A snapshot didn't parse (this tab predates a deploy): ask for a reload
+  let stale = $state(false)
   // The newest camera still of each board and camera in this game
   let cameraVersions = $state.raw<CameraVersions>({})
   // "Not your turn": a dart on your board while someone else is up (6 s, the newest wins)
@@ -183,6 +187,9 @@
     unsubCameras = sessionStore.cameras.subscribe(v => {
       cameraVersions = v
     })
+    unsubStale = sessionStore.stale.subscribe(v => {
+      stale = v
+    })
     authClient
       .getSession()
       .then(r => {
@@ -202,6 +209,7 @@
     unsubError?.()
     unsubConnected?.()
     unsubCameras?.()
+    unsubStale?.()
     toast.dismiss()
     sessionStore?.destroy()
     caller.stop()
@@ -942,4 +950,8 @@
   {#key $toast.id}
     <NotTurnToast lines={noticeLines($toast.value)} compact={$isPhone} ondismiss={toast.dismiss} />
   {/key}
+{/if}
+
+{#if stale}
+  <Toast tone="error" actionLabel="Reload" onaction={() => location.reload()}>Dartcade was updated. Reload to continue.</Toast>
 {/if}
