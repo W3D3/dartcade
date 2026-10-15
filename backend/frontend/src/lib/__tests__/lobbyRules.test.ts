@@ -13,6 +13,7 @@ import {
   isMine,
   isTeamFormat,
   myRow,
+  noBoardOnline,
   nextGameInTeams,
   playsInGame,
   teamRosters,
@@ -137,6 +138,14 @@ describe('lobby rules for the screens', () => {
       ['living', true, 'Your board · online'],
       ['garage', false, 'Your board · offline'],
     ])
+  })
+
+  it('board menu: hints at the bridge only when none of your boards is online', () => {
+    expect(noBoardOnline(boardChoices(max, 'chris', own))).toBe(false)
+    const offline = own.map(b => ({ ...b, online: false }))
+    expect(noBoardOnline(boardChoices(max, 'chris', offline))).toBe(true)
+    // No boards offered (only Manual entry): nothing to hint at
+    expect(noBoardOnline(boardChoices(max, 'chris', []))).toBe(false)
   })
 
   it("board status: the lobby's live status wins for a board someone sits on", () => {

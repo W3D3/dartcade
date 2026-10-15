@@ -1,9 +1,10 @@
 <script lang="ts">
   // A person's board as a chip that opens what the board rule lets the viewer pick; a plain
-  // label when there's nothing to pick. Each board says whether it's online (yellow when not).
+  // label when there's nothing to pick. Each board says whether it's online (yellow when not);
+  // an offline board can't be picked.
   import { ChevronDown, Keyboard, Monitor } from '@lucide/svelte'
   import type { LobbyPerson } from '$lib/api/lobby-ws'
-  import type { BoardChoice } from '$lib/lobby/rules'
+  import { noBoardOnline, type BoardChoice } from '$lib/lobby/rules'
   import BoardLabel from './BoardLabel.svelte'
   import MenuItem from './MenuItem.svelte'
   import PopoverMenu from './PopoverMenu.svelte'
@@ -40,6 +41,7 @@
           label={c.label}
           detail={c.detail}
           checked={c.current}
+          disabled={c.online === false}
           onclick={() => {
             close()
             if (!c.current) onpick(c.boardId)
@@ -53,6 +55,9 @@
           {/snippet}
         </MenuItem>
       {/each}
+      {#if noBoardOnline(choices)}
+        <span class="px-[10px] pt-[6px] pb-1 text-[12px] text-text-dim">No board online. Start the bridge next to your board.</span>
+      {/if}
       {#if person.usualBoardName}
         <span class="px-[10px] pt-[6px] pb-1 text-[12px] text-text-dim">{person.name} usually plays on {person.usualBoardName}</span>
       {/if}
