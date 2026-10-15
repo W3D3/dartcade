@@ -80,7 +80,7 @@ export type FriendStatus = FriendPlaying | FriendInLobby | FriendOnline | Friend
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "MeServerMessage".
  */
-export type MeServerMessage = MeMessage | FriendsMessage | XpGainedMessage | BoardStatusMessage
+export type MeServerMessage = MeMessage | FriendsMessage | XpGainedMessage | BoardStatusMessage | MatchmakingMessage
 
 /**
  * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
@@ -540,4 +540,92 @@ export interface BoardStatusMessage {
   type: 'board.status'
   boardId: string
   online: boolean
+}
+/**
+ * Your ranked search: yours alone (1v1), or your duo's (2v2), which its host started and only they cancel.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "MatchmakingSearch".
+ */
+export interface MatchmakingSearch {
+  mode: '1v1' | '2v2'
+  /**
+   * What you picked: First to 3 is played only when the other side picked it too.
+   */
+  firstTo: 2 | 3
+  /**
+   * When the search started; it keeps its place when a match falls through.
+   */
+  since: string
+  /**
+   * How far from the side's rating an opponent may be, in RP either way; widens while searching.
+   */
+  range: number
+  /**
+   * The side's rating (a duo: the average of both); null while you're placing (it's hidden).
+   */
+  rating: number | null
+  hostUserId: string
+  /**
+   * The names on your side, host first.
+   */
+  players: string[]
+  /**
+   * How many searches of this mode are running, yours included.
+   */
+  searching: number
+}
+/**
+ * Someone in a found match. The other side's names stay hidden until everyone accepted.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "MatchmakingSeat".
+ */
+export interface MatchmakingSeat {
+  /**
+   * null for the other side.
+   */
+  name: string | null
+  accepted: boolean
+  you: boolean
+}
+/**
+ * A match the queue found: everyone has until expiresAt to accept. Declining, or letting the time run out, pauses your search.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "MatchmakingMatch".
+ */
+export interface MatchmakingMatch {
+  id: string
+  mode: '1v1' | '2v2'
+  firstTo: 2 | 3
+  expiresAt: string
+  /**
+   * The opponent is within this many RP of your side.
+   */
+  range: number
+  /**
+   * What a win or loss moves your rating by; null while you're placing.
+   */
+  stakes: {
+    win: number
+    loss: number
+  } | null
+  yours: MatchmakingSeat[]
+  theirs: MatchmakingSeat[]
+}
+/**
+ * Pushed on /ws/me when it opens and whenever your ranked search changes. Once everyone accepted, the game starts and shows in the me message's game.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "MatchmakingMessage".
+ */
+export interface MatchmakingMessage {
+  type: 'matchmaking'
+  search: MatchmakingSearch | null
+  match: MatchmakingMatch | null
+  /**
+   * You declined or missed a match: no new search until then.
+   */
+  pausedUntil: string | null
 }

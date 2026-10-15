@@ -27,7 +27,7 @@ vi.mock('better-auth/node', async orig => {
   }
 })
 
-const deps = () => ({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any })
+const deps = () => ({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any, matchmaking: {} as any })
 
 describe('unmatched routes', () => {
   it("POST /api/nope returns 404 with our ErrorResponse shape, not Fastify's default", async () => {

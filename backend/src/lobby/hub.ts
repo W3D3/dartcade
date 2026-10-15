@@ -1,6 +1,13 @@
 import type { WebSocket } from 'ws'
 import { BrowserConnections } from '../browser-gw/connections.js'
-import type { BoardStatusMessage, FriendsMessage, LobbyServerMessage, MeMessage, XpGainedMessage } from '../schema/lobby-ws.js'
+import type {
+  BoardStatusMessage,
+  FriendsMessage,
+  LobbyServerMessage,
+  MatchmakingMessage,
+  MeMessage,
+  XpGainedMessage,
+} from '../schema/lobby-ws.js'
 
 /** Open lobby sockets (per lobby) and per-user sockets (/ws/me, per user). */
 export class LobbyHub {
@@ -9,6 +16,7 @@ export class LobbyHub {
   // What each user's /ws/me last got: an unchanged message isn't sent again
   private readonly lastMe = new Map<string, string>()
   private readonly lastFriends = new Map<string, string>()
+  private readonly lastMatchmaking = new Map<string, string>()
 
   addLobbySocket(lobbyId: string, ws: WebSocket, userId: string): void {
     this.lobbies.add(lobbyId, ws, userId)
@@ -46,11 +54,12 @@ export class LobbyHub {
   }
 
   /**
-   * A /ws/me socket opened: it gets the user's current state and friends list right away.
+   * A /ws/me socket opened: it gets the user's current state, friends list and (where matchmaking
+   * runs) ranked search right away.
    * The friends list is remembered only for the user's first socket: a later one may carry a
    * newer list than the open tabs have (a push still pending), so then the next push always goes out.
    */
-  addMeSocket(userId: string, ws: WebSocket, first: MeMessage, friends: FriendsMessage): void {
+  addMeSocket(userId: string, ws: WebSocket, first: MeMessage, friends: FriendsMessage, matchmaking?: MatchmakingMessage): void {
     const firstSocket = !this.users.has(userId)
     this.users.add(userId, ws, userId)
     const payload = JSON.stringify(first)
@@ -60,6 +69,10 @@ export class LobbyHub {
     if (firstSocket) this.lastFriends.set(userId, friendsPayload)
     else this.lastFriends.delete(userId)
     ws.send(friendsPayload)
+    if (matchmaking === undefined) return
+    const matchmakingPayload = JSON.stringify(matchmaking)
+    this.lastMatchmaking.set(userId, matchmakingPayload)
+    ws.send(matchmakingPayload)
   }
 
   removeMeSocket(userId: string, ws: WebSocket): void {
@@ -68,6 +81,7 @@ export class LobbyHub {
     if (!this.users.has(userId)) {
       this.lastMe.delete(userId)
       this.lastFriends.delete(userId)
+      this.lastMatchmaking.delete(userId)
     }
   }
 
@@ -101,5 +115,14 @@ export class LobbyHub {
   sendBoardStatus(ownerUserId: string, boardId: string, online: boolean): void {
     const msg: BoardStatusMessage = { type: 'board.status', boardId, online }
     this.users.pushEach(ownerUserId, () => msg)
+  }
+
+  /** Sends the user's /ws/me sockets their ranked search, unless it's what they already have. */
+  sendMatchmaking(userId: string, msg: MatchmakingMessage): void {
+    if (!this.users.has(userId)) return
+    const payload = JSON.stringify(msg)
+    if (this.lastMatchmaking.get(userId) === payload) return
+    this.lastMatchmaking.set(userId, payload)
+    this.users.pushEach(userId, () => msg)
   }
 }
