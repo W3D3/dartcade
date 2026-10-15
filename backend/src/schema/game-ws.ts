@@ -117,6 +117,7 @@ export interface X01Game {
     startScore: number
     inMode: 'straight' | 'double' | 'master'
     botSpeed: 'fast' | 'normal' | 'slow'
+    bullValue?: '25_50' | '50_50'
   }
   visitLocked: boolean
   bullOff: BullOffView | null

@@ -322,6 +322,7 @@
       ? x01Slots({
           darts,
           outMode,
+          bullValue: x01?.config.bullValue,
           bust,
           remaining: x01Players[currentPlayer]?.remaining ?? 0,
           opened: x01Players[currentPlayer]?.opened ?? true,

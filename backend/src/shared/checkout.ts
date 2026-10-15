@@ -4,6 +4,9 @@
 import { CHECKOUTS } from './checkoutTable.js'
 
 type OutMode = 'straight' | 'double' | 'master'
+/** X01's bull value: 50_50 makes the outer bull (25) score 50. It never finishes: only the inner
+ *  bull counts as a double, as in the engine. */
+type BullValue = '25_50' | '50_50'
 
 /** A player's checkout preferences (to be set in Settings). */
 export type CheckoutPrefs = {
@@ -20,10 +23,12 @@ export function checkoutHint(
   outMode: OutMode = 'double',
   dartsLeft = 3,
   prefs: CheckoutPrefs = DEFAULT_CHECKOUT_PREFS,
+  bullValue: BullValue = '25_50',
 ): string[] | null {
   if (remaining < 1 || remaining > 170 || dartsLeft < 1) return null
   const n = Math.min(dartsLeft, 3)
-  return outMode === 'double' ? doubleOutHint(remaining, n, prefs) : computedHint(remaining, outMode, n)
+  const outerBull = bullValue === '50_50' ? 50 : 25
+  return outMode === 'double' ? doubleOutHint(remaining, n, prefs, outerBull) : computedHint(remaining, outMode, n, outerBull)
 }
 
 const finishingLabel = (d: number) => (d === 25 ? 'Bull' : `D${d}`)
@@ -32,18 +37,19 @@ const finishingLabel = (d: number) => (d === 25 ? 'Bull' : `D${d}`)
 const directDouble = (remaining: number) =>
   remaining === 50 ? 'Bull' : remaining % 2 === 0 && remaining <= 40 ? `D${remaining / 2}` : null
 
-function doubleOutHint(remaining: number, n: number, prefs: CheckoutPrefs): string[] | null {
+function doubleOutHint(remaining: number, n: number, prefs: CheckoutPrefs, outerBull: number): string[] | null {
   const direct = directDouble(remaining)
   if (n === 1) return direct ? [direct] : null
 
   const entry = remaining in CHECKOUTS ? CHECKOUTS[remaining] : null
   if (entry) {
     const fav = prefs.favouriteDouble === null ? null : finishingLabel(prefs.favouriteDouble)
+    // The table's routes count the outer bull as 25
+    const valid = outerBull === 25 ? entry.routes : entry.routes.filter(r => !r.includes('25'))
     // The favourite double's route first, then the table's order
-    const routes =
-      fav === null ? entry.routes : [...entry.routes.filter(r => r.at(-1) === fav), ...entry.routes.filter(r => r.at(-1) !== fav)]
+    const routes = fav === null ? valid : [...valid.filter(r => r.at(-1) === fav), ...valid.filter(r => r.at(-1) !== fav)]
     if (n >= 3) return routes[0]
-    return entry.twoDarts ?? routes.find(r => r.length <= 2) ?? computedHint(remaining, 'double', 2)
+    return entry.twoDarts ?? routes.find(r => r.length <= 2) ?? computedHint(remaining, 'double', 2, outerBull)
   }
   // Above 40 and not in the table: no three-dart finish (169, 168, 166, …)
   if (remaining > 40) return null
@@ -59,7 +65,7 @@ function doubleOutHint(remaining: number, n: number, prefs: CheckoutPrefs): stri
 
 // Straight and master out (and a double-out fallback): the easiest finishing dart, after the
 // fewest darts that set it up.
-function computedHint(remaining: number, outMode: OutMode, n: number): string[] | null {
+function computedHint(remaining: number, outMode: OutMode, n: number, outerBull: number): string[] | null {
   // Valid finishing darts; the easiest dart wins a total (a single before a double before a triple)
   const finishMap = new Map<number, string>()
   const add = (v: number, l: string) => {
@@ -67,7 +73,7 @@ function computedHint(remaining: number, outMode: OutMode, n: number): string[] 
   }
   if (outMode === 'straight') {
     for (let k = 20; k >= 1; k--) add(k, `S${k}`)
-    add(25, '25')
+    add(outerBull, '25')
   }
   for (let k = 20; k >= 1; k--) add(2 * k, `D${k}`)
   add(50, 'Bull')
@@ -82,7 +88,7 @@ function computedHint(remaining: number, outMode: OutMode, n: number): string[] 
   const scoring: { l: string; v: number }[] = []
   for (let k = 20; k >= 2; k--) scoring.push({ l: `T${k}`, v: 3 * k })
   for (let k = 20; k >= 1; k--) scoring.push({ l: `S${k}`, v: k })
-  scoring.push({ l: '25', v: 25 }, { l: 'Bull', v: 50 })
+  scoring.push({ l: '25', v: outerBull }, { l: 'Bull', v: 50 })
 
   // 2-dart finish
   if (n >= 2) {

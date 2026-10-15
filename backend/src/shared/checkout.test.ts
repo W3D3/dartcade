@@ -92,3 +92,19 @@ describe('checkoutHint, straight and master out', () => {
     expect(checkoutHint(57, 'master')).toEqual(['T19'])
   })
 })
+
+describe('checkoutHint, 50/50 bull', () => {
+  it('the outer bull sets up for 50, but never finishes', () => {
+    // 135: the table's 25 · T20 · Bull would leave 25 here; the favourite-bull route is dropped
+    expect(checkoutHint(135, 'double', 3, { favouriteDouble: 25 }, '50_50')).toEqual(['T20', 'T17', 'D12'])
+    expect(checkoutHint(135, 'double', 3, { favouriteDouble: 25 })).toEqual(['25', 'T20', 'Bull'])
+    // Double out: only the inner bull finishes. Straight out: the outer bull finishes 50, not 25
+    expect(checkoutHint(50, 'double', 1, undefined, '50_50')).toEqual(['Bull'])
+    expect(checkoutHint(25, 'straight', 1, undefined, '50_50')).toBeNull()
+    expect(checkoutHint(25, 'straight', 1)).toEqual(['25'])
+    expect(checkoutHint(50, 'straight', 1, undefined, '50_50')).toEqual(['25'])
+    // Straight out: 170 ends on the outer bull, and 145 can't (T20 · T20 · 25 would be 170)
+    expect(checkoutHint(170, 'straight', 3, undefined, '50_50')).toEqual(['T20', 'T20', '25'])
+    expect(checkoutHint(145, 'straight', 3, undefined, '50_50')).toEqual(['T20', 'T19', 'D14'])
+  })
+})

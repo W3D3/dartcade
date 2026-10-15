@@ -48,6 +48,8 @@ export function x01Slots(o: {
   darts: ThrownDart[]
   remaining: number
   outMode: 'straight' | 'double' | 'master'
+  /** X01's bull value: under 50_50 the outer bull scores 50. */
+  bullValue?: '25_50' | '50_50'
   opened: boolean
   bust: boolean
   suggest: boolean
@@ -72,7 +74,9 @@ export function x01Slots(o: {
   }
   const dartsLeft = 3 - done.length
   const hint =
-    o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0 ? checkoutHint(o.remaining, o.outMode, dartsLeft, o.checkout) : null
+    o.suggest && o.opened && o.remaining > 0 && dartsLeft > 0
+      ? checkoutHint(o.remaining, o.outMode, dartsLeft, o.checkout, o.bullValue)
+      : null
   let rest = o.remaining
   const suggestions = (hint ?? []).map((label, k, all) => {
     rest -= parseLabel(label).score
