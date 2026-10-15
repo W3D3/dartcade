@@ -100,6 +100,54 @@ func TestPersistToken_ReturnsErrorWhenDirUnwritable(t *testing.T) {
 	}
 }
 
+// Persisting a key twice must rewrite it, not append a duplicate: a duplicate
+// key makes the TOML unparseable and the bridge would ignore the whole file.
+func TestPersistToken_RewritesExistingKey(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "bridge.toml")
+	orig := "# my board\nboard_url = \"ws://board:3180\"\ntoken = \"old\"\ntoken = \"older\"\n"
+	if err := os.WriteFile(path, []byte(orig), 0640); err != nil {
+		t.Fatal(err)
+	}
+	for _, tok := range []string{"first", "second"} {
+		if err := persistToken(path, tok); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := persistBridgeID(path, "br_x"); err != nil {
+		t.Fatal(err)
+	}
+
+	data, _ := os.ReadFile(path)
+	want := "# my board\nboard_url = \"ws://board:3180\"\ntoken = \"second\"\nbridge_id = \"br_x\"\n"
+	if string(data) != want {
+		t.Errorf("got:\n%s\nwant:\n%s", data, want)
+	}
+	if info, _ := os.Stat(path); info.Mode().Perm() != 0640 {
+		t.Errorf("permissions changed to %o", info.Mode().Perm())
+	}
+
+	cfg, err := loadConfig(map[string]string{"backend_url": "ws://localhost:3000/bridge"}, path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.Token != "second" || cfg.BridgeID != "br_x" || cfg.BoardURL != "ws://board:3180" {
+		t.Errorf("file did not load back: %+v", cfg)
+	}
+}
+
+func TestLoadConfig_RejectsMalformedBackendURL(t *testing.T) {
+	for _, bad := range []string{"localhost:3000/bridge", "not a url", "ws://%zz"} {
+		_, err := loadConfig(map[string]string{
+			"board_url":   "ws://board:3180",
+			"backend_url": bad,
+			"bridge_id":   "br_test",
+		}, "")
+		if err == nil || !strings.Contains(err.Error(), "backend_url") {
+			t.Errorf("backend_url %q: got err %v, want a backend_url error", bad, err)
+		}
+	}
+}
+
 func TestRunPairing_Success(t *testing.T) {
 	expiry := time.Now().Add(10 * time.Minute)
 
