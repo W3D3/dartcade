@@ -91,6 +91,10 @@ export function boardChoices(p: LobbyPerson, viewerId: string | null, own: OwnBo
   return choices
 }
 
+/** The menu offers your boards but none is online: say how to bring one up. */
+export const noBoardOnline = (choices: BoardChoice[]): boolean =>
+  choices.some(c => c.online === false) && !choices.some(c => c.online === true)
+
 export function counts(lobby: Lobby): { people: number; playing: number; ready: number } {
   const playing = lobby.people.filter(p => p.plays)
   return { people: lobby.people.length, playing: playing.length, ready: playing.filter(p => p.ready).length }

@@ -8,6 +8,7 @@
     detail,
     checked,
     danger = false,
+    disabled = false,
     leading,
     onclick,
   }: {
@@ -16,6 +17,8 @@
     /** Set for a choice: whether it's the current one. */
     checked?: boolean
     danger?: boolean
+    /** Shown greyed out and can't be picked, e.g. an offline board. */
+    disabled?: boolean
     /** Shown before the label, e.g. an avatar preview. */
     leading?: Snippet
     onclick: () => void
@@ -26,9 +29,10 @@
   type="button"
   role={checked === undefined ? 'menuitem' : 'menuitemradio'}
   aria-checked={checked}
+  {disabled}
   {onclick}
-  class="min-h-11 flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer font-[inherit]
-         {checked ? 'bg-accent-tint' : 'bg-transparent hover:bg-surface-hover'} {danger ? 'text-live-text' : 'text-text'}"
+  class="min-h-11 flex items-center gap-[10px] px-[10px] border-0 rounded-[8px] text-left cursor-pointer font-[inherit] disabled:cursor-default disabled:opacity-50
+         {checked ? 'bg-accent-tint' : 'bg-transparent enabled:hover:bg-surface-hover'} {danger ? 'text-live-text' : 'text-text'}"
 >
   {@render leading?.()}
   <span class="flex flex-col gap-px flex-grow">
