@@ -1,4 +1,5 @@
-import type { ColumnType, Generated } from 'kysely'
+import type { ColumnType, Generated, RawBuilder } from 'kysely'
+import type { components } from '../schema/api.js'
 
 // Column names match better-auth's camelCase schema
 export interface UserTable {
@@ -13,6 +14,8 @@ export interface UserTable {
   name_needs_change: ColumnType<boolean, boolean | undefined, boolean>
   /** Friends see this user as offline (migration 016). */
   invisible: ColumnType<boolean, boolean | undefined, boolean>
+  /** Account-wide preferences, only the ones set (migration 022; API schema Preferences). */
+  preferences: ColumnType<components['schemas']['Preferences'], never, RawBuilder<unknown>>
   /** better-auth admin plugin (migration 019): 'admin', 'user' or null. */
   role: ColumnType<string | null, string | null | undefined, string | null>
   banned: ColumnType<boolean | null, boolean | undefined, boolean>

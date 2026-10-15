@@ -3,7 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { isAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { getAccount, setInvisible } from '../db/users.js'
+import { getAccount, getPreferences, setInvisible, updatePreferences } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
@@ -38,6 +38,19 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     opts.onChanged?.(req.userId)
     return me(req.userId)
   })
+
+  // Account-wide preferences: the spec checks the body (known keys and types only, unknown keys dropped)
+  app.get<Route<'getPreferences'>>('/api/me/preferences', { preValidation: requireAuth, schema: fromSpec('getPreferences') }, async req => {
+    return (await getPreferences(db, req.userId)) ?? {}
+  })
+
+  app.put<Route<'updatePreferences'>>(
+    '/api/me/preferences',
+    { preValidation: requireAuth, schema: fromSpec('updatePreferences') },
+    async req => {
+      return (await updatePreferences(db, req.userId, req.body)) ?? {}
+    },
+  )
 
   done()
 }
