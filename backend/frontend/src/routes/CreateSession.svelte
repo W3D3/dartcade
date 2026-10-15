@@ -10,6 +10,7 @@
   import GameSettings from '$lib/components/GameSettings.svelte'
   import PlayButton from '$lib/components/PlayButton.svelte'
   import InvitesBanner from '$lib/components/lobby/InvitesBanner.svelte'
+  import ConnectBoardCard from '$lib/components/ConnectBoardCard.svelte'
   import { gameName } from '$lib/lobby/format'
   import { me } from '$lib/lobby/sockets'
   import { initialGameSelection } from '$lib/lobby/start'
@@ -174,6 +175,8 @@
 <Layout title="New game">
   <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_32px] xl:p-[40px_44px]">
     {#if invites > 0}<InvitesBanner count={invites} />{/if}
+    <!-- Phones and tablets have no side nav, where desktops get this card -->
+    <div class="xl:hidden empty:hidden"><ConnectBoardCard compact /></div>
 
     <!-- Header (phones: the title is in the phone header) -->
     <header class="hidden md:flex items-end justify-between">
