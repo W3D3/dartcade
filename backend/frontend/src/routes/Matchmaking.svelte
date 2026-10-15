@@ -1,9 +1,10 @@
 <script lang="ts">
   // Matchmaking (MM-Home board): your 1v1 and 2v2 ratings and ranks, online average and record,
-  // the Find a match panel, and your last ranked games. Searching comes with the ranked queue;
-  // until then Find match is off. Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
-  import { onMount } from 'svelte'
-  import { Clock, Hourglass, LoaderCircle, Search, User, Users } from '@lucide/svelte'
+  // the Find a match panel (Searching while your search runs: MM-Searching, MM-Duo), and your last
+  // ranked games. A found match is prompted app-wide (MatchFound in App.svelte).
+  // Design: docs/superpowers/specs/2026-10-14-matchmaking-design.md
+  import { onDestroy, onMount } from 'svelte'
+  import { Clock, Crosshair, Hourglass, LoaderCircle, Search, User, Users, X } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -14,6 +15,9 @@
   import { TIER_COLOR, fmtSeconds, ratingCard, record, recentRow } from '$lib/ranked/view'
   import { numberFlag } from '$lib/flags'
   import { RESERVE_SECONDS, VISIT_SECONDS } from '$shared/ranked.js'
+  import { me } from '$lib/lobby/sockets'
+  import { currentUser } from '$lib/auth'
+  import { cancelSearch, pausedFor, searchView, startSearch } from '$lib/ranked/queue'
 
   type Profile = components['schemas']['RankedProfile']
 
@@ -36,6 +40,30 @@
     if (data) profile = data
     else error = err.error
   })
+
+  // The search runs on the server; its clock and range tick here
+  let tick = $state(Date.now())
+  const ticker = setInterval(() => (tick = Date.now()), 1000)
+  onDestroy(() => clearInterval(ticker))
+
+  const search = $derived($me?.matchmaking?.search ?? null)
+  const searching = $derived(search ? searchView(search, tick) : null)
+  const youHost = $derived(search !== null && search.hostUserId === $currentUser?.id)
+  const paused = $derived(pausedFor($me?.matchmaking?.pausedUntil ?? null, tick))
+  let busy = $state(false)
+  let searchError = $state('')
+
+  async function find() {
+    busy = true
+    searchError = (await startSearch(queue, firstTo)) ?? ''
+    busy = false
+  }
+
+  async function cancel() {
+    busy = true
+    searchError = (await cancelSearch()) ?? ''
+    busy = false
+  }
 
   const queues = [
     { id: '1v1', title: 'Solo · 1v1', line: 'Matched by your 1v1 rating', short: 'By your 1v1 rating', hint: '', hintShort: '' },
@@ -107,100 +135,188 @@
       </div>
 
       <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_400px]">
-        <section
-          aria-label="Find a match"
-          class="box-border flex flex-col gap-3 rounded-[16px] border border-line bg-surface-panel px-4 py-4 md:gap-4 md:px-6 md:py-5"
-        >
-          <div class="flex items-center justify-between gap-3">
-            <h2 class="m-0 font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">Find a match</h2>
-            <span class="text-right text-[12px] text-text-muted md:text-[13px]"
-              ><span class="hidden md:inline">X01 ·&nbsp;</span>501 · Double out</span
-            >
-          </div>
-
-          <div role="radiogroup" aria-label="Queue" class="grid grid-cols-2 gap-[10px] md:gap-3">
-            {#each queues as opt (opt.id)}
-              {@const on = queue === opt.id}
-              <button
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onclick={() => (queue = opt.id)}
-                class="box-border flex min-w-0 cursor-pointer flex-col gap-1 rounded-[12px] px-3 py-[10px] text-left font-[inherit] md:min-h-[84px] md:px-[14px] md:py-3 {on
-                  ? 'border-2 border-accent bg-surface-active text-text'
-                  : 'border border-line-chip bg-transparent text-ink-2'}"
-              >
-                <span class="flex items-center gap-[10px]">
-                  <span class="hidden md:flex {on ? 'text-accent' : 'text-text-muted'}">
-                    {#if opt.id === '1v1'}<User size={20} />{:else}<Users size={20} />{/if}
-                  </span>
-                  <span class="whitespace-nowrap font-display text-[19px] font-bold uppercase tracking-[0.03em] md:text-[22px]"
-                    >{opt.title}</span
+        {#if search && searching}
+          <section
+            aria-label={searching.title}
+            aria-live="polite"
+            class="box-border flex flex-col gap-4 rounded-[16px] border-2 border-accent-line bg-surface-panel px-4 py-4 md:px-6 md:py-[22px]"
+          >
+            <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <h2 class="m-0 font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">{searching.title}</h2>
+              <span class="text-[12px] text-text-muted md:text-[13px]">{searching.format}</span>
+            </div>
+            <div class="flex flex-grow items-center gap-5 md:gap-7 md:px-1 md:py-[6px]">
+              <div class="relative h-[120px] w-[120px] flex-shrink-0 md:h-[176px] md:w-[176px]">
+                {#each [0, 0.8, 1.6] as delay (delay)}
+                  <span
+                    aria-hidden="true"
+                    class="absolute inset-0 animate-radar rounded-full border-2 border-accent opacity-0 motion-reduce:hidden"
+                    style:animation-delay="{delay}s"
+                  ></span>
+                {/each}
+                <span
+                  class="absolute inset-[22%] flex flex-col items-center justify-center gap-[2px] rounded-full border border-accent-line bg-surface-1"
+                >
+                  <Crosshair size={18} class="text-accent" />
+                  <span role="timer" aria-label="Time searching" class="font-display text-[22px] font-bold leading-none md:text-[28px]"
+                    >{searching.elapsed}</span
                   >
                 </span>
-                <span class="text-[12px] text-text-muted md:text-[13px]"
-                  ><span class="md:hidden">{opt.short}</span><span class="hidden md:inline">{opt.line}</span></span
+              </div>
+              <div class="flex min-w-0 flex-grow flex-col gap-[14px]">
+                {#if search.mode === '2v2'}
+                  <span class="truncate text-[14px] font-semibold">{searching.players}</span>
+                {/if}
+                <div class="flex flex-col gap-1">
+                  <span class="text-[12px] uppercase tracking-[0.1em] text-text-muted">Rating range</span>
+                  <span class="text-[15px]"
+                    ><strong class="font-mono font-medium">{searching.range}</strong>
+                    <span class="text-text-muted">· widens every 30 s</span></span
+                  >
+                </div>
+                {#if searching.bar}
+                  <div class="flex w-full flex-col gap-2">
+                    <div class="relative h-[10px] rounded-[5px] bg-surface-chip">
+                      <span
+                        class="absolute top-0 bottom-0 rounded-[5px] border border-accent-line-strong bg-accent-line transition-[left,right] duration-700"
+                        style:left="{searching.bar.inset}%"
+                        style:right="{searching.bar.inset}%"
+                      ></span>
+                      <span class="absolute top-[-5px] left-1/2 -ml-[2px] h-5 w-1 rounded-[2px] bg-accent"></span>
+                    </div>
+                    <div class="flex justify-between gap-2 font-mono text-[11px] text-text-dim md:text-[12px]">
+                      <span>{searching.bar.low}</span><span class="truncate text-accent">{searching.bar.you}</span><span
+                        >{searching.bar.high}</span
+                      >
+                    </div>
+                  </div>
+                {/if}
+                <span class="text-[13px] text-text-muted">{searching.searching}</span>
+              </div>
+            </div>
+            <div class="flex flex-col items-stretch gap-3 md:flex-row md:items-center md:gap-4">
+              <span class="flex-grow text-[13px] leading-[1.45] text-text-muted">
+                {#if search.mode === '2v2' && !youHost}
+                  Only your duo's host can cancel. When a match is found, you get 10 seconds to accept on any screen.
+                {:else}
+                  Keep browsing. When a match is found, you get 10 seconds to accept on any screen.
+                {/if}
+              </span>
+              {#if search.mode === '1v1' || youHost}
+                <button
+                  type="button"
+                  disabled={busy}
+                  onclick={cancel}
+                  class="flex h-[52px] flex-shrink-0 cursor-pointer items-center justify-center gap-2 rounded-[12px] border border-line-strong bg-transparent px-[22px] font-[inherit] text-[15px] font-semibold text-text"
                 >
-                {#if opt.hint}<span class="text-[11px] text-warn md:text-[12px]"
-                    ><span class="md:hidden">{opt.hintShort}</span><span class="hidden md:inline">{opt.hint}</span></span
-                  >{/if}
-              </button>
-            {/each}
-          </div>
-
-          <div role="radiogroup" aria-label="Format" class="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
-            <span class="mr-1 hidden text-[13px] text-text-muted md:inline">Format</span>
-            {#each formats as f (f.value)}
-              {@const on = firstTo === f.value}
-              <button
-                type="button"
-                role="radio"
-                aria-checked={on}
-                onclick={() => (firstTo = f.value)}
-                class="flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[10px] px-3 font-[inherit] text-[13px] font-semibold md:px-[14px] md:text-[14px] {on
-                  ? 'border border-accent-line-strong bg-surface-paused text-text'
-                  : 'border border-line-chip bg-transparent text-ink-2'}"
+                  <X size={18} />Cancel search
+                </button>
+              {/if}
+            </div>
+            {#if searchError}<ErrorText>{searchError}</ErrorText>{/if}
+          </section>
+        {:else}
+          <section
+            aria-label="Find a match"
+            class="box-border flex flex-col gap-3 rounded-[16px] border border-line bg-surface-panel px-4 py-4 md:gap-4 md:px-6 md:py-5"
+          >
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="m-0 font-display text-[22px] font-bold uppercase tracking-[0.03em] md:text-[28px]">Find a match</h2>
+              <span class="text-right text-[12px] text-text-muted md:text-[13px]"
+                ><span class="hidden md:inline">X01 ·&nbsp;</span>501 · Double out</span
               >
-                {f.label}<span class="hidden text-[12px] font-normal text-text-dim md:inline">{f.hint}</span>
-              </button>
-            {/each}
-          </div>
+            </div>
 
-          <span class="flex items-center justify-center gap-2 text-[12px] text-ink-2 md:hidden"
-            ><Clock size={14} class="flex-shrink-0" />{visit} · {reserve}</span
-          >
-          <div class="hidden flex-col gap-2 rounded-[12px] border border-line bg-surface-1 px-[14px] py-3 text-[13px] text-ink-2 md:flex">
-            <span class="flex items-start gap-2"
-              ><Clock size={16} class="mt-px flex-shrink-0" /><span
-                ><strong class="font-semibold whitespace-nowrap text-text">{visit}</strong>
-                <span class="text-text-dim">· starts once the board is clear</span></span
-              ></span
-            >
-            <span class="flex items-start gap-2"
-              ><Hourglass size={16} class="mt-px flex-shrink-0" /><span
-                ><strong class="font-semibold whitespace-nowrap text-text">{reserve}</strong>
-                <span class="text-text-dim">· only used once a visit runs over; at 0:00 you forfeit</span></span
-              ></span
-            >
-          </div>
+            <div role="radiogroup" aria-label="Queue" class="grid grid-cols-2 gap-[10px] md:gap-3">
+              {#each queues as opt (opt.id)}
+                {@const on = queue === opt.id}
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onclick={() => (queue = opt.id)}
+                  class="box-border flex min-w-0 cursor-pointer flex-col gap-1 rounded-[12px] px-3 py-[10px] text-left font-[inherit] md:min-h-[84px] md:px-[14px] md:py-3 {on
+                    ? 'border-2 border-accent bg-surface-active text-text'
+                    : 'border border-line-chip bg-transparent text-ink-2'}"
+                >
+                  <span class="flex items-center gap-[10px]">
+                    <span class="hidden md:flex {on ? 'text-accent' : 'text-text-muted'}">
+                      {#if opt.id === '1v1'}<User size={20} />{:else}<Users size={20} />{/if}
+                    </span>
+                    <span class="whitespace-nowrap font-display text-[19px] font-bold uppercase tracking-[0.03em] md:text-[22px]"
+                      >{opt.title}</span
+                    >
+                  </span>
+                  <span class="text-[12px] text-text-muted md:text-[13px]"
+                    ><span class="md:hidden">{opt.short}</span><span class="hidden md:inline">{opt.line}</span></span
+                  >
+                  {#if opt.hint}<span class="text-[11px] text-warn md:text-[12px]"
+                      ><span class="md:hidden">{opt.hintShort}</span><span class="hidden md:inline">{opt.hint}</span></span
+                    >{/if}
+                </button>
+              {/each}
+            </div>
 
-          <div class="flex items-center gap-[10px] text-[12px] text-ink-2 md:text-[14px]">
-            <Search size={16} class="flex-shrink-0" />
-            <span
-              >Starts within <strong class="font-mono font-medium text-text">±75 RP</strong> of your rating
-              <span class="text-text-dim">· widens while you wait</span></span
-            >
-          </div>
+            <div role="radiogroup" aria-label="Format" class="grid grid-cols-2 gap-2 md:flex md:flex-wrap md:items-center">
+              <span class="mr-1 hidden text-[13px] text-text-muted md:inline">Format</span>
+              {#each formats as f (f.value)}
+                {@const on = firstTo === f.value}
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={on}
+                  onclick={() => (firstTo = f.value)}
+                  class="flex h-11 cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[10px] px-3 font-[inherit] text-[13px] font-semibold md:px-[14px] md:text-[14px] {on
+                    ? 'border border-accent-line-strong bg-surface-paused text-text'
+                    : 'border border-line-chip bg-transparent text-ink-2'}"
+                >
+                  {f.label}<span class="hidden text-[12px] font-normal text-text-dim md:inline">{f.hint}</span>
+                </button>
+              {/each}
+            </div>
 
-          <button
-            type="button"
-            disabled
-            class="mt-auto flex h-14 items-center justify-center gap-3 rounded-[14px] bg-accent font-display text-[22px] font-bold md:h-16 md:text-[26px] uppercase tracking-[0.06em] text-accent-fg opacity-40"
-          >
-            <Search size={24} />Find match
-          </button>
-          <span class="text-center text-[13px] text-text-muted">Searching for opponents is coming soon.</span>
-        </section>
+            <span class="flex items-center justify-center gap-2 text-[12px] text-ink-2 md:hidden"
+              ><Clock size={14} class="flex-shrink-0" />{visit} · {reserve}</span
+            >
+            <div class="hidden flex-col gap-2 rounded-[12px] border border-line bg-surface-1 px-[14px] py-3 text-[13px] text-ink-2 md:flex">
+              <span class="flex items-start gap-2"
+                ><Clock size={16} class="mt-px flex-shrink-0" /><span
+                  ><strong class="font-semibold whitespace-nowrap text-text">{visit}</strong>
+                  <span class="text-text-dim">· starts once the board is clear</span></span
+                ></span
+              >
+              <span class="flex items-start gap-2"
+                ><Hourglass size={16} class="mt-px flex-shrink-0" /><span
+                  ><strong class="font-semibold whitespace-nowrap text-text">{reserve}</strong>
+                  <span class="text-text-dim">· only used once a visit runs over; at 0:00 you forfeit</span></span
+                ></span
+              >
+            </div>
+
+            <div class="flex items-center gap-[10px] text-[12px] text-ink-2 md:text-[14px]">
+              <Search size={16} class="flex-shrink-0" />
+              <span
+                >Starts within <strong class="font-mono font-medium text-text">±75 RP</strong> of your rating
+                <span class="text-text-dim">· widens while you wait</span></span
+              >
+            </div>
+
+            <button
+              type="button"
+              disabled={busy || paused !== null}
+              onclick={find}
+              class="mt-auto flex h-14 cursor-pointer items-center justify-center gap-3 rounded-[14px] border-0 bg-accent font-display text-[22px] font-bold md:h-16 md:text-[26px] uppercase tracking-[0.06em] text-accent-fg disabled:cursor-default disabled:opacity-40"
+            >
+              <Search size={24} />Find match
+            </button>
+            {#if paused}
+              <span class="text-center text-[13px] text-text-muted"
+                >You declined a match: you can search again in <span class="font-mono">{paused}</span>.</span
+              >
+            {/if}
+            {#if searchError}<ErrorText>{searchError}</ErrorText>{/if}
+          </section>
+        {/if}
 
         <section
           aria-label="Recent ranked matches"
