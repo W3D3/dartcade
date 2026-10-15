@@ -16,10 +16,13 @@ afterEach(async () => {
   vi.mocked(getAuthUser).mockReset().mockResolvedValue(null)
 })
 
+const matchmakingMsg = { type: 'matchmaking', search: null, match: null, pausedUntil: null }
+
 async function serve(lobbies: unknown, hub: LobbyHub, friends: unknown = {}): Promise<number> {
   app = Fastify()
   await app.register(fastifyWebsocket)
-  await app.register(lobbyGwPlugin, { lobbies: lobbies as any, hub, friends: friends as any })
+  const matchmaking = { message: () => matchmakingMsg }
+  await app.register(lobbyGwPlugin, { lobbies: lobbies as any, hub, friends: friends as any, matchmaking: matchmaking as any })
   await app.listen({ port: 0, host: '127.0.0.1' })
   return (app.server.address() as AddressInfo).port
 }
@@ -86,7 +89,7 @@ describe('/ws/me', () => {
       setTimeout(() => reject(new Error('no message')), 2000)
     })
 
-  it("closes for the signed out; sends the user's state and friends when it opens", async () => {
+  it("closes for the signed out; sends the user's state, friends and ranked search when it opens", async () => {
     const hub = new LobbyHub()
     const me = { type: 'me', invites: [], lobby: null }
     const friends = fakeFriends()
@@ -95,7 +98,7 @@ describe('/ws/me', () => {
     expect(friends.connected).not.toHaveBeenCalled()
     vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
-    expect(await messages(ws, 2)).toEqual([me, friendsMsg])
+    expect(await messages(ws, 3)).toEqual([me, friendsMsg, matchmakingMsg])
     expect(hub.hasMe('lena')).toBe(true)
     expect(friends.connected).toHaveBeenCalledWith('lena')
     ws.close()
@@ -111,7 +114,7 @@ describe('/ws/me', () => {
     vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
     const a = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
     const b = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
-    await Promise.all([messages(a, 2), messages(b, 2)])
+    await Promise.all([messages(a, 3), messages(b, 3)])
     expect(friends.connected).toHaveBeenCalledTimes(2)
     a.close()
     await until(() => friends.disconnected.mock.calls.length > 0)

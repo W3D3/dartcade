@@ -7,19 +7,20 @@ import { WsCloseCode } from '../schema/game-ws.js'
 import type { LobbyHub } from '../lobby/hub.js'
 import type { LobbyService } from '../lobby/service.js'
 import type { FriendsService } from '../friends/service.js'
+import type { MatchmakingService } from '../matchmaking/service.js'
 
 const LobbyQuerySchema = z.object({ lobbyId: z.string().min(1) })
 
-type Opts = FastifyPluginOptions & { lobbies: LobbyService; hub: LobbyHub; friends: FriendsService }
+type Opts = FastifyPluginOptions & { lobbies: LobbyService; hub: LobbyHub; friends: FriendsService; matchmaking: MatchmakingService }
 
 /**
  * The lobby socket (/ws/lobby?lobbyId=…) and the per-user socket (/ws/me). Both only push
- * (schema/lobby-ws-v1.json); changes go through the REST API. An open lobby socket is
+ * (schema/lobby-ws-v1.json); changes go through the REST API. /ws/me also carries the ranked search. An open lobby socket is
  * what makes a member "online" in the lobby; an open /ws/me is what makes a user online for
  * their friends.
  */
 export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { lobbies, hub, friends } = opts
+  const { lobbies, hub, friends, matchmaking } = opts
 
   app.get('/ws/lobby', { websocket: true }, (connection: SocketStream, req) => {
     withAuthedSocket(connection, req, async (socket, userId) => {
@@ -53,7 +54,7 @@ export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Err
     withAuthedSocket(connection, req, async (socket, userId) => {
       const [first, friendsFirst] = await Promise.all([lobbies.meMessage(userId), friends.message(userId)])
       if (!isOpen(socket)) return
-      hub.addMeSocket(userId, socket, first, friendsFirst)
+      hub.addMeSocket(userId, socket, first, friendsFirst, matchmaking.message(userId))
       friends.connected(userId)
       onceGone(socket, () => {
         hub.removeMeSocket(userId, socket)
