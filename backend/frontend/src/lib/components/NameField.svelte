@@ -1,7 +1,7 @@
 <script lang="ts">
   // A name (handle) input that checks the rules while typing and availability after a pause.
   // Used on sign-up, in Settings and on Pick your name.
-  import { onDestroy } from 'svelte'
+  import { onDestroy, type Snippet } from 'svelte'
   import { Input } from '$lib/components/ui/input/index.js'
   import NameStatusLine from './NameStatusLine.svelte'
   import { createNameCheck, lookupName, type NameStatus } from '$lib/names'
@@ -12,6 +12,7 @@
     value = $bindable(''),
     own = null,
     status = $bindable({ kind: 'empty' }),
+    action,
   }: {
     id: string
     label: string
@@ -19,6 +20,8 @@
     /** Your current name: free for you without asking. */
     own?: string | null
     status?: NameStatus
+    /** Next to the input, e.g. Settings' Save button. */
+    action?: Snippet
   } = $props()
 
   const check = createNameCheck(lookupName, () => own)
@@ -50,6 +53,7 @@
       maxlength={64}
       class="flex-grow min-w-0"
     />
+    {@render action?.()}
   </div>
   <NameStatusLine id={statusId} {status} />
 </div>
