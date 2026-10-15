@@ -1,19 +1,5 @@
-import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures/auth.js'
-import { startGame } from '../fixtures/lobby.js'
-
-/** Each worker's admin is shared by the specs that run in it, and game-minigolf.spec.ts starts a
- *  game it never finishes: clear any game left running, before and after, regardless of run order. */
-async function endAnyRunningGame(page: Page): Promise<void> {
-  await page.goto('/#/')
-  const backToGame = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Back to game' })
-  if (!(await backToGame.isVisible().catch(() => false))) return
-  await backToGame.click()
-  await page.waitForURL('**/#/session/**')
-  await page.getByRole('button', { name: 'End' }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'End game' }).click()
-  await page.waitForURL(url => !url.hash.startsWith('#/session/'))
-}
+import { endAnyRunningGame, startGame } from '../fixtures/lobby.js'
 
 // A fresh course, not the shared seeded "test" course: this spec publishes a change, and the
 // other Minigolf specs (the bench, game-minigolf) must keep working no matter the run order.
