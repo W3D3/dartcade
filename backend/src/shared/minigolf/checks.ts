@@ -3,7 +3,7 @@ import { distanceToSegment, edgesOf, pointInPolygon } from './geometry.js'
 import { validateHole } from './hole.js'
 import { BALL_R, type Hole, type Pt } from './types.js'
 
-export type ElementRef = { kind: 'outline' | 'tee' | 'cup' | 'bumper' | 'wall' | 'slope' | 'terrain'; index: number }
+export type ElementRef = { kind: 'outline' | 'tee' | 'cup' | 'bumper' | 'wall' | 'slope' | 'terrain' | 'circle'; index: number }
 
 export type Check = { level: 'error' | 'warning'; message: string; element?: ElementRef }
 
@@ -15,7 +15,7 @@ function elementFor(message: string): ElementRef | undefined {
   if (message.startsWith('tee')) return { kind: 'tee', index: 0 }
   if (message.startsWith('cup')) return { kind: 'cup', index: 0 }
   const m = /^(\w+) (\d+)/.exec(message)
-  const kind = (['wall', 'bumper', 'slope', 'terrain'] as const).find(k => k === m?.[1])
+  const kind = (['wall', 'bumper', 'slope', 'terrain', 'circle'] as const).find(k => k === m?.[1])
   return m && kind ? { kind, index: Number(m[2]) - 1 } : undefined
 }
 

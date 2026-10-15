@@ -35,12 +35,31 @@ export type Slope =
  *  one a cliff. In 2D the ground is flat. */
 export type Terrain = { mesa: { from: Pt; to: Pt; height: number; edges: [number, number, number, number] } }
 
+/** A curved outline edge's two control points (a cubic Bézier alongside its corners). */
+export type Curve = { c1: Pt; c2: Pt }
+
+/** A circle baked into the outline (e.g. the round green round a cup). */
+export interface Circle {
+  center: Pt
+  r: number
+}
+
+/** The outline's editable source: corners, an optional curve per edge, and circles unioned in.
+ *  `curves[i]` curves the edge from `corners[i]` to `corners[i + 1]` (wrapping); `null` is straight. */
+export interface Shape {
+  corners: Pt[]
+  curves: (Curve | null)[]
+  circles: Circle[]
+}
+
 export interface Hole {
   id: string
   name: string
   par: number
   /** The felt's edge; rails run along it. */
   outline: Pt[]
+  /** The outline's editable source, when it was drawn with the shape tools; baked into `outline`. */
+  shape?: Shape
   walls: Wall[]
   bumpers: Bumper[]
   slopes: Slope[]

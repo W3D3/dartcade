@@ -4,7 +4,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { minigolfCoursesApiPlugin } from './minigolfCourses.js'
-import type { Hole } from '../shared/minigolf/types.js'
+import type { Hole, Shape } from '../shared/minigolf/types.js'
 
 // Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
 vi.mock('../auth/middleware.js', () => ({
@@ -224,6 +224,49 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
       expect(stale.json()).toEqual({ error: 'conflict' })
     })
 
+    it('saves a hole draft with a shape, and GET returns it unchanged', async () => {
+      const created = await createHoleAs(asAdmin, validHole('with-shape'))
+      const { id, version }: { id: string; version: number } = created.json()
+      const shape: Shape = {
+        corners: [
+          [0, 0],
+          [500, 0],
+          [500, 3000],
+          [0, 3000],
+        ],
+        curves: [null, { c1: [520, 1000], c2: [520, 2000] }, null, null],
+        circles: [{ center: [250, 300], r: 400 }],
+      }
+
+      const saved = await app().inject({
+        method: 'PATCH',
+        url: `/api/minigolf/holes/${id}`,
+        headers: asAdmin,
+        payload: { version, hole: validHole(id, { shape }) },
+      })
+      expect(saved.statusCode).toBe(200)
+      expect(saved.json().draft.shape).toEqual(shape)
+
+      const fetched = await app().inject({ method: 'GET', url: `/api/minigolf/holes/${id}`, headers: asAdmin })
+      expect(fetched.statusCode).toBe(200)
+      expect(fetched.json().draft.shape).toEqual(shape)
+    })
+
+    it('400s saving a shape with a radius that is not positive or curves that do not match its corners', async () => {
+      const { id, version }: { id: string; version: number } = (await createHoleAs(asAdmin, validHole('bad-shape'))).json()
+      const corners = validHole('x').outline
+      const bad: Shape[] = [
+        { corners, curves: corners.map(() => null), circles: [{ center: [250, 300], r: 0 }] },
+        { corners, curves: [null], circles: [] },
+      ]
+      for (const shape of bad) {
+        const save = (hole: Hole) =>
+          app().inject({ method: 'PATCH', url: `/api/minigolf/holes/${id}`, headers: asAdmin, payload: { version, hole } })
+        expect((await save(validHole(id, { shape }))).statusCode).toBe(400)
+        expect((await createHoleAs(asAdmin, validHole('new', { shape }))).statusCode).toBe(400)
+      }
+    })
+
     it('404s saving a draft for a hole that does not exist', async () => {
       const res = await app().inject({
         method: 'PATCH',
@@ -282,6 +325,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
       expect(res.statusCode).toBe(422)
       expect(res.json().error).toBe('invalid')
       expect(res.json().problems).toEqual([{ holeId, checks: expect.arrayContaining([expect.objectContaining({ level: 'error' })]) }])
+    })
+
+    it('422s publishing a course whose hole has a bad circle, naming the circle', async () => {
+      const { id: holeId } = (await createHoleAs(asAdmin, validHole('circle'))).json()
+      // Written straight to the row: the API refuses such a circle on save
+      const shape: Shape = { corners: validHole('x').outline, curves: [null, null, null, null], circles: [{ center: [250, 300], r: 0 }] }
+      await db
+        .updateTable('minigolf_holes')
+        .set({ draft: JSON.stringify(validHole(holeId, { shape })) })
+        .where('id', '=', holeId)
+        .execute()
+      const { id } = (await createCourseAs(asAdmin, { name: 'Links', description: '', difficulty: 1, holeIds: [holeId] })).json()
+
+      const res = await app().inject({ method: 'POST', url: `/api/minigolf/courses/${id}/publish`, headers: asAdmin })
+      expect(res.statusCode).toBe(422)
+      expect(res.json().problems).toEqual([
+        { holeId, checks: [{ level: 'error', message: 'circle 1 radius must be positive', element: { kind: 'circle', index: 0 } }] },
+      ])
     })
 
     it('422s publishing a course with no holes, with a problem for the course itself', async () => {

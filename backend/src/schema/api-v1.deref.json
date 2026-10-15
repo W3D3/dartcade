@@ -16011,12 +16011,14 @@
                                       "type": "string",
                                       "enum": [
                                         "outline",
+                                        "edge",
                                         "tee",
                                         "cup",
                                         "bumper",
                                         "wall",
                                         "slope",
-                                        "terrain"
+                                        "terrain",
+                                        "circle"
                                       ]
                                     },
                                     "index": {
@@ -16702,6 +16704,100 @@
                                       }
                                     }
                                   },
+                                  "shape": {
+                                    "type": "object",
+                                    "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                                    "required": [
+                                      "corners",
+                                      "curves",
+                                      "circles"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "corners": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      },
+                                      "curves": {
+                                        "type": "array",
+                                        "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                              "required": [
+                                                "c1",
+                                                "c2"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "c1": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "c2": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "string",
+                                              "nullable": true,
+                                              "enum": [
+                                                null
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "circles": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "center",
+                                            "r"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "center": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "r": {
+                                              "type": "number",
+                                              "description": "The server refuses r <= 0 on save"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
                                   "tee": {
                                     "type": "array",
                                     "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -16984,6 +17080,100 @@
                                               },
                                               "minItems": 4,
                                               "maxItems": 4
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "shape": {
+                                    "type": "object",
+                                    "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                                    "required": [
+                                      "corners",
+                                      "curves",
+                                      "circles"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "corners": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      },
+                                      "curves": {
+                                        "type": "array",
+                                        "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                        "items": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                              "required": [
+                                                "c1",
+                                                "c2"
+                                              ],
+                                              "additionalProperties": false,
+                                              "properties": {
+                                                "c1": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                },
+                                                "c2": {
+                                                  "type": "array",
+                                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                                  "items": {
+                                                    "type": "number"
+                                                  },
+                                                  "minItems": 2,
+                                                  "maxItems": 2
+                                                }
+                                              }
+                                            },
+                                            {
+                                              "type": "string",
+                                              "nullable": true,
+                                              "enum": [
+                                                null
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "circles": {
+                                        "type": "array",
+                                        "items": {
+                                          "type": "object",
+                                          "required": [
+                                            "center",
+                                            "r"
+                                          ],
+                                          "additionalProperties": false,
+                                          "properties": {
+                                            "center": {
+                                              "type": "array",
+                                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                              "items": {
+                                                "type": "number"
+                                              },
+                                              "minItems": 2,
+                                              "maxItems": 2
+                                            },
+                                            "r": {
+                                              "type": "number",
+                                              "description": "The server refuses r <= 0 on save"
                                             }
                                           }
                                         }
@@ -17442,6 +17632,100 @@
                               }
                             }
                           },
+                          "shape": {
+                            "type": "object",
+                            "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                            "required": [
+                              "corners",
+                              "curves",
+                              "circles"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "corners": {
+                                "type": "array",
+                                "items": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              },
+                              "curves": {
+                                "type": "array",
+                                "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                "items": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                      "required": [
+                                        "c1",
+                                        "c2"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "c1": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        },
+                                        "c2": {
+                                          "type": "array",
+                                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                          "items": {
+                                            "type": "number"
+                                          },
+                                          "minItems": 2,
+                                          "maxItems": 2
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "string",
+                                      "nullable": true,
+                                      "enum": [
+                                        null
+                                      ]
+                                    }
+                                  ]
+                                }
+                              },
+                              "circles": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "center",
+                                    "r"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "center": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    "r": {
+                                      "type": "number",
+                                      "description": "The server refuses r <= 0 on save"
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
                           "tee": {
                             "type": "array",
                             "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -17768,6 +18052,100 @@
                                 }
                               }
                             },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
                             "tee": {
                               "type": "array",
                               "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -18056,6 +18434,100 @@
                                 }
                               }
                             },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
                             "tee": {
                               "type": "array",
                               "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -18115,6 +18587,45 @@
                       "type": "integer",
                       "minimum": 0,
                       "description": "Courses (draft or published) using it; only in the library list"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -18571,6 +19082,100 @@
                                 }
                               }
                             },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
                             "tee": {
                               "type": "array",
                               "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -18853,6 +19458,100 @@
                                         },
                                         "minItems": 4,
                                         "maxItems": 4
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
                                       }
                                     }
                                   }
@@ -19349,6 +20048,100 @@
                           }
                         }
                       },
+                      "shape": {
+                        "type": "object",
+                        "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                        "required": [
+                          "corners",
+                          "curves",
+                          "circles"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "corners": {
+                            "type": "array",
+                            "items": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          },
+                          "curves": {
+                            "type": "array",
+                            "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                            "items": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                  "required": [
+                                    "c1",
+                                    "c2"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "c1": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    },
+                                    "c2": {
+                                      "type": "array",
+                                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                      "items": {
+                                        "type": "number"
+                                      },
+                                      "minItems": 2,
+                                      "maxItems": 2
+                                    }
+                                  }
+                                },
+                                {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "enum": [
+                                    null
+                                  ]
+                                }
+                              ]
+                            }
+                          },
+                          "circles": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "required": [
+                                "center",
+                                "r"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "center": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "r": {
+                                  "type": "number",
+                                  "description": "The server refuses r <= 0 on save"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
                       "tee": {
                         "type": "array",
                         "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -19660,6 +20453,100 @@
                                 }
                               }
                             },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
                             "tee": {
                               "type": "array",
                               "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -19948,6 +20835,100 @@
                                 }
                               }
                             },
+                            "shape": {
+                              "type": "object",
+                              "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                              "required": [
+                                "corners",
+                                "curves",
+                                "circles"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "corners": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  }
+                                },
+                                "curves": {
+                                  "type": "array",
+                                  "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                                  "items": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                        "required": [
+                                          "c1",
+                                          "c2"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                          "c1": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          },
+                                          "c2": {
+                                            "type": "array",
+                                            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                            "items": {
+                                              "type": "number"
+                                            },
+                                            "minItems": 2,
+                                            "maxItems": 2
+                                          }
+                                        }
+                                      },
+                                      {
+                                        "type": "string",
+                                        "nullable": true,
+                                        "enum": [
+                                          null
+                                        ]
+                                      }
+                                    ]
+                                  }
+                                },
+                                "circles": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "required": [
+                                      "center",
+                                      "r"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "center": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "r": {
+                                        "type": "number",
+                                        "description": "The server refuses r <= 0 on save"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            },
                             "tee": {
                               "type": "array",
                               "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -20007,6 +20988,45 @@
                       "type": "integer",
                       "minimum": 0,
                       "description": "Courses (draft or published) using it; only in the library list"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -21152,12 +22172,14 @@
                                   "type": "string",
                                   "enum": [
                                     "outline",
+                                    "edge",
                                     "tee",
                                     "cup",
                                     "bumper",
                                     "wall",
                                     "slope",
-                                    "terrain"
+                                    "terrain",
+                                    "circle"
                                   ]
                                 },
                                 "index": {
@@ -26182,6 +27204,100 @@
               }
             }
           },
+          "shape": {
+            "type": "object",
+            "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+            "required": [
+              "corners",
+              "curves",
+              "circles"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "corners": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "curves": {
+                "type": "array",
+                "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                      "required": [
+                        "c1",
+                        "c2"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "c1": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "c2": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      }
+                    },
+                    {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        null
+                      ]
+                    }
+                  ]
+                }
+              },
+              "circles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "center",
+                    "r"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "center": {
+                      "type": "array",
+                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    },
+                    "r": {
+                      "type": "number",
+                      "description": "The server refuses r <= 0 on save"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "tee": {
             "type": "array",
             "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -26212,6 +27328,35 @@
                 "type": "number"
               }
             }
+          }
+        }
+      },
+      "MinigolfCurve": {
+        "type": "object",
+        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+        "required": [
+          "c1",
+          "c2"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "c1": {
+            "type": "array",
+            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "c2": {
+            "type": "array",
+            "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
           }
         }
       },
@@ -26852,6 +27997,100 @@
                       }
                     }
                   },
+                  "shape": {
+                    "type": "object",
+                    "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                    "required": [
+                      "corners",
+                      "curves",
+                      "circles"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "corners": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "curves": {
+                        "type": "array",
+                        "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                              "required": [
+                                "c1",
+                                "c2"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "c1": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "c2": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "nullable": true,
+                              "enum": [
+                                null
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "circles": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "center",
+                            "r"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "center": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "r": {
+                              "type": "number",
+                              "description": "The server refuses r <= 0 on save"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
                   "tee": {
                     "type": "array",
                     "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -27134,6 +28373,100 @@
                               },
                               "minItems": 4,
                               "maxItems": 4
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "shape": {
+                    "type": "object",
+                    "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                    "required": [
+                      "corners",
+                      "curves",
+                      "circles"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "corners": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "curves": {
+                        "type": "array",
+                        "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                              "required": [
+                                "c1",
+                                "c2"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "c1": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "c2": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "nullable": true,
+                              "enum": [
+                                null
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "circles": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "center",
+                            "r"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "center": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "r": {
+                              "type": "number",
+                              "description": "The server refuses r <= 0 on save"
                             }
                           }
                         }
@@ -27479,6 +28812,100 @@
                             }
                           }
                         },
+                        "shape": {
+                          "type": "object",
+                          "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                          "required": [
+                            "corners",
+                            "curves",
+                            "circles"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "corners": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "curves": {
+                              "type": "array",
+                              "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                    "required": [
+                                      "c1",
+                                      "c2"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "c1": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "c2": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "enum": [
+                                      null
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "circles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "center",
+                                  "r"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "center": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "r": {
+                                    "type": "number",
+                                    "description": "The server refuses r <= 0 on save"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
                         "tee": {
                           "type": "array",
                           "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -27761,6 +29188,100 @@
                                     },
                                     "minItems": 4,
                                     "maxItems": 4
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "shape": {
+                          "type": "object",
+                          "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                          "required": [
+                            "corners",
+                            "curves",
+                            "circles"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "corners": {
+                              "type": "array",
+                              "items": {
+                                "type": "array",
+                                "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                "items": {
+                                  "type": "number"
+                                },
+                                "minItems": 2,
+                                "maxItems": 2
+                              }
+                            },
+                            "curves": {
+                              "type": "array",
+                              "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                              "items": {
+                                "anyOf": [
+                                  {
+                                    "type": "object",
+                                    "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                                    "required": [
+                                      "c1",
+                                      "c2"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "c1": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      },
+                                      "c2": {
+                                        "type": "array",
+                                        "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                        "items": {
+                                          "type": "number"
+                                        },
+                                        "minItems": 2,
+                                        "maxItems": 2
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "enum": [
+                                      null
+                                    ]
+                                  }
+                                ]
+                              }
+                            },
+                            "circles": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "center",
+                                  "r"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "center": {
+                                    "type": "array",
+                                    "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                    "items": {
+                                      "type": "number"
+                                    },
+                                    "minItems": 2,
+                                    "maxItems": 2
+                                  },
+                                  "r": {
+                                    "type": "number",
+                                    "description": "The server refuses r <= 0 on save"
                                   }
                                 }
                               }
@@ -28087,6 +29608,100 @@
                       }
                     }
                   },
+                  "shape": {
+                    "type": "object",
+                    "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                    "required": [
+                      "corners",
+                      "curves",
+                      "circles"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "corners": {
+                        "type": "array",
+                        "items": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        }
+                      },
+                      "curves": {
+                        "type": "array",
+                        "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                        "items": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                              "required": [
+                                "c1",
+                                "c2"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "c1": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                },
+                                "c2": {
+                                  "type": "array",
+                                  "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                                  "items": {
+                                    "type": "number"
+                                  },
+                                  "minItems": 2,
+                                  "maxItems": 2
+                                }
+                              }
+                            },
+                            {
+                              "type": "string",
+                              "nullable": true,
+                              "enum": [
+                                null
+                              ]
+                            }
+                          ]
+                        }
+                      },
+                      "circles": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "center",
+                            "r"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "center": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "r": {
+                              "type": "number",
+                              "description": "The server refuses r <= 0 on save"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
                   "tee": {
                     "type": "array",
                     "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -28394,6 +30009,100 @@
                   }
                 }
               },
+              "shape": {
+                "type": "object",
+                "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+                "required": [
+                  "corners",
+                  "curves",
+                  "circles"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "corners": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  },
+                  "curves": {
+                    "type": "array",
+                    "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+                          "required": [
+                            "c1",
+                            "c2"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "c1": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            },
+                            "c2": {
+                              "type": "array",
+                              "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                              "items": {
+                                "type": "number"
+                              },
+                              "minItems": 2,
+                              "maxItems": 2
+                            }
+                          }
+                        },
+                        {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            null
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "circles": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "center",
+                        "r"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "center": {
+                          "type": "array",
+                          "description": "A point in course space, [x, y]: millimetres, x right, y down.",
+                          "items": {
+                            "type": "number"
+                          },
+                          "minItems": 2,
+                          "maxItems": 2
+                        },
+                        "r": {
+                          "type": "number",
+                          "description": "The server refuses r <= 0 on save"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
               "tee": {
                 "type": "array",
                 "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -28460,12 +30169,14 @@
                 "type": "string",
                 "enum": [
                   "outline",
+                  "edge",
                   "tee",
                   "cup",
                   "bumper",
                   "wall",
                   "slope",
-                  "terrain"
+                  "terrain",
+                  "circle"
                 ]
               },
               "index": {
@@ -28521,12 +30232,14 @@
                       "type": "string",
                       "enum": [
                         "outline",
+                        "edge",
                         "tee",
                         "cup",
                         "bumper",
                         "wall",
                         "slope",
-                        "terrain"
+                        "terrain",
+                        "circle"
                       ]
                     },
                     "index": {
@@ -28601,12 +30314,14 @@
                             "type": "string",
                             "enum": [
                               "outline",
+                              "edge",
                               "tee",
                               "cup",
                               "bumper",
                               "wall",
                               "slope",
-                              "terrain"
+                              "terrain",
+                              "circle"
                             ]
                           },
                           "index": {

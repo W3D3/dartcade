@@ -1882,11 +1882,27 @@ export interface components {
                     edges: number[];
                 };
             }[];
+            /** @description The outline's editable source (corners, curved edges, circles); baked into `outline`. */
+            shape?: {
+                corners: components["schemas"]["MinigolfPt"][];
+                /** @description One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count. */
+                curves: (components["schemas"]["MinigolfCurve"] | (null))[];
+                circles: {
+                    center: components["schemas"]["MinigolfPt"];
+                    /** @description The server refuses r <= 0 on save */
+                    r: number;
+                }[];
+            };
             tee: components["schemas"]["MinigolfPt"];
             cup: {
                 at: components["schemas"]["MinigolfPt"];
                 r: number;
             };
+        };
+        /** @description A curved outline edge's two control points (a cubic Bézier alongside its corners). */
+        MinigolfCurve: {
+            c1: components["schemas"]["MinigolfPt"];
+            c2: components["schemas"]["MinigolfPt"];
         };
         MinigolfCourseContent: {
             name: string;
@@ -1961,7 +1977,7 @@ export interface components {
             message: string;
             element?: {
                 /** @enum {string} */
-                kind: "outline" | "tee" | "cup" | "bumper" | "wall" | "slope" | "terrain";
+                kind: "outline" | "edge" | "tee" | "cup" | "bumper" | "wall" | "slope" | "terrain" | "circle";
                 index: number;
             };
         };
@@ -4093,6 +4109,7 @@ export interface operations {
                     "application/json": components["schemas"]["MinigolfHoleRow"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
@@ -4174,6 +4191,7 @@ export interface operations {
                     "application/json": components["schemas"]["MinigolfHoleRow"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
