@@ -23,6 +23,7 @@ const me = (n: number) => ({
           youHost: false,
           solo: n <= 1,
           hasBot: false,
+          faces: [],
         },
 })
 

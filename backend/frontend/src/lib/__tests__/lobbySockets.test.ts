@@ -58,6 +58,7 @@ const meMsg = {
     youHost: true,
     solo: false,
     hasBot: false,
+    faces: [],
   },
 }
 
