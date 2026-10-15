@@ -70,6 +70,9 @@ func loadConfig(overrides map[string]string, cfgPath string) (Config, error) {
 	if cfg.BackendURL == "" {
 		return cfg, fmt.Errorf("backend_url is required (--backend-url or DARTCADE_BACKEND_URL)")
 	}
+	if u, err := url.Parse(cfg.BackendURL); err != nil || u.Host == "" {
+		return cfg, fmt.Errorf("backend_url %q is not a valid URL (want e.g. wss://host/bridge)", cfg.BackendURL)
+	}
 
 	if cfg.BridgeID == "" {
 		cfg.BridgeID = "br_" + ulid.Make().String()
@@ -106,24 +109,66 @@ func configFilePath(dirOverride string) (string, error) {
 }
 
 func persistBridgeID(path, id string) error {
-	return appendConfigLine(path, fmt.Sprintf("\nbridge_id = %q\n", id))
+	return setConfigKey(path, "bridge_id", id)
 }
 
 func persistToken(path, token string) error {
-	return appendConfigLine(path, fmt.Sprintf("\ntoken = %q\n", token))
+	return setConfigKey(path, "token", token)
 }
 
-func appendConfigLine(path, line string) error {
+// setConfigKey writes key = "value" into the TOML file at path, replacing an
+// existing line for key (and dropping duplicates) rather than appending, since
+// a duplicate key makes the whole file unparseable. Other lines are kept as
+// they are. The file is replaced atomically and keeps its permissions.
+func setConfigKey(path, key, value string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
 		return err
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	mode := os.FileMode(0600)
+	data, err := os.ReadFile(path)
+	if err == nil {
+		if info, err := os.Stat(path); err == nil {
+			mode = info.Mode().Perm()
+		}
+	} else if !os.IsNotExist(err) {
+		return err
+	}
+
+	entry := fmt.Sprintf("%s = %q", key, value)
+	var out []string
+	written := false
+	for _, line := range strings.Split(strings.TrimRight(string(data), "\n"), "\n") {
+		if name, _, ok := strings.Cut(line, "="); ok && strings.TrimSpace(name) == key {
+			if !written {
+				out = append(out, entry)
+				written = true
+			}
+			continue
+		}
+		out = append(out, line)
+	}
+	if !written {
+		out = append(out, entry)
+	}
+	content := strings.TrimLeft(strings.Join(out, "\n"), "\n") + "\n"
+
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".bridge.toml-*")
 	if err != nil {
 		return err
 	}
-	defer f.Close()
-	_, err = f.WriteString(line)
-	return err
+	defer os.Remove(tmp.Name())
+	if _, err := tmp.WriteString(content); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Chmod(mode); err != nil {
+		tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	return os.Rename(tmp.Name(), path)
 }
 
 // toHTTPBase derives the HTTP origin (scheme://host) for the REST API from
