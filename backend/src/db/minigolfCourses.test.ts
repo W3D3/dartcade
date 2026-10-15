@@ -19,6 +19,7 @@ import {
   publishedOfficialHoles,
   type CourseContent,
 } from './minigolfCourses.js'
+import { greenhornCourse } from '../shared/minigolf/courses/greenhorn.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
 import type { Hole } from '../shared/minigolf/types.js'
 
@@ -34,28 +35,38 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
     await close()
   })
 
-  it('seeds the test course, published, with its four holes', async () => {
+  it('seeds the test and Greenhorn courses, published, with their holes', async () => {
     await seedOfficialCourses(db)
-    const course = await getCourse(db, 'test')
-    expect(course?.draft).toBeNull()
-    expect(course?.published).toEqual({
-      name: testCourse.name,
-      description: expect.any(String),
-      difficulty: 1,
-      holeIds: testCourse.holes.map(h => h.id),
-    })
-    for (const h of testCourse.holes) {
-      const hole = await getHole(db, h.id)
-      expect(hole?.draft).toBeNull()
-      expect(hole?.published).toEqual(h)
+    for (const seeded of [testCourse, greenhornCourse]) {
+      const course = await getCourse(db, seeded.id)
+      expect(course?.draft).toBeNull()
+      expect(course?.published).toEqual({
+        name: seeded.name,
+        description: expect.any(String),
+        difficulty: 1,
+        holeIds: seeded.holes.map(h => h.id),
+      })
+      for (const h of seeded.holes) {
+        const hole = await getHole(db, h.id)
+        expect(hole?.draft).toBeNull()
+        expect(hole?.published).toEqual(h)
+      }
     }
   })
 
-  it('seeding again changes nothing (only seeds an empty table)', async () => {
+  it('seeding again changes nothing', async () => {
     const before = await listCourses(db, { drafts: true })
     await seedOfficialCourses(db)
     const after = await listCourses(db, { drafts: true })
     expect(after).toEqual(before)
+  })
+
+  it('seeding adds a course missing from an already seeded table, leaving the others alone', async () => {
+    await deleteCourse(db, greenhornCourse.id)
+    const test = await getCourse(db, 'test')
+    await seedOfficialCourses(db)
+    expect(await getCourse(db, 'test')).toEqual(test)
+    expect((await getCourse(db, greenhornCourse.id))?.published?.holeIds).toEqual(greenhornCourse.holes.map(h => h.id))
   })
 
   it('listCourses without drafts only returns published courses, draft nulled', async () => {
