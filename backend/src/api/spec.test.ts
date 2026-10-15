@@ -14,6 +14,7 @@ async function registeredRoutes() {
     lobbies: {} as any,
     hub: {} as any,
     friends: {} as any,
+    matchmaking: {} as any,
     onRoute: (r: RouteOptions) => {
       for (const method of ([] as string[]).concat(r.method)) {
         if (method === 'HEAD') continue // auto-added for every GET
