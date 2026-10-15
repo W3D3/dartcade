@@ -46,9 +46,13 @@ run = "cd backend/frontend && npm run lint"
 description = "Lint the backend"
 run = "cd backend && npm run lint"
 
+[tasks."lint:api"]
+description = "Lint the HTTP API spec"
+run = "npm run lint:api"
+
 [tasks.lint]
 description = "Lint everything"
-depends = ["lint:frontend", "lint:backend"]
+depends = ["lint:frontend", "lint:backend", "lint:api"]
 
 [tasks."test:e2e"]
 description = "Run e2e smoke tests"
