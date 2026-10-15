@@ -27,6 +27,7 @@
     type PlayAction,
   } from '$lib/lobby/play'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
+  import { loadSettings } from '$lib/gameSettings'
   import { GAME_MODES, gameModes, listedMode, withDefaults } from '$lib/gameModes'
 
   // ── Preference persistence ──────────────────────────────────────────────────
@@ -43,6 +44,20 @@
 
   type Config = Record<string, unknown>
   const initPrefs = loadPrefs(localStorage)
+  // The account's New game defaults (Settings: Game preferences) pre-fill X01 over this device's
+  // last setup. shortcut: read from the device's cache, which the account's settings fill after
+  // sign-in; on a new device's very first open they may land after this page, until its next open.
+  const account = loadSettings(localStorage)
+  const x01Defaults: Config = {
+    startScore: account.x01StartScore,
+    outMode: account.x01OutMode,
+    firstTo: account.x01FirstTo,
+    bullOff: account.x01BullOff,
+  }
+  const initConfigs: Partial<Record<string, Config>> = {
+    ...initPrefs?.configs,
+    x01: { ...initPrefs?.configs.x01, ...x01Defaults },
+  }
 
   // The backend's modes (defaults, settings meta), loaded once for this page and the lobby
   const games = $derived($gameModes)
@@ -55,10 +70,10 @@
     ...Object.fromEntries(games.filter(g => g.id !== 'x01').map(g => [g.id, g.defaultConfig])),
     x01: X01_DEFAULTS,
   })
-  let savedConfigs = $state<Partial<Record<string, Config>>>(initPrefs?.configs ?? {})
+  let savedConfigs = $state<Partial<Record<string, Config>>>(initConfigs)
   let config = $state<Record<string, unknown>>({
     ...X01_DEFAULTS,
-    ...(initPrefs?.configs[initPrefs.mode] ?? {}),
+    ...(initConfigs[initPrefs?.mode ?? 'atc'] ?? {}),
   })
 
   // Persist whenever mode or config changes
