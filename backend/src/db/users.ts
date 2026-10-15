@@ -10,12 +10,14 @@ export type Account = {
   invisible: boolean
   /** better-auth's admin role (migration 019); see auth/admin.ts for who is an admin. */
   role: string | null
+  /** When the account was made, ISO 8601. */
+  createdAt: string
 }
 
 export async function getAccount(db: Kysely<Database>, userId: string): Promise<Account | undefined> {
   const row = await db
     .selectFrom('user')
-    .select(['id', 'name', 'email', 'name_needs_change', 'invisible', 'role'])
+    .select(['id', 'name', 'email', 'name_needs_change', 'invisible', 'role', 'createdAt'])
     .where('id', '=', userId)
     .executeTakeFirst()
   return (
@@ -26,6 +28,7 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       nameNeedsChange: row.name_needs_change,
       invisible: row.invisible,
       role: row.role,
+      createdAt: row.createdAt.toISOString(),
     }
   )
 }

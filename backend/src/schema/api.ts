@@ -1621,6 +1621,11 @@ export interface components {
             invisible: boolean;
             /** @description May open admin pages (the minigolf test bench) */
             isAdmin: boolean;
+            /**
+             * Format: date-time
+             * @description When the account was made (Member since)
+             */
+            createdAt: string;
         };
         UpdateMeRequest: {
             name?: string;

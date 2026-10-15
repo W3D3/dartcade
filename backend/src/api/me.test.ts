@@ -22,9 +22,15 @@ const app = () => {
 }
 
 beforeEach(() => {
-  vi.mocked(getAccount)
-    .mockReset()
-    .mockResolvedValue({ id: 'old', name: 'Phil Taylor', email: 'p@x', nameNeedsChange: true, invisible: false, role: null })
+  vi.mocked(getAccount).mockReset().mockResolvedValue({
+    id: 'old',
+    name: 'Phil Taylor',
+    email: 'p@x',
+    nameNeedsChange: true,
+    invisible: false,
+    role: null,
+    createdAt: '2026-08-01T10:00:00.000Z',
+  })
   vi.mocked(setInvisible).mockReset()
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
   vi.mocked(renameUser).mockReset().mockResolvedValue('Phil_T')
@@ -42,6 +48,7 @@ describe('/api/me', () => {
       invisible: false,
       isAdmin: false,
       suggestedName: 'Phil.Taylor',
+      createdAt: '2026-08-01T10:00:00.000Z',
     })
   })
 
@@ -53,6 +60,7 @@ describe('/api/me', () => {
       nameNeedsChange: false,
       invisible: false,
       role: 'admin',
+      createdAt: '2026-08-01T10:00:00.000Z',
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true })
@@ -67,6 +75,7 @@ describe('/api/me', () => {
       nameNeedsChange: false,
       invisible: false,
       role: null,
+      createdAt: '2026-08-01T10:00:00.000Z',
     })
     const res = await app().inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
     expect(res.statusCode).toBe(200)
@@ -96,6 +105,7 @@ describe('/api/me', () => {
       nameNeedsChange: false,
       invisible: true,
       role: null,
+      createdAt: '2026-08-01T10:00:00.000Z',
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { invisible: true } })
     expect(res.statusCode).toBe(200)
