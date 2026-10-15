@@ -3,6 +3,7 @@
   import PreviewBadge from './PreviewBadge.svelte'
   import { Clock, Mail, Radio, Settings, Swords, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
+  import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
   import NavBadge from './NavBadge.svelte'
   import NavLink from './NavLink.svelte'
@@ -70,6 +71,7 @@
   </div>
 
   <div class="mt-auto flex flex-col gap-3">
+    <ConnectBoardCard />
     <LobbyIndicator />
   </div>
 </nav>

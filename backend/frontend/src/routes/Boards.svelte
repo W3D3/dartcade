@@ -1,7 +1,8 @@
 <script lang="ts">
   import { ExternalLink, LoaderCircle, Pencil, Play, Plus, RotateCcw, Square, Sun } from '@lucide/svelte'
   import { onMount, onDestroy } from 'svelte'
-  import { push } from 'svelte-spa-router'
+  import { push, querystring } from 'svelte-spa-router'
+  import { hasBoards } from '$lib/hasBoards'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -157,9 +158,11 @@
     }
     boards = boards.filter(b => b.id !== id)
     selectedId = boards[0]?.id ?? null
+    hasBoards.set(boards.length > 0)
   }
 
-  let pairOpen = $state(false)
+  // The nav's Connect your board card links here with ?pair
+  let pairOpen = $state($querystring === 'pair')
   let justPairedId = $state<string | null>(null)
   let toast = $state<{ name: string; boardId: string } | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | null = null
@@ -167,6 +170,7 @@
 
   async function onPaired(info: { boardId: string; name: string }) {
     pairOpen = false
+    hasBoards.set(true)
     // The board is already paired server-side; refresh the list, but still
     // surface success even if the refetch fails (e.g. session expired).
     try {
@@ -192,6 +196,7 @@
     const { data } = await api.GET('/api/boards')
     if (!data) return // 401 is redirected to login by the client
     boards = data.boards
+    hasBoards.set(boards.length > 0)
     if (boards.length) selectedId = boards[0].id
     cameraInterval = setInterval(() => {
       cameraTs = Date.now()
