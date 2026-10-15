@@ -74,16 +74,16 @@ describe('railLobby', () => {
   it('creates a lobby while you are in none', () => {
     expect(railLobby(null, true)).toEqual({ kind: 'create', label: 'Lobby', aria: 'Create lobby' })
   })
-  it('your lobby by name, with what is next', () => {
+  it('your lobby with its head count; the aria label says the name and what is next', () => {
     expect(railLobby(s, true)).toEqual({
       kind: 'in',
       href: '/lobby',
-      label: 'Friday darts',
+      label: 'Lobby · 6',
       aria: "You're in the lobby Friday darts. 6 people · Next: X01. Open the lobby",
     })
   })
-  it('a solo lobby shows like any other: its name', () => {
-    expect(railLobby({ ...s, solo: true }, true)).toMatchObject({ kind: 'in', href: '/lobby', label: 'Friday darts' })
+  it('a solo lobby shows like any other', () => {
+    expect(railLobby({ ...s, solo: true }, true)).toMatchObject({ kind: 'in', href: '/lobby', label: 'Lobby · 6' })
   })
 })
 

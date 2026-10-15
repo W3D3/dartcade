@@ -1,6 +1,6 @@
 <script lang="ts">
   // Desktop: the Friends icon button beside the account in the side nav, with the request count
-  // (User-Badge). It opens the Friends drawer, and is as tall as the account button beside it.
+  // (User-Badge). It opens the Friends drawer.
   // Its label says friends online and requests, so the badge is decoration.
   import { UsersRound } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
@@ -20,7 +20,7 @@
   aria-haspopup="dialog"
   aria-expanded={$friendsDrawerOpen}
   onclick={() => friendsDrawerOpen.update(o => !o)}
-  class="relative shrink-0 w-11 self-stretch box-border flex items-center justify-center rounded-[10px] border cursor-pointer font-[inherit]
+  class="relative shrink-0 w-10 h-10 box-border flex items-center justify-center rounded-[10px] border cursor-pointer font-[inherit]
          {active
     ? 'border-accent-line-strong bg-accent-tint text-accent'
     : 'border-line bg-transparent text-ink-2 hover:text-text hover:bg-surface-active'}"

@@ -3,8 +3,6 @@
   import PreviewBadge from './PreviewBadge.svelte'
   import { Clock, Mail, Radio, Settings, Swords, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
-  import AccountMenu from './AccountMenu.svelte'
-  import FriendsButton from './friends/FriendsButton.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
   import NavBadge from './NavBadge.svelte'
   import NavLink from './NavLink.svelte'
@@ -71,12 +69,7 @@
     {/if}
   </div>
 
-  <div class="mt-auto flex flex-col gap-4">
+  <div class="mt-auto flex flex-col gap-3">
     <LobbyIndicator />
-
-    <div class="flex items-stretch gap-2">
-      <div class="flex-grow min-w-0"><AccountMenu placement="sidebar" /></div>
-      <FriendsButton />
-    </div>
   </div>
 </nav>

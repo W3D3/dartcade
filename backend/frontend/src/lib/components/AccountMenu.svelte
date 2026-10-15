@@ -86,14 +86,15 @@
       aria-label={triggerLabel}
       aria-haspopup="menu"
       aria-expanded={open}
-      class="w-full h-[60px] box-border flex items-center gap-3 px-3 rounded-[10px] border border-line bg-transparent text-left text-text cursor-pointer font-[inherit] hover:bg-surface-active"
+      class="w-full box-border flex items-center gap-[10px] p-[6px] rounded-[9px] border-0 bg-transparent text-left text-text cursor-pointer font-[inherit] hover:bg-surface-active"
     >
       {@render avatar(36)}
       <span class="flex flex-col gap-[2px] min-w-0 flex-grow">
         <span class="text-[14px] font-semibold truncate">{name}</span>
-        <span class="text-[12px] text-text-muted">{invisible ? 'Invisible' : 'Online'}</span>
+        <span class="flex items-center gap-[5px] text-[12px] text-text-muted"
+          >{invisible ? 'Invisible' : 'Online'}<ChevronUp size={12} strokeWidth={2.4} class="text-text-dim" /></span
+        >
       </span>
-      <ChevronUp size={16} class="text-text-muted" />
     </button>
   {:else}
     <button

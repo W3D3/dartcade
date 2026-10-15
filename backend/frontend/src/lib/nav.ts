@@ -55,14 +55,19 @@ export function isActiveRoute(location: string, href: string): boolean {
   return location === href || location.startsWith(`${href}/`)
 }
 
-/** The tablet rail's Lobby item: create one, or the lobby you're in by name. */
+/** The tablet rail's Lobby item: create one, or the lobby you're in with its head count ("Lobby · 6"). */
 export type RailLobby = { kind: 'create'; label: string; aria: string } | { kind: 'in'; href: string; label: string; aria: string }
 
 /** Null until we know who you are (`signedIn`: the per-user socket has spoken). */
 export function railLobby(summary: LobbySummary | null, signedIn: boolean): RailLobby | null {
   if (!summary) return signedIn ? { kind: 'create', label: 'Lobby', aria: 'Create lobby' } : null
   const view = indicatorView(summary)
-  return { kind: 'in', href: '/lobby', label: view.name, aria: `You're in the lobby ${view.name}. ${view.line}. Open the lobby` }
+  return {
+    kind: 'in',
+    href: '/lobby',
+    label: `Lobby · ${summary.peopleCount}`,
+    aria: `You're in the lobby ${view.name}. ${view.line}. Open the lobby`,
+  }
 }
 
 /** The Friends entry's badge (requests for you) and its label (friends online too). */
