@@ -263,6 +263,15 @@ export interface MinigolfCoursesTable {
   published_at: ColumnType<Date | null, Date | null | undefined, Date | null>
 }
 
+/** A game the ranked queue started, with who played on which side (migration 022). */
+export interface RankedMatchesTable {
+  session_id: string
+  mode: '1v1' | '2v2'
+  /** The user ids of each side's players (written as JSON). */
+  sides: ColumnType<[string[], string[]], string, never>
+  created_at: ColumnType<Date, Date | undefined, never>
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -284,4 +293,5 @@ export interface Database {
   ranked_results: RankedResultsTable
   minigolf_holes: MinigolfHolesTable
   minigolf_courses: MinigolfCoursesTable
+  ranked_matches: RankedMatchesTable
 }
