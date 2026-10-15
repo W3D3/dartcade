@@ -211,7 +211,33 @@ describe('createMeStore', () => {
     const s = createMeStore(open)
     s.start()
     FakeSocket.opened[0].receive({ type: 'friends', friends: [], incoming: [], outgoing: [] })
-    expect(get(s)).toEqual({ invites: [], lobby: null, game: null, friends: { friends: [], incoming: [], outgoing: [] } })
+    expect(get(s)).toEqual({
+      invites: [],
+      lobby: null,
+      game: null,
+      friends: { friends: [], incoming: [], outgoing: [] },
+      matchmaking: null,
+    })
+    s.stop()
+  })
+
+  it('keeps the ranked search next to the rest', () => {
+    const s = createMeStore(open)
+    s.start()
+    const search = {
+      mode: '1v1',
+      firstTo: 2,
+      since: '2026-10-15T20:00:00.000Z',
+      range: 75,
+      rating: null,
+      hostUserId: 'chris',
+      players: ['Christoph'],
+      searching: 3,
+    }
+    FakeSocket.opened[0].receive({ type: 'matchmaking', search, match: null, pausedUntil: null })
+    FakeSocket.opened[0].receive(meMsg)
+    expect(get(s)?.matchmaking).toEqual({ search, match: null, pausedUntil: null })
+    expect(get(s)?.lobby?.youHost).toBe(true)
     s.stop()
   })
 
