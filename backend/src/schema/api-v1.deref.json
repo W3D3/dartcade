@@ -22,7 +22,7 @@
   "tags": [
     {
       "name": "system",
-      "description": "Health checks"
+      "description": "Health checks and deployment info"
     },
     {
       "name": "games",
@@ -104,6 +104,94 @@
                   "properties": {
                     "ok": {
                       "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/preview": {
+      "get": {
+        "operationId": "getPreview",
+        "summary": "Which pull request this deployment previews (null outside a PR preview)",
+        "tags": [
+          "system"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The preview this deployment is, if any",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "preview"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "preview": {
+                      "type": "object",
+                      "nullable": true,
+                      "required": [
+                        "pr",
+                        "url"
+                      ],
+                      "additionalProperties": false,
+                      "description": "The pull request this deployment previews; null in production",
+                      "properties": {
+                        "pr": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "url": {
+                          "type": "string",
+                          "format": "uri",
+                          "description": "The pull request on GitHub"
+                        }
+                      }
                     }
                   }
                 }
@@ -15799,6 +15887,36 @@
         "properties": {
           "ok": {
             "type": "boolean"
+          }
+        }
+      },
+      "PreviewInfo": {
+        "type": "object",
+        "required": [
+          "preview"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "preview": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "pr",
+              "url"
+            ],
+            "additionalProperties": false,
+            "description": "The pull request this deployment previews; null in production",
+            "properties": {
+              "pr": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "url": {
+                "type": "string",
+                "format": "uri",
+                "description": "The pull request on GitHub"
+              }
+            }
           }
         }
       },
