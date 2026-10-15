@@ -3,7 +3,7 @@
   // a section nav over Profile, Game preferences, Boards, Lights (soon) and Caller, each its own
   // route (`#/settings/<section>`). Tablets and desktops open on Profile; phones get a list of
   // the sections first.
-  import { onMount, type Component } from 'svelte'
+  import { onMount, untrack, type Component } from 'svelte'
   import { ChevronLeft, ChevronRight, Lightbulb, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -16,6 +16,7 @@
   import { currentUser } from '$lib/auth'
   import { loadVoiceLibrary } from '$lib/caller/voices.js'
   import { loadSettings, saveSettings } from '$lib/gameSettings.js'
+  import { accountSettings, writeThrough } from '$lib/accountSettings'
   import { SETTINGS_SECTIONS, sectionOf } from '$lib/settings/sections'
 
   let { params = {} }: { params?: { section?: string } } = $props()
@@ -34,16 +35,21 @@
   // The phone list's line under each section
   const SUBS = $derived({
     profile: $currentUser ? `@${$currentUser.name} · how friends see you` : 'How friends see you',
-    game: 'Checkout suggestions, chalkboard, sounds',
+    game: 'Checkout suggestions, new game defaults, sounds',
     boards: 'Pair and manage your Autodarts boards',
     lights: 'Board lights that react to your game',
     caller: 'Voices, and the caller in X01',
   })
 
-  // The game settings on this device, the same ones a match's settings drawer changes
+  // The game settings: the account's (once loaded) over this device's; changes go to both
   let settings = $state(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
   $effect(() => {
+    const account = $accountSettings
+    if (account) untrack(() => (settings = { ...settings, ...account }))
+  })
+  $effect(() => {
     saveSettings(typeof localStorage === 'undefined' ? null : localStorage, settings)
+    writeThrough($state.snapshot(settings))
   })
 
   onMount(() => {

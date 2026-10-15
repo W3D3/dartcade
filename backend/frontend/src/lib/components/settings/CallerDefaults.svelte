@@ -1,6 +1,7 @@
 <script lang="ts">
-  // Settings' Caller: whether the caller is on, its voice and volume (Settings-Caller board). The
-  // same per-device settings as a match's game settings drawer, so they can still change mid-game.
+  // Settings' Caller: whether the caller is on, its voice and volume (Settings-Caller board). On and
+  // the voice follow the account; a match's game settings drawer still changes them on that device.
+  // The volume is the device's (the same as the sound effects).
   import type { GameSettings } from '$lib/gameSettings.js'
   import { voiceLibrary } from '$lib/caller/voices.js'
   import { audioContext } from '$lib/sounds.js'
@@ -15,7 +16,7 @@
   <div class="flex flex-col gap-1">
     <h2 id="caller-defaults" class="m-0 text-[17px] font-semibold">Caller defaults</h2>
     <p class="m-0 text-[13px] leading-[1.5] text-text-dim">
-      Saved on this device. Caller on/off and the voice can still be changed mid-game.
+      Used in every match on every board. Caller on/off and the voice can still be changed mid-game.
     </p>
   </div>
   <SettingSwitch
@@ -38,5 +39,5 @@
     />
   </div>
   <VolumeSlider bind:value={settings.volume} label="Caller volume" />
-  <p class="m-0 -mt-3 text-[12px] text-text-dim">The same volume as the sound effects.</p>
+  <p class="m-0 -mt-3 text-[12px] text-text-dim">Set on each device, the same volume as the sound effects.</p>
 </section>

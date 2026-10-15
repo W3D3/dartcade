@@ -21,6 +21,7 @@
   import Ranks from './routes/Ranks.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
+  import { loadAccountSettings } from '$lib/accountSettings'
   import { setFlagUser, startFlags } from '$lib/flags'
   import { gameModes } from '$lib/gameModes'
   import { me } from '$lib/lobby/sockets'
@@ -112,6 +113,15 @@
   // login page: drop the stale user so it can't leak into things like the dev user switch.
   $effect(() => {
     if ($location.startsWith('/login')) currentUser.set(null)
+  })
+
+  // Account-wide settings follow the signed-in user (sign-in, sign-out, a switch of user)
+  let settingsUser: string | null | undefined
+  $effect(() => {
+    const id = $currentUser?.id ?? null
+    if (id === settingsUser) return
+    settingsUser = id
+    void loadAccountSettings(id, typeof localStorage === 'undefined' ? null : localStorage)
   })
 
   // The per-user socket (invites, the lobby indicator) runs while someone is signed in, and

@@ -1,7 +1,8 @@
 import { z } from 'zod'
 import type { ScoreUpdates } from './heldScore.js'
 
-/** In-game display and sound settings, kept per device in localStorage. */
+/** In-game display and sound settings, cached per device in localStorage; the account-wide ones
+ *  (`ACCOUNT_KEYS` in accountSettings.ts) also follow the signed-in account. */
 export interface GameSettings {
   /** 3+ player Around the Clock: other players' targets as initials on the board. */
   showMarkers: boolean
@@ -39,6 +40,12 @@ export interface GameSettings {
   boardView: BoardView
   /** The camera view the board-on-board toggle restores when switching back from Drawn. */
   lastCameraView: CameraView
+  /** New game defaults: X01's start score, check-out, legs to win and throw order (bull off),
+   *  pre-filled on the Play page. Values from X01's own settings. */
+  x01StartScore: 301 | 501 | 701
+  x01OutMode: 'straight' | 'double' | 'master'
+  x01FirstTo: number
+  x01BullOff: 'off' | 'wdc' | 'pdc'
 }
 
 export const BOARD_VIEWS = ['svg', 'cam1', 'cam2', 'cam3', 'combined'] as const
@@ -79,6 +86,10 @@ export const defaultSettings: GameSettings = {
   callerVoice: null,
   boardView: 'svg',
   lastCameraView: 'combined',
+  x01StartScore: 501,
+  x01OutMode: 'double',
+  x01FirstTo: 3,
+  x01BullOff: 'off',
 }
 
 export const SETTINGS_KEY = 'dartcade_game_settings'
@@ -122,18 +133,35 @@ const SettingsSchema = z
     callerVoice: z.string().min(1).nullable().catch(null).default(null),
     boardView: z.enum(BOARD_VIEWS).catch(d.boardView).default(d.boardView),
     lastCameraView: z.enum(CAMERA_VIEWS).catch(d.lastCameraView).default(d.lastCameraView),
+    x01StartScore: z
+      .union([z.literal(301), z.literal(501), z.literal(701)])
+      .catch(d.x01StartScore)
+      .default(d.x01StartScore),
+    x01OutMode: z.enum(['straight', 'double', 'master']).catch(d.x01OutMode).default(d.x01OutMode),
+    // At most 99, as the account takes it
+    x01FirstTo: z
+      .number()
+      .int()
+      .min(1)
+      .transform(v => Math.min(99, v))
+      .catch(d.x01FirstTo)
+      .default(d.x01FirstTo),
+    x01BullOff: z.enum(['off', 'wdc', 'pdc']).catch(d.x01BullOff).default(d.x01BullOff),
   })
   .catch({ ...d })
 
+/** Settings from untrusted data over the defaults; unknown keys and values of the wrong type are ignored. */
+export function parseSettings(raw: unknown): GameSettings {
+  return SettingsSchema.parse(raw ?? {})
+}
+
 /** Stored settings over the defaults; unknown keys and values of the wrong type are ignored. */
 export function loadSettings(storage: Pick<Storage, 'getItem'> | null): GameSettings {
-  let raw: unknown
   try {
-    raw = JSON.parse(storage?.getItem(SETTINGS_KEY) ?? 'null')
+    return parseSettings(JSON.parse(storage?.getItem(SETTINGS_KEY) ?? 'null'))
   } catch {
     return { ...defaultSettings }
   }
-  return SettingsSchema.parse(raw ?? {})
 }
 
 export function saveSettings(storage: Pick<Storage, 'setItem'> | null, s: GameSettings): void {
