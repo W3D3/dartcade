@@ -23,10 +23,14 @@ export type { Snapshot }
 export function parseSnapshot(m: unknown): Snapshot | null {
   const r = SnapshotSchema.safeParse(m)
   if (r.success) return r.data
-  if (typeof m === 'object' && m !== null && 'type' in m && m.type === 'snapshot') {
+  if (isSnapshotMessage(m)) {
     console.warn('Ignoring a snapshot that does not match the schema', r.error.issues)
   }
   return null
+}
+
+function isSnapshotMessage(m: unknown): boolean {
+  return typeof m === 'object' && m !== null && 'type' in m && m.type === 'snapshot'
 }
 
 /** A transient notice from the server (a dart on your board out of turn), or null. Never warns. */
@@ -55,12 +59,18 @@ export function createSessionStore(sessionId: string) {
   const cameras = writable<CameraVersions>({})
   // The game socket is open (false while it reconnects)
   const connected = writable(false)
+  // A snapshot didn't parse: this tab is older than the server (reloading fixes it)
+  const stale = writable(false)
   const socket = reconnectingSocket(`/ws?sessionId=${encodeURIComponent(sessionId)}`, {
     onOpen: () => connected.set(true),
     onMessage: data => {
       const snap = parseSnapshot(data)
       if (snap) {
         snapshot.set(snap)
+        return
+      }
+      if (isSnapshotMessage(data)) {
+        stale.set(true)
         return
       }
       // Each notice is a new object, so subscribers hear the same notice twice in a row too
@@ -114,5 +124,15 @@ export function createSessionStore(sessionId: string) {
   const errorStore: Readable<ErrorMessage | null> = { subscribe: error.subscribe }
   const connectedStore: Readable<boolean> = { subscribe: connected.subscribe }
   const camerasStore: Readable<CameraVersions> = { subscribe: cameras.subscribe }
-  return { snapshot, notice: noticeStore, error: errorStore, connected: connectedStore, cameras: camerasStore, send, destroy }
+  const staleStore: Readable<boolean> = { subscribe: stale.subscribe }
+  return {
+    snapshot,
+    notice: noticeStore,
+    error: errorStore,
+    connected: connectedStore,
+    cameras: camerasStore,
+    stale: staleStore,
+    send,
+    destroy,
+  }
 }
