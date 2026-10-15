@@ -37,6 +37,19 @@ type ApiHole = components['schemas']['MinigolfHole']
 // oxlint-disable-next-line typescript/consistent-type-assertions -- the same JSON, only Pt's readonly differs
 const toApiHole = (h: Hole | null) => h as ApiHole | null
 
+/** The body's hole, refused when its shape is malformed. Checked here, not in the spec: AJV can't
+ *  compare lengths, and responses must still serialize a stored hole saved before this check. */
+function bodyHole(body: unknown): Hole {
+  const hole = holeSchema.parse(body)
+  const shape = hole.shape
+  const invalid = (path: string, message: string) =>
+    new ApiError(400, { error: 'invalid request', details: [{ path: `body/hole/shape/${path}`, message }] })
+  if (shape && shape.curves.length !== shape.corners.length) throw invalid('curves', 'must have one entry per corner')
+  const i = shape?.circles.findIndex(c => !(c.r > 0)) ?? -1
+  if (i >= 0) throw invalid(`circles/${i}/r`, 'must be positive')
+  return hole
+}
+
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
 /** The signed-in user's isAdmin (requireAdmin's check). */
@@ -189,7 +202,7 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
         if (!content) return reply.code(404).send({ error: 'not found' })
         hole = { ...content, id: ulid(), name: `${content.name} (copy)` }
       } else {
-        hole = { ...holeSchema.parse(req.body.hole), id: ulid() }
+        hole = { ...bodyHole(req.body.hole), id: ulid() }
       }
       const row = await createHole(db, hole)
       return reply.code(201).send(serializeHoleRow(row))
@@ -210,7 +223,7 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
     '/api/minigolf/holes/:id',
     { preValidation: adminOnly, schema: fromSpec('saveMinigolfHole') },
     async req => {
-      const result = await saveHoleDraft(db, req.params.id, req.body.version, { ...holeSchema.parse(req.body.hole), id: req.params.id })
+      const result = await saveHoleDraft(db, req.params.id, req.body.version, { ...bodyHole(req.body.hole), id: req.params.id })
       if (result === 'missing') throw new ApiError(404, { error: 'not found' })
       if (result === 'conflict') throw new ApiError(409, { error: 'conflict' })
       return serializeHoleRow(result)

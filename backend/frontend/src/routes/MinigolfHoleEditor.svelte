@@ -104,7 +104,14 @@
   const redo = () => !readOnly && step(history?.redo())
 
   function exists(h: Hole, ref: ElementRef): boolean {
-    const list = { outline: h.outline, bumper: h.bumpers, wall: h.walls, slope: h.slopes, terrain: h.terrain ?? [] }
+    const list = {
+      outline: h.outline,
+      bumper: h.bumpers,
+      wall: h.walls,
+      slope: h.slopes,
+      terrain: h.terrain ?? [],
+      circle: h.shape?.circles ?? [],
+    }
     return ref.kind === 'tee' || ref.kind === 'cup' || ref.index < list[ref.kind].length
   }
 

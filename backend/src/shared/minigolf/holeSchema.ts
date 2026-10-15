@@ -9,6 +9,13 @@ export const holeSchema = z.object({
   name: z.string(),
   par: z.number(),
   outline: z.array(pt),
+  shape: z
+    .object({
+      corners: z.array(pt),
+      curves: z.array(z.object({ c1: pt, c2: pt }).nullable()),
+      circles: z.array(z.object({ center: pt, r: z.number() })),
+    })
+    .optional(),
   walls: z
     .array(
       z.object({

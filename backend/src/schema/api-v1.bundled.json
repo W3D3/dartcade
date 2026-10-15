@@ -2757,6 +2757,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
@@ -2835,6 +2838,9 @@
                 }
               }
             }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -5730,6 +5736,62 @@
               }
             }
           },
+          "shape": {
+            "type": "object",
+            "description": "The outline's editable source (corners, curved edges, circles); baked into `outline`.",
+            "required": [
+              "corners",
+              "curves",
+              "circles"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "corners": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/MinigolfPt"
+                }
+              },
+              "curves": {
+                "type": "array",
+                "description": "One per edge from corners[i] to corners[i + 1] (wrapping); null is straight. The server refuses a shape with a different count.",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/MinigolfCurve"
+                    },
+                    {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        null
+                      ]
+                    }
+                  ]
+                }
+              },
+              "circles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "center",
+                    "r"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "center": {
+                      "$ref": "#/components/schemas/MinigolfPt"
+                    },
+                    "r": {
+                      "type": "number",
+                      "description": "The server refuses r <= 0 on save"
+                    }
+                  }
+                }
+              }
+            }
+          },
           "tee": {
             "$ref": "#/components/schemas/MinigolfPt"
           },
@@ -5748,6 +5810,23 @@
                 "type": "number"
               }
             }
+          }
+        }
+      },
+      "MinigolfCurve": {
+        "type": "object",
+        "description": "A curved outline edge's two control points (a cubic Bézier alongside its corners).",
+        "required": [
+          "c1",
+          "c2"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "c1": {
+            "$ref": "#/components/schemas/MinigolfPt"
+          },
+          "c2": {
+            "$ref": "#/components/schemas/MinigolfPt"
           }
         }
       },
@@ -6058,12 +6137,14 @@
                 "type": "string",
                 "enum": [
                   "outline",
+                  "edge",
                   "tee",
                   "cup",
                   "bumper",
                   "wall",
                   "slope",
-                  "terrain"
+                  "terrain",
+                  "circle"
                 ]
               },
               "index": {

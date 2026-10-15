@@ -32,6 +32,20 @@ export function validateHole(hole: Hole): string[] {
   else if (outlineOk && !pointInPolygon(hole.cup.at, hole.outline)) errors.push('cup is outside the outline')
   if (!(hole.cup.r > 0)) errors.push('cup radius must be positive')
   if (!(hole.par >= 1)) errors.push('par must be at least 1')
+  if (hole.shape) {
+    const { corners, curves, circles } = hole.shape
+    if (curves.length !== corners.length) errors.push('shape curves must match its corners')
+    corners.forEach((p, i) => {
+      if (!finite([p])) errors.push(`shape corner ${i + 1} must have finite numbers`)
+    })
+    curves.forEach((c, i) => {
+      if (c && !finite([c.c1, c.c2])) errors.push(`curve ${i + 1} must have finite numbers`)
+    })
+    circles.forEach((c, i) => {
+      if (!finite([c.center]) || !Number.isFinite(c.r)) errors.push(`circle ${i + 1} must have finite numbers`)
+      if (!(c.r > 0)) errors.push(`circle ${i + 1} radius must be positive`)
+    })
+  }
   hole.walls.forEach((w, i) => {
     if (w.points.length < 2) errors.push(`wall ${i + 1} needs at least 2 points`)
     else if (!finite(w.points)) errors.push(`wall ${i + 1} has a non-finite number`)

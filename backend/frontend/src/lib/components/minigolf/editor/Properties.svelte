@@ -122,6 +122,7 @@
     wall: 'Wall',
     slope: 'Terrain',
     terrain: 'Plateau',
+    circle: 'Circle',
   }
   const title = $derived.by(() => {
     if (!selection) return ''

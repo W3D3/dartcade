@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateHole } from './hole.js'
-import type { Hole, Pt } from './types.js'
+import type { Curve, Hole, Pt } from './types.js'
 
 const ok: Hole = {
   id: 'h',
@@ -75,6 +75,39 @@ describe('validateHole', () => {
         ],
       }),
     ).toContain('wall 1 thickness must be positive')
+  })
+  it('rejects a shape whose curves do not match its corners, and a non-positive circle', () => {
+    expect(validateHole({ ...ok, shape: { corners: ok.outline, curves: [null], circles: [] } })).toContain(
+      'shape curves must match its corners',
+    )
+    expect(
+      validateHole({
+        ...ok,
+        shape: { corners: ok.outline, curves: ok.outline.map(() => null), circles: [{ center: [200, 600], r: 0 }] },
+      }),
+    ).toContain('circle 1 radius must be positive')
+    expect(
+      validateHole({
+        ...ok,
+        shape: { corners: ok.outline, curves: ok.outline.map(() => null), circles: [{ center: [Number.NaN, 600], r: 100 }] },
+      }),
+    ).toContain('circle 1 must have finite numbers')
+    expect(
+      validateHole({
+        ...ok,
+        shape: { corners: ok.outline, curves: ok.outline.map(() => null), circles: [{ center: [200, 600], r: 100 }] },
+      }),
+    ).toEqual([])
+  })
+  it('rejects non-finite numbers in shape corners and curves', () => {
+    const corners: Pt[] = [...ok.outline]
+    corners[1] = [Number.NaN, 0]
+    expect(validateHole({ ...ok, shape: { corners, curves: corners.map(() => null), circles: [] } })).toContain(
+      'shape corner 2 must have finite numbers',
+    )
+    const curves = ok.outline.map(() => null as Curve | null)
+    curves[0] = { c1: [0, 0], c2: [Infinity, 0] }
+    expect(validateHole({ ...ok, shape: { corners: ok.outline, curves, circles: [] } })).toContain('curve 1 must have finite numbers')
   })
   it('rejects terrain that cannot be built', () => {
     const mesa = { from: [0, 0] as Pt, to: [100, 100] as Pt, height: 100, edges: [50, 50, 50, 50] as [number, number, number, number] }

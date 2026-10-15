@@ -175,6 +175,10 @@ export function moveElement(h: Hole, ref: ElementRef, delta: Pt): Hole {
       return { ...h, slopes: h.slopes.map((s, i) => (i === ref.index ? movedSlope(s, shift) : s)) }
     case 'terrain':
       return { ...h, terrain: (h.terrain ?? []).map((t, i) => (i === ref.index ? movedTerrain(t, shift) : t)) }
+    case 'circle':
+      return h.shape
+        ? { ...h, shape: { ...h.shape, circles: h.shape.circles.map((c, i) => (i === ref.index ? { ...c, center: shift(c.center) } : c)) } }
+        : h
   }
 }
 
@@ -195,6 +199,8 @@ export function removeElement(h: Hole, ref: ElementRef): Hole {
       return { ...h, slopes: h.slopes.filter((_, i) => i !== ref.index) }
     case 'terrain':
       return { ...h, terrain: (h.terrain ?? []).filter((_, i) => i !== ref.index) }
+    case 'circle':
+      return h.shape ? { ...h, shape: { ...h.shape, circles: h.shape.circles.filter((_, i) => i !== ref.index) } } : h
   }
 }
 
