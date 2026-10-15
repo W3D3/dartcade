@@ -337,6 +337,13 @@
                 "normal",
                 "slow"
               ]
+            },
+            "bullValue": {
+              "type": "string",
+              "enum": [
+                "25_50",
+                "50_50"
+              ]
             }
           }
         },
@@ -1361,6 +1368,13 @@
                     "fast",
                     "normal",
                     "slow"
+                  ]
+                },
+                "bullValue": {
+                  "type": "string",
+                  "enum": [
+                    "25_50",
+                    "50_50"
                   ]
                 }
               }
@@ -5643,6 +5657,13 @@
                         "fast",
                         "normal",
                         "slow"
+                      ]
+                    },
+                    "bullValue": {
+                      "type": "string",
+                      "enum": [
+                        "25_50",
+                        "50_50"
                       ]
                     }
                   }

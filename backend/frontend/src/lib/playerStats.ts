@@ -58,7 +58,7 @@ export function x01Player(
   const dartsLeft = 3 - running.length
   const hint =
     o.suggest && !o.bust && opened && remaining > 0 && dartsLeft > 0
-      ? checkoutHint(remaining, game.config.outMode, dartsLeft, o.checkout)
+      ? checkoutHint(remaining, game.config.outMode, dartsLeft, o.checkout, game.config.bullValue)
       : null
   const leg: Visit[] = game.legVisits.filter(v => v.seat === i)
   const last = game.lastVisit.at(i) ?? null

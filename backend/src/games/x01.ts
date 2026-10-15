@@ -372,8 +372,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         }
 
         const cp = s.currentPlayer
-        // A dart thrown on a one-dart finish is a dart at the double, wherever it lands (see #119 for 25)
-        const attempt = checkoutHint(s.scores[t], s.cfg.outMode, 1) !== null
+        // A dart thrown on a one-dart finish is a dart at the double, wherever it lands
+        const attempt = checkoutHint(s.scores[t], s.cfg.outMode, 1, undefined, s.cfg.bullValue) !== null
         const counted = attempt ? { ...thrown, checkoutAttempts: s.checkoutAttempts.map((a, i) => (i === cp ? a + 1 : a)) } : thrown
 
         const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
@@ -456,7 +456,13 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
       winner: s.winner === null ? null : s.teamOf.indexOf(s.winner),
       opened: s.teamOf.map(t => s.opened[t]),
       bustThisVisit: s.bustThisVisit,
-      config: { outMode: s.cfg.outMode, startScore: s.cfg.startScore, inMode: s.cfg.inMode, botSpeed: readBotSpeed(s.cfg) },
+      config: {
+        outMode: s.cfg.outMode,
+        startScore: s.cfg.startScore,
+        inMode: s.cfg.inMode,
+        botSpeed: readBotSpeed(s.cfg),
+        bullValue: s.cfg.bullValue,
+      },
       visitLocked: s.bustThisVisit || s.scores[s.teamOf[s.currentPlayer]] === 0,
       pointsScored: s.pointsScored,
       dartsThrown: s.dartsThrown,
@@ -486,7 +492,13 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
     const t = s.teamOf[seatIndex]
     const visitOver = s.bustThisVisit || s.scores[t] === 0 || dartsThrown >= 3 || s.winner !== null
     if (visitOver) return 'takeout'
-    return pickTarget(s.scores[t] ?? 0, 3 - dartsThrown, s.cfg.outMode, { opened: s.opened[t] ?? true, inMode: s.cfg.inMode })
+    return pickTarget(
+      s.scores[t] ?? 0,
+      3 - dartsThrown,
+      s.cfg.outMode,
+      { opened: s.opened[t] ?? true, inMode: s.cfg.inMode },
+      s.cfg.bullValue,
+    )
   },
 
   getLeg(s: X01State): number {

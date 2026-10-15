@@ -211,6 +211,10 @@
             "botSpeed": {
               "type": "string",
               "enum": ["fast", "normal", "slow"]
+            },
+            "bullValue": {
+              "type": "string",
+              "enum": ["25_50", "50_50"]
             }
           }
         },
