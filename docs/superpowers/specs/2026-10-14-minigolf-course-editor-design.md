@@ -133,7 +133,8 @@ Properties panel with the Elements list and Checks.
 Tools:
 
 - **Outline**: drag corners; ● at an edge's middle adds a corner; a selected corner can be removed;
-  snap to a 50 mm grid and to 45° (Shift draws freely). Sharp corners only.
+  snap to a 50 mm grid and to 45° (Shift draws freely). Sharp corners only — superseded by
+  `2026-10-15-minigolf-outline-shapes-design.md`, which adds a circle tool and curved edges.
 - **Tee**: one, dragged into place.
 - **Cup**: one; Standard (r 80 mm) or Beginner (r 110 mm).
 - **Bumper**: click to place; size S / M / L (r 40 / 60 / 80 mm); bounce Soft / Normal / Strong
