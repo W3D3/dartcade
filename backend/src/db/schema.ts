@@ -26,7 +26,7 @@ export interface UserTable {
   last_login_at: Date | null
   /** When sign-up's acceptTerms was accepted; null for accounts from before it (migration 028). */
   terms_accepted_at: ColumnType<Date | null, Date | null | undefined, Date | null>
-  /** 'preset' (the Dartcade mark, default for new accounts), 'none' (bare initials), or an uploaded photo (migration 031). */
+  /** 'preset' (the Dartcade mark, default for new accounts), 'none' (bare initials), or an uploaded photo (migration 039). */
   avatar_kind: ColumnType<'none' | 'preset' | 'upload', 'none' | 'preset' | 'upload' | undefined, 'none' | 'preset' | 'upload'>
   /** The preset's foreground finish (shared/avatarFinishes.ts; migration 038). */
   avatar_preset: string | null
@@ -406,6 +406,15 @@ export interface AuthSessionTable {
   expiresAt: Date
 }
 
+/** A game the ranked queue started, with who played on which side (migration 039). */
+export interface RankedMatchesTable {
+  session_id: string
+  mode: '1v1' | '2v2'
+  /** The user ids of each side's players (written as JSON). */
+  sides: ColumnType<[string[], string[]], string, never>
+  created_at: ColumnType<Date, Date | undefined, never>
+}
+
 export interface Database {
   user: UserTable
   session: AuthSessionTable
@@ -437,4 +446,5 @@ export interface Database {
   progression_backfill: ProgressionBackfillTable
   user_challenges: UserChallengesTable
   user_unlocks: UserUnlocksTable
+  ranked_matches: RankedMatchesTable
 }
