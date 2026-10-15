@@ -10,6 +10,7 @@
   import { createLobby } from '$lib/lobby/create'
   import AccountMenu from './AccountMenu.svelte'
   import BrandMark from './BrandMark.svelte'
+  import PreviewBadge from './PreviewBadge.svelte'
   import FriendsNavItem from './friends/FriendsNavItem.svelte'
   import NavTabItem from './NavTabItem.svelte'
 
@@ -40,7 +41,10 @@
   class="hidden md:flex xl:hidden w-[88px] shrink-0 box-border h-dvh overflow-y-auto overflow-x-hidden flex-col items-center gap-6 pt-5 px-2 pb-4
          border-r border-line bg-surface-1"
 >
-  <BrandMark size={28} />
+  <div class="shrink-0 flex flex-col items-center gap-2">
+    <BrandMark size={28} />
+    <PreviewBadge />
+  </div>
   <div class="shrink-0 flex flex-col gap-1">
     {#each tabs as tab (tab.href)}
       <NavTabItem {tab} active={isActiveRoute($location, tab.href)} class="w-[72px] h-16" />

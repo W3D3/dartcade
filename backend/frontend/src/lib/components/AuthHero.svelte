@@ -2,6 +2,7 @@
   // Sign-in hero for phones (below md); the desktop shows AuthPanel instead.
   import AuthBoard from './AuthBoard.svelte'
   import BrandMark from './BrandMark.svelte'
+  import PreviewBadge from './PreviewBadge.svelte'
 </script>
 
 <div
@@ -13,6 +14,7 @@
   <div class="relative flex items-center gap-[10px]">
     <BrandMark size={28} />
     <span class="font-display font-bold text-[22px] tracking-[0.06em]">DARTCADE</span>
+    <PreviewBadge />
   </div>
   <div class="relative flex flex-col gap-[10px]">
     <span class="font-[JetBrains_Mono,monospace] text-[12px] tracking-[0.08em] text-accent">T20 · T20 · T20 — 180</span>

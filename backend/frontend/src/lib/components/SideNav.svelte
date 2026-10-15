@@ -1,5 +1,6 @@
 <script lang="ts">
   import BrandMark from './BrandMark.svelte'
+  import PreviewBadge from './PreviewBadge.svelte'
   import { Clock, Mail, Monitor, Settings, Swords, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import AccountMenu from './AccountMenu.svelte'
@@ -33,6 +34,7 @@
   <div class="flex items-center gap-[10px] px-2">
     <BrandMark size={28} />
     <span class="font-display font-bold text-[24px] tracking-[0.06em]">DARTCADE</span>
+    <PreviewBadge />
   </div>
 
   <!-- Nav links -->
