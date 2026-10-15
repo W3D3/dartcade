@@ -62,7 +62,7 @@ describe('rulesLine', () => {
       'Test · 4 holes · 3 tries per stroke',
     )
     expect(rulesLine(game({ mode: 'minigolf', config: { course: 'mixed', tries: 1, ballContact: true } }))).toBe(
-      'Mixed course · 4 holes · 1 dart per stroke · ball contact',
+      'Mixed course · 9 holes · 1 dart per stroke · ball contact',
     )
     // A game started from a published course carries its name and holes
     const config = { course: '01J9', courseName: 'Canal Street', holes: [{}, {}, {}], tries: 3, ballContact: false }

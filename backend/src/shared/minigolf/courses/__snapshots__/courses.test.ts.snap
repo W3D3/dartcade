@@ -1,5 +1,1135 @@
 // Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
+exports[`courses > greenhorn/greenhorn-double-bump 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 833.2,
+    "rest": [
+      500,
+      2320.781,
+    ],
+  },
+  {
+    "hits": [
+      97.5,
+    ],
+    "holed": false,
+    "length": 3097.2,
+    "rest": [
+      911.317,
+      167.867,
+    ],
+  },
+  {
+    "hits": [
+      86.25,
+      87,
+    ],
+    "holed": false,
+    "length": 3581.5,
+    "rest": [
+      841.832,
+      394.065,
+    ],
+  },
+  {
+    "hits": [
+      19.5,
+    ],
+    "holed": false,
+    "length": 2282.4,
+    "rest": [
+      364.97,
+      1774.355,
+    ],
+  },
+  {
+    "hits": [
+      11,
+      50.25,
+    ],
+    "holed": false,
+    "length": 2780.6,
+    "rest": [
+      691.478,
+      1236.649,
+    ],
+  },
+  {
+    "hits": [
+      13.25,
+    ],
+    "holed": false,
+    "length": 1215.6,
+    "rest": [
+      211.974,
+      3150,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-double-bump golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      500,
+      1803.75,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": true,
+    "rest": [
+      500,
+      450,
+    ],
+    "samples": 83,
+  },
+  {
+    "holed": true,
+    "rest": [
+      500,
+      450,
+    ],
+    "samples": 72,
+  },
+  {
+    "holed": false,
+    "rest": [
+      246.196,
+      1147.983,
+    ],
+    "samples": 118,
+  },
+  {
+    "holed": false,
+    "rest": [
+      448.933,
+      997.347,
+    ],
+    "samples": 127,
+  },
+  {
+    "holed": false,
+    "rest": [
+      211.527,
+      3150,
+    ],
+    "samples": 82,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-first-putt 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1346.4,
+    "rest": [
+      400,
+      1003.623,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2066.1,
+    "rest": [
+      406.118,
+      361.839,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2072.6,
+    "rest": [
+      409.532,
+      361.649,
+    ],
+  },
+  {
+    "hits": [
+      15,
+      86.5,
+    ],
+    "holed": false,
+    "length": 2295.2,
+    "rest": [
+      64.27,
+      360.228,
+    ],
+  },
+  {
+    "hits": [
+      8.5,
+      37,
+    ],
+    "holed": false,
+    "length": 2772.7,
+    "rest": [
+      90.676,
+      238.985,
+    ],
+  },
+  {
+    "hits": [
+      10.25,
+      57.75,
+    ],
+    "holed": false,
+    "length": 1126.1,
+    "rest": [
+      63.847,
+      2350,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-first-putt golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      400,
+      1003.75,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": true,
+    "rest": [
+      400,
+      450,
+    ],
+    "samples": 54,
+  },
+  {
+    "holed": true,
+    "rest": [
+      400,
+      450,
+    ],
+    "samples": 49,
+  },
+  {
+    "holed": false,
+    "rest": [
+      64.062,
+      362.53,
+    ],
+    "samples": 116,
+  },
+  {
+    "holed": false,
+    "rest": [
+      90.5,
+      244.133,
+    ],
+    "samples": 125,
+  },
+  {
+    "holed": false,
+    "rest": [
+      63.663,
+      2350,
+    ],
+    "samples": 75,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-gentle-bend 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1346.4,
+    "rest": [
+      450,
+      703.619,
+    ],
+  },
+  {
+    "hits": [
+      46.25,
+      86,
+    ],
+    "holed": false,
+    "length": 2979.1,
+    "rest": [
+      1557.34,
+      55.139,
+    ],
+  },
+  {
+    "hits": [
+      40.75,
+      70.5,
+      115.5,
+    ],
+    "holed": false,
+    "length": 3425.5,
+    "rest": [
+      1929.963,
+      113.129,
+    ],
+  },
+  {
+    "hits": [
+      17.25,
+      69.25,
+    ],
+    "holed": false,
+    "length": 2151.1,
+    "rest": [
+      457.101,
+      433.975,
+    ],
+  },
+  {
+    "hits": [
+      9.75,
+      89.75,
+    ],
+    "holed": false,
+    "length": 3099.4,
+    "rest": [
+      1816.362,
+      180.276,
+    ],
+  },
+  {
+    "hits": [
+      11.75,
+    ],
+    "holed": false,
+    "length": 1194.7,
+    "rest": [
+      88.17,
+      2050,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-gentle-bend golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      450,
+      703.75,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1556.004,
+      53.974,
+    ],
+    "samples": 130,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1929.73,
+      111.544,
+    ],
+    "samples": 134,
+  },
+  {
+    "holed": false,
+    "rest": [
+      454.682,
+      433.662,
+    ],
+    "samples": 105,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1816.565,
+      176.86,
+    ],
+    "samples": 131,
+  },
+  {
+    "holed": false,
+    "rest": [
+      87.753,
+      2050,
+    ],
+    "samples": 82,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-grand-finale 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1340.1,
+    "rest": [
+      2149.408,
+      2588.387,
+    ],
+  },
+  {
+    "hits": [
+      82.25,
+    ],
+    "holed": false,
+    "length": 3215.8,
+    "rest": [
+      1702.172,
+      113.992,
+    ],
+  },
+  {
+    "hits": [
+      67.5,
+      112.75,
+    ],
+    "holed": false,
+    "length": 3792.3,
+    "rest": [
+      1137.142,
+      41.226,
+    ],
+  },
+  {
+    "hits": [
+      17.25,
+    ],
+    "holed": false,
+    "length": 2277.8,
+    "rest": [
+      1827.545,
+      1007.54,
+    ],
+  },
+  {
+    "hits": [
+      9.75,
+      43.25,
+    ],
+    "holed": false,
+    "length": 2839.5,
+    "rest": [
+      1970.725,
+      862.137,
+    ],
+  },
+  {
+    "hits": [
+      11.75,
+    ],
+    "holed": false,
+    "length": 1194.6,
+    "rest": [
+      1788.189,
+      2950,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-grand-finale golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      2150,
+      1603.75,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1703.591,
+      115.1,
+    ],
+    "samples": 135,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1208.618,
+      33.643,
+    ],
+    "samples": 145,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1811.997,
+      949.509,
+    ],
+    "samples": 118,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1970.735,
+      822.298,
+    ],
+    "samples": 126,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1787.753,
+      2950,
+    ],
+    "samples": 82,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-hairpin 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1346.4,
+    "rest": [
+      500,
+      1153.622,
+    ],
+  },
+  {
+    "hits": [
+      63.5,
+      95.25,
+    ],
+    "holed": false,
+    "length": 3105,
+    "rest": [
+      1241.9,
+      44.43,
+    ],
+  },
+  {
+    "hits": [
+      54.75,
+      76,
+      96.5,
+    ],
+    "holed": false,
+    "length": 3537.5,
+    "rest": [
+      1494.731,
+      307.663,
+    ],
+  },
+  {
+    "hits": [
+      19,
+    ],
+    "holed": false,
+    "length": 2336.3,
+    "rest": [
+      229.275,
+      492.795,
+    ],
+  },
+  {
+    "hits": [
+      11,
+      49,
+    ],
+    "holed": false,
+    "length": 2906.1,
+    "rest": [
+      432.978,
+      341.244,
+    ],
+  },
+  {
+    "hits": [
+      13,
+    ],
+    "holed": false,
+    "length": 1200.3,
+    "rest": [
+      197.614,
+      2500,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-hairpin golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      500,
+      1153.75,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1241.586,
+      44.15,
+    ],
+    "samples": 133,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1492.222,
+      304.9,
+    ],
+    "samples": 138,
+  },
+  {
+    "holed": false,
+    "rest": [
+      229.419,
+      498.407,
+    ],
+    "samples": 118,
+  },
+  {
+    "holed": false,
+    "rest": [
+      432.901,
+      348.828,
+    ],
+    "samples": 127,
+  },
+  {
+    "holed": false,
+    "rest": [
+      197.587,
+      2500,
+    ],
+    "samples": 82,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-pinball 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      37.25,
+    ],
+    "holed": false,
+    "length": 1687.3,
+    "rest": [
+      900,
+      2591.743,
+    ],
+  },
+  {
+    "hits": [
+      20.25,
+      51.25,
+    ],
+    "holed": false,
+    "length": 2790.1,
+    "rest": [
+      900,
+      2198.829,
+    ],
+  },
+  {
+    "hits": [
+      18.25,
+      45.75,
+    ],
+    "holed": false,
+    "length": 3094.1,
+    "rest": [
+      900,
+      1906.392,
+    ],
+  },
+  {
+    "hits": [
+      40,
+    ],
+    "holed": false,
+    "length": 2462.6,
+    "rest": [
+      1296.8,
+      640.393,
+    ],
+  },
+  {
+    "hits": [
+      21,
+    ],
+    "holed": false,
+    "length": 3370.2,
+    "rest": [
+      1594.63,
+      370.899,
+    ],
+  },
+  {
+    "hits": [
+      26.75,
+    ],
+    "holed": false,
+    "length": 1432.7,
+    "rest": [
+      1206.052,
+      2700,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-pinball golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      900,
+      2591.489,
+    ],
+    "samples": 108,
+  },
+  {
+    "holed": false,
+    "rest": [
+      900,
+      2198.815,
+    ],
+    "samples": 121,
+  },
+  {
+    "holed": false,
+    "rest": [
+      900,
+      1905.681,
+    ],
+    "samples": 127,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1296.803,
+      641.997,
+    ],
+    "samples": 120,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1595.702,
+      371.831,
+    ],
+    "samples": 140,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1205.594,
+      2700,
+    ],
+    "samples": 86,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-sidehill 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      25.5,
+    ],
+    "holed": false,
+    "length": 993.7,
+    "rest": [
+      1000,
+      2661.127,
+    ],
+  },
+  {
+    "hits": [
+      14.75,
+      55.25,
+    ],
+    "holed": false,
+    "length": 1788.9,
+    "rest": [
+      1000,
+      3083.161,
+    ],
+  },
+  {
+    "hits": [
+      13.5,
+      47.25,
+    ],
+    "holed": false,
+    "length": 1917.1,
+    "rest": [
+      1000,
+      2921.422,
+    ],
+  },
+  {
+    "hits": [
+      163.25,
+    ],
+    "holed": false,
+    "length": 2561.3,
+    "rest": [
+      1248.707,
+      1167.918,
+    ],
+  },
+  {
+    "hits": [
+      24.75,
+      55.75,
+      171,
+    ],
+    "holed": false,
+    "length": 2964.9,
+    "rest": [
+      765.233,
+      1219.886,
+    ],
+  },
+  {
+    "hits": [
+      30.25,
+    ],
+    "holed": false,
+    "length": 1473.7,
+    "rest": [
+      1455.69,
+      3000,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-sidehill golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      1000,
+      2661.181,
+    ],
+    "samples": 72,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1000,
+      3083.168,
+    ],
+    "samples": 91,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1000,
+      2921.254,
+    ],
+    "samples": 95,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1560.096,
+      929.222,
+    ],
+    "samples": 121,
+  },
+  {
+    "holed": false,
+    "rest": [
+      301.22,
+      766.663,
+    ],
+    "samples": 130,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1455.321,
+      3000,
+    ],
+    "samples": 87,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-the-funnel 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      48,
+    ],
+    "holed": false,
+    "length": 1201.4,
+    "rest": [
+      1050,
+      1665.754,
+    ],
+  },
+  {
+    "hits": [
+      24.5,
+    ],
+    "holed": false,
+    "length": 2181.6,
+    "rest": [
+      1050,
+      2655.072,
+    ],
+  },
+  {
+    "hits": [
+      22,
+      87.5,
+    ],
+    "holed": false,
+    "length": 2441.6,
+    "rest": [
+      1050,
+      2812.974,
+    ],
+  },
+  {
+    "hits": [
+      12.75,
+      36.75,
+    ],
+    "holed": false,
+    "length": 1870,
+    "rest": [
+      657.677,
+      2028.712,
+    ],
+  },
+  {
+    "hits": [
+      25,
+      36.25,
+    ],
+    "holed": false,
+    "length": 2948.6,
+    "rest": [
+      1332.134,
+      2295.382,
+    ],
+  },
+  {
+    "hits": [
+      8.75,
+    ],
+    "holed": false,
+    "length": 1144.5,
+    "rest": [
+      539.14,
+      2600,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-the-funnel golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      1050,
+      1665.573,
+    ],
+    "samples": 79,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1050,
+      2656.238,
+    ],
+    "samples": 108,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1050,
+      2812.087,
+    ],
+    "samples": 109,
+  },
+  {
+    "holed": false,
+    "rest": [
+      657.606,
+      2028.944,
+    ],
+    "samples": 100,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1201.473,
+      55.396,
+    ],
+    "samples": 133,
+  },
+  {
+    "holed": false,
+    "rest": [
+      539.09,
+      2600,
+    ],
+    "samples": 81,
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-three-ways 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      46.5,
+    ],
+    "holed": false,
+    "length": 1470.7,
+    "rest": [
+      1100,
+      2130.868,
+    ],
+  },
+  {
+    "hits": [
+      24,
+      63.75,
+    ],
+    "holed": false,
+    "length": 2754.5,
+    "rest": [
+      1100,
+      2507.739,
+    ],
+  },
+  {
+    "hits": [
+      21.75,
+      55.5,
+    ],
+    "holed": false,
+    "length": 3018.8,
+    "rest": [
+      1100,
+      2234.875,
+    ],
+  },
+  {
+    "hits": [
+      52.25,
+    ],
+    "holed": false,
+    "length": 2525.2,
+    "rest": [
+      1823.419,
+      664.597,
+    ],
+  },
+  {
+    "hits": [
+      26.5,
+      60.25,
+    ],
+    "holed": false,
+    "length": 3452.1,
+    "rest": [
+      1477.53,
+      393.233,
+    ],
+  },
+  {
+    "hits": [
+      34,
+    ],
+    "holed": false,
+    "length": 1523.2,
+    "rest": [
+      1705.733,
+      2750,
+    ],
+  },
+]
+`;
+
+exports[`courses > greenhorn/greenhorn-three-ways golden shots 1`] = `
+[
+  {
+    "holed": false,
+    "rest": [
+      1100,
+      2131.045,
+    ],
+    "samples": 100,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1100,
+      2507.441,
+    ],
+    "samples": 118,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1100,
+      2234.357,
+    ],
+    "samples": 123,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1823.528,
+      666.71,
+    ],
+    "samples": 121,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1477.597,
+      398.372,
+    ],
+    "samples": 141,
+  },
+  {
+    "holed": false,
+    "rest": [
+      1705.819,
+      2750,
+    ],
+    "samples": 89,
+  },
+]
+`;
+
 exports[`courses > test/test-dogleg 3D golden shots 1`] = `
 [
   {

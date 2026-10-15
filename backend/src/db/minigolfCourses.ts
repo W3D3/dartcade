@@ -6,6 +6,7 @@ import { z } from 'zod'
 import type { Database } from './schema.js'
 import { holeChecks, type Check } from '../shared/minigolf/checks.js'
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
+import { greenhornCourse } from '../shared/minigolf/courses/greenhorn.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
 import type { Hole } from '../shared/minigolf/types.js'
 
@@ -359,34 +360,37 @@ export async function publishedOfficialHoles(db: Kysely<Database>): Promise<Hole
   })
 }
 
-/** Seeds the current code test course as the first official course, published, once. */
+/** The code courses seeded as official courses, published. */
+const OFFICIAL_SEEDS = [
+  { course: testCourse, description: 'A short course to try the physics.', difficulty: 1 },
+  { course: greenhornCourse, description: 'Nine friendly holes, each with one new trick to learn.', difficulty: 1 },
+] as const
+
+/** Seeds each official code course once: a course whose id is already in the table is left alone. */
 export async function seedOfficialCourses(db: Kysely<Database>): Promise<void> {
-  const existing = await db.selectFrom('minigolf_courses').select('id').executeTakeFirst()
-  if (existing) return
+  const existing = new Set((await db.selectFrom('minigolf_courses').select('id').execute()).map(r => r.id))
   await db.transaction().execute(async trx => {
-    for (const hole of testCourse.holes) {
+    for (const { course, description, difficulty } of OFFICIAL_SEEDS) {
+      if (existing.has(course.id)) continue
+      for (const hole of course.holes) {
+        await trx
+          .insertInto('minigolf_holes')
+          .values({ id: hole.id, owner_user_id: null, published: JSON.stringify(hole), published_at: sql<Date>`now()` })
+          .onConflict(oc => oc.column('id').doNothing())
+          .execute()
+      }
+      const content: CourseContent = { name: course.name, description, difficulty, holeIds: course.holes.map(h => h.id) }
       await trx
-        .insertInto('minigolf_holes')
-        .values({ id: hole.id, owner_user_id: null, published: JSON.stringify(hole), published_at: sql<Date>`now()` })
+        .insertInto('minigolf_courses')
+        .values({
+          id: course.id,
+          owner_user_id: null,
+          visibility: 'official',
+          published: JSON.stringify(content),
+          published_at: sql<Date>`now()`,
+        })
         .onConflict(oc => oc.column('id').doNothing())
         .execute()
     }
-    const content: CourseContent = {
-      name: testCourse.name,
-      description: 'A short course to try the physics.',
-      difficulty: 1,
-      holeIds: testCourse.holes.map(h => h.id),
-    }
-    await trx
-      .insertInto('minigolf_courses')
-      .values({
-        id: testCourse.id,
-        owner_user_id: null,
-        visibility: 'official',
-        published: JSON.stringify(content),
-        published_at: sql<Date>`now()`,
-      })
-      .onConflict(oc => oc.column('id').doNothing())
-      .execute()
   })
 }
