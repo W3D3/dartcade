@@ -13,7 +13,7 @@ servers:
   - url: /
 tags:
   - name: system
-    description: Health checks
+    description: Health checks and deployment info
   - name: games
     description: Finished games (history)
   - name: gamemodes
@@ -58,6 +58,20 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Health' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/preview:
+    get:
+      operationId: getPreview
+      summary: Which pull request this deployment previews (null outside a PR preview)
+      tags: [system]
+      security: []
+      responses:
+        '200':
+          description: The preview this deployment is, if any
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PreviewInfo' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/gamemodes:
@@ -1502,6 +1516,21 @@ components:
       additionalProperties: false
       properties:
         ok: { type: boolean }
+
+    PreviewInfo:
+      type: object
+      required: [preview]
+      additionalProperties: false
+      properties:
+        preview:
+          type: object
+          nullable: true
+          required: [pr, url]
+          additionalProperties: false
+          description: The pull request this deployment previews; null in production
+          properties:
+            pr: { type: integer, minimum: 1 }
+            url: { type: string, format: uri, description: The pull request on GitHub }
 
     ConfigFieldMeta:
       type: object

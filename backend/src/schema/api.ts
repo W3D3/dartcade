@@ -18,6 +18,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Which pull request this deployment previews (null outside a PR preview) */
+        get: operations["getPreview"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gamemodes": {
         parameters: {
             query?: never;
@@ -1201,6 +1218,17 @@ export interface components {
         Health: {
             ok: boolean;
         };
+        PreviewInfo: {
+            /** @description The pull request this deployment previews; null in production */
+            preview: {
+                pr: number;
+                /**
+                 * Format: uri
+                 * @description The pull request on GitHub
+                 */
+                url: string;
+            } | null;
+        };
         ConfigFieldMeta: {
             label: string;
             tooltip?: string;
@@ -1891,6 +1919,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPreview: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The preview this deployment is, if any */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreviewInfo"];
                 };
             };
             429: components["responses"]["TooManyRequests"];
