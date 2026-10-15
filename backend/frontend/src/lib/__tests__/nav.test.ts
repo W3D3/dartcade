@@ -1,24 +1,39 @@
 import { describe, it, expect } from 'vitest'
-import { friendsEntry, navTabs, isActiveRoute, railLobby } from '../nav.js'
+import { friendsEntry, navTabs, isActiveRoute, railLobby, sideLinks } from '../nav.js'
 
 describe('navTabs', () => {
-  it('has no Live tab without a running game', () => {
-    expect(navTabs(null).map(t => t.label)).toEqual(['Play', 'Boards', 'History'])
+  it('follows the design: Play, Live, Tournaments, History (no Boards)', () => {
+    expect(navTabs('s1').map(t => t.label)).toEqual(['Play', 'Live', 'Tournaments', 'History'])
   })
-  it('puts Live second, linking to the running game', () => {
-    const tabs = navTabs('s1')
-    expect(tabs.map(t => t.label)).toEqual(['Play', 'Live', 'Boards', 'History'])
-    expect(tabs[1]).toEqual({ href: '/session/s1', label: 'Live', icon: 'live' })
+  it('links Live to the running game', () => {
+    expect(navTabs('s1')[1]).toEqual({ href: '/session/s1', label: 'Live', icon: 'live' })
+  })
+  it('keeps Live in place but disabled without a running game', () => {
+    expect(navTabs(null)[1]).toMatchObject({ label: 'Live', disabled: true, aria: 'Live: no game running' })
+  })
+  it('shows Tournaments as not there yet', () => {
+    expect(navTabs('s1')[2]).toMatchObject({ label: 'Tournaments', disabled: true })
   })
 
   it('puts Ranked after Play while matchmaking is on', () => {
-    expect(navTabs('s1', 0, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Boards', 'History'])
+    expect(navTabs('s1', 0, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Tournaments', 'History'])
     expect(navTabs(null, 0, true)[1]).toEqual({ href: '/matchmaking', label: 'Ranked', icon: 'ranked', aria: 'Matchmaking' })
   })
 
   it('puts the pending invites on the Play tab', () => {
     expect(navTabs(null, 2)[0]).toEqual({ href: '/', label: 'Play', icon: 'play', badge: 2 })
     expect(navTabs(null, 0)[0]).toEqual({ href: '/', label: 'Play', icon: 'play' })
+  })
+})
+
+describe('sideLinks', () => {
+  it('lists the design order, with Matchmaking only while it is on', () => {
+    expect(sideLinks('s1').map(l => l.label)).toEqual(['Play', 'Live match', 'Tournaments', 'History', 'Settings'])
+    expect(sideLinks('s1', true).map(l => l.label)).toEqual(['Play', 'Matchmaking', 'Live match', 'Tournaments', 'History', 'Settings'])
+  })
+  it('links Live match to the running game, disabled without one', () => {
+    expect(sideLinks('s1')[1]).toEqual({ href: '/session/s1', label: 'Live match', icon: 'live' })
+    expect(sideLinks(null)[1]).toMatchObject({ label: 'Live match', disabled: true })
   })
 })
 
