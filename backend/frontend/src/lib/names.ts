@@ -4,6 +4,9 @@ import { writable, type Readable } from 'svelte/store'
 import { api } from './api'
 
 export const NAME_RULE = '2–20 letters, digits, . _ or -, no spaces'
+/** The same rules in a sentence, under the name field in Settings. */
+export const NAME_HINT =
+  '2 to 20 characters: letters, digits, dot, underscore and hyphen, no spaces. Friends find and add you by this name.'
 const ALLOWED = /^[\p{L}\p{Nd}._-]+$/u
 
 export const normalizeName = (raw: string): string => raw.trim().normalize('NFC')
