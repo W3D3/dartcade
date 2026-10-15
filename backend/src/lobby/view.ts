@@ -80,6 +80,7 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
     youHost: lobby.hostUserId === userId,
     solo: isSolo(lobby),
     hasBot: lobby.people.some(p => p.bot !== null),
+    faces: lobby.people.slice(0, 4).map(p => ({ name: p.name, guest: p.userId === null && p.bot === null })),
   }
 }
 

@@ -279,6 +279,13 @@ export interface LobbySummary {
    * At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed.
    */
   hasBot: boolean
+  /**
+   * The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.
+   */
+  faces: {
+    name: string
+    guest: boolean
+  }[]
 }
 /**
  * The viewer's running game, wherever it started (a lobby or not); LobbySummary carries that game's lobby-specific state.

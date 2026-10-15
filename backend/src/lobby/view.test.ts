@@ -187,6 +187,11 @@ describe('lobbySummary', () => {
       youHost: true,
       solo: false,
       hasBot: false,
+      faces: [
+        { name: 'Christoph', guest: false },
+        { name: 'Max', guest: false },
+        { name: 'Guest 1', guest: true },
+      ],
     })
     expect(lobbySummary(lobby, 'max', session).youThrowNext).toBe(false)
     expect(lobbySummary(lobby, 'max', session).youHost).toBe(false)
@@ -212,6 +217,7 @@ describe('lobbySummary', () => {
     expect(lobbySummary(lobby, 'chris', undefined).hasBot).toBe(false)
     const withBot: LobbyState = { ...lobby, people: [...lobby.people, person({ id: 'b', name: 'Bot Lvl 5', bot: { level: 5 } })] }
     expect(lobbySummary(withBot, 'chris', undefined).hasBot).toBe(true)
+    expect(lobbySummary(withBot, 'chris', undefined).faces[3]).toEqual({ name: 'Bot Lvl 5', guest: false })
   })
 
   it("youThrowNext is false for the bot's own controller: they control the seat but don't throw for it", async () => {

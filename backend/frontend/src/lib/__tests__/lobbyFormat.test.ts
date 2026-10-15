@@ -202,6 +202,7 @@ describe('indicatorView', () => {
     youHost: false,
     solo: false,
     hasBot: false,
+    faces: [],
   }
 
   it('a member waiting, the host', () => {

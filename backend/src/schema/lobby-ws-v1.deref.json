@@ -1755,7 +1755,8 @@
         "leg",
         "youHost",
         "solo",
-        "hasBot"
+        "hasBot",
+        "faces"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1838,6 +1839,26 @@
         "hasBot": {
           "type": "boolean",
           "description": "At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed."
+        },
+        "faces": {
+          "type": "array",
+          "description": "The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.",
+          "items": {
+            "type": "object",
+            "required": [
+              "name",
+              "guest"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "guest": {
+                "type": "boolean"
+              }
+            }
+          }
         }
       }
     },
@@ -1952,7 +1973,8 @@
                 "leg",
                 "youHost",
                 "solo",
-                "hasBot"
+                "hasBot",
+                "faces"
               ],
               "additionalProperties": false,
               "properties": {
@@ -2035,6 +2057,26 @@
                 "hasBot": {
                   "type": "boolean",
                   "description": "At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed."
+                },
+                "faces": {
+                  "type": "array",
+                  "description": "The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name",
+                      "guest"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "guest": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
                 }
               }
             },
@@ -2394,7 +2436,8 @@
                     "leg",
                     "youHost",
                     "solo",
-                    "hasBot"
+                    "hasBot",
+                    "faces"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -2477,6 +2520,26 @@
                     "hasBot": {
                       "type": "boolean",
                       "description": "At least one seat in the lobby's people is a bot: the Play page's settings form shows Bot speed."
+                    },
+                    "faces": {
+                      "type": "array",
+                      "description": "The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "guest"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "guest": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
                     }
                   }
                 },
