@@ -28,6 +28,8 @@ export interface Physics {
   wallThickness: number
   /** Aim assist: a putt within this many degrees of a clear line to the cup is pulled onto it. */
   assistAngle: number
+  /** Aim assist only near the cup: full strength within half this distance (mm), none beyond it. */
+  assistRange: number
 }
 
 export const DEFAULT_PHYSICS: Physics = {
@@ -44,4 +46,5 @@ export const DEFAULT_PHYSICS: Physics = {
   maxTime: 20,
   wallThickness: 20,
   assistAngle: 10,
+  assistRange: 600,
 }

@@ -14,20 +14,22 @@ export function powerAt(r: number, physics: Physics): number {
 }
 
 /**
- * Aim assist: a direction within `physics.assistAngle` of a clear line to the cup is pulled onto
- * it, fully in the inner half of the window and less towards its edge. Without a clear line (a
- * dogleg, a bumper in the way) the direction is left alone, so bank shots stay yours.
+ * Aim assist: near the cup, a direction within `physics.assistAngle` of a clear line to it is
+ * pulled onto it, fully in the inner half of the window and less towards its edge. It fades out
+ * from half `physics.assistRange` to the range itself, so only short putts get help. Without a
+ * clear line (a dogleg, a bumper in the way) the direction is left alone, so bank shots stay yours.
  */
 export function assistDir(dir: Pt, ball: Pt, hole: Hole, physics: Physics): Pt {
   const dx = hole.cup.at[0] - ball[0]
   const dy = hole.cup.at[1] - ball[1]
   const len = Math.sqrt(dx * dx + dy * dy)
-  if (len === 0 || physics.assistAngle <= 0) return dir
+  if (len === 0 || len >= physics.assistRange || physics.assistAngle <= 0) return dir
   const cup: Pt = [dx / len, dy / len]
   const cosWindow = Math.cos((physics.assistAngle * Math.PI) / 180)
   const cos = dir[0] * cup[0] + dir[1] * cup[1]
   if (cos < cosWindow || !lineClear(hole, ball, hole.cup.at)) return dir
-  const w = Math.min(1, (2 * (cos - cosWindow)) / (1 - cosWindow))
+  const near = Math.min(1, (2 * (physics.assistRange - len)) / physics.assistRange)
+  const w = near * Math.min(1, (2 * (cos - cosWindow)) / (1 - cosWindow))
   const x = dir[0] + w * (cup[0] - dir[0])
   const y = dir[1] + w * (cup[1] - dir[1])
   const n = Math.sqrt(x * x + y * y)
