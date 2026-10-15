@@ -23,6 +23,7 @@
     "flowbite-svelte": "^0.46.0",
     "layerchart": "^2.5.2",
     "openapi-fetch": "0.17.0",
+    "polyclip-ts": "0.16.8",
     "simpleheat": "^0.4.0",
     "svelte": "^5.0.0",
     "svelte-spa-router": "^4.0.1",

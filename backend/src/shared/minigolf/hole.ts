@@ -4,7 +4,7 @@ import type { Hole, Pt } from './types.js'
 
 const finite = (pts: readonly Pt[]) => pts.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
 
-function crossesItself(poly: readonly Pt[]): boolean {
+export function crossesItself(poly: readonly Pt[]): boolean {
   const n = poly.length
   for (let i = 0; i < n; i++) {
     for (let j = i + 2; j < n; j++) {
