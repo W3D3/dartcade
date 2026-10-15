@@ -22,6 +22,7 @@
     { key: 'wallThickness', label: 'Rail thickness (mm)', min: 5, max: 60, step: 1 },
     { key: 'maxTime', label: 'Time cap (s)', min: 5, max: 60, step: 1 },
     { key: 'assistAngle', label: 'Aim assist window (°)', min: 0, max: 30, step: 1 },
+    { key: 'assistRange', label: 'Aim assist range (mm)', min: 0, max: 3000, step: 50 },
   ]
 
   /** Roll on flat felt, mm, for a dart r from the bull (r = 1 at the double wire). */

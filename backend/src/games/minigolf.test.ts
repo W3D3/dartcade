@@ -234,13 +234,24 @@ describe('minigolf', () => {
     expect(missed.tries[0].aim).toBeNull()
   })
 
-  it('pulls a putt near the cup line with aim assist, not without', () => {
-    // A little right of straight up: the straight hole's cup is straight up from the tee
+  it('pulls a short putt near the cup line with aim assist, not without', () => {
+    // The straight hole teed up 250 mm below its cup, inside the assist's range; the dart a
+    // little right of straight up
+    const close: Hole = { ...straight, tee: [straight.cup.at[0], straight.cup.at[1] + 250] }
+    const nearly = dart({ x: 0.02, y: 0.3 })
+    const assisted = visit(M.init(cfg({ aimAssist: true, holes: [close] }), two), nearly)
+    const plain = visit(M.init(cfg({ aimAssist: false, holes: [close] }), two), nearly)
+    // Where it stops depends on the bounce; the assisted putt ends far nearer the line
+    const off = (at: Pt) => Math.abs(at[0] - close.tee[0])
+    expect(off(plain.balls[0].at)).toBeGreaterThan(10)
+    expect(off(assisted.balls[0].at)).toBeLessThan(off(plain.balls[0].at) / 4)
+  })
+
+  it('leaves a long putt to the player, even with aim assist', () => {
     const nearly = dart({ x: 0.03, y: 0.5 })
     const assisted = visit(M.init(cfg({ aimAssist: true }), two), nearly)
     const plain = visit(M.init(cfg({ aimAssist: false }), two), nearly)
-    expect(assisted.balls[0].at[0]).toBeCloseTo(straight.tee[0], 0)
-    expect(plain.balls[0].at[0]).toBeGreaterThan(straight.tee[0] + 20)
+    expect(assisted.balls[0].at).toEqual(plain.balls[0].at)
   })
 
   it('plays a config saved before an option existed with its default', () => {

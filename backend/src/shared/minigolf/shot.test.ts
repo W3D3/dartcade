@@ -70,7 +70,8 @@ describe('aim assist', () => {
     tee: [200, 1800],
     cup: { at: [200, 200], r: 54 },
   }
-  const ball = [200, 1800] as const
+  // Close to the cup (250 mm): inside the assist's range
+  const ball = [200, 450] as const
   /** A unit direction `deg` degrees right of straight up. */
   const tilted = (deg: number) => [Math.sin((deg * Math.PI) / 180), -Math.cos((deg * Math.PI) / 180)] as const
   const angle = (d: readonly number[]) => (Math.atan2(d[0], -d[1]) * 180) / Math.PI
@@ -92,15 +93,24 @@ describe('aim assist', () => {
       walls: [
         {
           points: [
-            [150, 1000],
-            [250, 1000],
+            [150, 330],
+            [250, 330],
           ],
         },
       ],
     }
-    const bumped: Hole = { ...lane, bumpers: [{ at: [200, 1000], r: 40 }] }
+    const bumped: Hole = { ...lane, bumpers: [{ at: [200, 330], r: 40 }] }
     expect(angle(assistDir(tilted(4), ball, walled, P))).toBeCloseTo(4)
     expect(angle(assistDir(tilted(4), ball, bumped, P))).toBeCloseTo(4)
+  })
+  it('leaves a long putt alone, however close to the line', () => {
+    expect(angle(assistDir(tilted(4), [200, 1800], lane, P))).toBeCloseTo(4)
+  })
+  it('fades out between half its range and its range', () => {
+    // 450 mm out: halfway between full strength (300 mm) and none (600 mm), so half way to the cup
+    const a = angle(assistDir(tilted(4), [200, 650], lane, P))
+    expect(a).toBeGreaterThan(1)
+    expect(a).toBeLessThan(3)
   })
   it('only helps when asked, and keeps the power', () => {
     const dart = { x: 0.05, y: 0.5 }
