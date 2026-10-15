@@ -30,10 +30,10 @@
     <div class="font-mono text-[13px] tracking-[0.08em] text-accent">T20 · T20 · T20 — 180</div>
     <h2 class="m-0 font-display font-bold text-[80px] xl:text-[104px] leading-[0.88] tracking-[0.01em] uppercase">Step up to the oche.</h2>
     <p class="m-0 text-[17px] xl:text-[18px] leading-[1.55] text-text-muted max-w-[380px] xl:max-w-[430px]">
-      Custom minigames, 501 and tournaments — scored live from your Autodarts board.
+      Custom minigames, X01 and tournaments — scored live from your Autodarts board.
     </p>
     <div class="hidden xl:flex gap-2 flex-wrap">
-      {#each ['501', 'Dart Soccer', 'Challenges', 'Tournaments'] as label (label)}
+      {#each ['X01', 'Dart Soccer', 'Challenges', 'Tournaments'] as label (label)}
         <span class="px-[14px] py-2 border border-line-chip rounded-full text-[14px] text-ink-soft">
           {label}
         </span>
