@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import { boardsRedirect, sectionOf, SETTINGS_SECTIONS } from '../settings/sections.js'
 import { defaultSettings } from '../gameSettings.js'
+import { gameModes } from '../gameModes.js'
 import GamePrefs from '../components/settings/GamePrefs.svelte'
 import BoardsEmpty from '../components/boards/BoardsEmpty.svelte'
 
@@ -31,9 +32,25 @@ describe('Game preferences', () => {
     const html = render(GamePrefs, { props: { settings: { ...defaultSettings } } }).body
     for (const label of ['Checkout suggestions', 'Visit sum', 'Chalkboard', "Other players' targets", 'Hit', 'Bust'])
       expect(html).toContain(label)
-    for (const label of ['Stats panel', 'Score count animation', 'Highlight target segment', 'New game defaults'])
-      expect(html).not.toContain(label)
-    expect(html).toContain('Saved on this device')
+    for (const label of ['Stats panel', 'Score count animation', 'Highlight target segment']) expect(html).not.toContain(label)
+    expect(html).not.toContain('Saved on this device')
+  })
+
+  it("offers X01's own options as New game defaults once the modes are known", () => {
+    expect(render(GamePrefs, { props: { settings: { ...defaultSettings } } }).body).not.toContain('New game defaults')
+    const opts = (...vs: (string | number)[]) => ({ label: '', options: vs.map(v => ({ value: v, label: String(v) })) })
+    gameModes.set([
+      {
+        id: 'x01',
+        defaultConfig: {},
+        teams: true,
+        supportsBots: true,
+        configMeta: { startScore: opts(301, 501, 701), outMode: opts('straight', 'double', 'master'), bullOff: opts('off', 'wdc', 'pdc') },
+      },
+    ])
+    const html = render(GamePrefs, { props: { settings: { ...defaultSettings, x01FirstTo: 7 } } }).body
+    for (const label of ['New game defaults', '701', 'master', 'Lobby order', 'Bull off · PDC', '>7<']) expect(html).toContain(label)
+    gameModes.set([])
   })
 })
 
