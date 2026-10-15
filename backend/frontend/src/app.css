@@ -85,6 +85,19 @@
     }
   }
 
+  /* The ranked search's radar: rings spreading out from the clock (Matchmaking, MM-Searching) */
+  --animate-radar: radar 2.4s ease-out infinite;
+  @keyframes radar {
+    from {
+      transform: scale(0.35);
+      opacity: 0.9;
+    }
+    to {
+      transform: scale(1.25);
+      opacity: 0;
+    }
+  }
+
   /* Menus and pickers that float over the page (shadow-popover), and tooltips (shadow-tooltip) */
   --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.5);
   --shadow-tooltip: 0 4px 16px rgba(0, 0, 0, 0.5);
