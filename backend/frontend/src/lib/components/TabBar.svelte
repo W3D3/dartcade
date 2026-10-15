@@ -1,5 +1,5 @@
 <script lang="ts">
-  // The phone's main navigation (below md): Play, Ranked with matchmaking on, Live while a game runs, Boards, History.
+  // The phone's main navigation (below md): Play, Ranked with matchmaking on, Live, Tournaments, History.
   import { location } from 'svelte-spa-router'
   import { navTabs, isActiveRoute } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'

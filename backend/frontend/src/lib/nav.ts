@@ -5,23 +5,47 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'play' | 'ranked' | 'live' | 'boards' | 'history'
+  icon: 'play' | 'ranked' | 'live' | 'tournaments' | 'history'
   badge?: number
   /** When the label alone doesn't say it ('Ranked' is the Matchmaking page). */
   aria?: string
+  /** Shown dimmed, not a link: Live with no running game, Tournaments until it ships. */
+  disabled?: boolean
+}
+
+/** Live links to your running game; with none it keeps its place, dimmed. */
+function liveItem(liveSessionId: string | null, label: string): NavTab {
+  return liveSessionId
+    ? { href: `/session/${liveSessionId}`, label, icon: 'live' }
+    : { href: '/session', label, icon: 'live', aria: `${label}: no game running`, disabled: true }
 }
 
 /**
- * The phone tab bar and the tablet rail: Ranked after Play while matchmaking is on (MM-Phone),
- * Live only while a game is running; pending invites as a badge on Play.
+ * The phone tab bar and the tablet rail: Play, Ranked while matchmaking is on (MM-Phone), Live,
+ * Tournaments (soon), History; pending invites as a badge on Play.
  */
 export function navTabs(liveSessionId: string | null, invites = 0, ranked = false): NavTab[] {
   return [
     { href: '/', label: 'Play', icon: 'play', ...(invites > 0 ? { badge: invites } : {}) },
     ...(ranked ? [{ href: '/matchmaking', label: 'Ranked', icon: 'ranked' as const, aria: 'Matchmaking' }] : []),
-    ...(liveSessionId ? [{ href: `/session/${liveSessionId}`, label: 'Live', icon: 'live' as const }] : []),
-    { href: '/boards', label: 'Boards', icon: 'boards' },
+    liveItem(liveSessionId, 'Live'),
+    { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', aria: 'Tournaments: coming soon', disabled: true },
     { href: '/history', label: 'History', icon: 'history' },
+  ]
+}
+
+export type SideLink = Omit<NavTab, 'icon' | 'badge' | 'aria'> & { icon: NavTab['icon'] | 'settings'; soon?: boolean }
+
+/** The desktop side nav: the same pages under their long names, then Settings. */
+export function sideLinks(liveSessionId: string | null, ranked = false): SideLink[] {
+  const { href, disabled } = liveItem(liveSessionId, 'Live match')
+  return [
+    { href: '/', label: 'Play', icon: 'play' },
+    ...(ranked ? [{ href: '/matchmaking', label: 'Matchmaking', icon: 'ranked' as const }] : []),
+    { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
+    { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },
+    { href: '/history', label: 'History', icon: 'history' },
+    { href: '/settings', label: 'Settings', icon: 'settings' },
   ]
 }
 

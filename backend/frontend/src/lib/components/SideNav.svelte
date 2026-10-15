@@ -1,14 +1,15 @@
 <script lang="ts">
   import BrandMark from './BrandMark.svelte'
   import PreviewBadge from './PreviewBadge.svelte'
-  import { Clock, Mail, Monitor, Settings, Swords, Target, Trophy } from '@lucide/svelte'
+  import { Clock, Mail, Radio, Settings, Swords, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import AccountMenu from './AccountMenu.svelte'
   import FriendsButton from './friends/FriendsButton.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
   import NavBadge from './NavBadge.svelte'
   import NavLink from './NavLink.svelte'
-  import { isActiveRoute } from '$lib/nav'
+  import { isActiveRoute, sideLinks } from '$lib/nav'
+  import { activeSessionId } from '$lib/activeSession'
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
 
@@ -16,14 +17,7 @@
 
   const matchmaking = flag('matchmaking.enabled')
 
-  const links = $derived([
-    { href: '/', label: 'Play', icon: 'play' },
-    ...($matchmaking ? [{ href: '/matchmaking', label: 'Matchmaking', icon: 'swords' }] : []),
-    { href: '/boards', label: 'Boards', icon: 'boards' },
-    { href: '/tournaments', label: 'Tournaments', icon: 'trophy', soon: true },
-    { href: '/history', label: 'History', icon: 'clock' },
-    { href: '/settings', label: 'Settings', icon: 'settings' },
-  ])
+  const links = $derived(sideLinks($activeSessionId, $matchmaking))
 </script>
 
 <nav
@@ -41,21 +35,24 @@
   <div class="flex flex-col gap-1">
     {#each links as link (link.href)}
       {@const active = isActiveRoute($location, link.href)}
-      <NavLink href={`#${link.href}`} {active} disabled={link.soon}>
+      <NavLink href={`#${link.href}`} {active} disabled={link.disabled}>
         {#if link.icon === 'play'}
           <Target size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'swords'}
+        {:else if link.icon === 'ranked'}
           <Swords size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
-        {:else if link.icon === 'boards'}
-          <Monitor size={20} strokeWidth={1.8} />
-        {:else if link.icon === 'trophy'}
+        {:else if link.icon === 'live'}
+          <Radio size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
+        {:else if link.icon === 'tournaments'}
           <Trophy size={20} strokeWidth={1.8} />
-        {:else if link.icon === 'clock'}
+        {:else if link.icon === 'history'}
           <Clock size={20} strokeWidth={1.8} />
         {:else if link.icon === 'settings'}
           <Settings size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {/if}
         {link.label}
+        {#if link.icon === 'live' && !link.disabled}
+          <span class="ml-auto w-2 h-2 rounded-full bg-live" aria-hidden="true"></span>
+        {/if}
         {#if link.soon}
           <span
             class="ml-auto text-[11px] font-medium tracking-[0.06em] uppercase text-text-dim border border-line-3 rounded-[5px] px-[7px] py-[3px]"

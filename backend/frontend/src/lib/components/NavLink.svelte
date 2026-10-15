@@ -7,7 +7,7 @@
 </script>
 
 {#if disabled}
-  <span class="flex items-center gap-3 h-11 px-3 rounded-lg text-[15px] font-medium text-text-dim cursor-default">
+  <span aria-disabled="true" class="flex items-center gap-3 h-11 px-3 rounded-lg text-[15px] font-medium text-text-dim cursor-default">
     {@render children()}
   </span>
 {:else}

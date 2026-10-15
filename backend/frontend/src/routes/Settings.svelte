@@ -1,6 +1,7 @@
 <script lang="ts">
   // Account settings (Settings and Settings-Phone boards). For now: the caller's voices.
   import { onMount } from 'svelte'
+  import { ChevronRight, Monitor } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import CallerVoices from '$lib/components/settings/CallerVoices.svelte'
   import NameCard from '$lib/components/settings/NameCard.svelte'
@@ -23,6 +24,15 @@
     </header>
     <div class="w-full max-w-[760px] flex flex-col gap-[14px] md:gap-6">
       <NameCard />
+      <!-- shortcut: a plain link while Boards is out of the nav; #166 gives Settings its section nav -->
+      <a href="#/boards" class="flex items-center gap-3 p-4 md:p-6 card no-underline text-text hover:bg-surface-active">
+        <Monitor size={20} strokeWidth={1.8} class="text-accent" />
+        <span class="flex flex-col gap-1 flex-grow">
+          <span class="text-[17px] font-semibold">Boards</span>
+          <span class="text-[13px] text-text-muted">Pair, rename and check your Autodarts boards.</span>
+        </span>
+        <ChevronRight size={18} class="text-text-muted" />
+      </a>
       <CallerVoices current={settings.callerVoice} volume={settings.volume} />
     </div>
   </main>
