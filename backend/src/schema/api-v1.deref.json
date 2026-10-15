@@ -6555,6 +6555,479 @@
         }
       }
     },
+    "/api/me/preferences": {
+      "get": {
+        "operationId": "getPreferences",
+        "summary": "Your account-wide game and caller preferences (only the ones you have set)",
+        "tags": [
+          "me"
+        ],
+        "responses": {
+          "200": {
+            "description": "The preferences you have set; a missing one is the app's default",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Account-wide settings (Settings: Game preferences, Caller). Volume and the match screen's view stay on each device.",
+                  "properties": {
+                    "checkoutSuggestions": {
+                      "type": "boolean"
+                    },
+                    "visitSum": {
+                      "type": "boolean"
+                    },
+                    "chalkboard": {
+                      "type": "boolean"
+                    },
+                    "showMarkers": {
+                      "type": "boolean",
+                      "description": "Around the Clock: other players' targets on the board"
+                    },
+                    "soundHit": {
+                      "type": "boolean"
+                    },
+                    "soundMiss": {
+                      "type": "boolean"
+                    },
+                    "soundSwitch": {
+                      "type": "boolean"
+                    },
+                    "soundBust": {
+                      "type": "boolean"
+                    },
+                    "soundWin": {
+                      "type": "boolean"
+                    },
+                    "callerOn": {
+                      "type": "boolean",
+                      "description": "The caller is on in new games"
+                    },
+                    "callerVoice": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "nullable": true,
+                      "description": "A voice pack id or builtin:<id>; null: the default voice"
+                    },
+                    "x01StartScore": {
+                      "type": "integer",
+                      "enum": [
+                        301,
+                        501,
+                        701
+                      ],
+                      "description": "New game defaults: X01 start score"
+                    },
+                    "x01OutMode": {
+                      "type": "string",
+                      "enum": [
+                        "straight",
+                        "double",
+                        "master"
+                      ],
+                      "description": "New game defaults: X01 check-out"
+                    },
+                    "x01FirstTo": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 99,
+                      "description": "New game defaults: X01 legs to win"
+                    },
+                    "x01BullOff": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "wdc",
+                        "pdc"
+                      ],
+                      "description": "New game defaults: X01 throw order (off: lobby order)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "operationId": "updatePreferences",
+        "summary": "Set some preferences; the ones left out keep their value, unknown ones are dropped",
+        "tags": [
+          "me"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "description": "Account-wide settings (Settings: Game preferences, Caller). Volume and the match screen's view stay on each device.",
+                "properties": {
+                  "checkoutSuggestions": {
+                    "type": "boolean"
+                  },
+                  "visitSum": {
+                    "type": "boolean"
+                  },
+                  "chalkboard": {
+                    "type": "boolean"
+                  },
+                  "showMarkers": {
+                    "type": "boolean",
+                    "description": "Around the Clock: other players' targets on the board"
+                  },
+                  "soundHit": {
+                    "type": "boolean"
+                  },
+                  "soundMiss": {
+                    "type": "boolean"
+                  },
+                  "soundSwitch": {
+                    "type": "boolean"
+                  },
+                  "soundBust": {
+                    "type": "boolean"
+                  },
+                  "soundWin": {
+                    "type": "boolean"
+                  },
+                  "callerOn": {
+                    "type": "boolean",
+                    "description": "The caller is on in new games"
+                  },
+                  "callerVoice": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "nullable": true,
+                    "description": "A voice pack id or builtin:<id>; null: the default voice"
+                  },
+                  "x01StartScore": {
+                    "type": "integer",
+                    "enum": [
+                      301,
+                      501,
+                      701
+                    ],
+                    "description": "New game defaults: X01 start score"
+                  },
+                  "x01OutMode": {
+                    "type": "string",
+                    "enum": [
+                      "straight",
+                      "double",
+                      "master"
+                    ],
+                    "description": "New game defaults: X01 check-out"
+                  },
+                  "x01FirstTo": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 99,
+                    "description": "New game defaults: X01 legs to win"
+                  },
+                  "x01BullOff": {
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "wdc",
+                      "pdc"
+                    ],
+                    "description": "New game defaults: X01 throw order (off: lobby order)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All your preferences as they are now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "description": "Account-wide settings (Settings: Game preferences, Caller). Volume and the match screen's view stay on each device.",
+                  "properties": {
+                    "checkoutSuggestions": {
+                      "type": "boolean"
+                    },
+                    "visitSum": {
+                      "type": "boolean"
+                    },
+                    "chalkboard": {
+                      "type": "boolean"
+                    },
+                    "showMarkers": {
+                      "type": "boolean",
+                      "description": "Around the Clock: other players' targets on the board"
+                    },
+                    "soundHit": {
+                      "type": "boolean"
+                    },
+                    "soundMiss": {
+                      "type": "boolean"
+                    },
+                    "soundSwitch": {
+                      "type": "boolean"
+                    },
+                    "soundBust": {
+                      "type": "boolean"
+                    },
+                    "soundWin": {
+                      "type": "boolean"
+                    },
+                    "callerOn": {
+                      "type": "boolean",
+                      "description": "The caller is on in new games"
+                    },
+                    "callerVoice": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200,
+                      "nullable": true,
+                      "description": "A voice pack id or builtin:<id>; null: the default voice"
+                    },
+                    "x01StartScore": {
+                      "type": "integer",
+                      "enum": [
+                        301,
+                        501,
+                        701
+                      ],
+                      "description": "New game defaults: X01 start score"
+                    },
+                    "x01OutMode": {
+                      "type": "string",
+                      "enum": [
+                        "straight",
+                        "double",
+                        "master"
+                      ],
+                      "description": "New game defaults: X01 check-out"
+                    },
+                    "x01FirstTo": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 99,
+                      "description": "New game defaults: X01 legs to win"
+                    },
+                    "x01BullOff": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "wdc",
+                        "pdc"
+                      ],
+                      "description": "New game defaults: X01 throw order (off: lobby order)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sessions": {
       "get": {
         "operationId": "listSessions",
@@ -24773,6 +25246,85 @@
           },
           "invisible": {
             "type": "boolean"
+          }
+        }
+      },
+      "Preferences": {
+        "type": "object",
+        "additionalProperties": false,
+        "description": "Account-wide settings (Settings: Game preferences, Caller). Volume and the match screen's view stay on each device.",
+        "properties": {
+          "checkoutSuggestions": {
+            "type": "boolean"
+          },
+          "visitSum": {
+            "type": "boolean"
+          },
+          "chalkboard": {
+            "type": "boolean"
+          },
+          "showMarkers": {
+            "type": "boolean",
+            "description": "Around the Clock: other players' targets on the board"
+          },
+          "soundHit": {
+            "type": "boolean"
+          },
+          "soundMiss": {
+            "type": "boolean"
+          },
+          "soundSwitch": {
+            "type": "boolean"
+          },
+          "soundBust": {
+            "type": "boolean"
+          },
+          "soundWin": {
+            "type": "boolean"
+          },
+          "callerOn": {
+            "type": "boolean",
+            "description": "The caller is on in new games"
+          },
+          "callerVoice": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "nullable": true,
+            "description": "A voice pack id or builtin:<id>; null: the default voice"
+          },
+          "x01StartScore": {
+            "type": "integer",
+            "enum": [
+              301,
+              501,
+              701
+            ],
+            "description": "New game defaults: X01 start score"
+          },
+          "x01OutMode": {
+            "type": "string",
+            "enum": [
+              "straight",
+              "double",
+              "master"
+            ],
+            "description": "New game defaults: X01 check-out"
+          },
+          "x01FirstTo": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 99,
+            "description": "New game defaults: X01 legs to win"
+          },
+          "x01BullOff": {
+            "type": "string",
+            "enum": [
+              "off",
+              "wdc",
+              "pdc"
+            ],
+            "description": "New game defaults: X01 throw order (off: lobby order)"
           }
         }
       },

@@ -1,5 +1,8 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
+import type { components } from '../schema/api.js'
+
+export type Preferences = components['schemas']['Preferences']
 
 /** The signed-in account as /api/me shows it. */
 export type Account = {
@@ -57,4 +60,21 @@ export async function setName(db: Kysely<Database>, userId: string, name: string
 /** Invisible: friends see the user as offline. */
 export async function setInvisible(db: Kysely<Database>, userId: string, invisible: boolean): Promise<void> {
   await db.updateTable('user').set({ invisible }).where('id', '=', userId).execute()
+}
+
+/** The account-wide preferences the user has set; undefined for an unknown user. */
+export async function getPreferences(db: Kysely<Database>, userId: string): Promise<Preferences | undefined> {
+  const row = await db.selectFrom('user').select('preferences').where('id', '=', userId).executeTakeFirst()
+  return row?.preferences
+}
+
+/** Sets the given preferences over the stored ones (the rest keep theirs) and answers with all of them. */
+export async function updatePreferences(db: Kysely<Database>, userId: string, changes: Preferences): Promise<Preferences | undefined> {
+  const row = await db
+    .updateTable('user')
+    .set({ preferences: sql`preferences || ${JSON.stringify(changes)}::jsonb` })
+    .where('id', '=', userId)
+    .returning('preferences')
+    .executeTakeFirst()
+  return row?.preferences
 }

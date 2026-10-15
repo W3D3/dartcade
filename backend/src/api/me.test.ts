@@ -9,10 +9,10 @@ vi.mock('../auth/middleware.js', () => ({
     done()
   }),
 }))
-vi.mock('../db/users.js', () => ({ getAccount: vi.fn(), setInvisible: vi.fn() }))
+vi.mock('../db/users.js', () => ({ getAccount: vi.fn(), setInvisible: vi.fn(), getPreferences: vi.fn(), updatePreferences: vi.fn() }))
 vi.mock('../users/account.js', () => ({ renameUser: vi.fn(), suggestName: vi.fn() }))
 
-import { getAccount, setInvisible } from '../db/users.js'
+import { getAccount, getPreferences, setInvisible, updatePreferences } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
 
 const app = () => {
@@ -113,5 +113,44 @@ describe('/api/me', () => {
     expect(renameUser).not.toHaveBeenCalled()
     expect(onChanged).toHaveBeenCalledWith('old')
     expect(JSON.parse(res.body).invisible).toBe(true)
+  })
+})
+
+describe('/api/me/preferences', () => {
+  beforeEach(() => {
+    vi.mocked(getPreferences).mockReset().mockResolvedValue({ chalkboard: false })
+    vi.mocked(updatePreferences)
+      .mockReset()
+      .mockImplementation((_db, _id, changes) => Promise.resolve({ chalkboard: false, ...changes }))
+  })
+
+  it('shows the preferences set so far', async () => {
+    const res = await app().inject({ method: 'GET', url: '/api/me/preferences' })
+    expect(res.statusCode).toBe(200)
+    expect(getPreferences).toHaveBeenCalledWith({}, 'old')
+    expect(JSON.parse(res.body)).toEqual({ chalkboard: false })
+  })
+
+  it('stores known keys and drops unknown ones', async () => {
+    const res = await app().inject({
+      method: 'PUT',
+      url: '/api/me/preferences',
+      payload: { callerOn: true, x01StartScore: 301, callerVoice: null, volume: 0.2, evil: 'x'.repeat(1000) },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(updatePreferences).toHaveBeenCalledWith({}, 'old', { callerOn: true, x01StartScore: 301, callerVoice: null })
+    expect(JSON.parse(res.body)).toEqual({ chalkboard: false, callerOn: true, x01StartScore: 301, callerVoice: null })
+  })
+
+  it.each([
+    ['a value of the wrong type', { chalkboard: 'yes' }],
+    ['a start score X01 does not offer', { x01StartScore: 401 }],
+    ['an unknown check-out', { x01OutMode: 'triple' }],
+    ['zero legs', { x01FirstTo: 0 }],
+    ['an oversized voice id', { callerVoice: 'v'.repeat(201) }],
+  ])('rejects %s', async (_what, payload) => {
+    const res = await app().inject({ method: 'PUT', url: '/api/me/preferences', payload })
+    expect(res.statusCode).toBe(400)
+    expect(updatePreferences).not.toHaveBeenCalled()
   })
 })

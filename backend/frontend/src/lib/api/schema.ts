@@ -454,6 +454,24 @@ export interface paths {
         patch: operations["updateMe"];
         trace?: never;
     };
+    "/api/me/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your account-wide game and caller preferences (only the ones you have set) */
+        get: operations["getPreferences"];
+        /** Set some preferences; the ones left out keep their value, unknown ones are dropped */
+        put: operations["updatePreferences"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sessions": {
         parameters: {
             query?: never;
@@ -1630,6 +1648,40 @@ export interface components {
         UpdateMeRequest: {
             name?: string;
             invisible?: boolean;
+        };
+        /** @description Account-wide settings (Settings: Game preferences, Caller). Volume and the match screen's view stay on each device. */
+        Preferences: {
+            checkoutSuggestions?: boolean;
+            visitSum?: boolean;
+            chalkboard?: boolean;
+            /** @description Around the Clock: other players' targets on the board */
+            showMarkers?: boolean;
+            soundHit?: boolean;
+            soundMiss?: boolean;
+            soundSwitch?: boolean;
+            soundBust?: boolean;
+            soundWin?: boolean;
+            /** @description The caller is on in new games */
+            callerOn?: boolean;
+            /** @description A voice pack id or builtin:<id>; null: the default voice */
+            callerVoice?: string | null;
+            /**
+             * @description New game defaults: X01 start score
+             * @enum {integer}
+             */
+            x01StartScore?: 301 | 501 | 701;
+            /**
+             * @description New game defaults: X01 check-out
+             * @enum {string}
+             */
+            x01OutMode?: "straight" | "double" | "master";
+            /** @description New game defaults: X01 legs to win */
+            x01FirstTo?: number;
+            /**
+             * @description New game defaults: X01 throw order (off: lobby order)
+             * @enum {string}
+             */
+            x01BullOff?: "off" | "wdc" | "pdc";
         };
         NameAvailability: {
             available: boolean;
@@ -2872,6 +2924,55 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The preferences you have set; a missing one is the app's default */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updatePreferences: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Preferences"];
+            };
+        };
+        responses: {
+            /** @description All your preferences as they are now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Preferences"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
             429: components["responses"]["TooManyRequests"];
         };
     };
