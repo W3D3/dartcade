@@ -16,6 +16,16 @@ describe('createFastify', () => {
     }
   })
 
+  // A proxy can forward an empty POST chunked, with no Content-Length, and add a content type
+  it('takes a chunked POST without a body whatever content type it claims', async () => {
+    const res = await app().inject({
+      method: 'POST',
+      url: '/empty',
+      headers: { 'content-type': 'application/octet-stream', 'transfer-encoding': 'chunked' },
+    })
+    expect(res.statusCode).toBe(200)
+  })
+
   it('still refuses a body of a type it cannot parse', async () => {
     const res = await app().inject({ method: 'POST', url: '/json', headers: { 'content-type': 'application/octet-stream' }, payload: 'x' })
     expect(res.statusCode).toBe(415)
