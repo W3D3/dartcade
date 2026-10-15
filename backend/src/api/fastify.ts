@@ -16,6 +16,11 @@ export function createFastify(): FastifyInstance {
     if ((length === undefined || length === '0') && req.headers['transfer-encoding'] === undefined) delete req.headers['content-type']
     done()
   })
+  // Chunked, the length isn't known up front: any type we can't parse is fine as long as it's empty
+  app.addContentTypeParser('*', { parseAs: 'buffer' }, (_req, body: Buffer, done) => {
+    if (body.length === 0) done(null, undefined)
+    else done(Object.assign(new Error('Unsupported Media Type'), { statusCode: 415 }))
+  })
   if (process.env.NODE_ENV !== 'production') registerResponseValidation(app)
   return app
 }
