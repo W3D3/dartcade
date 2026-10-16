@@ -120,11 +120,10 @@ function endVisit(s: P121State, made: boolean): P121State {
   return finishTry(s, made, used)
 }
 
-// Give up: ends the open try as missed right away, counting only the darts actually thrown
-// (committed visits plus the open visit's), not a full dartsPerTry.
+// Give up: ends the open try as missed right away, counting only the darts of its committed
+// visits, not a full dartsPerTry. Only between visits (see onUserAction).
 function giveUp(s: P121State): P121State {
-  const seat = s.seats[s.currentPlayer]
-  return finishTry(s, false, seat.darts + s.visitDarts)
+  return finishTry(s, false, s.seats[s.currentPlayer].darts)
 }
 
 // The next turn in order whose seat still has tries left; the game ends when none does.
@@ -397,9 +396,9 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
   },
 
   onUserAction(s: P121State, a: UserAction): { state: P121State } {
-    // Once the visit is decided (a checkout or a bust), takeout commits it; give up only
-    // ends an open try that's still live.
-    if (a.type === 'p121_give_up' && s.phase === 'game' && !locked(s)) return { state: advance(giveUp(s)) }
+    // Give up waits until the visit's darts are out of the board: the engine drops the open
+    // visit on a module action, so the board's later takeout would commit an empty visit.
+    if (a.type === 'p121_give_up' && s.phase === 'game' && s.visitDarts === 0) return { state: advance(giveUp(s)) }
     return { state: s }
   },
 
