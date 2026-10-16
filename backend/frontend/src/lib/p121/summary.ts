@@ -19,13 +19,12 @@ export type P121SummaryData = {
 
 export type P121Standing = { name: string; placement: number; highestMade: number | null }
 
-// Above 120 a checkout takes 3 darts at least, so the chart starts there
-const FEWEST_DARTS = 3
-
 export function summaryData(detail: P121Detail, seat: number): P121SummaryData {
   const s = detail.seats[seat]
   const made = s.tries.filter(t => t.made)
   const most = Math.max(0, ...s.dartsPerCheckout.map(d => d.darts))
+  // Above 120 a checkout takes 3 darts at least; 81 and 101 can go out in 2 (or 1, straight out)
+  const fewest = Math.min(3, ...s.dartsPerCheckout.map(d => d.darts))
   return {
     reached: s.highestReached,
     bestRun: s.bestRun,
@@ -35,9 +34,9 @@ export function summaryData(detail: P121Detail, seat: number): P121SummaryData {
     fastest: s.fastest,
     tries: s.tries.map(t => ({ target: t.target, made: t.made })),
     doubles: s.doubles,
-    dartsPerCheckout: Array.from({ length: Math.max(0, most - FEWEST_DARTS + 1) }, (_, i) => ({
-      darts: FEWEST_DARTS + i,
-      count: s.dartsPerCheckout.find(d => d.darts === FEWEST_DARTS + i)?.count ?? 0,
+    dartsPerCheckout: Array.from({ length: Math.max(0, most - fewest + 1) }, (_, i) => ({
+      darts: fewest + i,
+      count: s.dartsPerCheckout.find(d => d.darts === fewest + i)?.count ?? 0,
     })),
   }
 }
