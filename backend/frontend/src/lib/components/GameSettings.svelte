@@ -81,6 +81,9 @@
   // ATC config fields in display order — populated from backend configMeta
   const ATC_FIELD_ORDER = ['finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit'] as const
 
+  // 121 config fields in display order — populated from backend configMeta (bullOff comes from withBullOff)
+  const P121_FIELD_ORDER = ['startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff'] as const
+
   // A numeric config field, or its default when missing or not a number
   const num = (v: unknown, d: number) => (typeof v === 'number' ? v : d)
   const isNonDefault = (key: string) => key in defaults && config[key] !== defaults[key]
@@ -222,6 +225,29 @@
 {:else if gameId === 'atc'}
   <div class={root}>
     {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
+      {@const field = meta[fieldKey]}
+      {#if field?.options && offered(field)}
+        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+          <legend class="flex items-center gap-2 field-label mb-2">
+            {field.label}
+            {#if field.tooltip}
+              <Tooltip text={field.tooltip} />
+            {/if}
+          </legend>
+          <SegmentedControl
+            options={field.options}
+            value={config[fieldKey]}
+            defaultValue={defaults[fieldKey]}
+            disabled={readonly}
+            onchange={(v: unknown) => set(fieldKey, v)}
+          />
+        </fieldset>
+      {/if}
+    {/each}
+  </div>
+{:else if gameId === 'p121'}
+  <div class={root}>
+    {#each P121_FIELD_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options && offered(field)}
         <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
