@@ -11,6 +11,8 @@
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
   import P121Match from '$lib/components/p121/P121Match.svelte'
+  import P121Summary from '$lib/components/p121/P121Summary.svelte'
+  import { snapshotStandings } from '$lib/p121/summary'
   import { rollFor } from '$lib/minigolf/match'
   import BoardLegend from '../lib/components/BoardLegend.svelte'
   import VisitBand from '../lib/components/VisitBand.svelte'
@@ -257,6 +259,8 @@
   const p121 = $derived(current.p121)
   const game = $derived(x01 ?? atc ?? minigolf ?? p121)
   const isX01 = $derived(x01 !== null)
+  // 121 ends on its session summary (P121Summary), not the win screen
+  const p121Finished = $derived(p121 !== null && snapshot?.status === 'finished')
   const view = $derived(getGameView(gameId))
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
   const winner = $derived(game?.winner ?? null)
@@ -491,17 +495,25 @@
   // arrives. Only the players can read it; everyone else sees what the snapshot has.
   let savedGame = $state.raw<GameDetail | null>(null)
   let savedFor = ''
+  // The fetch failed: 121's summary falls back to the standings alone
+  let savedFailed = $state(false)
   $effect(() => {
-    if (snapshot?.status !== 'finished' || winner === null || !isX01 || snapshot.mySeats.length === 0) return
+    // A forfeit finishes 121 without a winner, so it doesn't wait for one
+    if (snapshot?.status !== 'finished' || (winner === null && !p121) || !(isX01 || p121) || snapshot.mySeats.length === 0) return
     const id = snapshot.sessionId
     if (savedFor === id) return
     savedFor = id
+    savedFailed = false
     void api
       .GET('/api/games/{id}', { params: { path: { id } } })
       .then(({ data }) => {
-        if (data && snapshot?.sessionId === id) savedGame = data
+        if (snapshot?.sessionId !== id) return
+        if (data) savedGame = data
+        else savedFailed = true
       })
-      .catch(() => undefined)
+      .catch(() => {
+        if (snapshot?.sessionId === id) savedFailed = true
+      })
   })
   // Minigolf's last stroke rolls before the win screen: it waits until the match screen says that roll is done
   let minigolfRolled = $state<string | null>(null)
@@ -516,7 +528,7 @@
   let fanfare = false
   $effect(() => {
     if (snapshot?.status === 'active') sawPlay = true
-    if (win && sawPlay && !fanfare) {
+    if ((win || p121Finished) && sawPlay && !fanfare) {
       fanfare = true
       if (settings.soundWin) sounds.win()
     }
@@ -751,7 +763,7 @@
       <GameHeader
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-        showViewToggle={!bullOff && !minigolf && remote.kind === 'play'}
+        showViewToggle={!bullOff && !minigolf && !p121Finished && remote.kind === 'play'}
         boards={myBoards}
         {gameId}
         {viewMode}
@@ -773,7 +785,28 @@
         </div>
       {/if}
 
-      {#if bullOff}
+      {#if p121 && p121Finished}
+        {@const saved = savedGame?.game.id === snapshot.sessionId ? savedGame : null}
+        <P121Summary
+          detail={saved?.detail.mode === 'p121' ? saved.detail : null}
+          {players}
+          seat={snapshot.mySeats[0] ?? 0}
+          missRule={p121.cfg.missRule}
+          startTarget={p121.cfg.startTarget}
+          standings={snapshotStandings(
+            p121,
+            players,
+            snapshot.seats.map(s => s.forfeited),
+            saved?.game.players ?? null,
+          )}
+          loading={snapshot.mySeats.length > 0 && !savedFailed}
+          primary={{
+            label: winButtons.primary === 'rematch' ? 'Play again' : WIN_LABELS[winButtons.primary],
+            onclick: () => void finishWin(winButtons.primary),
+          }}
+          secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
+        />
+      {:else if bullOff}
         <BullOffPanel {players} {bots} {bullOff} manual={boardId === null} {send} />
       {:else if minigolf}
         <MinigolfMatch

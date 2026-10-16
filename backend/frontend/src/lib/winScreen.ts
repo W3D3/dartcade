@@ -88,7 +88,7 @@ export function sharedBoard(snapshot: Snapshot): string | null {
 }
 
 /** Places 1..n: the winner first, the rest by `better` (ties share a place). */
-function rank(count: number, winner: number | null, better: (a: number, b: number) => number): number[] {
+export function rank(count: number, winner: number | null, better: (a: number, b: number) => number): number[] {
   const order = Array.from({ length: count }, (_, i) => i).sort((a, b) => (a === winner ? -1 : b === winner ? 1 : better(a, b)))
   const places = new Array<number>(count)
   order.forEach((c, i) => {

@@ -15,6 +15,7 @@
   import AtcTargets from '$lib/components/details/AtcTargets.svelte'
   import RaceChart from '$lib/components/details/RaceChart.svelte'
   import HighlightPicker from '$lib/components/details/HighlightPicker.svelte'
+  import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { api, type GameDetail } from '$lib/api'
   import { detailSides, highlightDefault, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
 
@@ -61,46 +62,67 @@
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
         <DetailsHeader detail={d} />
-        <main
-          class="flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
-        >
-          <section
-            aria-label="Result and statistics"
-            class="flex flex-col gap-4 min-w-0 lg:shrink-0 {layout === 'party' ? 'lg:w-[560px]' : 'lg:w-[420px] xl:w-[520px]'}"
+        {#if d.detail.mode === 'p121'}
+          <!-- 121's summary has its own standings and stats, so it takes the whole page -->
+          {@const players = [...d.game.players].sort((a, b) => a.seat - b.seat)}
+          {@const cfg = d.game.config}
+          <P121Summary
+            detail={d.detail}
+            {players}
+            seat={highlightDefault(d)}
+            yourBest
+            missRule={cfg.missRule === 'down' || cfg.missRule === 'stay' ? cfg.missRule : 'reset'}
+            startTarget={typeof cfg.startTarget === 'number' ? cfg.startTarget : 121}
+            standings={sides
+              .map(s => ({
+                name: s.name,
+                placement: s.placement,
+                highestMade: Object.hasOwn(s.values, 'highestMade') ? s.values.highestMade : null,
+              }))
+              .sort((a, b) => a.placement - b.placement)}
+          />
+        {:else}
+          <main
+            class="flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
           >
-            {#if layout === 'party'}
-              <Standings rows={d.stats.rows} {sides} />
-            {:else}
-              <ResultCard detail={d} {sides} />
-              <StatsTable rows={d.stats.rows} {sides} title={layout === 'teams' ? 'Team stats' : 'Match stats'} />
-              {#if layout === 'teams'}<TeamShares detail={d} />{/if}
-            {/if}
-          </section>
-          <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
-            {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
-            {#if d.detail.mode === 'minigolf'}
-              <section class="flex flex-col gap-3 rounded-2xl border border-line bg-surface-1 p-5" aria-label="Scorecard">
-                <h2 class="m-0 font-display text-[22px] font-bold uppercase">Scorecard · {d.detail.course}</h2>
-                <Scorecard
-                  scores={d.detail.scores}
-                  pars={d.detail.holes.map(h => h.par)}
-                  players={[...d.game.players].sort((a, b) => a.seat - b.seat)}
-                />
-              </section>
-            {/if}
-            {#if d.game.mode === 'atc'}
-              <AtcTargets detail={d} />
+            <section
+              aria-label="Result and statistics"
+              class="flex flex-col gap-4 min-w-0 lg:shrink-0 {layout === 'party' ? 'lg:w-[560px]' : 'lg:w-[420px] xl:w-[520px]'}"
+            >
               {#if layout === 'party'}
-                <HighlightPicker
-                  options={d.game.players.map(p => ({ key: p.seat, name: p.name }))}
-                  value={atcHighlight ?? highlightDefault(d)}
-                  onpick={(k: number) => (atcHighlight = k)}
-                />
+                <Standings rows={d.stats.rows} {sides} />
+              {:else}
+                <ResultCard detail={d} {sides} />
+                <StatsTable rows={d.stats.rows} {sides} title={layout === 'teams' ? 'Team stats' : 'Match stats'} />
+                {#if layout === 'teams'}<TeamShares detail={d} />{/if}
               {/if}
-              <RaceChart detail={d} highlight={atcHighlight ?? highlightDefault(d)} />
-            {/if}
-          </div>
-        </main>
+            </section>
+            <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
+              {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
+              {#if d.detail.mode === 'minigolf'}
+                <section class="flex flex-col gap-3 rounded-2xl border border-line bg-surface-1 p-5" aria-label="Scorecard">
+                  <h2 class="m-0 font-display text-[22px] font-bold uppercase">Scorecard · {d.detail.course}</h2>
+                  <Scorecard
+                    scores={d.detail.scores}
+                    pars={d.detail.holes.map(h => h.par)}
+                    players={[...d.game.players].sort((a, b) => a.seat - b.seat)}
+                  />
+                </section>
+              {/if}
+              {#if d.game.mode === 'atc'}
+                <AtcTargets detail={d} />
+                {#if layout === 'party'}
+                  <HighlightPicker
+                    options={d.game.players.map(p => ({ key: p.seat, name: p.name }))}
+                    value={atcHighlight ?? highlightDefault(d)}
+                    onpick={(k: number) => (atcHighlight = k)}
+                  />
+                {/if}
+                <RaceChart detail={d} highlight={atcHighlight ?? highlightDefault(d)} />
+              {/if}
+            </div>
+          </main>
+        {/if}
         {#snippet failed(_error: unknown, reset: () => void)}
           {@render errorCard(() => void load().then(reset))}
         {/snippet}
