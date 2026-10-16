@@ -20,6 +20,11 @@ export function x01Rules(r: X01Rules, playerCount: number, teams?: string): stri
   return parts.join(' · ')
 }
 
+/** The 121 rules as one line, e.g. "121 · 10 tries · 9 darts · Double out". */
+export function p121Rules(r: { startTarget: number; tries: number; dartsPerTry: number; outMode: Mode }): string {
+  return `${r.startTarget} · ${r.tries} tries · ${r.dartsPerTry} darts · ${cap(r.outMode)} out`
+}
+
 /** The Around the Clock rules as one line, e.g. "1–20, then Bull · any segment counts". */
 export function atcRules(r: AtcRules, playerCount: number): string {
   const order = r.order === 'desc' ? '20–1' : r.order === 'random' ? 'Random order' : '1–20'

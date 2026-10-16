@@ -39,6 +39,7 @@ describe('lobby text', () => {
   it('names game modes, and passes unknown ones through', () => {
     expect(gameName('x01')).toBe('X01')
     expect(gameName('atc')).toBe('Around the Clock')
+    expect(gameName('p121')).toBe('121 Checkout')
     expect(gameName('cricket')).toBe('cricket')
   })
 
@@ -62,6 +63,13 @@ describe('lobby text', () => {
       '301 · Straight out · First to 1 leg',
     )
     expect(nextGameSummary({ gameId: 'atc', config: { order: 'random', finishOn: 'bull' } })).toBe('Random order · finish on bull')
+    expect(nextGameSummary({ gameId: 'p121', config: { startTarget: 121, tries: 10, dartsPerTry: 9, outMode: 'double' } })).toBe(
+      '121 · 10 tries · 9 darts · Double out',
+    )
+    expect(
+      nextGameSummary({ gameId: 'p121', config: { startTarget: 81, tries: 5, dartsPerTry: 6, bullOff: 'wdc' } }, { outMode: 'master' }),
+    ).toBe('81 · 5 tries · 6 darts · Master out · Bull off (WDC)')
+    expect(nextGameSummary({ gameId: 'p121', config: { startTarget: '121' } })).toBe('')
     expect(nextGameSummary({ gameId: 'x01', config: { startScore: 'lots' } })).toBe('')
     expect(nextGameSummary(null)).toBe('')
   })

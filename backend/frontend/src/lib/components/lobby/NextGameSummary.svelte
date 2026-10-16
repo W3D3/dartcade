@@ -1,9 +1,9 @@
 <script lang="ts">
-  // The next game at a glance: the big number (X01's start score, or the mode), whose pick,
+  // The next game at a glance: the big number (X01's start score, or the mode's glyph), whose pick,
   // the mode and its settings (over the game's defaults, for anything the lobby didn't save),
   // after "Teams 2v2" in a team game.
   import type { Lobby } from '$lib/api/lobby-ws'
-  import { gameModes, withDefaults } from '$lib/gameModes'
+  import { GAME_MODES, gameModes, withDefaults } from '$lib/gameModes'
   import { gameName, nextGameSummary } from '$lib/lobby/format'
   import { nextGameInTeams, teamRosters } from '$lib/lobby/rules'
 
@@ -20,11 +20,9 @@
   const big = $derived(
     game?.gameId === 'x01' && typeof config.startScore === 'number'
       ? String(config.startScore)
-      : game?.gameId === 'minigolf'
-        ? 'Par 3'
-        : game
-          ? game.gameId.toUpperCase()
-          : '—',
+      : game
+        ? (GAME_MODES.find(m => m.id === game.gameId)?.glyph ?? game.gameId.toUpperCase())
+        : '—',
   )
 </script>
 
