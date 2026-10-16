@@ -184,7 +184,7 @@
       </span>
       <!-- Solo only: in multiplayer the next dart is the next player's -->
       {#if solo && !lastTry}<span class="shrink-0 max-w-[180px] text-right text-[12px] text-text-dim"
-          >Starts by itself when you throw the next dart</span
+          >Take your darts out to start the next try</span
         >{/if}
     </div>
   {/if}

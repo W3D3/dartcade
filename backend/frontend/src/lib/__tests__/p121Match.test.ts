@@ -90,7 +90,7 @@ describe('P121Match in solo', () => {
     const { body } = render(P121Match, { props: { ...props(g), darts, locked: true } })
     expect(text(body)).toContain('Checked out')
     expect(text(body)).toContain('122 · T13, D12 in 2 darts')
-    expect(text(body)).toContain('Starts by itself when you throw the next dart')
+    expect(text(body)).toContain('Take your darts out to start the next try')
     // One Next button: the controls' own, naming the next try
     expect(body.match(/>\s*Next: 123/g)).toHaveLength(1)
     expect(text(body)).not.toContain('Next player')
@@ -116,14 +116,14 @@ describe('P121Match in solo', () => {
 })
 
 describe('P121Match in a duel', () => {
-  it("doesn't promise the next try starts with the next dart (it's the next player's)", () => {
+  it("doesn't promise the takeout starts the next try (it passes to the next player)", () => {
     const g = game({ visitLocked: true, seats: [seat({ left: 0 }), seat()] })
     const darts = [{ segment: { name: 'D12', number: 12, multiplier: 2 }, score: 24 }] as never
     const { body } = render(P121Match, {
       props: { ...props(g), players: [{ name: 'Anna' }, { name: 'Ben' }], layout: 'duel' as const, darts, locked: true },
     })
     expect(text(body)).toContain('Checked out')
-    expect(text(body)).not.toContain('Starts by itself')
+    expect(text(body)).not.toContain('Take your darts out to start')
     expect(text(body)).toContain('Next player')
   })
 })
