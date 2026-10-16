@@ -151,4 +151,14 @@ describe('pickClips', () => {
     expect(pickClips([['gameshot'], ['and'], ['leg_2']], clips, () => 0)).toEqual(['g'])
     expect(pickClips([['busted']], clips, () => 0)).toEqual([])
   })
+
+  describe('pickClips with phrases', () => {
+    const first = () => 0
+    it('plays the first choice the voice has; a phrase only when it has every key', () => {
+      const call = [['require_121', ['you_require', '121']]]
+      expect(pickClips(call, { require_121: ['r'], you_require: ['y'], '121': ['n'] }, first)).toEqual(['r'])
+      expect(pickClips(call, { you_require: ['y'], '121': ['n'] }, first)).toEqual(['y', 'n'])
+      expect(pickClips(call, { you_require: ['y'] }, first)).toEqual([])
+    })
+  })
 })

@@ -19,8 +19,9 @@ export type CallGame = Pick<
   | 'teams'
 >
 
-/** Parts said in order; each part lists keys by preference (the first the pack has plays). */
-export type Call = string[][]
+/** Parts said in order; each part lists choices by preference: a key, or a phrase (keys said one
+ *  after another) that plays only when the voice has every one of them. */
+export type Call = (string | string[])[][]
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 // What the visit took off the score, not the dart faces: darts before a double/master in score nothing.
@@ -72,17 +73,19 @@ function endOfVisit(g: CallGame): Call {
   return [[String(visitTotal(g))]]
 }
 
-/** One clip per part: the first key the pack has, a random variant of it. Missing parts are skipped. */
+/** One clip per key of the first choice the voice has, a random variant of each. Missing parts are skipped. */
 export function pickClips<T>(
   call: Call,
   clips: Record<string, T[]>,
   pick: (n: number) => number = n => Math.floor(Math.random() * n),
 ): T[] {
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const has = (k: string) => (clips[k]?.length ?? 0) > 0
   const out: T[] = []
   for (const part of call) {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    const key = part.find(k => (clips[k]?.length ?? 0) > 0)
-    if (key !== undefined) out.push(clips[key][pick(clips[key].length)])
+    const choice = part.find(c => (typeof c === 'string' ? has(c) : c.every(has)))
+    if (choice === undefined) continue
+    for (const k of typeof choice === 'string' ? [choice] : choice) out.push(clips[k][pick(clips[k].length)])
   }
   return out
 }
