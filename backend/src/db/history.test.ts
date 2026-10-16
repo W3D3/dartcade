@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession, insertBoard } from './queries.js'
-import { listFinishedGames, getStatRows, getViewableGame } from './history.js'
+import { listFinishedGames, getStatRows, getViewableGame, getBestStat } from './history.js'
 import type { Database } from './schema.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
@@ -22,6 +22,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     finishedAt: Date | 'abort' | 'active',
     board: string | null = null,
     forfeitedSeats: number[] = [],
+    extraStats: Record<string, number>[] = [],
   ) {
     await insertGameSession(db, {
       id,
@@ -41,7 +42,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
         finishedAt,
         seats.map((_, i) => ({
           placement: i + 1,
-          stats: { dartsThrown: 10 + i },
+          stats: { dartsThrown: 10 + i, ...extraStats[i] },
           throwPosition: seats.length - 1 - i,
           forfeited: forfeitedSeats.includes(i),
         })),
@@ -124,6 +125,26 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
       ]),
     )
     expect(rows).toHaveLength(2)
+  })
+
+  it('best stat: my highest value of a stat in a mode, with its date', async () => {
+    await game('p-1', 'p121', 'u1', [{ name: 'One', user_id: 'u1' }], t(6), null, [], [{ highestMade: 131 }])
+    await game('p-2', 'p121', 'u1', [{ name: 'One', user_id: 'u1' }], t(7), null, [], [{ highestMade: 124 }])
+    await game('p-other', 'p121', 'u2', [{ name: 'Two', user_id: 'u2' }], t(8), null, [], [{ highestMade: 140 }])
+    expect(await getBestStat(db, 'u1', 'p121', 'highestMade')).toEqual({ value: 131, finishedAt: t(6) })
+    expect(await getBestStat(db, 'u1', 'p121', 'nope')).toBeNull()
+    expect(await getBestStat(db, 'u1', 'atc', 'highestMade')).toBeNull()
+
+    // A game finished without a placement (e.g. from before game history existed) is excluded,
+    // even with a higher value, the same as getStatRows and listFinishedGames
+    await game('p-noplacement', 'p121', 'u1', [{ name: 'One', user_id: 'u1' }], t(9), null, [], [{ highestMade: 999 }])
+    await db.updateTable('game_players').set({ placement: null }).where('session_id', '=', 'p-noplacement').execute()
+    expect(await getBestStat(db, 'u1', 'p121', 'highestMade')).toEqual({ value: 131, finishedAt: t(6) })
+
+    // Tied best value: the earlier finishedAt wins
+    await game('p-tie-1', 'p121', 'u1', [{ name: 'One', user_id: 'u1' }], t(10), null, [], [{ tieStat: 150 }])
+    await game('p-tie-2', 'p121', 'u1', [{ name: 'One', user_id: 'u1' }], t(11), null, [], [{ tieStat: 150 }])
+    expect(await getBestStat(db, 'u1', 'p121', 'tieStat')).toEqual({ value: 150, finishedAt: t(10) })
   })
 
   it('a game is viewable by its seats; private games are 404 for others until public', async () => {

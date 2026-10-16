@@ -165,6 +165,28 @@ export async function getStatRows(db: Kysely<Database>, userId: string, since: D
   }))
 }
 
+/** The highest value of stat `key` in the user's finished games of `mode`, and when that game finished; null when none has it. */
+export async function getBestStat(
+  db: Kysely<Database>,
+  userId: string,
+  mode: string,
+  key: string,
+): Promise<{ value: number; finishedAt: Date } | null> {
+  const value = sql<number>`(me.stats->>${key})::float8`
+  const row = await finishedGames(db)
+    .innerJoin('game_players as me', 'me.session_id', 'gs.id')
+    .select(value.as('value'))
+    .where('me.user_id', '=', userId)
+    .where('me.placement', 'is not', null)
+    .where('gs.game_id', '=', mode)
+    .where(sql<boolean>`me.stats ? ${key}`)
+    .orderBy(value, 'desc')
+    .orderBy('gs.finished_at', 'asc')
+    .limit(1)
+    .executeTakeFirst()
+  return row ? { value: row.value, finishedAt: row.finished_at } : null
+}
+
 /** A finished game the user may see: they hold a seat, or it is public. */
 export async function getViewableGame(db: Kysely<Database>, id: string, userId: string): Promise<HistoryGame | undefined> {
   const row = await finishedGames(db)
