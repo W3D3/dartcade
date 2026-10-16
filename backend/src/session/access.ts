@@ -28,7 +28,7 @@ export async function canWatchSession(userId: string, session: Session, isLobbyM
 }
 
 // Actions on the turn in progress: only whoever controls the seat that's up
-const SEAT_ACTIONS = new Set(['add_dart', 'undo_dart', 'takeout', 'correct_dart', 'bulloff_skip'])
+const SEAT_ACTIONS = new Set(['add_dart', 'undo_dart', 'takeout', 'correct_dart', 'bulloff_skip', 'p121_give_up'])
 
 /** The action as it may be applied (forfeit gets its seats), or null when the user may not send it. */
 export function authorizeAction(session: Session, userId: string, action: UserAction): UserAction | null {

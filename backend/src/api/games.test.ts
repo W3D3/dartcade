@@ -83,7 +83,7 @@ describe('GET /api/gamemodes', () => {
     vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1' })
     vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
     const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
-    expect(res.json().modes.map((m: { id: string }) => m.id)).toEqual(['atc', 'x01', 'minigolf'])
+    expect(res.json().modes.map((m: { id: string }) => m.id)).toEqual(['atc', 'x01', 'p121', 'minigolf'])
   })
 
   it("lists Minigolf's published courses plus Mixed", async () => {

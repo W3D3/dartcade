@@ -464,6 +464,234 @@
         }
       }
     },
+    "P121Try": {
+      "title": "P121Try",
+      "description": "A finished 121 Checkout try.",
+      "type": "object",
+      "required": ["target", "made", "darts", "finish"],
+      "additionalProperties": false,
+      "properties": {
+        "target": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "made": {
+          "type": "boolean"
+        },
+        "darts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "finish": {
+          "type": ["string", "null"],
+          "description": "The finishing dart's label (e.g. D14); null when the try was missed."
+        }
+      }
+    },
+    "P121Result": {
+      "title": "P121Result",
+      "description": "The try that just ended; drives the made/missed banner.",
+      "type": "object",
+      "required": ["seat", "target", "made", "darts", "next"],
+      "additionalProperties": false,
+      "properties": {
+        "seat": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "target": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "made": {
+          "type": "boolean"
+        },
+        "darts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "P121Game": {
+      "title": "P121Game",
+      "description": "121 Checkout view plus the engine's per-session fields and the bull off.",
+      "type": "object",
+      "required": [
+        "cfg",
+        "phase",
+        "currentPlayer",
+        "nextPlayer",
+        "winner",
+        "visitLocked",
+        "bust",
+        "visitStartLeft",
+        "seats",
+        "lastResult",
+        "bullOff",
+        "currentVisitDarts",
+        "totalDarts",
+        "totalVisits"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cfg": {
+          "type": "object",
+          "required": ["startTarget", "tries", "dartsPerTry", "outMode", "missRule", "lock"],
+          "additionalProperties": false,
+          "properties": {
+            "startTarget": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "tries": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "dartsPerTry": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "outMode": {
+              "type": "string",
+              "enum": ["straight", "double", "master"]
+            },
+            "missRule": {
+              "type": "string",
+              "enum": ["reset", "down", "stay"]
+            },
+            "lock": {
+              "type": "boolean"
+            }
+          }
+        },
+        "phase": {
+          "type": "string",
+          "enum": ["bulloff", "game", "finished"]
+        },
+        "currentPlayer": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nextPlayer": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+        },
+        "winner": {
+          "type": ["integer", "null"]
+        },
+        "visitLocked": {
+          "type": "boolean"
+        },
+        "bust": {
+          "type": "boolean"
+        },
+        "visitStartLeft": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "seats": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["target", "left", "darts", "visits", "floor", "tries", "made", "highestMade", "avgDarts", "done"],
+            "additionalProperties": false,
+            "properties": {
+              "target": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "left": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "darts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "visits": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "floor": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "tries": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/P121Try"
+                }
+              },
+              "made": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Count of made tries."
+              },
+              "highestMade": {
+                "type": ["integer", "null"],
+                "description": "The highest target checked out; null before the first."
+              },
+              "avgDarts": {
+                "type": ["number", "null"],
+                "description": "Mean darts over made tries; null before the first."
+              },
+              "done": {
+                "type": "boolean",
+                "description": "Every try is used up."
+              }
+            }
+          }
+        },
+        "lastResult": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/P121Result"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bullOff": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BullOffView"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currentVisitDarts": {
+          "type": "array",
+          "items": {
+            "$ref": "common-v1.json#/$defs/Dart"
+          }
+        },
+        "totalDarts": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "totalVisits": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
     "SeatInfo": {
       "title": "SeatInfo",
       "description": "Who acts for a seat and where its darts come from.",
@@ -762,6 +990,100 @@
         },
         "game": {
           "$ref": "#/$defs/AtcGame"
+        },
+        "bmStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BmStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Status of the board of the seat that's up."
+        },
+        "status": {
+          "$ref": "#/$defs/SessionStatus"
+        },
+        "finishPending": {
+          "type": "boolean",
+          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+        },
+        "canUndoVisit": {
+          "type": "boolean",
+          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
+        },
+        "ownerUserId": {
+          "type": "string",
+          "description": "The host: starts the bull off, aborts the game."
+        },
+        "seats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatInfo"
+          },
+          "description": "Same order as players."
+        },
+        "mySeats": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Seats the viewer controls."
+        }
+      }
+    },
+    "P121Snapshot": {
+      "title": "P121Snapshot",
+      "type": "object",
+      "required": [
+        "type",
+        "sessionId",
+        "gameId",
+        "boardId",
+        "lobbyId",
+        "lobbyName",
+        "players",
+        "game",
+        "bmStatus",
+        "status",
+        "finishPending",
+        "canUndoVisit",
+        "ownerUserId",
+        "seats",
+        "mySeats"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "snapshot"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "gameId": {
+          "const": "p121"
+        },
+        "boardId": {
+          "type": ["string", "null"]
+        },
+        "lobbyId": {
+          "type": ["string", "null"],
+          "description": "The lobby the game was started from; null for a local game."
+        },
+        "lobbyName": {
+          "type": ["string", "null"],
+          "description": "The lobby's name, for the match header; null for a local game."
+        },
+        "players": {
+          "type": "array",
+          "items": {
+            "$ref": "common-v1.json#/$defs/Player"
+          }
+        },
+        "game": {
+          "$ref": "#/$defs/P121Game"
         },
         "bmStatus": {
           "anyOf": [
@@ -1541,6 +1863,9 @@
           "$ref": "#/$defs/AtcSnapshot"
         },
         {
+          "$ref": "#/$defs/P121Snapshot"
+        },
+        {
           "$ref": "#/$defs/MinigolfSnapshot"
         }
       ]
@@ -1673,6 +1998,18 @@
             }
           },
           "description": "Minigolf, between holes: the host starts the next hole."
+        },
+        {
+          "title": "P121GiveUpAction",
+          "type": "object",
+          "required": ["type"],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "p121_give_up"
+            }
+          },
+          "description": "121: the current player gives up the open try (counts as missed)."
         }
       ]
     },
