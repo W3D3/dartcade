@@ -23,6 +23,11 @@ describe('mergeClips', () => {
     const base = { '180': ['/b/180'], busted: ['/b/bust'] }
     expect(mergeClips(pack, base)).toEqual({ '180': ['/p/180'], gameshot: ['/p/gs'], busted: ['/b/bust'] })
   })
+
+  it('doesn\'t fill "and" from the built-in voice, so a call doesn\'t mix voices', () => {
+    expect(mergeClips({ gameshot: ['/p/gs'] }, { and: ['/b/and'] })).toEqual({ gameshot: ['/p/gs'] })
+    expect(mergeClips({ and: ['/p/and'] }, { and: ['/b/and'] })).toEqual({ and: ['/p/and'] })
+  })
 })
 
 describe('storageUse', () => {

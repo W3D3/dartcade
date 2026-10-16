@@ -4,8 +4,8 @@ import { ZipError } from './zip.js'
 import { makeZip, deflatedZeros } from './zipFixture.js'
 
 describe('caller keys', () => {
-  it('keeps scores, busts, shots, legs, sets, game on and bull off', () => {
-    for (const k of ['0', '9', '60', '100', '180', 'busted', 'gameshot', 'matchshot', 'gameon', 'leg_2', 'set_10', 'bulling_start'])
+  it('keeps scores, busts, shots, legs, sets, game on, bull off and "and"', () => {
+    for (const k of ['0', '9', '60', '100', '180', 'busted', 'gameshot', 'matchshot', 'gameon', 'leg_2', 'set_10', 'bulling_start', 'and'])
       expect(isCallerKey(k)).toBe(true)
     for (const k of ['181', '07', 'murmel', 'you_require', 'm20', 'bot level 3', '']) expect(isCallerKey(k)).toBe(false)
   })
