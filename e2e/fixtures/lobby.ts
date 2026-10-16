@@ -19,7 +19,7 @@ export async function endAnyRunningGame(page: Page): Promise<void> {
  * guests are added there, and Start opens the game. A fresh test user owns no boards, so
  * everyone plays with manual entry and a solo start never asks "Start anyway?".
  */
-export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01' | 'Minigolf'; setup?: (page: Page) => Promise<void>; guests?: string[] }) {
+export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01' | 'Minigolf' | '121'; setup?: (page: Page) => Promise<void>; guests?: string[] }) {
   await page.goto('/#/')
   const main = page.locator('main')
   // The game's card (named "X01: Count down…"): the page may open on a game already, with phone
