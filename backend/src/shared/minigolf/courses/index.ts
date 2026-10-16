@@ -2,7 +2,7 @@ import type { Course, Hole } from '../types.js'
 import { greenhornCourse } from './greenhorn.js'
 import { testCourse } from './test.js'
 
-export const COURSES: readonly Course[] = [testCourse, greenhornCourse]
+export const COURSES: readonly Course[] = [greenhornCourse, testCourse]
 
 export function getCourse(id: string): Course | undefined {
   return COURSES.find(c => c.id === id)
