@@ -53,4 +53,11 @@ export default tseslint.config(
       '@typescript-eslint/no-non-null-assertion': 'off',
     },
   },
+  {
+    // The bookmarklet source is plain JS, outside tsconfig's program (its types come from the
+    // sibling autodartsVoices.d.ts instead); without this, the project service can't find it to
+    // type-check it at all. Last, so it wins over the global rule overrides above for this one file.
+    files: ['src/lib/caller/autodartsVoices.js'],
+    ...tseslint.configs.disableTypeChecked,
+  },
 )
