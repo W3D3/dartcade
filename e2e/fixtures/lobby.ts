@@ -22,8 +22,10 @@ export async function endAnyRunningGame(page: Page): Promise<void> {
 export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01' | 'Minigolf'; setup?: (page: Page) => Promise<void>; guests?: string[] }) {
   await page.goto('/#/')
   const main = page.locator('main')
-  // The Choose players button shows once a game is picked
-  await main.locator(`button:has-text("${opts.mode}")`).first().click()
+  // The game's card (named "X01: Count down…"): the page may open on a game already, with phone
+  // chips for the games hidden in it, so match the card and nothing that only reads the same.
+  // The Choose players button shows once a game is picked.
+  await main.getByRole('button', { name: new RegExp(`^${opts.mode}:`) }).click()
   const create = main.getByRole('button', { name: /Choose players/ })
   await expect(create).toBeEnabled()
   if (opts.setup) await opts.setup(page)
