@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { audibleRange } from '../caller/player.js'
 
 // A stand-in AudioContext: decoding returns the "audio" the response carried, and every
 // started source is recorded with it
@@ -12,7 +13,14 @@ class FakeContext {
   }
   createBufferSource() {
     const src = {
-      buffer: null as { tag: string; duration: number } | null,
+      buffer: null as {
+        tag: string
+        duration: number
+        numberOfChannels: number
+        length: number
+        sampleRate: number
+        getChannelData: (i: number) => Float32Array
+      } | null,
       connect: vi.fn(),
       disconnect: vi.fn(),
       stop: vi.fn(),
@@ -22,8 +30,23 @@ class FakeContext {
     }
     return src
   }
+  createBuffer(numberOfChannels: number, length: number, sampleRate: number) {
+    return {
+      numberOfChannels,
+      length,
+      sampleRate,
+      getChannelData: () => new Float32Array(length).fill(0.5),
+    }
+  }
   decodeAudioData(data: { tag: string }) {
-    return Promise.resolve({ tag: data.tag, duration: 1 })
+    return Promise.resolve({
+      tag: data.tag,
+      duration: 1,
+      numberOfChannels: 1,
+      length: 22050,
+      sampleRate: 22050,
+      getChannelData: () => new Float32Array(22050).fill(0.5),
+    })
   }
   resume() {
     return Promise.resolve()
@@ -32,6 +55,20 @@ class FakeContext {
 
 const ok = (tag: string) => ({ ok: true, status: 200, arrayBuffer: () => Promise.resolve({ tag }) })
 const flush = () => new Promise(r => setTimeout(r, 0))
+
+describe('audibleRange', () => {
+  const clip = (...runs: [number, number][]) => Float32Array.from(runs.flatMap(([v, n]) => Array<number>(n).fill(v)))
+
+  it('trims quiet edges only, keeping a pause inside and a margin either side', () => {
+    const mono = clip([0, 1000], [0.5, 100], [0, 300], [0.5, 100], [0.001, 500])
+    expect(audibleRange([mono], 0.01, 20)).toEqual([980, 1520])
+  })
+
+  it('counts a sample loud on any channel, and keeps a clip that is all quiet', () => {
+    expect(audibleRange([clip([0, 50]), clip([0, 10], [0.2, 5], [0, 35])], 0.01, 0)).toEqual([10, 15])
+    expect(audibleRange([clip([0, 50])], 0.01, 5)).toEqual([0, 50])
+  })
+})
 
 describe('createCaller', () => {
   beforeEach(() => {
