@@ -1,6 +1,5 @@
 <script lang="ts">
-  import BrandMark from './BrandMark.svelte'
-  import PreviewBadge from './PreviewBadge.svelte'
+  import Wordmark from './Wordmark.svelte'
   import { Clock, Mail, Radio, Settings, Swords, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import ConnectBoardCard from './ConnectBoardCard.svelte'
@@ -24,11 +23,7 @@
   class="hidden xl:flex w-[248px] flex-shrink-0 flex-col gap-9 border-r border-line bg-surface-1 box-border h-screen p-[28px_16px]"
 >
   <!-- Logo -->
-  <div class="flex items-center gap-[10px] px-2">
-    <BrandMark size={28} />
-    <span class="font-display font-bold text-[24px] tracking-[0.06em]">DARTCADE</span>
-    <PreviewBadge />
-  </div>
+  <div class="px-2"><Wordmark /></div>
 
   <!-- Nav links -->
   <div class="flex flex-col gap-1">
