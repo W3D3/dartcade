@@ -10,6 +10,8 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { createCaller } from '$lib/caller/player.js'
   import { audioContext } from '$lib/sounds.js'
+  import { flag } from '$lib/flags'
+  import { bookmarkletHref, consoleSnippet } from '$lib/caller/bookmarklet'
   import {
     deleteVoicePack,
     formatMB,
@@ -32,6 +34,9 @@
     /** The game settings' volume (0–1), for the samples. */
     volume: number
   } = $props()
+
+  const autodartsOn = flag('caller.autodartsImport')
+  let copyState = $state<'idle' | 'copied' | 'failed'>('idle')
 
   const lib = $derived($voiceLibrary)
   const storage = $derived(storageUse(lib.usage))
@@ -313,10 +318,60 @@
         <ErrorText>{result.text}</ErrorText>
       {/if}
 
+      {#if $autodartsOn}
+        <div class="flex flex-col gap-2">
+          <span class="text-[14px] font-semibold">Import Autodarts voices</span>
+          <ol class="m-0 pl-5 flex flex-col gap-1 text-[13px] leading-[1.5] text-text-muted">
+            <li>
+              Drag
+              <!-- A bookmarklet: dragged to the bookmarks bar, not clicked here -->
+              <a
+                href={bookmarkletHref}
+                onclick={e => {
+                  e.preventDefault()
+                }}
+                title="Drag this to your bookmarks bar"
+                aria-describedby="v-bookmarklet-hint"
+                class="font-semibold text-accent cursor-grab">Get Autodarts voices</a
+              >
+              to your bookmarks bar.
+              <span id="v-bookmarklet-hint" class="sr-only">Drag this link to your bookmarks bar; clicking it here does nothing.</span>
+            </li>
+            <li>Open play.autodarts.com, signed in, and click the bookmark. If a voice is missing, play it once in Autodarts first.</li>
+            <li>Drop each downloaded .zip here, one at a time.</li>
+          </ol>
+          <details class="text-[13px] text-text-muted">
+            <summary class="cursor-pointer min-h-10 flex items-center">Bookmarks blocked? Paste the code into the console instead</summary>
+            <div class="flex flex-col gap-2">
+              <pre
+                class="m-0 max-h-40 overflow-auto p-3 rounded-[9px] bg-bg border border-line-chip font-mono text-[11px] whitespace-pre-wrap break-all">{consoleSnippet}</pre>
+              <Button
+                type="button"
+                variant="key"
+                class="self-start h-10 px-4 rounded-[9px]"
+                onclick={async () => {
+                  try {
+                    await navigator.clipboard.writeText(consoleSnippet)
+                    copyState = 'copied'
+                  } catch {
+                    copyState = 'failed'
+                  }
+                }}
+                >{copyState === 'copied' ? 'Copied' : copyState === 'failed' ? 'Copy failed — select the code above' : 'Copy code'}</Button
+              >
+            </div>
+          </details>
+          <span class="text-[12px] leading-[1.45] text-text-dim"
+            >Autodarts' voices stay yours: they're imported to your account only and never shared.</span
+          >
+        </div>
+      {/if}
+
       <p class="m-0 text-[12px] leading-normal text-text-dim">
         A voice pack is a .zip of short .mp3, .ogg or .wav clips named by what they call:
         <span class="font-mono text-ink-2">180.mp3</span>, <span class="font-mono text-ink-2">gameshot.mp3</span>,
-        <span class="font-mono text-ink-2">busted.mp3</span>. Missing clips fall back to the built-in voice.
+        <span class="font-mono text-ink-2">busted.mp3</span>, <span class="font-mono text-ink-2">require_121.mp3</span>. Missing clips fall
+        back to the built-in voice.
       </p>
     {/if}
   {/if}
