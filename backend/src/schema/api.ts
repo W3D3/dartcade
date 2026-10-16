@@ -86,6 +86,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/games/best": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The signed-in user's all-time best value of one stat in one game mode */
+        get: operations["getBestStat"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/games/{id}": {
         parameters: {
             query?: never;
@@ -1499,6 +1516,14 @@ export interface components {
                 [key: string]: components["schemas"]["ModeStats"];
             };
         };
+        BestStat: {
+            /** @description null when the user has no finished game of the mode with that stat */
+            best: {
+                value: number;
+                /** Format: date-time */
+                finishedAt: string;
+            } | null;
+        };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
             detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"];
@@ -2414,6 +2439,32 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameStats"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getBestStat: {
+        parameters: {
+            query: {
+                mode: string;
+                stat: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The best value and when it was reached; null without one */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BestStat"];
                 };
             };
             400: components["responses"]["BadRequest"];

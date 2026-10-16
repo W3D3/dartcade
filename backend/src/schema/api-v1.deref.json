@@ -942,6 +942,189 @@
         }
       }
     },
+    "/api/games/best": {
+      "get": {
+        "operationId": "getBestStat",
+        "summary": "The signed-in user's all-time best value of one stat in one game mode",
+        "tags": [
+          "games"
+        ],
+        "parameters": [
+          {
+            "name": "mode",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[a-z0-9_]{1,32}$"
+            }
+          },
+          {
+            "name": "stat",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_]{1,32}$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The best value and when it was reached; null without one",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "best"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "best": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "null when the user has no finished game of the mode with that stat",
+                      "required": [
+                        "value",
+                        "finishedAt"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "value": {
+                          "type": "number"
+                        },
+                        "finishedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/games/{id}": {
       "parameters": [
         {
@@ -24835,6 +25018,34 @@
                     }
                   }
                 }
+              }
+            }
+          }
+        }
+      },
+      "BestStat": {
+        "type": "object",
+        "required": [
+          "best"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "best": {
+            "type": "object",
+            "nullable": true,
+            "description": "null when the user has no finished game of the mode with that stat",
+            "required": [
+              "value",
+              "finishedAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "value": {
+                "type": "number"
+              },
+              "finishedAt": {
+                "type": "string",
+                "format": "date-time"
               }
             }
           }

@@ -15,6 +15,7 @@ vi.mock('../db/history.js', () => ({
   listFinishedGames: vi.fn(),
   getStatRows: vi.fn().mockResolvedValue([]),
   getViewableGame: vi.fn(),
+  getBestStat: vi.fn(),
 }))
 vi.mock('../db/queries.js', () => ({ getSessionEvents: vi.fn().mockResolvedValue([]) }))
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
@@ -22,6 +23,7 @@ vi.mock('../db/users.js', () => ({ getRoleAndEmail: vi.fn() }))
 
 import * as history from '../db/history.js'
 import * as queries from '../db/queries.js'
+import * as middleware from '../auth/middleware.js'
 import { getAuthUser } from '../auth/session.js'
 import { getRoleAndEmail } from '../db/users.js'
 
@@ -168,6 +170,35 @@ describe('GET /api/games/stats', () => {
     expect(res.json()).toEqual({ days: 30, matches: 0, wins: 0, contested: 0, modes: {} })
     const since = vi.mocked(history.getStatRows).mock.calls[0][2]
     expect(Date.now() - since.getTime()).toBeGreaterThanOrEqual(60 * 86_400_000 - 1000)
+  })
+})
+
+describe('GET /api/games/best', () => {
+  it('401 when signed out', async () => {
+    vi.mocked(middleware.requireAuth).mockImplementationOnce((_req: any, reply: any) => {
+      reply.code(401).send({ error: 'unauthorized' })
+    })
+    const res = await makeApp().inject({ method: 'GET', url: '/api/games/best?mode=p121&stat=highestMade' })
+    expect(res.statusCode).toBe(401)
+  })
+
+  it('400 for a bad mode', async () => {
+    const res = await makeApp().inject({ method: 'GET', url: '/api/games/best?mode=Not-Ok&stat=highestMade' })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('returns the seeded best', async () => {
+    vi.mocked(history.getBestStat).mockResolvedValue({ value: 131, finishedAt: new Date('2026-10-02T00:00:00Z') })
+    const res = await makeApp().inject({ method: 'GET', url: '/api/games/best?mode=p121&stat=highestMade' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toEqual({ best: { value: 131, finishedAt: '2026-10-02T00:00:00.000Z' } })
+    expect(history.getBestStat).toHaveBeenCalledWith(expect.anything(), 'user-1', 'p121', 'highestMade')
+  })
+
+  it('null when there is none', async () => {
+    vi.mocked(history.getBestStat).mockResolvedValue(null)
+    const res = await makeApp().inject({ method: 'GET', url: '/api/games/best?mode=p121&stat=highestMade' })
+    expect(res.json()).toEqual({ best: null })
   })
 })
 

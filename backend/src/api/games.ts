@@ -5,7 +5,7 @@ import type { components } from '../schema/api.js'
 import { gameList } from '../games/index.js'
 import type { AnyGameModule } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
-import { listFinishedGames, getStatRows, getViewableGame, type HistoryGame } from '../db/history.js'
+import { listFinishedGames, getStatRows, getViewableGame, getBestStat, type HistoryGame } from '../db/history.js'
 import { getSessionEvents } from '../db/queries.js'
 import { decodeCursor, encodeCursor } from '../history/cursor.js'
 import { aggregateStats } from '../history/stats.js'
@@ -86,6 +86,11 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     // Twice the period: the earlier half is the comparison (previousAvg)
     const rows = await getStatRows(db, req.userId, new Date(now.getTime() - 2 * days * DAY_MS))
     return aggregateStats(rows, days, now)
+  })
+
+  app.get<Route<'getBestStat'>>('/api/games/best', { preValidation: requireAuth, schema: fromSpec('getBestStat') }, async req => {
+    const best = await getBestStat(db, req.userId, req.query.mode, req.query.stat)
+    return { best: best && { value: best.value, finishedAt: best.finishedAt.toISOString() } }
   })
 
   app.get<Route<'getGame'>>('/api/games/:id', { preValidation: requireAuth, schema: fromSpec('getGame') }, async (req, reply) => {
