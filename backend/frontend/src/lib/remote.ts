@@ -54,11 +54,12 @@ export function myBoard(snap: Snapshot | null): MyBoard | null {
 
 /** Of the viewer's own boards (everything GET /api/boards returned them), the ones actually
  *  playing a seat in this game right now — any seat, so a guest borrowing one of your boards
- *  counts too. For the status/controls panel in the header. */
-export function myBoardsInUse<T extends { id: string }>(snap: Snapshot | null, ownBoards: T[]): T[] {
+ *  counts too. For the status/controls panel in the header, with the snapshot's live online state
+ *  (GET /api/boards is fetched once). */
+export function myBoardsInUse<T extends { id: string; online: boolean }>(snap: Snapshot | null, ownBoards: T[]): T[] {
   if (!snap) return []
-  const inUse = new Set(snap.seats.map(s => s.boardId).filter((id): id is string => id !== null))
-  return ownBoards.filter(b => inUse.has(b.id))
+  const online = new Map(snap.seats.filter(s => s.boardId !== null).map(s => [s.boardId, s.boardOnline]))
+  return ownBoards.filter(b => online.has(b.id)).map(b => ({ ...b, online: online.get(b.id) === true }))
 }
 
 /** What the centre column shows. */
