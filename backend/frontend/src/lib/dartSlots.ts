@@ -53,6 +53,8 @@ export function x01Slots(o: {
   suggest: boolean
   /** The player's checkout preferences (favourite double). */
   checkout?: CheckoutPrefs
+  /** Replaces the last suggestion's 'Game shot'/'to win the leg' foot, e.g. 121's 'checks out'. */
+  finishFoot?: string
 }): Slot[] {
   const done = o.darts.slice(0, 3).map((d, i) => {
     const score = d.score ?? 0
@@ -76,7 +78,7 @@ export function x01Slots(o: {
   let rest = o.remaining
   const suggestions = (hint ?? []).map((label, k, all) => {
     rest -= parseLabel(label).score
-    const foot = k < all.length - 1 ? `leaves ${rest}` : all.length === 1 ? 'Game shot' : 'to win the leg'
+    const foot = k < all.length - 1 ? `leaves ${rest}` : (o.finishFoot ?? (all.length === 1 ? 'Game shot' : 'to win the leg'))
     return { label, foot }
   })
   return [...done, ...openSlots(done.length, suggestions)]

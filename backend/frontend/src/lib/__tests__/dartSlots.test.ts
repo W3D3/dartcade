@@ -56,6 +56,11 @@ describe('x01Slots', () => {
   it('never shows more than three slots', () => {
     expect(x01Slots({ ...base, darts: [d('S1', 1), d('S1', 1), d('S1', 1), d('S1', 1)], remaining: 97 })).toHaveLength(3)
   })
+
+  it('a finishFoot replaces the last suggestion foot', () => {
+    const s = x01Slots({ ...base, darts: [], remaining: 24, finishFoot: 'checks out' })
+    expect(s[0]).toMatchObject({ kind: 'suggested-next', label: 'D12', foot: 'checks out' })
+  })
 })
 
 describe('atcSlots', () => {
