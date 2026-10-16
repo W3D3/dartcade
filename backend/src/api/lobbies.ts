@@ -24,10 +24,15 @@ export function lobbiesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
     return lobby ? reply.send(lobby) : reply.code(404).send({ error: 'not in a lobby' })
   })
 
-  app.get<Route<'getLobbyByCode'>>('/api/lobby-codes/:code', { ...auth, schema: fromSpec('getLobbyByCode') }, async (req, reply) => {
-    const preview = await lobbies.preview(req.params.code)
-    return preview ? reply.send(preview) : reply.code(404).send({ error: 'no open lobby with this code' })
-  })
+  // Signed out too, so an invite link shows its lobby first; tighter than the global limit against guessing codes
+  app.get<Route<'getLobbyByCode'>>(
+    '/api/lobby-codes/:code',
+    { schema: fromSpec('getLobbyByCode'), config: { rateLimit: { max: 30, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const preview = await lobbies.preview(req.params.code)
+      return preview ? reply.send(preview) : reply.code(404).send({ error: 'no open lobby with this code' })
+    },
+  )
 
   app.patch<Route<'updateLobby'>>('/api/lobbies/:id', { ...auth, schema: fromSpec('updateLobby') }, async (req, reply) => {
     await lobbies.update(req.userId, req.params.id, req.body)

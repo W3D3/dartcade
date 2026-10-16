@@ -235,6 +235,30 @@ export interface PendingInvite {
   inviterUserId: string | null
   inviterName: string | null
   createdAt: string
+  /**
+   * Null only if the host's account is gone; any member can invite, so it may differ from the inviter.
+   */
+  hostName: string | null
+  peopleCount: number
+  /**
+   * The first four people in lobby order.
+   */
+  faces: Face[]
+  nextGame: NextGame | null
+  /**
+   * The boards people in the lobby play on.
+   */
+  boardNames: string[]
+}
+/**
+ * Someone in a lobby, for an avatar stack. guest: no account and not a bot.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "Face".
+ */
+export interface Face {
+  name: string
+  guest: boolean
 }
 /**
  * The viewer's lobby for the lobby indicator.
@@ -280,12 +304,9 @@ export interface LobbySummary {
    */
   hasBot: boolean
   /**
-   * The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.
+   * The first four people in lobby order, for the indicator's avatar stack.
    */
-  faces: {
-    name: string
-    guest: boolean
-  }[]
+  faces: Face[]
 }
 /**
  * The viewer's running game, wherever it started (a lobby or not); LobbySummary carries that game's lobby-specific state.

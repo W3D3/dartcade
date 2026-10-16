@@ -1708,7 +1708,12 @@
         "lobbyName",
         "inviterUserId",
         "inviterName",
-        "createdAt"
+        "createdAt",
+        "hostName",
+        "peopleCount",
+        "faces",
+        "nextGame",
+        "boardNames"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1736,6 +1741,89 @@
         "createdAt": {
           "type": "string",
           "format": "date-time"
+        },
+        "hostName": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Null only if the host's account is gone; any member can invite, so it may differ from the inviter."
+        },
+        "peopleCount": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "faces": {
+          "type": "array",
+          "description": "The first four people in lobby order.",
+          "items": {
+            "title": "Face",
+            "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
+            "type": "object",
+            "required": [
+              "name",
+              "guest"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "guest": {
+                "type": "boolean"
+              }
+            }
+          }
+        },
+        "nextGame": {
+          "anyOf": [
+            {
+              "title": "NextGame",
+              "type": "object",
+              "required": [
+                "gameId",
+                "config"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "gameId": {
+                  "type": "string"
+                },
+                "config": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "boardNames": {
+          "type": "array",
+          "description": "The boards people in the lobby play on.",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Face": {
+      "title": "Face",
+      "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
+      "type": "object",
+      "required": [
+        "name",
+        "guest"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "guest": {
+          "type": "boolean"
         }
       }
     },
@@ -1842,8 +1930,10 @@
         },
         "faces": {
           "type": "array",
-          "description": "The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.",
+          "description": "The first four people in lobby order, for the indicator's avatar stack.",
           "items": {
+            "title": "Face",
+            "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
             "type": "object",
             "required": [
               "name",
@@ -1923,7 +2013,12 @@
               "lobbyName",
               "inviterUserId",
               "inviterName",
-              "createdAt"
+              "createdAt",
+              "hostName",
+              "peopleCount",
+              "faces",
+              "nextGame",
+              "boardNames"
             ],
             "additionalProperties": false,
             "properties": {
@@ -1951,6 +2046,71 @@
               "createdAt": {
                 "type": "string",
                 "format": "date-time"
+              },
+              "hostName": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Null only if the host's account is gone; any member can invite, so it may differ from the inviter."
+              },
+              "peopleCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "faces": {
+                "type": "array",
+                "description": "The first four people in lobby order.",
+                "items": {
+                  "title": "Face",
+                  "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
+                  "type": "object",
+                  "required": [
+                    "name",
+                    "guest"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "guest": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              },
+              "nextGame": {
+                "anyOf": [
+                  {
+                    "title": "NextGame",
+                    "type": "object",
+                    "required": [
+                      "gameId",
+                      "config"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "gameId": {
+                        "type": "string"
+                      },
+                      "config": {
+                        "type": "object",
+                        "additionalProperties": true
+                      }
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "boardNames": {
+                "type": "array",
+                "description": "The boards people in the lobby play on.",
+                "items": {
+                  "type": "string"
+                }
               }
             }
           }
@@ -2060,8 +2220,10 @@
                 },
                 "faces": {
                   "type": "array",
-                  "description": "The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.",
+                  "description": "The first four people in lobby order, for the indicator's avatar stack.",
                   "items": {
+                    "title": "Face",
+                    "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
                     "type": "object",
                     "required": [
                       "name",
@@ -2386,7 +2548,12 @@
                   "lobbyName",
                   "inviterUserId",
                   "inviterName",
-                  "createdAt"
+                  "createdAt",
+                  "hostName",
+                  "peopleCount",
+                  "faces",
+                  "nextGame",
+                  "boardNames"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -2414,6 +2581,71 @@
                   "createdAt": {
                     "type": "string",
                     "format": "date-time"
+                  },
+                  "hostName": {
+                    "type": [
+                      "string",
+                      "null"
+                    ],
+                    "description": "Null only if the host's account is gone; any member can invite, so it may differ from the inviter."
+                  },
+                  "peopleCount": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "faces": {
+                    "type": "array",
+                    "description": "The first four people in lobby order.",
+                    "items": {
+                      "title": "Face",
+                      "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
+                      "type": "object",
+                      "required": [
+                        "name",
+                        "guest"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "guest": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  },
+                  "nextGame": {
+                    "anyOf": [
+                      {
+                        "title": "NextGame",
+                        "type": "object",
+                        "required": [
+                          "gameId",
+                          "config"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "gameId": {
+                            "type": "string"
+                          },
+                          "config": {
+                            "type": "object",
+                            "additionalProperties": true
+                          }
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "boardNames": {
+                    "type": "array",
+                    "description": "The boards people in the lobby play on.",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               }
@@ -2523,8 +2755,10 @@
                     },
                     "faces": {
                       "type": "array",
-                      "description": "The first four people in lobby order, for the indicator's avatar stack. guest: no account and not a bot.",
+                      "description": "The first four people in lobby order, for the indicator's avatar stack.",
                       "items": {
+                        "title": "Face",
+                        "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
                         "type": "object",
                         "required": [
                           "name",

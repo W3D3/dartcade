@@ -8252,9 +8252,11 @@
       "get": {
         "operationId": "getLobbyByCode",
         "summary": "What the Join page shows about an open lobby before joining",
+        "description": "Open without signing in, so an invite link shows its lobby first; the code is what a host shares.",
         "tags": [
           "lobbies"
         ],
+        "security": [],
         "responses": {
           "200": {
             "description": "The lobby's preview",
@@ -8267,6 +8269,8 @@
                     "name",
                     "hostName",
                     "peopleCount",
+                    "faces",
+                    "nextGame",
                     "boardNames"
                   ],
                   "additionalProperties": false,
@@ -8284,6 +8288,44 @@
                     "peopleCount": {
                       "type": "integer",
                       "minimum": 0
+                    },
+                    "faces": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "description": "Someone in a lobby, for an avatar stack. guest means no account and not a bot.",
+                        "required": [
+                          "name",
+                          "guest"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "guest": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "nextGame": {
+                      "type": "object",
+                      "nullable": true,
+                      "required": [
+                        "gameId",
+                        "config"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "gameId": {
+                          "type": "string"
+                        },
+                        "config": {
+                          "type": "object",
+                          "additionalProperties": true
+                        }
+                      }
                     },
                     "boardNames": {
                       "type": "array",
@@ -11164,7 +11206,12 @@
                           "lobbyName",
                           "inviterUserId",
                           "inviterName",
-                          "createdAt"
+                          "createdAt",
+                          "hostName",
+                          "peopleCount",
+                          "faces",
+                          "nextGame",
+                          "boardNames"
                         ],
                         "additionalProperties": false,
                         "description": "Same shape as PendingInvite in schema/lobby-ws-v1.json",
@@ -11189,6 +11236,58 @@
                           "createdAt": {
                             "type": "string",
                             "format": "date-time"
+                          },
+                          "hostName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "peopleCount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "faces": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "description": "Someone in a lobby, for an avatar stack. guest means no account and not a bot.",
+                              "required": [
+                                "name",
+                                "guest"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "name": {
+                                  "type": "string"
+                                },
+                                "guest": {
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          },
+                          "nextGame": {
+                            "type": "object",
+                            "nullable": true,
+                            "required": [
+                              "gameId",
+                              "config"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "gameId": {
+                                "type": "string"
+                              },
+                              "config": {
+                                "type": "object",
+                                "additionalProperties": true
+                              }
+                            }
+                          },
+                          "boardNames": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
                           }
                         }
                       }
@@ -26425,6 +26524,8 @@
           "name",
           "hostName",
           "peopleCount",
+          "faces",
+          "nextGame",
           "boardNames"
         ],
         "additionalProperties": false,
@@ -26443,11 +26544,66 @@
             "type": "integer",
             "minimum": 0
           },
+          "faces": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Someone in a lobby, for an avatar stack. guest means no account and not a bot.",
+              "required": [
+                "name",
+                "guest"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "guest": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "nextGame": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "gameId",
+              "config"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "gameId": {
+                "type": "string"
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
           "boardNames": {
             "type": "array",
             "items": {
               "type": "string"
             }
+          }
+        }
+      },
+      "LobbyFace": {
+        "type": "object",
+        "description": "Someone in a lobby, for an avatar stack. guest means no account and not a bot.",
+        "required": [
+          "name",
+          "guest"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "guest": {
+            "type": "boolean"
           }
         }
       },
@@ -26686,7 +26842,12 @@
           "lobbyName",
           "inviterUserId",
           "inviterName",
-          "createdAt"
+          "createdAt",
+          "hostName",
+          "peopleCount",
+          "faces",
+          "nextGame",
+          "boardNames"
         ],
         "additionalProperties": false,
         "description": "Same shape as PendingInvite in schema/lobby-ws-v1.json",
@@ -26711,6 +26872,58 @@
           "createdAt": {
             "type": "string",
             "format": "date-time"
+          },
+          "hostName": {
+            "type": "string",
+            "nullable": true
+          },
+          "peopleCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "faces": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "Someone in a lobby, for an avatar stack. guest means no account and not a bot.",
+              "required": [
+                "name",
+                "guest"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "guest": {
+                  "type": "boolean"
+                }
+              }
+            }
+          },
+          "nextGame": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "gameId",
+              "config"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "gameId": {
+                "type": "string"
+              },
+              "config": {
+                "type": "object",
+                "additionalProperties": true
+              }
+            }
+          },
+          "boardNames": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
           }
         }
       },
@@ -26731,7 +26944,12 @@
                 "lobbyName",
                 "inviterUserId",
                 "inviterName",
-                "createdAt"
+                "createdAt",
+                "hostName",
+                "peopleCount",
+                "faces",
+                "nextGame",
+                "boardNames"
               ],
               "additionalProperties": false,
               "description": "Same shape as PendingInvite in schema/lobby-ws-v1.json",
@@ -26756,6 +26974,58 @@
                 "createdAt": {
                   "type": "string",
                   "format": "date-time"
+                },
+                "hostName": {
+                  "type": "string",
+                  "nullable": true
+                },
+                "peopleCount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "faces": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "description": "Someone in a lobby, for an avatar stack. guest means no account and not a bot.",
+                    "required": [
+                      "name",
+                      "guest"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "guest": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                },
+                "nextGame": {
+                  "type": "object",
+                  "nullable": true,
+                  "required": [
+                    "gameId",
+                    "config"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "gameId": {
+                      "type": "string"
+                    },
+                    "config": {
+                      "type": "object",
+                      "additionalProperties": true
+                    }
+                  }
+                },
+                "boardNames": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
                 }
               }
             }

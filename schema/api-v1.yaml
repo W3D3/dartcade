@@ -707,7 +707,9 @@ paths:
     get:
       operationId: getLobbyByCode
       summary: What the Join page shows about an open lobby before joining
+      description: Open without signing in, so an invite link shows its lobby first; the code is what a host shares.
       tags: [lobbies]
+      security: []
       responses:
         '200':
           description: The lobby's preview
@@ -2274,14 +2276,31 @@ components:
         code: { type: string, description: '6 characters; shown as K7Q4-MD' }
     LobbyPreview:
       type: object
-      required: [id, name, hostName, peopleCount, boardNames]
+      required: [id, name, hostName, peopleCount, faces, nextGame, boardNames]
       additionalProperties: false
       properties:
         id: { type: string }
         name: { type: string }
         hostName: { type: string, nullable: true }
         peopleCount: { type: integer, minimum: 0 }
+        faces: { type: array, items: { $ref: '#/components/schemas/LobbyFace' } }
+        nextGame:
+          type: object
+          nullable: true
+          required: [gameId, config]
+          additionalProperties: false
+          properties:
+            gameId: { type: string }
+            config: { type: object, additionalProperties: true }
         boardNames: { type: array, items: { type: string } }
+    LobbyFace:
+      type: object
+      description: Someone in a lobby, for an avatar stack. guest means no account and not a bot.
+      required: [name, guest]
+      additionalProperties: false
+      properties:
+        name: { type: string }
+        guest: { type: boolean }
     UpdateLobbyRequest:
       type: object
       minProperties: 1
@@ -2390,7 +2409,7 @@ components:
         offlineBoards: { type: array, items: { type: string }, description: 'board_offline: the boards that are offline' }
     Invite:
       type: object
-      required: [id, lobbyId, lobbyName, inviterUserId, inviterName, createdAt]
+      required: [id, lobbyId, lobbyName, inviterUserId, inviterName, createdAt, hostName, peopleCount, faces, nextGame, boardNames]
       additionalProperties: false
       description: Same shape as PendingInvite in schema/lobby-ws-v1.json
       properties:
@@ -2400,6 +2419,18 @@ components:
         inviterUserId: { type: string, nullable: true }
         inviterName: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
+        hostName: { type: string, nullable: true }
+        peopleCount: { type: integer, minimum: 0 }
+        faces: { type: array, items: { $ref: '#/components/schemas/LobbyFace' } }
+        nextGame:
+          type: object
+          nullable: true
+          required: [gameId, config]
+          additionalProperties: false
+          properties:
+            gameId: { type: string }
+            config: { type: object, additionalProperties: true }
+        boardNames: { type: array, items: { type: string } }
     InviteList:
       type: object
       required: [invites]
