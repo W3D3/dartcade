@@ -134,9 +134,9 @@ describe('myBoard', () => {
 })
 
 describe('myBoardsInUse', () => {
-  const boardA = { id: 'board-a', name: 'Living room' }
-  const boardB = { id: 'board-b', name: "Lena's place" }
-  const boardC = { id: 'board-c', name: 'Spare room' }
+  const boardA = { id: 'board-a', name: 'Living room', online: true }
+  const boardB = { id: 'board-b', name: "Lena's place", online: true }
+  const boardC = { id: 'board-c', name: 'Spare room', online: true }
 
   it('only the owner boards actually playing a seat, in a remote game', () => {
     // The viewer owns board-a and board-c; only board-a (Christoph's seat) is in this game
@@ -150,6 +150,10 @@ describe('myBoardsInUse', () => {
 
   it('a local game: the single board, via its seats', () => {
     expect(myBoardsInUse(local({ boardId: 'board-a' }), [boardA, boardC])).toEqual([boardA])
+  })
+
+  it("takes the snapshot's live online state over the one fetched with the boards", () => {
+    expect(myBoardsInUse(remote({ seats: [{ boardOnline: false }] }), [boardA])).toEqual([{ ...boardA, online: false }])
   })
 
   it('none without a snapshot, or when none of the owner boards are in use', () => {
