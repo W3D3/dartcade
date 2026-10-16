@@ -78,6 +78,7 @@ describe('flags', () => {
       { key: 'gamemode.minigolf.flat', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
       { key: 'gamemode.p121.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'matchmaking.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
+      { key: 'caller.autodartsImport', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'matchmaking.visitSeconds', value: 60, reason: 'STATIC', variant: 'default' },
       { key: 'matchmaking.reserveSeconds', value: 180, reason: 'STATIC', variant: 'default' },
     ])

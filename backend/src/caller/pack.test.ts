@@ -2,6 +2,7 @@ import { describe, it, expect, beforeAll } from 'vitest'
 import { isCallerKey, parseTemplate, packName, readPack, keyFromName } from './pack.js'
 import { ZipError } from './zip.js'
 import { makeZip, deflatedZeros } from './zipFixture.js'
+import { makeMp3 } from './mp3Fixture.js'
 
 describe('caller keys', () => {
   it('keeps scores, busts, shots, legs, sets, game on, bull off and "and"', () => {
@@ -170,5 +171,88 @@ describe('readPack', () => {
       const five = makeZip([...four, bomb('v/4.mp3', mib15, 15)])
       await expect(readPack(five, 'v.zip')).rejects.toThrow(new ZipError('That pack unpacks too big'))
     }, 30_000)
+  })
+})
+
+describe('readPack: Autodarts voices', () => {
+  const mp3 = makeMp3()
+  const json = JSON.stringify({
+    voice: 'dotty-floor-english',
+    mp3: 'dotty-floor-english-Ab12.mp3',
+    mp3Bytes: mp3.length,
+    unit: 'ms',
+    sprite: { '1': [0, 500], game_shot: [500, 700], require_2: [1200, 1190], murmel: [100, 100] },
+  })
+  const zip = makeZip([
+    { name: 'dotty-floor-english-Ab12.mp3', data: mp3, method: 0 },
+    { name: 'dotty-floor-english-Ab12.json', data: json },
+  ])
+
+  it('cuts the MP3 by its table when Autodarts imports are on', async () => {
+    const pack = await readPack(zip, 'dotty-floor-english-Ab12.zip', { autodarts: true })
+    expect(pack).toMatchObject({ name: 'Autodarts Dotty (English)', lang: 'en', total: 4 })
+    expect(Object.keys(pack.clips).sort()).toEqual(['1', 'gameshot', 'require_2'])
+    expect(pack.clips.gameshot[0].mime).toBe('audio/mpeg')
+  })
+
+  it('reads it as an ordinary pack when they are off (and finds no clips)', async () => {
+    await expect(readPack(zip, 'dotty-floor-english-Ab12.zip')).rejects.toThrow('No caller clips in this pack')
+  })
+
+  it('a pack with a .json and several clips is an ordinary pack', async () => {
+    const pack = await readPack(
+      makeZip([
+        { name: '180.mp3', data: 'a' },
+        { name: 'gameshot.mp3', data: 'b' },
+        { name: 'notes.json', data: '{}' },
+      ]),
+      'mine.zip',
+      { autodarts: true },
+    )
+    expect(Object.keys(pack.clips).sort()).toEqual(['180', 'gameshot'])
+  })
+
+  it('a clip with a .json that is no table is an ordinary pack', async () => {
+    for (const notes of ['{"author":"me"}', 'not json']) {
+      const pack = await readPack(
+        makeZip([
+          { name: '180.mp3', data: 'a' },
+          { name: 'info.json', data: notes },
+        ]),
+        'mine.zip',
+        { autodarts: true },
+      )
+      expect(Object.keys(pack.clips)).toEqual(['180'])
+    }
+  })
+
+  it('still refuses a table that does not fit its MP3', async () => {
+    const wrong = makeZip([
+      { name: 'v.mp3', data: mp3, method: 0 },
+      { name: 'v.json', data: JSON.stringify({ ...JSON.parse(json), mp3Bytes: mp3.length + 1 }) },
+    ])
+    await expect(readPack(wrong, 'v.zip', { autodarts: true })).rejects.toThrow('This table belongs to a different MP3')
+  })
+
+  it('refuses a table whose clips together unpack over 64 MiB', async () => {
+    // 400 caller clips, each the whole 12 s (192 kB) MP3: 77 MB
+    const big = makeMp3({ frames: 500 })
+    const keys = [
+      ...Array.from({ length: 181 }, (_, n) => String(n)),
+      ...Array.from({ length: 180 }, (_, n) => `require_${n + 1}`),
+      ...Array.from({ length: 39 }, (_, n) => `leg_${n + 1}`),
+    ]
+    const table = {
+      voice: 'dotty-floor-english',
+      mp3: 'v.mp3',
+      mp3Bytes: big.length,
+      unit: 'ms',
+      sprite: Object.fromEntries(keys.map(k => [k, [0, 12000]])),
+    }
+    const bomb = makeZip([
+      { name: 'v.mp3', data: big, method: 0 },
+      { name: 'v.json', data: JSON.stringify(table) },
+    ])
+    await expect(readPack(bomb, 'v.zip', { autodarts: true })).rejects.toThrow(new ZipError('That pack unpacks too big'))
   })
 })

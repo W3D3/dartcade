@@ -1,8 +1,10 @@
 // darts-caller voice packs: read the zip a player imports and keep only the caller's clips.
 // Two shapes: the download (clips zip + template CSV; the i-th clip in sorted name order is the
 // i-th CSV row) and an installed pack (clips named by key: 180.mp3, gameshot+1.mp3).
+// A third shape, behind a flag: an Autodarts voice (one MP3 and its timing table; see autodarts.ts).
 
 import { listEntries, readEntry, ZipError, type ZipEntry } from './zip.js'
+import { cutAutodarts } from './autodarts.js'
 
 export interface Clip {
   bytes: Uint8Array
@@ -75,9 +77,13 @@ export function keyFromName(fileName: string): string {
   return SPELLED.test(key) ? key.replace(/[_ ]/, '') : key
 }
 
-export async function readPack(bytes: Uint8Array, fileName: string): Promise<ParsedPack> {
+export async function readPack(bytes: Uint8Array, fileName: string, opts: { autodarts?: boolean } = {}): Promise<ParsedPack> {
   let zip = bytes
   let entries = listEntries(zip).filter(e => !isJunk(e.name))
+  if (opts.autodarts) {
+    const voice = await autodartsVoice(zip, entries)
+    if (voice) return voice
+  }
   let csv = await template(zip, entries)
   let sounds = entries.filter(e => SOUND.test(e.name))
   if (sounds.length === 0) {
@@ -121,4 +127,30 @@ export async function readPack(bytes: Uint8Array, fileName: string): Promise<Par
 async function template(zip: Uint8Array, entries: ZipEntry[]): Promise<string | null> {
   const csv = entries.find(e => /\.csv$/i.test(e.name))
   return csv ? new TextDecoder().decode(await readEntry(zip, csv, ENTRY_MAX)) : null
+}
+
+/** An Autodarts voice zip (the bookmarklet's: one .mp3 and its .json table) cut into the caller's
+ *  clips; null for any other zip. */
+async function autodartsVoice(zip: Uint8Array, entries: ZipEntry[]): Promise<ParsedPack | null> {
+  const sounds = entries.filter(e => SOUND.test(e.name))
+  const table = entries.find(e => /\.json$/i.test(e.name))
+  if (!table || sounds.length !== 1 || !/\.mp3$/i.test(sounds[0].name)) return null
+  let json: unknown
+  try {
+    json = JSON.parse(new TextDecoder().decode(await readEntry(zip, table, ENTRY_MAX)))
+  } catch (err) {
+    if (err instanceof ZipError) throw err
+    return null
+  }
+  // Any other JSON (a pack's notes) leaves the zip to the ordinary reader
+  const isTable = typeof json === 'object' && json !== null && 'sprite' in json && typeof json.sprite === 'object' && json.sprite !== null
+  if (!isTable) return null
+  const voice = cutAutodarts(await readEntry(zip, sounds[0], ENTRY_MAX), json)
+  const kept = Object.entries(voice.clips).filter(([key]) => isCallerKey(key))
+  if (kept.length === 0) throw new ZipError('No caller clips in this pack')
+  // Clips may overlap in the MP3, so together they can be far bigger than it
+  if (kept.reduce((n, [, bytes]) => n + bytes.length, 0) > CLIPS_MAX) throw new ZipError('That pack unpacks too big')
+  const clips: Record<string, Clip[]> = {}
+  for (const [key, bytes] of kept) clips[key] = [{ bytes: bytes.slice(), mime: MIME.mp3 }]
+  return { name: voice.name, lang: voice.lang, total: voice.total, clips }
 }
