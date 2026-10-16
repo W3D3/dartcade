@@ -1730,6 +1730,72 @@ components:
           type: array
           description: 'Strokes per hole (in hole order), then per seat; null for a hole not finished'
           items: { type: array, items: { type: integer, minimum: 1, nullable: true } }
+    P121Detail:
+      type: object
+      required: [mode, seats]
+      additionalProperties: false
+      properties:
+        mode: { type: string, enum: [p121] }
+        seats:
+          type: array
+          description: One per seat, in seat order
+          items:
+            type: object
+            required: [tries, doubles, dartsPerCheckout, bestRun, highestReached, fastest]
+            additionalProperties: false
+            properties:
+              tries:
+                type: array
+                items:
+                  type: object
+                  required: [target, made, darts, finish]
+                  additionalProperties: false
+                  properties:
+                    target: { type: integer }
+                    made: { type: boolean }
+                    darts: { type: integer, minimum: 0 }
+                    finish: { type: string, nullable: true }
+              doubles:
+                type: array
+                description: Finishing darts with attempts, most attempted first
+                items:
+                  type: object
+                  required: [label, hits, attempts]
+                  additionalProperties: false
+                  properties:
+                    label: { type: string }
+                    hits: { type: integer, minimum: 0 }
+                    attempts: { type: integer, minimum: 0 }
+              dartsPerCheckout:
+                type: array
+                description: Made tries by darts used, ascending
+                items:
+                  type: object
+                  required: [darts, count]
+                  additionalProperties: false
+                  properties:
+                    darts: { type: integer, minimum: 1 }
+                    count: { type: integer, minimum: 1 }
+              bestRun:
+                type: object
+                nullable: true
+                description: 'The longest run of consecutive made tries; null without one'
+                required: [length, from, to]
+                additionalProperties: false
+                properties:
+                  length: { type: integer, minimum: 1 }
+                  from: { type: integer }
+                  to: { type: integer }
+              highestReached: { type: integer }
+              fastest:
+                type: object
+                nullable: true
+                description: 'The made try with the fewest darts; null without a made try'
+                required: [darts, target]
+                additionalProperties: false
+                properties:
+                  darts: { type: integer }
+                  target: { type: integer }
     AtcDetail:
       type: object
       required: [mode, visits, progress, sequence]
@@ -1951,12 +2017,14 @@ components:
             - $ref: '#/components/schemas/X01Detail'
             - $ref: '#/components/schemas/AtcDetail'
             - $ref: '#/components/schemas/MinigolfDetail'
+            - $ref: '#/components/schemas/P121Detail'
           discriminator:
             propertyName: mode
             mapping:
               x01: '#/components/schemas/X01Detail'
               atc: '#/components/schemas/AtcDetail'
               minigolf: '#/components/schemas/MinigolfDetail'
+              p121: '#/components/schemas/P121Detail'
         stats: { $ref: '#/components/schemas/MatchStats' }
 
     MatchStats:

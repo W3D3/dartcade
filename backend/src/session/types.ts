@@ -88,6 +88,7 @@ export type DartMeta = { source: DartSource; corrected: boolean; thrownAt: Date 
 export type X01Detail = components['schemas']['X01Detail']
 export type AtcDetail = components['schemas']['AtcDetail']
 export type MinigolfDetail = components['schemas']['MinigolfDetail']
+export type P121Detail = components['schemas']['P121Detail']
 export type MatchStats = components['schemas']['MatchStats']
 export type StatRow = components['schemas']['StatRow']
 export type VisitPhase = 'game' | 'bulloff'
@@ -194,7 +195,7 @@ export interface GameModule<
 export type AnyGameModule =
   | GameModule<unknown, GameConfig, X01ModuleView, 'x01', X01Detail>
   | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
-  | GameModule<unknown, GameConfig, P121ModuleView, 'p121'>
+  | GameModule<unknown, GameConfig, P121ModuleView, 'p121', P121Detail>
   | GameModule<unknown, GameConfig, MinigolfView, 'minigolf', MinigolfDetail>
 
 /** A game's config as the API and the database carry it (a JSON object). */

@@ -1,12 +1,25 @@
 // 121 Checkout: a solo/multiplayer checkout drill. Each try throws at a target until it's
 // checked out or the try's darts run out; a made try moves the target up, a missed one
 // follows the miss rule. See docs/superpowers/specs/2026-10-16-p121-design.md.
-import type { ConfigFieldMeta, GameModule, Player, BoardEvent, Dart, SeatResult, UserAction } from '../session/types.js'
+import type {
+  ConfigFieldMeta,
+  GameModule,
+  Player,
+  BoardEvent,
+  CommittedVisit,
+  Dart,
+  MatchStats,
+  P121Detail,
+  SeatResult,
+  UserAction,
+} from '../session/types.js'
 import type { P121View } from '../session/views.js'
 import { withBullOff } from '../session/withBullOff.js'
 import { scoreDart } from './outRules.js'
 import type { OutMode } from './outRules.js'
 import { checkoutHint } from '../shared/checkout.js'
+import { rankSeats } from './ranking.js'
+import { row, values } from './matchStats.js'
 
 export type P121Config = {
   startTarget: number
@@ -57,9 +70,6 @@ export type P121State = {
    *  read by endVisit when the visit checks out. */
   finishLabel: string | null
 }
-
-// Placeholder: Task 4 adds the real detail.
-export type P121Detail = Record<string, unknown>
 
 export function nextTarget(t: { target: number; made: boolean; darts: number }, cfg: P121Config, floor: number) {
   const lockedFloor = cfg.lock && t.made && t.darts <= 3 ? Math.max(floor, t.target) : floor
@@ -167,6 +177,57 @@ function rankWinner(s: P121State): number {
   }
   return winner
 }
+
+type Run = { length: number; from: number; to: number }
+
+// The longest run of consecutive made tries; on equal lengths the later run wins (>= keeps it).
+function bestRun(tries: P121Try[]): Run | null {
+  let best: Run | null = null
+  let i = 0
+  while (i < tries.length) {
+    if (!tries[i].made) {
+      i++
+      continue
+    }
+    let j = i
+    while (j < tries.length && tries[j].made) j++
+    const run: Run = { length: j - i, from: tries[i].target, to: tries[j - 1].target }
+    if (!best || run.length >= best.length) best = run
+    i = j
+  }
+  return best
+}
+
+// The made try with the fewest darts; on equal darts, the higher target wins.
+function fastestCheckout(made: P121Try[]): { darts: number; target: number } | null {
+  if (made.length === 0) return null
+  const best = made.reduce((a, b) => (b.darts < a.darts || (b.darts === a.darts && b.target > a.target) ? b : a))
+  return { darts: best.darts, target: best.target }
+}
+
+// Made tries grouped by darts used, ascending.
+function dartsPerCheckout(made: P121Try[]): { darts: number; count: number }[] {
+  const counts = new Map<number, number>()
+  for (const t of made) counts.set(t.darts, (counts.get(t.darts) ?? 0) + 1)
+  return [...counts.entries()].sort(([a], [b]) => a - b).map(([darts, count]) => ({ darts, count }))
+}
+
+// Finishing doubles with hits and attempts, most attempted first, then by label. A label can
+// appear in only one of the two maps (under master or straight out a dart other than the
+// hinted double can finish, so its hit is recorded under its own label).
+function doubles(seat: P121Seat): { label: string; hits: number; attempts: number }[] {
+  const labels = new Set([...Object.keys(seat.attempts), ...Object.keys(seat.hits)])
+  return [...labels]
+    .map(label => ({ label, hits: seat.hits[label] ?? 0, attempts: seat.attempts[label] ?? 0 }))
+    .sort((a, b) => b.attempts - a.attempts || a.label.localeCompare(b.label))
+}
+
+const MATCH_STATS_ROWS = [
+  row('checkouts', 'Checkouts', 'ratio', 'higher', { of: 'tries' }),
+  row('highestMade', 'Highest made', 'integer', 'higher', { compact: true }),
+  row('avgDarts', 'Average darts', 'decimal', 'lower'),
+  row('fastest', 'Fastest checkout', 'integer', 'lower', { compact: true }),
+]
 
 export const configMeta: Record<Exclude<keyof P121Config, 'bullOff'>, ConfigFieldMeta> = {
   startTarget: {
@@ -381,12 +442,59 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
     }
   },
 
-  summarize(): SeatResult[] {
-    return []
+  summarize(s: P121State): SeatResult[] {
+    const placements = rankSeats(s.seats.length, s.winner, (a, b) => compareSeats(s.seats[a], s.seats[b]))
+    return s.seats.map((seat, i) => {
+      const made = seat.tries.filter(t => t.made)
+      return {
+        placement: placements[i],
+        stats: {
+          checkouts: made.length,
+          tries: seat.tries.length,
+          bestRun: bestRun(seat.tries)?.length ?? 0,
+          ...(made.length > 0 && {
+            highestMade: Math.max(...made.map(t => t.target)),
+            avgDarts: made.reduce((sum, t) => sum + t.darts, 0) / made.length,
+          }),
+        },
+      }
+    })
   },
 
-  detail(): P121Detail {
-    return { mode: 'p121' }
+  detail(_visits: CommittedVisit<P121State>[], final: P121State): P121Detail {
+    return {
+      mode: 'p121',
+      seats: final.seats.map(seat => {
+        const made = seat.tries.filter(t => t.made)
+        return {
+          tries: seat.tries,
+          doubles: doubles(seat),
+          dartsPerCheckout: dartsPerCheckout(made),
+          bestRun: bestRun(seat.tries),
+          highestReached: Math.max(seat.target, ...seat.tries.map(t => t.target)),
+          fastest: fastestCheckout(made),
+        }
+      }),
+    }
+  },
+
+  matchStats(_visits: CommittedVisit<P121State>[], final: P121State): MatchStats {
+    return {
+      rows: MATCH_STATS_ROWS,
+      seats: final.seats.map((seat, index) => {
+        const made = seat.tries.filter(t => t.made)
+        return {
+          index,
+          values: values({
+            tries: seat.tries.length,
+            checkouts: made.length,
+            highestMade: made.length > 0 ? Math.max(...made.map(t => t.target)) : undefined,
+            avgDarts: made.length > 0 ? made.reduce((sum, t) => sum + t.darts, 0) / made.length : undefined,
+            fastest: made.length > 0 ? Math.min(...made.map(t => t.darts)) : undefined,
+          }),
+        }
+      }),
+    }
   },
 }
 
