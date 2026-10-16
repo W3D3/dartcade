@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { callsFor, pickClips, type CallGame } from '../caller/calls.js'
+import { callsFor, pickClips, checkoutFor, requirePart, createCheckoutMemory, type CallGame } from '../caller/calls.js'
 
 const dart = (score: number) => ({ score }) as CallGame['currentVisitDarts'][number]
 const game = (o: Partial<CallGame> = {}): CallGame => ({
@@ -13,6 +13,7 @@ const game = (o: Partial<CallGame> = {}): CallGame => ({
   currentVisitDarts: [],
   visitStartScores: [501, 501],
   totalVisits: [0, 0],
+  config: { outMode: 'double', startScore: 501, inMode: 'straight', botSpeed: 'normal' },
   ...o,
 })
 
@@ -160,5 +161,69 @@ describe('pickClips', () => {
       expect(pickClips(call, { you_require: ['y'], '121': ['n'] }, first)).toEqual(['y', 'n'])
       expect(pickClips(call, { you_require: ['y'] }, first)).toEqual([])
     })
+  })
+})
+
+describe('checkoutFor', () => {
+  const three = [dart(60), dart(60), dart(60)]
+  // Seat 0's visit over (three darts), then the takeout hands the turn to seat 1
+  const over = (o: Partial<CallGame> = {}) => game({ scores: [141, 121], currentVisitDarts: three, ...o })
+  const next = (o: Partial<CallGame> = {}) => game({ scores: [141, 121], currentPlayer: 1, totalVisits: [1, 0], ...o })
+
+  it('names what the next thrower needs when they can finish', () => {
+    expect(checkoutFor(over(), next())).toEqual({ seat: 1, remaining: 121, leg: 0 })
+  })
+
+  it("says nothing for a score that can't be finished, or before a visit is committed", () => {
+    expect(checkoutFor(over({ scores: [141, 169] }), next({ scores: [141, 169] }))).toBeNull()
+    expect(checkoutFor(game({ scores: [381, 121], currentVisitDarts: [dart(60)] }), over())).toBeNull()
+  })
+
+  it('follows the out mode: 180 finishes in straight out', () => {
+    const config = { outMode: 'straight' as const, startScore: 501, inMode: 'straight' as const, botSpeed: 'normal' as const }
+    expect(checkoutFor(over({ scores: [141, 180], config }), next({ scores: [141, 180], config }))).toEqual({
+      seat: 1,
+      remaining: 180,
+      leg: 0,
+    })
+  })
+
+  it('not at a new leg, not mid-game on open, not on an undo', () => {
+    expect(checkoutFor(over(), next({ legs: [1, 0] }))).toBeNull()
+    expect(checkoutFor(null, next())).toBeNull()
+    expect(checkoutFor(next(), over({ totalVisits: [0, 0] }))).toBeNull()
+  })
+
+  it("uses the team's score in team games", () => {
+    const teams = [
+      { id: 'A' as const, name: 'A', seats: [0, 2], score: 141, legs: 0 },
+      { id: 'B' as const, name: 'B', seats: [1, 3], score: 40, legs: 0 },
+    ]
+    const before = over({ scores: [141, 501, 141, 501], visitStartScores: [501, 501, 501, 501], totalVisits: [0, 0, 0, 0], teams })
+    const after = next({ scores: [141, 501, 141, 501], visitStartScores: [501, 501, 501, 501], totalVisits: [1, 0, 0, 0], teams })
+    expect(checkoutFor(before, after)).toEqual({ seat: 1, remaining: 40, leg: 0 })
+  })
+})
+
+describe('requirePart', () => {
+  it('the whole phrase, else the lead-in and the number', () => {
+    expect(requirePart(121)).toEqual(['require_121', ['you_require', '121']])
+  })
+})
+
+describe('createCheckoutMemory', () => {
+  it('without repeat, skips the same score for the same seat until the next leg', () => {
+    const say = createCheckoutMemory()
+    expect(say({ seat: 1, remaining: 121, leg: 0 }, false)).toBe(true)
+    expect(say({ seat: 1, remaining: 121, leg: 0 }, false)).toBe(false)
+    expect(say({ seat: 0, remaining: 121, leg: 0 }, false)).toBe(true)
+    expect(say({ seat: 1, remaining: 80, leg: 0 }, false)).toBe(true)
+    expect(say({ seat: 1, remaining: 121, leg: 1 }, false)).toBe(true)
+  })
+
+  it('with repeat, always says it', () => {
+    const say = createCheckoutMemory()
+    expect(say({ seat: 1, remaining: 121, leg: 0 }, true)).toBe(true)
+    expect(say({ seat: 1, remaining: 121, leg: 0 }, true)).toBe(true)
   })
 })
