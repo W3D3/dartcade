@@ -34,7 +34,7 @@
 </script>
 
 <Modal title={current ? 'Change game' : 'Pick a game'} onclose={oncancel} dismissOnBackdrop widthClass="max-w-[440px]" zClass="z-[200]">
-  <GameModeTiles selected={picked} compact onselect={(id: string) => (picked = id)} />
+  <GameModeTiles selected={picked} onselect={(id: string) => (picked = id)} />
   {#snippet footer()}
     <Button variant="outline" size="lg" class="flex-1" onclick={oncancel}>Cancel</Button>
     <Button variant="accent" size="lg" class="flex-1" disabled={!ok} onclick={confirm}>

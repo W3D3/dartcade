@@ -1,42 +1,153 @@
 // The game modes: the tiles the Play page and the lobby pick from, and what the backend says
 // about each (its default settings and their labels), loaded once for both.
 import { api, type GameInfo } from '$lib/api'
+import { derived } from 'svelte/store'
+import { flag } from './flags.js'
 import { loadOnce } from './loadOnce.js'
 
-/** `flag`: the feature flag that has to be on for the mode to show (see lib/flags.ts). */
-export type GameMode = { id: string; glyph: string; name: string; desc: string; available: boolean; flag?: string }
+import x01Img from './assets/games/x01.svg'
+import atcImg from './assets/games/atc.svg'
+import cricketImg from './assets/games/cricket.svg'
+import minigolfImg from './assets/games/minigolf.svg'
+import p121Img from './assets/games/p121.svg'
+import bobsImg from './assets/games/bobs.svg'
+import soccerImg from './assets/games/soccer.svg'
+import hiloImg from './assets/games/hilo.svg'
+import catch40Img from './assets/games/catch40.svg'
+import shanghaiImg from './assets/games/shanghai.svg'
+import killerImg from './assets/games/killer.svg'
+import halveitImg from './assets/games/halveit.svg'
+
+export type GameCategory = 'arcade' | 'classic' | 'practice'
+
+/** The Play page's sections, in order. */
+export const GAME_CATEGORIES: { id: GameCategory; name: string; sub: string }[] = [
+  { id: 'arcade', name: 'Arcade', sub: 'Dart minigames for groups' },
+  { id: 'classic', name: 'Classic', sub: 'The standards, with full stats' },
+  { id: 'practice', name: 'Practice', sub: 'Drills and other games' },
+]
+
+/**
+ * `glyph`: the lobby dialog's tile label (playable modes only).
+ * `flag`: the feature flag that has to be on for the mode to show (see lib/flags.ts).
+ * `img`: the Play page card's illustration; `small`: a strip row there, not a card.
+ */
+export type GameMode = {
+  id: string
+  glyph?: string
+  name: string
+  desc: string
+  cat: GameCategory
+  img: string
+  available: boolean
+  small?: boolean
+  flag?: string
+}
 
 export const GAME_MODES: GameMode[] = [
+  { id: 'x01', glyph: 'X01', name: 'X01', desc: 'Count down from 501. Finish on a double.', cat: 'classic', img: x01Img, available: true },
+  { id: 'atc', glyph: 'ATC', name: 'ATC', desc: 'Around the Clock: 1 to 20, then the bull.', cat: 'classic', img: atcImg, available: true },
   {
-    id: 'atc',
-    glyph: 'ATC',
-    name: 'Around the Clock',
-    desc: 'Hit 1 through 20 in order, then finish on your chosen target.',
-    available: true,
-  },
-  {
-    id: 'x01',
-    glyph: 'X01',
-    name: 'X01',
-    desc: 'Count down from your chosen score. Configure check-in, check-out, and bull off.',
-    available: true,
+    id: 'cricket',
+    name: 'Cricket',
+    desc: 'Close 15 to 20 and bull, then score.',
+    cat: 'classic',
+    img: cricketImg,
+    available: false,
   },
   {
     id: 'minigolf',
     glyph: 'Par 3',
     name: 'Minigolf',
-    desc: 'Your dart is the putter. Angle sets direction, distance sets power.',
+    desc: 'Your dart is the putter. Sink it under par.',
+    cat: 'arcade',
+    img: minigolfImg,
     available: true,
     flag: 'gamemode.minigolf.enabled',
   },
-  { id: 'soccer', glyph: 'Soccer', name: 'Dart Soccer', desc: 'Coming soon.', available: false },
-  { id: 'tournament', glyph: 'R16', name: 'Tournament', desc: 'Coming soon.', available: false },
+  {
+    id: 'p121',
+    name: '121',
+    desc: 'Check out 121 in nine darts, then go higher.',
+    cat: 'practice',
+    img: p121Img,
+    available: false,
+  },
+  {
+    id: 'bobs',
+    name: "Bob's 27",
+    desc: 'Doubles 1 to 20. Hits add, misses cost.',
+    cat: 'practice',
+    img: bobsImg,
+    available: false,
+  },
+  {
+    id: 'soccer',
+    name: 'Soccer',
+    desc: 'Win the ball, then hit the goal zone first.',
+    cat: 'practice',
+    img: soccerImg,
+    available: false,
+  },
+  {
+    id: 'hilo',
+    name: 'Higher Lower',
+    desc: 'Call it: next visit higher or lower?',
+    cat: 'practice',
+    img: hiloImg,
+    available: false,
+    small: true,
+  },
+  {
+    id: 'catch40',
+    name: 'Catch 40',
+    desc: 'Checkouts 61 to 100 in six darts.',
+    cat: 'practice',
+    img: catch40Img,
+    available: false,
+    small: true,
+  },
+  {
+    id: 'shanghai',
+    name: 'Shanghai',
+    desc: 'Single, double, treble of one number wins.',
+    cat: 'practice',
+    img: shanghaiImg,
+    available: false,
+    small: true,
+  },
+  {
+    id: 'killer',
+    name: 'Killer',
+    desc: 'Hit your double to arm, then take lives.',
+    cat: 'practice',
+    img: killerImg,
+    available: false,
+    small: true,
+  },
+  {
+    id: 'halveit',
+    name: 'Halve-it',
+    desc: 'Miss the target and your score halves.',
+    cat: 'practice',
+    img: halveitImg,
+    available: false,
+    small: true,
+  },
 ]
 
 /** The modes to show: those without a flag, and those whose flag is on. */
 export function visibleModes(modes: readonly GameMode[], isOn: (flag: string) => boolean): GameMode[] {
   return modes.filter(m => m.flag === undefined || isOn(m.flag))
 }
+
+const flagKeys = GAME_MODES.flatMap(m => (m.flag ? [m.flag] : []))
+
+/** The modes to show, as their flags stand (flagged modes stay hidden until the flags have loaded). */
+export const shownModes = derived(
+  flagKeys.map(k => flag(k)),
+  values => visibleModes(GAME_MODES, k => values[flagKeys.indexOf(k)] ?? false),
+)
 
 /** The saved mode if the backend lists it (it leaves out modes whose flag is off), else its first. */
 export function listedMode(saved: string, games: readonly { id: string }[]): string {

@@ -4,14 +4,16 @@
   // lobby when you have none; New lobby starts over with a fresh one while you're alone in yours.
   // A member of someone else's lobby sees its planned game read-only.
   import { untrack } from 'svelte'
+  import { fly } from 'svelte/transition'
+  import { ChevronLeft, Users } from '@lucide/svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
-  import GameModeTiles from '$lib/components/GameModeTiles.svelte'
+  import GameCards from '$lib/components/GameCards.svelte'
   import GameSettings from '$lib/components/GameSettings.svelte'
   import PlayButton from '$lib/components/PlayButton.svelte'
   import InvitesBanner from '$lib/components/lobby/InvitesBanner.svelte'
   import ConnectBoardCard from '$lib/components/ConnectBoardCard.svelte'
-  import { gameName } from '$lib/lobby/format'
+  import { nextGameSummary } from '$lib/lobby/format'
   import { me } from '$lib/lobby/sockets'
   import { initialGameSelection } from '$lib/lobby/start'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -28,7 +30,7 @@
   } from '$lib/lobby/play'
   import { loadPrefs, savePrefs } from '$lib/gamePrefs'
   import { loadSettings } from '$lib/gameSettings'
-  import { GAME_MODES, gameModes, listedMode, withDefaults } from '$lib/gameModes'
+  import { GAME_CATEGORIES, GAME_MODES, gameModes, listedMode, withDefaults } from '$lib/gameModes'
 
   // ── Preference persistence ──────────────────────────────────────────────────
   const X01_DEFAULTS: Record<string, unknown> = {
@@ -62,6 +64,9 @@
   // The backend's modes (defaults, settings meta), loaded once for this page and the lobby
   const games = $derived($gameModes)
   let selectedMode = $state(initPrefs?.mode ?? 'atc')
+  // A game is picked: its settings show beside the games, which shrink to a list. The page
+  // opens on every game; the saved mode's settings are still there once it's picked again.
+  let open = $state(false)
   let error = $state('')
   let busy = $state(false)
 
@@ -88,6 +93,7 @@
     savedConfigs = { ...savedConfigs, [selectedMode]: { ...config } }
     selectedMode = id
     config = { ...(gameDefaults[id] ?? {}), ...(savedConfigs[id] ?? {}) }
+    open = true
   }
 
   // Re-apply with real defaults once the modes are known (at mount when already loaded).
@@ -124,14 +130,21 @@
       const picked = initialGameSelection(saved, { mode: selectedMode, config }, m => gameDefaults[m])
       selectedMode = picked.mode
       config = picked.config
+      open = true
     })
   })
 
-  // A member of someone else's lobby can't edit: the mode grid shows the lobby's planned game
+  // A member of someone else's lobby can't edit: the page shows the lobby's planned game
   const canEditGame = $derived(action !== 'open')
   const displayMode = $derived(canEditGame ? selectedMode : (lobbyGame?.gameId ?? null))
-  const setupName = $derived(
-    canEditGame ? GAME_MODES.find(m => m.id === selectedMode)?.name : displayMode ? gameName(displayMode) : 'No game yet',
+  const showPanel = $derived(open || !canEditGame)
+  const selectedInfo = $derived(games.find(g => g.id === selectedMode))
+  const shown = $derived(GAME_MODES.find(m => m.id === displayMode))
+  const shownName = $derived(shown?.name ?? displayMode ?? 'No game yet')
+  const summary = $derived(
+    canEditGame
+      ? nextGameSummary({ gameId: selectedMode, config }, gameDefaults[selectedMode], null, selectedInfo?.configMeta)
+      : nextGameSummary(lobbyGame, lobbyGameDefaults, null, lobbyGameInfo?.configMeta),
   )
   const invites = $derived($me?.invites.length ?? 0)
 
@@ -188,7 +201,7 @@
 </script>
 
 <Layout title="New game">
-  <main class="flex flex-grow flex-col gap-4 md:gap-7 box-border min-w-0 overflow-y-auto p-4 md:p-[40px_32px] xl:p-[40px_44px]">
+  <main class="flex flex-grow flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:p-[36px_32px] xl:p-[36px_44px]">
     {#if invites > 0}<InvitesBanner count={invites} />{/if}
     <!-- Phones and tablets have no side nav, where desktops get this card -->
     <div class="xl:hidden empty:hidden"><ConnectBoardCard compact /></div>
@@ -197,71 +210,117 @@
     <header class="hidden md:flex items-end justify-between">
       <div class="flex flex-col gap-[6px]">
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">New game</h1>
-        <p class="m-0 text-[15px] text-text-muted">Choose a mode and set it up, then choose who plays.</p>
+        <p class="m-0 text-[15px] text-text-muted">
+          {#if !canEditGame}
+            The host picks the game. You play it in the lobby.
+          {:else if showPanel}
+            Set up {shownName}, then choose who plays in the lobby.
+          {:else}
+            Pick a game. Players are chosen in the lobby next.
+          {/if}
+        </p>
       </div>
     </header>
 
-    <!-- Tiles and setup side by side from lg (tablets: a 440 px setup); stacked below -->
-    <div class="flex flex-col lg:flex-row gap-4 md:gap-5 xl:gap-6 lg:flex-grow lg:min-h-0">
-      <!-- Mode grid -->
-      <GameModeTiles selected={displayMode} disabled={!canEditGame} onselect={selectMode} />
+    <!-- Every game; once one is picked, a list beside its settings from lg (only the settings below) -->
+    <div class="flex flex-col lg:flex-row gap-4 lg:gap-6 lg:flex-grow lg:min-h-0">
+      <section
+        aria-label="Games"
+        class="flex flex-col gap-[14px] min-w-0 transition-[width] duration-[450ms] ease-[cubic-bezier(.2,.8,.2,1)] {showPanel
+          ? 'lg:w-[300px] lg:flex-shrink-0'
+          : 'w-full'}"
+      >
+        {#if showPanel && canEditGame}
+          <Button variant="ghost" size="sm" class="self-start pl-2 pr-3 gap-[6px] font-semibold" onclick={() => (open = false)}>
+            <ChevronLeft size={16} />All games
+          </Button>
+        {/if}
+        <div class={showPanel ? 'hidden lg:block' : ''}>
+          <GameCards selected={displayMode} open={showPanel} disabled={!canEditGame} onselect={selectMode} />
+        </div>
+      </section>
 
-      <!-- Setup aside -->
-      <aside class="w-full lg:w-[440px] xl:w-[400px] lg:flex-shrink-0 box-border card flex flex-col lg:overflow-hidden">
-        <!-- Scrollable body: title + config -->
-        <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-themed p-4 md:p-6 pb-4 md:pb-4 flex flex-col gap-[22px]">
-          <div class="flex flex-col gap-1">
-            <span class="text-[12px] label-caps text-text-dim">Setup</span>
-            <h2 class="m-0 font-display font-bold text-[32px] leading-none uppercase">
-              {setupName}
-            </h2>
-          </div>
+      {#if showPanel}
+        <section
+          aria-label="Game settings"
+          in:fly={{ x: 40, duration: 450 }}
+          class="w-full lg:flex-grow lg:max-w-[780px] lg:min-w-0 box-border card rounded-[16px] flex flex-col lg:overflow-hidden"
+        >
+          <!-- Scrollable body: the game + its settings -->
+          <div class="lg:flex-1 lg:min-h-0 lg:overflow-y-auto scrollbar-themed p-4 md:p-[26px_28px] pb-4 md:pb-4 flex flex-col gap-[22px]">
+            <div class="flex items-center gap-[18px] pb-[18px] border-b border-surface-paused">
+              {#if shown}
+                <span
+                  aria-hidden="true"
+                  class="w-20 h-[72px] flex-shrink-0 rounded-[10px] border border-line bg-cover bg-[75%_center]"
+                  style:background-image={`url("${shown.img}")`}
+                ></span>
+                <span class="flex flex-col gap-1 min-w-0">
+                  <span class="text-[12px] font-semibold label-caps text-text-dim"
+                    >{GAME_CATEGORIES.find(c => c.id === shown.cat)?.name}</span
+                  >
+                  <h2 class="m-0 font-display font-bold text-[38px] leading-none uppercase">{shown.name}</h2>
+                  <span class="text-[14px] text-text-muted">{shown.desc}</span>
+                </span>
+              {:else}
+                <h2 class="m-0 font-display font-bold text-[38px] leading-none uppercase">{shownName}</h2>
+              {/if}
+            </div>
 
-          {#if !canEditGame}
-            {#if lobbyGame}
-              <GameSettings
-                gameId={lobbyGame.gameId}
-                config={withDefaults(lobbyGame.config, lobbyGameDefaults)}
-                defaults={lobbyGameDefaults}
-                meta={lobbyGameInfo?.configMeta ?? {}}
-                teams={lobbyGameInfo?.teams ?? false}
-                hasBot={lobbyHasBot}
-                readonly
-              />
+            {#if !canEditGame}
+              {#if lobbyGame}
+                <GameSettings
+                  gameId={lobbyGame.gameId}
+                  config={withDefaults(lobbyGame.config, lobbyGameDefaults)}
+                  defaults={lobbyGameDefaults}
+                  meta={lobbyGameInfo?.configMeta ?? {}}
+                  teams={lobbyGameInfo?.teams ?? false}
+                  hasBot={lobbyHasBot}
+                  readonly
+                  wide
+                />
+              {:else}
+                <p class="m-0 p-4 border border-line-2 rounded-[10px] bg-surface-2 text-[14px] leading-[1.5] text-text-muted">
+                  {$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.
+                </p>
+              {/if}
             {:else}
-              <div class="p-4 border border-line-2 rounded-[10px] bg-surface-2 flex flex-col gap-1">
-                <span class="text-[14px] leading-[1.5] text-text-muted">{$me?.lobby?.hostName ?? 'The host'} hasn't picked a game yet.</span
-                >
-              </div>
+              <GameSettings
+                gameId={selectedMode}
+                {config}
+                defaults={gameDefaults[selectedMode] ?? {}}
+                meta={selectedInfo?.configMeta ?? {}}
+                teams={selectedInfo?.teams ?? false}
+                hasBot={lobbyHasBot}
+                wide
+                onchange={(key: string, value: unknown) => (config = { ...config, [key]: value })}
+              />
             {/if}
-          {:else}
-            <GameSettings
-              gameId={selectedMode}
-              {config}
-              defaults={gameDefaults[selectedMode] ?? {}}
-              meta={games.find(g => g.id === selectedMode)?.configMeta ?? {}}
-              teams={games.find(g => g.id === selectedMode)?.teams ?? false}
-              hasBot={lobbyHasBot}
-              onchange={(key: string, value: unknown) => (config = { ...config, [key]: value })}
-            />
-            {#if selectedMode === 'minigolf' && $currentUser?.isAdmin}
+            {#if canEditGame && selectedMode === 'minigolf' && $currentUser?.isAdmin}
               <a href="#/admin/minigolf/courses" class="self-start text-[14px] font-semibold">Edit courses</a>
             {/if}
-          {/if}
-        </div>
-        <!-- end scrollable body -->
+          </div>
 
-        <!-- Sticky bottom: error + main button -->
-        <div
-          class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[14px] px-4 pb-6 md:px-6 md:pb-6 pt-2 md:pt-3 flex flex-col gap-3 border-t border-line"
-        >
-          {#if error}<p class="m-0 text-[14px] text-live-text">{error}</p>{/if}
-          <PlayButton label={loading ? 'Loading…' : playLabel(action)} {busy} disabled={loading} onclick={() => void toLobby()} />
-          {#if newLobby && !loading}
-            <Button variant="ghost" size="md" disabled={busy} onclick={() => void freshLobby()}>New lobby</Button>
-          {/if}
-        </div>
-      </aside>
+          <!-- Sticky bottom: the settings in one line, error + main button -->
+          <div
+            class="sticky -bottom-4 bg-bg md:static md:bg-transparent rounded-b-[16px] px-4 pb-6 md:px-7 md:pb-[26px] pt-3 md:pt-[18px] flex flex-col md:flex-row md:items-center gap-3 md:gap-4 border-t border-surface-paused"
+          >
+            <span class="flex flex-col gap-[3px] min-w-0 md:flex-grow">
+              {#if summary}<span class="text-[14px] font-semibold text-text">{summary}</span>{/if}
+              <span class="inline-flex items-center gap-[6px] text-[13px] text-text-dim">
+                <Users size={14} aria-hidden="true" />Players, teams and throw order come next, in the lobby
+              </span>
+              {#if error}<span class="text-[14px] text-live-text">{error}</span>{/if}
+            </span>
+            <div class="flex flex-col gap-2 md:flex-shrink-0">
+              <PlayButton label={loading ? 'Loading…' : playLabel(action)} {busy} disabled={loading} onclick={() => void toLobby()} />
+              {#if newLobby && !loading}
+                <Button variant="ghost" size="md" disabled={busy} onclick={() => void freshLobby()}>New lobby</Button>
+              {/if}
+            </div>
+          </div>
+        </section>
+      {/if}
     </div>
   </main>
 </Layout>
