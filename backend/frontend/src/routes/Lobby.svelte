@@ -181,8 +181,14 @@
       return
     }
     void replace('/lobby')
-    if (step === 'start') void start()
-    else if (step === 'ready' && me && !me.ready) void updatePerson(me.id, { ready: true })
+    const id = lobby?.id
+    if (step === null || !id) return
+    void (async () => {
+      // The reset after the game put everyone back in: bring back who sat it out
+      await api.POST('/api/lobbies/{id}/rematch', { params: { path: { id } } })
+      if (step === 'start') await start()
+      else if (me && !me.ready) await updatePerson(me.id, { ready: true })
+    })()
   })
 
   onMount(() => {

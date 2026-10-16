@@ -744,6 +744,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/lobbies/{id}/rematch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Host: bring back the last game's line-up for a rematch
+         * @description Whoever played the last game plays the next one; whoever sat it out (or joined since) sits out. The host starts it as usual.
+         */
+        post: operations["rematchLobby"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/lobbies/{id}/invites": {
         parameters: {
             query?: never;
@@ -3541,6 +3563,31 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LobbyConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    rematchLobby: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["LobbyId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Line-up restored */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];

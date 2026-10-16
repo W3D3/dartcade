@@ -304,12 +304,21 @@ export async function setPositions(db: Kysely<Database>, lobbyId: string, ids: s
     .execute()
 }
 
-/** Exactly these people play the game that starts; the others sit it out. */
+/** Exactly these people play the game that starts (kept in played_last for a rematch); the others sit it out. */
 export async function setPlaying(db: Kysely<Database>, lobbyId: string, personIds: string[]): Promise<void> {
+  const playing = sql<boolean>`id = ANY(${personIds})`
+  await db.updateTable('lobby_people').set({ plays: playing, played_last: playing }).where('lobby_id', '=', lobbyId).execute()
+}
+
+/** Rematch: whoever played the last game plays, everyone else sits out. Nothing if nobody from it is left. */
+export async function restoreLastLineUp(db: Kysely<Database>, lobbyId: string): Promise<void> {
   await db
     .updateTable('lobby_people')
-    .set({ plays: sql<boolean>`id = ANY(${personIds})` })
+    .set(eb => ({ plays: eb.ref('played_last') }))
     .where('lobby_id', '=', lobbyId)
+    .where(eb =>
+      eb.exists(eb.selectFrom('lobby_people as l').select('l.id').where('l.lobby_id', '=', lobbyId).where('l.played_last', '=', true)),
+    )
     .execute()
 }
 

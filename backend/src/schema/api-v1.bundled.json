@@ -1928,6 +1928,41 @@
         }
       }
     },
+    "/api/lobbies/{id}/rematch": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/LobbyId"
+        }
+      ],
+      "post": {
+        "operationId": "rematchLobby",
+        "summary": "Host: bring back the last game's line-up for a rematch",
+        "description": "Whoever played the last game plays the next one; whoever sat it out (or joined since) sits out. The host starts it as usual.",
+        "tags": [
+          "lobbies"
+        ],
+        "responses": {
+          "204": {
+            "description": "Line-up restored"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LobbyConflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/lobbies/{id}/invites": {
       "parameters": [
         {
