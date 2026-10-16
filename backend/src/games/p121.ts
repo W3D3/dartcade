@@ -299,6 +299,15 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
   },
   configMeta,
 
+  // Configs come from the client: each field must be one of its options (strict, so '121' isn't 121)
+  validate(cfg: P121Config): string | null {
+    const values: Record<string, unknown> = cfg
+    for (const [key, meta] of Object.entries(configMeta)) {
+      if (!meta.options?.some(o => o.value === values[key])) return `Unknown ${meta.label.toLowerCase()}`
+    }
+    return null
+  },
+
   init(cfg: P121Config, players: Player[]): P121State {
     const n = players.length
     const seats: P121Seat[] = Array.from({ length: n }, () => ({
