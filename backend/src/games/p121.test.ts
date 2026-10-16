@@ -225,6 +225,22 @@ describe('give up', () => {
   })
 })
 
+describe('validate', () => {
+  const one = [{ name: 'A' }]
+  it('passes the defaults', () => {
+    expect(p121Module.validate!(p121Module.defaultConfig, one)).toBeNull()
+  })
+  it('takes 3 darts per try', () => {
+    expect(p121Module.validate!({ ...cfg, dartsPerTry: 3 }, one)).toBeNull()
+  })
+  it('rejects a value that is not one of the options', () => {
+    expect(p121Module.validate!({ ...cfg, tries: 0 }, one)).toBe('Unknown tries')
+    expect(p121Module.validate!({ ...cfg, dartsPerTry: 7 }, one)).toBe('Unknown darts per try')
+    expect(p121Module.validate!({ ...cfg, startTarget: '121' as unknown as number }, one)).toBe('Unknown start target')
+    expect(p121Module.validate!({ ...cfg, outMode: 'triple' as 'double' }, one)).toBe('Unknown check-out')
+  })
+})
+
 it('p121Module starts with the bull off order', () => {
   const s = p121Module.init({ ...cfg, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
   expect(s.stage).toBe('bulloff')
