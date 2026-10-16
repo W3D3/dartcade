@@ -1,4 +1,4 @@
-import type { GameModule, BoardEvent, Player, Dart, ConfigFieldMeta, Point, X01Detail, SeatResult } from '../session/types.js'
+import type { GameModule, BoardEvent, Player, ConfigFieldMeta, Point, X01Detail, SeatResult } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
 import type { X01View } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
@@ -7,6 +7,7 @@ import { rankSeats } from './ranking.js'
 import { checkoutHint } from '../shared/checkout.js'
 import { seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, type TeamsConfig } from './teams.js'
 import { x01MatchStats } from './x01Stats.js'
+import { meetsMode, scoreDart } from './outRules.js'
 
 export type X01Config = {
   /** Any score; the setup offers 301, 501 and 701. */
@@ -109,27 +110,6 @@ function committedVisit(s: X01State): Pick<X01State, 'pointsScored' | 'dartsThro
     visitDarts: 0,
   }
 }
-
-function effectiveDartScore(dart: Dart, bullValue: '25_50' | '50_50'): number {
-  const { number, multiplier } = dart.segment
-  if (multiplier === 0) return 0
-  if (number === 25 && bullValue === '50_50') return 50
-  return dart.score
-}
-
-// The bull counts as a double however it is reported (Board Manager and manual
-// entry send number 50 with multiplier 1; its score is 50 either way).
-const isDouble = (dart: Dart) => dart.segment.multiplier === 2 || dart.segment.number === 50
-
-/** The dart may open (check-in) or finish (check-out) a player under the mode. */
-function meetsMode(dart: Dart, mode: 'straight' | 'double' | 'master'): boolean {
-  if (mode === 'straight') return true
-  if (mode === 'double') return isDouble(dart)
-  return isDouble(dart) || dart.segment.multiplier === 3
-}
-
-/** Nothing can finish from 1 unless any dart may finish. */
-const deadEnd = (score: number, outMode: 'straight' | 'double' | 'master') => score === 1 && outMode !== 'straight'
 
 // A session started before botSpeed existed has no such key in its stored config at all (its
 // startPlan-merged defaults predate the field, and rebuildOne doesn't re-merge current defaults
@@ -361,9 +341,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           const opens = meetsMode(dart, s.cfg.inMode)
           if (!opens) return { state: thrown }
           const opened = s.opened.map((o, i) => (i === t ? true : o))
-          const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
-          const newScore = s.scores[t] - dartScore
-          if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !meetsMode(dart, s.cfg.outMode))) {
+          const newScore = scoreDart(s.scores[t], dart, s.cfg.outMode, s.cfg.bullValue)
+          if (newScore === 'bust') {
             return {
               state: { ...thrown, opened, bustThisVisit: true, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)) },
             }
@@ -376,10 +355,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         const attempt = checkoutHint(s.scores[t], s.cfg.outMode, 1) !== null
         const counted = attempt ? { ...thrown, checkoutAttempts: s.checkoutAttempts.map((a, i) => (i === cp ? a + 1 : a)) } : thrown
 
-        const dartScore = effectiveDartScore(dart, s.cfg.bullValue)
-        const newScore = s.scores[t] - dartScore
-
-        if (newScore < 0 || deadEnd(newScore, s.cfg.outMode) || (newScore === 0 && !meetsMode(dart, s.cfg.outMode))) {
+        const newScore = scoreDart(s.scores[t], dart, s.cfg.outMode, s.cfg.bullValue)
+        if (newScore === 'bust') {
           return { state: { ...counted, scores: s.scores.map((sc, i) => (i === t ? s.visitOpenedScores[t] : sc)), bustThisVisit: true } }
         }
 
