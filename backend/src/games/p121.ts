@@ -1,0 +1,323 @@
+// 121 Checkout: a solo/multiplayer checkout drill. Each try throws at a target until it's
+// checked out or the try's darts run out; a made try moves the target up, a missed one
+// follows the miss rule. See docs/superpowers/specs/2026-10-16-p121-design.md.
+import type { ConfigFieldMeta, GameModule, Player, BoardEvent, Dart, SeatResult } from '../session/types.js'
+import { scoreDart } from './outRules.js'
+import type { OutMode } from './outRules.js'
+import { checkoutHint } from '../shared/checkout.js'
+
+export type P121Config = {
+  startTarget: number
+  tries: number
+  dartsPerTry: number
+  outMode: OutMode
+  missRule: 'reset' | 'down' | 'stay'
+  lock: boolean
+  bullOff: 'off' | 'wdc' | 'pdc'
+}
+
+export type P121Try = { target: number; made: boolean; darts: number; finish: string | null }
+
+export type P121Seat = {
+  /** Finished tries, oldest first. */
+  tries: P121Try[]
+  /** The open try's target. */
+  target: number
+  /** Points left in the open try. */
+  left: number
+  /** Darts used by the open try's committed visits. */
+  darts: number
+  /** Points scored by each committed visit of the open try (0 on a bust). */
+  visits: number[]
+  /** Lowest target a miss can drop to (startTarget, or a locked target). */
+  floor: number
+  /** Finishing dart label → darts thrown when one dart could finish. */
+  attempts: Record<string, number>
+  /** Finishing dart label → checkouts with it. */
+  hits: Record<string, number>
+}
+
+export type P121Result = { seat: number; target: number; made: boolean; darts: number; next: number }
+
+export type P121State = {
+  cfg: P121Config
+  seats: P121Seat[]
+  order: number[]
+  turn: number
+  currentPlayer: number
+  visitStartLeft: number
+  visitDarts: number
+  bust: boolean
+  phase: 'game' | 'finished'
+  winner: number | null
+  lastResult: P121Result | null
+  /** The label of the dart that just finished the open try, if any; reset on visit.opened,
+   *  read by endVisit when the visit checks out. */
+  finishLabel: string | null
+}
+
+// Placeholders: Task 3 adds the real view, Task 4 the real detail.
+export type P121View = Record<string, unknown>
+export type P121Detail = Record<string, unknown>
+
+export function nextTarget(t: { target: number; made: boolean; darts: number }, cfg: P121Config, floor: number) {
+  const lockedFloor = cfg.lock && t.made && t.darts <= 3 ? Math.max(floor, t.target) : floor
+  if (t.made) return { target: t.target + 1, floor: lockedFloor }
+  const missed = cfg.missRule === 'reset' ? cfg.startTarget : cfg.missRule === 'down' ? t.target - 1 : t.target
+  return { target: Math.max(missed, cfg.startTarget, floor), floor }
+}
+
+export function dartLabel(seg: { number: number; multiplier: number }): string {
+  if (seg.number === 0 || seg.multiplier === 0) return 'Miss'
+  if (seg.number === 50 || (seg.number === 25 && seg.multiplier === 2)) return 'Bull'
+  if (seg.number === 25) return '25'
+  if (seg.multiplier === 3) return `T${seg.number}`
+  if (seg.multiplier === 2) return `D${seg.number}`
+  return `${seg.number}`
+}
+
+function bumpCount(counts: Record<string, number>, label: string): Record<string, number> {
+  return { ...counts, [label]: (counts[label] ?? 0) + 1 }
+}
+
+function withSeat(s: P121State, i: number, patch: Partial<P121Seat>): P121Seat[] {
+  return s.seats.map((seat, j) => (j === i ? { ...seat, ...patch } : seat))
+}
+
+// Commits the open visit: pushes a finished try once it's made or out of darts, otherwise
+// just records the visit and lets the try go on.
+function endVisit(s: P121State, made: boolean): P121State {
+  const cp = s.currentPlayer
+  const seat = s.seats[cp]
+  const used = made ? seat.darts + s.visitDarts : seat.darts + 3
+  if (!(made || used >= s.cfg.dartsPerTry)) {
+    const scored = s.visitStartLeft - seat.left
+    return { ...s, seats: withSeat(s, cp, { darts: used, visits: [...seat.visits, scored] }) }
+  }
+  const finishedTry: P121Try = { target: seat.target, made, darts: used, finish: made ? s.finishLabel : null }
+  const { target, floor } = nextTarget({ target: seat.target, made, darts: used }, s.cfg, seat.floor)
+  const seats = withSeat(s, cp, { tries: [...seat.tries, finishedTry], target, left: target, darts: 0, visits: [], floor })
+  const lastResult: P121Result = { seat: cp, target: seat.target, made, darts: used, next: target }
+  return { ...s, seats, lastResult }
+}
+
+// The next turn in order whose seat still has tries left; the game ends when none does.
+function advance(s: P121State): P121State {
+  const n = s.order.length
+  for (let i = 1; i <= n; i++) {
+    const turn = (s.turn + i) % n
+    const seat = s.order[turn]
+    if (s.seats[seat].tries.length < s.cfg.tries) {
+      return { ...s, turn, currentPlayer: seat, visitStartLeft: s.seats[seat].left, visitDarts: 0, bust: false }
+    }
+  }
+  return { ...s, phase: 'finished', winner: rankWinner(s) }
+}
+
+function rankKey(seat: P121Seat): [number, number, number] {
+  const made = seat.tries.filter(t => t.made)
+  const highest = made.length ? Math.max(...made.map(t => t.target)) : 0
+  const darts = made.reduce((sum, t) => sum + t.darts, 0)
+  return [-highest, -made.length, darts]
+}
+
+/** Negative: `a` is ahead (higher made target, then more checkouts, then fewer darts over made
+ *  tries). Equal seats compare 0 — it leaves out the seat index on purpose. */
+export function compareSeats(a: P121Seat, b: P121Seat): number {
+  const [ha, ca, da] = rankKey(a)
+  const [hb, cb, db] = rankKey(b)
+  return ha - hb || ca - cb || da - db
+}
+
+// The lower seat index breaks a tie that compareSeats leaves at 0.
+function rankWinner(s: P121State): number {
+  let winner = 0
+  for (let i = 1; i < s.seats.length; i++) {
+    if (compareSeats(s.seats[i], s.seats[winner]) < 0) winner = i
+  }
+  return winner
+}
+
+export const configMeta: Record<Exclude<keyof P121Config, 'bullOff'>, ConfigFieldMeta> = {
+  startTarget: {
+    label: 'Start target',
+    options: [
+      { value: 81, label: '81' },
+      { value: 101, label: '101' },
+      { value: 121, label: '121' },
+    ],
+  },
+  tries: {
+    label: 'Tries',
+    options: [
+      { value: 5, label: '5' },
+      { value: 10, label: '10' },
+      { value: 20, label: '20' },
+    ],
+  },
+  dartsPerTry: {
+    label: 'Darts per try',
+    options: [
+      { value: 3, label: '3' },
+      { value: 6, label: '6' },
+      { value: 9, label: '9' },
+      { value: 12, label: '12' },
+    ],
+  },
+  outMode: {
+    label: 'Check-out',
+    tooltip: 'How a try finishes. Straight: any dart on 0. Double: must finish on a double. Master: double or triple.',
+    options: [
+      { value: 'straight', label: 'Straight' },
+      { value: 'double', label: 'Double' },
+      { value: 'master', label: 'Master' },
+    ],
+  },
+  missRule: {
+    label: 'Miss rule',
+    tooltip: 'What happens to the target after a missed try.',
+    options: [
+      { value: 'reset', label: 'Back to start' },
+      { value: 'down', label: 'Down one' },
+      { value: 'stay', label: 'Stay' },
+    ],
+  },
+  lock: {
+    label: 'Lock',
+    tooltip: 'A target checked out in 3 darts or fewer becomes a floor: a miss never drops you below it.',
+    options: [
+      { value: false, label: 'Off' },
+      { value: true, label: 'On' },
+    ],
+  },
+}
+
+/** 121 without a bull off; the wrapper that adds one (and `bullOff` to the config) is added
+ *  where this module is registered. */
+export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121Detail> = {
+  id: 'p121',
+  version: 1,
+  // bullOff is also set by withBullOff once this module is wrapped, same as x01Game.
+  defaultConfig: {
+    startTarget: 121,
+    tries: 10,
+    dartsPerTry: 9,
+    outMode: 'double',
+    missRule: 'reset',
+    lock: false,
+    bullOff: 'off',
+  },
+  configMeta,
+
+  init(cfg: P121Config, players: Player[]): P121State {
+    const n = players.length
+    const seats: P121Seat[] = Array.from({ length: n }, () => ({
+      tries: [],
+      target: cfg.startTarget,
+      left: cfg.startTarget,
+      darts: 0,
+      visits: [],
+      floor: cfg.startTarget,
+      attempts: {},
+      hits: {},
+    }))
+    return {
+      cfg,
+      seats,
+      order: Array.from({ length: n }, (_, i) => i),
+      turn: 0,
+      currentPlayer: 0,
+      visitStartLeft: cfg.startTarget,
+      visitDarts: 0,
+      bust: false,
+      phase: 'game',
+      winner: null,
+      lastResult: null,
+      finishLabel: null,
+    }
+  },
+
+  getCurrentPlayer(s: P121State): number {
+    return s.currentPlayer
+  },
+
+  onBoardEvent(s: P121State, e: BoardEvent): { state: P121State } {
+    switch (e.kind) {
+      case 'visit.opened':
+        return { state: { ...s, visitStartLeft: s.seats[s.currentPlayer].left, visitDarts: 0, bust: false, finishLabel: null } }
+
+      case 'dart.detected': {
+        const cp = s.currentPlayer
+        const seat = s.seats[cp]
+        // A checkout mid-visit ends the visit; leftover darts in it aren't needed and don't count.
+        if (seat.left === 0) return { state: s }
+        if (s.phase === 'finished' || s.bust) {
+          return { state: { ...s, visitDarts: s.visitDarts + 1 } }
+        }
+
+        const dart: Dart = e.data.dart
+        const hint = checkoutHint(seat.left, s.cfg.outMode, 1)
+        const hintLabel = hint ? hint[0] : null
+        const attempts = hintLabel ? bumpCount(seat.attempts, hintLabel) : seat.attempts
+
+        const scored = scoreDart(seat.left, dart, s.cfg.outMode, '25_50')
+        if (scored === 'bust') {
+          return {
+            state: {
+              ...s,
+              seats: withSeat(s, cp, { left: s.visitStartLeft, attempts }),
+              bust: true,
+              visitDarts: s.visitDarts + 1,
+              lastResult: null,
+            },
+          }
+        }
+
+        if (scored === 0) {
+          // The attempt (above) is the hint's double; the hit is whatever dart actually finished
+          // it — under master or straight out those can differ (e.g. T10 finishes a hinted D15).
+          const label = dartLabel(dart.segment)
+          return {
+            state: {
+              ...s,
+              seats: withSeat(s, cp, { left: scored, attempts, hits: bumpCount(seat.hits, label) }),
+              visitDarts: s.visitDarts + 1,
+              finishLabel: label,
+              lastResult: null,
+            },
+          }
+        }
+
+        return {
+          state: { ...s, seats: withSeat(s, cp, { left: scored, attempts }), visitDarts: s.visitDarts + 1, lastResult: null },
+        }
+      }
+
+      case 'takeout.finished':
+      case 'visit.cleared': {
+        if (s.phase === 'finished') return { state: s }
+        const made = s.seats[s.currentPlayer].left === 0
+        return { state: advance(endVisit(s, made)) }
+      }
+
+      default:
+        return { state: s }
+    }
+  },
+
+  onUserAction(s: P121State) {
+    return { state: s }
+  },
+
+  view(): P121View {
+    return {}
+  },
+
+  summarize(): SeatResult[] {
+    return []
+  },
+
+  detail(): P121Detail {
+    return { mode: 'p121' }
+  },
+}
