@@ -8,7 +8,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import AccountMenu from './AccountMenu.svelte'
-  import Avatar from './Avatar.svelte'
+  import FaceStack from './FaceStack.svelte'
   import FriendsButton from './friends/FriendsButton.svelte'
   import { createLobby } from '$lib/lobby/create'
   import { me } from '$lib/lobby/sockets'
@@ -46,18 +46,7 @@
         </span>
         <span class="font-display font-bold text-[22px] leading-none uppercase tracking-[0.02em] truncate">{view.name}</span>
         <span class="flex items-center gap-2 min-w-0">
-          {#if summary?.faces.length}
-            <span class="flex items-center pl-[6px] shrink-0">
-              {#each summary.faces as face, i (i)}
-                <Avatar
-                  name={face.name}
-                  guest={face.guest}
-                  size={20}
-                  class="-ml-[6px] {face.guest ? 'bg-surface-active' : 'ring-2 ring-surface-active'}"
-                />
-              {/each}
-            </span>
-          {/if}
+          {#if summary?.faces.length}<FaceStack faces={summary.faces} />{/if}
           <span class="text-[12px] text-text-muted truncate">{view.line}</span>
         </span>
       </a>
