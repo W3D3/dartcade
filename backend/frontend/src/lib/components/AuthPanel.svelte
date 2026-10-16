@@ -1,8 +1,7 @@
 <script lang="ts">
   // The sign-in and register brand panel, md and up. Tablets (md up to xl) get a narrower one,
   // headline under the logo and the board in the corner, so the form keeps its 400 px beside it.
-  import BrandMark from './BrandMark.svelte'
-  import PreviewBadge from './PreviewBadge.svelte'
+  import Wordmark from './Wordmark.svelte'
   import AuthBoard from './AuthBoard.svelte'
 </script>
 
@@ -11,11 +10,7 @@
             bg-surface-1 border-r border-line box-border p-[40px_44px] xl:p-[48px_56px]"
 >
   <!-- Logo -->
-  <div class="relative flex items-center gap-3">
-    <BrandMark size={32} />
-    <span class="font-display font-bold text-[26px] xl:text-[28px] tracking-[0.06em]">DARTCADE</span>
-    <PreviewBadge />
-  </div>
+  <Wordmark size={32} text="text-[26px] xl:text-[28px]" />
 
   <!-- Dartboard illustration (bleeds off right edge) -->
   <div class="absolute right-[-250px] top-[110px] opacity-95 pointer-events-none hidden xl:block">
