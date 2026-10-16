@@ -21,6 +21,7 @@
     teams = false,
     hasBot = false,
     readonly = false,
+    wide = false,
     onchange,
   }: {
     gameId: string
@@ -37,8 +38,14 @@
     /** A member sees exactly what's set, but can't change it: every control is disabled, and
      * nothing here calls onchange. */
     readonly?: boolean
+    /** Two columns from lg (the Play page's wide panel). */
+    wide?: boolean
     onchange?: (key: string, value: unknown) => void
   } = $props()
+
+  const root = $derived(
+    wide ? 'flex flex-col gap-[18px] lg:grid lg:grid-cols-2 lg:gap-x-7 lg:gap-y-[22px] lg:content-start' : 'flex flex-col gap-[18px]',
+  )
 
   function set(key: string, value: unknown) {
     if (!readonly) onchange?.(key, value)
@@ -90,7 +97,7 @@
 </script>
 
 {#if gameId === 'x01'}
-  <div class="flex flex-col gap-[18px]">
+  <div class={root}>
     {#if teams && meta.format}
       <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
         <legend class="flex items-center gap-2 field-label mb-2">
@@ -213,7 +220,7 @@
     </div>
   </div>
 {:else if gameId === 'atc'}
-  <div class="flex flex-col gap-[18px]">
+  <div class={root}>
     {#each ATC_FIELD_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options && offered(field)}
@@ -236,8 +243,8 @@
     {/each}
   </div>
 {:else if gameId === 'minigolf'}
-  <div class="flex flex-col gap-[18px]">
-    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+  <div class={root}>
+    <fieldset class="m-0 p-0 border-0 flex flex-col gap-2 lg:col-span-2">
       <legend class="field-label mb-2">Course</legend>
       <div class="grid gap-2" role="radiogroup" aria-label="Course">
         {#each courseCards as c (String(c.id))}

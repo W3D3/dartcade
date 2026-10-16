@@ -9,10 +9,10 @@ import type { Page } from '@playwright/test'
 export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01' | 'Minigolf'; setup?: (page: Page) => Promise<void>; guests?: string[] }) {
   await page.goto('/#/')
   const main = page.locator('main')
+  // The Choose players button shows once a game is picked
+  await main.locator(`button:has-text("${opts.mode}")`).first().click()
   const create = main.getByRole('button', { name: /Choose players/ })
   await expect(create).toBeEnabled()
-
-  await main.locator(`button:has-text("${opts.mode}")`).first().click()
   if (opts.setup) await opts.setup(page)
   await create.click()
   await page.waitForURL('**/#/lobby')
