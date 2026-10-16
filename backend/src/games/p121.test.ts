@@ -246,6 +246,11 @@ it('p121Module starts with the bull off order', () => {
   expect(s.stage).toBe('bulloff')
 })
 
+it('throwOrder is the order seats throw in, not seat order', () => {
+  const s = p121Game.init(cfg, [{ name: 'A' }, { name: 'B' }])
+  expect(p121Game.throwOrder!({ ...s, order: [1, 0] })).toEqual([1, 0])
+})
+
 describe('history', () => {
   const s0 = play(solo(), [T20, [11, 3], [14, 2]], [T20, [14, 3], [10, 2]], miss3, miss3, miss3, [T20, [11, 3], [14, 2]])
   // tries: 121 made (3), 122 made (3), 123 missed (9), 121 made (3); open target 122

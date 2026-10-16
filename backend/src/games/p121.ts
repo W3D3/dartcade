@@ -450,6 +450,11 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
     }
   },
 
+  // Seats in the order they throw (a bull off may have changed it)
+  throwOrder(s: P121State): number[] {
+    return [...s.order]
+  },
+
   summarize(s: P121State): SeatResult[] {
     const placements = rankSeats(s.seats.length, s.winner, (a, b) => compareSeats(s.seats[a], s.seats[b]))
     return s.seats.map((seat, i) => {
