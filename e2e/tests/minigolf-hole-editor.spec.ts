@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures/auth.js'
+import { LOADS_3D } from '../fixtures/minigolf.js'
 
 const lane = {
   id: 'new',
@@ -41,8 +42,8 @@ test('an admin draws on a hole, undoes, and test-putts it', async ({ adminPage: 
   const { id: courseId } = (await course.json()) as { id: string }
 
   await page.goto(`/#/admin/minigolf/holes/${id}?course=${courseId}`)
-  await expect(page.getByText('Hole 1 of 1')).toBeVisible()
-  await expect(page.getByTestId('hole-3d')).toBeVisible()
+  await expect(page.getByText('Hole 1 of 1')).toBeVisible(LOADS_3D)
+  await expect(page.getByTestId('hole-3d')).toBeVisible(LOADS_3D)
   const elements = page.getByRole('region', { name: 'Elements' })
 
   // A wall, dragged across the lane
