@@ -67,8 +67,9 @@ In `lib/gameSettings.ts`, next to `callerOn`, both in `ACCOUNT_KEYS` like it:
 
 - `callerCheckouts` (default on): say checkout calls.
 - `callerCheckoutRepeat` (default on): when off, skip the call if that seat's remaining score is the
-  one last announced for it (after a bust or a no-score visit). This memory lives in `createCaller`,
-  per game; `callsFor` stays pure.
+  one last announced for it (after a bust or a no-score visit). This memory lives in
+  `createCheckoutMemory` (`lib/caller/calls.ts`), held by the match screen (`GameDisplay.svelte`) and
+  reset on every new session; `callsFor` stays pure.
 
 Shown under Caller in Settings (`CallerDefaults.svelte`) and the in-game drawer
 (`SettingsDrawer.svelte`), only while the caller is on.
@@ -104,7 +105,7 @@ rejects `you_require` flips.
 `scripts/caller-voice/lines.json` gains `"you_require": ["You require"]` and
 `"require_N": ["You require N"]` for N 1–180, generated and normalised like the other clips (Kokoro,
 then one ffmpeg pass) and committed to `backend/frontend/public/voices/en-adam/` with the manifest.
-About 180 clips, about 0.9 MB.
+About 180 clips, about 2 MB.
 
 ## Autodarts voice import
 
@@ -121,9 +122,10 @@ About 180 clips, about 0.9 MB.
 
 ### The bookmarklet
 
-`backend/frontend/src/lib/caller/autodartsBookmarklet.ts` holds the source as a readable function;
-the `javascript:` URL is built from it (`Function.prototype.toString`, URI-encoded), so the guide's
-button and its copyable console version are the same code. It contains a file-name pattern, no
+`backend/frontend/src/lib/caller/autodartsVoices.js` holds the source as a plain JS module; the SPA
+imports its text (`?raw`, so the build doesn't transform it) and builds the `javascript:` URL from it,
+so the guide's button and its copyable console version are the same code, and tests import the same
+module. It contains a file-name pattern, no
 Autodarts data.
 
 Run on play.autodarts.com, it:
@@ -133,7 +135,8 @@ Run on play.autodarts.com, it:
    found in.
 2. Loads each voice's chunk with `import()` (it runs in Autodarts' own page) and collects the default
    score map plus every export that is a `[number, number]` pair.
-3. Fetches the MP3 and downloads two files under Autodarts' own names:
+3. Fetches the MP3 and downloads one zip per voice, `<voice>-<hash>.zip`, stored (not deflated:
+   the MP3 doesn't shrink), holding:
    - `<voice>-<hash>.mp3`, unchanged;
    - `<voice>-<hash>.json`:
      `{ "voice": "dotty-floor-english", "mp3": "dotty-floor-english-<hash>.mp3", "mp3Bytes": 9316345, "unit": "ms", "sprite": { "1": [0, 654], … } }`.
@@ -150,25 +153,22 @@ In the Caller voices card (`CallerVoices.svelte`), only when `caller.autodartsIm
 1. Drag the **Get Autodarts voices** button to your bookmarks bar.
 2. Open play.autodarts.com, logged in, and click it. If a voice is missing, play it once in Autodarts
    first.
-3. Drop the `.mp3` and `.json` files here.
+3. Drop the downloaded `.zip` files here.
 
 A disclosure below holds the same code to paste into the browser console, for browsers that block
 bookmarklets.
 
 ### Upload
 
-The existing drop zone and file input take several files at once. With the flag on, `.mp3` and
-`.json` files are accepted next to `.zip`. Each `.json` is paired with the MP3 it names (`mp3`); a
-pair goes to the server as one import, with the same progress and cancel as a zip. A JSON without its
-MP3, or the other way round, is reported before anything is uploaded.
-
-On the server, `api/voices.ts` takes the pair (the transport, e.g. multipart or a second route, is
-left to the plan) and refuses it with 404 when `caller.autodartsImport` is off for the user. The
-existing limits apply (one import at a time per user, two across the server, size caps, quota).
+No new route or file type: the zip goes through the existing upload (`POST /api/voice-packs`, the
+drop zone, progress, cancel, limits). `readPack` gets an `autodarts` option, which the route sets from
+`caller.autodartsImport` for the user. With it on, a zip holding a `.json` table and an `.mp3` is cut
+as an Autodarts voice; with it off, the zip is read as before (and refused: "No caller clips in this
+pack").
 
 ### Cutting (`backend/src/caller/autodarts.ts`, pure)
 
-1. **Parse the table** with zod: `voice` matches `^(dotty|hware)-floor-[a-z]+$`, `unit` is `ms`,
+1. **Parse the table** with zod: `voice` matches `^[a-z]+(-[a-z]+)+$` (any Autodarts voice name), `unit` is `ms`,
    `sprite` maps keys to `[offset, duration]` with offset ≥ 0 and duration > 0, at most 400 entries.
 2. **Pair check**: the MP3's byte length equals `mp3Bytes`.
 3. **Parse the MP3 frames**: skip an ID3v2 tag, walk MPEG-1 Layer III frame headers to the end, drop
@@ -185,7 +185,7 @@ existing limits apply (one import at a time per user, two across the server, siz
    "Autodarts Hware (English)"; language from the last part (`english` → `en`, `german` → `de`).
 
 The clips are handed to the existing `service.ts` storage path (dedup by SHA-256, quota, owner-only).
-Errors say what to do: "This JSON belongs to a different MP3", "The timings don't fit this MP3",
+Errors say what to do: "This table belongs to a different MP3", "The timings don't fit this MP3",
 "Not an Autodarts voice file".
 
 ### Edge trim in the player
@@ -198,8 +198,8 @@ kept as is.
 ### Flag
 
 `caller.autodartsImport` in `backend/src/flags/definitions.ts`, like `matchmaking.enabled`: on for
-admins, on for everyone with `FLAGS_ON=caller.autodartsImport`. The SPA hides the guide and the
-`.mp3`/`.json` file types; the server refuses the upload. Checkout calls are not behind it.
+admins, on for everyone with `FLAGS_ON=caller.autodartsImport`. The SPA hides the guide; the server
+reads Autodarts zips only with it on. Checkout calls are not behind it.
 
 ## Testing
 
@@ -218,9 +218,10 @@ Unit tests (vitest), with no Autodarts audio or tables in the repo:
 - `pack.ts`: `require_N` and `you_require` accepted.
 - `player.ts`: edge trim keeps an inner pause and a 20 ms margin.
 - API: an Autodarts upload is refused with the flag off and stored with it on.
-- The bookmarklet builds into a `javascript:` URL that parses.
+- The bookmarklet, run against stubbed page globals: finds the voices, zips MP3 and table, reports
+  what's missing; its `javascript:` URL parses.
 
-Once by hand, with the real files (not committed): import the three MP3 + JSON pairs on the dev stack
+Once by hand, with the real files (not committed): import the three voice zips on the dev stack
 and compare with the reference packs split by hand: the same keys after the `game_*` renames, every
 clip at least as long as its reference clip (nothing cut short), clips decode in Chrome. Listen to
 chained calls with Hware ("game shot · and · leg 3", "100 · you require 121") to check the trim closes
