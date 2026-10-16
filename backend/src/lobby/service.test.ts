@@ -1133,6 +1133,27 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       })
     })
 
+    it('a rematch keeps the line-up: whoever sat out the last game sits out again, the same seats (#196)', async () => {
+      await lobbies.join('max', id, code)
+      await lobbies.addGuest('lena', id, { name: 'Guest 1' })
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
+      const first = await lobbies.start('chris', id, true)
+      const seats = engine.getSession(first.sessionId)?.seats
+      await engine.onUserAction(first.sessionId, 'lena', { type: 'forfeit' })
+      await lobbies.whenIdle(id)
+      await engine.deleteSession(first.sessionId, 'chris')
+      await lobbies.rematch('chris', id)
+      expect((await person('Max')).plays).toBe(false)
+      const second = await lobbies.start('chris', id, true)
+      expect(engine.getSession(second.sessionId)?.seats).toEqual(seats)
+    })
+
+    it('a rematch is refused while a game runs, and for members', async () => {
+      const { sessionId } = await lobbies.start('chris', id, true)
+      await expect(lobbies.rematch('chris', id)).rejects.toMatchObject({ statusCode: 409, body: { code: 'game_running', sessionId } })
+      await expect(lobbies.rematch('lena', id)).rejects.toMatchObject({ statusCode: 403 })
+    })
+
     it('an abort resets the lobby too and names who aborted', async () => {
       const { sessionId } = await lobbies.start('chris', id, true)
       await engine.deleteSession(sessionId, 'chris')
