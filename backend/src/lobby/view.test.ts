@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { x01Module } from '../games/x01.js'
 import type { LobbyPerson, LobbyState } from './types.js'
-import { inviteView, lobbySummary, lobbyView } from './view.js'
+import { inviteView, lobbyGlance, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
 
 const store = (): EngineStore => ({
@@ -198,13 +198,32 @@ describe('lobbySummary', () => {
     expect(lobbySummary(lobby, 'max', undefined)).toMatchObject({ sessionId: null, gameId: null, youThrowNext: false, leg: null })
     const me = {
       type: 'me' as const,
-      invites: [inviteView({ id: 'i1', lobbyId: 'l1', lobbyName: 'L', inviterUserId: null, inviterName: null, createdAt: at })],
+      invites: [inviteView({ id: 'i1', lobbyId: 'l1', lobbyName: 'L', inviterUserId: null, inviterName: null, createdAt: at }, lobby)],
       game: null,
       lobby: lobbySummary(lobby, 'chris', session),
     }
     expect(() => {
       checkLobbyMessage(me, () => undefined)
     }).not.toThrow()
+  })
+
+  it('glances at the lobby: four faces at most, each board once, the next game', () => {
+    const more: LobbyState = {
+      ...lobby,
+      people: [...lobby.people, person({ id: 'a', name: 'Anna', boardName: 'Garage' }), person({ id: 'b', name: 'Ben' })],
+    }
+    expect(lobbyGlance(more)).toEqual({
+      hostName: 'Christoph',
+      peopleCount: 5,
+      faces: [
+        { name: 'Christoph', guest: false },
+        { name: 'Max', guest: false },
+        { name: 'Guest 1', guest: true },
+        { name: 'Anna', guest: true },
+      ],
+      nextGame: more.nextGame,
+      boardNames: ['Living room', 'Garage'],
+    })
   })
 
   it('names the host; null only once their account is gone', () => {

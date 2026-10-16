@@ -17,7 +17,7 @@ import { LobbyError, inLobby } from './errors.js'
 import type { LobbyHub } from './hub.js'
 import * as rules from './rules.js'
 import { newLobbyCode, normalizeCode } from './code.js'
-import { inviteView, lobbySummary, lobbyView } from './view.js'
+import { inviteView, lobbyGlance, lobbySummary, lobbyView } from './view.js'
 import { checkLobbyMessage } from './validation.js'
 import { planGame, type PlanProblem } from './startPlan.js'
 import type { LobbyAccess, LobbyPerson, LobbyState, NextGame, StartGame, TeamId, ThrowOrder } from './types.js'
@@ -30,7 +30,7 @@ export const SOLO_IDLE_MS = 6 * 60 * 60 * 1000
 export const SHARED_IDLE_MS = 24 * 60 * 60 * 1000
 
 export type LobbyRef = { id: string; name: string; code: string }
-export type LobbyPreview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
+export type LobbyPreview = { id: string; name: string } & ReturnType<typeof lobbyGlance>
 export type LobbyPatch = {
   name?: string
   throwOrder?: ThrowOrder
@@ -263,7 +263,7 @@ export class LobbyService {
   }
 
   async meMessage(userId: string): Promise<MeMessage> {
-    const invites = (await q.pendingInvitesFor(this.db, userId)).map(inviteView)
+    const invites = await this.listInvites(userId)
     const lobbyId = await q.getOpenLobbyIdOfUser(this.db, userId)
     const lobby = lobbyId === undefined ? undefined : await this.state(lobbyId)
     const session = this.deps.engine.getSessionByUser(userId)
@@ -312,14 +312,7 @@ export class LobbyService {
     const id = await q.getOpenLobbyIdByCode(this.db, normalizeCode(code))
     const lobby = id === undefined ? undefined : await this.state(id)
     if (!lobby) return null
-    const host = lobby.hostUserId === null ? undefined : rules.memberOf(lobby, lobby.hostUserId)
-    return {
-      id: lobby.id,
-      name: lobby.name,
-      hostName: host?.name ?? null,
-      peopleCount: lobby.people.length,
-      boardNames: [...new Set(lobby.people.flatMap(p => (p.boardName === null ? [] : [p.boardName])))],
-    }
+    return { id: lobby.id, name: lobby.name, ...lobbyGlance(lobby) }
   }
 
   // ---- lifecycle --------------------------------------------------------------------
@@ -761,7 +754,13 @@ export class LobbyService {
   }
 
   async listInvites(userId: string): Promise<PendingInvite[]> {
-    return (await q.pendingInvitesFor(this.db, userId)).map(inviteView)
+    const views = await Promise.all(
+      (await q.pendingInvitesFor(this.db, userId)).map(async row => {
+        const lobby = await this.state(row.lobbyId)
+        return lobby ? inviteView(row, lobby) : null
+      }),
+    )
+    return views.filter(v => v !== null)
   }
 
   // The user's own pending invite to an open lobby, or 404

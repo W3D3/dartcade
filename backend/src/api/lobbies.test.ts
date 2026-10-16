@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { lobbiesApiPlugin } from './lobbies.js'
 import { LobbyError, inLobby } from '../lobby/errors.js'
+import { requireAuth } from '../auth/middleware.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -62,11 +63,22 @@ describe('lobbies API', () => {
     expect(JSON.parse((await app.inject({ method: 'GET', url: '/api/lobbies/current' })).body)).toEqual(ref)
   })
 
-  it('previews a lobby by code', async () => {
+  it('previews a lobby by code, signed out too (an invite link shows its lobby first)', async () => {
     const { app, lobbies } = makeApp()
-    lobbies.preview.mockResolvedValueOnce({ id: 'l1', name: 'L', hostName: 'Christoph', peopleCount: 2, boardNames: ['Living room'] })
+    const preview = {
+      id: 'l1',
+      name: 'L',
+      hostName: 'Christoph',
+      peopleCount: 2,
+      faces: [{ name: 'Christoph', guest: false }],
+      nextGame: { gameId: 'x01', config: { startScore: 501 } },
+      boardNames: ['Living room'],
+    }
+    lobbies.preview.mockResolvedValueOnce(preview)
     const res = await app.inject({ method: 'GET', url: '/api/lobby-codes/k7q4-md' })
     expect(res.statusCode).toBe(200)
+    expect(requireAuth).not.toHaveBeenCalled()
+    expect(res.json()).toEqual(preview)
     expect(lobbies.preview).toHaveBeenCalledWith('k7q4-md')
   })
 
@@ -144,6 +156,11 @@ describe('lobbies API', () => {
       inviterUserId: 'lena',
       inviterName: 'Lena',
       createdAt: new Date(0).toISOString(),
+      hostName: 'Lena',
+      peopleCount: 1,
+      faces: [{ name: 'Lena', guest: false }],
+      nextGame: null,
+      boardNames: [],
     }
     lobbies.listInvites.mockResolvedValueOnce([invite])
     expect(JSON.parse((await app.inject({ method: 'GET', url: '/api/invites' })).body)).toEqual({ invites: [invite] })

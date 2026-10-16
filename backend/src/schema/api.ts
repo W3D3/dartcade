@@ -554,7 +554,10 @@ export interface paths {
             };
             cookie?: never;
         };
-        /** What the Join page shows about an open lobby before joining */
+        /**
+         * What the Join page shows about an open lobby before joining
+         * @description Open without signing in, so an invite link shows its lobby first; the code is what a host shares.
+         */
         get: operations["getLobbyByCode"];
         put?: never;
         post?: never;
@@ -1707,7 +1710,19 @@ export interface components {
             name: string;
             hostName: string | null;
             peopleCount: number;
+            faces: components["schemas"]["LobbyFace"][];
+            nextGame: {
+                gameId: string;
+                config: {
+                    [key: string]: unknown;
+                };
+            } | null;
             boardNames: string[];
+        };
+        /** @description Someone in a lobby, for an avatar stack. guest means no account and not a bot. */
+        LobbyFace: {
+            name: string;
+            guest: boolean;
         };
         UpdateLobbyRequest: {
             name?: string;
@@ -1788,6 +1803,16 @@ export interface components {
             inviterName: string | null;
             /** Format: date-time */
             createdAt: string;
+            hostName: string | null;
+            peopleCount: number;
+            faces: components["schemas"]["LobbyFace"][];
+            nextGame: {
+                gameId: string;
+                config: {
+                    [key: string]: unknown;
+                };
+            } | null;
+            boardNames: string[];
         };
         InviteList: {
             invites: components["schemas"]["Invite"][];

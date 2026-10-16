@@ -170,6 +170,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
         name: "Christoph's lobby",
         hostName: 'Christoph',
         peopleCount: 2,
+        faces: [
+          { name: 'Christoph', guest: false },
+          { name: 'Lena', guest: false },
+        ],
+        nextGame: null,
         boardNames: ['Living room', "Lena's place"],
       })
     })
@@ -860,6 +865,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
           inviterUserId: 'lena',
           inviterName: 'Lena',
           createdAt: expect.any(String),
+          hostName: 'Christoph',
+          peopleCount: 2,
+          faces: [
+            { name: 'Christoph', guest: false },
+            { name: 'Lena', guest: false },
+          ],
+          nextGame: null,
+          boardNames: ['Living room', "Lena's place"],
         },
       ])
       expect((await lobbies.view(id))?.invites).toMatchObject([{ userId: 'max', name: 'Max', invitedByUserId: 'lena' }])

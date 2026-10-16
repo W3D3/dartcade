@@ -1,4 +1,4 @@
-import type { Lobby, LobbySummary, PendingInvite } from '../schema/lobby-ws.js'
+import type { Face, Lobby, LobbySummary, NextGame, PendingInvite } from '../schema/lobby-ws.js'
 import type { Session } from '../session/types.js'
 import { currentSeat } from '../session/access.js'
 import { effectiveReady, isSolo, memberOf, nextHost } from './rules.js'
@@ -61,14 +61,32 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
   }
 }
 
+/** What a lobby is about at a glance: its host, who's in (the first four faces), its next game, its boards. */
+export function lobbyGlance(lobby: LobbyState): {
+  hostName: string | null
+  peopleCount: number
+  faces: Face[]
+  nextGame: NextGame | null
+  boardNames: string[]
+} {
+  return {
+    hostName: hostNameOf(lobby),
+    peopleCount: lobby.people.length,
+    faces: lobby.people.slice(0, 4).map(p => ({ name: p.name, guest: p.userId === null && p.bot === null })),
+    nextGame: lobby.nextGame,
+    boardNames: [...new Set(lobby.people.flatMap(p => (p.boardName === null ? [] : [p.boardName])))],
+  }
+}
+
 /** The user's lobby as the indicator shows it (/ws/me). */
 export function lobbySummary(lobby: LobbyState, userId: string, session: Session | undefined): LobbySummary {
+  const { hostName, peopleCount, faces, nextGame } = lobbyGlance(lobby)
   return {
     id: lobby.id,
     name: lobby.name,
-    hostName: hostNameOf(lobby),
-    peopleCount: lobby.people.length,
-    nextGame: lobby.nextGame,
+    hostName,
+    peopleCount,
+    nextGame,
     sessionId: session?.id ?? null,
     gameId: session?.module.id ?? null,
     // A bot's seat is controlled by whoever added it, but they don't throw for it themselves
@@ -80,13 +98,14 @@ export function lobbySummary(lobby: LobbyState, userId: string, session: Session
     youHost: lobby.hostUserId === userId,
     solo: isSolo(lobby),
     hasBot: lobby.people.some(p => p.bot !== null),
-    faces: lobby.people.slice(0, 4).map(p => ({ name: p.name, guest: p.userId === null && p.bot === null })),
+    faces,
   }
 }
 
-/** A pending invite as its invitee sees it: on /ws/me and from GET /api/invites. */
-export function inviteView(row: InviteRow): PendingInvite {
+/** A pending invite as its invitee sees it, with a glance at its lobby: on /ws/me and from GET /api/invites. */
+export function inviteView(row: InviteRow, lobby: LobbyState): PendingInvite {
   return {
+    ...lobbyGlance(lobby),
     id: row.id,
     lobbyId: row.lobbyId,
     lobbyName: row.lobbyName,
