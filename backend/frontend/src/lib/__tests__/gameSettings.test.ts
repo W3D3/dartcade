@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY } from '../gameSettings.js'
+import { defaultSettings, loadSettings, parseSettings, saveSettings, SETTINGS_KEY } from '../gameSettings.js'
 
 const store = (value: string | null) => ({ getItem: (k: string) => (k === SETTINGS_KEY ? value : null) })
 
@@ -73,6 +73,12 @@ describe('loadSettings', () => {
 
   it('falls back to the defaults on broken JSON', () => {
     expect(loadSettings(store('{nope'))).toEqual(defaultSettings)
+  })
+
+  it('checkout calls are on by default and repeat by default', () => {
+    const s = parseSettings({})
+    expect(s.callerCheckouts).toBe(true)
+    expect(s.callerCheckoutRepeat).toBe(true)
   })
 })
 

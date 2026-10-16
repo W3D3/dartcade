@@ -25,7 +25,7 @@
   import { get } from 'svelte/store'
   import { accountSettings } from '$lib/accountSettings'
   import { audioContext, createSounds } from '../lib/sounds.js'
-  import { callsFor } from '$lib/caller/calls'
+  import { callsFor, checkoutFor, createCheckoutMemory, requirePart } from '$lib/caller/calls'
   import { createCaller } from '$lib/caller/player'
   import { voiceClips, type Clips } from '$lib/caller/voices'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
@@ -92,6 +92,7 @@
   // them; the player drops a call overtaken by a newer one.
   const caller = createCaller(() => settings.volume)
   let callerClips: Promise<Clips | null> = Promise.resolve(null)
+  let checkoutMemory = createCheckoutMemory()
   $effect(() => {
     const on = settings.callerOn
     const voice = settings.callerVoice
@@ -166,10 +167,17 @@
       }
       const next = gameState(snap)
       // A new session starts the caller afresh (the previous game isn't this one's "before")
-      const before = snapshot?.sessionId === snap.sessionId ? gameState(snapshot) : gameState(null)
+      const newSession = snapshot?.sessionId !== snap.sessionId
+      const before = newSession ? gameState(null) : gameState(snapshot)
+      // A new session starts the checkout memory afresh too, even while the caller was off
+      if (newSession) checkoutMemory = createCheckoutMemory()
       if (next.x01 && settings.callerOn) {
         const call = callsFor(before.x01, next.x01)
-        if (call.length) void callerClips.then(c => c && caller.say(call, c))
+        // Only the require call at the takeout: the score call said at the third dart may still be playing
+        const queue = !call.length
+        const checkout = settings.callerCheckouts ? checkoutFor(before.x01, next.x01) : null
+        if (checkout && checkoutMemory(checkout, settings.callerCheckoutRepeat)) call.push(requirePart(checkout.remaining))
+        if (call.length) void callerClips.then(c => c && caller.say(call, c, { queue }))
       }
       const g = next.x01 ?? next.atc
       if (g) {

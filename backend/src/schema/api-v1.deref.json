@@ -6611,6 +6611,14 @@
                       "nullable": true,
                       "description": "A voice pack id or builtin:<id>; null: the default voice"
                     },
+                    "callerCheckouts": {
+                      "type": "boolean",
+                      "description": "X01: the caller says \"You require N\" when the next thrower can finish"
+                    },
+                    "callerCheckoutRepeat": {
+                      "type": "boolean",
+                      "description": "The checkout call is said again while the score stays the same"
+                    },
                     "x01StartScore": {
                       "type": "integer",
                       "enum": [
@@ -6783,6 +6791,14 @@
                     "nullable": true,
                     "description": "A voice pack id or builtin:<id>; null: the default voice"
                   },
+                  "callerCheckouts": {
+                    "type": "boolean",
+                    "description": "X01: the caller says \"You require N\" when the next thrower can finish"
+                  },
+                  "callerCheckoutRepeat": {
+                    "type": "boolean",
+                    "description": "The checkout call is said again while the score stays the same"
+                  },
                   "x01StartScore": {
                     "type": "integer",
                     "enum": [
@@ -6869,6 +6885,14 @@
                       "maxLength": 200,
                       "nullable": true,
                       "description": "A voice pack id or builtin:<id>; null: the default voice"
+                    },
+                    "callerCheckouts": {
+                      "type": "boolean",
+                      "description": "X01: the caller says \"You require N\" when the next thrower can finish"
+                    },
+                    "callerCheckoutRepeat": {
+                      "type": "boolean",
+                      "description": "The checkout call is said again while the score stays the same"
                     },
                     "x01StartScore": {
                       "type": "integer",
@@ -26413,6 +26437,14 @@
             "maxLength": 200,
             "nullable": true,
             "description": "A voice pack id or builtin:<id>; null: the default voice"
+          },
+          "callerCheckouts": {
+            "type": "boolean",
+            "description": "X01: the caller says \"You require N\" when the next thrower can finish"
+          },
+          "callerCheckoutRepeat": {
+            "type": "boolean",
+            "description": "The checkout call is said again while the score stays the same"
           },
           "x01StartScore": {
             "type": "integer",
