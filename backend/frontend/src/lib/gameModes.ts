@@ -67,11 +67,13 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'p121',
+    glyph: '121',
     name: '121',
     desc: 'Check out 121 in nine darts, then go higher.',
     cat: 'practice',
     img: p121Img,
-    available: false,
+    available: true,
+    flag: 'gamemode.p121.enabled',
   },
   {
     id: 'bobs',
