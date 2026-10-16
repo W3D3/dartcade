@@ -805,6 +805,17 @@ export class LobbyService {
     })
   }
 
+  /** Rematch (the win screen): the last game's line-up plays again; whoever sat it out sits out again. */
+  async rematch(userId: string, lobbyId: string): Promise<void> {
+    await this.enqueue(lobbyId, async () => {
+      await this.openAsHost(lobbyId, userId)
+      const running = this.deps.engine.getLobbySession(lobbyId)
+      if (running) throw LobbyError.conflict({ error: 'a game is running already', code: 'game_running', sessionId: running.id })
+      await q.restoreLastLineUp(this.db, lobbyId)
+      await this.refreshAndPublish(lobbyId)
+    })
+  }
+
   /** A game mode or setting that's off for the user (its feature flag) can't be picked or started. */
   private async checkAvailable(userId: string, gameId: string, config: Record<string, unknown>): Promise<void> {
     if (this.deps.gameAvailable && !(await this.deps.gameAvailable(userId, gameId, config))) {

@@ -98,6 +98,12 @@ History stays as it is.
      `ready: true`); the others see it and the usual ready check runs when the host presses Start.
    - anyone else, or a game already running (a reload after the rematch started): nothing.
 
+Before either, the lobby page sends `POST /api/lobbies/{id}/rematch` (#196): the reset put
+everyone back in, and this brings back the last game's line-up (`lobby_people.played_last`), so
+whoever sat it out sits out again. Back to lobby skips it: there, sitting out lasts a single game.
+It's refused (409 `game_running`) while a game runs. The line-up isn't read from `game_players`:
+a guest's seat keeps only a name and its adder, and guest names needn't be unique.
+
 The rematch keeps the game, settings, people and throw order the lobby has after its reset; with
 Bull off on, the rematch bulls off again. It doesn't swap who throws first.
 

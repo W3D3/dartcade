@@ -145,6 +145,8 @@ export interface LobbyPeopleTable {
   position: number
   plays: ColumnType<boolean, boolean | undefined, boolean>
   ready: ColumnType<boolean, boolean | undefined, boolean>
+  /** Played the lobby's last game (migration 023): a rematch plays exactly these again. */
+  played_last: ColumnType<boolean, boolean | undefined, boolean>
   /** Who put them on their board when it wasn't their own (or their adder's) pick. */
   board_moved_by: string | null
   joined_at: ColumnType<Date, Date | undefined, never>
