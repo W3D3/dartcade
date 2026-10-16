@@ -1732,6 +1732,10 @@ export interface components {
             callerOn?: boolean;
             /** @description A voice pack id or builtin:<id>; null: the default voice */
             callerVoice?: string | null;
+            /** @description X01: the caller says "You require N" when the next thrower can finish */
+            callerCheckouts?: boolean;
+            /** @description The checkout call is said again while the score stays the same */
+            callerCheckoutRepeat?: boolean;
             /**
              * @description New game defaults: X01 start score
              * @enum {integer}

@@ -37,8 +37,12 @@ function trimmed(ctx: AudioContext, b: AudioBuffer): AudioBuffer {
 export function createCaller(volume: () => number) {
   const buffers = new Map<string, Promise<AudioBuffer | null>>()
   let playing: AudioBufferSourceNode[] = []
-  // Bumped by every say and stop: a call still loading when the next one comes is dropped
+  // Bumped by every normal say and stop: a call still loading when the next one comes is dropped
   let turn = 0
+  // Settles once the latest call has started playing (or was dropped); a queued call waits for it
+  let tail: Promise<void> = Promise.resolve()
+  // When the last scheduled clip ends, in the context's time
+  let endsAt = 0
 
   function load(ctx: AudioContext, url: string): Promise<AudioBuffer | null> {
     const cached = buffers.get(url)
@@ -77,22 +81,34 @@ export function createCaller(volume: () => number) {
       }
     }
     playing = []
+    endsAt = 0
   }
 
-  async function say(call: Call, clips: Record<string, string[]>): Promise<void> {
-    const mine = ++turn
-    silence()
+  /** Says `call`, cutting off whatever is playing or loading; with `queue` it leaves that be and
+   *  starts once it has ended. */
+  function say(call: Call, clips: Record<string, string[]>, { queue = false } = {}): Promise<void> {
+    if (!queue) {
+      turn++
+      silence()
+    }
+    const after = queue ? tail : Promise.resolve()
+    tail = play(call, clips, turn, after)
+    return tail
+  }
+
+  async function play(call: Call, clips: Record<string, string[]>, mine: number, after: Promise<void>) {
     const vol = volume()
     const ctx = audioContext()
     if (!ctx || vol <= 0) return
     const loaded = await Promise.all(pickClips(call, clips).map(url => load(ctx, url)))
+    await after
     if (mine !== turn) return
     if (!gain) {
       gain = ctx.createGain()
       gain.connect(ctx.destination)
     }
     gain.gain.value = vol
-    let at = ctx.currentTime
+    let at = Math.max(ctx.currentTime, endsAt)
     for (const buffer of loaded) {
       if (!buffer) continue
       const src = ctx.createBufferSource()
@@ -105,6 +121,7 @@ export function createCaller(volume: () => number) {
       at += buffer.duration
       playing.push(src)
     }
+    endsAt = at
   }
 
   function stop() {

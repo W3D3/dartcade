@@ -35,6 +35,10 @@ export interface GameSettings {
   callerOn: boolean
   /** The caller's voice: one of the user's packs (its id) or `builtin:<id>`; null for the default built-in voice. */
   callerVoice: string | null
+  /** X01: the caller says what the next thrower requires when they can finish ("You require 121"). */
+  callerCheckouts: boolean
+  /** X01: the checkout call is said again while the thrower's score stays the same (after a bust or a no-score visit). */
+  callerCheckoutRepeat: boolean
   /** The match screen's board: drawn, or a camera's still of the real board under the marks
    *  (combined: the three cameras blended, each region from the sharpest). */
   boardView: BoardView
@@ -84,6 +88,8 @@ export const defaultSettings: GameSettings = {
   inputView: null,
   callerOn: false,
   callerVoice: null,
+  callerCheckouts: true,
+  callerCheckoutRepeat: true,
   boardView: 'svg',
   lastCameraView: 'combined',
   x01StartScore: 501,
@@ -131,6 +137,8 @@ const SettingsSchema = z
     inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),
     callerOn: flag(d.callerOn),
     callerVoice: z.string().min(1).nullable().catch(null).default(null),
+    callerCheckouts: flag(d.callerCheckouts),
+    callerCheckoutRepeat: flag(d.callerCheckoutRepeat),
     boardView: z.enum(BOARD_VIEWS).catch(d.boardView).default(d.boardView),
     lastCameraView: z.enum(CAMERA_VIEWS).catch(d.lastCameraView).default(d.lastCameraView),
     x01StartScore: z

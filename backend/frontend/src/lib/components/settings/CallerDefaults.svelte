@@ -28,6 +28,22 @@
       audioContext()
     }}
   />
+  {#if settings.callerOn}
+    <SettingSwitch
+      id="pref-callerCheckouts"
+      label="Checkout calls"
+      sub="“You require 121” when the next thrower can finish"
+      bind:checked={settings.callerCheckouts}
+    />
+    {#if settings.callerCheckouts}
+      <SettingSwitch
+        id="pref-callerCheckoutRepeat"
+        label="Repeat checkout calls"
+        sub="Say it again while the score stays the same"
+        bind:checked={settings.callerCheckoutRepeat}
+      />
+    {/if}
+  {/if}
   <div class="flex flex-col gap-2">
     <span id="pref-callerVoice" class="text-[15px] text-text-muted">Default voice</span>
     <VoiceSelect

@@ -1,9 +1,20 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { audibleRange } from '../caller/player.js'
 
-// A stand-in AudioContext: decoding returns the "audio" the response carried, and every
-// started source is recorded with it
+// A stand-in AudioContext: decoding returns the "audio" the response carried (1 s of sound,
+// unless it brings its own samples), and every started and stopped source is recorded
 const started: string[] = []
+type FakeBuffer = {
+  tag?: string
+  duration: number
+  numberOfChannels: number
+  length: number
+  sampleRate: number
+  getChannelData: (i: number) => Float32Array
+  copyToChannel?: (c: Float32Array, i: number) => void
+}
+const starts: { tag?: string; at: number; length: number }[] = []
+const stopped: string[] = []
 class FakeContext {
   state = 'running'
   currentTime = 0
@@ -13,39 +24,42 @@ class FakeContext {
   }
   createBufferSource() {
     const src = {
-      buffer: null as {
-        tag: string
-        duration: number
-        numberOfChannels: number
-        length: number
-        sampleRate: number
-        getChannelData: (i: number) => Float32Array
-      } | null,
+      buffer: null as FakeBuffer | null,
       connect: vi.fn(),
       disconnect: vi.fn(),
-      stop: vi.fn(),
-      start: () => {
-        if (src.buffer) started.push(src.buffer.tag)
+      stop: () => {
+        if (src.buffer?.tag) stopped.push(src.buffer.tag)
+      },
+      start: (at = 0) => {
+        if (!src.buffer) return
+        if (src.buffer.tag) started.push(src.buffer.tag)
+        starts.push({ tag: src.buffer.tag, at, length: src.buffer.length })
       },
     }
     return src
   }
-  createBuffer(numberOfChannels: number, length: number, sampleRate: number) {
+  createBuffer(numberOfChannels: number, length: number, sampleRate: number): FakeBuffer {
+    const data = new Float32Array(length)
     return {
       numberOfChannels,
       length,
       sampleRate,
-      getChannelData: () => new Float32Array(length).fill(0.5),
+      duration: length / sampleRate,
+      getChannelData: () => data,
+      copyToChannel: c => {
+        data.set(c)
+      },
     }
   }
-  decodeAudioData(data: { tag: string }) {
+  decodeAudioData(data: { tag: string; samples?: Float32Array }): Promise<FakeBuffer> {
+    const samples = data.samples ?? new Float32Array(22050).fill(0.5)
     return Promise.resolve({
       tag: data.tag,
-      duration: 1,
+      duration: samples.length / 22050,
       numberOfChannels: 1,
-      length: 22050,
+      length: samples.length,
       sampleRate: 22050,
-      getChannelData: () => new Float32Array(22050).fill(0.5),
+      getChannelData: () => samples,
     })
   }
   resume() {
@@ -53,7 +67,11 @@ class FakeContext {
   }
 }
 
-const ok = (tag: string) => ({ ok: true, status: 200, arrayBuffer: () => Promise.resolve({ tag }) })
+const ok = (tag: string, samples?: Float32Array) => ({
+  ok: true,
+  status: 200,
+  arrayBuffer: () => Promise.resolve({ tag, samples }),
+})
 const flush = () => new Promise(r => setTimeout(r, 0))
 
 describe('audibleRange', () => {
@@ -73,6 +91,8 @@ describe('audibleRange', () => {
 describe('createCaller', () => {
   beforeEach(() => {
     started.length = 0
+    starts.length = 0
+    stopped.length = 0
     vi.stubGlobal('AudioContext', FakeContext)
   })
   afterEach(() => {
@@ -109,5 +129,86 @@ describe('createCaller', () => {
     await first
     await flush()
     expect(started).toEqual(['fast'])
+  })
+
+  it('plays a clip without its quiet edges', async () => {
+    // 0.5 s quiet, 0.5 s sound, 0.5 s quiet at 22050 Hz: kept is the sound plus 20 ms either side
+    const samples = new Float32Array(33075)
+    samples.fill(0.5, 11025, 22050)
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(ok('padded', samples)))
+    const { createCaller } = await import('../caller/player.js')
+    await createCaller(() => 1).say([['p']], { p: ['/c/padded'] })
+    expect(starts.map(s => s.length)).toEqual([11025 + 2 * 441])
+  })
+
+  it('queues a call after the one playing without stopping it', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => Promise.resolve(ok(url))),
+    )
+    const { createCaller } = await import('../caller/player.js')
+    const caller = createCaller(() => 1)
+    await caller.say([['a']], { a: ['/q/a'] })
+    await caller.say([['b']], { b: ['/q/b'] }, { queue: true })
+    expect(starts.map(s => [s.tag, s.at])).toEqual([
+      ['/q/a', 0],
+      ['/q/b', 1],
+    ])
+    expect(stopped).toEqual([])
+  })
+
+  it('plays a queued call after the one still loading', async () => {
+    let release: (v: unknown) => void = () => undefined
+    const slow = new Promise(r => {
+      release = r
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => (url === '/w/slow' ? slow : Promise.resolve(ok(url)))),
+    )
+    const { createCaller } = await import('../caller/player.js')
+    const caller = createCaller(() => 1)
+    const first = caller.say([['a']], { a: ['/w/slow'] })
+    const second = caller.say([['b']], { b: ['/w/fast'] }, { queue: true })
+    await flush()
+    expect(started).toEqual([])
+    release(ok('slow'))
+    await Promise.all([first, second])
+    expect(starts.map(s => [s.tag, s.at])).toEqual([
+      ['slow', 0],
+      ['/w/fast', 1],
+    ])
+  })
+
+  it('cuts off the playing and the queued call with a normal one', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => Promise.resolve(ok(url))),
+    )
+    const { createCaller } = await import('../caller/player.js')
+    const caller = createCaller(() => 1)
+    await caller.say([['a']], { a: ['/n/a'] })
+    await caller.say([['b']], { b: ['/n/b'] }, { queue: true })
+    await caller.say([['c']], { c: ['/n/c'] })
+    expect(stopped).toEqual(['/n/a', '/n/b'])
+    expect(starts.at(-1)).toEqual({ tag: '/n/c', at: 0, length: 22050 })
+  })
+
+  it('drops a queued call still loading when a normal one comes', async () => {
+    let release: (v: unknown) => void = () => undefined
+    const slow = new Promise(r => {
+      release = r
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => (url === '/d/slow' ? slow : Promise.resolve(ok(url)))),
+    )
+    const { createCaller } = await import('../caller/player.js')
+    const caller = createCaller(() => 1)
+    const queued = caller.say([['a']], { a: ['/d/slow'] }, { queue: true })
+    await caller.say([['b']], { b: ['/d/fast'] })
+    release(ok('slow'))
+    await queued
+    expect(started).toEqual(['/d/fast'])
   })
 })
