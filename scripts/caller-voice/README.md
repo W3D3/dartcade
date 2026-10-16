@@ -36,7 +36,8 @@ node generate.mjs
 ```
 
 This reads `lines.json` (the lines per key — darts scores 0-180, `gameshot`/`matchshot`/
-`busted`/`gameon` variants, `leg_1`…`leg_15`, `bulling_start`, `and`), synthesises each line with
+`busted`/`gameon` variants, `leg_1`…`leg_15`, `bulling_start`, `and`, `you_require`,
+`require_1`…`require_180`), synthesises each line with
 Kokoro, and for every clip:
 
 1. Trims leading/trailing silence (`silenceremove`).
