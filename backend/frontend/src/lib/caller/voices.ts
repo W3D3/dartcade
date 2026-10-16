@@ -46,8 +46,12 @@ export const packClipUrls = (clips: Clips): Clips => mapClips(clips, clipUrl)
 export const builtinClipUrls = (id: string, clips: Clips): Clips =>
   mapClips(clips, file => `/voices/${encodeURIComponent(id)}/${file.split('/').map(encodeURIComponent).join('/')}`)
 
-/** A voice's clips over the built-in voice's: keys the voice lacks fall back to it. */
-export const mergeClips = (voice: Clips, base: Clips): Clips => ({ ...base, ...voice })
+/** A voice's clips over the built-in voice's: keys the voice lacks fall back to it, except `and`. */
+export const mergeClips = (voice: Clips, base: Clips): Clips => {
+  // "and" joins two of the voice's own clips, so another voice's would mix voices mid-sentence; skip it
+  const { and: _and, ...rest } = base
+  return { ...rest, ...voice }
+}
 
 const BuiltinManifestSchema = z.object({
   id: z.string(),

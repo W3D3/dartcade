@@ -65,7 +65,7 @@ function endOfVisit(g: CallGame): Call {
   if (g.visitLocked && g.scores[cp] === 0) {
     if (legsOf(g, cp) + 1 >= g.firstTo) return [['matchshot', 'gameshot']]
     // Legs count up at the takeout, so g still has the old count: this is the leg just won
-    return [['gameshot'], [`leg_${legsPlayed(g) + 1}`]]
+    return [['gameshot'], ['and'], [`leg_${legsPlayed(g) + 1}`]]
   }
   return [[String(visitTotal(g))]]
 }

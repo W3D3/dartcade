@@ -15,7 +15,7 @@ export interface ParsedPack {
   clips: Record<string, Clip[]>
 }
 
-const SHOTS = new Set(['busted', 'gameshot', 'matchshot', 'gameon', 'bulling_start'])
+const SHOTS = new Set(['busted', 'gameshot', 'matchshot', 'gameon', 'bulling_start', 'and'])
 const SOUND = /\.(mp3|wav|ogg)$/i
 const MIME: Record<string, string> = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg' }
 

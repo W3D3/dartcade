@@ -36,7 +36,7 @@ node generate.mjs
 ```
 
 This reads `lines.json` (the lines per key — darts scores 0-180, `gameshot`/`matchshot`/
-`busted`/`gameon` variants, `leg_1`…`leg_15`, `bulling_start`), synthesises each line with
+`busted`/`gameon` variants, `leg_1`…`leg_15`, `bulling_start`, `and`), synthesises each line with
 Kokoro, and for every clip:
 
 1. Trims leading/trailing silence (`silenceremove`).
@@ -53,6 +53,7 @@ model's output actually sounds right.
 
 ## Editing the lines
 
-Edit `lines.json` and re-run `node generate.mjs`; it regenerates every clip (there's no
-incremental mode — a full run takes a few minutes on CPU). Keep the key names in sync
+Edit `lines.json` and re-run `node generate.mjs`; it regenerates every clip (a full run takes
+a few minutes on CPU). To make only some clips, name their keys (`node generate.mjs and`): the
+other clips and their manifest entries stay as they are. Keep the key names in sync
 with what the app's caller expects (see `backend/frontend/src/lib/caller/`).

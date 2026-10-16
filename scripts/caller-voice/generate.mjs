@@ -3,7 +3,7 @@
 // lines.json, synthesised once with Kokoro-82M (through kokoro-js) and encoded to small mono
 // MP3s. Run this on a developer machine; the app only ships the resulting clips and manifest.
 //
-// Usage: node generate.mjs
+// Usage: node generate.mjs [key…]  (keys given: only those clips, the rest of the manifest is kept)
 // (ffmpeg is invoked as `nix shell nixpkgs#ffmpeg -c ffmpeg ...`; see README.md.)
 
 import { execFile } from 'node:child_process'
@@ -73,12 +73,15 @@ async function main() {
   const tmp = await mkdtemp(join(tmpdir(), 'caller-voice-'))
   await mkdir(OUT_DIR, { recursive: true })
 
-  const manifestClips = {}
-  const keys = Object.keys(lines)
+  const only = process.argv.slice(2)
+  const manifestPath = join(OUT_DIR, 'manifest.json')
+  const manifestClips = only.length > 0 ? JSON.parse(await readFile(manifestPath, 'utf8')).clips : {}
+  const keys = only.length > 0 ? only : Object.keys(lines)
   let done = 0
 
   for (const key of keys) {
     const texts = lines[key]
+    if (!texts) throw new Error(`No line for ${key} in lines.json`)
     const names = filenames(key, texts.length)
     manifestClips[key] = names
     for (let i = 0; i < texts.length; i++) {
@@ -94,7 +97,7 @@ async function main() {
   await rm(tmp, { recursive: true, force: true })
 
   const manifest = { id: VOICE_ID, name: VOICE_NAME, clips: manifestClips }
-  await writeFile(join(OUT_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2) + '\n')
+  await writeFile(manifestPath, JSON.stringify(manifest, null, 2) + '\n')
 
   let totalBytes = 0
   for (const names of Object.values(manifestClips)) {

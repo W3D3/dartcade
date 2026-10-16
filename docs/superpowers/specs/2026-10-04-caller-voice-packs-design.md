@@ -50,18 +50,18 @@ Found by reading darts-caller's code, Tools for Autodarts' code, one darts-calle
    `busted`, `matchshot` as `.mp3` or `.wav`.
 
 Keys we use: `0`–`180`, `busted`, `gameshot`, `matchshot`, `gameon`, `leg_N`, `set_N`,
-`bulling_start`. Everything else is ignored.
+`bulling_start`, `and`. Everything else is ignored.
 
 ## What the caller says
 
-| Moment                         | Clip                       | Notes                                                           |
-| ------------------------------ | -------------------------- | --------------------------------------------------------------- |
-| A visit ends with a score      | the visit total, `0`–`180` | a visit of 0 plays the pack's `0` clip                          |
-| A bust                         | `busted`                   | instead of the total                                            |
-| A checkout that wins a leg     | `gameshot`                 | then `leg_N` for the next leg if the pack has it ("Second leg") |
-| A checkout that wins the match | `matchshot`                | falls back to `gameshot`                                        |
-| The game starts                | `gameon`                   | after the bull off, if there is one                             |
-| A bull off starts              | `bulling_start`            | optional; silent without it                                     |
+| Moment                         | Clip                       | Notes                                                                                                                            |
+| ------------------------------ | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| A visit ends with a score      | the visit total, `0`–`180` | a visit of 0 plays the pack's `0` clip                                                                                           |
+| A bust                         | `busted`                   | instead of the total                                                                                                             |
+| A checkout that wins a leg     | `gameshot`                 | then `and` and `leg_N` for the leg just won ("and the first leg"); `and` only from the voice itself, never the built-in fallback |
+| A checkout that wins the match | `matchshot`                | falls back to `gameshot`                                                                                                         |
+| The game starts                | `gameon`                   | after the bull off, if there is one                                                                                              |
+| A bull off starts              | `bulling_start`            | optional; silent without it                                                                                                      |
 
 **When a visit ends** is the same rule as the "Score left: After the visit" setting: the third dart,
 a bust, a checkout, or else the takeout / Next player. Each visit is called once; a correction that
