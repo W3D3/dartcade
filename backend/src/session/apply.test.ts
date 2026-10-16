@@ -174,6 +174,15 @@ describe('applyInput', () => {
       expect(awaitsFinish(leg)).toBe(false)
     })
 
+    it("X01: the round limit's last visit waits only once its three darts are in", () => {
+      const s = session(x01Module, { ...x01Module.defaultConfig, maxRounds: 1 }, 1)
+      applyInput(s, add(S20), t(0))
+      applyInput(s, add(S20), t(1))
+      expect(awaitsFinish(s)).toBe(false)
+      applyInput(s, add(S20), t(2))
+      expect(awaitsFinish(s)).toBe(true)
+    })
+
     it('X01: correcting the double away ends the wait', () => {
       const s = session(x01Module, { ...x01Module.defaultConfig, startScore: 40, firstTo: 1 }, 2)
       applyInput(s, add(D20), t(0))

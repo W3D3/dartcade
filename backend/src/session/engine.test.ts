@@ -3,8 +3,9 @@ import { SessionEngine, type SnapshotView } from './engine.js'
 import { ActiveSessionError, BoardBusyError, InvalidConfigError } from './errors.js'
 import type { EngineStore } from './engine.js'
 import type { StoredGameSession } from '../db/queries.js'
-import type { X01Game } from '../schema/game-ws.js'
+import type { P121Game, X01Game } from '../schema/game-ws.js'
 import { x01Module } from '../games/x01.js'
+import { p121Module } from '../games/p121.js'
 import { atcModule } from '../games/atc.js'
 import type { Seat } from './types.js'
 import { seededRng, shuffle } from './rng.js'
@@ -207,6 +208,54 @@ describe('onBridgeEvent', () => {
     const session = engine.getSession(sessionId)!
     expect(session.openVisitEvents).toHaveLength(0)
     expect(session.currentState).toEqual(session.committedState)
+  })
+
+  describe('121 on a camera board', () => {
+    const seg = (name: string, number: number, multiplier: number) => ({ name, number, bed: 'Single', multiplier })
+    const MISS = seg('Miss', 0, 0)
+    async function start() {
+      const store = makeStore()
+      const engine = new SessionEngine(store, push)
+      const config = { ...p121Module.defaultConfig, startTarget: 81, tries: 5, dartsPerTry: 6 }
+      const { sessionId } = await engine.create('user-1', 'board-1', 'p121', config, [{ name: 'Alice' }])
+      let seq = 0
+      const visit = async (...darts: ReturnType<typeof seg>[]) => {
+        const id = `v${seq}`
+        await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: id })
+        for (const [index, d] of darts.entries()) {
+          await engine.onBridgeEvent('board-1', 'dart.detected', {
+            visit_id: id,
+            index,
+            source_seq: ++seq,
+            dart: { segment: d, score: d.number * d.multiplier },
+          })
+        }
+      }
+      const game = () => engine.getSnapshot(sessionId)!.game as P121Game
+      return { store, engine, sessionId, visit, game }
+    }
+
+    it("the game's last visit takes all its darts: a checkout on dart 2 counts", async () => {
+      const { store, engine, sessionId, visit, game } = await start()
+      for (let i = 0; i < 4; i++) await engine.onUserAction(sessionId, 'user-1', { type: 'p121_give_up' })
+      // The last try: 81 - T20 - S1 = 20 after the first visit
+      await visit(seg('T20', 20, 3), seg('S1', 1, 1), MISS)
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      // Its last visit: a takeout after one dart would end the game, but the visit isn't over
+      await visit(MISS)
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(false)
+      await engine.onBridgeEvent('board-1', 'dart.detected', {
+        visit_id: 'v4',
+        index: 1,
+        source_seq: 99,
+        dart: { segment: seg('D10', 10, 2), score: 20 },
+      })
+      expect(game().seats[0].left).toBe(0)
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(true)
+      await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+      expect(store.finishSession).toHaveBeenCalled()
+      expect(game().seats[0].tries.at(-1)).toMatchObject({ target: 81, made: true, darts: 5 })
+    })
   })
 
   describe('the visit that wins the game', () => {
