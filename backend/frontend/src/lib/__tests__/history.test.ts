@@ -50,6 +50,9 @@ describe('rulesLine', () => {
     expect(
       rulesLine(game({ mode: 'atc', config: { order: 'asc', finishOn: 'bull', multiplierAdvances: false }, players: [game().players[0]] })),
     ).toBe('1–20, then Bull · Practice')
+    expect(
+      rulesLine(game({ mode: 'p121', config: { startTarget: 121, tries: 10, dartsPerTry: 9, outMode: 'double', missRule: 'reset' } })),
+    ).toBe('121 · 10 tries · 9 darts · Double out')
   })
   it('names the course for Minigolf', () => {
     expect(rulesLine(game({ mode: 'minigolf', config: { course: 'test', tries: 3, ballContact: false } }))).toBe(
@@ -104,6 +107,12 @@ describe('historyStat', () => {
       value: '52',
       label: 'darts to finish',
     })
+    const p121 = (stats: Record<string, number>) => game({ mode: 'p121', players: [{ ...game().players[0], stats }] })
+    expect(historyStat(p121({ highestMade: 124, checkouts: 4, tries: 10, dartsThrown: 70 }))).toEqual({
+      value: '124',
+      label: 'highest made',
+    })
+    expect(historyStat(p121({ checkouts: 0, tries: 10, dartsThrown: 90 }))).toBeNull()
     expect(historyStat(game({ mode: 'soccer' }))).toBeNull()
   })
 })
@@ -149,6 +158,12 @@ describe('statTiles', () => {
         stats: { average: agg(72.64, 50, 90, 871.7, 69.5), bestCheckout: agg(80, 40, 121, 400), dartsThrown: agg(200, 100, 300, 2400) },
       },
       atc: { matches: 6, wins: 4, contested: 6, stats: { dartsToFinish: agg(58.4, 52, 70, 292), dartsThrown: agg(170, 52, 300, 1012) } },
+      p121: {
+        matches: 2,
+        wins: 0,
+        contested: 0,
+        stats: { highestMade: agg(123, 122, 124, 246), checkouts: agg(3, 2, 4, 6), dartsThrown: agg(80, 70, 90, 160) },
+      },
     },
     ...o,
   })
@@ -157,7 +172,7 @@ describe('statTiles', () => {
     expect(statTiles(stats(), null, title)).toEqual([
       { label: 'Matches · 30 days', value: '23', note: null, trend: null },
       { label: 'Won', value: '14', note: '64%', trend: null },
-      { label: 'Darts thrown', value: '3,412', note: null, trend: null },
+      { label: 'Darts thrown', value: '3,572', note: null, trend: null },
       { label: 'Most played', value: 'X01', note: '12 matches', trend: null },
     ])
   })
@@ -175,6 +190,14 @@ describe('statTiles', () => {
       { label: 'Won', value: '4', note: '67%', trend: null },
       { label: 'Best finish', value: '52', note: 'darts', trend: null },
       { label: 'Average finish', value: '58', note: 'darts', trend: null },
+    ])
+  })
+  it('121: its matches, won, highest made, checkouts', () => {
+    expect(statTiles(stats(), 'p121', title)).toEqual([
+      { label: 'p121 matches · 30 days', value: '2', note: null, trend: null },
+      { label: 'Won', value: '–', note: null, trend: null },
+      { label: 'Highest made', value: '124', note: null, trend: null },
+      { label: 'Checkouts', value: '6', note: null, trend: null },
     ])
   })
   it('shows – without data, and only matches and won for an unknown mode', () => {

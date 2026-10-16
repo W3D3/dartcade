@@ -1,7 +1,7 @@
 // Formatting for the History page: one finished game per row, plus the stat tiles.
 import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
-import { atcRules, minigolfRules, x01Rules } from './gameViews/meta.js'
+import { atcRules, minigolfRules, p121Rules, x01Rules } from './gameViews/meta.js'
 import { COURSES } from '$shared/minigolf/courses/index'
 import { dayMonth, ordinal, startOfDay } from './fmt.js'
 
@@ -13,6 +13,7 @@ const AtcConfigSchema = z.object({
   finishOn: z.enum(['twenty', 'single_bull', 'bull']),
   multiplierAdvances: z.boolean(),
 })
+const P121ConfigSchema = z.object({ startTarget: z.number(), tries: z.number(), dartsPerTry: z.number(), outMode: ModeSchema })
 const MinigolfConfigSchema = z.object({
   course: z.string(),
   tries: z.number(),
@@ -60,6 +61,10 @@ export function rulesLine(game: GameSummary): string {
     const c = AtcConfigSchema.safeParse(game.config)
     return c.success ? atcRules(c.data, n) : ''
   }
+  if (game.mode === 'p121') {
+    const c = P121ConfigSchema.safeParse(game.config)
+    return c.success ? p121Rules(c.data) : ''
+  }
   if (game.mode === 'minigolf') {
     const c = MinigolfConfigSchema.safeParse(game.config)
     if (!c.success) return ''
@@ -104,6 +109,10 @@ export function historyStat(game: GameSummary): { value: string; label: string }
   if (game.mode === 'atc') {
     const darts = stat(me, 'dartsThrown')
     return darts === undefined ? null : { value: String(darts), label: 'darts to finish' }
+  }
+  if (game.mode === 'p121') {
+    const high = stat(me, 'highestMade')
+    return high === undefined ? null : { value: String(high), label: 'highest made' }
   }
   if (game.mode === 'minigolf') {
     const strokes = stat(me, 'strokes')
@@ -169,6 +178,11 @@ export function statTiles(s: GameStats, mode: string | null, title: (mode: strin
       plain('Best finish', finish ? String(finish.min) : NONE, finish ? 'darts' : null),
       plain('Average finish', finish ? String(Math.round(finish.avg)) : NONE, finish ? 'darts' : null),
     ]
+  }
+  if (mode === 'p121') {
+    const high = modeStat(s, 'p121', 'highestMade')
+    const checkouts = modeStat(s, 'p121', 'checkouts')
+    return [...head, plain('Highest made', high ? String(high.max) : NONE), plain('Checkouts', checkouts ? String(checkouts.sum) : NONE)]
   }
   if (mode === 'minigolf') {
     const strokes = modeStat(s, 'minigolf', 'strokes')

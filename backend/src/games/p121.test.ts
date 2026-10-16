@@ -256,7 +256,7 @@ describe('history', () => {
   // tries: 121 made (3), 122 made (3), 123 missed (9), 121 made (3); open target 122
   it('summarize', () => {
     expect(p121Game.summarize(s0, { totalDarts: [18], totalVisits: [6] })).toEqual([
-      { placement: 1, stats: { highestMade: 122, checkouts: 3, tries: 4, avgDarts: 3, bestRun: 2 } },
+      { placement: 1, stats: { highestMade: 122, checkouts: 3, tries: 4, dartsThrown: 18, avgDarts: 3, bestRun: 2 } },
     ])
   })
   it('summarize places seats without a winner (forfeit before the end)', () => {
@@ -264,6 +264,7 @@ describe('history', () => {
     const r = p121Game.summarize(duo, { totalDarts: [3, 0], totalVisits: [1, 0] })
     expect(r.map(x => x.placement)).toEqual([1, 1])
     expect(r[0].stats).not.toHaveProperty('highestMade')
+    expect(r.map(x => x.stats.dartsThrown)).toEqual([3, 0])
   })
   it('detail', () => {
     const d = p121Game.detail([], s0)
