@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { request } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { createFastify } from './fastify.js'
+import { createFastify, trustProxy } from './fastify.js'
 
 describe('createFastify', () => {
   const app = () => {
@@ -49,5 +49,15 @@ describe('createFastify', () => {
   it('still parses a JSON body', async () => {
     const res = await app().inject({ method: 'POST', url: '/json', payload: { a: 1 } })
     expect(res.json()).toEqual({ body: { a: 1 } })
+  })
+})
+
+describe('trustProxy', () => {
+  it('is off unless set; "true", a hop count or addresses as Fastify takes them', () => {
+    expect(trustProxy(undefined)).toBe(false)
+    expect(trustProxy('')).toBe(false)
+    expect(trustProxy('true')).toBe(true)
+    expect(trustProxy('1')).toBe(1)
+    expect(trustProxy('10.0.0.1,10.0.0.2')).toBe('10.0.0.1,10.0.0.2')
   })
 })
