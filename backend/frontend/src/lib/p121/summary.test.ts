@@ -69,6 +69,21 @@ describe('summaryData', () => {
     ])
   })
 
+  it('starts the darts per checkout lower when a checkout took fewer than 3 (81 or 101)', () => {
+    const seat = {
+      ...detail.seats[0],
+      dartsPerCheckout: [
+        { darts: 2, count: 1 },
+        { darts: 4, count: 1 },
+      ],
+    }
+    expect(summaryData({ ...detail, seats: [seat] }, 0).dartsPerCheckout).toEqual([
+      { darts: 2, count: 1 },
+      { darts: 3, count: 0 },
+      { darts: 4, count: 1 },
+    ])
+  })
+
   it('has no averages without a checkout', () => {
     const none: P121Detail = {
       mode: 'p121',
