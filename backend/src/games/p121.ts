@@ -455,7 +455,7 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
     return [...s.order]
   },
 
-  summarize(s: P121State): SeatResult[] {
+  summarize(s: P121State, { totalDarts }): SeatResult[] {
     const placements = rankSeats(s.seats.length, s.winner, (a, b) => compareSeats(s.seats[a], s.seats[b]))
     return s.seats.map((seat, i) => {
       const made = seat.tries.filter(t => t.made)
@@ -464,6 +464,7 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
         stats: {
           checkouts: made.length,
           tries: seat.tries.length,
+          dartsThrown: totalDarts[i] ?? 0,
           bestRun: bestRun(seat.tries)?.length ?? 0,
           ...(made.length > 0 && {
             highestMade: Math.max(...made.map(t => t.target)),
