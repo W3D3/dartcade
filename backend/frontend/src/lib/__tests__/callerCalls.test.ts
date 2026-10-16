@@ -37,10 +37,12 @@ describe('callsFor', () => {
     expect(callsFor(before, after)).toEqual([['busted']])
   })
 
-  it('a checkout says game shot and the next leg; the last leg says match shot', () => {
+  it('a checkout says game shot and the leg just won; the last leg says match shot', () => {
     const before = game({ scores: [40, 501], currentVisitDarts: [dart(0)] })
     const leg = game({ scores: [0, 501], currentVisitDarts: [dart(0), dart(40)], visitLocked: true })
-    expect(callsFor(before, leg)).toEqual([['gameshot'], ['leg_2']])
+    expect(callsFor(before, leg)).toEqual([['gameshot'], ['leg_1']])
+    const second = game({ ...leg, firstTo: 3, legs: [0, 1] })
+    expect(callsFor(game({ ...before, firstTo: 3, legs: [0, 1] }), second)).toEqual([['gameshot'], ['leg_2']])
     const match = game({ ...leg, legs: [1, 1] })
     expect(callsFor(game({ ...before, legs: [1, 1] }), match)).toEqual([['matchshot', 'gameshot']])
   })
@@ -60,6 +62,8 @@ describe('callsFor', () => {
     })
     const after = game({ ...before, scores: [0, 101, 0, 101], visitLocked: true, currentVisitDarts: [dart(40)], teams })
     expect(callsFor(before, after)).toEqual([['matchshot', 'gameshot']])
+    // First to 3: Team A's checkout wins the second leg, not the third
+    expect(callsFor({ ...before, firstTo: 3 }, { ...after, firstTo: 3 })).toEqual([['gameshot'], ['leg_2']])
   })
 
   it('an undo that reopens a visit says nothing; the visit is called again when it ends again', () => {
