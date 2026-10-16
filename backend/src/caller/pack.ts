@@ -15,7 +15,7 @@ export interface ParsedPack {
   clips: Record<string, Clip[]>
 }
 
-const SHOTS = new Set(['busted', 'gameshot', 'matchshot', 'gameon', 'bulling_start', 'and'])
+const SHOTS = new Set(['busted', 'gameshot', 'matchshot', 'gameon', 'bulling_start', 'and', 'you_require'])
 const SOUND = /\.(mp3|wav|ogg)$/i
 const MIME: Record<string, string> = { mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg' }
 
@@ -29,6 +29,7 @@ const CLIPS_MAX = 64 * MiB
 /** The keys the caller plays; everything else in a pack is dropped on import. */
 export function isCallerKey(key: string): boolean {
   if (/^(0|[1-9]\d?|1[0-7]\d|180)$/.test(key)) return true
+  if (/^require_([1-9]\d?|1[0-7]\d|180)$/.test(key)) return true
   return /^(leg|set)_\d+$/.test(key) || SHOTS.has(key)
 }
 
@@ -63,13 +64,14 @@ const SPELLED = /^(game|match)[_ ](shot|on)$/
 
 /** The key a clip named by key plays for: basename without extension, lowercased, hyphens as
  * underscores, a trailing "+N" variant marker dropped, spelled-out shots folded ("game shot",
- * "game_on", "match_shot" → "gameshot", "gameon", "matchshot"). */
+ * "game_on", "match_shot" → "gameshot", "gameon", "matchshot"), "you require" → "you_require". */
 export function keyFromName(fileName: string): string {
   const key = base(fileName)
     .replace(SOUND, '')
     .toLowerCase()
     .replace(/\+\d+$/, '')
     .replace(/-/g, '_')
+  if (key === 'you require') return 'you_require'
   return SPELLED.test(key) ? key.replace(/[_ ]/, '') : key
 }
 

@@ -7,7 +7,14 @@ describe('caller keys', () => {
   it('keeps scores, busts, shots, legs, sets, game on, bull off and "and"', () => {
     for (const k of ['0', '9', '60', '100', '180', 'busted', 'gameshot', 'matchshot', 'gameon', 'leg_2', 'set_10', 'bulling_start', 'and'])
       expect(isCallerKey(k)).toBe(true)
-    for (const k of ['181', '07', 'murmel', 'you_require', 'm20', 'bot level 3', '']) expect(isCallerKey(k)).toBe(false)
+    for (const k of ['181', '07', 'murmel', 'm20', 'bot level 3', '']) expect(isCallerKey(k)).toBe(false)
+  })
+
+  it('takes checkout calls: require_1 to require_180 and the you_require lead-in', () => {
+    for (const k of ['require_1', 'require_121', 'require_180', 'you_require']) expect(isCallerKey(k)).toBe(true)
+    for (const k of ['require_0', 'require_181', 'require_07', 'require_']) expect(isCallerKey(k)).toBe(false)
+    expect(keyFromName('you require.mp3')).toBe('you_require')
+    expect(keyFromName('You-Require+2.mp3')).toBe('you_require')
   })
 })
 
