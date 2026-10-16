@@ -1,6 +1,7 @@
 import { createAuthClient } from 'better-auth/svelte'
 import { loadOnce } from './loadOnce.js'
 import { createApi } from './api/client.js'
+import { clearBests } from './p121/best.js'
 import type { components } from './api/schema'
 
 /** better-auth's typed client for /api/auth/* (sign-in, sign-up, session). Same origin as the app. */
@@ -26,6 +27,7 @@ export async function signOut(): Promise<void> {
     await authClient.signOut()
   } finally {
     currentUser.set(null)
+    clearBests()
     window.location.hash = '#/login'
   }
 }

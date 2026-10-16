@@ -1,0 +1,72 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { get } from 'svelte/store'
+
+const GET = vi.fn()
+vi.mock('$lib/api', () => ({ api: { GET: (...args: unknown[]) => GET(...args) } }))
+const { bestStat, clearBests } = await import('./best.js')
+
+const settle = () => new Promise(r => setTimeout(r, 0))
+
+beforeEach(() => {
+  GET.mockReset()
+})
+
+describe('bestStat', () => {
+  it('fetches once for two subscribers', async () => {
+    GET.mockResolvedValue({ data: { best: { value: 131, finishedAt: '2026-10-02T18:00:00.000Z' } } })
+    const a = bestStat('p121', 'highestMade')
+    const b = bestStat('p121', 'highestMade')
+    const stopA = a.subscribe(() => {})
+    const stopB = b.subscribe(() => {})
+    await settle()
+    expect(GET).toHaveBeenCalledTimes(1)
+    expect(GET).toHaveBeenCalledWith('/api/games/best', { params: { query: { mode: 'p121', stat: 'highestMade' } } })
+    expect(get(a)).toEqual({ value: 131, finishedAt: '2026-10-02T18:00:00.000Z' })
+    stopA()
+    stopB()
+  })
+  it('is null when there is no best yet', async () => {
+    GET.mockResolvedValue({ data: { best: null } })
+    const s = bestStat('p121', 'made')
+    const stop = s.subscribe(() => {})
+    await settle()
+    expect(get(s)).toBeNull()
+    stop()
+  })
+  it('is null, without throwing, on a network error', async () => {
+    GET.mockRejectedValue(new TypeError('Failed to fetch'))
+    const s = bestStat('p121', 'avgDarts')
+    const stop = s.subscribe(() => {})
+    await settle()
+    expect(get(s)).toBeNull()
+    stop()
+  })
+  it('refetches on refresh, so a screen sees a best set since', async () => {
+    GET.mockResolvedValue({ data: { best: { value: 125, finishedAt: '2026-10-01T18:00:00.000Z' } } })
+    const s = bestStat('p121', 'refresh-case')
+    const stop = s.subscribe(() => {})
+    await settle()
+    GET.mockResolvedValue({ data: { best: { value: 128, finishedAt: '2026-10-16T18:00:00.000Z' } } })
+    await s.refresh()
+    expect(GET).toHaveBeenCalledTimes(2)
+    expect(get(s)?.value).toBe(128)
+    stop()
+  })
+  it('clears every best on sign-out, and loads afresh for the next viewer', async () => {
+    GET.mockResolvedValue({ data: { best: { value: 131, finishedAt: '2026-10-02T18:00:00.000Z' } } })
+    const s = bestStat('p121', 'clear-case')
+    const stop = s.subscribe(() => {})
+    await settle()
+    expect(get(s)?.value).toBe(131)
+    clearBests()
+    expect(get(s)).toBeNull()
+    stop()
+    GET.mockResolvedValue({ data: { best: null } })
+    const next = bestStat('p121', 'clear-case')
+    const stopNext = next.subscribe(() => {})
+    await settle()
+    expect(get(next)).toBeNull()
+    expect(GET).toHaveBeenCalledTimes(2)
+    stopNext()
+  })
+})
