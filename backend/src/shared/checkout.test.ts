@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { checkoutHint } from './checkout.js'
+import { checkoutHint, canCheckOut } from './checkout.js'
 import { CHECKOUTS } from './checkoutTable.js'
 
 const scoreOf = (label: string): number => {
@@ -90,5 +90,23 @@ describe('checkoutHint, straight and master out', () => {
   it('master out: a double before a triple', () => {
     expect(checkoutHint(18, 'master')).toEqual(['D9'])
     expect(checkoutHint(57, 'master')).toEqual(['T19'])
+  })
+})
+
+describe('canCheckOut', () => {
+  it('double out: up to 170, not the bogey numbers, not 1', () => {
+    for (const n of [2, 40, 50, 101, 170]) expect(canCheckOut(n, 'double')).toBe(true)
+    for (const n of [1, 159, 162, 163, 165, 166, 168, 169, 171, 180]) expect(canCheckOut(n, 'double')).toBe(false)
+  })
+
+  it('straight and master out reach 180', () => {
+    for (const n of [1, 171, 174, 177, 180]) expect(canCheckOut(n, 'straight')).toBe(true)
+    for (const n of [172, 173, 175, 176, 178, 179, 181]) expect(canCheckOut(n, 'straight')).toBe(false)
+    for (const n of [171, 180]) expect(canCheckOut(n, 'master')).toBe(true)
+    for (const n of [1, 179]) expect(canCheckOut(n, 'master')).toBe(false)
+  })
+
+  it('suggests a route for 180 in straight out', () => {
+    expect(checkoutHint(180, 'straight')).toEqual(['T20', 'T20', 'T20'])
   })
 })
