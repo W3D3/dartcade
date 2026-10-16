@@ -6,6 +6,8 @@
   --color-surface-1: #131511;
   --color-surface-2: #181a16;
   --color-surface-active: #1b1e17;
+  /* A picked game: its card, row or chip */
+  --color-surface-picked: #1f2614;
   --color-line: #2a2d27;
   --color-line-2: #2e322b;
   --color-line-3: #353930;
