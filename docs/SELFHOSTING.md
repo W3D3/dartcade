@@ -44,6 +44,7 @@ Put it behind a reverse proxy with TLS (e.g. Caddy or nginx) so the frontend and
 reach it over `https://`/`wss://`. Env vars worth knowing about (all optional, see
 [`DEVELOPMENT.md`](../DEVELOPMENT.md#environment-variables) for the full list):
 
+- `TRUST_PROXY` — set to `1` behind one reverse proxy, so rate limits count each client, not the proxy
 - `VOICE_STORAGE_LIMIT_MB` — caller voice pack storage per user, in MB (default `50`)
 - `BOARD_LIVE_CAMERA` — set to `off` if the backend can't reach your boards' network (e.g. a
   cloud host); turns off the owner's live camera preview on the Boards page only

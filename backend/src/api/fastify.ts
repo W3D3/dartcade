@@ -6,7 +6,9 @@ import { registerResponseValidation } from './responseValidation.js'
 export function createFastify(): FastifyInstance {
   // Fastify's default Ajv options strip unknown request fields (removeAdditional): newer
   // clients keep working, and handlers only see fields from the spec
-  const app = Fastify({ logger: process.env.NODE_ENV !== 'test' })
+  // Behind a reverse proxy every request comes from the proxy: TRUST_PROXY makes rate limits count
+  // the client's address from X-Forwarded-For instead (true, a hop count, or the proxy's addresses)
+  const app = Fastify({ logger: process.env.NODE_ENV !== 'test', trustProxy: trustProxy(process.env.TRUST_PROXY) })
   registerErrorHandler(app)
   // A POST without a body (create a lobby, close it, …) can still arrive looking like one: with a
   // content type Fastify has no parser for, or as an empty chunked body without any type, which a
@@ -19,4 +21,11 @@ export function createFastify(): FastifyInstance {
   })
   if (process.env.NODE_ENV !== 'production') registerResponseValidation(app)
   return app
+}
+
+/** TRUST_PROXY as Fastify takes it: unset is off, "true" trusts every proxy, a number counts hops. */
+export function trustProxy(value: string | undefined): boolean | number | string {
+  if (!value) return false
+  if (value === 'true') return true
+  return /^\d+$/.test(value) ? Number(value) : value
 }
