@@ -10,6 +10,7 @@
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
+  import P121Match from '$lib/components/p121/P121Match.svelte'
   import { rollFor } from '$lib/minigolf/match'
   import BoardLegend from '../lib/components/BoardLegend.svelte'
   import VisitBand from '../lib/components/VisitBand.svelte'
@@ -253,7 +254,8 @@
   const x01 = $derived(current.x01)
   const atc = $derived(current.atc)
   const minigolf = $derived(current.minigolf)
-  const game = $derived(x01 ?? atc ?? minigolf)
+  const p121 = $derived(current.p121)
+  const game = $derived(x01 ?? atc ?? minigolf ?? p121)
   const isX01 = $derived(x01 !== null)
   const view = $derived(getGameView(gameId))
   const currentPlayer = $derived(game?.currentPlayer ?? 0)
@@ -295,8 +297,8 @@
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
   // The visit is over (bust, checkout, win): no more darts until the next player
-  const locked = $derived(x01?.visitLocked === true || minigolf?.visitLocked === true || winner !== null)
-  const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : null)
+  const locked = $derived(x01?.visitLocked === true || minigolf?.visitLocked === true || p121?.visitLocked === true || winner !== null)
+  const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : p121?.phase === 'bulloff' ? p121.bullOff : null)
   // Checkout preferences: this device's for now; per player (from each seat's account) once they
   // can be set in Settings
   const checkout = $derived({ favouriteDouble: settings.favouriteDouble })
@@ -790,6 +792,26 @@
           host={snapshot?.ownerUserId === viewerId}
           manual={boardId === null}
           onNextHole={() => send({ type: 'minigolf_next_hole' })}
+        />
+      {:else if p121}
+        <P121Match
+          game={p121}
+          {players}
+          {darts}
+          {layout}
+          {canThrow}
+          {locked}
+          {canUndo}
+          {next}
+          onUndo={undo}
+          onNext={advance}
+          onBoardClick={addBoardDart}
+          onCorrect={correct}
+          onGiveUp={() => send({ type: 'p121_give_up' })}
+          {settings}
+          {checkout}
+          {keypad}
+          onDart={canThrow ? addManualDart : () => {}}
         />
       {:else if !game}
         <main class="flex-grow flex items-center justify-center">

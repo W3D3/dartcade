@@ -1,6 +1,7 @@
 // Dev-only quick logins: the accounts the backend seeds in development (auth/seed.ts).
 // Only used behind import.meta.env.DEV; production never seeds or shows them.
 import { authClient, currentUser } from './auth.js'
+import { clearBests } from './p121/best.js'
 
 export type DevUser = { name: string; email: string; password: string }
 
@@ -23,6 +24,7 @@ export const DEV_USERS: DevUser[] = [
 /** Signs out whoever is signed in, then in as `user`, and goes home. Returns an error message or null. */
 export async function signInAs(user: DevUser): Promise<string | null> {
   await authClient.signOut().catch(() => undefined)
+  clearBests()
   const { error } = await authClient.signIn.email({ email: user.email, password: user.password })
   if (error) return error.message ?? 'Sign-in failed'
   await currentUser.refresh()

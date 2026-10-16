@@ -32,10 +32,13 @@ export function p121Pips(game: P121Game, seat: number, visitDarts: number): ('us
   return groups
 }
 
+/** Where a missed try sends the player: "again" when the target stays, else "back to 121". */
+export const missedNext = (target: number, next: number): string => (next === target ? 'again' : `back to ${next}`)
+
 /** The banner after a try: made or missed, for the seat the result belongs to; null otherwise. */
 export function p121Banner(game: P121Game, seat: number): { kind: 'made' | 'missed'; text: string } | null {
   const r = game.lastResult
   if (!r || r.seat !== seat) return null
   if (r.made) return { kind: 'made', text: `Checked out ${r.target} in ${plural(r.darts, 'dart')} · next ${r.next}` }
-  return { kind: 'missed', text: r.next === r.target ? `Missed ${r.target} · again` : `Missed ${r.target} · back to ${r.next}` }
+  return { kind: 'missed', text: `Missed ${r.target} · ${missedNext(r.target, r.next)}` }
 }
