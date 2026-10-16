@@ -3,6 +3,7 @@
 
 import type { X01Game } from '$lib/api/game-ws'
 import { visitOver } from '../heldScore.js'
+import { canCheckOut } from '$shared/checkout.js'
 
 export type CallGame = Pick<
   X01Game,
@@ -17,6 +18,7 @@ export type CallGame = Pick<
   | 'visitStartScores'
   | 'totalVisits'
   | 'teams'
+  | 'config'
 >
 
 /** Parts said in order; each part lists choices by preference: a key, or a phrase (keys said one
@@ -71,6 +73,40 @@ function endOfVisit(g: CallGame): Call {
     return [['gameshot'], ['and'], [`leg_${legsPlayed(g) + 1}`]]
   }
   return [[String(visitTotal(g))]]
+}
+
+/** What the next thrower needs and in which leg, when they can finish it. */
+export type Checkout = { seat: number; remaining: number; leg: number }
+
+/** At the takeout: what the next thrower needs, when they can finish it in one visit. Null when no
+ *  visit was committed (an undo or a correction), at a new leg or the end, and on a fresh page. */
+export function checkoutFor(before: CallGame | null, after: CallGame): Checkout | null {
+  if (before?.phase !== 'game' || after.phase !== 'game') return null
+  if (sum(after.totalVisits) <= sum(before.totalVisits)) return null
+  const leg = legsPlayed(after)
+  if (leg !== legsPlayed(before)) return null
+  const seat = after.currentPlayer
+  const remaining = after.teams?.find(t => t.seats.includes(seat))?.score ?? after.scores[seat]
+  return canCheckOut(remaining, after.config.outMode) ? { seat, remaining, leg } : null
+}
+
+/** "You require N": the whole phrase, else the lead-in and the number. */
+export const requirePart = (n: number): (string | string[])[] => [`require_${n}`, ['you_require', String(n)]]
+
+/** Whether to say a checkout call: with `repeat` off, not again for a seat whose score is the one
+ *  last announced for it in this leg (after a bust or a no-score visit). Remembers what it lets through. */
+export function createCheckoutMemory(): (c: Checkout, repeat: boolean) => boolean {
+  let leg = -1
+  const said = new Map<number, number>()
+  return (c, repeat) => {
+    if (c.leg !== leg) {
+      said.clear()
+      leg = c.leg
+    }
+    if (!repeat && said.get(c.seat) === c.remaining) return false
+    said.set(c.seat, c.remaining)
+    return true
+  }
 }
 
 /** One clip per key of the first choice the voice has, a random variant of each. Missing parts are skipped. */
