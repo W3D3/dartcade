@@ -1,21 +1,23 @@
 <script lang="ts">
   // Joining a lobby by its code: typed, or from a join link or QR code (#/join/K7Q4MD). It shows
-  // which lobby the code opens first; someone in another lobby can leave it first.
+  // which lobby the code opens first; someone in another lobby can leave it first. Signed out, a
+  // link shows its invite (InviteLink) with sign-in and sign-up that come back here.
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
-  import ErrorText from '$lib/components/ErrorText.svelte'
+  import RefusalNotice from '$lib/components/lobby/RefusalNotice.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import LobbyPreviewCard from '$lib/components/lobby/LobbyPreviewCard.svelte'
   import SwitchLobbyConfirm from '$lib/components/lobby/SwitchLobbyConfirm.svelte'
   import { api } from '$lib/api'
+  import type { components } from '$lib/api/schema'
+  import InviteLink from '$lib/components/lobby/InviteLink.svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { formatCode } from '$lib/lobby/format'
   import { describeConflict, normalizeCode, type Refusal } from '$lib/lobby/input'
   import { me } from '$lib/lobby/sockets'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
 
-  type Preview = { id: string; name: string; hostName: string | null; peopleCount: number; boardNames: string[] }
   let { params = {} }: { params?: { code?: string } } = $props()
 
   // Filled from the link; typing changes it from there, and another link fills that one in
@@ -29,7 +31,7 @@
     if (c) text = fromLink(c)
   })
   const code = $derived(normalizeCode(text))
-  let preview = $state<Preview | null>(null)
+  let preview = $state<components['schemas']['LobbyPreview'] | null>(null)
   // No open lobby has the code (a 404), or the check itself failed
   let missing = $state(false)
   let failed = $state(false)
@@ -101,66 +103,64 @@
   }
 </script>
 
-<Layout title="Join lobby">
-  <main
-    class="flex flex-grow flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10"
-  >
-    <div class="flex flex-col gap-2">
-      <h2 class="m-0 font-display font-bold text-[34px] leading-none uppercase">Enter the lobby code</h2>
-      <p class="m-0 text-[15px] leading-[1.45] text-text-muted">The host sees it at the top of their lobby screen.</p>
-    </div>
-    <div class="flex flex-col gap-2">
-      <label for="lobby-code" class="field-label">Lobby code</label>
-      <input
-        id="lobby-code"
-        bind:value={text}
-        autocomplete="one-time-code"
-        autocapitalize="characters"
-        spellcheck="false"
-        placeholder="K7Q4-MD"
-        maxlength="12"
-        class="h-[60px] box-border px-4 bg-surface-2 border-2 rounded-[12px] text-text font-mono text-[26px] tracking-[0.16em] text-center uppercase
-               {missing || failed ? 'border-live' : 'border-accent'}"
-      />
-      {#if missing}<span class="text-[13px] text-live-text">No open lobby with that code. Check it with the host.</span>{/if}
-      {#if failed}
-        <span class="text-[13px] text-live-text"
-          >Couldn't check the code.
-          <button
-            type="button"
-            onclick={() => check(code)}
-            class="p-0 border-0 bg-transparent text-live-text underline cursor-pointer font-[inherit]">Try again.</button
-          ></span
-        >
-      {/if}
-    </div>
-    {#if preview}<LobbyPreviewCard
-        name={preview.name}
-        hostName={preview.hostName}
-        boardNames={preview.boardNames}
-        peopleCount={preview.peopleCount}
-      />{/if}
-    <p class="m-0 text-[13px] text-text-dim">Or point your phone's camera at the QR code on the host's lobby screen.</p>
-    {#if error}
-      <span class="flex flex-wrap items-center gap-3">
-        <ErrorText>{error}</ErrorText>
-        {#if runningSessionId}<Button variant="outline" size="sm" href="#/session/{runningSessionId}" class="px-3 text-[13px]"
-            >Return to game</Button
-          >{/if}
-      </span>
-    {/if}
-    <Button size="xl" class="mt-auto" disabled={!preview || busy} onclick={() => void join()}>{busy ? 'Joining…' : `Join as ${you}`}</Button
+{#if !$currentUser}
+  <InviteLink {code} {preview} missing={missing || code.length !== 6} {failed} onretry={() => check(code)} />
+{:else}
+  <Layout title="Join lobby">
+    <main
+      class="flex flex-grow flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10"
     >
-    <p class="m-0 text-[13px] text-center text-text-muted">
-      Not {you}?
-      <button
-        type="button"
-        onclick={switchAccount}
-        class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Switch account</button
+      <div class="flex flex-col gap-2">
+        <h2 class="m-0 font-display font-bold text-[34px] leading-none uppercase">Enter the lobby code</h2>
+        <p class="m-0 text-[15px] leading-[1.45] text-text-muted">The host sees it at the top of their lobby screen.</p>
+      </div>
+      <div class="flex flex-col gap-2">
+        <label for="lobby-code" class="field-label">Lobby code</label>
+        <input
+          id="lobby-code"
+          bind:value={text}
+          autocomplete="one-time-code"
+          autocapitalize="characters"
+          spellcheck="false"
+          placeholder="K7Q4-MD"
+          maxlength="12"
+          class="h-[60px] box-border px-4 bg-surface-2 border-2 rounded-[12px] text-text font-mono text-[26px] tracking-[0.16em] text-center uppercase
+               {missing || failed ? 'border-live' : 'border-accent'}"
+        />
+        {#if missing}<span class="text-[13px] text-live-text">No open lobby with that code. Check it with the host.</span>{/if}
+        {#if failed}
+          <span class="text-[13px] text-live-text"
+            >Couldn't check the code.
+            <button
+              type="button"
+              onclick={() => check(code)}
+              class="p-0 border-0 bg-transparent text-live-text underline cursor-pointer font-[inherit]">Try again.</button
+            ></span
+          >
+        {/if}
+      </div>
+      {#if preview}<LobbyPreviewCard
+          name={preview.name}
+          hostName={preview.hostName}
+          boardNames={preview.boardNames}
+          peopleCount={preview.peopleCount}
+        />{/if}
+      <p class="m-0 text-[13px] text-text-dim">Or point your phone's camera at the QR code on the host's lobby screen.</p>
+      <RefusalNotice {error} sessionId={runningSessionId} />
+      <Button size="xl" class="mt-auto" disabled={!preview || busy} onclick={() => void join()}
+        >{busy ? 'Joining…' : `Join as ${you}`}</Button
       >
-    </p>
-  </main>
-</Layout>
+      <p class="m-0 text-[13px] text-center text-text-muted">
+        Not {you}?
+        <button
+          type="button"
+          onclick={switchAccount}
+          class="p-0 border-0 bg-transparent text-accent font-semibold cursor-pointer font-[inherit]">Switch account</button
+        >
+      </p>
+    </main>
+  </Layout>
+{/if}
 
 {#if leaveFirst && preview}
   <SwitchLobbyConfirm

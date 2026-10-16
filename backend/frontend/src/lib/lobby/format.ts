@@ -76,6 +76,25 @@ function rulesLine(game: NextGame | null, defaults: Record<string, unknown>, met
   return ''
 }
 
+/** "X01 · 501 · Double out · First to 3 legs", or "No game picked yet". */
+export function nextGameLine(game: NextGame | null, defaults: Record<string, unknown> = {}): string {
+  if (!game) return 'No game picked yet'
+  const rules = nextGameSummary(game, defaults)
+  return rules ? `${gameName(game.gameId)} · ${rules}` : gameName(game.gameId)
+}
+
+/** Who's in a lobby by name: "Mara, Tom, Lukas", "+2" for those past the first faces. */
+export function peopleNames(glance: { peopleCount: number; faces: { name: string }[] }): string {
+  const more = glance.peopleCount - glance.faces.length
+  return glance.faces.map(f => f.name).join(', ') + (more > 0 ? ` +${more}` : '')
+}
+
+/** One line about an invite's lobby: "X01 next · 3 people". */
+export function inviteLine(invite: { nextGame: NextGame | null; peopleCount: number }): string {
+  const people = invite.peopleCount === 1 ? '1 person' : `${invite.peopleCount} people`
+  return invite.nextGame ? `${gameName(invite.nextGame.gameId)} next · ${people}` : people
+}
+
 /** A piece of a history line; names are bold. */
 export type Part = { text: string; bold?: boolean }
 

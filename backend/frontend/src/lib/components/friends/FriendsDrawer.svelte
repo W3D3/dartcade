@@ -8,6 +8,7 @@
   import SwitchLobbyConfirm from '$lib/components/lobby/SwitchLobbyConfirm.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import DrawerFriendRow from './DrawerFriendRow.svelte'
+  import DrawerInvites from './DrawerInvites.svelte'
   import IncomingRequest from './IncomingRequest.svelte'
   import OutgoingRequest from './OutgoingRequest.svelte'
   import { me } from '$lib/lobby/sockets'
@@ -103,6 +104,7 @@
 
   <div class="flex-grow min-h-0 overflow-y-auto scrollbar-themed px-3 pb-3 flex flex-col gap-4">
     {#if actions.error}<div class="px-[6px]"><ErrorText>{actions.error}</ErrorText></div>{/if}
+    {#if $me?.invites.length}<DrawerInvites invites={$me.invites} {now} />{/if}
     {#if hasRequests}
       <details open class="requests rounded-[12px] border border-line bg-surface-1">
         <summary

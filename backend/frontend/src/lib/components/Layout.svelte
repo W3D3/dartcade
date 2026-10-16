@@ -7,6 +7,7 @@
   import LobbyStrip from './LobbyStrip.svelte'
   import TabBar from './TabBar.svelte'
   import FriendsDrawer from './friends/FriendsDrawer.svelte'
+  import InviteToast from './lobby/InviteToast.svelte'
   import { friendsDrawerOpen } from '$lib/friends/drawer'
 
   let { title, headerAction, children }: { title?: string; headerAction?: Snippet; children: Snippet } = $props()
@@ -25,3 +26,4 @@
 </div>
 
 {#if $friendsDrawerOpen}<FriendsDrawer />{/if}
+<InviteToast />

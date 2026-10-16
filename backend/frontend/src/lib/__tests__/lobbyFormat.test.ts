@@ -1,6 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
   accessHint,
+  inviteLine,
+  nextGameLine,
+  peopleNames,
   activityLine,
   feedTime,
   formatCode,
@@ -289,5 +292,26 @@ describe('accessHint', () => {
   it('says who can join', () => {
     expect(accessHint('friends')).toBe('Your friends see this lobby in Friends and join without the code. The code and link work too.')
     expect(accessHint('invite')).toBe('Only people you invite or give the code to.')
+  })
+})
+
+describe('invite lines', () => {
+  it('names the next game with its rules, or says none is picked', () => {
+    expect(nextGameLine(null)).toBe('No game picked yet')
+    expect(nextGameLine({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 3 } })).toBe(
+      'X01 · 501 · Double out · First to 3 legs',
+    )
+    expect(nextGameLine({ gameId: 'soccer', config: {} })).toBe('soccer')
+  })
+
+  it('lists the first faces by name and counts the rest', () => {
+    const faces = [{ name: 'Mara' }, { name: 'Tom' }]
+    expect(peopleNames({ peopleCount: 2, faces })).toBe('Mara, Tom')
+    expect(peopleNames({ peopleCount: 5, faces })).toBe('Mara, Tom +3')
+  })
+
+  it('sums an invite up in one line', () => {
+    expect(inviteLine({ nextGame: { gameId: 'x01', config: {} }, peopleCount: 3 })).toBe('X01 next · 3 people')
+    expect(inviteLine({ nextGame: null, peopleCount: 1 })).toBe('1 person')
   })
 })
