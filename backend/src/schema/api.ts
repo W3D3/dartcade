@@ -1319,6 +1319,45 @@ export interface components {
             /** @description Strokes per hole (in hole order), then per seat; null for a hole not finished */
             scores: (number | null)[][];
         };
+        P121Detail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "p121";
+            /** @description One per seat, in seat order */
+            seats: {
+                tries: {
+                    target: number;
+                    made: boolean;
+                    darts: number;
+                    finish: string | null;
+                }[];
+                /** @description Finishing darts with attempts, most attempted first */
+                doubles: {
+                    label: string;
+                    hits: number;
+                    attempts: number;
+                }[];
+                /** @description Made tries by darts used, ascending */
+                dartsPerCheckout: {
+                    darts: number;
+                    count: number;
+                }[];
+                /** @description The longest run of consecutive made tries; null without one */
+                bestRun: {
+                    length: number;
+                    from: number;
+                    to: number;
+                } | null;
+                highestReached: number;
+                /** @description The made try with the fewest darts; null without a made try */
+                fastest: {
+                    darts: number;
+                    target: number;
+                } | null;
+            }[];
+        };
         AtcDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -1462,7 +1501,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"];
             stats: components["schemas"]["MatchStats"];
         };
         /** @description The game's match stats, the same shape for every game mode. Rows say how to show each value, so a mode adds stats without a frontend change. */

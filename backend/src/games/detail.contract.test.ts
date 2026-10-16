@@ -5,6 +5,8 @@ import spec from '../schema/api-v1.deref.json' with { type: 'json' }
 import { x01Game } from './x01.js'
 import { atcModule } from './atc.js'
 import { minigolfModule } from './minigolf.js'
+import { p121Game, type P121Config } from './p121.js'
+import type { BoardEvent } from '../session/types.js'
 
 const addFormats = addFormatsModule.default
 const ajv = new Ajv({ strict: false, allErrors: true })
@@ -106,5 +108,40 @@ describe('module detail() matches schema/api-v1.yaml', () => {
     const validateStats = ajv.compile(schemas.MatchStats)
     expect(validateStats(m), JSON.stringify(validateStats.errors)).toBe(true)
     expect(m.seats[1].values).toMatchObject({ holesInOne: 1, avgStrokes: 1 })
+  })
+  it('P121Detail and MatchStats', () => {
+    const p121Cfg: P121Config = {
+      startTarget: 121,
+      tries: 10,
+      dartsPerTry: 9,
+      outMode: 'double',
+      missRule: 'reset',
+      lock: false,
+      bullOff: 'off',
+    }
+    const open: BoardEvent = { kind: 'visit.opened', data: {} }
+    const takeout: BoardEvent = { kind: 'takeout.finished', data: {} }
+    const p121Dart = (number: number, multiplier: number, index: number): BoardEvent =>
+      ({
+        kind: 'dart.detected',
+        data: {
+          visit_id: 'v',
+          index,
+          dart: { segment: { name: '', number, bed: '', multiplier }, score: number * multiplier },
+          source_seq: 1,
+        },
+      }) as any
+    let s = p121Game.init(p121Cfg, [{ name: 'A' }])
+    s = p121Game.onBoardEvent(s, open).state
+    s = p121Game.onBoardEvent(s, p121Dart(20, 3, 0)).state
+    s = p121Game.onBoardEvent(s, p121Dart(11, 3, 1)).state
+    s = p121Game.onBoardEvent(s, p121Dart(14, 2, 2)).state
+    s = p121Game.onBoardEvent(s, takeout).state
+    const d = p121Game.detail([], s)
+    const validateDetail = ajv.compile(schemas.P121Detail)
+    expect(validateDetail(d), JSON.stringify(validateDetail.errors)).toBe(true)
+    const m = p121Game.matchStats!([], s)
+    const validateStats = ajv.compile(schemas.MatchStats)
+    expect(validateStats(m), JSON.stringify(validateStats.errors)).toBe(true)
   })
 })

@@ -222,3 +222,29 @@ it('p121Module starts with the bull off order', () => {
   const s = p121Module.init({ ...cfg, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
   expect(s.stage).toBe('bulloff')
 })
+
+describe('history', () => {
+  const s0 = play(solo(), [T20, [11, 3], [14, 2]], [T20, [14, 3], [10, 2]], miss3, miss3, miss3, [T20, [11, 3], [14, 2]])
+  // tries: 121 made (3), 122 made (3), 123 missed (9), 121 made (3); open target 122
+  it('summarize', () => {
+    expect(p121Game.summarize(s0, { totalDarts: [18], totalVisits: [6] })).toEqual([
+      { placement: 1, stats: { highestMade: 122, checkouts: 3, tries: 4, avgDarts: 3, bestRun: 2 } },
+    ])
+  })
+  it('summarize places seats without a winner (forfeit before the end)', () => {
+    const duo = play(p121Game.init(cfg, [{ name: 'A' }, { name: 'B' }]), miss3)
+    const r = p121Game.summarize(duo, { totalDarts: [3, 0], totalVisits: [1, 0] })
+    expect(r.map(x => x.placement)).toEqual([1, 1])
+    expect(r[0].stats).not.toHaveProperty('highestMade')
+  })
+  it('detail', () => {
+    const d = p121Game.detail([], s0)
+    expect(d.seats[0]).toMatchObject({
+      highestReached: 123,
+      bestRun: { length: 2, from: 121, to: 122 },
+      fastest: { darts: 3, target: 122 },
+      dartsPerCheckout: [{ darts: 3, count: 3 }],
+    })
+    expect(d.seats[0].doubles[0]).toEqual({ label: 'D14', hits: 2, attempts: 2 })
+  })
+})
