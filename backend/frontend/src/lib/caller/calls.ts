@@ -14,6 +14,7 @@ export type CallGame = Pick<
   | 'bustThisVisit'
   | 'visitLocked'
   | 'currentVisitDarts'
+  | 'visitStartScores'
   | 'totalVisits'
   | 'teams'
 >
@@ -22,7 +23,8 @@ export type CallGame = Pick<
 export type Call = string[][]
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
-const visitTotal = (g: CallGame) => sum(g.currentVisitDarts.map(d => d.score))
+// What the visit took off the score, not the dart faces: darts before a double/master in score nothing.
+const visitTotal = (g: CallGame) => (g.visitStartScores[g.currentPlayer] ?? 0) - g.scores[g.currentPlayer]
 const legsPlayed = (g: CallGame) => (g.teams ? sum(g.teams.map(t => t.legs)) : sum(g.legs))
 const legsOf = (g: CallGame, seat: number) => {
   const teamLegs = g.teams?.find(t => t.seats.includes(seat))?.legs

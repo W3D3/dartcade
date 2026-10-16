@@ -11,6 +11,7 @@ const game = (o: Partial<CallGame> = {}): CallGame => ({
   bustThisVisit: false,
   visitLocked: false,
   currentVisitDarts: [],
+  visitStartScores: [501, 501],
   totalVisits: [0, 0],
   ...o,
 })
@@ -67,6 +68,31 @@ describe('callsFor', () => {
     expect(callsFor(three, undone)).toEqual([])
     const again = game({ scores: [362, 501], currentVisitDarts: [dart(60), dart(60), dart(19)] })
     expect(callsFor(undone, again)).toEqual([['139']])
+  })
+
+  it('double in: calls what the visit scored, not the dart faces; nothing counted is 0', () => {
+    // T20, 5 before checking in score nothing; D10 checks in for 20
+    const two = game({ scores: [501, 501], currentVisitDarts: [dart(60), dart(5)] })
+    const three = game({ scores: [481, 501], currentVisitDarts: [dart(60), dart(5), dart(20)] })
+    expect(callsFor(two, three)).toEqual([['20']])
+    const none = game({ scores: [501, 501], currentVisitDarts: [dart(60), dart(5), dart(19)] })
+    expect(callsFor(two, none)).toEqual([['0']])
+    // a short visit called at the next player: before is the last snapshot of the visit
+    const short = game({ scores: [501, 501], currentVisitDarts: [dart(57)] })
+    expect(callsFor(short, game({ currentPlayer: 1, totalVisits: [1, 0] }))).toEqual([['0']])
+  })
+
+  it('master in: a treble checks in, singles before it score nothing', () => {
+    const two = game({ scores: [501, 501], currentVisitDarts: [dart(20), dart(19)] })
+    const three = game({ scores: [441, 501], currentVisitDarts: [dart(20), dart(19), dart(60)] })
+    expect(callsFor(two, three)).toEqual([['60']])
+  })
+
+  it('teams: calls what the current seat took off its team score', () => {
+    const base = { legs: [0, 0, 0, 0], currentPlayer: 2, totalVisits: [1, 1, 0, 0], visitStartScores: [461, 501, 461, 501] }
+    const two = game({ ...base, scores: [461, 501, 461, 501], currentVisitDarts: [dart(60), dart(5)] })
+    const three = game({ ...base, scores: [441, 501, 441, 501], currentVisitDarts: [dart(60), dart(5), dart(20)] })
+    expect(callsFor(two, three)).toEqual([['20']])
   })
 
   it('game on after the bull off, and at a pristine start; bull off start', () => {
