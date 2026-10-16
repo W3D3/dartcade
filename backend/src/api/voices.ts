@@ -6,6 +6,7 @@ import { readPack, type ParsedPack } from '../caller/pack.js'
 import { fetchPack, LinkError } from '../caller/fetchPack.js'
 import { ZipError } from '../caller/zip.js'
 import { voiceConfig } from '../caller/config.js'
+import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import {
   importPack,
   listPacks,
@@ -129,7 +130,12 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       },
       async (req, reply) => {
         try {
-          const pack = await runImport(req, () => readPack(orEmpty(req.body), req.query.name), { kind: 'upload' })
+          // Autodarts voices only for users the flag is on for; for others such a zip has no caller clips
+          const read = async () =>
+            readPack(orEmpty(req.body), req.query.name, {
+              autodarts: await flagEnabled('caller.autodartsImport', await loadFlagUser(db, req.userId)),
+            })
+          const pack = await runImport(req, read, { kind: 'upload' })
           return await reply.code(201).send(pack)
         } catch (err) {
           const { status, error } = importError(err)

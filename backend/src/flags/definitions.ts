@@ -40,6 +40,13 @@ export function flagDefinitions(flagsOn: ReadonlySet<string>, values: ReadonlyMa
       disabled: false,
       contextEvaluator: on('matchmaking.enabled', isAdmin),
     },
+    // Importing Autodarts' caller voices is tried by admins until it ships (FLAGS_ON=caller.autodartsImport for everyone)
+    'caller.autodartsImport': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('caller.autodartsImport', isAdmin),
+    },
     // The ranked time limit, in seconds: per visit, and the reserve each player gets on top
     'matchmaking.visitSeconds': number('matchmaking.visitSeconds', VISIT_SECONDS),
     'matchmaking.reserveSeconds': number('matchmaking.reserveSeconds', RESERVE_SECONDS),

@@ -7,6 +7,9 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { makeZip } from '../caller/zipFixture.js'
+import { makeMp3 } from '../caller/mp3Fixture.js'
+import { setupFlags } from '../flags/index.js'
+import { reserveImport, VoiceBusyError, type ImportSlot } from '../caller/service.js'
 import { createFastify } from './fastify.js'
 import { voicesApiPlugin } from './voices.js'
 
@@ -34,6 +37,24 @@ const zip = Buffer.from(
   ]),
 )
 const KEPT = 3000
+
+// An Autodarts voice zip (one MP3 and its timing table), as the play.autodarts.com bookmarklet makes it
+const adMp3 = makeMp3()
+const adZip = Buffer.from(
+  makeZip([
+    { name: 'dotty-floor-english-Ab12.mp3', data: adMp3, method: 0 },
+    {
+      name: 'dotty-floor-english-Ab12.json',
+      data: JSON.stringify({
+        voice: 'dotty-floor-english',
+        mp3: 'dotty-floor-english-Ab12.mp3',
+        mp3Bytes: adMp3.length,
+        unit: 'ms',
+        sprite: { '1': [0, 500], game_shot: [500, 700], require_2: [1200, 1190] },
+      }),
+    },
+  ]),
+)
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
   let db: Kysely<Database>
@@ -107,6 +128,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     expect(clip.headers['content-type']).toBe('audio/wav')
     expect(clip.headers['cache-control']).toBe('private, max-age=31536000, immutable')
     expect(clip.body).toBe(GS2)
+  })
+
+  it('imports an Autodarts voice zip only when caller.autodartsImport is on', async () => {
+    const app = makeApp()
+    await setupFlags(new Set(['caller.autodartsImport']))
+    try {
+      const res = await upload(app, adZip)
+      expect(res.statusCode).toBe(201)
+      expect(res.json()).toMatchObject({ name: 'Autodarts Dotty (English)' })
+    } finally {
+      await setupFlags(new Set())
+    }
+    const off = await upload(makeApp(), adZip)
+    expect(off.statusCode).toBe(400)
+    expect(off.json()).toEqual({ error: 'No caller clips in this pack' })
   })
 
   it('hides a pack and its clips from other users', async () => {
@@ -270,6 +306,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
       return app
     }
 
+    // Resolves once the user's import slot is taken (by a slow upload), without taking it itself.
+    // A busy error for this user confirms it; the server-wide one (two *other* users running) doesn't
+    // say anything about this user, so it keeps polling instead of passing for the wrong reason.
+    const untilHeld = (user: string) =>
+      vi.waitFor(() => {
+        let slot: ImportSlot | undefined
+        try {
+          slot = reserveImport(user)
+        } catch (err) {
+          if (err instanceof VoiceBusyError && !err.server) return
+          throw err
+        }
+        slot.release()
+        throw new Error(`${user}'s upload hasn't taken its slot yet`)
+      })
+
     it('counts uploads still receiving their body against the two at once', async () => {
       await db
         .insertInto('user')
@@ -279,6 +331,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
       const app = await listening(makeApp(undefined, 1000))
       try {
         const slow = [slowUpload(app, 'a'), slowUpload(app, 'b')]
+        await Promise.all([untilHeld('a'), untilHeld('b')])
         let done: (number | undefined)[] = []
         try {
           // Over the upload limit (a 413 once read): refused before its body is
@@ -312,6 +365,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
       const app = await listening(makeApp())
       try {
         const slow = slowUpload(app, 'a')
+        await untilHeld('a')
         // The slot is taken while the body comes in
         await vi.waitFor(async () => {
           expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(429)
