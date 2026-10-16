@@ -13,6 +13,9 @@ export const badgeVariants = tv({
       guest:
         'h-[18px] px-[6px] rounded-full border border-line-strong text-ink-2 text-[10px] font-bold tracking-[0.06em] uppercase shrink-0',
       bot: 'h-[18px] px-[6px] rounded-full border border-line-strong text-ink-2 text-[10px] font-bold tracking-[0.06em] uppercase shrink-0',
+      // Invited, not joined yet
+      invited:
+        'h-[18px] px-[6px] rounded-full border border-warn-line text-warn text-[10px] font-bold tracking-[0.06em] uppercase shrink-0',
       ready: 'h-8 px-[10px] rounded-full bg-accent-tint text-accent text-[12px] font-bold',
       'not-ready': 'h-8 px-[10px] rounded-full bg-surface-paused text-warn text-[12px]',
       'sits-out': 'h-8 px-[10px] rounded-full border border-dashed border-line-strong text-text-muted text-[12px] font-medium',

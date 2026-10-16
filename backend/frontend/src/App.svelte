@@ -88,8 +88,9 @@
     }
     await currentUser.refresh()
     void startFlags(get(currentUser)?.id ?? null)
-    if (!get(currentUser)) {
-      // A join link or QR code opened while signed out comes back here after signing in
+    // A join link or QR code opened while signed out shows its lobby first (and comes back after
+    // signing in); everything else goes to the login page and comes back here after it
+    if (!get(currentUser) && !currentHash.startsWith('#/join/')) {
       rememberReturn(sessionStore(), currentHash)
       void push('/login')
     }
