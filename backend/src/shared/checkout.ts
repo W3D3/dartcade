@@ -21,9 +21,15 @@ export function checkoutHint(
   dartsLeft = 3,
   prefs: CheckoutPrefs = DEFAULT_CHECKOUT_PREFS,
 ): string[] | null {
-  if (remaining < 1 || remaining > 170 || dartsLeft < 1) return null
+  // Three darts finish 170 on a double, 180 (T20 T20 T20) when any dart may finish
+  if (remaining < 1 || remaining > (outMode === 'double' ? 170 : 180) || dartsLeft < 1) return null
   const n = Math.min(dartsLeft, 3)
   return outMode === 'double' ? doubleOutHint(remaining, n, prefs) : computedHint(remaining, outMode, n)
+}
+
+/** Whether `remaining` can be finished in one visit (three darts) under the out mode. */
+export function canCheckOut(remaining: number, outMode: OutMode = 'double'): boolean {
+  return checkoutHint(remaining, outMode, 3) !== null
 }
 
 const finishingLabel = (d: number) => (d === 25 ? 'Bull' : `D${d}`)
