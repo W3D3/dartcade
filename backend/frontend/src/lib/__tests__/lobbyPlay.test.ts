@@ -59,7 +59,7 @@ describe('boardToApply', () => {
 })
 
 describe('chosenGame', () => {
-  const games = [{ id: 'atc' }, { id: 'x01' }, { id: 'minigolf' }]
+  const games = [{ id: 'atc' }, { id: 'x01' }, { id: 'minigolf' }, { id: 'p121' }]
 
   it("keeps Minigolf's own fields, and only those", () => {
     const config = {
@@ -102,6 +102,24 @@ describe('chosenGame', () => {
         firstTo: 3,
         botSpeed: 'fast',
       },
+    })
+  })
+
+  it("keeps 121's own fields, and only those", () => {
+    const config = {
+      startTarget: 121,
+      tries: 5,
+      dartsPerTry: 9,
+      outMode: 'double',
+      missRule: 'reset',
+      lock: false,
+      bullOff: 'off',
+      // Not in the 121 whitelist: must not leak into the saved config
+      startScore: 501,
+    }
+    expect(chosenGame(games, 'p121', config)).toEqual({
+      gameId: 'p121',
+      config: { startTarget: 121, tries: 5, dartsPerTry: 9, outMode: 'double', missRule: 'reset', lock: false, bullOff: 'off' },
     })
   })
 

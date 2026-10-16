@@ -67,16 +67,26 @@ export function chosenGame(games: { id: string }[], selectedMode: string, config
             multiplierAdvances: config.multiplierAdvances,
             throwAgainOnAllHit: config.throwAgainOnAllHit,
           }
-        : {
-            startScore: config.startScore,
-            inMode: config.inMode,
-            outMode: config.outMode,
-            bullOff: config.bullOff,
-            bullValue: config.bullValue,
-            maxRounds: config.maxRounds,
-            firstTo: config.firstTo,
-            botSpeed: config.botSpeed,
-          }
+        : selectedMode === 'p121'
+          ? {
+              startTarget: config.startTarget,
+              tries: config.tries,
+              dartsPerTry: config.dartsPerTry,
+              outMode: config.outMode,
+              missRule: config.missRule,
+              lock: config.lock,
+              bullOff: config.bullOff,
+            }
+          : {
+              startScore: config.startScore,
+              inMode: config.inMode,
+              outMode: config.outMode,
+              bullOff: config.bullOff,
+              bullValue: config.bullValue,
+              maxRounds: config.maxRounds,
+              firstTo: config.firstTo,
+              botSpeed: config.botSpeed,
+            }
   return { gameId, config: settings }
 }
 
