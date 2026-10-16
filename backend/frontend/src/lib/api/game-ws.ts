@@ -26,7 +26,7 @@ export type MinigolfPathPt = [number, number] | [number, number, number]
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "Snapshot".
  */
-export type Snapshot = X01Snapshot | AtcSnapshot | MinigolfSnapshot
+export type Snapshot = X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "UserAction".
@@ -41,6 +41,7 @@ export type UserAction =
   | BullOffStartAction
   | ForfeitAction
   | MinigolfNextHoleAction
+  | P121GiveUpAction
 
 /**
  * Messages on the game WebSocket (/ws?sessionId=…) between the browser and the backend. Server → client: Snapshot, NoticeMessage, ErrorMessage, CameraMessage. Client → server: ClientMessage. The server closes the socket with a WsCloseCode.
@@ -238,6 +239,89 @@ export interface AtcGame {
   totalVisits: number[]
 }
 /**
+ * A finished 121 Checkout try.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "P121Try".
+ */
+export interface P121Try {
+  target: number
+  made: boolean
+  darts: number
+  /**
+   * The finishing dart's label (e.g. D14); null when the try was missed.
+   */
+  finish: string | null
+}
+/**
+ * The try that just ended; drives the made/missed banner.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "P121Result".
+ */
+export interface P121Result {
+  seat: number
+  target: number
+  made: boolean
+  darts: number
+  next: number
+}
+/**
+ * 121 Checkout view plus the engine's per-session fields and the bull off.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "P121Game".
+ */
+export interface P121Game {
+  cfg: {
+    startTarget: number
+    tries: number
+    dartsPerTry: number
+    outMode: 'straight' | 'double' | 'master'
+    missRule: 'reset' | 'down' | 'stay'
+    lock: boolean
+  }
+  phase: 'bulloff' | 'game' | 'finished'
+  currentPlayer: number
+  /**
+   * The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it.
+   */
+  nextPlayer: number | null
+  winner: number | null
+  visitLocked: boolean
+  bust: boolean
+  visitStartLeft: number
+  seats: {
+    target: number
+    left: number
+    darts: number
+    visits: number[]
+    floor: number
+    tries: P121Try[]
+    /**
+     * Count of made tries.
+     */
+    made: number
+    /**
+     * The highest target checked out; null before the first.
+     */
+    highestMade: number | null
+    /**
+     * Mean darts over made tries; null before the first.
+     */
+    avgDarts: number | null
+    /**
+     * Every try is used up.
+     */
+    done: boolean
+  }[]
+  lastResult: P121Result | null
+  bullOff: BullOffView | null
+  currentVisitDarts: Dart[]
+  totalDarts: number[]
+  totalVisits: number[]
+}
+/**
  * Who acts for a seat and where its darts come from.
  *
  * This interface was referenced by `GameWs`'s JSON-Schema
@@ -392,6 +476,51 @@ export interface AtcSnapshot {
   lobbyName: string | null
   players: Player[]
   game: AtcGame
+  /**
+   * Status of the board of the seat that's up.
+   */
+  bmStatus: BmStatus | null
+  status: SessionStatus
+  /**
+   * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
+   */
+  finishPending: boolean
+  /**
+   * No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it).
+   */
+  canUndoVisit: boolean
+  /**
+   * The host: starts the bull off, aborts the game.
+   */
+  ownerUserId: string
+  /**
+   * Same order as players.
+   */
+  seats: SeatInfo[]
+  /**
+   * Seats the viewer controls.
+   */
+  mySeats: number[]
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "P121Snapshot".
+ */
+export interface P121Snapshot {
+  type: 'snapshot'
+  sessionId: string
+  gameId: 'p121'
+  boardId: string | null
+  /**
+   * The lobby the game was started from; null for a local game.
+   */
+  lobbyId: string | null
+  /**
+   * The lobby's name, for the match header; null for a local game.
+   */
+  lobbyName: string | null
+  players: Player[]
+  game: P121Game
   /**
    * Status of the board of the seat that's up.
    */
@@ -697,6 +826,12 @@ export interface ForfeitAction {
  */
 export interface MinigolfNextHoleAction {
   type: 'minigolf_next_hole'
+}
+/**
+ * 121: the current player gives up the open try (counts as missed).
+ */
+export interface P121GiveUpAction {
+  type: 'p121_give_up'
 }
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema

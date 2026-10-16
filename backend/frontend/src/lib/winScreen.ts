@@ -73,6 +73,10 @@ export function winMeta(snapshot: Snapshot): string {
     const g = snapshot.game
     return minigolfRules(g.config, g.courseName, g.holeCount, n) + vs
   }
+  if (snapshot.gameId === 'p121') {
+    const g = snapshot.game
+    return `121 Checkout · ${g.cfg.tries} tries · ${g.cfg.dartsPerTry} darts` + vs
+  }
   return atcRules(snapshot.game.cfg, n) + vs
 }
 
@@ -313,5 +317,7 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
   if (!snapshot || snapshot.status !== 'finished' || snapshot.game.winner === null) return null
   if (snapshot.gameId === 'x01') return x01Win(snapshot, detail?.detail.mode === 'x01' ? detail : null)
   if (snapshot.gameId === 'minigolf') return minigolfWin(snapshot)
+  // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
+  if (snapshot.gameId === 'p121') return null
   return atcWin(snapshot)
 }

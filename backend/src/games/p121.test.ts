@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest'
-import { p121Game, nextTarget, dartLabel, compareSeats, type P121Config, type P121State, type P121Seat, type P121Try } from './p121.js'
+import {
+  p121Game,
+  p121Module,
+  nextTarget,
+  dartLabel,
+  compareSeats,
+  type P121Config,
+  type P121State,
+  type P121Seat,
+  type P121Try,
+} from './p121.js'
 import type { BoardEvent } from '../session/types.js'
 import { refoldVisit } from '../session/refold.js'
 
@@ -168,4 +178,47 @@ it('dartLabel', () => {
     dartLabel({ number: 25, multiplier: 1 }),
     dartLabel({ number: 12, multiplier: 2 }),
   ]).toEqual(['Bull', '25', 'D12'])
+})
+
+describe('view', () => {
+  it('shows the open try, the ladder and the session numbers', () => {
+    const s = play(solo(), [T20, [11, 3], [14, 2]], miss3)
+    const v = p121Game.view(s, [{ name: 'A' }])
+    expect(v.seats[0]).toMatchObject({ target: 122, left: 122, darts: 3, made: 1, highestMade: 121, avgDarts: 3, done: false })
+    expect(v.seats[0].tries).toHaveLength(1)
+    expect(v).toMatchObject({ currentPlayer: 0, nextPlayer: 0, winner: null, visitLocked: false, phase: 'game' })
+  })
+  it('locks the visit after a checkout or a bust', () => {
+    let s = p121Game.onBoardEvent(solo(), opened).state
+    s = p121Game.onBoardEvent(s, dart(20, 3)).state
+    s = p121Game.onBoardEvent(s, dart(20, 3, 1)).state
+    expect(p121Game.view(s, [{ name: 'A' }]).visitLocked).toBe(true)
+  })
+})
+
+describe('give up', () => {
+  it('ends the open try as missed, counts its darts, and passes the turn', () => {
+    let s = p121Game.init(cfg, [{ name: 'A' }, { name: 'B' }])
+    s = play(s, [T20, MISS, MISS]) // A: 61 left, 3 darts
+    s = play(s, miss3) // B
+    s = p121Game.onBoardEvent(s, opened).state
+    s = p121Game.onBoardEvent(s, dart(20, 1)).state // A throws one more, then gives up
+    s = p121Game.onUserAction(s, { type: 'p121_give_up' }).state
+    expect(s.seats[0].tries[0]).toEqual({ target: 121, made: false, darts: 4, finish: null })
+    expect(s.seats[0].target).toBe(121)
+    expect(s.currentPlayer).toBe(1)
+  })
+  it('is a no-op once the visit is locked (a checkout waiting for takeout)', () => {
+    let s = p121Game.onBoardEvent(solo(), opened).state
+    s = p121Game.onBoardEvent(s, dart(20, 3)).state
+    s = p121Game.onBoardEvent(s, dart(11, 3, 1)).state // not yet 0, still live
+    expect(p121Game.view(s, [{ name: 'A' }]).visitLocked).toBe(false)
+    s = p121Game.onBoardEvent(s, dart(14, 2, 2)).state // checks out 121, now locked
+    expect(p121Game.onUserAction(s, { type: 'p121_give_up' }).state).toEqual(s)
+  })
+})
+
+it('p121Module starts with the bull off order', () => {
+  const s = p121Module.init({ ...cfg, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
+  expect(s.stage).toBe('bulloff')
 })

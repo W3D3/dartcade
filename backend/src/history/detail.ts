@@ -25,5 +25,10 @@ export function buildDetail(
   })
   const { visits } = replay(session, events, warn)
   const final = session.committedState
-  return { detail: mod.detail(visits, final), stats: mod.matchStats?.(visits, final) ?? noStats() }
+  const stats = mod.matchStats?.(visits, final) ?? noStats()
+  // p121 has no history detail yet (its D is `unknown` until Task 4 adds P121Detail)
+  if (mod.id === 'x01') return { detail: mod.detail(visits, final), stats }
+  if (mod.id === 'atc') return { detail: mod.detail(visits, final), stats }
+  if (mod.id === 'minigolf') return { detail: mod.detail(visits, final), stats }
+  return null
 }
