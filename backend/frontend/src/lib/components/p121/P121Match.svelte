@@ -135,11 +135,17 @@
 
 {#snippet giveUp()}
   {#if canThrow && playing && !locked}
-    <button
-      type="button"
-      class="shrink-0 h-11 px-2 border-0 bg-transparent text-text-muted text-[15px] cursor-pointer hover:text-text"
-      onclick={() => (confirmGiveUp = true)}>Give up this try ›</button
-    >
+    <!-- Darts in the board: their takeout would end a visit of a try that's already over -->
+    <span class="shrink-0 flex flex-col items-end">
+      <button
+        type="button"
+        class="h-11 px-2 border-0 bg-transparent text-text-muted text-[15px] cursor-pointer hover:text-text disabled:cursor-default disabled:text-text-dim disabled:hover:text-text-dim"
+        disabled={darts.length > 0}
+        aria-describedby={darts.length > 0 ? 'p121-give-up-hint' : undefined}
+        onclick={() => (confirmGiveUp = true)}>Give up this try ›</button
+      >
+      {#if darts.length > 0}<span id="p121-give-up-hint" class="px-2 text-[12px] text-text-dim">Take your darts out first</span>{/if}
+    </span>
   {/if}
 {/snippet}
 

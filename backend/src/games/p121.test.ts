@@ -200,13 +200,20 @@ describe('give up', () => {
   it('ends the open try as missed, counts its darts, and passes the turn', () => {
     let s = p121Game.init(cfg, [{ name: 'A' }, { name: 'B' }])
     s = play(s, [T20, MISS, MISS]) // A: 61 left, 3 darts
+    s = play(s, miss3, [MISS, MISS, MISS]) // B, then A again
     s = play(s, miss3) // B
-    s = p121Game.onBoardEvent(s, opened).state
-    s = p121Game.onBoardEvent(s, dart(20, 1)).state // A throws one more, then gives up
-    s = p121Game.onUserAction(s, { type: 'p121_give_up' }).state
-    expect(s.seats[0].tries[0]).toEqual({ target: 121, made: false, darts: 4, finish: null })
+    s = p121Game.onUserAction(s, { type: 'p121_give_up' }).state // A, between visits
+    expect(s.seats[0].tries[0]).toEqual({ target: 121, made: false, darts: 6, finish: null })
     expect(s.seats[0].target).toBe(121)
     expect(s.currentPlayer).toBe(1)
+  })
+  it('is refused while darts are in the open visit', () => {
+    let s = p121Game.onBoardEvent(solo(), opened).state
+    s = p121Game.onBoardEvent(s, dart(20, 1)).state
+    expect(p121Game.onUserAction(s, { type: 'p121_give_up' }).state).toBe(s)
+    s = p121Game.onBoardEvent(s, takeout).state
+    s = p121Game.onUserAction(s, { type: 'p121_give_up' }).state
+    expect(s.seats[0].tries).toEqual([{ target: 121, made: false, darts: 3, finish: null }])
   })
   it('is a no-op once the visit is locked (a checkout waiting for takeout)', () => {
     let s = p121Game.onBoardEvent(solo(), opened).state

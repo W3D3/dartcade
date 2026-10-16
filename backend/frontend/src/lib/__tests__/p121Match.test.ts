@@ -98,6 +98,16 @@ describe('P121Match in solo', () => {
     expect(text(body)).not.toContain('Give up this try')
   })
 
+  it('disables give up while darts are in the board, with a hint', () => {
+    const darts = [{ segment: { name: 'S1', number: 1, multiplier: 1 }, score: 1 }] as never
+    const { body } = render(P121Match, { props: { ...props(game({ seats: [seat({ left: 23 })] })), darts } })
+    expect(body).toMatch(/<button[^>]* disabled(="")?[ >][^>]*>Give up this try ›/)
+    expect(text(body)).toContain('Take your darts out first')
+    const clean = render(P121Match, { props: props(game()) }).body
+    expect(clean).not.toMatch(/<button[^>]* disabled(="")?[ >][^>]*>Give up this try ›/)
+    expect(text(clean)).not.toContain('Take your darts out first')
+  })
+
   it('shows the missed banner after a missed try', () => {
     const g = game({ lastResult: { seat: 0, target: 123, made: false, darts: 9, next: 121 }, seats: [seat({ target: 121, left: 121 })] })
     const { body } = render(P121Match, { props: props(g) })

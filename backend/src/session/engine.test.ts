@@ -256,6 +256,19 @@ describe('onBridgeEvent', () => {
       expect(store.finishSession).toHaveBeenCalled()
       expect(game().seats[0].tries.at(-1)).toMatchObject({ target: 81, made: true, darts: 5 })
     })
+
+    it('give up waits for the takeout while darts are in the board', async () => {
+      const { engine, sessionId, visit, game } = await start()
+      await visit(seg('S1', 1, 1))
+      await engine.onUserAction(sessionId, 'user-1', { type: 'p121_give_up' })
+      expect(game().seats[0].tries).toHaveLength(0)
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      expect(game().seats[0].darts).toBe(3)
+      await engine.onUserAction(sessionId, 'user-1', { type: 'p121_give_up' })
+      expect(game().seats[0].tries).toEqual([{ target: 81, made: false, darts: 3, finish: null }])
+      // No phantom visit: the next try starts clean
+      expect(game().seats[0].darts).toBe(0)
+    })
   })
 
   describe('the visit that wins the game', () => {
