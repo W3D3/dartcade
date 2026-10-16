@@ -13,6 +13,7 @@ import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { FriendsService } from './friends/service.js'
+import { MatchmakingService } from './matchmaking/service.js'
 import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 import { closePool, warmPool } from './games/minigolfPool.js'
@@ -55,7 +56,10 @@ const engine: SessionEngine = new SessionEngine(
   (sessionId, userIds, notice) => {
     pushNotice(sessionId, userIds, notice)
   },
-  ended => lobbies.onGameEnded(ended),
+  async ended => {
+    await lobbies.onGameEnded(ended)
+    await matchmaking.onGameEnded(ended)
+  },
   started => lobbies.onGameStarted(started),
   { forgotten: forgetSession },
 )
@@ -80,9 +84,22 @@ const lobbies: LobbyService = new LobbyService({
     friends.touch(userIds)
   },
 })
+const matchmaking = new MatchmakingService({
+  db,
+  engine,
+  send: (userId, msg) => {
+    hub.sendMatchmaking(userId, msg)
+  },
+  warn: (message, details) => {
+    warn(message, details)
+  },
+})
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
+// …and a ranked one never moved its ratings
+await matchmaking.settleAll()
+matchmaking.start()
 // Lobbies with no game running close after hours without activity: 6 h with one account,
 // 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS)
 const idleSweep = setInterval(
@@ -95,13 +112,14 @@ const idleSweep = setInterval(
 )
 idleSweep.unref()
 
-const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../frontend/dist') })
+const app = await buildApp({ engine, db, lobbies, hub, friends, matchmaking, frontendDist: join(__dirname, '../frontend/dist') })
 warn = (message, details) => {
   app.log.warn({ details }, message)
 }
-// Stopping: no idle sweep, friends pushes, grace or debounce timers or shot workers left running
+// Stopping: no idle sweep, matchmaking ticks, friends pushes, grace or debounce timers or shot workers left running
 app.addHook('onClose', async () => {
   clearInterval(idleSweep)
+  matchmaking.close()
   friends.close()
   await closePool()
 })

@@ -19,6 +19,7 @@
   import PickName from './routes/PickName.svelte'
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
+  import MatchFound from '$lib/components/ranked/MatchFound.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { loadAccountSettings } from '$lib/accountSettings'
@@ -144,6 +145,7 @@
       <PickName />
     {:else}
       <Router {routes} />
+      {#if $currentUser}<MatchFound />{/if}
     {/if}
   {/if}
 </Tooltip.Provider>

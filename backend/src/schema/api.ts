@@ -899,6 +899,62 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/matchmaking/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Search for a ranked match: alone (1v1), or as the host of a lobby of two (2v2) */
+        post: operations["startRankedSearch"];
+        /** Stop searching (a duo's search: only its host) */
+        delete: operations["cancelRankedSearch"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/matchmaking/matches/{matchId}/accept": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: components["parameters"]["MatchId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Accept a found match; the game starts once everyone did */
+        post: operations["acceptRankedMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/matchmaking/matches/{matchId}/decline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: components["parameters"]["MatchId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Decline a found match: it's dropped, and your search pauses for 2 minutes */
+        post: operations["declineRankedMatch"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/friends": {
         parameters: {
             query?: never;
@@ -1199,6 +1255,22 @@ export interface components {
         };
         /** @enum {string} */
         RankedMode: "1v1" | "2v2";
+        RankedSearchRequest: {
+            mode: components["schemas"]["RankedMode"];
+            /**
+             * @description First to 3 is played only when the other side picked it too
+             * @enum {integer}
+             */
+            firstTo: 2 | 3;
+        };
+        RankedConflict: {
+            error: string;
+            /**
+             * @description searching: already searching or in a found match. paused: you declined or missed a match a moment ago. active_session: a game of yours is running. not_duo: 2v2 needs you as host of a lobby of exactly two members.
+             * @enum {string}
+             */
+            code?: "searching" | "paused" | "active_session" | "not_duo";
+        };
         RankedRating: {
             mode: components["schemas"]["RankedMode"];
             /** @description Rating points (RP); null (hidden) during the placement matches */
@@ -2159,6 +2231,15 @@ export interface components {
                 "application/json": components["schemas"]["BoardActionResult"];
             };
         };
+        /** @description Can't search right now (see code) */
+        RankedConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["RankedConflict"];
+            };
+        };
         /** @description Conflicts with the lobby's state (see code) */
         LobbyConflict: {
             headers: {
@@ -2224,6 +2305,7 @@ export interface components {
         SessionId: string;
         GameId: string;
         LobbyId: string;
+        MatchId: string;
         PersonId: string;
         InviteId: string;
         VoicePackId: string;
@@ -3724,6 +3806,100 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    startRankedSearch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RankedSearchRequest"];
+            };
+        };
+        responses: {
+            /** @description Searching; the search shows on /ws/me */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            409: components["responses"]["RankedConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    cancelRankedSearch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Not searching any more */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    acceptRankedMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: components["parameters"]["MatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Accepted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    declineRankedMatch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                matchId: components["parameters"]["MatchId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Declined */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

@@ -1,15 +1,27 @@
 // The two lobby sockets. /ws/lobby?lobbyId= pushes the whole lobby after every change (the
 // lobby page). /ws/me pushes your pending invites and a summary of your lobby (the
-// indicator and the invite badge, everywhere), and your friends list with their status.
+// indicator and the invite badge, everywhere), your friends list with their status, and your
+// ranked search (the match-found prompt, everywhere).
 // Both only push; changes go through REST.
 import { writable, type Readable } from 'svelte/store'
 import { WsCloseCode } from '../api/game-ws'
 import { reconnectingSocket, type OpenSocket, type ReconnectingSocket } from '../reconnectingSocket'
 import { LobbyServerMessageSchema, MeServerMessageSchema } from '../api/zod'
-import type { ActiveGame, FriendsMessage, Lobby, LobbyServerMessage, LobbySummary, MeMessage, PendingInvite } from '../api/lobby-ws'
+import type {
+  ActiveGame,
+  FriendsMessage,
+  Lobby,
+  LobbyServerMessage,
+  LobbySummary,
+  MatchmakingMessage,
+  MeMessage,
+  PendingInvite,
+} from '../api/lobby-ws'
 
 /** Your friends and friend requests (the friends message on /ws/me, GET /api/friends). */
 export type FriendList = Omit<FriendsMessage, 'type'>
+/** Your ranked search and found match (the matchmaking message on /ws/me). */
+export type Matchmaking = Omit<MatchmakingMessage, 'type'>
 
 const isTyped = (m: unknown, ...types: string[]): boolean =>
   typeof m === 'object' && m !== null && 'type' in m && typeof m.type === 'string' && types.includes(m.type)
@@ -22,7 +34,7 @@ export function parseLobbyMessage(m: unknown): LobbyServerMessage | null {
   return null
 }
 
-export function parseMeMessage(m: unknown): MeMessage | FriendsMessage | null {
+export function parseMeMessage(m: unknown): MeMessage | FriendsMessage | MatchmakingMessage | null {
   const r = MeServerMessageSchema.safeParse(m)
   return r.success ? r.data : null
 }
@@ -73,7 +85,16 @@ export function createLobbyStore(lobbyId: string, open?: OpenSocket) {
   }
 }
 
-export type MeState = { invites: PendingInvite[]; lobby: LobbySummary | null; game: ActiveGame | null; friends: FriendList | null }
+export type MeState = {
+  invites: PendingInvite[]
+  lobby: LobbySummary | null
+  game: ActiveGame | null
+  friends: FriendList | null
+  /** null until the server sent it (a server without matchmaking never does). */
+  matchmaking: Matchmaking | null
+}
+
+const EMPTY: MeState = { invites: [], lobby: null, game: null, friends: null, matchmaking: null }
 
 /** The signed-in user's /ws/me; started once signed in, stopped on sign-out. */
 export function createMeStore(open?: OpenSocket) {
@@ -93,10 +114,13 @@ export function createMeStore(open?: OpenSocket) {
           onMessage: data => {
             const msg = parseMeMessage(data)
             if (msg?.type === 'me') {
-              state.update(s => ({ invites: msg.invites, lobby: msg.lobby, game: msg.game, friends: s?.friends ?? null }))
+              state.update(s => ({ ...(s ?? EMPTY), invites: msg.invites, lobby: msg.lobby, game: msg.game }))
             } else if (msg?.type === 'friends') {
               const { type: _type, ...list } = msg
-              state.update(s => ({ ...(s ?? { invites: [], lobby: null, game: null }), friends: list }))
+              state.update(s => ({ ...(s ?? EMPTY), friends: list }))
+            } else if (msg?.type === 'matchmaking') {
+              const { type: _type, ...matchmaking } = msg
+              state.update(s => ({ ...(s ?? EMPTY), matchmaking }))
             }
           },
           onClose: code => (WsCloseCode[code] === 'Unauthorized' ? 'stop' : undefined),

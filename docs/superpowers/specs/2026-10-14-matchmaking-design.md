@@ -52,6 +52,8 @@ so seat control, remote boards, forfeits and history work as they do today.
   wins, streak.
 - `ranked_results (session_id, user_id)`: mode, won, whether it was a placement match, rating before
   and after, the game's 3-dart average. Feeds the 30-day trend, the online average and Recent ranked matches.
+- `ranked_matches (session_id)`: which games came from the queue, their mode and sides. When a
+  ranked game finishes, its result is recorded from this row; an aborted game records nothing.
 - `recordRankedResult` moves the ratings for a finished game in one transaction and is idempotent
   per game.
 
@@ -59,11 +61,14 @@ The rank maths (`backend/src/shared/ranked.ts`) is shared with the frontend.
 
 ## Slices
 
-1. **Ratings and ranks** (this PR): rank and Elo rules, the tables, `GET /api/ranked/me`, the
+1. **Ratings and ranks**: rank and Elo rules, the tables, `GET /api/ranked/me`, the
    Matchmaking page (Find match off) and the Ranks page, behind the flag.
 2. **Queue:** matcher with the widening range, queue and match-found states on `/ws/me`, accept and
-   decline, a hidden lobby that starts the ranked game, ratings recorded when it ends, the result
-   screen. Solo and duo.
+   decline, the ranked game started straight from the queue (no hidden lobby: each player at their
+   lobby board or usual board, else entering darts by hand), ratings recorded when it ends. Solo and
+   duo (a duo searches from a lobby of exactly two; its host starts and cancels). The queue lives in
+   memory, so a restart drops the searches. Moved on: the ranked result screen, locking the duo's
+   lobby while it searches, and stopping a ranked game from being aborted.
 3. **Ranked rules in game:** the visit timer and reserve as input events (so replay stays
    deterministic), the disconnect forfeit, the ranked header with stakes.
 4. **Everywhere else:** the searching / match-found states in the lobby card, tablet rail and phone
