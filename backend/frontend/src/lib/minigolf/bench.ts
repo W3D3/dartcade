@@ -8,8 +8,9 @@ import { initPhysics3d, simulateShot3d } from '$shared/minigolf/3d/physics3d'
 import { R } from '$shared/board'
 import type { Physics } from '$shared/minigolf/physics'
 import { powerAt, shotFromDart } from '$shared/minigolf/shot'
-import { BALL_R, type Hole, type PathPt, type Pt, type ShotResult } from '$shared/minigolf/types'
+import { BALL_R, type Hole, type PathPt, type Pt, type Shot, type ShotResult } from '$shared/minigolf/types'
 import { playFrames, playPath } from './animate.js'
+import type { ShotReply } from './shotWorker.js'
 
 export interface BenchState {
   ball: Pt
@@ -91,7 +92,57 @@ export function withHeight(hole: Hole, p: PathPt): Pt3 {
   return [p[0], p[1], p[2] ?? heightAt(hole, [p[0], p[1]]) + BALL_R]
 }
 
-/** A dart's putt, simulated with 3D physics (loading Rapier on first use): the rolled path, with
+let worker: Worker | null = null
+let nextId = 0
+const waiting = new Map<number, { resolve: (r: ShotResult) => void; reject: (e: Error) => void }>()
+
+/** The shot worker, started on first use; null where there are no Workers (tests). */
+function shotWorker(): Worker | null {
+  if (typeof Worker === 'undefined') return null
+  if (!worker) {
+    worker = new Worker(new URL('./shotWorker.ts', import.meta.url), { type: 'module' })
+    worker.onmessage = (e: MessageEvent<ShotReply>) => {
+      const w = waiting.get(e.data.id)
+      waiting.delete(e.data.id)
+      if ('result' in e.data) w?.resolve(e.data.result)
+      else w?.reject(new Error(e.data.error))
+    }
+    worker.onerror = () => {
+      for (const w of waiting.values()) w.reject(new Error('the shot worker stopped'))
+      waiting.clear()
+      worker = null
+    }
+  }
+  return worker
+}
+
+/** Starts the shot worker, and its Rapier load, before the first putt. */
+export function warmShots(): void {
+  shotWorker()
+}
+
+/** A putt's 3D physics in the shot worker, so the page keeps drawing while it runs; on this thread
+ *  without Workers, or if the worker fails. */
+async function simulate(hole: Hole, physics: Physics, from: Pt, shot: Shot): Promise<ShotResult> {
+  const w = shotWorker()
+  if (w) {
+    const id = nextId++
+    // Plain copies: a Svelte state proxy can't be posted
+    const req: unknown = JSON.parse(JSON.stringify({ id, hole, physics, from, shot }))
+    try {
+      return await new Promise<ShotResult>((resolve, reject) => {
+        waiting.set(id, { resolve, reject })
+        w.postMessage(req)
+      })
+    } catch {
+      // Fall through and simulate here
+    }
+  }
+  await initPhysics3d()
+  return simulateShot3d(hole, physics, from, shot)
+}
+
+/** A dart's putt, simulated with 3D physics off the main thread: the rolled path, with
  *  heights filled in for drawing, where it ends and whether it holed — or null for a miss (off
  *  the board). `assist` snaps the aim onto the cup within the physics's assist angle. */
 export async function putt3d(
@@ -103,8 +154,7 @@ export async function putt3d(
 ): Promise<{ path: Pt3[]; rest: Pt; holed: boolean } | null> {
   const shot = shotFromDart(coords, from, hole.cup.at, physics, assist ? hole : null)
   if (!shot) return null
-  await initPhysics3d()
-  const r = simulateShot3d(hole, physics, from, shot)
+  const r = await simulate(hole, physics, from, shot)
   return { ...r, path: r.path.map(p => withHeight(hole, p)) }
 }
 

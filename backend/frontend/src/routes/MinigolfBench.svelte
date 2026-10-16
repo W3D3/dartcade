@@ -5,7 +5,7 @@
   Design: docs/superpowers/specs/2026-10-09-minigolf-core-bench-design.md
 -->
 <script lang="ts">
-  import { untrack } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { currentUser } from '$lib/auth'
   import DartBoard from '$lib/components/DartBoard.svelte'
@@ -28,6 +28,7 @@
     playShot,
     playReplay,
     putt3d,
+    warmShots,
     startShot,
     undoShot,
     withHeight,
@@ -45,6 +46,9 @@
   $effect(() => {
     if ($currentUser && !$currentUser.isAdmin) void push('/')
   })
+
+  // The 3D physics runs in a worker: start it, and its Rapier load, before the first putt
+  onMount(warmShots)
 
   let courses = $state.raw<readonly Course[]>(COURSES)
   let previewError = $state('')

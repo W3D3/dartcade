@@ -5,7 +5,7 @@
   the ball to its tee.
 -->
 <script lang="ts">
-  import { untrack } from 'svelte'
+  import { onMount, untrack } from 'svelte'
   import DartBoard from '$lib/components/DartBoard.svelte'
   import {
     aimDial,
@@ -19,6 +19,7 @@
     playShot,
     playReplay,
     putt3d,
+    warmShots,
     startShot,
     undoShot,
     withHeight,
@@ -46,6 +47,9 @@
     freeCamera?: boolean
     relief?: number
   } = $props()
+
+  // The physics runs in a worker: start it, and its Rapier load, before the first putt
+  onMount(warmShots)
 
   const start = untrack(() => initBench(hole))
   let bench = $state<BenchState>(start)
