@@ -46,11 +46,18 @@ export const packClipUrls = (clips: Clips): Clips => mapClips(clips, clipUrl)
 export const builtinClipUrls = (id: string, clips: Clips): Clips =>
   mapClips(clips, file => `/voices/${encodeURIComponent(id)}/${file.split('/').map(encodeURIComponent).join('/')}`)
 
-/** A voice's clips over the built-in voice's: keys the voice lacks fall back to it, except `and`. */
+/** A voice's clips over the built-in voice's: keys the voice lacks fall back to it, except the lead-ins. */
 export const mergeClips = (voice: Clips, base: Clips): Clips => {
-  // "and" joins two of the voice's own clips, so another voice's would mix voices mid-sentence; skip it
-  const { and: _and, ...rest } = base
-  return { ...rest, ...voice }
+  // "and" and "you_require" lead into the voice's own next clip, so another voice's would mix voices
+  // mid-sentence; a voice with its own "you_require" says checkouts with it and its own N, borrowing
+  // the whole phrase only for an N it can't say
+  const { and: _and, you_require: _youRequire, ...rest } = base
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  const has = (k: string) => (voice[k]?.length ?? 0) > 0
+  const borrowed = has('you_require')
+    ? Object.fromEntries(Object.entries(rest).filter(([k]) => !(k.startsWith('require_') && has(k.slice('require_'.length)))))
+    : rest
+  return { ...borrowed, ...voice }
 }
 
 const BuiltinManifestSchema = z.object({

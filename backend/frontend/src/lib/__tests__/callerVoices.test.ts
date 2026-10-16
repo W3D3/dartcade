@@ -28,6 +28,15 @@ describe('mergeClips', () => {
     expect(mergeClips({ gameshot: ['/p/gs'] }, { and: ['/b/and'] })).toEqual({ gameshot: ['/p/gs'] })
     expect(mergeClips({ and: ['/p/and'] }, { and: ['/b/and'] })).toEqual({ and: ['/p/and'] })
   })
+
+  it('never borrows you_require; a voice with its own lead-in borrows require_N only for N it lacks', () => {
+    const base = { you_require: ['b-y'], require_121: ['b-r'], '121': ['b-n'], and: ['b-and'] }
+    expect(mergeClips({ '60': ['v-60'] }, base)).toEqual({ require_121: ['b-r'], '121': ['b-n'], '60': ['v-60'] })
+    // It can't say 121: the base voice says the whole phrase
+    expect(mergeClips({ you_require: ['v-y'] }, base)).toEqual({ require_121: ['b-r'], '121': ['b-n'], you_require: ['v-y'] })
+    // It can: its own lead-in and its own 121
+    expect(mergeClips({ you_require: ['v-y'], '121': ['v-n'] }, base)).toEqual({ '121': ['v-n'], you_require: ['v-y'] })
+  })
 })
 
 describe('storageUse', () => {
