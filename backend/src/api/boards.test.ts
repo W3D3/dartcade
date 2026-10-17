@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { createServer } from 'node:http'
+import type { AddressInfo } from 'node:net'
 import { createFastify } from './fastify.js'
 import { boardsApiPlugin } from './boards.js'
 import { CameraStills } from '../camera/store.js'
@@ -360,19 +362,52 @@ describe('GET /api/boards/:id/camera/:index/live', () => {
     )
   })
 
-  it('is off (404) with BOARD_LIVE_CAMERA=off', async () => {
+  it('is off (404) with BOARD_LIVE_CAMERA=off, like the status and commands', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
     vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
     const fetch = vi.fn()
     vi.stubGlobal('fetch', fetch)
     vi.stubEnv('BOARD_LIVE_CAMERA', 'off')
     try {
-      const res = await makeApp().inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })
-      expect(res.statusCode).toBe(404)
+      const app = makeApp()
+      expect((await app.inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })).statusCode).toBe(404)
+      expect((await app.inject({ method: 'GET', url: '/api/boards/b1/status' })).statusCode).toBe(404)
+      expect((await app.inject({ method: 'POST', url: '/api/boards/b1/start' })).statusCode).toBe(404)
       expect(fetch).not.toHaveBeenCalled()
     } finally {
       vi.unstubAllEnvs()
     }
+  })
+
+  it('never follows a redirect from the Board Manager', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    const hits: string[] = []
+    const server = createServer((req, res) => {
+      hits.push(req.url ?? '')
+      if (req.url === '/elsewhere') return res.writeHead(200, { 'content-type': 'image/jpeg' }).end('x')
+      res.writeHead(302, { location: '/elsewhere' }).end()
+    })
+    await new Promise<void>(resolve => server.listen(0, '127.0.0.1', resolve))
+    try {
+      const { port } = server.address() as AddressInfo
+      vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: `http://127.0.0.1:${port}` } as any)
+      const app = makeApp()
+      expect((await app.inject({ method: 'GET', url: '/api/boards/b1/camera/1/live' })).statusCode).toBe(502)
+      expect((await app.inject({ method: 'GET', url: '/api/boards/b1/status' })).statusCode).toBe(502)
+      expect((await app.inject({ method: 'POST', url: '/api/boards/b1/reset' })).statusCode).toBe(502)
+      expect(hits).not.toContain('/elsewhere')
+    } finally {
+      server.close()
+    }
+  })
+
+  it("keeps a failed Board Manager call's error to itself: it names hosts on the board's network", async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'b1', owner_user_id: 'user-1' } as any)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmUrl: 'http://bm:3180' } as any)
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('connect ECONNREFUSED 10.0.0.7:3180')))
+    const res = await makeApp().inject({ method: 'POST', url: '/api/boards/b1/start' })
+    expect(res.statusCode).toBe(502)
+    expect(res.json()).toEqual({ error: 'Board Manager request failed' })
   })
 })
 

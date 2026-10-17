@@ -47,7 +47,9 @@ reach it over `https://`/`wss://`. Env vars worth knowing about (all optional, s
 - `TRUST_PROXY` — set to `1` behind one reverse proxy, so rate limits count each client, not the proxy
 - `VOICE_STORAGE_LIMIT_MB` — caller voice pack storage per user, in MB (default `50`)
 - `BOARD_LIVE_CAMERA` — set to `off` if the backend can't reach your boards' network (e.g. a
-  cloud host); turns off the owner's live camera preview on the Boards page only
+  cloud host) or anyone can sign up: the backend then never calls a Board Manager itself, so the
+  Boards page loses the live camera preview, the board status and the Start/Stop/Reset/Calibrate
+  buttons (games are not affected)
 
 Once it's up, continue with [`GETTING_STARTED.md`](../GETTING_STARTED.md) to install the bridge
 and pair a board.

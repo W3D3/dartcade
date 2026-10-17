@@ -58,8 +58,10 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     stills = cameraStills,
     liveCameraTimeoutMs = 3000,
   } = opts
-  // BOARD_LIVE_CAMERA=off: a cloud backend can't reach boards' networks, so it never tries
-  const liveCamera = process.env.BOARD_LIVE_CAMERA !== 'off'
+  // BOARD_LIVE_CAMERA=off: a cloud backend can't reach boards' networks, so it never calls a
+  // Board Manager (live camera, status, commands): the URL comes from the bridge, so a fake
+  // bridge could otherwise point the backend at any host it can reach
+  const reachBoards = process.env.BOARD_LIVE_CAMERA !== 'off'
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
   async function ownBoard(id: string, userId: string, reply: { code(n: number): { send(b: { error: string }): unknown } }) {
@@ -126,7 +128,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     '/api/boards/:id/camera/:index/live',
     { preValidation: requireAuth, schema: fromSpec('getBoardCameraLive') },
     async (req, reply) => {
-      if (!liveCamera) return reply.code(404).send({ error: 'not found' })
+      if (!reachBoards) return reply.code(404).send({ error: 'not found' })
       const { id, index } = req.params
       if (!(await ownBoard(id, req.userId, reply))) return reply
       const conn = bridgeConnections.get(id)
@@ -136,7 +138,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       // A frame, or null when the camera didn't answer with an image in time
       let frame: Buffer | null = null
       try {
-        const upstream = await fetch(url, { signal: AbortSignal.timeout(liveCameraTimeoutMs) })
+        const upstream = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(liveCameraTimeoutMs) })
         if (upstream.ok && upstream.headers.get('content-type')?.startsWith('image/')) frame = Buffer.from(await upstream.arrayBuffer())
       } catch {
         /* unreachable, timed out */
@@ -184,6 +186,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     '/api/boards/:id/status',
     { preValidation: requireAuth, schema: fromSpec('getBoardStatus') },
     async (req, reply) => {
+      if (!reachBoards) return reply.code(404).send({ error: 'not found' })
       const { id } = req.params
       if (!(await ownBoard(id, req.userId, reply))) return reply
       const conn = bridgeConnections.get(id)
@@ -191,7 +194,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       let res: Response
       let body: unknown
       try {
-        res = await fetch(`${conn.bmUrl}/api/state`, { signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
+        res = await fetch(`${conn.bmUrl}/api/state`, { redirect: 'manual', signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
         if (res.ok) body = await res.json()
       } catch {
         return reply.code(503).send({ error: 'board unreachable' })
@@ -207,19 +210,20 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       `/api/boards/:id/${action}`,
       { preValidation: requireAuth, schema: fromSpec(operationId) },
       async (req, reply) => {
+        if (!reachBoards) return reply.code(404).send({ error: 'not found' })
         const { id } = req.params
         if (!(await ownBoard(id, req.userId, reply))) return reply
         const conn = bridgeConnections.get(id)
         if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
         const bmUrl = conn.bmUrl
         const tryFetch = (url: string) =>
-          fetch(url, { method, headers: { 'Content-Length': '0' }, signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
+          fetch(url, { method, redirect: 'manual', headers: { 'Content-Length': '0' }, signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
         let res: Response
         try {
           res = await tryFetch(bmUrl + path)
           if ((res.status === 404 || res.status === 405) && fallback) res = await tryFetch(bmUrl + fallback)
-        } catch (err) {
-          return reply.code(502).send({ error: err instanceof Error ? err.message : 'Board Manager request failed' })
+        } catch {
+          return reply.code(502).send({ error: 'Board Manager request failed' })
         }
         if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
         return reply.send({ status: res.status })
