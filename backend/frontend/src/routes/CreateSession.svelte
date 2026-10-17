@@ -303,9 +303,10 @@
           >
             <div class="flex items-center gap-3 md:gap-[18px] md:pb-[18px] md:border-b border-surface-paused">
               {#if shown}
+                <!-- The art sits in the right half of the card illustration: zoom in a little and pin it right to centre it -->
                 <span
                   aria-hidden="true"
-                  class="w-14 h-[50px] md:w-20 md:h-[72px] flex-shrink-0 rounded-[9px] md:rounded-[10px] border border-line bg-cover bg-[75%_center]"
+                  class="w-14 h-[50px] md:w-20 md:h-[72px] flex-shrink-0 rounded-[9px] md:rounded-[10px] border border-line bg-size-[auto_112%] bg-right"
                   style:background-image={`url("${shown.img}")`}
                 ></span>
                 <span class="flex flex-col gap-1 min-w-0">
