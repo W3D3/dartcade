@@ -59,6 +59,9 @@ function isOpenApiDocument(v: unknown): v is StaticDocumentSpec['document'] {
   return OpenApiShapeSchema.safeParse(v).success
 }
 
+// The largest legitimate message is a 1 MiB camera still (MAX_STILL_BYTES), base64 in a JSON envelope (~1.4 MiB)
+export const WS_MAX_PAYLOAD = 2 * 1024 * 1024
+
 // 'urls.primaryName' is a Swagger UI option that @fastify/swagger-ui's types leave out
 const swaggerUiConfig = {
   urls: [
@@ -75,7 +78,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   // Feature flags (OpenFeature): the provider is set before any route evaluates one
   await setupFlags(envFlagsOn(), envFlagValues())
 
-  await app.register(fastifyWebsocket)
+  await app.register(fastifyWebsocket, { options: { maxPayload: WS_MAX_PAYLOAD } })
   // RATE_LIMIT_MAX: the e2e stack raises it, since every test browser shares one IP
   await app.register(rateLimit, { max: Number(process.env.RATE_LIMIT_MAX) || 200, timeWindow: '1 minute' })
 

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { buildApp } from './app.js'
+import { buildApp, WS_MAX_PAYLOAD } from './app.js'
 
 const deps = () => ({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any })
 
@@ -49,5 +49,12 @@ describe('malformed requests', () => {
       process.off('unhandledRejection', unhandled)
       await app.close()
     }
+  })
+
+  it('caps WebSocket messages at WS_MAX_PAYLOAD, before any socket is authenticated', async () => {
+    const app = await buildApp(deps())
+    // The socket routes need a real db to stay open, so check the server-wide limit ws enforces
+    expect(app.websocketServer.options.maxPayload).toBe(WS_MAX_PAYLOAD)
+    await app.close()
   })
 })
