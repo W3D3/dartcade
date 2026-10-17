@@ -16,7 +16,6 @@ export type ATCState = {
   sequence: number[] // ordered list of actual dart targets (1–20, 21=25, 22=bull)
   targets: number[] // current target per player (actual number from sequence)
   currentPlayer: number
-  allHitThisVisit: boolean
   winner: number | null
   cfg: ATCConfig
   playerCount: number
@@ -144,7 +143,6 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
       sequence,
       targets: players.map(() => sequence[0]),
       currentPlayer: 0,
-      allHitThisVisit: false,
       winner: null,
       cfg,
       playerCount: players.length,
@@ -159,7 +157,7 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
   onBoardEvent(s: ATCState, e: BoardEvent) {
     switch (e.kind) {
       case 'visit.opened':
-        return { state: { ...s, allHitThisVisit: true, currentVisitHits: [] } }
+        return { state: { ...s, currentVisitHits: [] } }
 
       case 'dart.detected': {
         const data = e.data
@@ -167,26 +165,22 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
         const steps = s.cfg.multiplierAdvances ? data.dart.segment.multiplier : 1
         const hit = hitsTarget(prev, data.dart)
         const currentVisitHits = [...s.currentVisitHits, hit]
-        if (!hit) return { state: { ...s, allHitThisVisit: false, currentVisitHits } }
+        if (!hit) return { state: { ...s, currentVisitHits } }
         const next = advanceInSequence(prev, steps, s.sequence)
         const targets = s.targets.map((t, i) => (i === s.currentPlayer ? next : t))
         const winner = !s.sequence.includes(next) ? s.currentPlayer : s.winner
-        return {
-          state: { ...s, targets, allHitThisVisit: s.allHitThisVisit && true, winner, currentVisitHits },
-        }
+        return { state: { ...s, targets, winner, currentVisitHits } }
       }
 
-      case 'takeout.finished': {
+      // A Reset ends the visit like a takeout: no turn change after the win
+      case 'takeout.finished':
+      case 'visit.cleared': {
         if (s.winner !== null) return { state: s }
-        const stay = s.cfg.throwAgainOnAllHit && s.allHitThisVisit
+        const hits = s.currentVisitHits
+        const stay = s.cfg.throwAgainOnAllHit && hits.length >= 3 && hits.every(Boolean)
         const nextPlayer = stay ? s.currentPlayer : (s.currentPlayer + 1) % s.playerCount
-        return { state: { ...s, currentPlayer: nextPlayer, allHitThisVisit: false, currentVisitHits: [] } }
+        return { state: { ...s, currentPlayer: nextPlayer, currentVisitHits: [] } }
       }
-
-      case 'visit.cleared':
-        return {
-          state: { ...s, currentPlayer: (s.currentPlayer + 1) % s.playerCount, allHitThisVisit: false, currentVisitHits: [] },
-        }
 
       default:
         return { state: s }

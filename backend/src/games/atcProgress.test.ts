@@ -119,7 +119,6 @@ describe('ATC matchStats', () => {
       sequence: [1],
       targets,
       currentPlayer: 0,
-      allHitThisVisit: false,
       winner,
       cfg: base,
       playerCount: 1,
