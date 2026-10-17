@@ -137,3 +137,67 @@ test('sign in, play, history', async ({ browser }) => {
     await ctx.close()
   }
 })
+
+test('admin: hub and users', async ({ browser }) => {
+  const { ctx, page } = await open(browser, 'admin', VIEW.desktop)
+
+  await page.goto('/#/admin')
+  await expect(page.getByRole('heading', { name: 'Admin' })).toBeVisible()
+  await expect(page.getByRole('link', { name: 'Feature flags' })).toBeVisible()
+  await shot(page, 'admin/hub-desktop.png')
+
+  // Phil verified, everyone else not: the Verified column shows both states
+  const phil = await open(browser, 'phil', VIEW.desktop)
+  const philId = await userId(phil.page)
+  await phil.ctx.close()
+  await api(page).put(`/api/admin/users/${philId}/verified`, { verified: true })
+
+  await page.goto('/#/admin/users')
+  await expect(page.getByRole('heading', { name: 'Users' })).toBeVisible()
+  await expect(page.locator('main').getByText('Admin', { exact: true }).first()).toBeVisible()
+  await shot(page, 'admin/users-desktop.png')
+
+  // The "…" row menu: pick an action, confirm, the dialog closes and the page is interactive again
+  // (no stray overlay left capturing clicks) and the row reflects the change
+  const actions = page.getByRole('button', { name: 'Actions for Michael' })
+  await actions.click()
+  await page.getByRole('menuitem', { name: 'Mark email as verified' }).click()
+  const dialog = page.getByRole('dialog')
+  await expect(dialog).toBeVisible()
+  await dialog.getByRole('button', { name: 'Mark verified' }).click()
+  await expect(dialog).toBeHidden()
+  await actions.click()
+  await expect(page.getByRole('menuitem', { name: 'Mark email as unverified' })).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  await ctx.close()
+})
+
+test('admin: feature flags', async ({ browser }) => {
+  const { ctx, page } = await open(browser, 'admin', VIEW.desktop)
+
+  // The table, grouped by feature, with the feature chips over it
+  await page.goto('/#/admin/flags')
+  await expect(page.getByRole('heading', { name: 'Feature flags' })).toBeVisible()
+  await expect(page.getByRole('row', { name: 'Open details for gamemode.p121.enabled' })).toBeVisible()
+  await expect(page.getByRole('group', { name: 'Filter by feature' })).toBeVisible()
+  await shot(page, 'admin/flags-desktop.png')
+
+  // A row's details card beside the narrowed table: Global and Conditional. Pick a different mode
+  // first (not saved yet), so the footer shows "Unsaved changes" and an enabled Save.
+  await page.getByRole('row', { name: 'Open details for gamemode.hilo.enabled' }).click()
+  const panel = page.getByRole('region', { name: 'gamemode.hilo.enabled' })
+  await expect(panel.getByRole('heading', { name: 'gamemode.hilo.enabled' })).toBeVisible()
+  await panel.getByRole('button', { name: 'Everyone', exact: true }).click()
+  await expect(panel.getByText('Unsaved changes')).toBeVisible()
+  await shot(page, 'admin/flag-panel-desktop.png')
+
+  await ctx.close()
+
+  // On a phone the table takes the page
+  const phone = await open(browser, 'admin', VIEW.phone)
+  await phone.page.goto('/#/admin/flags')
+  await expect(phone.page.getByRole('row', { name: 'Open details for gamemode.p121.enabled' })).toBeVisible()
+  await shot(phone.page, 'admin/flags-phone.png')
+  await phone.ctx.close()
+})
