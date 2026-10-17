@@ -1706,6 +1706,7 @@ export interface components {
             players: components["schemas"]["SeatRequest"][];
         };
         SeatRequest: {
+            /** @description As long as a guest name may be (AddGuestRequest) */
             name: string;
         };
         UserSummary: {

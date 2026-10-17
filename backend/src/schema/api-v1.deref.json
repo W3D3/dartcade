@@ -7584,6 +7584,7 @@
                   "players": {
                     "type": "array",
                     "minItems": 1,
+                    "maxItems": 16,
                     "description": "The first player is the signed-in user; the others are guests at the same board",
                     "items": {
                       "type": "object",
@@ -7594,7 +7595,9 @@
                       "properties": {
                         "name": {
                           "type": "string",
-                          "minLength": 1
+                          "minLength": 1,
+                          "maxLength": 32,
+                          "description": "As long as a guest name may be (AddGuestRequest)"
                         }
                       }
                     }
@@ -27185,6 +27188,7 @@
           "players": {
             "type": "array",
             "minItems": 1,
+            "maxItems": 16,
             "description": "The first player is the signed-in user; the others are guests at the same board",
             "items": {
               "type": "object",
@@ -27195,7 +27199,9 @@
               "properties": {
                 "name": {
                   "type": "string",
-                  "minLength": 1
+                  "minLength": 1,
+                  "maxLength": 32,
+                  "description": "As long as a guest name may be (AddGuestRequest)"
                 }
               }
             }
@@ -27211,7 +27217,9 @@
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "As long as a guest name may be (AddGuestRequest)"
           }
         }
       },
