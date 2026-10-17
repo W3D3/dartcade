@@ -1,11 +1,12 @@
 // The win screen after a game: who won, the final standings and the match stats we keep.
 // Placements come from the final snapshot (the server ranks the same way); the per-player
 // X01 stats (average, best checkout) and the legs come from the saved game, once it loads.
-import type { AtcGame, GameDetail, MinigolfGame, Snapshot, X01Game } from './api'
+import type { AtcGame, GameDetail, HiloGame, MinigolfGame, Snapshot, X01Game } from './api'
 import { atcPlayer, fmtAvg } from './playerStats.js'
-import { atcRules, minigolfRules, x01Rules } from './gameViews/meta.js'
+import { atcRules, hiloRules, minigolfRules, x01Rules } from './gameViews/meta.js'
 import { teamsLabel } from './teams.js'
 import { fmtToPar } from './minigolf/match.js'
+import { outcomeText } from './hilo/view.js'
 import { plural } from './fmt.js'
 
 type X01Detail = Extract<GameDetail['detail'], { mode: 'x01' }>
@@ -31,7 +32,7 @@ export type WinLeg = { n: number; name: string; guest: boolean; byWinner: boolea
 export type StatRow = { label: string; values: [string, string]; share: number }
 
 export type WinView = {
-  mode: 'x01' | 'atc' | 'minigolf'
+  mode: 'x01' | 'atc' | 'minigolf' | 'hilo'
   layout: 'duel' | 'party'
   /** By placement: the winner first. */
   competitors: Competitor[]
@@ -77,9 +78,7 @@ export function winMeta(snapshot: Snapshot): string {
     const g = snapshot.game
     return `121 Checkout · ${g.cfg.tries} tries · ${g.cfg.dartsPerTry} darts` + vs
   }
-  // Higher Lower's own header line is a frontend task; this generic fallback is only reached
-  // through winMeta's type, not through any UI yet (hilo has no win screen below).
-  if (snapshot.gameId === 'hilo') return 'Higher Lower' + vs
+  if (snapshot.gameId === 'hilo') return hiloRules(snapshot.game.cfg) + vs
   return atcRules(snapshot.game.cfg, n) + vs
 }
 
@@ -274,6 +273,103 @@ export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
   }
 }
 
+/** Bars moved (visits that set high or low) for one seat. */
+const barsMoved = (g: HiloGame, seat: number) => g.seats[seat].visits.filter(v => v.outcome === 'high' || v.outcome === 'low').length
+/** Lives lost to a miss (not to landing between the bars) for one seat. */
+const livesLostMiss = (g: HiloGame, seat: number) => g.seats[seat].visits.filter(v => v.outcome === 'miss').length
+
+export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
+  const g = snapshot.game
+  const n = snapshot.players.length
+  const forfeited = snapshot.seats.map(s => s.forfeited)
+  const live = n - forfeited.filter(Boolean).length
+  // Mirrors the engine's own compareSeats (hilo.ts): among the seats that didn't forfeit, one
+  // still in always ranks ahead of one that's out (even if a forfeit ends the game before the
+  // module ever sets a winner); among the ones still in, more lives first; among the ones out,
+  // by their engine place (equivalently, the later out first). Forfeited seats always rank
+  // after every seat that didn't forfeit, sharing last place.
+  const better = (a: number, b: number) => {
+    if (forfeited[a] !== forfeited[b]) return forfeited[a] ? 1 : -1
+    const sa = g.seats[a]
+    const sb = g.seats[b]
+    if (sa.out !== sb.out) return sa.out ? 1 : -1
+    return sa.out ? (sa.place ?? 0) - (sb.place ?? 0) : sb.lives - sa.lives
+  }
+  const ranked = rank(n, g.winner, better)
+  const places = g.seats.map((_, i) => (forfeited[i] ? live + 1 : ranked[i]))
+
+  const competitors = byPlacement(
+    g.seats.map((s, i): Competitor => {
+      const livesLeft = `${plural(s.lives, 'life', 'lives')} left`
+      return {
+        name: snapshot.players[i].name,
+        guest: snapshot.seats[i]?.userId === null,
+        members: [],
+        seats: [i],
+        placement: places[i],
+        score: s.lives,
+        sub: places[i] === 1 ? livesLeft : s.out ? `Out in round ${s.outRound}` : forfeited[i] ? 'Forfeited' : livesLeft,
+        cells: [String(s.lives), String(barsMoved(g, i)), s.outRound !== null ? String(s.outRound) : '–'],
+      }
+    }),
+  )
+
+  const w = competitors[0].seats[0]
+  const r = competitors.at(1)?.seats[0]
+  const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
+  const stats: StatRow[] =
+    r === undefined
+      ? []
+      : [
+          {
+            label: 'Lives left',
+            values: pair(String(g.seats[w].lives), String(g.seats[r].lives)),
+            share: share(g.seats[w].lives, g.seats[r].lives),
+          },
+          {
+            label: 'Bars moved',
+            values: pair(String(barsMoved(g, w)), String(barsMoved(g, r))),
+            share: share(barsMoved(g, w), barsMoved(g, r)),
+          },
+          {
+            label: 'Lives lost to misses',
+            values: pair(String(livesLostMiss(g, w)), String(livesLostMiss(g, r))),
+            share: share(livesLostMiss(g, w), livesLostMiss(g, r)),
+          },
+        ]
+
+  // Party highlights: the highest bar set high, and the lowest set low, across every visit
+  type Bar = { seat: number; total: number }
+  const bars = g.seats.flatMap((s, seat) => s.visits.map(v => ({ seat, ...v })))
+  const extreme = (outcome: 'high' | 'low', better: (a: number, b: number) => boolean) =>
+    bars.filter(v => v.outcome === outcome).reduce<Bar | null>((acc, v) => (acc === null || better(v.total, acc.total) ? v : acc), null)
+  const highest = extreme('high', (a, b) => a > b)
+  const lowest = extreme('low', (a, b) => a < b)
+  const highlight = (h: Bar, label: string, outcome: 'high' | 'low') => ({
+    name: snapshot.players[h.seat].name,
+    guest: snapshot.seats[h.seat]?.userId === null,
+    label,
+    text: `${outcomeText({ total: h.total, outcome })}.`,
+  })
+
+  return {
+    mode: 'hilo',
+    layout: n > 2 ? 'party' : 'duel',
+    competitors,
+    kicker: 'Last one standing',
+    scoreLabel: 'Lives left',
+    note: 'The rest ranked by when they went out',
+    checkout: null,
+    legs: [],
+    stats,
+    columns: ['Lives', 'Bars moved', 'Out in'],
+    highlights: [
+      ...(highest ? [highlight(highest, 'Highest bar', 'high')] : []),
+      ...(lowest ? [highlight(lowest, 'Lowest bar', 'low')] : []),
+    ],
+  }
+}
+
 export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinView {
   const g = snapshot.game
   const aces = (seat: number) => g.scores.filter(row => row[seat] === 1).length
@@ -317,12 +413,16 @@ export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinVie
 
 /** The win screen once a won game has ended (not while its winning visit waits for Finish); null before, or when nobody won. */
 export function winView(snapshot: Snapshot | null, detail: GameDetail | null): WinView | null {
-  if (!snapshot || snapshot.status !== 'finished' || snapshot.game.winner === null) return null
+  if (!snapshot || snapshot.status !== 'finished') return null
+  // Higher Lower's own engine always names a winner once it finishes a game by play; a forfeit
+  // ends the session without the module ever running, so its winner stays null. Status
+  // 'finished' with no winner is therefore always a forfeit here, and the win screen still
+  // shows: hiloWin ranks the forfeited seat last from snapshot.seats[i].forfeited.
+  if (snapshot.gameId === 'hilo') return hiloWin(snapshot)
+  if (snapshot.game.winner === null) return null
   if (snapshot.gameId === 'x01') return x01Win(snapshot, detail?.detail.mode === 'x01' ? detail : null)
   if (snapshot.gameId === 'minigolf') return minigolfWin(snapshot)
   // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
   if (snapshot.gameId === 'p121') return null
-  // Higher Lower's win screen (hiloWin) is a frontend task; no UI reaches hilo here yet.
-  if (snapshot.gameId === 'hilo') return null
   return atcWin(snapshot)
 }
