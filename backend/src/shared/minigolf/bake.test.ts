@@ -175,6 +175,18 @@ describe('bakeOutline', () => {
     expect(bakeOutline({ corners: lane, curves, circles: [] })).toEqual({ ok: false, reason: "The edges can't cross each other" })
   })
 
+  it('refuses corners that touch each other, as two pieces of course', () => {
+    const bowtie: Pt[] = [
+      [0, 0],
+      [200, 0],
+      [100, 100],
+      [200, 200],
+      [0, 200],
+      [100, 100],
+    ]
+    expect(bakeOutline(shapeOf([], bowtie))).toEqual({ ok: false, reason: "The outline can't touch itself" })
+  })
+
   it('refuses fewer than 3 corners', () => {
     expect(bakeOutline(shapeOf([{ center: [0, 0], r: 100 }], lane.slice(0, 2)))).toEqual({
       ok: false,
