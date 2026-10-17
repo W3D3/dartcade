@@ -22,13 +22,11 @@ function modeRule(o: { mode: 'off' | 'admins' | 'users' | 'on'; userIds: string[
   }
 }
 
-/** What the admin flags page shows for one flag (schema/api-v1.yaml, a later task's admin API). */
-export type FlagMeta = {
-  kind: 'boolean' | 'number'
-  description: string
-  range?: [number, number]
-  defaultRule: 'admins' | 'nobody'
-}
+/** What the admin flags page shows for one flag (schema/api-v1.yaml, api/adminFlags.ts): who an
+ *  on/off flag is on for by default, or a number flag's range and code default. */
+export type FlagMeta =
+  | { kind: 'boolean'; description: string; defaultRule: 'admins' | 'nobody' }
+  | { kind: 'number'; description: string; range: [number, number]; defaultNumber: number }
 
 export const FLAG_META: Record<string, FlagMeta> = {
   'gamemode.minigolf.enabled': {
@@ -60,13 +58,13 @@ export const FLAG_META: Record<string, FlagMeta> = {
     kind: 'number',
     description: 'How long a ranked player has for each visit, in seconds.',
     range: [10, 300],
-    defaultRule: 'admins',
+    defaultNumber: VISIT_SECONDS,
   },
   'matchmaking.reserveSeconds': {
     kind: 'number',
     description: 'Extra time each ranked player can use up across a match when visits run over, in seconds.',
     range: [0, 900],
-    defaultRule: 'admins',
+    defaultNumber: RESERVE_SECONDS,
   },
 }
 

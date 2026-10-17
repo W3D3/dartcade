@@ -452,6 +452,43 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/flags": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every feature flag, its default, override and current value for you (admin) */
+        get: operations["listAdminFlags"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/flags/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: components["parameters"]["FlagKey"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Override a flag at runtime, applied immediately, no restart (admin) */
+        put: operations["setFlagOverride"];
+        post?: never;
+        /** Remove a flag's override, back to its default behaviour (admin) */
+        delete: operations["clearFlagOverride"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ofrep/v1/evaluate/flags": {
         parameters: {
             query?: never;
@@ -1800,6 +1837,69 @@ export interface components {
             /** @description true: grant the admin role; false: revoke it */
             admin: boolean;
         };
+        /** @description [min, max], number flags only */
+        FlagRange: number[];
+        /** @description The flag's behaviour without a stored override */
+        FlagDefault: {
+            /**
+             * @description Boolean flags only: who it's on for without FLAGS_ON
+             * @enum {string}
+             */
+            rule?: "admins" | "nobody";
+            /** @description Boolean flags only: turned on for everyone by FLAGS_ON */
+            envOn?: boolean;
+            /** @description Number flags only: set for this deployment by FLAG_VALUES */
+            envValue?: number;
+            /** @description Number flags only: the code default, used without FLAG_VALUES */
+            value?: number;
+        };
+        AdminFlag: {
+            key: string;
+            /** @enum {string} */
+            kind: "boolean" | "number";
+            description: string;
+            range?: components["schemas"]["FlagRange"];
+            default: components["schemas"]["FlagDefault"];
+            /** @description A stored override, or null for default behaviour */
+            override: {
+                /** @enum {string} */
+                mode?: "off" | "admins" | "users" | "on";
+                /** @description Only for mode 'users' */
+                users?: {
+                    id: string;
+                    /** @description null when the account no longer exists */
+                    name: string | null;
+                }[];
+                number?: number;
+                updatedBy: {
+                    id: string;
+                    /** @description null when the account no longer exists */
+                    name: string | null;
+                } | null;
+                /** Format: date-time */
+                updatedAt: string;
+            } | null;
+            /** @description The flag's value for you, right now */
+            value: boolean | number;
+        };
+        AdminFlagList: {
+            flags: components["schemas"]["AdminFlag"][];
+            /** @description Override rows whose key isn't a flag any more */
+            stale: {
+                key: string;
+                /** Format: date-time */
+                updatedAt: string;
+            }[];
+        };
+        /** @description A mode (on/off flags) or a number (number flags) */
+        SetFlagOverrideRequest: {
+            /** @enum {string} */
+            mode: "off" | "admins" | "users" | "on";
+            /** @description Only read for mode 'users'; unknown ids are dropped */
+            userIds?: string[];
+        } | {
+            number: number;
+        };
         Me: {
             id: string;
             /** @description Your handle, shown as @name */
@@ -2448,6 +2548,7 @@ export interface components {
         MinigolfCourseId: string;
         MinigolfHoleId: string;
         AdminUserId: string;
+        FlagKey: string;
     };
     requestBodies: never;
     headers: never;
@@ -3118,6 +3219,83 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["LastAdminConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listAdminFlags: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The flags, and any stored override whose key no longer matches a flag */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFlagList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setFlagOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: components["parameters"]["FlagKey"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetFlagOverrideRequest"];
+            };
+        };
+        responses: {
+            /** @description The flag, as in the list */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminFlag"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    clearFlagOverride: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key: components["parameters"]["FlagKey"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Cleared, also for a stale key no longer in FLAG_META */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
         };
     };

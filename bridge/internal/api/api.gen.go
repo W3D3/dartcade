@@ -55,6 +55,9 @@ type AdminUserId = string
 // BoardId defines model for BoardId.
 type BoardId = string
 
+// FlagKey defines model for FlagKey.
+type FlagKey = string
+
 // FriendRequestId defines model for FriendRequestId.
 type FriendRequestId = string
 

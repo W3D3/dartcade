@@ -78,7 +78,7 @@
     },
     {
       "name": "admin",
-      "description": "Admin-only account management (list users, promote or demote admins)"
+      "description": "Admin-only account management (list users, promote or demote admins) and feature flag overrides"
     },
     {
       "name": "minigolf",
@@ -6713,6 +6713,864 @@
                 },
                 "example": {
                   "error": "There must be at least one admin"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/flags": {
+      "get": {
+        "operationId": "listAdminFlags",
+        "summary": "Every feature flag, its default, override and current value for you (admin)",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "The flags, and any stored override whose key no longer matches a flag",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "flags",
+                    "stale"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "flags": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "kind",
+                          "description",
+                          "default",
+                          "override",
+                          "value"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "boolean",
+                              "number"
+                            ]
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "range": {
+                            "type": "array",
+                            "description": "[min, max], number flags only",
+                            "items": {
+                              "type": "number"
+                            },
+                            "minItems": 2,
+                            "maxItems": 2
+                          },
+                          "default": {
+                            "type": "object",
+                            "description": "The flag's behaviour without a stored override",
+                            "additionalProperties": false,
+                            "properties": {
+                              "rule": {
+                                "type": "string",
+                                "enum": [
+                                  "admins",
+                                  "nobody"
+                                ],
+                                "description": "Boolean flags only: who it's on for without FLAGS_ON"
+                              },
+                              "envOn": {
+                                "type": "boolean",
+                                "description": "Boolean flags only: turned on for everyone by FLAGS_ON"
+                              },
+                              "envValue": {
+                                "type": "number",
+                                "description": "Number flags only: set for this deployment by FLAG_VALUES"
+                              },
+                              "value": {
+                                "type": "number",
+                                "description": "Number flags only: the code default, used without FLAG_VALUES"
+                              }
+                            }
+                          },
+                          "override": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "A stored override, or null for default behaviour",
+                            "required": [
+                              "updatedBy",
+                              "updatedAt"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mode": {
+                                "type": "string",
+                                "enum": [
+                                  "off",
+                                  "admins",
+                                  "users",
+                                  "on"
+                                ]
+                              },
+                              "users": {
+                                "type": "array",
+                                "description": "Only for mode 'users'",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "id",
+                                    "name"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "id": {
+                                      "type": "string"
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "nullable": true,
+                                      "description": "null when the account no longer exists"
+                                    }
+                                  }
+                                }
+                              },
+                              "number": {
+                                "type": "number"
+                              },
+                              "updatedBy": {
+                                "type": "object",
+                                "nullable": true,
+                                "required": [
+                                  "id",
+                                  "name"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "name": {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "description": "null when the account no longer exists"
+                                  }
+                                }
+                              },
+                              "updatedAt": {
+                                "type": "string",
+                                "format": "date-time"
+                              }
+                            }
+                          },
+                          "value": {
+                            "description": "The flag's value for you, right now",
+                            "oneOf": [
+                              {
+                                "type": "boolean"
+                              },
+                              {
+                                "type": "number"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    },
+                    "stale": {
+                      "type": "array",
+                      "description": "Override rows whose key isn't a flag any more",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/flags/{key}": {
+      "parameters": [
+        {
+          "name": "key",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "put": {
+        "operationId": "setFlagOverride",
+        "summary": "Override a flag at runtime, applied immediately, no restart (admin)",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "A mode (on/off flags) or a number (number flags)",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "mode"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "enum": [
+                          "off",
+                          "admins",
+                          "users",
+                          "on"
+                        ]
+                      },
+                      "userIds": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Only read for mode 'users'; unknown ids are dropped"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "number"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "number": {
+                        "type": "number"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The flag, as in the list",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "key",
+                    "kind",
+                    "description",
+                    "default",
+                    "override",
+                    "value"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "key": {
+                      "type": "string"
+                    },
+                    "kind": {
+                      "type": "string",
+                      "enum": [
+                        "boolean",
+                        "number"
+                      ]
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "range": {
+                      "type": "array",
+                      "description": "[min, max], number flags only",
+                      "items": {
+                        "type": "number"
+                      },
+                      "minItems": 2,
+                      "maxItems": 2
+                    },
+                    "default": {
+                      "type": "object",
+                      "description": "The flag's behaviour without a stored override",
+                      "additionalProperties": false,
+                      "properties": {
+                        "rule": {
+                          "type": "string",
+                          "enum": [
+                            "admins",
+                            "nobody"
+                          ],
+                          "description": "Boolean flags only: who it's on for without FLAGS_ON"
+                        },
+                        "envOn": {
+                          "type": "boolean",
+                          "description": "Boolean flags only: turned on for everyone by FLAGS_ON"
+                        },
+                        "envValue": {
+                          "type": "number",
+                          "description": "Number flags only: set for this deployment by FLAG_VALUES"
+                        },
+                        "value": {
+                          "type": "number",
+                          "description": "Number flags only: the code default, used without FLAG_VALUES"
+                        }
+                      }
+                    },
+                    "override": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "A stored override, or null for default behaviour",
+                      "required": [
+                        "updatedBy",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "mode": {
+                          "type": "string",
+                          "enum": [
+                            "off",
+                            "admins",
+                            "users",
+                            "on"
+                          ]
+                        },
+                        "users": {
+                          "type": "array",
+                          "description": "Only for mode 'users'",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "name"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "name": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "null when the account no longer exists"
+                              }
+                            }
+                          }
+                        },
+                        "number": {
+                          "type": "number"
+                        },
+                        "updatedBy": {
+                          "type": "object",
+                          "nullable": true,
+                          "required": [
+                            "id",
+                            "name"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "name": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "null when the account no longer exists"
+                            }
+                          }
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time"
+                        }
+                      }
+                    },
+                    "value": {
+                      "description": "The flag's value for you, right now",
+                      "oneOf": [
+                        {
+                          "type": "boolean"
+                        },
+                        {
+                          "type": "number"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "clearFlagOverride",
+        "summary": "Remove a flag's override, back to its default behaviour (admin)",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "204": {
+            "description": "Cleared, also for a stale key no longer in FLAG_META"
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -22879,6 +23737,15 @@
           "type": "string",
           "minLength": 1
         }
+      },
+      "FlagKey": {
+        "name": "key",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "responses": {
@@ -28236,6 +29103,405 @@
             "description": "true: grant the admin role; false: revoke it"
           }
         }
+      },
+      "FlagRange": {
+        "type": "array",
+        "description": "[min, max], number flags only",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 2,
+        "maxItems": 2
+      },
+      "FlagDefault": {
+        "type": "object",
+        "description": "The flag's behaviour without a stored override",
+        "additionalProperties": false,
+        "properties": {
+          "rule": {
+            "type": "string",
+            "enum": [
+              "admins",
+              "nobody"
+            ],
+            "description": "Boolean flags only: who it's on for without FLAGS_ON"
+          },
+          "envOn": {
+            "type": "boolean",
+            "description": "Boolean flags only: turned on for everyone by FLAGS_ON"
+          },
+          "envValue": {
+            "type": "number",
+            "description": "Number flags only: set for this deployment by FLAG_VALUES"
+          },
+          "value": {
+            "type": "number",
+            "description": "Number flags only: the code default, used without FLAG_VALUES"
+          }
+        }
+      },
+      "AdminFlag": {
+        "type": "object",
+        "required": [
+          "key",
+          "kind",
+          "description",
+          "default",
+          "override",
+          "value"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "boolean",
+              "number"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "range": {
+            "type": "array",
+            "description": "[min, max], number flags only",
+            "items": {
+              "type": "number"
+            },
+            "minItems": 2,
+            "maxItems": 2
+          },
+          "default": {
+            "type": "object",
+            "description": "The flag's behaviour without a stored override",
+            "additionalProperties": false,
+            "properties": {
+              "rule": {
+                "type": "string",
+                "enum": [
+                  "admins",
+                  "nobody"
+                ],
+                "description": "Boolean flags only: who it's on for without FLAGS_ON"
+              },
+              "envOn": {
+                "type": "boolean",
+                "description": "Boolean flags only: turned on for everyone by FLAGS_ON"
+              },
+              "envValue": {
+                "type": "number",
+                "description": "Number flags only: set for this deployment by FLAG_VALUES"
+              },
+              "value": {
+                "type": "number",
+                "description": "Number flags only: the code default, used without FLAG_VALUES"
+              }
+            }
+          },
+          "override": {
+            "type": "object",
+            "nullable": true,
+            "description": "A stored override, or null for default behaviour",
+            "required": [
+              "updatedBy",
+              "updatedAt"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "admins",
+                  "users",
+                  "on"
+                ]
+              },
+              "users": {
+                "type": "array",
+                "description": "Only for mode 'users'",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "null when the account no longer exists"
+                    }
+                  }
+                }
+              },
+              "number": {
+                "type": "number"
+              },
+              "updatedBy": {
+                "type": "object",
+                "nullable": true,
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "null when the account no longer exists"
+                  }
+                }
+              },
+              "updatedAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          },
+          "value": {
+            "description": "The flag's value for you, right now",
+            "oneOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        }
+      },
+      "AdminFlagList": {
+        "type": "object",
+        "required": [
+          "flags",
+          "stale"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "kind",
+                "description",
+                "default",
+                "override",
+                "value"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "boolean",
+                    "number"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "range": {
+                  "type": "array",
+                  "description": "[min, max], number flags only",
+                  "items": {
+                    "type": "number"
+                  },
+                  "minItems": 2,
+                  "maxItems": 2
+                },
+                "default": {
+                  "type": "object",
+                  "description": "The flag's behaviour without a stored override",
+                  "additionalProperties": false,
+                  "properties": {
+                    "rule": {
+                      "type": "string",
+                      "enum": [
+                        "admins",
+                        "nobody"
+                      ],
+                      "description": "Boolean flags only: who it's on for without FLAGS_ON"
+                    },
+                    "envOn": {
+                      "type": "boolean",
+                      "description": "Boolean flags only: turned on for everyone by FLAGS_ON"
+                    },
+                    "envValue": {
+                      "type": "number",
+                      "description": "Number flags only: set for this deployment by FLAG_VALUES"
+                    },
+                    "value": {
+                      "type": "number",
+                      "description": "Number flags only: the code default, used without FLAG_VALUES"
+                    }
+                  }
+                },
+                "override": {
+                  "type": "object",
+                  "nullable": true,
+                  "description": "A stored override, or null for default behaviour",
+                  "required": [
+                    "updatedBy",
+                    "updatedAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "admins",
+                        "users",
+                        "on"
+                      ]
+                    },
+                    "users": {
+                      "type": "array",
+                      "description": "Only for mode 'users'",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "name"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "null when the account no longer exists"
+                          }
+                        }
+                      }
+                    },
+                    "number": {
+                      "type": "number"
+                    },
+                    "updatedBy": {
+                      "type": "object",
+                      "nullable": true,
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "null when the account no longer exists"
+                        }
+                      }
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                },
+                "value": {
+                  "description": "The flag's value for you, right now",
+                  "oneOf": [
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "type": "number"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "stale": {
+            "type": "array",
+            "description": "Override rows whose key isn't a flag any more",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "updatedAt"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "updatedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                }
+              }
+            }
+          }
+        }
+      },
+      "SetFlagOverrideRequest": {
+        "type": "object",
+        "description": "A mode (on/off flags) or a number (number flags)",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "mode"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "admins",
+                  "users",
+                  "on"
+                ]
+              },
+              "userIds": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Only read for mode 'users'; unknown ids are dropped"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "number"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "number": {
+                "type": "number"
+              }
+            }
+          }
+        ]
       },
       "Me": {
         "type": "object",
