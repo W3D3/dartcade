@@ -101,7 +101,12 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   app.all('/api/auth/*', async (req, reply) => {
     // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
     if (req.body !== undefined) Object.assign(req.raw, { body: req.body })
-    void toNodeHandler(auth)(req.raw, reply.raw)
+    // better-call throws on a malformed Host or X-Forwarded-Proto; unhandled, that would exit Node
+    toNodeHandler(auth)(req.raw, reply.raw).catch((err: unknown) => {
+      req.log.warn({ err }, 'auth request failed')
+      if (reply.raw.headersSent) return reply.raw.end()
+      reply.raw.writeHead(400, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'bad request' }))
+    })
     return reply.hijack()
   })
 
