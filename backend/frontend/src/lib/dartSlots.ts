@@ -94,6 +94,28 @@ export function atcSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: stri
   return [...done, ...openSlots(done.length, o.target ? [{ label: o.target, foot: 'your target' }] : [])]
 }
 
+/**
+ * Higher Lower: the thrown darts, then the score that beats the high bar (`highHint`) in the next
+ * slot: "61+" over "in 3 darts · beats 60", or "beats 60" on the last dart. A visit a miss
+ * locked is over: the slots left are not thrown, with no next dart.
+ */
+export function hiloSlots(o: { darts: ThrownDart[]; hint: { need: number; high: number } | null; locked?: boolean }): Slot[] {
+  const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, (d.score ?? 0) > 0, String(d.score ?? 0)))
+  if (o.locked)
+    return [
+      ...done,
+      ...openSlots(done.length, []).map((s, k): Slot => ({ ...s, kind: 'empty-later', aria: `Dart ${done.length + k + 1}: not thrown` })),
+    ]
+  const left = 3 - done.length
+  if (!o.hint || left === 0) return [...done, ...openSlots(done.length, [])]
+  const { need, high } = o.hint
+  const within = left > 1 ? `in ${left} darts` : ''
+  const foot = [within, `beats ${high}`].filter(Boolean).join(' · ')
+  const [next, ...rest] = openSlots(done.length, [{ label: `${need}+`, foot }])
+  const aria = `Dart ${done.length + 1}: needs ${need} or more ${within ? `${within} ` : ''}to beat HIGH ${high}`
+  return [...done, { ...next, aria }, ...rest]
+}
+
 /** The checkout labels to highlight on the board: only X01's next suggested dart. ATC's
  *  suggestion is a bare target number, not a checkout; the board shows its whole wedge. */
 export function boardCheckoutTargets(slots: Slot[], isX01: boolean): string[] {
