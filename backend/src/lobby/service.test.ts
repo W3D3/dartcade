@@ -197,6 +197,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await expect(lobbies.leave('chris', id)).rejects.toMatchObject({ statusCode: 404 })
     })
 
+    it('a member who renames their account shows the new name, and the next game seats it', async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+      const ws = sock()
+      hub.addLobbySocket(id, ws, 'chris')
+      await lobbies.renamed('chris', 'Chris')
+      expect(lastMsg(ws).lobby).toMatchObject({ name: "Christoph's lobby", people: [{ name: 'Chris' }, { name: 'Lena' }] })
+      expect(await lobbies.preview(code)).toMatchObject({ hostName: 'Chris' })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      expect(engine.getSession(sessionId)?.seats.map(s => s.name)).toEqual(['Chris', 'Lena'])
+    })
+
     it('closes when the last member leaves', async () => {
       const { id } = await lobbies.create('chris')
       await lobbies.leave('chris', id)

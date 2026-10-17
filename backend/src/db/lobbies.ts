@@ -348,6 +348,11 @@ export async function releaseBoard(db: Kysely<Database>, boardId: string): Promi
   return [...new Set(rows.map(r => r.lobby_id))]
 }
 
+/** The account was renamed: its row in its open lobby follows. */
+export async function renameMember(db: Kysely<Database>, userId: string, name: string): Promise<void> {
+  await db.updateTable('lobby_people').set({ name }).where('user_id', '=', userId).execute()
+}
+
 /** After every game: everyone is back in and no member is ready (a guest's ready follows its adder's: effectiveReady). */
 export async function resetAfterGame(db: Kysely<Database>, lobbyId: string): Promise<void> {
   await db
