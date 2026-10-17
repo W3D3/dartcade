@@ -287,6 +287,14 @@ describe('minigolf courses from the course source', () => {
     expect(out.holes).toEqual(testCourse.holes)
     expect(out.courseName).toBe('Canal Street')
     expect(out.tries).toBe(3)
+    expect(out.ballPhysics).toEqual(DEFAULT_PHYSICS)
+  })
+
+  it('plays the physics stored with the game, the defaults for a game stored before them', () => {
+    const slow = { ...DEFAULT_PHYSICS, friction: 2400 }
+    expect(M.init(cfg({ ballPhysics: slow }), two).physics).toEqual(slow)
+    expect(M.init(cfg(), two).physics).toEqual(DEFAULT_PHYSICS)
+    expect(M.init(cfg({ ballPhysics: slow }), two).cfg).not.toHaveProperty('ballPhysics')
   })
 
   it('picks 9 of the official holes for the mixed course with the given rng, or all if fewer', async () => {

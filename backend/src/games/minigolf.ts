@@ -32,6 +32,9 @@ export type MinigolfConfig = {
    *  stored before them plays the code course. */
   holes?: Hole[]
   courseName?: string
+  /** The ball physics at start (prepareConfig), so a later tuning can't change how this game
+   *  replays. A game stored before it plays DEFAULT_PHYSICS. */
+  ballPhysics?: Physics
 }
 
 /** `waiting`: not putted yet on this hole (the ball is in hand, not on the felt). */
@@ -50,7 +53,7 @@ export type MinigolfState = {
   courseName: string
   /** Copied in at the start, so later course edits can't change how this game replays. */
   holes: Hole[]
-  /** Likewise the physics. */
+  /** The config's ballPhysics. */
   physics: Physics
   holeIdx: number
   /** Seats in turn order on this hole. */
@@ -281,7 +284,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
     const course =
       cfg.course === 'mixed' ? { name: 'Mixed course', holes: mixedHoles(rng, await src.officialHoles()) } : await src.course(cfg.course)
     if (!course || course.holes.length === 0) throw new InvalidConfigError("That course can't be played")
-    return { ...cfg, holes: course.holes, courseName: course.name }
+    return { ...cfg, holes: course.holes, courseName: course.name, ballPhysics: DEFAULT_PHYSICS }
   },
 
   async liveOptions(field) {
@@ -309,7 +312,7 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       cfg,
       courseName: course?.name ?? 'Mixed course',
       holes,
-      physics: DEFAULT_PHYSICS,
+      physics: saved.ballPhysics ?? DEFAULT_PHYSICS,
       holeIdx: 0,
       order,
       current: 0,
