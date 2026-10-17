@@ -300,6 +300,14 @@ describe('sessions: spec enforcement', () => {
     })
     expect(res.statusCode).toBe(400)
   })
+
+  it('rejects more than 16 players, or a name longer than a guest name, with 400', async () => {
+    const { app } = makeApp()
+    const create = (players: { name: string }[]) =>
+      app.inject({ method: 'POST', url: '/api/sessions', payload: { boardId: null, gameId: 'atc', config: {}, players } })
+    expect((await create(Array.from({ length: 17 }, (_, i) => ({ name: `P${i}` })))).statusCode).toBe(400)
+    expect((await create([{ name: 'x'.repeat(33) }])).statusCode).toBe(400)
+  })
 })
 
 describe('lobby games', () => {
