@@ -1920,6 +1920,125 @@
                               }
                             }
                           }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "mode",
+                            "start",
+                            "visits",
+                            "seats"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "mode": {
+                              "type": "string",
+                              "enum": [
+                                "hilo"
+                              ]
+                            },
+                            "start": {
+                              "type": "object",
+                              "description": "The bars the game started with",
+                              "required": [
+                                "high",
+                                "low"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "high": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 180
+                                },
+                                "low": {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 180
+                                }
+                              }
+                            },
+                            "visits": {
+                              "type": "array",
+                              "description": "Every visit of the game, in order",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "seat",
+                                  "round",
+                                  "total",
+                                  "outcome",
+                                  "high",
+                                  "low"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "seat": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "round": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "total": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "outcome": {
+                                    "type": "string",
+                                    "enum": [
+                                      "high",
+                                      "low",
+                                      "between",
+                                      "miss"
+                                    ]
+                                  },
+                                  "high": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 180,
+                                    "description": "The high bar after this visit"
+                                  },
+                                  "low": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "maximum": 180,
+                                    "description": "The low bar after this visit"
+                                  }
+                                }
+                              }
+                            },
+                            "seats": {
+                              "type": "array",
+                              "description": "One per seat, in seat order",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "place",
+                                  "outRound",
+                                  "livesLeft"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "place": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "outRound": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "nullable": true,
+                                    "description": "The round the seat went out in; null while still in"
+                                  },
+                                  "livesLeft": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                       ],
                       "discriminator": {
@@ -1928,7 +2047,8 @@
                           "x01": "#/components/schemas/X01Detail",
                           "atc": "#/components/schemas/AtcDetail",
                           "minigolf": "#/components/schemas/MinigolfDetail",
-                          "p121": "#/components/schemas/P121Detail"
+                          "p121": "#/components/schemas/P121Detail",
+                          "hilo": "#/components/schemas/HiloDetail"
                         }
                       }
                     },
@@ -24315,6 +24435,125 @@
           }
         }
       },
+      "HiloDetail": {
+        "type": "object",
+        "required": [
+          "mode",
+          "start",
+          "visits",
+          "seats"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "hilo"
+            ]
+          },
+          "start": {
+            "type": "object",
+            "description": "The bars the game started with",
+            "required": [
+              "high",
+              "low"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "high": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 180
+              },
+              "low": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 180
+              }
+            }
+          },
+          "visits": {
+            "type": "array",
+            "description": "Every visit of the game, in order",
+            "items": {
+              "type": "object",
+              "required": [
+                "seat",
+                "round",
+                "total",
+                "outcome",
+                "high",
+                "low"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "seat": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "round": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "total": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "outcome": {
+                  "type": "string",
+                  "enum": [
+                    "high",
+                    "low",
+                    "between",
+                    "miss"
+                  ]
+                },
+                "high": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 180,
+                  "description": "The high bar after this visit"
+                },
+                "low": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 180,
+                  "description": "The low bar after this visit"
+                }
+              }
+            }
+          },
+          "seats": {
+            "type": "array",
+            "description": "One per seat, in seat order",
+            "items": {
+              "type": "object",
+              "required": [
+                "place",
+                "outRound",
+                "livesLeft"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "place": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "outRound": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "nullable": true,
+                  "description": "The round the seat went out in; null while still in"
+                },
+                "livesLeft": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      },
       "AtcDetail": {
         "type": "object",
         "required": [
@@ -26087,6 +26326,125 @@
                     }
                   }
                 }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "mode",
+                  "start",
+                  "visits",
+                  "seats"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "hilo"
+                    ]
+                  },
+                  "start": {
+                    "type": "object",
+                    "description": "The bars the game started with",
+                    "required": [
+                      "high",
+                      "low"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "high": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 180
+                      },
+                      "low": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 180
+                      }
+                    }
+                  },
+                  "visits": {
+                    "type": "array",
+                    "description": "Every visit of the game, in order",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "seat",
+                        "round",
+                        "total",
+                        "outcome",
+                        "high",
+                        "low"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "seat": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "round": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "outcome": {
+                          "type": "string",
+                          "enum": [
+                            "high",
+                            "low",
+                            "between",
+                            "miss"
+                          ]
+                        },
+                        "high": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 180,
+                          "description": "The high bar after this visit"
+                        },
+                        "low": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 180,
+                          "description": "The low bar after this visit"
+                        }
+                      }
+                    }
+                  },
+                  "seats": {
+                    "type": "array",
+                    "description": "One per seat, in seat order",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "place",
+                        "outRound",
+                        "livesLeft"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "place": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "outRound": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "nullable": true,
+                          "description": "The round the seat went out in; null while still in"
+                        },
+                        "livesLeft": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    }
+                  }
+                }
               }
             ],
             "discriminator": {
@@ -26095,7 +26453,8 @@
                 "x01": "#/components/schemas/X01Detail",
                 "atc": "#/components/schemas/AtcDetail",
                 "minigolf": "#/components/schemas/MinigolfDetail",
-                "p121": "#/components/schemas/P121Detail"
+                "p121": "#/components/schemas/P121Detail",
+                "hilo": "#/components/schemas/HiloDetail"
               }
             }
           },

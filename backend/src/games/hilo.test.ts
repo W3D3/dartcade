@@ -219,6 +219,74 @@ describe('edge cases', () => {
   })
 })
 
+describe('summarize', () => {
+  it('a finished 3-player game: placements by when each went out, plus the exact stats', () => {
+    const g = hiloGame.init({ ...cfg, lives: 1 }, [{ name: 'A' }, { name: 'B' }, { name: 'C' }])
+    let s = play(g, [S20, [5, 1], [5, 1]]) // A: 30 between -> out, round 1
+    s = play(s, [T20, S1, S1]) // B: 62 high
+    s = play(s, [S20, S20, S20]) // C: 60 between -> out, round 1; B is the only one left in
+    expect(s).toMatchObject({ phase: 'finished', winner: 1 })
+
+    const results = hiloGame.summarize(s, { totalDarts: [3, 3, 3], totalVisits: [1, 1, 1] })
+    expect(results[0]).toEqual({
+      placement: 3,
+      stats: { livesLeft: 0, visits: 1, livesLostBetween: 1, livesLostMiss: 0, dartsThrown: 3, outRound: 1 },
+    })
+    expect(results[1]).toEqual({
+      placement: 1,
+      stats: { livesLeft: 1, visits: 1, livesLostBetween: 0, livesLostMiss: 0, dartsThrown: 3, highestSet: 62 },
+    })
+    expect(results[2]).toEqual({
+      placement: 2,
+      stats: { livesLeft: 0, visits: 1, livesLostBetween: 1, livesLostMiss: 0, dartsThrown: 3, outRound: 1 },
+    })
+  })
+
+  it('a forfeit-style unfinished game with no winner: seats still in rank first', () => {
+    const g = hiloGame.init({ ...cfg, lives: 1 }, [{ name: 'A' }, { name: 'B' }, { name: 'C' }])
+    const s = play(g, [S20, [5, 1], [5, 1]]) // A out (30, between); B and C still in, game goes on
+    expect(s).toMatchObject({ phase: 'game', winner: null })
+
+    const results = hiloGame.summarize(s, { totalDarts: [3, 0, 0], totalVisits: [1, 0, 0] })
+    expect(results.map(r => r.placement)).toEqual([3, 1, 1])
+    expect(results[0].stats).toEqual({ livesLeft: 0, visits: 1, livesLostBetween: 1, livesLostMiss: 0, dartsThrown: 3, outRound: 1 })
+    expect(results[1].stats).toEqual({ livesLeft: 1, visits: 0, livesLostBetween: 0, livesLostMiss: 0, dartsThrown: 0 })
+    expect(results[2].stats).toEqual({ livesLeft: 1, visits: 0, livesLostBetween: 0, livesLostMiss: 0, dartsThrown: 0 })
+  })
+})
+
+describe('detail', () => {
+  it('a short game', () => {
+    const g = hiloGame.init({ ...cfg, lives: 1 }, [{ name: 'A' }, { name: 'B' }])
+    const s = play(g, [S20, [5, 1], [5, 1]]) // A: 30 between -> out, B wins
+    expect(s).toMatchObject({ phase: 'finished', winner: 1 })
+
+    const d = hiloGame.detail([], s)
+    expect(d).toEqual({
+      mode: 'hilo',
+      start: { high: 41, low: 21 },
+      visits: [{ seat: 0, round: 1, total: 30, outcome: 'between', high: 41, low: 21 }],
+      seats: [
+        { place: 2, outRound: 1, livesLeft: 0 },
+        { place: 1, outRound: null, livesLeft: 1 },
+      ],
+    })
+  })
+})
+
+describe('matchStats', () => {
+  it('visits survived, highest/lowest set, lives lost', () => {
+    const g = hiloGame.init({ ...cfg, lives: 2 }, [{ name: 'A' }, { name: 'B' }])
+    const s = play(g, [T20, S1, S1], [S20, [5, 1], [5, 1]], [[5, 1], S1, S1]) // A sets high 62; B between (life); A sets low 7
+    const m = hiloGame.matchStats!([], s)
+    expect(m.rows.map(r => r.key)).toEqual(['visitsSurvived', 'highestSet', 'lowestSet', 'livesLost'])
+    const a = m.seats.find(x => x.index === 0)!
+    const b = m.seats.find(x => x.index === 1)!
+    expect(a.values).toEqual({ visitsSurvived: 2, visits: 2, highestSet: 62, lowestSet: 7, livesLost: 0 })
+    expect(b.values).toEqual({ visitsSurvived: 0, visits: 1, livesLost: 1 })
+  })
+})
+
 describe('validate', () => {
   const two = [{ name: 'A' }, { name: 'B' }]
   it('passes the defaults', () => expect(hiloGame.validate!(hiloGame.defaultConfig, two)).toBeNull())
