@@ -44,7 +44,7 @@ describe('3D physics', () => {
     world.free()
   })
 
-  it('rolls a flat putt as far as the 2D physics does', () => {
+  it('rolls a flat putt its share of the full-power roll', () => {
     const r = simulateShot3d(lane, P, lane.tee, up(0.3))
     expect(lane.tee[1] - r.rest[1]).toBeGreaterThan(0.3 * P.maxRoll * 0.95)
     expect(lane.tee[1] - r.rest[1]).toBeLessThan(0.3 * P.maxRoll * 1.05)

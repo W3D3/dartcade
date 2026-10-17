@@ -14,7 +14,6 @@
   "dependencies": {
     "@dimforge/rapier3d-deterministic-compat": "0.21.0",
     "@lucide/svelte": "^1.49.0",
-    "@newkrok/nape-js": "3.43.5",
     "@openfeature/ofrep-web-provider": "0.4.3",
     "@openfeature/web-sdk": "1.10.0",
     "better-auth": "1.7.6",

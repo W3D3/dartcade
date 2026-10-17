@@ -1,5 +1,5 @@
 import { join, dirname } from 'path'
-import { gameAvailable, loadFlagUser } from './flags/index.js'
+import { loadFlagUser, modeAvailable } from './flags/index.js'
 import { fileURLToPath } from 'url'
 import { db, takeInstanceLock, url as dbUrl } from './db/index.js'
 import { deletePairingCodesExpiredBefore, runMigrations } from './db/queries.js'
@@ -79,7 +79,7 @@ const lobbies: LobbyService = new LobbyService({
   engine,
   hub,
   isBoardOnline: boardId => bridgeConnections.isOnline(boardId),
-  gameAvailable: async (userId, gameId, config) => gameAvailable(gameId, config, await loadFlagUser(db, userId)),
+  gameAvailable: async (userId, gameId) => modeAvailable(gameId, await loadFlagUser(db, userId)),
   warn: (message, details) => {
     warn(message, details)
   },

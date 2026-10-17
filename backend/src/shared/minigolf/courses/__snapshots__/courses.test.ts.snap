@@ -76,59 +76,6 @@ exports[`courses > test/test-dogleg 3D golden shots 1`] = `
 ]
 `;
 
-exports[`courses > test/test-dogleg golden shots 1`] = `
-[
-  {
-    "holed": false,
-    "rest": [
-      300,
-      2458.296,
-    ],
-    "samples": 69,
-  },
-  {
-    "holed": false,
-    "rest": [
-      300,
-      2438.698,
-    ],
-    "samples": 85,
-  },
-  {
-    "holed": false,
-    "rest": [
-      300,
-      2277.825,
-    ],
-    "samples": 90,
-  },
-  {
-    "holed": false,
-    "rest": [
-      1648.729,
-      2630.101,
-    ],
-    "samples": 113,
-  },
-  {
-    "holed": false,
-    "rest": [
-      1650.621,
-      2570.017,
-    ],
-    "samples": 124,
-  },
-  {
-    "holed": false,
-    "rest": [
-      2098.548,
-      2500,
-    ],
-    "samples": 105,
-  },
-]
-`;
-
 exports[`courses > test/test-mesa 3D golden shots 1`] = `
 [
   {
@@ -192,59 +139,6 @@ exports[`courses > test/test-mesa 3D golden shots 1`] = `
       957.621,
       2950,
     ],
-  },
-]
-`;
-
-exports[`courses > test/test-mesa golden shots 1`] = `
-[
-  {
-    "holed": false,
-    "rest": [
-      800,
-      1603.75,
-    ],
-    "samples": 91,
-  },
-  {
-    "holed": true,
-    "rest": [
-      800,
-      600,
-    ],
-    "samples": 70,
-  },
-  {
-    "holed": true,
-    "rest": [
-      800,
-      600,
-    ],
-    "samples": 62,
-  },
-  {
-    "holed": false,
-    "rest": [
-      1034.785,
-      907.2,
-    ],
-    "samples": 120,
-  },
-  {
-    "holed": false,
-    "rest": [
-      1518.795,
-      648.704,
-    ],
-    "samples": 136,
-  },
-  {
-    "holed": false,
-    "rest": [
-      957.116,
-      2950,
-    ],
-    "samples": 85,
   },
 ]
 `;
@@ -314,59 +208,6 @@ exports[`courses > test/test-straight 3D golden shots 1`] = `
       246.491,
       2750,
     ],
-  },
-]
-`;
-
-exports[`courses > test/test-straight golden shots 1`] = `
-[
-  {
-    "holed": false,
-    "rest": [
-      250,
-      1403.75,
-    ],
-    "samples": 91,
-  },
-  {
-    "holed": true,
-    "rest": [
-      250,
-      300,
-    ],
-    "samples": 74,
-  },
-  {
-    "holed": true,
-    "rest": [
-      250,
-      300,
-    ],
-    "samples": 65,
-  },
-  {
-    "holed": false,
-    "rest": [
-      324.592,
-      825.033,
-    ],
-    "samples": 113,
-  },
-  {
-    "holed": false,
-    "rest": [
-      336.632,
-      777.979,
-    ],
-    "samples": 117,
-  },
-  {
-    "holed": false,
-    "rest": [
-      246.529,
-      2750,
-    ],
-    "samples": 65,
   },
 ]
 `;
@@ -441,59 +282,6 @@ exports[`courses > test/test-summit 3D golden shots 1`] = `
       1206.052,
       2350,
     ],
-  },
-]
-`;
-
-exports[`courses > test/test-summit golden shots 1`] = `
-[
-  {
-    "holed": false,
-    "rest": [
-      900,
-      2084.967,
-    ],
-    "samples": 71,
-  },
-  {
-    "holed": false,
-    "rest": [
-      900,
-      2321.286,
-    ],
-    "samples": 88,
-  },
-  {
-    "holed": false,
-    "rest": [
-      900,
-      2160.757,
-    ],
-    "samples": 93,
-  },
-  {
-    "holed": false,
-    "rest": [
-      1326.869,
-      280.221,
-    ],
-    "samples": 120,
-  },
-  {
-    "holed": false,
-    "rest": [
-      1699.278,
-      649.309,
-    ],
-    "samples": 142,
-  },
-  {
-    "holed": false,
-    "rest": [
-      1205.594,
-      2350,
-    ],
-    "samples": 86,
   },
 ]
 `;

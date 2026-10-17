@@ -9,13 +9,13 @@ const hole = testCourse.holes[0]
 const shot = (power: number): Shot => ({ dir: [0, -1], power })
 
 it('simulates inline outside live play (the startup rebuild, replays)', () => {
-  expect(cachedShot(hole, P, hole.tee, shot(0.31), [], '3d')).toEqual(simulateShot3d(hole, P, hole.tee, shot(0.31)))
+  expect(cachedShot(hole, P, hole.tee, shot(0.31), [])).toEqual(simulateShot3d(hole, P, hole.tee, shot(0.31)))
 })
 
-it('asks for a missing 3D shot in live play, and finds it once stored', () => {
+it('asks for a missing shot in live play, and finds it once stored', () => {
   const err = (() => {
     try {
-      liveShots(() => cachedShot(hole, P, hole.tee, shot(0.32), [], '3d'))
+      liveShots(() => cachedShot(hole, P, hole.tee, shot(0.32), []))
     } catch (e) {
       return e
     }
@@ -25,7 +25,7 @@ it('asks for a missing 3D shot in live play, and finds it once stored', () => {
   expect(inputs).toEqual({ hole, physics: P, ball: hole.tee, shot: shot(0.32), others: [] })
   const result = simulateShot3d(hole, P, hole.tee, shot(0.32))
   storeShot(inputs, result)
-  expect(liveShots(() => cachedShot(hole, P, hole.tee, shot(0.32), [], '3d'))).toBe(result)
+  expect(liveShots(() => cachedShot(hole, P, hole.tee, shot(0.32), []))).toBe(result)
 })
 
 it("keeps a caller's own shots out of the shared cache, so its eviction can't drop them", () => {
@@ -33,11 +33,7 @@ it("keeps a caller's own shots out of the shared cache, so its eviction can't dr
   const result = simulateShot3d(hole, P, hole.tee, shot(0.34))
   const own = new Map()
   storeShot(inputs, result, own)
-  const play = (shots?: typeof own) => () => liveShots(() => cachedShot(hole, P, hole.tee, shot(0.34), [], '3d'), shots)
+  const play = (shots?: typeof own) => () => liveShots(() => cachedShot(hole, P, hole.tee, shot(0.34), []), shots)
   expect(play(own)()).toBe(result)
   expect(play()).toThrow(ShotNeeded)
-})
-
-it('plays 2D shots inline even in live play', () => {
-  expect(liveShots(() => cachedShot(hole, P, hole.tee, shot(0.33), [], '2d')).rest).toBeDefined()
 })

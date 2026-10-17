@@ -629,7 +629,6 @@ export interface MinigolfGame {
     ballContact: boolean
     aimAssist: boolean
     shotPreview: boolean
-    physics: '3d' | '2d'
   }
   courseName: string
   holeIdx: number

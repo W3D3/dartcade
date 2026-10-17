@@ -14,7 +14,7 @@ test('minigolf: a putt clicked on the board counts once shot', async ({ adminPag
   await page.mouse.click(box.x + box.width / 2, box.y + box.height * 0.3)
   await expect(page.getByLabel('Tries')).toContainText('S20')
 
-  // Games default to 3D physics: the chase-cam canvas is up
+  // Games play in 3D: the chase-cam canvas is up
   await expect(page.locator('[data-testid=hole-3d] canvas')).toBeVisible()
 
   // Shoot (as pulling the darts would): the stroke counts and Lena is up once it has rolled
