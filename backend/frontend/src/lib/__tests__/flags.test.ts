@@ -1,7 +1,7 @@
 import { describe, it, expect, afterEach } from 'vitest'
 import { get } from 'svelte/store'
-import { OpenFeature, TypedInMemoryProvider } from '@openfeature/web-sdk'
-import { flag, numberFlag } from '$lib/flags'
+import { OpenFeature, TypedInMemoryProvider, type EvaluationContext, type Provider } from '@openfeature/web-sdk'
+import { flag, numberFlag, refreshFlags, setFlagUser } from '$lib/flags'
 
 const config = (on: boolean) => ({
   'gamemode.minigolf.enabled': {
@@ -26,6 +26,25 @@ describe('flag()', () => {
     await provider.putConfiguration(config(true))
     stop()
     expect(values).toEqual([false, true])
+  })
+})
+
+describe('refreshFlags()', () => {
+  afterEach(() => OpenFeature.clearProviders())
+
+  it("re-sets the context so the provider re-evaluates, even though the user hasn't changed", async () => {
+    const seen: (EvaluationContext | undefined)[] = []
+    class RecordingProvider extends TypedInMemoryProvider implements Pick<Provider, 'onContextChange'> {
+      onContextChange(_oldContext: EvaluationContext, newContext: EvaluationContext) {
+        seen.push(newContext)
+      }
+    }
+    await OpenFeature.setProviderAndWait(new RecordingProvider({}))
+    await setFlagUser('alice')
+    await refreshFlags()
+    const last = seen.slice(-2)
+    expect(last).toHaveLength(2)
+    expect(last.every(c => c?.targetingKey === 'alice')).toBe(true)
   })
 })
 
