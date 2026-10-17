@@ -375,15 +375,15 @@ export class SessionEngine {
     await prefetchShots(session, input, at)
     await this.logInput(session, input, raw, origin, at)
     const outcome = applyInput(session, input, at)
-    if (outcome.reopened !== undefined) await this.store.deleteDarts(session.id, outcome.reopened)
-    if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
-    // finish() pushes the final snapshot itself (before notifying), so the caller doesn't
-    // push it a second time
-    if (outcome.won) {
-      await this.finish(session, at)
-      return false
+    try {
+      if (outcome.reopened !== undefined) await this.store.deleteDarts(session.id, outcome.reopened)
+      if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
+    } finally {
+      // A won game ends even if its darts fail to save. finish() pushes the final snapshot
+      // itself (before notifying), so the caller doesn't push it a second time
+      if (outcome.won) await this.finish(session, at)
     }
-    return true
+    return !outcome.won
   }
 
   // A dart on a board whose seat isn't up: whoever throws at that board hears whose turn it is
