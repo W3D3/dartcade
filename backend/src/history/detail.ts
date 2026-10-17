@@ -4,12 +4,11 @@ import { newSession, replayPooled, StoredConfigSchema, type LoggedInput, type Wa
 import type { AtcDetail, MatchStats, MinigolfDetail, P121Detail, X01Detail } from '../session/types.js'
 import type { HistoryGame } from '../db/history.js'
 
-/** The game's per-mode detail and match stats, from replaying its input log; null if its mode is gone. */
-export async function buildDetail(
-  game: HistoryGame,
-  events: LoggedInput[],
-  warn: WarnFn,
-): Promise<{ detail: X01Detail | AtcDetail | MinigolfDetail | P121Detail; stats: MatchStats } | null> {
+type Detail = X01Detail | AtcDetail | MinigolfDetail | P121Detail
+
+/** The game's per-mode detail and match stats, from replaying its input log; null if its mode is
+ *  gone, or (hilo, for now) has no detail schema yet. */
+export async function buildDetail(game: HistoryGame, events: LoggedInput[], warn: WarnFn): Promise<{ detail: Detail; stats: MatchStats } | null> {
   const mod = games[game.game_id]
   const config = StoredConfigSchema.safeParse(game.config)
   if (!mod || !config.success) return null
@@ -29,5 +28,8 @@ export async function buildDetail(
   if (mod.id === 'x01') return { detail: mod.detail(visits, final), stats }
   if (mod.id === 'atc') return { detail: mod.detail(visits, final), stats }
   if (mod.id === 'minigolf') return { detail: mod.detail(visits, final), stats }
+  // shortcut: hilo has no detail schema in api-v1.yaml yet (Task 3 adds the GameDetail.detail
+  // branch); until then its match has no detail page, the same as an unregistered mode.
+  if (mod.id === 'hilo') return null
   return { detail: mod.detail(visits, final), stats }
 }

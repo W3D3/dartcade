@@ -583,6 +583,9 @@ export class SessionEngine {
     if (mod.id === 'p121') {
       return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
     }
+    if (mod.id === 'hilo') {
+      return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
+    }
     return { ...common, gameId: mod.id, game: { ...mod.view(session.currentState, session.players), ...engineFields } }
   }
 

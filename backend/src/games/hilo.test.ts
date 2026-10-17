@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { hiloGame, judge, compareSeats, type HiloConfig, type HiloState } from './hilo.js'
+import { hiloGame, hiloModule, judge, compareSeats, type HiloConfig, type HiloState } from './hilo.js'
 import type { BoardEvent } from '../session/types.js'
 import { refoldVisit } from '../session/refold.js'
 
@@ -118,6 +118,107 @@ describe('corrections', () => {
   })
 })
 
+describe('view', () => {
+  it('after a high visit sets the bar and leaves winner null', () => {
+    const s = play(duo(), [T20, S1, S1]) // 62, high
+    const v = hiloGame.view(s, [])
+    expect(v).toMatchObject({ high: 62, low: 21, winner: null, visitLocked: false, currentPlayer: 1 })
+    expect(v.seats[0]).toMatchObject({ lives: 3, out: false, place: null, outRound: null })
+    expect(v.seats[0].visits).toEqual([{ round: 1, total: 62, outcome: 'high' }])
+  })
+
+  it('an out seat has out: true and a place, winner stays null while the game goes on', () => {
+    const g = hiloGame.init({ ...cfg, lives: 1 }, [{ name: 'A' }, { name: 'B' }, { name: 'C' }])
+    const s = play(g, [S20, [5, 1], [5, 1]]) // A out (30, between)
+    const v = hiloGame.view(s, [])
+    expect(v.winner).toBeNull()
+    expect(v.seats[0]).toMatchObject({ out: true, place: 3, outRound: 1 })
+    expect(v.seats[1].place).toBeNull()
+  })
+
+  it('winner is always present, and the winner gets place 1 once finished', () => {
+    const g = hiloGame.init({ ...cfg, lives: 1 }, [{ name: 'A' }, { name: 'B' }])
+    const s = play(g, [S20, [5, 1], [5, 1]]) // A out, B is the last one in
+    const v = hiloGame.view(s, [])
+    expect(v.winner).toBe(1)
+    expect(v.seats[1]).toMatchObject({ out: false, place: 1 })
+    expect(v.seats[0]).toMatchObject({ out: true, place: 2 })
+  })
+
+  it('nextPlayer is null once the open visit would end the game', () => {
+    const g = hiloGame.init({ ...cfg, lives: 1 }, [{ name: 'A' }, { name: 'B' }])
+    let s = hiloGame.onBoardEvent(g, opened).state
+    s = hiloGame.onBoardEvent(s, dart(20, 1, 0)).state
+    s = hiloGame.onBoardEvent(s, dart(5, 1, 1)).state
+    s = hiloGame.onBoardEvent(s, dart(5, 1, 2)).state // 30, between: A's last life
+    expect(hiloGame.view(s, []).nextPlayer).toBeNull()
+  })
+})
+
+describe('hiloModule (with a bull off)', () => {
+  const two = [{ name: 'A' }, { name: 'B' }]
+  it('stages a bull off before the game starts', () => {
+    const s = hiloModule.init({ ...cfg, bullOff: 'wdc' }, two)
+    expect(s.stage).toBe('bulloff')
+  })
+})
+
+describe('edge cases', () => {
+  it('visit.cleared judges the visit like a takeout', () => {
+    let s = hiloGame.onBoardEvent(duo(), opened).state
+    s = hiloGame.onBoardEvent(s, dart(20, 3, 0)).state // T20
+    s = hiloGame.onBoardEvent(s, dart(1, 1, 1)).state // S1, total 61
+    s = hiloGame.onBoardEvent(s, { kind: 'visit.cleared', data: {} }).state
+    expect(s.visits[0]).toMatchObject({ total: 61, outcome: 'high' })
+    expect(s.currentPlayer).toBe(1)
+  })
+
+  it('board events after the game is finished change nothing', () => {
+    const g = hiloGame.init({ ...cfg, lives: 1 }, [{ name: 'A' }, { name: 'B' }])
+    const finished = play(g, [S20, [5, 1], [5, 1]]) // A out, B wins
+    expect(finished.phase).toBe('finished')
+    let s = hiloGame.onBoardEvent(finished, opened).state
+    expect(s).toEqual(finished)
+    s = hiloGame.onBoardEvent(s, dart(20, 3, 0)).state
+    expect(s).toEqual(finished)
+    s = hiloGame.onBoardEvent(s, takeout).state
+    expect(s).toEqual(finished)
+  })
+
+  it('a 4th dart after three is ignored, separately from the lock after a miss', () => {
+    let s = hiloGame.onBoardEvent(duo(), opened).state
+    s = hiloGame.onBoardEvent(s, dart(5, 1, 0)).state
+    s = hiloGame.onBoardEvent(s, dart(5, 1, 1)).state
+    s = hiloGame.onBoardEvent(s, dart(5, 1, 2)).state // 3 darts, total 15
+    const before = s
+    s = hiloGame.onBoardEvent(s, dart(20, 3, 3)).state
+    expect(s).toEqual(before)
+  })
+
+  it('lastResult clears on the next dart', () => {
+    let s = play(duo(), [S20, [5, 1], [5, 1]]) // between, life lost: lastResult set
+    expect(s.lastResult).not.toBeNull()
+    s = hiloGame.onBoardEvent(s, opened).state
+    s = hiloGame.onBoardEvent(s, dart(5, 1, 0)).state
+    expect(s.lastResult).toBeNull()
+  })
+
+  it('a miss on a total of 180 with the high bar at 180 (matchExtremes on) is harmless', () => {
+    const s = { ...duo({ startHigh: 180 }), visitTotal: 180, high: 180, visitDarts: 2 }
+    const after = hiloGame.onBoardEvent(s, dart(0, 0, 2)).state
+    expect(after.missed).toBe(false)
+    expect(after.visitTotal).toBe(180)
+  })
+
+  it('the round counts up correctly when the player at the wrap point is out', () => {
+    const base = hiloGame.init(cfg, [{ name: 'A' }, { name: 'B' }, { name: 'C' }])
+    // C (the wrap point, the last seat in order) is already out; B is up and sets a new high bar.
+    const s: HiloState = { ...base, lives: [1, 2, 0], outAt: [null, null, 0], turn: 1, currentPlayer: 1, round: 1, visitTotal: 100 }
+    const after = hiloGame.onBoardEvent(s, takeout).state
+    expect(after).toMatchObject({ currentPlayer: 0, round: 2 })
+  })
+})
+
 describe('validate', () => {
   const two = [{ name: 'A' }, { name: 'B' }]
   it('passes the defaults', () => expect(hiloGame.validate!(hiloGame.defaultConfig, two)).toBeNull())
@@ -127,5 +228,6 @@ describe('validate', () => {
     expect(hiloGame.validate!({ ...cfg, startHigh: 181 }, two)).not.toBeNull()
     expect(hiloGame.validate!({ ...cfg, lives: 8 }, two)).not.toBeNull()
     expect(hiloGame.validate!({ ...cfg, lives: '3' as unknown as number }, two)).not.toBeNull()
+    expect(hiloGame.validate!({ ...cfg, bullOff: 'bdo' as HiloConfig['bullOff'] }, two)).not.toBeNull()
   })
 })

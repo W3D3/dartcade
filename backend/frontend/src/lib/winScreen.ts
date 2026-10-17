@@ -77,6 +77,9 @@ export function winMeta(snapshot: Snapshot): string {
     const g = snapshot.game
     return `121 Checkout · ${g.cfg.tries} tries · ${g.cfg.dartsPerTry} darts` + vs
   }
+  // Higher Lower's own header line is a frontend task; this generic fallback is only reached
+  // through winMeta's type, not through any UI yet (hilo has no win screen below).
+  if (snapshot.gameId === 'hilo') return 'Higher Lower' + vs
   return atcRules(snapshot.game.cfg, n) + vs
 }
 
@@ -319,5 +322,7 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
   if (snapshot.gameId === 'minigolf') return minigolfWin(snapshot)
   // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
   if (snapshot.gameId === 'p121') return null
+  // Higher Lower's win screen (hiloWin) is a frontend task; no UI reaches hilo here yet.
+  if (snapshot.gameId === 'hilo') return null
   return atcWin(snapshot)
 }
