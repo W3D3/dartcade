@@ -40,6 +40,7 @@ corrected dart replays the open visit cleanly.
 | Who may act for a seat, who may watch a game | `backend/src/session/access.ts` |
 | Game modules (register new ones in `index.ts`) | `backend/src/games/` |
 | 121 Checkout: tries, targets, miss rules, lock; match screen and summary | `backend/src/games/p121.ts` (out rules shared with X01 in `outRules.ts`), all-time best `GET /api/games/best` (`db/history.ts` `getBestStat`); frontend `lib/components/p121/`, `lib/p121/`; behind `gamemode.p121.enabled` |
+| Higher Lower: two bars, lives, misses; match screen and result | `backend/src/games/hilo.ts`; frontend `lib/components/hilo/`, `lib/hilo/`; behind `gamemode.hilo.enabled` |
 | REST API | `backend/src/api/` |
 | WebSocket gateways | `backend/src/bridge-gw/` (bridge), `backend/src/browser-gw/` (browser) |
 | Auth, DB (Kysely + Postgres, migrations) | `backend/src/auth/`, `backend/src/db/` |
