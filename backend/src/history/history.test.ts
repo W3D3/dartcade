@@ -66,8 +66,8 @@ describe('buildDetail', () => {
     seats: [{ seat: 0, name: 'A', user_id: 'u1', bot_level: null, placement: 1, throw_position: 0, stats: {}, forfeited: false }],
   }
   const at = new Date('2026-10-01T10:00:00.000Z')
-  it('replays the log into the mode detail', () => {
-    const d = buildDetail(
+  it('replays the log into the mode detail', async () => {
+    const d = await buildDetail(
       game,
       [
         {
@@ -83,7 +83,7 @@ describe('buildDetail', () => {
     )
     expect(d).toMatchObject({ detail: { mode: 'atc', visits: [{ visit: 0, seat: 0, hits: 1, targetBefore: 1, targetAfter: 2 }] } })
   })
-  it('null for a mode that no longer exists', () => {
-    expect(buildDetail({ ...game, game_id: 'gone' }, [], vi.fn())).toBeNull()
+  it('null for a mode that no longer exists', async () => {
+    expect(await buildDetail({ ...game, game_id: 'gone' }, [], vi.fn())).toBeNull()
   })
 })
