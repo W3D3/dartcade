@@ -68,11 +68,20 @@ What happens on a fresh production deploy, in order:
 
 ### Managing admins: `#/admin/users`
 
-- Lists users (name, handle, email, created, role), with a search box. It uses better-auth's admin
-  plugin (`listUsers`, `setRole`), which is already installed and requires `role = 'admin'`.
+- Lists users (name, handle, email, created, role), with a search box. It uses two admin-only
+  endpoints of our own API (`GET /api/admin/users`, `PUT /api/admin/users/{id}/role`). The typed
+  client covers them, and the last-admin check runs in the same transaction as the change, which
+  better-auth's `setRole` doesn't do.
 - Promote or demote with a button and a confirmation. You can't demote yourself if you're the last
   admin (the server refuses with "There must be at least one admin").
-- Linked from the account menu's admin section, next to the minigolf links.
+- Listed on the admin page (below).
+
+## Admin page
+
+All admin tools sit on one page, `#/admin`: Users, Feature flags, Minigolf courses and the Minigolf
+bench, as cards. Admins see "Admin" in the desktop sidebar. The account menu's Admin group becomes
+one "Admin" link, which is how phones and tablets get there (the tablet rail shows the same tabs as
+the phone's bottom bar).
 
 ## Runtime feature flags
 
