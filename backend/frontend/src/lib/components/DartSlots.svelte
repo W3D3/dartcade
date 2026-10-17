@@ -115,7 +115,7 @@
             <span aria-hidden="true" class="{slotLabel} text-text-dim">{slot.label}</span>
             <span
               aria-hidden="true"
-              class="text-[10px] md:text-[12px] font-semibold uppercase tracking-[0.06em] text-ink-faint truncate max-w-full"
+              class="text-[10px] md:text-[12px] leading-[1.15] font-semibold uppercase tracking-[0.06em] text-ink-faint text-center line-clamp-2 max-w-full shrink-0"
               >{slot.foot}</span
             >
           {/if}

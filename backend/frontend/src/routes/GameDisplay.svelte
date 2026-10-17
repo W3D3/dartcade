@@ -11,6 +11,7 @@
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
   import P121Match from '$lib/components/p121/P121Match.svelte'
+  import HiloMatch from '$lib/components/hilo/HiloMatch.svelte'
   import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { snapshotStandings } from '$lib/p121/summary'
   import { rollFor } from '$lib/minigolf/match'
@@ -268,7 +269,8 @@
   const atc = $derived(current.atc)
   const minigolf = $derived(current.minigolf)
   const p121 = $derived(current.p121)
-  const game = $derived(x01 ?? atc ?? minigolf ?? p121)
+  const hilo = $derived(current.hilo)
+  const game = $derived(x01 ?? atc ?? minigolf ?? p121 ?? hilo)
   const isX01 = $derived(x01 !== null)
   // 121 ends on its session summary (P121Summary), not the win screen
   const p121Finished = $derived(p121 !== null && snapshot?.status === 'finished')
@@ -312,8 +314,16 @@
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
   // The visit is over (bust, checkout, win): no more darts until the next player
-  const locked = $derived(x01?.visitLocked === true || minigolf?.visitLocked === true || p121?.visitLocked === true || winner !== null)
-  const bullOff = $derived(x01?.phase === 'bulloff' ? x01.bullOff : p121?.phase === 'bulloff' ? p121.bullOff : null)
+  const locked = $derived(
+    x01?.visitLocked === true ||
+      minigolf?.visitLocked === true ||
+      p121?.visitLocked === true ||
+      hilo?.visitLocked === true ||
+      winner !== null,
+  )
+  const bullOff = $derived(
+    x01?.phase === 'bulloff' ? x01.bullOff : p121?.phase === 'bulloff' ? p121.bullOff : hilo?.phase === 'bulloff' ? hilo.bullOff : null,
+  )
   // Checkout preferences: this device's for now; per player (from each seat's account) once they
   // can be set in Settings
   const checkout = $derived({ favouriteDouble: settings.favouriteDouble })
@@ -854,6 +864,23 @@
           onGiveUp={() => send({ type: 'p121_give_up' })}
           {settings}
           {checkout}
+          {keypad}
+          onDart={canThrow ? addManualDart : () => {}}
+        />
+      {:else if hilo}
+        <HiloMatch
+          game={hilo}
+          {players}
+          {darts}
+          {layout}
+          {canThrow}
+          {locked}
+          {canUndo}
+          {next}
+          onUndo={undo}
+          onNext={advance}
+          onBoardClick={addBoardDart}
+          onCorrect={correct}
           {keypad}
           onDart={canThrow ? addManualDart : () => {}}
         />
