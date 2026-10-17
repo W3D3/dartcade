@@ -69,7 +69,8 @@ describe('chosenGame', () => {
     },
     { id: 'minigolf', configMeta: meta('course', 'tries', 'maxStrokes', 'ballContact', 'aimAssist', 'shotPreview') },
     { id: 'p121', configMeta: meta('startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff') },
-    { id: 'hilo', configMeta: meta('rounds', 'bullOff') },
+    { id: 'hilo', configMeta: meta('startHigh', 'startLow', 'lives', 't1Zero', 'matchExtremes', 'bullOff') },
+    { id: 'newmode', configMeta: meta('rounds', 'bullOff') },
   ]
 
   it("keeps Minigolf's own fields, and only those", () => {
@@ -129,6 +130,23 @@ describe('chosenGame', () => {
     })
   })
 
+  it("keeps Higher Lower's own fields, and only those", () => {
+    const config = {
+      startHigh: 41,
+      startLow: 21,
+      lives: 3,
+      t1Zero: false,
+      matchExtremes: true,
+      bullOff: 'off',
+      // Not in the hilo whitelist: must not leak into the saved config
+      startScore: 501,
+    }
+    expect(chosenGame(games, 'hilo', config)).toEqual({
+      gameId: 'hilo',
+      config: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, bullOff: 'off' },
+    })
+  })
+
   it("doesn't carry botSpeed for atc, which has no bots", () => {
     const config = { finishOn: 'twenty', order: 'asc', multiplierAdvances: true, throwAgainOnAllHit: false, botSpeed: 'fast' }
     const picked = chosenGame(games, 'atc', config)
@@ -137,7 +155,7 @@ describe('chosenGame', () => {
 
   it("keeps the settings of a mode with no special handling, not X01's", () => {
     const config = { rounds: 10, bullOff: 'wdc', startScore: 501, format: 'singles' }
-    expect(chosenGame(games, 'hilo', config)).toEqual({ gameId: 'hilo', config: { rounds: 10, bullOff: 'wdc' } })
+    expect(chosenGame(games, 'newmode', config)).toEqual({ gameId: 'newmode', config: { rounds: 10, bullOff: 'wdc' } })
   })
 
   it('falls back to a 501 game, then the first one, when the picked mode is unknown to the backend', () => {

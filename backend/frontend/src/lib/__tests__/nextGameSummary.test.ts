@@ -27,4 +27,12 @@ describe('NextGameSummary', () => {
     expect(text(render(NextGameSummary, { props: { lobby: lobby('x01', { startScore: 301 }), pickedBy: 'Host' } }).body)).toContain(' 301 ')
     expect(text(render(NextGameSummary, { props: { lobby: lobby('minigolf', {}), pickedBy: 'Host' } }).body)).toContain('Par 3')
   })
+
+  it("shows Higher Lower's glyph, name and rules", () => {
+    const config = { startHigh: 41, startLow: 21, lives: 3 }
+    const body = text(render(NextGameSummary, { props: { lobby: lobby('hilo', config), pickedBy: 'Host' } }).body)
+    expect(body).toContain(' HiLo ')
+    expect(body).toContain('Higher Lower')
+    expect(body).toContain('41 / 21 · 3 lives')
+  })
 })

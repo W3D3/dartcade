@@ -1,11 +1,17 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
 import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
 import type { ConfigFieldMeta } from '../api'
-import { minigolfRules, p121Rules, x01Rules, type Mode } from '../gameViews/meta.js'
+import { hiloRules, minigolfRules, p121Rules, x01Rules, type Mode } from '../gameViews/meta.js'
 import { teamSizesLabel } from '../teams.js'
 import { dayMonth, pad2, startOfDay } from '../fmt.js'
 
-const GAME_NAMES: Record<string, string> = { x01: 'X01', atc: 'Around the Clock', minigolf: 'Minigolf', p121: '121 Checkout' }
+const GAME_NAMES: Record<string, string> = {
+  x01: 'X01',
+  atc: 'Around the Clock',
+  minigolf: 'Minigolf',
+  p121: '121 Checkout',
+  hilo: 'Higher Lower',
+}
 
 /** The mode's name ("X01", "Around the Clock"); the id itself for a mode we don't know. */
 export function gameName(gameId: string): string {
@@ -71,6 +77,13 @@ function rulesLine(game: NextGame | null, defaults: Record<string, unknown>, met
     const [startTarget, tries, dartsPerTry] = [int(c.startTarget), int(c.tries), int(c.dartsPerTry)]
     if (startTarget === null || tries === null || dartsPerTry === null) return ''
     const rules = p121Rules({ startTarget, tries, dartsPerTry, outMode: mode(c.outMode, 'double') })
+    const bullOff = BULL_OFF[str(c.bullOff)]
+    return bullOff ? `${rules} · ${bullOff}` : rules
+  }
+  if (game.gameId === 'hilo') {
+    const [startHigh, startLow, lives] = [int(c.startHigh), int(c.startLow), int(c.lives)]
+    if (startHigh === null || startLow === null || lives === null) return ''
+    const rules = hiloRules({ startHigh, startLow, lives })
     const bullOff = BULL_OFF[str(c.bullOff)]
     return bullOff ? `${rules} · ${bullOff}` : rules
   }

@@ -1,6 +1,7 @@
 // The meta line next to the game title in the header.
 import type { AtcGame, X01Game } from '../api/game-ws'
 import { teamsLabel } from '../teams.js'
+import { plural } from '../fmt.js'
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
@@ -23,6 +24,11 @@ export function x01Rules(r: X01Rules, playerCount: number, teams?: string): stri
 /** The 121 rules as one line, e.g. "121 · 10 tries · 9 darts · Double out". */
 export function p121Rules(r: { startTarget: number; tries: number; dartsPerTry: number; outMode: Mode }): string {
   return `${r.startTarget} · ${r.tries} tries · ${r.dartsPerTry} darts · ${cap(r.outMode)} out`
+}
+
+/** The Higher Lower rules as one line, shared by the header and the lobby's next-game line, e.g. "41 / 21 · 3 lives". */
+export function hiloRules(r: { startHigh: number; startLow: number; lives: number }): string {
+  return `${r.startHigh} / ${r.startLow} · ${plural(r.lives, 'life', 'lives')}`
 }
 
 /** The Around the Clock rules as one line, e.g. "1–20, then Bull · any segment counts". */

@@ -82,9 +82,19 @@
   // 121 config fields in display order — populated from backend configMeta (bullOff comes from withBullOff)
   const P121_FIELD_ORDER = ['startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff'] as const
 
+  // Higher Lower's toggles in display order — populated from backend configMeta (bullOff comes from withBullOff);
+  // startHigh/startLow/lives have no options (they're Steppers, below)
+  const HILO_TOGGLE_ORDER = ['t1Zero', 'matchExtremes', 'bullOff'] as const
+
   // A numeric config field, or its default when missing or not a number
   const num = (v: unknown, d: number) => (typeof v === 'number' ? v : d)
   const isNonDefault = (key: string) => key in defaults && config[key] !== defaults[key]
+
+  // Higher Lower's bars: the Stepper has no upper bound of its own, and low must stay below
+  // high, so both are clamped here — the same silent-clamp pattern Minigolf's max strokes uses.
+  const setStartHigh = (n: number) => set('startHigh', clamp(n, num(config.startLow, 21) + 1, 180))
+  const setStartLow = (n: number) => set('startLow', clamp(n, 0, Math.min(179, num(config.startHigh, 41) - 1)))
+  const setLives = (n: number) => set('lives', clamp(n, 1, 7))
 </script>
 
 {#if gameId === 'x01'}
@@ -236,6 +246,75 @@
 {:else if gameId === 'p121'}
   <div class={root}>
     {#each P121_FIELD_ORDER as fieldKey (fieldKey)}
+      {@const field = meta[fieldKey]}
+      {#if field?.options}
+        <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
+          <legend class="flex items-center gap-2 field-label mb-2">
+            {field.label}
+            {#if field.tooltip}
+              <Tooltip text={field.tooltip} />
+            {/if}
+          </legend>
+          <SegmentedControl
+            options={field.options}
+            value={config[fieldKey]}
+            defaultValue={defaults[fieldKey]}
+            disabled={readonly}
+            onchange={(v: unknown) => set(fieldKey, v)}
+          />
+        </fieldset>
+      {/if}
+    {/each}
+  </div>
+{:else if gameId === 'hilo'}
+  <div class={root}>
+    <div class="flex justify-between items-center">
+      <span class="flex items-center gap-2 field-label">
+        {meta.startHigh?.label ?? 'Start high bar'}
+        {#if meta.startHigh?.tooltip}<Tooltip text={meta.startHigh.tooltip} />{/if}
+      </span>
+      <Stepper
+        value={num(config.startHigh, 41)}
+        min={num(config.startLow, 21) + 1}
+        label="high bar"
+        highlight={isNonDefault('startHigh')}
+        disabled={readonly}
+        onchange={setStartHigh}
+      />
+    </div>
+
+    <div class="flex justify-between items-center">
+      <span class="flex items-center gap-2 field-label">
+        {meta.startLow?.label ?? 'Start low bar'}
+        {#if meta.startLow?.tooltip}<Tooltip text={meta.startLow.tooltip} />{/if}
+      </span>
+      <Stepper
+        value={num(config.startLow, 21)}
+        min={0}
+        label="low bar"
+        highlight={isNonDefault('startLow')}
+        disabled={readonly}
+        onchange={setStartLow}
+      />
+    </div>
+
+    <div class="flex justify-between items-center">
+      <span class="flex items-center gap-2 field-label">
+        {meta.lives?.label ?? 'Lives'}
+        {#if meta.lives?.tooltip}<Tooltip text={meta.lives.tooltip} />{/if}
+      </span>
+      <Stepper
+        value={num(config.lives, 3)}
+        min={1}
+        label="lives"
+        unit={n => (n === 1 ? 'life' : 'lives')}
+        highlight={isNonDefault('lives')}
+        disabled={readonly}
+        onchange={setLives}
+      />
+    </div>
+
+    {#each HILO_TOGGLE_ORDER as fieldKey (fieldKey)}
       {@const field = meta[fieldKey]}
       {#if field?.options}
         <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
