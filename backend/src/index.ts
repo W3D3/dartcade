@@ -8,6 +8,7 @@ import { setCourseSource } from './games/minigolfCourseSource.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
 import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js'
 import { seedDev } from './auth/seed.js'
+import { bootstrapAdmin } from './auth/bootstrap.js'
 import { buildApp } from './app.js'
 import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
@@ -40,6 +41,7 @@ setCourseSource({
     (await listCourses(db, { drafts: false })).flatMap(c => (c.published ? [{ id: c.id, name: c.published.name }] : [])),
 })
 await seedDev()
+await bootstrapAdmin(db)
 
 const hub = new LobbyHub()
 // The rebuild below can already warn (a log entry that won't parse), before the app and its

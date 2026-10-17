@@ -20,7 +20,7 @@ export async function checkName(db: Kysely<Database>, raw: string, selfId: strin
 }
 
 /** A free name close to `current` for the Pick your name screen: cleaned, then numbered 2, 3, … */
-export async function suggestName(db: Kysely<Database>, current: string, selfId: string): Promise<string> {
+export async function suggestName(db: Kysely<Database>, current: string, selfId: string | null): Promise<string> {
   const base = cleanName(current)
   if (!(await isNameTaken(db, base, selfId))) return base
   for (let n = 2; n < SUGGESTION_TRIES; n++) {
