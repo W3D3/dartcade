@@ -183,24 +183,25 @@ type State struct {
     PrevThrows   []schema.Throw
     VisitID      ulid.ULID  // zero value = board empty, no open visit
     InTakeout    bool       // takeout.started emitted, not yet finished
-    ExpectResync bool       // true after bm_connect / bm_reconnect
+    ExpectResync bool       // true after bm_connect
+    Reconnected  bool       // true after bm_reconnect, until the next state frame
 }
 ```
 
 ### 7.3 Frame dispatch
 
-| Frame kind / BMType       | Action                                                      |
-| ------------------------- | ----------------------------------------------------------- |
-| `bm_connect`              | Set `ExpectResync = true`, emit `bm.link{up: true}`         |
-| `bm_reconnect`            | Set `ExpectResync = true`, emit `bm.link{up: true, gap_ms}` |
-| `bm_disconnect`           | Emit `bm.link{up: false}`                                   |
-| `BMType = "state"`        | Run diff logic (§7.4)                                       |
-| `BMType = "motion_state"` | Run takeout signal logic (§7.5)                             |
-| Anything else             | Emit as `bm.frame`, no state change                         |
+| Frame kind / BMType       | Action                                                     |
+| ------------------------- | ---------------------------------------------------------- |
+| `bm_connect`              | Set `ExpectResync = true`, emit `bm.link{up: true}`        |
+| `bm_reconnect`            | Set `Reconnected = true`, emit `bm.link{up: true, gap_ms}` |
+| `bm_disconnect`           | Emit `bm.link{up: false}`                                  |
+| `BMType = "state"`        | Run diff logic (§7.4)                                      |
+| `BMType = "motion_state"` | Run takeout signal logic (§7.5)                            |
+| Anything else             | Emit as `bm.frame`, no state change                        |
 
 ### 7.4 Diff logic (on `state` frames)
 
-1. **Resync:** if `ExpectResync`, emit `board.resync{throws: cur.throws}`, clear flag, set `PrevThrows = cur.throws`. Return. Never emit dart events on a resync frame.
+1. **Resync:** if `ExpectResync`, or `Reconnected` and a dart still on the board changed segment, emit `board.resync{throws: cur.throws}`, clear the flags, set `PrevThrows = cur.throws`. Return. Never emit dart events on a resync frame. Otherwise a reconnect's first frame is diffed as below (see `schema/diff-rules.md` §1).
 2. **New darts:** `len(cur) > len(prev)` — for each new index:
    - If `len(prev) == 0`: emit `visit.opened{visit_id: newULID()}`, set `VisitID`.
    - Emit `dart.detected{visit_id, index, dart: toDart(cur[i]), source_seq: 0}`.
@@ -375,7 +376,7 @@ Required fixtures:
 | `takeout-motion.jsonl`      | `takeout.started` via `motion_state.isHand`                             |
 | `visit-cleared.jsonl`       | `visit.cleared` via `numThrows=0` without takeout                       |
 | `spurious-takeout.jsonl`    | Takeout signal with `numThrows=0` → nothing emitted                     |
-| `resync.jsonl`              | `bm_reconnect` → `board.resync`, no `dart.detected`                     |
+| `resync.jsonl`              | `bm_connect` → `board.resync`; after `bm_reconnect`, diffed             |
 | `bounce-out.jsonl`          | Throw with no `coords` field                                            |
 | `near-miss.jsonl`           | Throw with `r > 1.0`                                                    |
 | `unknown-frame.jsonl`       | Unknown `BMType` passes through as `bm.frame`                           |
