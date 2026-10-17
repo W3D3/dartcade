@@ -1,6 +1,6 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
-import { applyInput, awaitsFinish, overflowsVisit, type GameInput } from './apply.js'
+import { applyInput, awaitsFinish, overflowsVisit, takeoutWins, type GameInput } from './apply.js'
 import type { GameConfig, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
@@ -23,6 +23,7 @@ export type ActionResult = { ok: true } | { ok: false; code: 'forbidden' }
 
 /** Board events that would end or add to the visit that wins the game (see awaitsFinish). */
 const HELD = new Set(['visit.opened', 'dart.detected', 'takeout.finished', 'visit.cleared'])
+/** Board events that end a visit: dropped when they're stale (dartsLeftOnBoard), held when they'd decide the game (takeoutWins, takeoutHeld). */
 const TAKEOUTS = new Set(['takeout.finished', 'visit.cleared'])
 
 /** A game ended: the lobby it came from resets and logs it (see LobbyService.onGameEnded). */
@@ -355,7 +356,7 @@ export class SessionEngine {
 
   // Runs inside the session's queue. Logs the input (raw, as received), then applies it and
   // stores what it committed. A board event from a board whose seat isn't up is dropped
-  // before it's logged. True when the input was applied.
+  // before it's logged. True when the input was applied (or a takeout held, see takeoutHeld).
   private async apply(session: Session, input: GameInput, raw: { kind: string; data: unknown }, origin: Origin): Promise<boolean> {
     if (session.status !== 'active') return false
     if (origin.boardId !== null && session.seats[currentSeat(session)].boardId !== origin.boardId) {
@@ -364,7 +365,7 @@ export class SessionEngine {
     }
     // The visit that wins the game waits for Finish: the board can't end or add to it (dropped
     // before it's logged, so logs from before this rule replay as they were played)
-    if (input.source === 'board' && HELD.has(input.event.kind) && awaitsFinish(session)) return false
+    if (input.source === 'board' && HELD.has(input.event.kind) && (session.takeoutHeld || awaitsFinish(session))) return false
     // Darts pulled after Next player ended their visit: the next visit goes on (dropped
     // unlogged too, so older logs, where this ended the next visit, replay as played)
     if (input.source === 'board' && TAKEOUTS.has(input.event.kind) && session.dartsLeftOnBoard) {
@@ -374,10 +375,19 @@ export class SessionEngine {
     // The board's darts after a visit's third, or its new visit while one is open, are dropped
     // unlogged too (older logs replay as played)
     if (input.source === 'board' && overflowsVisit(session, input.event)) return false
+    // An early takeout (an undetected dart) would decide the game too: it waits for Finish and
+    // freezes the visit (the board's next events belong to the next visit). True: the snapshot
+    // now shows Finish pending.
+    if (input.source === 'board' && TAKEOUTS.has(input.event.kind) && takeoutWins(session)) {
+      session.takeoutHeld = true
+      return true
+    }
     const at = new Date()
     await prefetchShots(session, input, at)
     await this.logInput(session, input, raw, origin, at)
     const outcome = applyInput(session, input, at)
+    // The held visit ends when it's committed, or once no darts are left in it (Undo, a resync)
+    if (outcome.committed || session.openDarts.length === 0) session.takeoutHeld = false
     try {
       if (outcome.reopened !== undefined) await this.store.deleteDarts(session.id, outcome.reopened)
       if (outcome.committed) await this.store.insertDarts(dartRows(session.id, outcome.committed))
@@ -562,7 +572,7 @@ export class SessionEngine {
       lobbyName: session.lobbyName,
       players: session.players,
       status: session.status,
-      finishPending: session.status === 'active' && awaitsFinish(session),
+      finishPending: session.status === 'active' && ((session.takeoutHeld === true && takeoutWins(session)) || awaitsFinish(session)),
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,

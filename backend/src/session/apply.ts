@@ -30,22 +30,27 @@ function hasWinner(session: Session, state: unknown): boolean {
   return session.module.view(state, session.players).winner !== null
 }
 
+/** Committing the open visit now (its darts in, not the bull off) would decide the game. */
+export function takeoutWins(session: Session): boolean {
+  if (session.module.noFinishHold) return false
+  if (dartEvents(session).length === 0 || inBullOff(session, session.currentState)) return false
+  const after = session.module.onBoardEvent(session.currentState, { kind: 'takeout.finished', data: {} }).state
+  return hasWinner(session, after)
+}
+
 /**
  * The open visit decides the game once it's committed (a match-winning checkout, the last
  * target hit). It waits for the Finish button (the user's takeout) so a misread dart can still
  * be corrected; the engine drops the board's takeout, new visits and darts until then.
  * Only a visit that's over is held (locked, won, or three darts in): one that would merely end
- * the game if taken out now (121's last visit, X01's round limit) still takes its next dart.
+ * the game if taken out now (121's last visit, X01's round limit) still takes its next dart,
+ * though the engine still holds the board's takeout for it (see takeoutWins).
  */
 export function awaitsFinish(session: Session): boolean {
-  if (session.module.noFinishHold) return false
   const darts = dartEvents(session).length
-  if (darts === 0 || inBullOff(session, session.currentState)) return false
   const view = session.module.view(session.currentState, session.players)
   const over = darts >= 3 || ('visitLocked' in view && view.visitLocked) || view.winner !== null
-  if (!over) return false
-  const after = session.module.onBoardEvent(session.currentState, { kind: 'takeout.finished', data: {} }).state
-  return hasWinner(session, after)
+  return over && takeoutWins(session)
 }
 
 /**

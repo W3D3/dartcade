@@ -219,6 +219,10 @@ export interface Session {
   /** One entry per dart.detected in openVisitEvents, same order. */
   openDarts: DartMeta[]
   currentState: unknown
+  /** The board's takeout ended a visit that would decide the game and was held for Finish (see
+   *  takeoutWins): the board's events are dropped until the visit is committed or has no darts
+   *  left; user actions still apply. Not logged: held events aren't. */
+  takeoutHeld?: boolean
   status: 'active' | 'finished' | 'aborted'
   createdAt: Date
   /** Seed of the generator passed to init(); stored so a replay sets the game up the same way. */
