@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import type { Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
 import { type RankedSide, getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult, x01Average } from './ranked.js'
@@ -104,6 +104,38 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     expect((await getRatings(db, 'chris'))['1v1']).toMatchObject({ rating: 1227, matches: 1, wins: 1, streak: 1, rankIndex: null })
     expect((await getRatings(db, 'anna'))['1v1']).toMatchObject({ rating: 1173, matches: 1, wins: 0, streak: -1 })
     expect((await getRatings(db, 'chris'))['2v2'].matches).toBe(0)
+  })
+
+  it('two calls for one game at once: the second changes nothing and does not throw', async () => {
+    await db
+      .insertInto('user')
+      .values(['kai', 'max'].map(id => ({ id, name: id, email: `${id}@x`, emailVerified: false, image: null })))
+      .execute()
+    await db
+      .insertInto('ranked_ratings')
+      .values(['kai', 'max'].map(user_id => ({ user_id, mode: '1v1' as const, rating: 1200 })))
+      .execute()
+    const g = await game()
+    const record = () => recordRankedResult(db, { sessionId: g, mode: '1v1', at: at(10), sides: duel('kai', 'max', 60, 50) })
+    // Hold the rating rows so both calls get as far as they can before either writes
+    let release = () => {}
+    const holding = db.transaction().execute(async trx => {
+      await trx.selectFrom('ranked_ratings').select('user_id').where('user_id', 'in', ['kai', 'max']).forUpdate().execute()
+      await new Promise<void>(r => (release = r))
+    })
+    const both = Promise.all([record(), record()])
+    const waiting = async () =>
+      Number(
+        (
+          await sql<{ n: string }>`SELECT count(*) AS n FROM pg_stat_activity
+            WHERE datname = current_database() AND wait_event_type = 'Lock' AND query ILIKE '%ranked%'`.execute(db)
+        ).rows[0].n,
+      )
+    while ((await waiting()) < 2) await new Promise(r => setTimeout(r, 10))
+    release()
+    await holding
+    await both
+    expect((await getRatings(db, 'kai'))['1v1']).toMatchObject({ rating: 1227, matches: 1 })
   })
 
   it('gets a rank after the fifth game; after that only the result counts', async () => {

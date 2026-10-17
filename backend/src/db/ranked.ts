@@ -149,6 +149,8 @@ export async function recordRankedResult(
 ): Promise<void> {
   const at = game.at ?? new Date()
   await db.transaction().execute(async trx => {
+    // A second call for the same game waits here, then finds it done
+    await sql`SELECT pg_advisory_xact_lock(hashtext('dartcade.ranked.' || ${game.sessionId}))`.execute(trx)
     const done = await trx.selectFrom('ranked_results').select('user_id').where('session_id', '=', game.sessionId).executeTakeFirst()
     if (done) return
     const userIds = game.sides.flatMap(s => s.players.map(p => p.userId))
