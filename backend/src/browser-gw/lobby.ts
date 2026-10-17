@@ -44,6 +44,13 @@ export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Err
           app.log.warn({ lobbyId, err }, 'lobby presence push failed')
         })
       })
+      // A removal during the check above had no socket to close yet: once the lobby's queued
+      // changes are done (the cache reloaded), check again
+      await lobbies.whenIdle(lobbyId)
+      if (!(await lobbies.isMember(lobbyId, userId))) {
+        socket.close(WsCloseCode.Forbidden, 'forbidden')
+        return
+      }
       // Everyone, this socket included, gets the lobby with this member online
       await lobbies.refreshPresence(lobbyId)
     })
