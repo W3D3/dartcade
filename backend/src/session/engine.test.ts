@@ -13,6 +13,7 @@ import { minigolfModule, type MinigolfState } from '../games/minigolf.js'
 import { courseSource, setCourseSource } from '../games/minigolfCourseSource.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
 import type { Hole } from '../shared/minigolf/types.js'
+import { DEFAULT_PHYSICS } from '../shared/minigolf/physics.js'
 
 const seat = (name: string, controllerUserId: string, boardId: string | null, userId: string | null = controllerUserId): Seat => ({
   name,
@@ -1625,7 +1626,7 @@ describe('a config prepared at start (Minigolf: the published course)', () => {
     const engine = new SessionEngine(store, push)
     const { sessionId } = await engine.create('user-1', 'board-1', 'minigolf', { ...config, holes: [] }, [{ name: 'Alice' }])
     const stored = store.insertSession.mock.calls[0][0].config
-    expect(stored).toEqual({ ...config, holes: testCourse.holes.slice(0, 2), courseName: 'Canal Street' })
+    expect(stored).toEqual({ ...config, holes: testCourse.holes.slice(0, 2), courseName: 'Canal Street', ballPhysics: DEFAULT_PHYSICS })
     expect(holesOf(engine, sessionId)).toEqual(testCourse.holes.slice(0, 2))
 
     published = { c1: { name: 'Canal Street', holes: testCourse.holes } }
