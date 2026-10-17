@@ -17,8 +17,7 @@
     formatMB,
     importVoicePackFromLink,
     keptText,
-    packClips,
-    sampleKey,
+    saySample,
     storageUse,
     uploadVoicePack,
     voiceLibrary,
@@ -52,12 +51,9 @@
   onDestroy(() => {
     caller.stop()
   })
-  // The pack's own clips only (never the built-in voice's): 180 if it has it, else a key it has
-  async function sample(id: string) {
+  function sample(id: string) {
     audioContext()
-    const clips = await packClips(id)
-    const key = clips ? sampleKey(clips) : null
-    if (clips && key !== null) await caller.say([[key]], clips)
+    void saySample(caller, id)
   }
 
   // ── Delete ──
@@ -183,7 +179,7 @@
               </span>
               <button
                 type="button"
-                onclick={() => void sample(p.id)}
+                onclick={() => sample(p.id)}
                 aria-label="Play a sample of {p.name}"
                 class="w-10 h-10 shrink-0 flex items-center justify-center rounded-[9px] border border-line-chip bg-transparent text-ink-2 cursor-pointer"
               >

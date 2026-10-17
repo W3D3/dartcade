@@ -35,6 +35,8 @@ function trimmed(ctx: AudioContext, b: AudioBuffer): AudioBuffer {
   return out
 }
 
+export type Caller = ReturnType<typeof createCaller>
+
 export function createCaller(volume: () => number) {
   const buffers = new Map<string, Promise<AudioBuffer | null>>()
   let playing: AudioBufferSourceNode[] = []
