@@ -134,6 +134,8 @@
   let unsubStale: (() => void) | null = null
   // A snapshot didn't parse (this tab predates a deploy): ask for a reload
   let stale = $state(false)
+  // The game socket is open: entry is off while it reconnects (what's sent meanwhile is dropped)
+  let connected = $state(false)
   // The newest camera still of each board and camera in this game
   let cameraVersions = $state.raw<CameraVersions>({})
   // "Not your turn": a dart on your board while someone else is up (6 s, the newest wins)
@@ -202,6 +204,7 @@
       }
     })
     unsubConnected = sessionStore.connected.subscribe(up => {
+      connected = up
       if (!up) leavePending = false
     })
     unsubCameras = sessionStore.cameras.subscribe(v => {
@@ -293,7 +296,7 @@
   // includes a bot seat (so Undo, below, stays reachable to fix a misdetected bot throw), but
   // `canThrow` — the live entry controls (keypad, board-click-to-score, Next/takeout) — excludes it.
   const myTurn = $derived(isMyTurn(snapshot))
-  const canThrow = $derived(isActive && canThrowNow(snapshot))
+  const canThrow = $derived(connected && isActive && canThrowNow(snapshot))
   // Remote games: what the centre shows when it isn't your turn, and where each seat throws
   const remote = $derived(centerState(snapshot, viewerId))
   const lines = $derived(seatLines(snapshot))
@@ -448,7 +451,7 @@
   // Undo takes back the last dart, or with none open reopens the last visit (its thrower is up
   // again) — available whenever the viewer's own seat (bot included) is up, even though `canThrow`
   // excludes a bot: the host may still need to correct a misdetected bot throw.
-  const canUndo = $derived(isActive && myTurn && (darts.length > 0 || snapshot?.canUndoVisit === true))
+  const canUndo = $derived(connected && isActive && myTurn && (darts.length > 0 || snapshot?.canUndoVisit === true))
   const next = $derived(
     nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending }),
   )
@@ -1026,4 +1029,6 @@
 
 {#if stale}
   <Toast tone="error" actionLabel="Reload" onaction={() => location.reload()}>Dartcade was updated. Reload to continue.</Toast>
+{:else if snapshot && !connected}
+  <Toast tone="error">Reconnecting…</Toast>
 {/if}
