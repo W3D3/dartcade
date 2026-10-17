@@ -549,6 +549,36 @@ describe('onUserAction', () => {
     await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
     expect(engine.getSession(sessionId)!.totalVisits).toEqual([1])
   })
+
+  it('pulling the darts after Next player leaves the next player up, unlogged', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01', x01Cfg, [{ name: 'A' }, { name: 'B' }, { name: 'C' }])
+    const throwVisit = async (id: string) => {
+      await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: id })
+      for (const index of [0, 1, 2]) {
+        await engine.onBridgeEvent('board-1', 'dart.detected', {
+          visit_id: id,
+          index,
+          source_seq: index,
+          dart: { segment: S20, score: 20 },
+        })
+      }
+    }
+    const up = () => engine.getSnapshot(sessionId)!.game.currentPlayer
+    await throwVisit('a')
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+    expect(up()).toBe(1)
+    const logged = store.appendEvent.mock.calls.length
+    await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+    expect(up()).toBe(1)
+    expect(store.appendEvent).toHaveBeenCalledTimes(logged)
+    // B's own visit still ends on the takeout
+    await throwVisit('b')
+    await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+    expect(up()).toBe(2)
+    expect(engine.getSession(sessionId)!.totalVisits).toEqual([1, 1, 0])
+  })
 })
 
 describe('rebuild', () => {

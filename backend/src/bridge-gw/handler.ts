@@ -154,10 +154,14 @@ export function handleBridgeConnection(
   // conditions between rapidly-arriving events, and to hold messages until auth
   // resolves. The listener is registered synchronously so nothing is dropped.
   let eventQueue: Promise<void> = authed.then(() => {})
+  // Set once storing an event failed: acks are cumulative on the bridge, so acking any later
+  // event would drop the failed one from its outbox for good
+  let failed = false
 
   socket.on('message', (raw: Buffer) => {
     eventQueue = eventQueue
       .then(async () => {
+        if (failed) return
         const boardDbId = conn.boardDbId
         if (!boardDbId) return // unauthenticated (socket already closed)
 
@@ -233,7 +237,10 @@ export function handleBridgeConnection(
         }
       })
       .catch((err: unknown) => {
-        console.error('Bridge event processing error:', { boardDbId: conn.boardDbId }, err)
+        failed = true
+        console.error('Bridge event processing error, closing so the bridge replays it:', { boardDbId: conn.boardDbId }, err)
+        // The bridge reconnects and resends everything unacked
+        socket.close(1011, 'internal error')
       })
   })
 

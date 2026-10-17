@@ -59,6 +59,9 @@ function isOpenApiDocument(v: unknown): v is StaticDocumentSpec['document'] {
   return OpenApiShapeSchema.safeParse(v).success
 }
 
+// The largest legitimate message is a 1 MiB camera still (MAX_STILL_BYTES), base64 in a JSON envelope (~1.4 MiB)
+export const WS_MAX_PAYLOAD = 2 * 1024 * 1024
+
 // 'urls.primaryName' is a Swagger UI option that @fastify/swagger-ui's types leave out
 const swaggerUiConfig = {
   urls: [
@@ -75,7 +78,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   // Feature flags (OpenFeature): the provider is set before any route evaluates one
   await setupFlags(envFlagsOn(), envFlagValues())
 
-  await app.register(fastifyWebsocket)
+  await app.register(fastifyWebsocket, { options: { maxPayload: WS_MAX_PAYLOAD } })
   // RATE_LIMIT_MAX: the e2e stack raises it, since every test browser shares one IP
   await app.register(rateLimit, { max: Number(process.env.RATE_LIMIT_MAX) || 200, timeWindow: '1 minute' })
 
@@ -101,7 +104,12 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   app.all('/api/auth/*', async (req, reply) => {
     // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
     if (req.body !== undefined) Object.assign(req.raw, { body: req.body })
-    void toNodeHandler(auth)(req.raw, reply.raw)
+    // better-call throws on a malformed Host or X-Forwarded-Proto; unhandled, that would exit Node
+    toNodeHandler(auth)(req.raw, reply.raw).catch((err: unknown) => {
+      req.log.warn({ err }, 'auth request failed')
+      if (reply.raw.headersSent) return reply.raw.end()
+      reply.raw.writeHead(400, { 'content-type': 'application/json' }).end(JSON.stringify({ error: 'bad request' }))
+    })
     return reply.hijack()
   })
 

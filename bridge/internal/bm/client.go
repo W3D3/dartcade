@@ -32,6 +32,10 @@ type Client struct {
 	cameras   atomic.Int32
 	frames    chan BMFrame
 	startTime time.Time
+
+	// emitMu guards wsFrames, so pollOnce checks it and emits without a WS frame in between.
+	emitMu   sync.Mutex
+	wsFrames uint64
 }
 
 // NewClient creates a new BM client for the given board URL.
@@ -201,6 +205,9 @@ func (c *Client) wsLoop(ctx context.Context) {
 }
 
 func (c *Client) emitRawWS(msg []byte) {
+	c.emitMu.Lock()
+	defer c.emitMu.Unlock()
+	c.wsFrames++
 	var env struct {
 		Type string          `json:"type"`
 		Data json.RawMessage `json:"data"`
@@ -228,13 +235,27 @@ func (c *Client) pollLoop(ctx context.Context) {
 			return
 		case <-time.After(2 * time.Second):
 		}
-		raw, err := getBody(ctx, c.boardURL+"/api/state")
-		if err != nil {
-			log.Warn("BM poll failed", "err", err)
-			continue
-		}
-		c.emit(BMFrame{Kind: "poll", BMType: "state", Data: raw, RecvWall: time.Now(), RecvMonoNs: c.mono()})
+		c.pollOnce(ctx)
 	}
+}
+
+// pollOnce GETs /api/state and emits it, unless a WS frame arrived meanwhile: that frame
+// may be newer, and feeding the older poll after it would replay darts or a visit (#211).
+func (c *Client) pollOnce(ctx context.Context) {
+	c.emitMu.Lock()
+	seen := c.wsFrames
+	c.emitMu.Unlock()
+	raw, err := getBody(ctx, c.boardURL+"/api/state")
+	if err != nil {
+		log.Warn("BM poll failed", "err", err)
+		return
+	}
+	c.emitMu.Lock()
+	defer c.emitMu.Unlock()
+	if c.wsFrames != seen {
+		return
+	}
+	c.emit(BMFrame{Kind: "poll", BMType: "state", Data: raw, RecvWall: time.Now(), RecvMonoNs: c.mono()})
 }
 
 // Reset calls POST /api/reset on the board.

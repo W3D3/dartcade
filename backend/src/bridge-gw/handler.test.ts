@@ -288,6 +288,37 @@ describe('handleBridgeConnection', () => {
     warn.mockRestore()
   })
 
+  it('closes the socket when storing an event fails, and acks nothing after it', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-11', hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockRejectedValueOnce(new Error('db down'))
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
+    const event = (seq: number) =>
+      Buffer.from(
+        JSON.stringify({
+          v: 1,
+          seq,
+          kind: 'dart.detected',
+          bridge_id: 'br',
+          boot_id: 'boot',
+          recv_wall: new Date().toISOString(),
+          data: {},
+        }),
+      )
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    socket.emit('message', event(1))
+    socket.emit('message', event(2))
+    for (let i = 0; i < 5; i++) await flush()
+
+    // The bridge's acks are cumulative: acking 2 would drop the unstored 1 from its outbox
+    expect(socket.close).toHaveBeenCalledWith(1011, expect.any(String))
+    expect(socket.send).not.toHaveBeenCalled()
+    expect(engine.onBridgeEvent).not.toHaveBeenCalled()
+    error.mockRestore()
+  })
+
   it('tells the lobbies when a board comes online and when it drops', async () => {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-9', hardware_id: null } as any)
     const engine = { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any

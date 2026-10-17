@@ -402,6 +402,20 @@ describe('visit.cleared', () => {
     expect(state.phase).toBe('finished')
     expect(state.winner).toBe(0)
   })
+
+  // #213: Reset right after a checkout must still give the thrower the leg
+  it('after a checkout wins the leg like a takeout', () => {
+    const cfg = { ...defaultCfg, firstTo: 2 }
+    let s = openedVisit(makeState({ cfg, scores: [40, 501], visitOpenedScores: [40, 501] }))
+    s = x01Game.onBoardEvent(s, D20).state
+    s = x01Game.onBoardEvent(s, { kind: 'visit.cleared', data: {} }).state
+    expect(s.legs).toEqual([1, 0])
+    expect(s.scores).toEqual([501, 501])
+    expect(s.bestCheckout[0]).toBe(40)
+    s = openedVisit(s)
+    s = x01Game.onBoardEvent(s, D20).state
+    expect(s.scores[s.teamOf[s.currentPlayer]]).toBe(461)
+  })
 })
 
 // ─── throwing order ──────────────────────────────────────────────────────────

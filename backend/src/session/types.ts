@@ -238,6 +238,9 @@ export interface Session {
   /** The game's committed visits since the bull off, newest last, as they were before each was
    *  committed: Undo with no darts open puts the last one back (see applyInput). */
   undoable: UndoableVisit[]
+  /** Next player (the user's takeout) ended the last visit while its darts may still be in the
+   *  board: pulling them must not end the next visit too (the engine drops that takeout). */
+  dartsLeftOnBoard: boolean
   /** Latest board.status per board id. */
   boardStatus: Map<string, BmStatus>
 }

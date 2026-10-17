@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { get } from 'svelte/store'
 import { accountSettings, loadAccountSettings, OWNER_KEY, writeThrough } from '../accountSettings.js'
-import { defaultSettings, loadSettings, SETTINGS_KEY, type GameSettings } from '../gameSettings.js'
+import { defaultSettings, loadSettings, saveSettings, SETTINGS_KEY, type GameSettings } from '../gameSettings.js'
 
 function memoryStorage(init: Record<string, string> = {}) {
   const m = new Map(Object.entries(init))
@@ -91,5 +91,22 @@ describe('account settings', () => {
     answer({ data: { chalkboard: true } })
     await first
     expect(get(accountSettings)).toMatchObject({ chalkboard: false })
+  })
+
+  it('keeps a change when a page applies the account settings again later', async () => {
+    const storage = memoryStorage()
+    const { api, puts } = fakeApi({ callerOn: false })
+    await loadAccountSettings('a', storage, api)
+    // Settings turns the caller on: saved on the device and written to the account
+    const changed = { ...loadSettings(storage), callerOn: true }
+    saveSettings(storage, changed)
+    writeThrough(changed, api)
+    await vi.runAllTimersAsync()
+    // Settings opens again and applies the account's settings over the device's
+    const reopened = { ...loadSettings(storage), ...get(accountSettings) }
+    expect(reopened.callerOn).toBe(true)
+    writeThrough(reopened, api)
+    await vi.runAllTimersAsync()
+    expect(puts).toEqual([{ callerOn: true }])
   })
 })

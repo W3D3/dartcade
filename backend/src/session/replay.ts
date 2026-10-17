@@ -4,6 +4,9 @@ import { parseBoardEvent } from './boardEvent.js'
 import { applyInput, type GameInput } from './apply.js'
 import { seededRng } from './rng.js'
 import { teamForfeitPlacements } from '../games/teams.js'
+import { liveShots, ShotNeeded, storeShot } from '../games/minigolfShots.js'
+import { simulateInPool } from '../games/minigolfPool.js'
+import type { ShotResult } from '../shared/minigolf/types.js'
 import type { NewGameDart } from '../db/queries.js'
 import type { AnyGameModule, CommittedVisit, GameConfig, FinishedSeat, Seat, Session } from './types.js'
 
@@ -66,6 +69,7 @@ export function newSession(a: {
     boardStatus: new Map(),
     forfeited: [],
     undoable: [],
+    dartsLeftOnBoard: false,
     lobbyId: a.lobbyId ?? null,
     lobbyName: a.lobbyName ?? null,
   }
@@ -82,6 +86,57 @@ export function replay(session: Session, rows: LoggedInput[], warn: WarnFn): { v
       continue
     }
     const outcome = applyInput(session, input, row.created_at)
+    if (outcome.reopened !== undefined) visits.pop()
+    if (outcome.committed) visits.push(outcome.committed)
+    if (outcome.won) won = true
+  }
+  session.nextSeq = (rows.at(-1)?.seq ?? -1) + 1
+  return { visits, won }
+}
+
+/**
+ * Plays the input on a scratch copy of the session first: each 3D shot it needs runs in the worker
+ * pool, so the real apply finds them stored and doesn't block the thread. They go in `shots` if
+ * given, else in the shared cache. Any other error is left for the real apply to raise.
+ */
+export async function prefetchShots(session: Session, input: GameInput, at: Date, shots?: Map<string, ShotResult>): Promise<void> {
+  for (;;) {
+    const { openVisitEvents, openDarts, totalDarts, totalVisits } = session
+    const scratch = {
+      ...session,
+      openVisitEvents: [...openVisitEvents],
+      openDarts: [...openDarts],
+      totalDarts: [...totalDarts],
+      totalVisits: [...totalVisits],
+    }
+    try {
+      liveShots(() => applyInput(scratch, input, at), shots)
+      return
+    } catch (err) {
+      if (!(err instanceof ShotNeeded)) return
+      storeShot(err.inputs, await simulateInPool(err.inputs), shots)
+    }
+  }
+}
+
+/** replay(), for a request path: every 3D shot runs in the worker pool, never on this thread. */
+export async function replayPooled(
+  session: Session,
+  rows: LoggedInput[],
+  warn: WarnFn,
+): Promise<{ visits: CommittedVisit<unknown>[]; won: boolean }> {
+  // This replay's own shots: a long game would evict its earlier ones from the shared cache
+  const shots = new Map<string, ShotResult>()
+  const visits: CommittedVisit<unknown>[] = []
+  let won = false
+  for (const row of rows) {
+    const input = parseLoggedInput(row)
+    if (!input) {
+      warn('skipped a log entry that does not parse', { sessionId: session.id, seq: row.seq, kind: row.kind })
+      continue
+    }
+    await prefetchShots(session, input, row.created_at, shots)
+    const outcome = liveShots(() => applyInput(session, input, row.created_at), shots)
     if (outcome.reopened !== undefined) visits.pop()
     if (outcome.committed) visits.push(outcome.committed)
     if (outcome.won) won = true

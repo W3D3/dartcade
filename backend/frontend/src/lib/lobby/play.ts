@@ -1,7 +1,7 @@
 // The Play page's main button: it picks the game, the lobby holds the people (spec: Every game
 // is a lobby). Choose players saves the game as your lobby's next game (opening one if you have
 // none) and goes there; a member of someone else's lobby only opens it. New lobby starts over.
-import { api } from '$lib/api'
+import { api, type GameInfo } from '$lib/api'
 import type { LobbySummary } from '$lib/api/lobby-ws'
 import { createLobby } from './create'
 import { lobbyActions } from './actions'
@@ -44,50 +44,23 @@ export type NextGame = { gameId: string; config: Record<string, unknown> }
 /**
  * The picked mode and its settings, as the Play page's form saves them: the mode's id (falling
  * back to a 501 game, then whatever's first, if the picked one isn't among the backend's games)
- * and a whitelist of its fields from `config` (so stray form state can't leak into the saved
- * config). null when the backend has no games at all.
+ * and the fields of `config` that mode's configMeta lists. The form's config also carries other
+ * modes' fields (it starts from X01's defaults), which stay out; so do `teams` and `teamStart`,
+ * which the lobby sets at the start. null when the backend has no games at all.
  */
-export function chosenGame(games: { id: string }[], selectedMode: string, config: Record<string, unknown>): NextGame | null {
-  const gameId = games.find(g => g.id === selectedMode)?.id ?? games.find(g => g.id.includes('501'))?.id ?? games[0]?.id
-  if (!gameId) return null
-  const settings =
-    selectedMode === 'minigolf'
-      ? {
-          course: config.course,
-          tries: config.tries,
-          maxStrokes: config.maxStrokes,
-          ballContact: config.ballContact,
-          aimAssist: config.aimAssist,
-          shotPreview: config.shotPreview,
-        }
-      : selectedMode === 'atc'
-        ? {
-            finishOn: config.finishOn,
-            order: config.order,
-            multiplierAdvances: config.multiplierAdvances,
-            throwAgainOnAllHit: config.throwAgainOnAllHit,
-          }
-        : selectedMode === 'p121'
-          ? {
-              startTarget: config.startTarget,
-              tries: config.tries,
-              dartsPerTry: config.dartsPerTry,
-              outMode: config.outMode,
-              missRule: config.missRule,
-              lock: config.lock,
-              bullOff: config.bullOff,
-            }
-          : {
-              startScore: config.startScore,
-              inMode: config.inMode,
-              outMode: config.outMode,
-              bullOff: config.bullOff,
-              bullValue: config.bullValue,
-              maxRounds: config.maxRounds,
-              firstTo: config.firstTo,
-              botSpeed: config.botSpeed,
-            }
-  return { gameId, config: settings }
+export function chosenGame(
+  games: Pick<GameInfo, 'id' | 'configMeta'>[],
+  selectedMode: string,
+  config: Record<string, unknown>,
+): NextGame | null {
+  const game = games.find(g => g.id === selectedMode) ?? games.find(g => g.id.includes('501')) ?? games.at(0)
+  if (!game) return null
+  const settings = Object.fromEntries(
+    Object.keys(game.configMeta)
+      .filter(k => k in config)
+      .map(k => [k, config[k]]),
+  )
+  return { gameId: game.id, config: settings }
 }
 
 /**

@@ -34,6 +34,7 @@ function session(module: AnyGameModule, config: Record<string, unknown>, n = 1):
     boardStatus: new Map(),
     forfeited: [],
     undoable: [],
+    dartsLeftOnBoard: false,
   }
 }
 const S1: Segment = { name: 'S1', number: 1, bed: 'Single', multiplier: 1 }

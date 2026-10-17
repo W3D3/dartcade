@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store'
+import { get, writable } from 'svelte/store'
 import { api as defaultApi } from './api/client.js'
 import { defaultSettings, loadSettings, parseSettings, saveSettings, type GameSettings } from './gameSettings.js'
 
@@ -60,7 +60,7 @@ function copy(to: Partial<AccountSettings>, from: AccountSettings, key: keyof Ac
   Object.assign(to, { [key]: from[key] })
 }
 
-/** The signed-in account's settings, set once per sign-in when loaded; pages apply them over theirs. */
+/** The signed-in account's settings, set when loaded and on every write; pages apply them over theirs. */
 export const accountSettings = writable<AccountSettings | null>(null)
 
 // What the server holds for the signed-in user (defaults for the keys never set)
@@ -102,6 +102,10 @@ export async function loadAccountSettings(userId: string | null, storage: Store 
 export function writeThrough(s: GameSettings, api: Api = defaultApi): void {
   if (!synced) return
   latest = s
+  // Keep the store current, so a page opened later doesn't apply stale values over the change
+  const now = accountPart(s)
+  const shown = get(accountSettings)
+  if (!shown || ACCOUNT_KEYS.some(k => shown[k] !== now[k])) accountSettings.set(now)
   clearTimeout(timer)
   timer = setTimeout(() => void flush(api), WRITE_DELAY_MS)
 }

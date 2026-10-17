@@ -124,3 +124,39 @@ func TestResetPostsToTheBoard(t *testing.T) {
 		t.Errorf("got %s %s, want POST /api/reset", method, path)
 	}
 }
+
+// A poll whose GET was in flight when a WS frame arrived may hold older state; emitting it
+// after the WS frame would replay darts or a visit (#211). A poll with no WS frame in
+// between, as when the WS is down, is still emitted.
+func TestPollDroppedIfAWSFrameArrivedMeanwhile(t *testing.T) {
+	inGet, release := make(chan struct{}), make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		inGet <- struct{}{}
+		<-release
+		w.Write([]byte(`{"throws":[{"segment":{"name":"S9"}}]}`))
+	}))
+	defer srv.Close()
+	c := NewClient(srv.URL)
+
+	done := make(chan struct{})
+	go func() { c.pollOnce(context.Background()); close(done) }()
+	<-inGet
+	c.emitRawWS([]byte(`{"type":"state","data":{"throws":[]}}`))
+	release <- struct{}{}
+	<-done
+	if f := <-c.Frames(); f.Kind != "ws" {
+		t.Fatalf("first frame %q, want ws", f.Kind)
+	}
+	if len(c.Frames()) != 0 {
+		t.Fatalf("stale poll emitted after the WS frame: %+v", <-c.Frames())
+	}
+
+	done = make(chan struct{})
+	go func() { c.pollOnce(context.Background()); close(done) }()
+	<-inGet
+	release <- struct{}{}
+	<-done
+	if f := <-c.Frames(); f.Kind != "poll" {
+		t.Fatalf("frame %q, want poll when no WS frame arrived", f.Kind)
+	}
+}
