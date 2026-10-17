@@ -315,11 +315,13 @@ Internals:
 - **MQTT** would need a broker to run and look after, and its QoS model adds nothing over a
   simple ack scheme.
 - **Delivery:** at least once. Each bridge event carries `seq`, which increases per
-  `boot_id`. The backend acks the highest contiguous `seq`. The bridge resends anything
-  unacked after it reconnects. The outbox is bounded: telemetry frames of the same type
-  collapse to the latest value under backpressure. **Frames that carry game data are never
-  dropped.** The outbox is optionally saved to disk so it survives a bridge restart in the
-  middle of a game.
+  `boot_id`. The backend acks every event as `{ack: seq, boot_id}`; the bridge drops that
+  boot's entries up to `seq`. The bridge resends anything unacked after it reconnects. The
+  outbox is bounded: telemetry frames of the same type collapse to the latest value under
+  backpressure. **Frames that carry game data are never dropped.** Their unacked entries
+  are saved to `outbox.json` next to `bridge.toml`, so they survive a bridge restart in the
+  middle of a game: the new boot replays them under their original `boot_id` and `seq`,
+  before its own events.
 - **Heartbeats:** app-level ping every 20 s both ways; treat the link as dead after 45 s.
   Cloudflare drops idle and long-lived sockets, and edge restarts can end a connection at
   any time, so reconnecting has to be routine.
