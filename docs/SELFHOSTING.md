@@ -45,6 +45,7 @@ reach it over `https://`/`wss://`. Env vars worth knowing about (all optional, s
 [`DEVELOPMENT.md`](../DEVELOPMENT.md#environment-variables) for the full list):
 
 - `TRUST_PROXY` — set to `1` behind one reverse proxy, so rate limits count each client, not the proxy
+- `PUBLIC_URL` — the address the app is reached at, e.g. `https://darts.example.com`, so shared links show a preview image
 - `VOICE_STORAGE_LIMIT_MB` — caller voice pack storage per user, in MB (default `50`)
 - `BOARD_LIVE_CAMERA` — set to `off` if the backend can't reach your boards' network (e.g. a
   cloud host) or anyone can sign up: the backend then never calls a Board Manager itself, so the
