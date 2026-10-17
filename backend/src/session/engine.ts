@@ -23,6 +23,7 @@ export type ActionResult = { ok: true } | { ok: false; code: 'forbidden' }
 
 /** Board events that would end or add to the visit that wins the game (see awaitsFinish). */
 const HELD = new Set(['visit.opened', 'dart.detected', 'takeout.finished', 'visit.cleared'])
+const TAKEOUTS = new Set(['takeout.finished', 'visit.cleared'])
 
 /** A game ended: the lobby it came from resets and logs it (see LobbyService.onGameEnded). */
 export type GameEnded = {
@@ -364,6 +365,12 @@ export class SessionEngine {
     // The visit that wins the game waits for Finish: the board can't end or add to it (dropped
     // before it's logged, so logs from before this rule replay as they were played)
     if (input.source === 'board' && HELD.has(input.event.kind) && awaitsFinish(session)) return false
+    // Darts pulled after Next player ended their visit: the next visit goes on (dropped
+    // unlogged too, so older logs, where this ended the next visit, replay as played)
+    if (input.source === 'board' && TAKEOUTS.has(input.event.kind) && session.dartsLeftOnBoard) {
+      session.dartsLeftOnBoard = false
+      return false
+    }
     const at = new Date()
     await prefetchShots(session, input, at)
     await this.logInput(session, input, raw, origin, at)

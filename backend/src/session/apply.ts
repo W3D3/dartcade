@@ -71,6 +71,8 @@ export function applyInput(session: Session, input: GameInput, at: Date): ApplyO
 }
 
 function applyBoardEvent(session: Session, event: BoardEvent, at: Date): ApplyOutcome {
+  // New darts, or the takeout, mean the board's darts are no longer those of the visit Next player ended
+  if (event.kind !== 'board.status' && event.kind !== 'board.resync' && event.kind !== 'dart.corrected') session.dartsLeftOnBoard = false
   switch (event.kind) {
     case 'visit.opened':
       session.openVisitEvents.push(event)
@@ -167,6 +169,7 @@ function applyUserAction(session: Session, action: UserAction, at: Date): ApplyO
         session.currentState = refoldVisit(session.module, session.committedState, session.openVisitEvents)
       }
       if (session.openVisitEvents.length === 0) return NONE
+      session.dartsLeftOnBoard = true
       return commit(session, { kind: 'takeout.finished', data: {} }, at)
     }
 
@@ -278,6 +281,8 @@ function reopen(session: Session): ApplyOutcome {
   const last = session.undoable.at(-1)
   if (!last) return NONE
   session.undoable = session.undoable.slice(0, -1)
+  // The visit is open again: pulling its darts ends it
+  session.dartsLeftOnBoard = false
   session.committedState = last.committedState
   session.openVisitEvents = last.openVisitEvents
   session.openDarts = last.openDarts
