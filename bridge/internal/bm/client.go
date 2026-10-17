@@ -258,50 +258,6 @@ func (c *Client) pollOnce(ctx context.Context) {
 	c.emit(BMFrame{Kind: "poll", BMType: "state", Data: raw, RecvWall: time.Now(), RecvMonoNs: c.mono()})
 }
 
-// Reset calls POST /api/reset on the board.
-func (c *Client) Reset(ctx context.Context) (int, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.boardURL+"/api/reset", nil)
-	if err != nil {
-		return 0, err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	resp.Body.Close()
-	return resp.StatusCode, nil
-}
-
-// StartDetection calls PUT /api/start (with fallback to /api/detection/start).
-func (c *Client) StartDetection(ctx context.Context) (int, error) {
-	return c.putWithFallback(ctx, "/api/start", "/api/detection/start")
-}
-
-// StopDetection calls PUT /api/stop (with fallback to /api/detection/stop).
-func (c *Client) StopDetection(ctx context.Context) (int, error) {
-	return c.putWithFallback(ctx, "/api/stop", "/api/detection/stop")
-}
-
-func (c *Client) putWithFallback(ctx context.Context, path, fallback string) (int, error) {
-	req, _ := http.NewRequestWithContext(ctx, http.MethodPut, c.boardURL+path, nil)
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return 0, err
-	}
-	resp.Body.Close()
-	if resp.StatusCode == 404 || resp.StatusCode == 405 {
-		req2, _ := http.NewRequestWithContext(ctx, http.MethodPut, c.boardURL+fallback, nil)
-		resp2, err := httpClient.Do(req2)
-		if err != nil {
-			return 0, err
-		}
-		resp2.Body.Close()
-		return resp2.StatusCode, nil
-	}
-	return resp.StatusCode, nil
-}
-
 func (c *Client) emit(f BMFrame) {
 	select {
 	case c.frames <- f:

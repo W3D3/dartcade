@@ -39,15 +39,6 @@ func wsURL(s *httptest.Server) string {
 	return "ws" + strings.TrimPrefix(s.URL, "http")
 }
 
-// commands routes the commands the bridge knows to fn.
-func commands(fn func(ctx context.Context, name string) (int, error)) transport.Commands {
-	cmds := transport.Commands{}
-	for _, name := range []string{"reset", "start", "stop"} {
-		cmds[name] = func(ctx context.Context) (int, error) { return fn(ctx, name) }
-	}
-	return cmds
-}
-
 // readSkipHello reads from conn until it gets a non-bridge.hello envelope.
 func readSkipHello(ctx context.Context, conn *websocket.Conn) (transport.Envelope, error) {
 	for {
@@ -73,7 +64,7 @@ func TestBridgeHelloOnConnect(t *testing.T) {
 		received <- e
 	})
 
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -118,7 +109,7 @@ func TestSeqIncrement(t *testing.T) {
 		BackendURL: wsURL(s),
 		BridgeID:   "br_test",
 		BootID:     "boot_test",
-	}, nil)
+	})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -164,7 +155,7 @@ func TestAckClearsOutbox(t *testing.T) {
 		wsjson.Read(ctx, conn, &e)
 	})
 
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -176,97 +167,6 @@ func TestAckClearsOutbox(t *testing.T) {
 	case <-acked:
 	case <-time.After(2 * time.Second):
 		t.Error("server never sent ack")
-	}
-}
-
-func TestCommandAllowlist_RejectsUnknown(t *testing.T) {
-	resultReceived := make(chan transport.Envelope, 10)
-	s := newTestServer(t, func(conn *websocket.Conn) {
-		ctx := context.Background()
-		// send an invalid command
-		wsjson.Write(ctx, conn, map[string]any{"command_id": "cmd1", "name": "explode"})
-		// read until we see command.result
-		for {
-			var e transport.Envelope
-			if err := wsjson.Read(ctx, conn, &e); err != nil {
-				return
-			}
-			if e.Kind == "command.result" {
-				resultReceived <- e
-				return
-			}
-		}
-	})
-
-	executed := false
-	execFn := func(_ context.Context, name string) (int, error) {
-		executed = true
-		return 200, nil
-	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, commands(execFn))
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	go tr.Start(ctx) //nolint
-
-	select {
-	case e := <-resultReceived:
-		if executed {
-			t.Error("disallowed command should not have been executed")
-		}
-		var d schema.CommandResultData
-		json.Unmarshal(e.Data, &d)
-		if d.Ok {
-			t.Error("command.result.ok should be false for rejected command")
-		}
-	case <-time.After(2 * time.Second):
-		t.Error("timeout waiting for command.result")
-	}
-}
-
-func TestCommandAllowlist_ExecutesAllowed(t *testing.T) {
-	resultReceived := make(chan transport.Envelope, 10)
-	s := newTestServer(t, func(conn *websocket.Conn) {
-		ctx := context.Background()
-		wsjson.Write(ctx, conn, map[string]any{"command_id": "cmd2", "name": "reset"})
-		for {
-			var e transport.Envelope
-			if err := wsjson.Read(ctx, conn, &e); err != nil {
-				return
-			}
-			if e.Kind == "command.result" {
-				resultReceived <- e
-				return
-			}
-		}
-	})
-
-	executed := make(chan string, 1)
-	execFn := func(_ context.Context, name string) (int, error) {
-		executed <- name
-		return 200, nil
-	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, commands(execFn))
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	go tr.Start(ctx) //nolint
-
-	select {
-	case name := <-executed:
-		if name != "reset" {
-			t.Errorf("executed %q want reset", name)
-		}
-	case <-time.After(2 * time.Second):
-		t.Error("timeout waiting for command execution")
-	}
-	select {
-	case e := <-resultReceived:
-		var d schema.CommandResultData
-		json.Unmarshal(e.Data, &d)
-		if !d.Ok {
-			t.Error("command.result.ok should be true for allowed command")
-		}
-	case <-time.After(500 * time.Millisecond):
-		t.Error("timeout waiting for command.result")
 	}
 }
 
@@ -288,7 +188,7 @@ func TestSourceSeqBackfill(t *testing.T) {
 		}
 	})
 
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br_test", BootID: "boot_test"})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -352,7 +252,7 @@ func TestEnvelopeRequiredFields(t *testing.T) {
 		BridgeID:   "br_test",
 		BootID:     "bt_test",
 		BMVersion:  "1.2.3",
-	}, nil)
+	})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -437,7 +337,7 @@ func TestReplayNoDuplicate(t *testing.T) {
 		BackendURL: wsURL(s),
 		BridgeID:   "br_test",
 		BootID:     "bt_test",
-	}, nil)
+	})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -492,7 +392,7 @@ func TestBridgeHelloOnReconnect(t *testing.T) {
 		time.Sleep(200 * time.Millisecond)
 	})
 
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -514,7 +414,7 @@ func TestRedialsWithBackoffWhenTheBackendCloses(t *testing.T) {
 		conn.Close(4401, "unauthorized")
 	})
 
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
 	ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
 	defer cancel()
 	tr.Start(ctx) //nolint
@@ -549,7 +449,7 @@ func TestCameraStillIsSentOnTheLiveConnection(t *testing.T) {
 		}
 		got <- m
 	})
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint
@@ -596,7 +496,7 @@ func TestCameraStillsAreDroppedWhileOffline(t *testing.T) {
 			}
 		}
 	})
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
 	// Not connected yet: this still is stale by the time the connection is up
 	tr.SendStill(camera.Still{Cam: 0, CapturedAt: time.Now(), JPEG: []byte{1}})
 
@@ -641,7 +541,7 @@ func TestOnConnectRunsOnEveryConnect(t *testing.T) {
 		}
 		time.Sleep(300 * time.Millisecond)
 	})
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
 	calls := make(chan bool, 4)
 	tr.OnConnect(func() { calls <- tr.Connected() })
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -659,126 +559,6 @@ func TestOnConnectRunsOnEveryConnect(t *testing.T) {
 		}
 	}
 }
-
-// A command the Board Manager doesn't answer runs off the send loop: events keep flowing
-// while it hangs, it gets a deadline, and its result follows once it returns.
-func TestHungCommandDoesNotBlockTheSendLoop(t *testing.T) {
-	kinds := make(chan string, 10)
-	s := newTestServer(t, func(conn *websocket.Conn) {
-		ctx := context.Background()
-		wsjson.Write(ctx, conn, map[string]any{"command_id": "cmd3", "name": "reset"})
-		for {
-			e, err := readSkipHello(ctx, conn)
-			if err != nil {
-				return
-			}
-			kinds <- e.Kind
-		}
-	})
-
-	release := make(chan struct{})
-	started := make(chan bool, 1)
-	execFn := func(ctx context.Context, name string) (int, error) {
-		_, hasDeadline := ctx.Deadline()
-		started <- hasDeadline
-		select {
-		case <-release:
-			return 200, nil
-		case <-ctx.Done():
-			return 0, ctx.Err()
-		}
-	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, commands(execFn))
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	go tr.Start(ctx) //nolint
-
-	select {
-	case hasDeadline := <-started:
-		if !hasDeadline {
-			t.Error("command ctx has no deadline")
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("command never ran")
-	}
-
-	tr.Send([]differ.Event{{Kind: "visit.opened", Data: &schema.VisitOpenedData{VisitId: "v"}}})
-	select {
-	case k := <-kinds:
-		if k != "visit.opened" {
-			t.Fatalf("got %s while the command hung, want visit.opened", k)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("event not sent while the command hung")
-	}
-
-	close(release)
-	select {
-	case k := <-kinds:
-		if k != "command.result" {
-			t.Fatalf("got %s, want command.result", k)
-		}
-	case <-time.After(time.Second):
-		t.Fatal("no command.result after the command returned")
-	}
-}
-
-// A burst of commands while one hangs is never silently dropped: each one gets a
-// command.result, refused ones with ok false.
-func TestEveryCommandInABurstGetsAResult(t *testing.T) {
-	const burst = 60
-	results := make(chan string, burst)
-	s := newTestServer(t, func(conn *websocket.Conn) {
-		ctx := context.Background()
-		for i := range burst {
-			wsjson.Write(ctx, conn, map[string]any{"command_id": fmt.Sprint(i), "name": "reset"})
-		}
-		for {
-			e, err := readSkipHello(ctx, conn)
-			if err != nil {
-				return
-			}
-			if e.Kind == "command.result" {
-				var d schema.CommandResultData
-				json.Unmarshal(e.Data, &d)
-				results <- d.CommandId
-			}
-		}
-	})
-
-	release := make(chan struct{})
-	execFn := func(ctx context.Context, name string) (int, error) {
-		select {
-		case <-release:
-			return 200, nil
-		case <-ctx.Done():
-			return 0, ctx.Err()
-		}
-	}
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, commands(execFn))
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-	go tr.Start(ctx) //nolint
-
-	seen := map[string]bool{}
-	timeout := time.After(2 * time.Second)
-	for len(seen) < burst {
-		select {
-		case id := <-results:
-			seen[id] = true
-			// At most commandsInFlight are running or queued, the rest are refused at once;
-			// once those are in, let the hung and queued ones finish
-			if len(seen) == burst-commandsInFlight {
-				close(release)
-			}
-		case <-timeout:
-			t.Fatalf("%d of %d commands got a result", len(seen), burst)
-		}
-	}
-}
-
-// One running plus the queue (transport.commandQueue).
-const commandsInFlight = 1 + 16
 
 // Events sent while the backend is unreachable stay in the outbox and are all delivered,
 // in order, once it connects, however many batches piled up.
@@ -806,7 +586,7 @@ func TestEventsSentWhileDisconnectedAreDelivered(t *testing.T) {
 	}))
 	t.Cleanup(s.Close)
 
-	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint

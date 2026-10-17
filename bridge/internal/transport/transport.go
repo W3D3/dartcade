@@ -27,10 +27,6 @@ import (
 const (
 	outboxMax     = 1000
 	schemaVersion = "adbridge/1.0"
-	// How long a backend command may take on the Board Manager
-	commandTimeout = 15 * time.Second
-	// Backend commands waiting to run; more are refused
-	commandQueue = 16
 	// How long one write to the backend may take before the connection is dropped
 	writeTimeout = 10 * time.Second
 	// The close status the backend sends when it doesn't know the bridge's token
@@ -69,34 +65,22 @@ type Config struct {
 	OutboxPath string
 }
 
-// Commands are the backend commands the bridge runs, by name; any other name is refused.
-// A command runs off the send loop, one at a time, and its ctx ends after commandTimeout.
-type Commands map[string]func(ctx context.Context) (httpStatus int, err error)
-
 // Transport manages the WSS connection to the backend.
 type Transport struct {
-	cfg      Config
-	handlers Commands
-	mu       sync.Mutex
-	outbox   []outboxEntry
-	seq      uint64
+	cfg    Config
+	mu     sync.Mutex
+	outbox []outboxEntry
+	seq    uint64
 	// Unacked game data from earlier boots (the outbox file), sent before this boot's outbox
 	replay []Envelope
 	// Signalled when the game data to keep in the outbox file changed
 	dirty chan struct{}
 	// Signalled after Send adds to the outbox, so the live connection flushes it
 	wake chan struct{}
-	// Allowed backend commands waiting for runCommands
-	commands chan command
 	// Camera stills to send on the live connection (never queued for a later one)
 	stills    chan any
 	connected atomic.Bool
 	onConnect func()
-}
-
-type command struct {
-	id, name string
-	run      func(context.Context) (int, error)
 }
 
 type outboxEntry struct {
@@ -105,15 +89,13 @@ type outboxEntry struct {
 }
 
 // New creates a Transport.
-func New(cfg Config, commands Commands) *Transport {
+func New(cfg Config) *Transport {
 	return &Transport{
-		cfg:      cfg,
-		handlers: commands,
-		wake:     make(chan struct{}, 1),
-		commands: make(chan command, commandQueue),
-		stills:   make(chan any, 2*camera.MaxCameras),
-		replay:   loadOutbox(cfg.OutboxPath),
-		dirty:    make(chan struct{}, 1),
+		cfg:    cfg,
+		wake:   make(chan struct{}, 1),
+		stills: make(chan any, 2*camera.MaxCameras),
+		replay: loadOutbox(cfg.OutboxPath),
+		dirty:  make(chan struct{}, 1),
 	}
 }
 
@@ -173,7 +155,6 @@ func (t *Transport) Start(ctx context.Context) error {
 	if t.cfg.Token != "" {
 		opts.HTTPHeader = http.Header{"Authorization": {"Bearer " + t.cfg.Token}}
 	}
-	go t.runCommands(ctx)
 	if t.cfg.OutboxPath != "" {
 		go t.runPersist(ctx)
 	}
@@ -439,7 +420,7 @@ func marshalData(ev differ.Event, bmFrameSeq uint64) (json.RawMessage, error) {
 	return json.Marshal(ev.Data)
 }
 
-// handleMessage handles a message from the backend: an ack or a command. It must not block.
+// handleMessage handles a message from the backend: an ack. It must not block.
 func (t *Transport) handleMessage(msg []byte) {
 	var ack struct {
 		Ack    *uint64 `json:"ack"`
@@ -473,59 +454,6 @@ func (t *Transport) handleMessage(msg []byte) {
 		}
 		if changed {
 			t.markDirty()
-		}
-		return
-	}
-
-	var cmd struct {
-		CommandID string `json:"command_id"`
-		Name      string `json:"name"`
-	}
-	json.Unmarshal(msg, &cmd)
-	if cmd.CommandID == "" {
-		return
-	}
-
-	run, ok := t.handlers[cmd.Name]
-	if !ok {
-		log.Error("rejected unknown command", "name", cmd.Name)
-		t.sendResult(cmd.CommandID, false, nil)
-		return
-	}
-
-	// Run it off the send loop: a Board Manager that doesn't answer must not stall
-	// heartbeats, acks and events. The result goes out through the outbox.
-	select {
-	case t.commands <- command{id: cmd.CommandID, name: cmd.Name, run: run}:
-	default:
-		log.Error("too many backend commands waiting, rejecting", "name", cmd.Name)
-		t.sendResult(cmd.CommandID, false, nil)
-	}
-}
-
-// sendResult queues the command.result for a backend command.
-func (t *Transport) sendResult(id string, ok bool, httpStatus *int) {
-	t.Send([]differ.Event{{Kind: "command.result", Data: &schema.CommandResultData{
-		CommandId:  id,
-		Ok:         ok,
-		HttpStatus: httpStatus,
-	}}})
-}
-
-// runCommands runs backend commands in the order they came, until ctx ends.
-func (t *Transport) runCommands(ctx context.Context) {
-	for {
-		select {
-		case <-ctx.Done():
-			return
-		case cmd := <-t.commands:
-			execCtx, cancel := context.WithTimeout(ctx, commandTimeout)
-			status, err := cmd.run(execCtx)
-			cancel()
-			if err != nil {
-				log.Warn("backend command failed", "name", cmd.name, "err", err)
-			}
-			t.sendResult(cmd.id, err == nil && status < 300, &status)
 		}
 	}
 }

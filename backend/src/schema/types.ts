@@ -64,10 +64,6 @@ export type AdbridgeV1BridgeBackendEnvelope =
   | (BaseEnvelope & {
       kind?: "motion";
       data?: MotionData;
-    })
-  | (BaseEnvelope & {
-      kind?: "command.result";
-      data?: CommandResultData;
     });
 /**
  * ULID, unique per visit (the physical set of darts in the board between two takeouts).
@@ -277,7 +273,7 @@ export interface TakeoutFinishedData {
  */
 export interface VisitClearedData {
   visit_id: VisitId;
-  reason: "manual_reset" | "bridge_reset_command" | "unknown";
+  reason: "manual_reset" | "unknown";
 }
 /**
  * motion_state frame forwarded from Board Manager. High-rate; consumers may throttle.
@@ -290,15 +286,4 @@ export interface MotionData {
   isTakeoutFull: boolean;
   isWaiting: boolean;
   [k: string]: unknown;
-}
-/**
- * Result of a downstream command (reset, start, stop) sent by the backend.
- */
-export interface CommandResultData {
-  command_id: string;
-  ok: boolean;
-  /**
-   * HTTP status from the BM endpoint, if applicable.
-   */
-  http_status?: number;
 }
