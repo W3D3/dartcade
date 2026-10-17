@@ -16,7 +16,7 @@
     <Popover.Content
       side="top"
       sideOffset={8}
-      class="z-[9999] w-[220px] px-3 py-2 rounded-[8px] text-[13px] leading-[1.45] text-text
+      class="z-[60] w-[220px] px-3 py-2 rounded-[8px] text-[13px] leading-[1.45] text-text
              bg-[#1e211b] border border-line-3 shadow-tooltip whitespace-normal"
     >
       {text}
