@@ -13,6 +13,8 @@ import type {
   SummaryContext,
   UserAction,
 } from '../session/types.js'
+import type { HiloView } from '../session/views.js'
+import { withBullOff } from '../session/withBullOff.js'
 import { effectiveDartScore } from './outRules.js'
 import { rankSeats } from './ranking.js'
 
@@ -53,8 +55,6 @@ export type HiloState = {
   lastResult: HiloResult | null
 }
 
-/** Placeholder until Task 2 fills in the real snapshot shape. */
-export type HiloView = Record<string, never>
 /** Placeholder until Task 3 fills in the real history detail. */
 export type HiloDetail = { mode: 'hilo' }
 
@@ -132,6 +132,14 @@ function advance(s: HiloState): HiloState {
   return s // unreachable: stillIn >= 2 guarantees a next seat
 }
 
+// Who throws after the open visit, by the same rotation advance() would apply if it
+// committed right now; null once the game is over, or when this visit would end it.
+function upNext(s: HiloState): number | null {
+  if (s.phase === 'finished') return null
+  const after = advance(endVisit(s))
+  return after.phase === 'finished' ? null : after.currentPlayer
+}
+
 export const configMeta: Record<Exclude<keyof HiloConfig, 'bullOff'>, ConfigFieldMeta> = {
   startHigh: { label: 'Start high bar', tooltip: 'The high bar a visit must clear to move it up.' },
   startLow: { label: 'Start low bar', tooltip: 'The low bar a visit must land under to move it down.' },
@@ -167,6 +175,7 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
     if (!isInt(cfg.startLow) || cfg.startLow < 0 || cfg.startLow > 180) return 'Low bar must be 0-180'
     if (cfg.startLow >= cfg.startHigh) return 'Low bar must be below the high bar'
     if (!isInt(cfg.lives) || cfg.lives < 1 || cfg.lives > 7) return 'Lives must be 1-7'
+    if (!['off', 'wdc', 'pdc'].includes(cfg.bullOff)) return 'Unknown bull off'
     for (const [key, meta] of Object.entries(configMeta)) {
       if (!meta.options) continue
       const values: Record<string, unknown> = cfg
@@ -204,6 +213,7 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
   onBoardEvent(s: HiloState, e: BoardEvent): { state: HiloState } {
     switch (e.kind) {
       case 'visit.opened':
+        if (s.phase === 'finished') return { state: s }
         return { state: { ...s, visitTotal: 0, visitDarts: 0, missed: false } }
 
       case 'dart.detected': {
@@ -230,8 +240,40 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
     return { state: s }
   },
 
-  view(_s: HiloState): HiloView {
-    return {}
+  view(s: HiloState): HiloView {
+    const placements = rankSeats(s.lives.length, s.winner, (a, b) => compareSeats(s, a, b))
+    const seats = s.lives.map((lives, i) => {
+      const outAt = s.outAt[i]
+      const out = outAt !== null
+      const place = out || (s.phase === 'finished' && s.winner === i) ? placements[i] : null
+      return {
+        lives,
+        out,
+        place,
+        outRound: out ? s.visits[outAt].round : null,
+        visits: s.visits.filter(v => v.seat === i).map(v => ({ round: v.round, total: v.total, outcome: v.outcome })),
+      }
+    })
+    return {
+      cfg: {
+        startHigh: s.cfg.startHigh,
+        startLow: s.cfg.startLow,
+        lives: s.cfg.lives,
+        t1Zero: s.cfg.t1Zero,
+        matchExtremes: s.cfg.matchExtremes,
+      },
+      phase: s.phase,
+      high: s.high,
+      low: s.low,
+      round: s.round,
+      currentPlayer: s.currentPlayer,
+      nextPlayer: upNext(s),
+      winner: s.winner,
+      visitLocked: s.missed,
+      visitTotal: s.visitTotal,
+      seats,
+      lastResult: s.lastResult,
+    }
   },
 
   throwOrder(s: HiloState): number[] {
@@ -247,3 +289,8 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
     return { mode: 'hilo' }
   },
 }
+
+/** Higher Lower with a bull off (off by default): what's registered in games/index.ts. */
+export const hiloModule = withBullOff(hiloGame, {
+  applyStartOrder: (s, order) => ({ ...s, order, turn: 0, currentPlayer: order[0] }),
+})

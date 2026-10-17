@@ -33,6 +33,13 @@ export function flagDefinitions(flagsOn: ReadonlySet<string>, values: ReadonlyMa
       disabled: false,
       contextEvaluator: on('gamemode.p121.enabled', isAdmin),
     },
+    // Higher Lower is played by admins until it ships (FLAGS_ON=gamemode.hilo.enabled for everyone)
+    'gamemode.hilo.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('gamemode.hilo.enabled', isAdmin),
+    },
     // Ranked matchmaking is tried by admins until it ships (FLAGS_ON=matchmaking.enabled for everyone)
     'matchmaking.enabled': {
       variants: { on: true, off: false },

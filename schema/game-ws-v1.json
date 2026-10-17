@@ -1128,6 +1128,317 @@
         }
       }
     },
+    "HiloVisit": {
+      "title": "HiloVisit",
+      "description": "A committed Higher Lower visit: its round, total and outcome.",
+      "type": "object",
+      "required": ["round", "total", "outcome"],
+      "additionalProperties": false,
+      "properties": {
+        "round": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["high", "low", "between", "miss"]
+        }
+      }
+    },
+    "HiloResult": {
+      "title": "HiloResult",
+      "description": "The visit that just ended; the bars are the ones BEFORE it. Drives the life-lost banner.",
+      "type": "object",
+      "required": ["seat", "total", "outcome", "high", "low"],
+      "additionalProperties": false,
+      "properties": {
+        "seat": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outcome": {
+          "type": "string",
+          "enum": ["high", "low", "between", "miss"]
+        },
+        "high": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 180
+        },
+        "low": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 180
+        }
+      }
+    },
+    "HiloGame": {
+      "title": "HiloGame",
+      "description": "Higher Lower view plus the engine's per-session fields and the bull off.",
+      "type": "object",
+      "required": [
+        "cfg",
+        "phase",
+        "high",
+        "low",
+        "round",
+        "currentPlayer",
+        "nextPlayer",
+        "winner",
+        "visitLocked",
+        "visitTotal",
+        "seats",
+        "lastResult",
+        "bullOff",
+        "currentVisitDarts",
+        "totalDarts",
+        "totalVisits"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "cfg": {
+          "type": "object",
+          "required": ["startHigh", "startLow", "lives", "t1Zero", "matchExtremes"],
+          "additionalProperties": false,
+          "properties": {
+            "startHigh": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 180
+            },
+            "startLow": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 180
+            },
+            "lives": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 7
+            },
+            "t1Zero": {
+              "type": "boolean"
+            },
+            "matchExtremes": {
+              "type": "boolean"
+            }
+          }
+        },
+        "phase": {
+          "type": "string",
+          "enum": ["bulloff", "game", "finished"]
+        },
+        "high": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 180
+        },
+        "low": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 180
+        },
+        "round": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "currentPlayer": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "nextPlayer": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "description": "The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it."
+        },
+        "winner": {
+          "type": ["integer", "null"]
+        },
+        "visitLocked": {
+          "type": "boolean"
+        },
+        "visitTotal": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The open visit's running total."
+        },
+        "seats": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["lives", "out", "place", "outRound", "visits"],
+            "additionalProperties": false,
+            "properties": {
+              "lives": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "out": {
+                "type": "boolean"
+              },
+              "place": {
+                "type": ["integer", "null"],
+                "minimum": 1,
+                "description": "The seat's placement once it's out, or the winner once the game is finished; null otherwise."
+              },
+              "outRound": {
+                "type": ["integer", "null"],
+                "minimum": 1,
+                "description": "The round the seat went out in; null while it's still in."
+              },
+              "visits": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/HiloVisit"
+                }
+              }
+            }
+          }
+        },
+        "lastResult": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/HiloResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "bullOff": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BullOffView"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "currentVisitDarts": {
+          "type": "array",
+          "items": {
+            "$ref": "common-v1.json#/$defs/Dart"
+          }
+        },
+        "totalDarts": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "totalVisits": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "HiloSnapshot": {
+      "title": "HiloSnapshot",
+      "type": "object",
+      "required": [
+        "type",
+        "sessionId",
+        "gameId",
+        "boardId",
+        "lobbyId",
+        "lobbyName",
+        "players",
+        "game",
+        "bmStatus",
+        "status",
+        "finishPending",
+        "canUndoVisit",
+        "ownerUserId",
+        "seats",
+        "mySeats"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "snapshot"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "gameId": {
+          "const": "hilo"
+        },
+        "boardId": {
+          "type": ["string", "null"]
+        },
+        "lobbyId": {
+          "type": ["string", "null"],
+          "description": "The lobby the game was started from; null for a local game."
+        },
+        "lobbyName": {
+          "type": ["string", "null"],
+          "description": "The lobby's name, for the match header; null for a local game."
+        },
+        "players": {
+          "type": "array",
+          "items": {
+            "$ref": "common-v1.json#/$defs/Player"
+          }
+        },
+        "game": {
+          "$ref": "#/$defs/HiloGame"
+        },
+        "bmStatus": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/BmStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Status of the board of the seat that's up."
+        },
+        "status": {
+          "$ref": "#/$defs/SessionStatus"
+        },
+        "finishPending": {
+          "type": "boolean",
+          "description": "The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected."
+        },
+        "canUndoVisit": {
+          "type": "boolean",
+          "description": "No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it)."
+        },
+        "ownerUserId": {
+          "type": "string",
+          "description": "The host: starts the bull off, aborts the game."
+        },
+        "seats": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SeatInfo"
+          },
+          "description": "Same order as players."
+        },
+        "mySeats": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "description": "Seats the viewer controls."
+        }
+      }
+    },
     "MinigolfPt": {
       "title": "MinigolfPt",
       "description": "A point in course space, [x, y]: millimetres, x right, y down.",
@@ -1864,6 +2175,9 @@
         },
         {
           "$ref": "#/$defs/MinigolfSnapshot"
+        },
+        {
+          "$ref": "#/$defs/HiloSnapshot"
         }
       ]
     },

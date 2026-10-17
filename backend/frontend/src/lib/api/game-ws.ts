@@ -26,7 +26,7 @@ export type MinigolfPathPt = [number, number] | [number, number, number]
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "Snapshot".
  */
-export type Snapshot = X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot
+export type Snapshot = X01Snapshot | AtcSnapshot | P121Snapshot | MinigolfSnapshot | HiloSnapshot
 /**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "UserAction".
@@ -521,6 +521,123 @@ export interface P121Snapshot {
   lobbyName: string | null
   players: Player[]
   game: P121Game
+  /**
+   * Status of the board of the seat that's up.
+   */
+  bmStatus: BmStatus | null
+  status: SessionStatus
+  /**
+   * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
+   */
+  finishPending: boolean
+  /**
+   * No darts are open and Undo would reopen the last committed visit (its thrower is up again, to correct it).
+   */
+  canUndoVisit: boolean
+  /**
+   * The host: starts the bull off, aborts the game.
+   */
+  ownerUserId: string
+  /**
+   * Same order as players.
+   */
+  seats: SeatInfo[]
+  /**
+   * Seats the viewer controls.
+   */
+  mySeats: number[]
+}
+/**
+ * A committed Higher Lower visit: its round, total and outcome.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "HiloVisit".
+ */
+export interface HiloVisit {
+  round: number
+  total: number
+  outcome: 'high' | 'low' | 'between' | 'miss'
+}
+/**
+ * The visit that just ended; the bars are the ones BEFORE it. Drives the life-lost banner.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "HiloResult".
+ */
+export interface HiloResult {
+  seat: number
+  total: number
+  outcome: 'high' | 'low' | 'between' | 'miss'
+  high: number
+  low: number
+}
+/**
+ * Higher Lower view plus the engine's per-session fields and the bull off.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "HiloGame".
+ */
+export interface HiloGame {
+  cfg: {
+    startHigh: number
+    startLow: number
+    lives: number
+    t1Zero: boolean
+    matchExtremes: boolean
+  }
+  phase: 'bulloff' | 'game' | 'finished'
+  high: number
+  low: number
+  round: number
+  currentPlayer: number
+  /**
+   * The seat that throws after the open visit, by the same rotation as the engine; null once the game is over, and when this visit ends it.
+   */
+  nextPlayer: number | null
+  winner: number | null
+  visitLocked: boolean
+  /**
+   * The open visit's running total.
+   */
+  visitTotal: number
+  seats: {
+    lives: number
+    out: boolean
+    /**
+     * The seat's placement once it's out, or the winner once the game is finished; null otherwise.
+     */
+    place: number | null
+    /**
+     * The round the seat went out in; null while it's still in.
+     */
+    outRound: number | null
+    visits: HiloVisit[]
+  }[]
+  lastResult: HiloResult | null
+  bullOff: BullOffView | null
+  currentVisitDarts: Dart[]
+  totalDarts: number[]
+  totalVisits: number[]
+}
+/**
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "HiloSnapshot".
+ */
+export interface HiloSnapshot {
+  type: 'snapshot'
+  sessionId: string
+  gameId: 'hilo'
+  boardId: string | null
+  /**
+   * The lobby the game was started from; null for a local game.
+   */
+  lobbyId: string | null
+  /**
+   * The lobby's name, for the match header; null for a local game.
+   */
+  lobbyName: string | null
+  players: Player[]
+  game: HiloGame
   /**
    * Status of the board of the seat that's up.
    */

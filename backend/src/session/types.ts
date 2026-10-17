@@ -10,7 +10,7 @@ import type {
   BoardStatusData,
 } from '../schema/types.js'
 import type { UserAction } from '../schema/game-ws.js'
-import type { AtcView, MinigolfView, P121ModuleView, X01ModuleView } from './views.js'
+import type { AtcView, HiloModuleView, MinigolfView, P121ModuleView, X01ModuleView } from './views.js'
 import type { Rng } from './rng.js'
 import type { components } from '../schema/api.js'
 
@@ -195,6 +195,7 @@ export type AnyGameModule =
   | GameModule<unknown, GameConfig, AtcView, 'atc', AtcDetail>
   | GameModule<unknown, GameConfig, P121ModuleView, 'p121', P121Detail>
   | GameModule<unknown, GameConfig, MinigolfView, 'minigolf', MinigolfDetail>
+  | GameModule<unknown, GameConfig, HiloModuleView, 'hilo'>
 
 /** A game's config as the API and the database carry it (a JSON object). */
 export type GameConfig = Record<string, unknown>
