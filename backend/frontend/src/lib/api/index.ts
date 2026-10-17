@@ -21,6 +21,7 @@ export type P121Detail = Schemas['P121Detail']
 export type VoicePackSummary = Schemas['VoicePackSummary']
 export type VoicePackImport = Schemas['VoicePackImport']
 export type VoicePackList = Schemas['VoicePackList']
+export type AdminUser = Schemas['AdminUser']
 
 export type { Snapshot, UserAction, Segment, BullOffView, X01Game, AtcGame, MinigolfGame, MinigolfHole, HiloGame } from './game-ws'
 export { WsCloseCode } from './game-ws'
