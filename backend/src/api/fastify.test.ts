@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { request } from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { createFastify, trustProxy } from './fastify.js'
+import { createFastify, logRequest, trustProxy } from './fastify.js'
 
 describe('createFastify', () => {
   const app = () => {
@@ -59,5 +59,12 @@ describe('trustProxy', () => {
     expect(trustProxy('true')).toBe(true)
     expect(trustProxy('1')).toBe(1)
     expect(trustProxy('10.0.0.1,10.0.0.2')).toBe('10.0.0.1,10.0.0.2')
+  })
+})
+
+describe('logRequest', () => {
+  it('logs the path without the query, which may carry a token', () => {
+    const req = { method: 'GET', url: '/bridge?token=s3cr3t', hostname: 'h', ip: '10.0.0.1', socket: { remotePort: 5 } }
+    expect(logRequest(req as never)).toEqual({ method: 'GET', url: '/bridge', hostname: 'h', remoteAddress: '10.0.0.1', remotePort: 5 })
   })
 })

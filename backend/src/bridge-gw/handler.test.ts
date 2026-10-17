@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createHash } from 'crypto'
 import { EventEmitter } from 'events'
+import type { AddressInfo } from 'net'
+import Fastify from 'fastify'
+import fastifyWebsocket from '@fastify/websocket'
+// Node's own WebSocket can't send headers
+import { WebSocket as WsClient } from 'ws'
 import { BridgeConnections } from './connections.js'
 import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
 
@@ -10,7 +15,7 @@ vi.mock('../db/queries.js', () => ({
   updateBoardHardwareId: vi.fn().mockResolvedValue(undefined),
 }))
 import * as queries from '../db/queries.js'
-import { handleBridgeConnection, bridgeConnections, parseEnvelope, parseHello } from './handler.js'
+import { handleBridgeConnection, bridgeConnections, parseEnvelope, parseHello, bridgeToken } from './handler.js'
 
 describe('bridge-gw token auth', () => {
   it('SHA-256 of token produces consistent hash', () => {
@@ -25,6 +30,14 @@ describe('bridge-gw token auth', () => {
     const h1 = createHash('sha256').update('token-a').digest('hex')
     const h2 = createHash('sha256').update('token-b').digest('hex')
     expect(h1).not.toBe(h2)
+  })
+
+  it('takes the token from the Authorization header, or the query an older bridge sends', () => {
+    expect(bridgeToken('Bearer abc', {})).toBe('abc')
+    expect(bridgeToken('Bearer abc', { token: 'old' })).toBe('abc')
+    expect(bridgeToken(undefined, { token: 'old' })).toBe('old')
+    expect(bridgeToken('Basic abc', {})).toBeUndefined()
+    expect(bridgeToken(undefined, {})).toBeUndefined()
   })
 })
 
@@ -142,10 +155,25 @@ describe('BridgeConnections', () => {
   })
 })
 
-describe('bridgeGwPlugin export', () => {
-  it('exports bridgeGwPlugin function', async () => {
+describe('bridgeGwPlugin', () => {
+  it("checks the token a bridge sends in the Authorization header, not the URL's", async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockClear().mockResolvedValue(undefined)
     const { bridgeGwPlugin } = await import('./handler.js')
-    expect(typeof bridgeGwPlugin).toBe('function')
+    const app = Fastify()
+    await app.register(fastifyWebsocket)
+    await app.register(bridgeGwPlugin, { db: {} as any, engine: {} as any })
+    await app.listen({ port: 0, host: '127.0.0.1' })
+    try {
+      const { port } = app.server.address() as AddressInfo
+      const ws = new WsClient(`ws://127.0.0.1:${port}/bridge?token=old`, { headers: { authorization: 'Bearer s3cr3t' } })
+      // An unknown token closes the socket
+      await new Promise(resolve => ws.once('close', resolve))
+      expect(vi.mocked(queries.getBoardByTokenHash).mock.calls.map(c => c[1])).toEqual([
+        createHash('sha256').update('s3cr3t').digest('hex'),
+      ])
+    } finally {
+      await app.close()
+    }
   })
 
   it('exports bridgeConnections instance', async () => {
