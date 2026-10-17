@@ -5,6 +5,7 @@
 import { writable } from 'svelte/store'
 import { z } from 'zod'
 import { api, type VoicePackImport, type VoicePackList, type VoicePackSummary } from '$lib/api'
+import type { Caller } from './player.js'
 
 /** The built-in voice missing keys fall back to, and the voice when none is picked. */
 export const DEFAULT_BUILTIN = 'en-adam'
@@ -127,6 +128,16 @@ export function sampleKey(clips: Clips): string | null {
   const keys = Object.keys(clips).filter(k => clips[k].length > 0)
   if (keys.includes('180')) return '180'
   return keys.find(k => /^\d+$/.test(k)) ?? keys.at(0) ?? null
+}
+
+/** Says a sample of pack `id` from its own clips only (never the built-in voice's): 180 if it
+ *  has it, else a key it has. Said while the pack loads, so stop() drops it then too. */
+export function saySample(caller: Pick<Caller, 'say'>, id: string): Promise<void> {
+  const sample = packClips(id).then(clips => {
+    const key = clips && sampleKey(clips)
+    return clips && key !== null ? { sample: clips[key] } : null
+  })
+  return caller.say([['sample']], sample)
 }
 
 // ── The library ───────────────────────────────────────────────────────────

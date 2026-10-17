@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { audibleRange } from '../caller/player.js'
 
+// A voice pack's clips, as GET /api/voice-packs/{id} answers (packClips)
+const apiGet = vi.hoisted(() => vi.fn())
+vi.mock('$lib/api', () => ({ api: { GET: apiGet } }))
+
 // A stand-in AudioContext: decoding returns the "audio" the response carried (1 s of sound,
 // unless it brings its own samples), and every started and stopped source is recorded
 const started: string[] = []
@@ -231,5 +235,29 @@ describe('createCaller', () => {
     expect(started).toEqual([])
     await caller.say([['180']], voice)
     expect(started).toEqual(['/v/180'])
+  })
+
+  it("drops a pack's sample when stopped while the pack still loads (leaving Settings)", async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => Promise.resolve(ok(url))),
+    )
+    let answer: (res: unknown) => void = () => undefined
+    apiGet.mockReturnValueOnce(
+      new Promise(r => {
+        answer = r
+      }),
+    )
+    const { createCaller } = await import('../caller/player.js')
+    const { saySample } = await import('../caller/voices.js')
+    const caller = createCaller(() => 1)
+    const sample = saySample(caller, 'p1')
+    caller.stop()
+    answer({ data: { clips: { '180': ['a'.repeat(64)] } } })
+    await sample
+    expect(started).toEqual([])
+    apiGet.mockResolvedValueOnce({ data: { clips: { '60': ['b'.repeat(64)] } } })
+    await saySample(caller, 'p2')
+    expect(started).toEqual([`/api/voice-clips/${'b'.repeat(64)}`])
   })
 })
