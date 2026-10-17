@@ -18,6 +18,8 @@ export class ShotNeeded extends Error {
 const CACHE_SIZE = 256
 const cache = new Map<string, ShotResult>()
 let live = false
+// The caller's own shots (see liveShots), looked up before the shared cache
+let pinned: ReadonlyMap<string, ShotResult> | undefined
 
 const keyOf = (i: ShotInputs, engine: '3d' | '2d') => JSON.stringify([engine, i.hole, i.physics, i.ball, i.shot, i.others])
 
@@ -28,17 +30,27 @@ const remember = (key: string, result: ShotResult): void => {
   if (cache.size > CACHE_SIZE && !oldest.done) cache.delete(oldest.value)
 }
 
-/** Runs `fn` as live play: a 3D shot missing from the cache throws ShotNeeded instead of blocking the thread. */
-export function liveShots<T>(fn: () => T): T {
+/**
+ * Runs `fn` as live play: a 3D shot missing from the cache (and from `shots`, if given) throws
+ * ShotNeeded instead of blocking the thread.
+ */
+export function liveShots<T>(fn: () => T, shots?: ReadonlyMap<string, ShotResult>): T {
   live = true
+  pinned = shots
   try {
     return fn()
   } finally {
     live = false
+    pinned = undefined
   }
 }
 
-export const storeShot = (inputs: ShotInputs, result: ShotResult): void => remember(keyOf(inputs, '3d'), result)
+/** Stores a shot the pool played: in `shots` if given (kept past the cache's eviction), else in the cache. */
+export function storeShot(inputs: ShotInputs, result: ShotResult, shots?: Map<string, ShotResult>): void {
+  const key = keyOf(inputs, '3d')
+  if (shots) shots.set(key, result)
+  else remember(key, result)
+}
 
 export function cachedShot(
   hole: Hole,
@@ -50,6 +62,8 @@ export function cachedShot(
 ): ShotResult {
   const inputs = { hole, physics, ball, shot, others }
   const key = keyOf(inputs, engine)
+  const own = pinned?.get(key)
+  if (own) return own
   const hit = cache.get(key)
   if (hit) {
     // Most recently used goes last

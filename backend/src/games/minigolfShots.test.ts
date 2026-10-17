@@ -28,6 +28,16 @@ it('asks for a missing 3D shot in live play, and finds it once stored', () => {
   expect(liveShots(() => cachedShot(hole, P, hole.tee, shot(0.32), [], '3d'))).toBe(result)
 })
 
+it("keeps a caller's own shots out of the shared cache, so its eviction can't drop them", () => {
+  const inputs = { hole, physics: P, ball: hole.tee, shot: shot(0.34), others: [] }
+  const result = simulateShot3d(hole, P, hole.tee, shot(0.34))
+  const own = new Map()
+  storeShot(inputs, result, own)
+  const play = (shots?: typeof own) => () => liveShots(() => cachedShot(hole, P, hole.tee, shot(0.34), [], '3d'), shots)
+  expect(play(own)()).toBe(result)
+  expect(play()).toThrow(ShotNeeded)
+})
+
 it('plays 2D shots inline even in live play', () => {
   expect(liveShots(() => cachedShot(hole, P, hole.tee, shot(0.33), [], '2d')).rest).toBeDefined()
 })

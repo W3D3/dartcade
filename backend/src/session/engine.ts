@@ -5,7 +5,7 @@ import type { GameConfig, Session, Player, Seat, FinishedSeat, UserAction, Snaps
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
 import { newSeed, seededRng, shuffle } from './rng.js'
-import { StoredConfigSchema, dartRows, newSession, replay, results, type WarnFn } from './replay.js'
+import { StoredConfigSchema, dartRows, newSession, prefetchShots, replay, results, type WarnFn } from './replay.js'
 import type { Kysely } from 'kysely'
 import { KeyedQueue } from '../util/keyedQueue.js'
 import { ActiveSessionError, BoardBusyError, InvalidConfigError, UnknownGameError } from './errors.js'
@@ -13,8 +13,6 @@ import type { Database } from '../db/schema.js'
 import * as queries from '../db/queries.js'
 import type { NewGameDart, NewGameSession, NewSessionEvent, StoredGameSession, StoredSessionEvent } from '../db/queries.js'
 import { createBotScheduler, type BotScheduler } from '../bots/scheduler.js'
-import { liveShots, ShotNeeded, storeShot } from '../games/minigolfShots.js'
-import { simulateInPool } from '../games/minigolfPool.js'
 
 type PushFn = (sessionId: string) => void
 
@@ -66,28 +64,6 @@ export type SnapshotView = {
   /** When the user's last socket of the game closed; null if open or never opened. */
   disconnectedAt: (userId: string) => Date | null
   isBoardOnline: (boardId: string) => boolean
-}
-// Plays the input on a scratch copy of the session first: each live 3D shot it needs runs in the
-// worker pool, so the real apply finds them cached and doesn't block the thread. Any other error is
-// left for the real apply to raise.
-async function prefetchShots(session: Session, input: GameInput, at: Date): Promise<void> {
-  for (;;) {
-    const { openVisitEvents, openDarts, totalDarts, totalVisits } = session
-    const scratch = {
-      ...session,
-      openVisitEvents: [...openVisitEvents],
-      openDarts: [...openDarts],
-      totalDarts: [...totalDarts],
-      totalVisits: [...totalVisits],
-    }
-    try {
-      liveShots(() => applyInput(scratch, input, at))
-      return
-    } catch (err) {
-      if (!(err instanceof ShotNeeded)) return
-      storeShot(err.inputs, await simulateInPool(err.inputs))
-    }
-  }
 }
 
 const NO_VIEWER: SnapshotView = { viewerUserId: null, connectedUserIds: new Set(), disconnectedAt: () => null, isBoardOnline: () => false }
