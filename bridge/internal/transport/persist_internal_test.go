@@ -20,7 +20,7 @@ import (
 // old boot never drops the new boot's entry with an overlapping seq.
 func TestOutboxSurvivesARestart(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "outbox.json")
-	old := New(Config{BridgeID: "br", BootID: "boot1", OutboxPath: path}, nil)
+	old := New(Config{BridgeID: "br", BootID: "boot1", OutboxPath: path})
 	old.enqueue([]differ.Event{
 		{Kind: "visit.opened", Data: &schema.VisitOpenedData{VisitId: "v"}},
 		{Kind: "bm.frame", Data: &schema.BmFrameData{Source: schema.BmFrameDataSourceWs}},
@@ -55,7 +55,7 @@ func TestOutboxSurvivesARestart(t *testing.T) {
 	}))
 	t.Cleanup(srv.Close)
 
-	tr := New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http"), BridgeID: "br", BootID: "boot2", OutboxPath: path}, nil)
+	tr := New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http"), BridgeID: "br", BootID: "boot2", OutboxPath: path})
 	tr.Send([]differ.Event{{Kind: "board.status", Data: &schema.BoardStatusData{Status: "Idle", Connected: true}}})
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()

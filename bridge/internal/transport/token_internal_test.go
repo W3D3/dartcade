@@ -30,7 +30,7 @@ func TestDialSendsTheTokenAsABearerHeader(t *testing.T) {
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	go New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http") + "/bridge?x=1", Token: token}, nil).Start(ctx) //nolint
+	go New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http") + "/bridge?x=1", Token: token}).Start(ctx) //nolint
 	select {
 	case r := <-got:
 		if h := r.Header.Get("Authorization"); h != "Bearer "+token {
@@ -68,7 +68,7 @@ func TestDialErrorsDoNotLogTheToken(t *testing.T) {
 
 			ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
 			defer cancel()
-			New(cfg, nil).Start(ctx) //nolint
+			New(cfg).Start(ctx) //nolint
 
 			out := buf.String()
 			if !strings.Contains(out, "backend connect failed") {

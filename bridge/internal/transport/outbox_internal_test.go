@@ -11,7 +11,7 @@ import (
 // A bm.frame dropped from a full outbox keeps its seq, so the dart it triggered never gets
 // that seq too and points at itself as its source.
 func TestDroppedFrameSeqIsNotReused(t *testing.T) {
-	tr := New(Config{BridgeID: "br", BootID: "bt"}, nil)
+	tr := New(Config{BridgeID: "br", BootID: "bt"})
 	for range outboxMax {
 		tr.enqueue([]differ.Event{{Kind: "visit.opened", Data: &schema.VisitOpenedData{VisitId: "v"}}})
 	}
@@ -39,7 +39,7 @@ func TestDroppedFrameSeqIsNotReused(t *testing.T) {
 // A full outbox collapses telemetry by dropping the older entry and appending the newer
 // one, so the outbox stays sorted by seq and flush never re-sends or reorders entries.
 func TestTelemetryCollapseKeepsSeqOrder(t *testing.T) {
-	tr := New(Config{BridgeID: "br", BootID: "bt"}, nil)
+	tr := New(Config{BridgeID: "br", BootID: "bt"})
 	frame := differ.Event{Kind: "bm.frame", Data: &schema.BmFrameData{Source: schema.BmFrameDataSourceWs}}
 	for range outboxMax {
 		tr.enqueue([]differ.Event{frame})

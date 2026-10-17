@@ -266,7 +266,7 @@
       "additionalProperties": false,
       "properties": {
         "visit_id": { "$ref": "#/$defs/VisitId" },
-        "reason": { "type": "string", "enum": ["manual_reset", "bridge_reset_command", "unknown"] }
+        "reason": { "type": "string", "enum": ["manual_reset", "unknown"] }
       }
     },
 
@@ -311,18 +311,6 @@
       "properties": {
         "kind": { "type": "string", "const": "camera.still" },
         "data": { "$ref": "#/$defs/CameraStillData" }
-      }
-    },
-
-    "CommandResultData": {
-      "description": "Result of a downstream command (reset, start, stop) sent by the backend.",
-      "type": "object",
-      "required": ["command_id", "ok"],
-      "additionalProperties": false,
-      "properties": {
-        "command_id": { "type": "string" },
-        "ok": { "type": "boolean" },
-        "http_status": { "type": "integer", "description": "HTTP status from the BM endpoint, if applicable." }
       }
     }
   },
@@ -411,12 +399,6 @@
       "allOf": [
         { "$ref": "#/$defs/BaseEnvelope" },
         { "properties": { "kind": { "const": "motion" }, "data": { "$ref": "#/$defs/MotionData" } } }
-      ]
-    },
-    {
-      "allOf": [
-        { "$ref": "#/$defs/BaseEnvelope" },
-        { "properties": { "kind": { "const": "command.result" }, "data": { "$ref": "#/$defs/CommandResultData" } } }
       ]
     }
   ]

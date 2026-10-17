@@ -39,7 +39,7 @@ func TestEventsGoBeforeStills(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	tr := New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http"), BridgeID: "br", BootID: "bt"}, nil)
+	tr := New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http"), BridgeID: "br", BootID: "bt"})
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 	go tr.Start(ctx) //nolint

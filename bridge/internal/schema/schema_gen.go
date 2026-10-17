@@ -416,39 +416,6 @@ func (j *CameraStillMessage) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
-// Result of a downstream command (reset, start, stop) sent by the backend.
-type CommandResultData struct {
-	// CommandId corresponds to the JSON schema field "command_id".
-	CommandId string `json:"command_id" yaml:"command_id" mapstructure:"command_id"`
-
-	// HTTP status from the BM endpoint, if applicable.
-	HttpStatus *int `json:"http_status,omitempty,omitzero" yaml:"http_status,omitempty" mapstructure:"http_status,omitempty"`
-
-	// Ok corresponds to the JSON schema field "ok".
-	Ok bool `json:"ok" yaml:"ok" mapstructure:"ok"`
-}
-
-// UnmarshalJSON implements json.Unmarshaler.
-func (j *CommandResultData) UnmarshalJSON(value []byte) error {
-	var raw map[string]interface{}
-	if err := json.Unmarshal(value, &raw); err != nil {
-		return err
-	}
-	if _, ok := raw["command_id"]; raw != nil && !ok {
-		return fmt.Errorf("field command_id in CommandResultData: required")
-	}
-	if _, ok := raw["ok"]; raw != nil && !ok {
-		return fmt.Errorf("field ok in CommandResultData: required")
-	}
-	type Plain CommandResultData
-	var plain Plain
-	if err := json.Unmarshal(value, &plain); err != nil {
-		return err
-	}
-	*j = CommandResultData(plain)
-	return nil
-}
-
 // Bull-centred, r=1.0 at the outer double wire, x pointing right, y pointing up.
 // Values beyond r=1 are valid for near-misses. Absent on bounce-outs (bed=Outside,
 // name=Miss).
@@ -1060,13 +1027,11 @@ type VisitClearedData struct {
 
 type VisitClearedDataReason string
 
-const VisitClearedDataReasonBridgeResetCommand VisitClearedDataReason = "bridge_reset_command"
 const VisitClearedDataReasonManualReset VisitClearedDataReason = "manual_reset"
 const VisitClearedDataReasonUnknown VisitClearedDataReason = "unknown"
 
 var enumValues_VisitClearedDataReason = []interface{}{
 	"manual_reset",
-	"bridge_reset_command",
 	"unknown",
 }
 
