@@ -347,6 +347,25 @@ describe('handleBridgeConnection', () => {
     error.mockRestore()
   })
 
+  it('acks telemetry without storing it or passing it to the game', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-12', hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear()
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
+    const event = (seq: number, kind: string) =>
+      Buffer.from(JSON.stringify({ v: 1, seq, kind, bridge_id: 'br', boot_id: 'boot', recv_wall: new Date().toISOString(), data: {} }))
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    socket.emit('message', event(1, 'bm.frame'))
+    socket.emit('message', event(2, 'motion'))
+    socket.emit('message', event(3, 'dart.detected'))
+    for (let i = 0; i < 5; i++) await flush()
+
+    expect(socket.send.mock.calls.map(c => c[0])).toEqual([1, 2, 3].map(ack => JSON.stringify({ ack })))
+    expect(vi.mocked(queries.insertBridgeEvent).mock.calls.map(c => c[1].kind)).toEqual(['dart.detected'])
+    expect(engine.onBridgeEvent.mock.calls.map((c: unknown[]) => c[1])).toEqual(['dart.detected'])
+  })
+
   it('tells the lobbies when a board comes online and when it drops', async () => {
     vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-9', hardware_id: null } as any)
     const engine = { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any
