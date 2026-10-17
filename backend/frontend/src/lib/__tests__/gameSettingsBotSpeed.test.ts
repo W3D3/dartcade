@@ -9,6 +9,7 @@ import { configMeta, x01Game } from '../../../../src/games/x01.js'
 // Stubbing it out sidesteps the crash; the tooltip branch isn't used here anyway.
 vi.mock('bits-ui', () => ({
   Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
+  Popover: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
 }))
 
 describe('GameSettings botSpeed field', () => {

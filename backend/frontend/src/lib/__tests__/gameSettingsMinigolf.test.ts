@@ -6,6 +6,7 @@ import { minigolfModule } from '../../../../src/games/minigolf.js'
 // See gameSettingsBotSpeed.test.ts: bits-ui's barrel crashes SSR here
 vi.mock('bits-ui', () => ({
   Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
+  Popover: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
 }))
 
 describe("GameSettings' Minigolf courses", () => {
