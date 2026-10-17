@@ -4,9 +4,20 @@ on:
   push:
     tags:
       - 'v*'
+  # Rebuilds the images of a tag that already exists (e.g. after a failed image build)
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: The release tag to build the images of (e.g. v0.3.0)
+        required: true
+
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
   release-bridge-binaries:
+    # The binaries are attached to the release when the tag is pushed; a rebuild leaves them be
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -44,14 +55,36 @@ jobs:
           files: bridge/${{ matrix.name }}
           generate_release_notes: true
 
-  release-bridge-image:
-    runs-on: ubuntu-latest
+  # Each image is built natively per architecture (arm64 on an ARM runner: QEMU crashed Node
+  # with "Illegal instruction" and hung the job), pushed by digest, then joined into one tag
+  build-image:
+    strategy:
+      fail-fast: false
+      matrix:
+        image: [bridge, backend]
+        platform: [linux/amd64, linux/arm64]
+        include:
+          - image: bridge
+            name: dartcade-bridge
+            context: bridge
+          - image: backend
+            name: dartcade
+            context: backend
+          - platform: linux/amd64
+            runner: ubuntu-latest
+            arch: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            arch: arm64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 30
     permissions:
       contents: read
       packages: write
     steps:
       - uses: actions/checkout@v5
-      - uses: docker/setup-qemu-action@v3
+        with:
+          ref: ${{ env.TAG }}
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -62,28 +95,49 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/dartcade-bridge
-          tags: |
-            type=semver,pattern={{version}}
-            type=raw,value=latest
-      - uses: docker/build-push-action@v6
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
+      - name: Build and push by digest
+        id: build
+        uses: docker/build-push-action@v6
         with:
-          context: bridge
-          push: true
-          platforms: linux/amd64,linux/arm64
+          context: ${{ matrix.context }}
+          platforms: ${{ matrix.platform }}
           build-args: |
-            VERSION=${{ github.ref_name }}
-          tags: ${{ steps.meta.outputs.tags }}
+            VERSION=${{ env.TAG }}
           labels: ${{ steps.meta.outputs.labels }}
+          outputs: type=image,name=ghcr.io/${{ github.repository_owner }}/${{ matrix.name }},push-by-digest=true,name-canonical=true,push=true
+      - name: Export digest
+        run: |
+          mkdir -p /tmp/digests
+          digest="${{ steps.build.outputs.digest }}"
+          touch "/tmp/digests/${digest#sha256:}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: digests-${{ matrix.image }}-${{ matrix.arch }}
+          path: /tmp/digests/*
+          if-no-files-found: error
+          retention-days: 1
 
-  release-backend-image:
+  merge-image:
+    needs: build-image
+    strategy:
+      matrix:
+        include:
+          - image: bridge
+            name: dartcade-bridge
+          - image: backend
+            name: dartcade
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     permissions:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v5
-      - uses: docker/setup-qemu-action@v3
+      - uses: actions/download-artifact@v4
+        with:
+          path: /tmp/digests
+          pattern: digests-${{ matrix.image }}-*
+          merge-multiple: true
       - uses: docker/setup-buildx-action@v3
       - uses: docker/login-action@v3
         with:
@@ -94,14 +148,14 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/dartcade
+          images: ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}
           tags: |
-            type=semver,pattern={{version}}
+            type=semver,pattern={{version}},value=${{ env.TAG }}
             type=raw,value=latest
-      - uses: docker/build-push-action@v6
-        with:
-          context: backend
-          push: true
-          platforms: linux/amd64,linux/arm64
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+      - name: Create the manifest list and push it
+        working-directory: /tmp/digests
+        run: |
+          # Word splitting is wanted: one -t per tag, one argument per digest
+          # shellcheck disable=SC2046
+          docker buildx imagetools create $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            $(printf 'ghcr.io/${{ github.repository_owner }}/${{ matrix.name }}@sha256:%s ' *)
