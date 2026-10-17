@@ -7,7 +7,6 @@ services:
   backend:
     environment:
       NODE_ENV: development
-      ADMIN_EMAILS: admin@dartcade.local
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5181
       FLAGS_ON: gamemode.minigolf.enabled,gamemode.p121.enabled,matchmaking.enabled,caller.autodartsImport
     ports: !override

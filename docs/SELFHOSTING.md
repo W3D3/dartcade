@@ -51,5 +51,13 @@ reach it over `https://`/`wss://`. Env vars worth knowing about (all optional, s
   Boards page loses the live camera preview, the board status and the Start/Stop/Reset/Calibrate
   buttons (games are not affected)
 
+**Admins** (the minigolf course editor, features still behind a flag) are users with
+better-auth's `admin` role. Sign up, then give your account the role in the database:
+
+```bash
+docker compose exec postgres psql -U dartgames -d dartgames \
+  -c "UPDATE \"user\" SET role = 'admin' WHERE email = 'you@example.com'"
+```
+
 Once it's up, continue with [`GETTING_STARTED.md`](../GETTING_STARTED.md) to install the bridge
 and pair a board.

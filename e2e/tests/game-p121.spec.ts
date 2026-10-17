@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/auth.js'
 import { startGame } from '../fixtures/lobby.js'
 
 test('121: a solo session played to the end with manual darts ends on the summary', async ({ adminPage: page }) => {
-  // 121 is behind gamemode.p121.enabled, admins only: adminPage (ADMIN_EMAILS in docker-compose.e2e.yaml)
+  // 121 is behind gamemode.p121.enabled, admins only: adminPage
   await startGame(page, {
     mode: '121',
     setup: async page => {

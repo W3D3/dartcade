@@ -1,5 +1,19 @@
 import { test as base, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
+import { execFileSync } from 'child_process'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+
+/** Gives a user better-auth's admin role in the e2e stack's database, as a deployment would. */
+function makeAdmin(email: string): void {
+  const sql = `UPDATE "user" SET role = 'admin' WHERE email = '${email}'`
+  execFileSync('docker', ['compose', '-f', 'docker-compose.e2e.yaml', 'exec', '-T', 'postgres', 'psql', '-U', 'dartgames', '-d', 'dartgames', '-c', sql], {
+    cwd: root,
+    stdio: 'pipe',
+  })
+}
 
 export { expect }
 
@@ -26,7 +40,7 @@ export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
 
     await use(page)
   },
-  /** Signed in as an e2e admin (ADMIN_EMAILS in docker-compose.e2e.yaml): sees admin pages and flagged-on modes.
+  /** Signed in as an e2e admin (role 'admin', set in the DB): sees admin pages and flagged-on modes.
    *  One admin per parallel worker: tests that start a game as the admin mustn't meet each other's games. */
   adminPage: async ({ page }, use, testInfo) => {
     const email = `e2e-admin-${testInfo.parallelIndex}@test.local`
@@ -34,6 +48,7 @@ export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
     const headers = { Origin: 'http://localhost:5174' }
     // Signing up again in a later test fails (the user exists): only the sign-in must succeed
     await page.request.post('http://localhost:5174/api/auth/sign-up/email', { data: { name: `e2eadmin${testInfo.parallelIndex}`, email, password }, headers })
+    makeAdmin(email)
     const signIn = await page.request.post('http://localhost:5174/api/auth/sign-in/email', { data: { email, password }, headers })
     expect(signIn.ok(), `admin sign-in failed: ${signIn.status()}`).toBeTruthy()
     await use(page)

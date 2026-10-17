@@ -25,7 +25,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     const { role, ...rest } = account
     return {
       ...rest,
-      isAdmin: isAdmin({ role, email: account.email }),
+      isAdmin: isAdmin({ role }),
       suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
     }
   }
