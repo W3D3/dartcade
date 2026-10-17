@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"net"
+	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"os"
 	"strings"
@@ -13,26 +15,32 @@ import (
 	"github.com/charmbracelet/log"
 )
 
-func TestWithTokenEscapesAndKeepsTheQuery(t *testing.T) {
-	got, err := withToken("wss://example.com/bridge?region=eu", "a b&c=d")
-	if err != nil {
-		t.Fatal(err)
-	}
-	u, err := url.Parse(got)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if q := u.Query(); q.Get("token") != "a b&c=d" || q.Get("region") != "eu" {
-		t.Errorf("query %v, want the token and region", q)
-	}
-	if u.Host != "example.com" || u.Path != "/bridge" {
-		t.Errorf("url %s lost its host or path", got)
-	}
-}
+// The token goes in the Authorization header: a URL query lands in proxies' access logs.
+func TestDialSendsTheTokenAsABearerHeader(t *testing.T) {
+	const token = "s3cr3t/+tok en"
+	got := make(chan *http.Request, 1)
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		select {
+		case got <- r:
+		default:
+		}
+		http.Error(w, "no", http.StatusUnauthorized)
+	}))
+	defer srv.Close()
 
-func TestWithTokenWithoutTokenKeepsTheURL(t *testing.T) {
-	if got, _ := withToken("ws://h/bridge", ""); got != "ws://h/bridge" {
-		t.Errorf("got %s", got)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go New(Config{BackendURL: "ws" + strings.TrimPrefix(srv.URL, "http") + "/bridge?x=1", Token: token}, nil).Start(ctx) //nolint
+	select {
+	case r := <-got:
+		if h := r.Header.Get("Authorization"); h != "Bearer "+token {
+			t.Errorf("Authorization %q, want the bearer token", h)
+		}
+		if q := r.URL.RawQuery; q != "x=1" {
+			t.Errorf("query %q, want only the configured one", q)
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("bridge never dialled")
 	}
 }
 

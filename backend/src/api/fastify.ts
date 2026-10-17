@@ -1,4 +1,4 @@
-import Fastify, { errorCodes, type FastifyInstance } from 'fastify'
+import Fastify, { errorCodes, type FastifyInstance, type FastifyRequest } from 'fastify'
 import { registerErrorHandler } from './errors.js'
 import { registerResponseValidation } from './responseValidation.js'
 
@@ -8,7 +8,10 @@ export function createFastify(): FastifyInstance {
   // clients keep working, and handlers only see fields from the spec
   // Behind a reverse proxy every request comes from the proxy: TRUST_PROXY makes rate limits count
   // the client's address from X-Forwarded-For instead (true, a hop count, or the proxy's addresses)
-  const app = Fastify({ logger: process.env.NODE_ENV !== 'test', trustProxy: trustProxy(process.env.TRUST_PROXY) })
+  const app = Fastify({
+    logger: process.env.NODE_ENV !== 'test' && { serializers: { req: logRequest } },
+    trustProxy: trustProxy(process.env.TRUST_PROXY),
+  })
   registerErrorHandler(app)
   // A POST without a body (create a lobby, close it, …) can still arrive looking like one: with a
   // content type Fastify has no parser for, or as an empty chunked body without any type, which a
@@ -28,4 +31,15 @@ export function trustProxy(value: string | undefined): boolean | number | string
   if (!value) return false
   if (value === 'true') return true
   return /^\d+$/.test(value) ? Number(value) : value
+}
+
+/** Fastify's request log line without the query: it can carry a secret (an old bridge's token, sign-in links). */
+export function logRequest(req: FastifyRequest) {
+  return {
+    method: req.method,
+    url: req.url.split('?')[0],
+    hostname: req.hostname,
+    remoteAddress: req.ip,
+    remotePort: req.socket.remotePort,
+  }
 }

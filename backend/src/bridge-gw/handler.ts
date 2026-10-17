@@ -94,6 +94,15 @@ function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCamera
 }
 const TokenQuerySchema = z.object({ token: z.string() })
 
+/** The bridge's token: `Authorization: Bearer …`, or the `?token=` query older bridges send. */
+export function bridgeToken(authorization: string | undefined, query: unknown): string | undefined {
+  const bearer = authorization?.match(/^Bearer (.+)$/)?.[1]
+  if (bearer) return bearer
+  // shortcut: bridges before the header put the token in the URL; drop this once they're updated
+  const q = TokenQuerySchema.safeParse(query)
+  return q.success ? q.data.token : undefined
+}
+
 // handleBridgeConnection wires up a single bridge WebSocket. The message
 // listener is attached synchronously and message *processing* is gated on the
 // token lookup, so the bridge.hello the bridge sends immediately on connect is
@@ -258,10 +267,9 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   const { engine, db } = opts
 
   app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
-    const q = TokenQuerySchema.safeParse(req.query)
     handleBridgeConnection(
       connection.socket,
-      { token: q.success ? q.data.token : undefined },
+      { token: bridgeToken(req.headers.authorization, req.query) },
       { db, engine, onBoardPresence: opts.onBoardPresence, onCameraStill: opts.onCameraStill },
     )
   })
