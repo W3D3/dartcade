@@ -54,7 +54,15 @@ describe('/ws/lobby', () => {
       hub.sendLobby(lobbyId, { type: 'lobby_closed', lobbyId }) // any message: the service builds the real one
       return Promise.resolve()
     })
-    const port = await serve({ lobbyAccess: vi.fn().mockResolvedValue('ok'), refreshPresence }, hub)
+    const port = await serve(
+      {
+        lobbyAccess: vi.fn().mockResolvedValue('ok'),
+        whenIdle: vi.fn().mockResolvedValue(undefined),
+        isMember: vi.fn().mockResolvedValue(true),
+        refreshPresence,
+      },
+      hub,
+    )
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/lobby?lobbyId=l1`)
     await new Promise<void>((resolve, reject) => {
       ws.addEventListener(
@@ -69,6 +77,26 @@ describe('/ws/lobby', () => {
     expect(hub.online('l1')).toEqual(new Set(['chris']))
     ws.close()
     await until(() => refreshPresence.mock.calls.length >= 2)
+    expect(hub.online('l1')).toEqual(new Set())
+  })
+
+  it('closes for a member removed while the socket was opening', async () => {
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'max' })
+    const hub = new LobbyHub()
+    let member = true
+    const lobbies = {
+      // The host removes Max after the access check passed, before his socket is in the hub
+      lobbyAccess: vi.fn(() => {
+        member = false
+        return Promise.resolve('ok')
+      }),
+      whenIdle: vi.fn().mockResolvedValue(undefined),
+      isMember: vi.fn(() => Promise.resolve(member)),
+      refreshPresence: vi.fn().mockResolvedValue(undefined),
+    }
+    const port = await serve(lobbies, hub)
+    expect(await closeCode(`ws://127.0.0.1:${port}/ws/lobby?lobbyId=l1`)).toBe(WsCloseCode.Forbidden)
+    await until(() => hub.online('l1').size === 0)
     expect(hub.online('l1')).toEqual(new Set())
   })
 })
