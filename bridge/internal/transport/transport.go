@@ -33,6 +33,8 @@ const (
 	commandQueue = 16
 	// How long one write to the backend may take before the connection is dropped
 	writeTimeout = 10 * time.Second
+	// The close status the backend sends when it doesn't know the bridge's token
+	statusUnauthorized websocket.StatusCode = 4401
 )
 
 // Envelope wraps every outbound adbridge/v1 message.
@@ -172,18 +174,23 @@ func (t *Transport) Start(ctx context.Context) error {
 		conn, _, err := websocket.Dial(ctx, t.cfg.BackendURL, opts)
 		if err != nil {
 			log.Warn("backend connect failed", "err", redact(err, token), "retry_in", delay)
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(delay):
+		} else {
+			log.Info("connected to backend")
+			// Only a connection that stayed up resets the backoff: a backend that closes right
+			// away (token rejected, database down) is redialled slower and slower too
+			stableAt := time.Now().Add(30 * time.Second)
+			t.runConn(ctx, conn)
+			conn.Close(websocket.StatusNormalClosure, "")
+			if time.Now().After(stableAt) {
+				delay = 500 * time.Millisecond
 			}
-			delay = backoff.Next(delay, 30*time.Second)
-			continue
 		}
-		delay = 500 * time.Millisecond
-		log.Info("connected to backend")
-		t.runConn(ctx, conn)
-		conn.Close(websocket.StatusNormalClosure, "")
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(delay):
+		}
+		delay = backoff.Next(delay, 30*time.Second)
 	}
 }
 
@@ -293,7 +300,12 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		case <-ctx.Done():
 			return
 		case err := <-readErr:
-			log.Warn("backend read error", "err", err)
+			if websocket.CloseStatus(err) == statusUnauthorized {
+				log.Error("backend rejected the bridge token (board removed or token changed): delete token from bridge.toml " +
+					"(or drop --token / DARTCADE_TOKEN) and restart the bridge to pair it again")
+			} else {
+				log.Warn("backend read error", "err", err)
+			}
 			return
 		case <-deadline.C:
 			log.Warn("backend heartbeat timeout")
