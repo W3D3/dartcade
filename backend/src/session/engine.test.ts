@@ -326,6 +326,60 @@ describe('onBridgeEvent', () => {
       expect(game().winner).toBe(1)
     })
 
+    it("an early takeout on a last life is held: Finish is pending and only the user's Finish ends the game", async () => {
+      const { store, engine, sessionId, visit, game } = await start({ lives: 1 })
+      await visit(seg('S20', 20, 1), seg('S5', 5, 1)) // 25: the dart not thrown would cost the last life
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(false)
+      const logged = store.appendEvent.mock.calls.length
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      await engine.onBridgeEvent('board-1', 'visit.cleared', {})
+      expect(store.appendEvent).toHaveBeenCalledTimes(logged)
+      expect(engine.getSnapshot(sessionId)!.status).toBe('active')
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(true)
+      expect(game().visitTotal).toBe(25)
+      await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+      expect(store.finishSession).toHaveBeenCalled()
+      expect(game().winner).toBe(1)
+    })
+
+    it("a held takeout freezes the visit: the board's next visit is dropped, a hand-entered dart still counts", async () => {
+      const { store, engine, sessionId, visit, game } = await start({ lives: 1 })
+      await visit(seg('S20', 20, 1), seg('S5', 5, 1))
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      const logged = store.appendEvent.mock.calls.length
+      // The board's real order after a takeout: a new visit, its first dart at index 0
+      await visit(seg('T20', 20, 3))
+      expect(store.appendEvent).toHaveBeenCalledTimes(logged)
+      expect(game().visitTotal).toBe(25)
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(true)
+      // The dart the board missed, entered by hand: 85, above the bar, safe
+      await engine.onUserAction(sessionId, 'user-1', {
+        type: 'add_dart',
+        segment: { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 },
+      })
+      expect(game().visitTotal).toBe(85)
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(false)
+      await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+      expect(store.finishSession).not.toHaveBeenCalled()
+      expect(game().high).toBe(85)
+      expect(game().seats[0].lives).toBe(1)
+      expect(game().currentPlayer).toBe(1)
+      // The hold is over: the board's next visit counts again
+      await visit(seg('S5', 5, 1))
+      expect(game().visitTotal).toBe(5)
+    })
+
+    it('a resync during a held takeout empties the visit and ends the hold', async () => {
+      const { engine, sessionId, visit, game } = await start({ lives: 1 })
+      await visit(seg('S20', 20, 1), seg('S5', 5, 1))
+      await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+      await engine.onBridgeEvent('board-1', 'board.resync', {})
+      expect(game().visitTotal).toBe(0)
+      expect(engine.getSnapshot(sessionId)!.finishPending).toBe(false)
+      await visit(seg('T20', 20, 3))
+      expect(game().visitTotal).toBe(60)
+    })
+
     it("a non-final visit after one dart isn't held: the second dart is accepted", async () => {
       const { engine, sessionId, visit, dart, game } = await start()
       await visit(seg('S5', 5, 1))
