@@ -497,10 +497,31 @@ func TestBridgeHelloOnReconnect(t *testing.T) {
 	defer cancel()
 	go tr.Start(ctx) //nolint
 
-	time.Sleep(600 * time.Millisecond)
+	// The redial waits 0.5 s after the first connection closes
+	time.Sleep(time.Second)
 
 	if got := helloCount.Load(); got < 2 {
 		t.Errorf("bridge.hello sent %d times, want ≥2 (once per connect)", got)
+	}
+}
+
+// A backend that closes every connection right away (a rejected token) is redialled with
+// backoff, not in a tight loop
+func TestRedialsWithBackoffWhenTheBackendCloses(t *testing.T) {
+	var conns atomic.Int32
+	s := newTestServer(t, func(conn *websocket.Conn) {
+		conns.Add(1)
+		conn.Close(4401, "unauthorized")
+	})
+
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"}, nil)
+	ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
+	defer cancel()
+	tr.Start(ctx) //nolint
+
+	// Dials at 0, 0.5 s and 1.5 s+ (backoff with jitter)
+	if got := conns.Load(); got > 2 {
+		t.Errorf("%d connections in 1.2 s, want at most 2", got)
 	}
 }
 
