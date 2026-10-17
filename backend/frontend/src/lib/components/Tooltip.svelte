@@ -1,9 +1,12 @@
 <script lang="ts">
   import { Popover } from 'bits-ui'
   let { text, class: className = '' }: { text: string; class?: string } = $props()
+  let open = $state(false)
 </script>
 
-<Popover.Root>
+<svelte:window onscrollcapture={() => (open = false)} />
+
+<Popover.Root bind:open>
   <Popover.Trigger
     type="button"
     aria-label="Help"
