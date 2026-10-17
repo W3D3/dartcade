@@ -75,6 +75,9 @@ export function parseHello(data: unknown): { bridgeVersion: string | null; bmVer
 // message from us resets the bridge's read deadline, so it gets a pong back.
 const PingSchema = z.object({ ping: z.string() })
 
+// High-rate kinds the games never read (the bridge's telemetry, bridge/internal/transport)
+const TELEMETRY_KINDS = new Set(['bm.frame', 'motion'])
+
 const MessageKindSchema = z.object({ kind: z.string(), data: z.unknown() }).partial()
 
 /** A camera.still message: like bridge.hello, not an event (no seq, never acked or stored). */
@@ -220,6 +223,13 @@ export function handleBridgeConnection(
         if (conn.bridgeId === null) {
           conn.bridgeId = bridgeId
           conn.bootId = bootId
+        }
+
+        // Not stored: one idle board sends tens of thousands a day and nothing reads them. Acking
+        // it is safe: events run in order and stop at a failed store, so every earlier one is stored
+        if (TELEMETRY_KINDS.has(kind)) {
+          socket.send(JSON.stringify({ ack: seq }))
+          return
         }
 
         const { inserted, id } = await insertBridgeEvent(db, {
