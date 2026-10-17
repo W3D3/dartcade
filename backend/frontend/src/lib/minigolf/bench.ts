@@ -1,6 +1,6 @@
 // The test bench's state: where the ball is, strokes, and whether a shot is still rolling. Also
 // the 3D putt, aim dial/preview and shot-playback helpers shared by the bench and Playtest
-// (bench.svelte keeps its own 2D-physics path; everything here is framework-free).
+// (everything here is framework-free).
 import { validateHole } from '$shared/minigolf/hole'
 import { holeSchema } from '$shared/minigolf/holeSchema'
 import { heightAt } from '$shared/minigolf/3d/ground'

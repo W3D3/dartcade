@@ -1451,8 +1451,6 @@ export interface components {
                 value: string | number | boolean;
                 label: string;
             }[];
-            /** @description A feature flag: the field is only offered, and only takes a non-default value, while it's on */
-            flag?: string;
         };
         GameInfo: {
             id: string;

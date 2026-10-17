@@ -1,6 +1,5 @@
-// The ground in 3D (a bench experiment): heights from the slopes and a mesh of it, in mm. A slope's
-// push in 2D is `strength` mm/s², so it rises strength / g per mm: gravity on it then pushes the
-// ball just as hard, and a hole plays the same in 3D as in 2D.
+// The ground in 3D: heights from the slopes and a mesh of it, in mm. A slope's `strength` is its
+// push in mm/s², so it rises strength / g per mm: gravity on it then pushes the ball just as hard.
 import { closestOnSegment, pointInPolygon } from '../geometry.js'
 import type { Hole, Pt } from '../types.js'
 
@@ -31,6 +30,26 @@ export function heightAt(hole: Hole, p: Pt): number {
     h += (strength / G) * Math.max(0, reach - Math.hypot(p[0] - from[0], p[1] - from[1]))
   }
   return h
+}
+
+/** The slopes' pull on a ball at p, mm/s²: away from a hill's centre or a bump's ridge. */
+export function slopeForce(hole: Hole, p: Pt): Pt {
+  let fx = 0
+  let fy = 0
+  for (const s of hole.slopes) {
+    const { strength, reach, from } =
+      'radial' in s
+        ? { ...s.radial, reach: s.radial.radius, from: s.radial.center }
+        : { ...s.bump, reach: s.bump.width, from: closestOnSegment(p, s.bump.from, s.bump.to) }
+    const dx = p[0] - from[0]
+    const dy = p[1] - from[1]
+    const len = Math.sqrt(dx * dx + dy * dy)
+    if (len > 0 && len < reach) {
+      fx += (dx / len) * strength
+      fy += (dy / len) * strength
+    }
+  }
+  return [fx, fy]
 }
 
 type Mesh = { positions: Float32Array; indices: Uint32Array }

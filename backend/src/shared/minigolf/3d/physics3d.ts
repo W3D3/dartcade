@@ -1,7 +1,7 @@
 // Minigolf in 3D: Rapier (its deterministic build) with real gravity on the ground from ground.ts
 // as one triangle mesh with a round hole and the cup under it, rails and bumpers as solid blocks.
-// A ball drops in by gravity alone, tipping over the rim's edge. Rolling friction is ours, as in
-// 2D: contacts are frictionless and the ball loses `friction` mm/s² while it's on the felt.
+// A ball drops in by gravity alone, tipping over the rim's edge. Rolling friction is ours:
+// contacts are frictionless and the ball loses `friction` mm/s² while it's on the felt.
 // Rapier works in metres; everything going in and out is mm.
 import RAPIER, { type Collider, type ColliderDesc, type RigidBody } from '@dimforge/rapier3d-deterministic-compat'
 import type { Physics } from '../physics.js'
@@ -15,7 +15,7 @@ const GRID = 20
 const RAIL_HEIGHT = 70
 /** Rails and walls stop a ball this far above the highest ground along them, mm: drawn low, they never let one fly out. */
 const RAIL_REACH = 1000
-/** Ball on ball bounce, as golf balls do (and as in 2D). */
+/** Ball on ball bounce, as golf balls do. */
 const BALL_BOUNCE = 0.9
 /** A ball slower than restSpeed this long rests, s, even where the slope under its centre is steep. */
 const STILL = 0.2

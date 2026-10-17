@@ -47,7 +47,7 @@ function game(over: Partial<MinigolfGame> = {}): MinigolfGame {
     currentPlayer: 1,
     visitLocked: false,
     paused: false,
-    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: true, physics: '3d' },
+    config: { course: 'test', tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: true },
     courseName: 'Test',
     holeIdx: 1,
     holeCount: 3,
@@ -262,17 +262,10 @@ describe('minigolf match screen', () => {
   const is3d = (body: string) => body.includes('data-view="3d"') && !body.includes('data-testid="hole-view"')
   const is2d = (body: string) => body.includes('data-view="2d"') && body.includes('data-testid="hole-view"')
 
-  it('plays a 3D game in 3D where WebGL works', () => {
+  it('plays in 3D where WebGL works', () => {
     webgl.ok = true
     const body = show(game())
     expect([is3d(body), is2d(body)]).toEqual([true, false])
-  })
-
-  it('shows the flat view for a 2D game', () => {
-    webgl.ok = true
-    const g = game()
-    const body = show(game({ config: { ...g.config, physics: '2d' } }))
-    expect([is3d(body), is2d(body)]).toEqual([false, true])
   })
 
   it('falls back to the flat view, with a note, without WebGL', () => {

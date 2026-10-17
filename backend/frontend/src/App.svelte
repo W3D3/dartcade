@@ -38,7 +38,7 @@
   const loadGameDetails = Object.assign(() => import('./routes/GameDetails.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
   })
-  // The minigolf bench brings the physics engine (nape-js): only admins open it, so it loads on demand too
+  // The minigolf bench brings the hole tools and physics: only admins open it, so it loads on demand too
   const loadMinigolfBench = Object.assign(() => import('./routes/MinigolfBench.svelte').catch(() => ({ default: RouteLoadFailed })), {
     loading: RouteLoading,
   })

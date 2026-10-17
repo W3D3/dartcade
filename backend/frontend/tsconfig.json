@@ -11,7 +11,6 @@
       "$shared": ["../src/shared"],
       "$shared/*": ["../src/shared/*"],
       // $shared/minigolf imports these; resolved from here, where they're installed too (as vite's dedupe)
-      "@newkrok/nape-js": ["./node_modules/@newkrok/nape-js"],
       "@dimforge/rapier3d-deterministic-compat": ["./node_modules/@dimforge/rapier3d-deterministic-compat"],
       "polyclip-ts": ["./node_modules/polyclip-ts"],
       "zod": ["./node_modules/zod"]

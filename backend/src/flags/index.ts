@@ -6,7 +6,6 @@ import { isAdmin } from '../auth/admin.js'
 import type { Database } from '../db/schema.js'
 import { getRoleAndEmail } from '../db/users.js'
 import { flagDefinitions } from './definitions.js'
-import { games } from '../games/index.js'
 
 export type FlagUser = { id: string; email: string; role: string | null } | null
 
@@ -90,16 +89,4 @@ export async function loadFlagUser(db: Kysely<Database>, userId: string | null):
 export async function modeAvailable(modeId: string, user: FlagUser): Promise<boolean> {
   const key = modeFlag(modeId)
   return key === null || flagEnabled(key, user)
-}
-
-/** Whether a game may be played with this config: its mode's flag, and the flag of every field
- *  behind one that the config sets to something other than its default. */
-export async function gameAvailable(modeId: string, config: Record<string, unknown>, user: FlagUser): Promise<boolean> {
-  const mod = games[modeId]
-  const defaults = mod?.defaultConfig ?? {}
-  const flags = Object.entries(mod?.configMeta ?? {}).flatMap(([field, meta]) =>
-    meta.flag && config[field] !== undefined && config[field] !== defaults[field] ? [meta.flag] : [],
-  )
-  const on = await Promise.all([modeAvailable(modeId, user), ...flags.map(key => flagEnabled(key, user))])
-  return on.every(Boolean)
 }

@@ -30,9 +30,9 @@ export type Slope =
   | { radial: { center: Pt; radius: number; strength: number } }
   | { bump: { from: Pt; to: Pt; width: number; strength: number } }
 
-/** Ground shaped by height, for 3D: a mesa is a raised rectangle from `from` to `to`, falling to
- *  the felt over each side's own width (left, top, right, bottom): a wide side is a ramp, a narrow
- *  one a cliff. In 2D the ground is flat. */
+/** Ground shaped by height: a mesa is a raised rectangle from `from` to `to`, falling to the felt
+ *  over each side's own width (left, top, right, bottom): a wide side is a ramp, a narrow one a
+ *  cliff. */
 export type Terrain = { mesa: { from: Pt; to: Pt; height: number; edges: [number, number, number, number] } }
 
 /** A curved outline edge's two control points (a cubic Bézier alongside its corners). */

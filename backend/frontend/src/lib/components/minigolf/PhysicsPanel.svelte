@@ -14,8 +14,6 @@
     { key: 'maxRoll', label: 'Full-power roll (mm)', min: 1000, max: 10000, step: 100 },
     { key: 'minPutt', label: 'Softest putt (share of full)', min: 0, max: 0.3, step: 0.01 },
     { key: 'friction', label: 'Rolling friction (mm/s²)', min: 200, max: 4000, step: 50 },
-    { key: 'cupPull', label: 'Cup pull (mm/s²)', min: 0, max: 20000, step: 500 },
-    { key: 'dropTime', label: 'Drop time (s)', min: 0.01, max: 0.15, step: 0.005 },
     { key: 'restSpeed', label: 'Rest speed (mm/s)', min: 1, max: 50, step: 1 },
     { key: 'wallRestitution', label: 'Rail bounce', min: 0, max: 1, step: 0.05 },
     { key: 'bumperRestitution', label: 'Bumper bounce', min: 0, max: 1, step: 0.05 },

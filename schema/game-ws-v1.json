@@ -1410,7 +1410,7 @@
         },
         "config": {
           "type": "object",
-          "required": ["course", "tries", "maxStrokes", "ballContact", "aimAssist", "shotPreview", "physics"],
+          "required": ["course", "tries", "maxStrokes", "ballContact", "aimAssist", "shotPreview"],
           "additionalProperties": false,
           "properties": {
             "course": {
@@ -1430,9 +1430,6 @@
             },
             "shotPreview": {
               "type": "boolean"
-            },
-            "physics": {
-              "enum": ["3d", "2d"]
             }
           }
         },

@@ -38,8 +38,6 @@
   import { apiLoadCourse, apiLoadHole } from '$lib/minigolf/editor/store.svelte'
   import { COURSES } from '$shared/minigolf/courses/index'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
-  import { shotFromDart } from '$shared/minigolf/shot'
-  import { simulateShot } from '$shared/minigolf/simulate'
   import { BALL_R, type Course, type Hole, type Pt } from '$shared/minigolf/types'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
@@ -92,9 +90,8 @@
   let shown3 = $state<Pt3>([...COURSES[0].holes[0].tee, BALL_R])
   const shown = $derived<Pt>([shown3[0], shown3[1]])
   const show = () => (shown3 = benchBall(bench, hole))
-  /** Experiments: draw the hole in 3D, and play it with 3D physics (Rapier, loaded on first use). */
+  /** Experiments: draw the hole in 3D or flat (the physics is always 3D: Rapier, loaded on first use). */
   let view3d = $state<boolean>(true)
-  let physics3d = $state<boolean>(true)
   let felt = $state<'stripes' | 'checker'>('checker')
   let shading = $state<'toon' | 'smooth'>('toon')
   let relief = $state(1)
@@ -108,8 +105,8 @@
   $effect(() => {
     if (!view3d) freeCamera = false
   })
-  /** The default (3D view, 3D physics) case: played entirely by the shared Playtest component. */
-  const playtest = $derived(view3d && physics3d)
+  /** The default (3D view) case: played entirely by the shared Playtest component. */
+  const playtest = $derived(view3d)
   let lastPath = $state<Pt[] | null>(null)
   let hover = $state<{ x: number; y: number } | null>(null)
   /** The 3D view's chase camera: the rolling path and the playback frame. */
@@ -155,14 +152,7 @@
     if (!canShoot(bench) || replaying) return
     const from = bench.ball
     bench = startShot(bench)
-    let result: { path: Pt3[]; rest: Pt; holed: boolean } | null
-    if (physics3d) {
-      result = await putt3d(hole, physics, from, coords, assist)
-    } else {
-      const shot = shotFromDart(coords, from, hole.cup.at, physics, assist ? hole : null)
-      const r = shot ? simulateShot(hole, physics, from, shot) : null
-      result = r && { ...r, path: r.path.map(p => withHeight(hole, p)) }
-    }
+    const result = await putt3d(hole, physics, from, coords, assist)
     lastPath = result?.path.map(p => [p[0], p[1]]) ?? null
     if (result) {
       await playShot(result.path, onFrame, reducedMotion())
@@ -242,13 +232,6 @@
           <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
             <span class="sr-only md:not-sr-only">View</span>
             <select class={SELECT} bind:value={view3d}>
-              <option value={true}>3D</option>
-              <option value={false}>2D</option>
-            </select>
-          </label>
-          <label class="flex min-w-0 items-center gap-2 text-[15px] text-text-muted">
-            <span class="sr-only md:not-sr-only">Physics</span>
-            <select class={SELECT} bind:value={physics3d} disabled={bench.rolling}>
               <option value={true}>3D</option>
               <option value={false}>2D</option>
             </select>

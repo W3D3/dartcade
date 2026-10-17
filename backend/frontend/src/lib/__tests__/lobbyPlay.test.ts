@@ -67,7 +67,7 @@ describe('chosenGame', () => {
       id: 'x01',
       configMeta: meta('format', 'startScore', 'inMode', 'outMode', 'bullOff', 'botSpeed', 'bullValue', 'maxRounds', 'firstTo'),
     },
-    { id: 'minigolf', configMeta: meta('course', 'tries', 'maxStrokes', 'ballContact', 'aimAssist', 'shotPreview', 'physics') },
+    { id: 'minigolf', configMeta: meta('course', 'tries', 'maxStrokes', 'ballContact', 'aimAssist', 'shotPreview') },
     { id: 'p121', configMeta: meta('startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff') },
     { id: 'hilo', configMeta: meta('rounds', 'bullOff') },
   ]
@@ -80,12 +80,11 @@ describe('chosenGame', () => {
       ballContact: true,
       aimAssist: false,
       shotPreview: true,
-      physics: '3d',
       startScore: 501,
     }
     expect(chosenGame(games, 'minigolf', config)).toEqual({
       gameId: 'minigolf',
-      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, aimAssist: false, shotPreview: true, physics: '3d' },
+      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, aimAssist: false, shotPreview: true },
     })
   })
 

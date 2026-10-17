@@ -48,18 +48,13 @@ describe('minigolf', () => {
     expect(M.getCurrentPlayer(s)).toBe(0)
   })
 
-  it('plays 3D by default, 2D when the config asks for it', () => {
-    expect(M.defaultConfig.physics).toBe('3d')
-    expect(M.init(cfg({ physics: '2d' }), two).cfg.physics).toBe('2d')
-    const path = (physics: MinigolfConfig['physics']) => visit(M.init(cfg({ physics }), two), bull()).balls[0].paths[0]
-    expect(path('3d').every(p => p.length === 3)).toBe(true)
-    expect(path('2d').every(p => p.length === 2)).toBe(true)
-  })
-
-  it('refuses physics it does not know', () => {
-    expect(M.validate!(cfg({ physics: '2d' }), two)).toBeNull()
-    expect(M.validate!({ ...cfg(), physics: undefined } as unknown as MinigolfConfig, two)).toBeNull()
-    expect(M.validate!(cfg({ physics: '4d' as '3d' }), two)).toBe('Unknown physics')
+  it('replays a game stored with the old flat physics in 3D', () => {
+    // The 2D engine is gone: such a game's config still has physics '2d', and its ballPhysics the 2D cup's settings
+    const old = { ...cfg(), physics: '2d', ballPhysics: { ...DEFAULT_PHYSICS, cupPull: 6000, dropTime: 0.045 } } as MinigolfConfig
+    expect(M.validate!(old, two)).toBeNull()
+    const s = M.init(old, two)
+    expect(s.cfg).not.toHaveProperty('physics')
+    expect(visit(s, bull()).balls[0].paths[0].every(p => p.length === 3)).toBe(true)
   })
 
   it('refuses option values it does not offer and a fractional stroke cap', () => {

@@ -1,10 +1,10 @@
-// How slopes look, drawn from what the physics does (shared/minigolf/simulate.ts): a hill or bowl
+// How slopes look, drawn from what the physics does (shared/minigolf/3d/ground.ts): a hill or bowl
 // pushes within a circle round its centre, a bump within a band round its ridge. Both are the
 // same shape, a capsule (a circle is a ridge with both ends at one point), so both are shaded as
 // stacked translucent capsules, strongest at the top and fading out at the edge, with contour
 // lines at regular heights.
 import { pointInPolygon } from '$shared/minigolf/geometry'
-import { slopeForce } from '$shared/minigolf/simulate'
+import { slopeForce } from '$shared/minigolf/3d/ground'
 import type { Hole, Pt, Slope, Terrain } from '$shared/minigolf/types'
 
 /** Contour spacing (mm): closer on steeper slopes, like a map. */

@@ -1,6 +1,6 @@
 <!--
   The minigolf match screen (Minigolf.dc.html, Minigolf-Shot.dc.html): players in turn order, the
-  hole (in 3D where the game plays 3D and WebGL works, else flat), and the hole card with the
+  hole (in 3D where WebGL works, else flat), and the hole card with the
   dartboard to aim on, the try slots and Undo / Next. A new try rolls once no newer dart has
   landed for the shot delay.
 -->
@@ -79,10 +79,10 @@
     settings: GameSettings
   } = $props()
 
-  // 3D where the game plays 3D physics and the device can draw it; else the flat view
-  const webgl = untrack(() => game.config.physics) === '3d' && webglAvailable()
+  // 3D where the device can draw it; else the flat view
+  const webgl = webglAvailable()
   let failed = $state(false)
-  const view3d = $derived(game.config.physics === '3d' && webgl && !failed)
+  const view3d = $derived(webgl && !failed)
   // A stale chunk after a deploy or a flaky network: play on in the flat view
   const loadHole3D = () =>
     import('$lib/components/minigolf/Hole3D.svelte').catch((e: unknown) => {
@@ -344,11 +344,9 @@
           camera={roll && zoom.current > 0 ? { focus: pt(rolling(roll.seat) ?? ball), t: zoom.current } : null}
         />
       </div>
-      {#if game.config.physics === '3d'}
-        <p class="absolute left-1/2 -translate-x-1/2 bottom-3 m-0 rounded-full bg-surface-1/90 px-3 py-1 text-[12px] text-text-muted">
-          3D isn't available on this device; showing the flat view
-        </p>
-      {/if}
+      <p class="absolute left-1/2 -translate-x-1/2 bottom-3 m-0 rounded-full bg-surface-1/90 px-3 py-1 text-[12px] text-text-muted">
+        3D isn't available on this device; showing the flat view
+      </p>
     {/if}
   </section>
 

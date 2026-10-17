@@ -26,8 +26,6 @@ export type MinigolfConfig = {
   aimAssist: boolean
   /** While darts are left to replace a try, show a straight aim line as far as it would roll on flat felt. */
   shotPreview: boolean
-  /** '2d': the flat game, behind the gamemode.minigolf.flat flag. */
-  physics: '3d' | '2d'
   /** The course's holes and name, read from the published course at start (prepareConfig). A game
    *  stored before them plays the code course. */
   holes?: Hole[]
@@ -114,14 +112,6 @@ const configMeta: Record<string, ConfigFieldMeta> = {
       { value: true, label: 'On' },
     ],
   },
-  physics: {
-    label: 'Physics',
-    flag: 'gamemode.minigolf.flat',
-    options: [
-      { value: '3d', label: '3D' },
-      { value: '2d', label: '2D' },
-    ],
-  },
 }
 
 // The view carries points as plain [x, y] arrays (the snapshot schema's MinigolfPt)
@@ -197,7 +187,7 @@ function playTry(s: MinigolfState, data: Extract<BoardEvent, { kind: 'dart.detec
     coords,
     power: shot?.power ?? null,
     dir: shot?.dir ?? null,
-    result: shot ? cachedShot(hole, s.physics, ball, shot, others, s.cfg.physics) : null,
+    result: shot ? cachedShot(hole, s.physics, ball, shot, others) : null,
   }
 }
 
@@ -259,7 +249,7 @@ function winnerOf(s: MinigolfState): number | null {
 export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfView, 'minigolf', MinigolfDetail> = {
   id: 'minigolf',
   version: 1,
-  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: false, physics: '3d' },
+  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: false },
   configMeta,
   positionalDarts: true,
   noFinishHold: true,
@@ -303,7 +293,6 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       ballContact: saved.ballContact ?? d.ballContact,
       aimAssist: saved.aimAssist ?? d.aimAssist,
       shotPreview: saved.shotPreview ?? d.shotPreview,
-      physics: saved.physics ?? d.physics,
     }
     const course = saved.holes ? { name: saved.courseName ?? '', holes: saved.holes } : getCourse(cfg.course)
     const holes = course ? course.holes : mixedHoles(rng)

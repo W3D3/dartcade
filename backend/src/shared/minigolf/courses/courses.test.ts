@@ -1,11 +1,10 @@
-// Golden shots: if a nape, Rapier, Node or physics change moves a ball, this fails. Changing the
+// Golden shots: if a Rapier, Node or physics change moves a ball, this fails. Changing the
 // physics on purpose means updating the snapshot (`npx vitest -u`) in the same commit.
 import { beforeAll, describe, it, expect } from 'vitest'
 import { initPhysics3d, simulateShot3d } from '../3d/physics3d.js'
 import { pointInPolygon } from '../geometry.js'
 import { validateHole } from '../hole.js'
 import { DEFAULT_PHYSICS } from '../physics.js'
-import { simulateShot } from '../simulate.js'
 import type { Shot } from '../types.js'
 import { COURSES, mixedHoles } from './index.js'
 
@@ -24,13 +23,6 @@ describe('courses', () => {
   for (const course of COURSES) {
     for (const hole of course.holes) {
       it(`${course.id}/${hole.id} is valid`, () => expect(validateHole(hole)).toEqual([]))
-      it(`${course.id}/${hole.id} golden shots`, () => {
-        const results = SHOTS.map(s => {
-          const r = simulateShot(hole, DEFAULT_PHYSICS, hole.tee, s)
-          return { rest: r.rest.map(n => Math.round(n * 1000) / 1000), holed: r.holed, samples: r.path.length }
-        })
-        expect(results).toMatchSnapshot()
-      })
       it(`${course.id}/${hole.id} 3D golden shots`, () => {
         const results = SHOTS.map(s => {
           const r = simulateShot3d(hole, DEFAULT_PHYSICS, hole.tee, s)

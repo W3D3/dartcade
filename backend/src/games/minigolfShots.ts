@@ -1,7 +1,6 @@
 // Putts for the minigolf module. The engine refolds the whole open visit on every input, so the
 // same tries are played again and again: the simulations are pure, so their results are cached by
 // their inputs.
-import { simulateShot } from '../shared/minigolf/simulate.js'
 import { simulateShot3d } from '../shared/minigolf/3d/physics3d.js'
 import type { Physics } from '../shared/minigolf/physics.js'
 import type { Hole, OtherBall, Pt, Shot, ShotResult } from '../shared/minigolf/types.js'
@@ -21,7 +20,7 @@ let live = false
 // The caller's own shots (see liveShots), looked up before the shared cache
 let pinned: ReadonlyMap<string, ShotResult> | undefined
 
-const keyOf = (i: ShotInputs, engine: '3d' | '2d') => JSON.stringify([engine, i.hole, i.physics, i.ball, i.shot, i.others])
+const keyOf = (i: ShotInputs) => JSON.stringify([i.hole, i.physics, i.ball, i.shot, i.others])
 
 const remember = (key: string, result: ShotResult): void => {
   cache.set(key, result)
@@ -47,21 +46,14 @@ export function liveShots<T>(fn: () => T, shots?: ReadonlyMap<string, ShotResult
 
 /** Stores a shot the pool played: in `shots` if given (kept past the cache's eviction), else in the cache. */
 export function storeShot(inputs: ShotInputs, result: ShotResult, shots?: Map<string, ShotResult>): void {
-  const key = keyOf(inputs, '3d')
+  const key = keyOf(inputs)
   if (shots) shots.set(key, result)
   else remember(key, result)
 }
 
-export function cachedShot(
-  hole: Hole,
-  physics: Physics,
-  ball: Pt,
-  shot: Shot,
-  others: readonly OtherBall[],
-  engine: '3d' | '2d',
-): ShotResult {
+export function cachedShot(hole: Hole, physics: Physics, ball: Pt, shot: Shot, others: readonly OtherBall[]): ShotResult {
   const inputs = { hole, physics, ball, shot, others }
-  const key = keyOf(inputs, engine)
+  const key = keyOf(inputs)
   const own = pinned?.get(key)
   if (own) return own
   const hit = cache.get(key)
@@ -71,8 +63,8 @@ export function cachedShot(
     cache.set(key, hit)
     return hit
   }
-  if (live && engine === '3d') throw new ShotNeeded(inputs)
-  const result = (engine === '3d' ? simulateShot3d : simulateShot)(hole, physics, ball, shot, others)
+  if (live) throw new ShotNeeded(inputs)
+  const result = simulateShot3d(hole, physics, ball, shot, others)
   remember(key, result)
   return result
 }

@@ -20,14 +20,6 @@ describe('flags', () => {
     await setupFlags(new Set())
   })
 
-  it('keeps the flat Minigolf off for everyone, admins too, unless FLAGS_ON turns it on', async () => {
-    expect(await flagEnabled('gamemode.minigolf.flat', admin)).toBe(false)
-    expect(await flagEnabled('gamemode.minigolf.flat', player)).toBe(false)
-    await setupFlags(new Set(['gamemode.minigolf.flat']))
-    expect(await flagEnabled('gamemode.minigolf.flat', player)).toBe(true)
-    await setupFlags(new Set())
-  })
-
   it('turns matchmaking on for admins only', async () => {
     expect(await flagEnabled('matchmaking.enabled', admin)).toBe(true)
     expect(await flagEnabled('matchmaking.enabled', player)).toBe(false)
@@ -75,7 +67,6 @@ describe('flags', () => {
   it('evaluates every flag', async () => {
     expect(await evaluateAll(admin)).toEqual([
       { key: 'gamemode.minigolf.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
-      { key: 'gamemode.minigolf.flat', value: false, reason: 'TARGETING_MATCH', variant: 'off' },
       { key: 'gamemode.p121.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'matchmaking.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'caller.autodartsImport', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
