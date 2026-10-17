@@ -201,15 +201,16 @@
   }
 
   onMount(async () => {
+    // Before the await: leaving while the list loads runs onDestroy first
+    cameraInterval = setInterval(() => {
+      cameraTs = Date.now()
+    }, 1000)
     const { data } = await api.GET('/api/boards')
     if (!data) return // 401 is redirected to login by the client
     boards = data.boards
     loaded = true
     hasBoards.set(boards.length > 0)
     if (boards.length) selectedId = boards[0].id
-    cameraInterval = setInterval(() => {
-      cameraTs = Date.now()
-    }, 1000)
   })
   onDestroy(() => {
     if (cameraInterval) clearInterval(cameraInterval)
