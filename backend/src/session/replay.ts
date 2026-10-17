@@ -69,6 +69,7 @@ export function newSession(a: {
     boardStatus: new Map(),
     forfeited: [],
     undoable: [],
+    dartsLeftOnBoard: false,
     lobbyId: a.lobbyId ?? null,
     lobbyName: a.lobbyName ?? null,
   }
