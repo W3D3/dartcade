@@ -264,9 +264,14 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
   // Whether the course can be played is only known at start (prepareConfig)
   validate(cfg) {
     if (typeof cfg.course !== 'string' || cfg.course === '') return 'Unknown course'
-    if (!(cfg.maxStrokes >= 3 && cfg.maxStrokes <= 10)) return 'Max strokes must be between 3 and 10'
-    // Missing (saved before the option existed) plays 3D, as init does
-    if (!['3d', '2d', undefined].includes(cfg.physics)) return 'Unknown physics'
+    if (!(Number.isInteger(cfg.maxStrokes) && cfg.maxStrokes >= 3 && cfg.maxStrokes <= 10)) return 'Max strokes must be between 3 and 10'
+    // Each other option must be one of its values (strict, so '3' isn't 3); missing (saved before
+    // the option existed) plays its default, as init does. The course's options are live (DB).
+    const values: Record<string, unknown> = cfg
+    for (const [key, meta] of Object.entries(configMeta)) {
+      if (key === 'course' || !meta.options || values[key] === undefined) continue
+      if (!meta.options.some(o => o.value === values[key])) return `Unknown ${meta.label.toLowerCase()}`
+    }
     return null
   },
 
