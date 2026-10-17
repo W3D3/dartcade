@@ -19,7 +19,10 @@ export async function endAnyRunningGame(page: Page): Promise<void> {
  * guests are added there, and Start opens the game. A fresh test user owns no boards, so
  * everyone plays with manual entry and a solo start never asks "Start anyway?".
  */
-export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01' | 'Minigolf' | '121'; setup?: (page: Page) => Promise<void>; guests?: string[] }) {
+export async function startGame(
+  page: Page,
+  opts: { mode: 'ATC' | 'X01' | 'Minigolf' | '121' | 'Higher Lower'; setup?: (page: Page) => Promise<void>; guests?: string[] },
+) {
   await page.goto('/#/')
   const main = page.locator('main')
   // The game's card (named "X01: Count down…"): the page may open on a game already, with phone
@@ -32,7 +35,26 @@ export async function startGame(page: Page, opts: { mode: 'ATC' | 'X01' | 'Minig
   await create.click()
   await page.waitForURL('**/#/lobby')
 
+  // Each worker's admin is shared by the specs that run in it, and its lobby keeps guests between
+  // games: leftover guests sit out, so the game seats only the guests this spec asks for
+  await expect(page.getByRole('button', { name: /^Start/ })).toBeVisible()
+  const plays = (name: string) => page.getByRole('button', { name: `${name} plays the next game. Sit out`, exact: true })
+  const sitsOut = (name: string) => page.getByRole('button', { name: `${name} sits out. Play the next game`, exact: true })
+  const playing = await page
+    .getByRole('button', { name: / plays the next game\. Sit out$/ })
+    .evaluateAll(els => els.map(e => (e.getAttribute('aria-label') ?? '').replace(/ plays the next game\. Sit out$/, '')))
+  for (const name of playing.filter(n => !n.startsWith('e2e') && !(opts.guests ?? []).includes(n))) {
+    await plays(name).click()
+    await expect(sitsOut(name)).toBeVisible()
+  }
+
   for (const name of opts.guests ?? []) {
+    if (await plays(name).isVisible()) continue
+    if (await sitsOut(name).isVisible()) {
+      await sitsOut(name).click()
+      await expect(plays(name)).toBeVisible()
+      continue
+    }
     await page.fill('input[placeholder="Name or @username"]', name)
     await page.getByRole('button', { name: 'Add guest' }).click()
     await expect(page.locator('main').getByText(name, { exact: true }).first()).toBeVisible()
