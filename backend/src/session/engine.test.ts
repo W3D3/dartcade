@@ -539,6 +539,19 @@ describe('onUserAction', () => {
     expect(engine.getSessionByBoard('board-1')).toBeUndefined()
   })
 
+  it('a win whose darts fail to save still ends the game', async () => {
+    const store = makeStore()
+    store.insertDarts.mockRejectedValueOnce(new Error('db down'))
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01', { ...x01Cfg, startScore: 40, firstTo: 1 }, [{ name: 'A' }])
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: { name: 'D20', number: 20, bed: 'Double', multiplier: 2 } })
+    await expect(engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })).rejects.toThrow('db down')
+    expect(engine.getSession(sessionId)!.status).toBe('finished')
+    expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [expect.objectContaining({ placement: 1 })])
+    expect(engine.getSessionByUser('user-1')).toBeUndefined()
+    expect(push).toHaveBeenCalledWith(sessionId)
+  })
+
   it('empty takeout is ignored after a win', async () => {
     const store = makeStore()
     const engine = new SessionEngine(store, push)
