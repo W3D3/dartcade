@@ -35,6 +35,10 @@ describe('sideLinks', () => {
     expect(sideLinks('s1')[1]).toEqual({ href: '/session/s1', label: 'Live match', icon: 'live' })
     expect(sideLinks(null)[1]).toMatchObject({ label: 'Live match', disabled: true })
   })
+  it('adds Admin last, admins only', () => {
+    expect(sideLinks(null, false, true).map(l => l.label)).toEqual(['Play', 'Live match', 'Tournaments', 'History', 'Settings', 'Admin'])
+    expect(sideLinks(null).map(l => l.label)).not.toContain('Admin')
+  })
 })
 
 describe('isActiveRoute', () => {

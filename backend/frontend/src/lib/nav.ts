@@ -34,10 +34,10 @@ export function navTabs(liveSessionId: string | null, invites = 0, ranked = fals
   ]
 }
 
-export type SideLink = Omit<NavTab, 'icon' | 'badge' | 'aria'> & { icon: NavTab['icon'] | 'settings'; soon?: boolean }
+export type SideLink = Omit<NavTab, 'icon' | 'badge' | 'aria'> & { icon: NavTab['icon'] | 'settings' | 'admin'; soon?: boolean }
 
-/** The desktop side nav: the same pages under their long names, then Settings. */
-export function sideLinks(liveSessionId: string | null, ranked = false): SideLink[] {
+/** The desktop side nav: the same pages under their long names, then Settings, then Admin (admins only). */
+export function sideLinks(liveSessionId: string | null, ranked = false, admin = false): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
     { href: '/', label: 'Play', icon: 'play' },
@@ -46,6 +46,7 @@ export function sideLinks(liveSessionId: string | null, ranked = false): SideLin
     { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },
     { href: '/history', label: 'History', icon: 'history' },
     { href: '/settings', label: 'Settings', icon: 'settings' },
+    ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]
 }
 

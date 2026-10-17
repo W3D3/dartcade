@@ -19,12 +19,13 @@ test('an admin draws a keyhole, curves a rail, publishes and plays it', async ({
   test.setTimeout(60_000)
 
   await endAnyRunningGame(page)
+  // Admins reach the editor through the admin page
   await page
     .getByRole('navigation', { name: 'Main' })
     .getByRole('button', { name: /^Account/ })
     .click()
   await page.getByRole('menuitem', { name: 'Admin' }).click()
-  await page.getByRole('menuitem', { name: 'Minigolf courses' }).click()
+  await page.getByRole('link', { name: /Minigolf courses/ }).click()
   await page.waitForURL('**/#/admin/minigolf/courses')
   await page.getByRole('button', { name: 'New course' }).click()
   await page.waitForURL(/\/admin\/minigolf\/courses\/[^/]+$/)

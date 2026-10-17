@@ -1,6 +1,6 @@
 <script lang="ts">
   import Wordmark from './Wordmark.svelte'
-  import { Clock, Mail, Radio, Settings, Swords, Target, Trophy } from '@lucide/svelte'
+  import { Clock, Mail, Radio, Settings, ShieldCheck, Swords, Target, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
@@ -8,6 +8,7 @@
   import NavLink from './NavLink.svelte'
   import { isActiveRoute, sideLinks } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'
+  import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
 
@@ -15,7 +16,7 @@
 
   const matchmaking = flag('matchmaking.enabled')
 
-  const links = $derived(sideLinks($activeSessionId, $matchmaking))
+  const links = $derived(sideLinks($activeSessionId, $matchmaking, $currentUser?.isAdmin))
 </script>
 
 <nav
@@ -42,6 +43,8 @@
           <Clock size={20} strokeWidth={1.8} />
         {:else if link.icon === 'settings'}
           <Settings size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
+        {:else if link.icon === 'admin'}
+          <ShieldCheck size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {/if}
         {link.label}
         {#if link.icon === 'live' && !link.disabled}

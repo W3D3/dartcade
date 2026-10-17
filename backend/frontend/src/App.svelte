@@ -19,6 +19,7 @@
   import PickName from './routes/PickName.svelte'
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
+  import Admin from './routes/Admin.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { loadAccountSettings } from '$lib/accountSettings'
@@ -71,6 +72,7 @@
     '/friends': Friends,
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
+    '/admin': Admin,
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,
