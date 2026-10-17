@@ -2,7 +2,7 @@ import { join, dirname } from 'path'
 import { gameAvailable, loadFlagUser } from './flags/index.js'
 import { fileURLToPath } from 'url'
 import { db, takeInstanceLock, url as dbUrl } from './db/index.js'
-import { runMigrations } from './db/queries.js'
+import { deletePairingCodesExpiredBefore, runMigrations } from './db/queries.js'
 import { listCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
 import { setCourseSource } from './games/minigolfCourseSource.js'
 import { SessionEngine, createEngineStore } from './session/engine.js'
@@ -91,11 +91,15 @@ await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
 // Lobbies with no game running close after hours without activity: 6 h with one account,
-// 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS)
+// 24 h with several (lobby/service.ts, SOLO_IDLE_MS and SHARED_IDLE_MS). Pairing codes go
+// an hour after they expired.
 const idleSweep = setInterval(
   () => {
     lobbies.closeIdleLobbies().catch((err: unknown) => {
       warn('idle lobby sweep failed', { error: String(err) })
+    })
+    deletePairingCodesExpiredBefore(db, new Date(Date.now() - 60 * 60 * 1000)).catch((err: unknown) => {
+      warn('pairing code sweep failed', { error: String(err) })
     })
   },
   5 * 60 * 1000,

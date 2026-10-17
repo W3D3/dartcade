@@ -400,6 +400,12 @@ export async function claimPairingCode(db: Kysely<Database>, p: { code: string; 
   }
 }
 
+// A bridge stops polling its code at expiry, so a code expired before `before` is dead:
+// it goes, with a token nobody fetched
+export async function deletePairingCodesExpiredBefore(db: Kysely<Database>, before: Date): Promise<void> {
+  await db.deleteFrom('pairing_codes').where('expires_at', '<', before).execute()
+}
+
 // consumePairingToken atomically reads and clears the one-time token: it locks
 // the row, returns the token if still present (nulling it), or null if it was
 // already delivered. The row lock serializes concurrent polls so the token is
