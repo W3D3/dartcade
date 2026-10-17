@@ -128,6 +128,17 @@ would be much bigger than the problem.
   self-contained change that builds and passes tests. Fold review fixes into the
   commit they fix; no "address review" or "fix lint" commits.
 - Merge by rebasing onto `main` and fast-forwarding. Never squash-merge.
+- Release notes start as one line per merged PR, taken from its title (`cliff.toml`, written by the
+  Release workflow on a `v*` tag). Write PR titles for players and self-hosters. Internal PRs use
+  `ci`, `docs`, `test`, `refactor` or `chore`, or the `dev`/`preview` scope, and are left out.
+- A PR with a big feature (a new game, page or flow) or a significant UI change adds a screenshot
+  of it under `docs/<feature>/`, or updates the one already there, so `docs/`, the README and the
+  release notes show the app as it is.
+- After a release, rewrite its notes by hand (`gh release edit vX.Y.Z --notes-file …`): group the
+  changes by area under emoji headers (🎯 New games, 🎮 Playing, 🗣️ Caller, 📊 Stats, ⚙️ Settings,
+  🐛 Fixes, 🐳 Self-hosting), describe each in a player's words, mark what is still behind a flag,
+  and show big features with their screenshot from `docs/`, linked at the tag
+  (`https://raw.githubusercontent.com/W3D3/dartcade/vX.Y.Z/docs/<feature>/<file>.png`).
 
 ## UI design
 

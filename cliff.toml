@@ -1,0 +1,49 @@
+# The first draft of the release notes (git-cliff, run by .github/workflows/release.yml): one line per
+# merged PR, from its title, sorted into New and Fixed; then rewritten by hand (see AGENTS.md). PRs about CI, docs, tests, refactors, chores and the dev setup are
+# left out, so a PR title is written for players and self-hosters.
+
+[remote.github]
+owner = "W3D3"
+repo = "dartcade"
+
+[changelog]
+header = ""
+body = """
+{%- set prs = commits | filter(attribute="remote.pr_number") | unique(attribute="remote.pr_number") -%}
+{%- set internal = ["ci", "chore", "docs", "test", "refactor", "build", "style"] -%}
+{%- set internal_scopes = ["dev", "preview"] -%}
+{%- set_global new = [] -%}{%- set_global fixed = [] -%}
+{%- for c in prs -%}
+  {%- set title = c.remote.pr_title | trim -%}
+  {%- set head = title | split(pat=":") | first -%}
+  {%- set type = head | split(pat="(") | first | trim | lower -%}
+  {%- if title is containing(":") and type is not containing(" ") -%}
+    {%- set rest = title | split(pat=":") | slice(start=1) | join(sep=":") | trim -%}
+    {%- if head is containing("(") -%}{%- set scope = head | split(pat="(") | last | trim_end_matches(pat=")") -%}{%- set what = rest | upper_first -%}{%- set line = "**" ~ scope ~ "**: " ~ what -%}{%- if scope in internal_scopes -%}{%- set type = "chore" -%}{%- endif -%}
+    {%- else -%}{%- set line = rest | upper_first -%}{%- endif -%}
+  {%- else -%}{%- set type = "feat" -%}{%- set line = title -%}{%- endif -%}
+  {%- set line = line ~ " ([#" ~ c.remote.pr_number ~ "](https://github.com/W3D3/dartcade/pull/" ~ c.remote.pr_number ~ "))" -%}
+  {%- if type == "fix" -%}{%- set_global fixed = fixed | concat(with=line) -%}
+  {%- elif type not in internal -%}{%- set_global new = new | concat(with=line) -%}{%- endif -%}
+{%- endfor %}
+{% if new %}
+## ✨ New
+{% for l in new %}
+- {{ l }}
+{%- endfor %}
+{% endif %}
+{%- if fixed %}
+## 🐛 Fixed
+{% for l in fixed %}
+- {{ l }}
+{%- endfor %}
+{% endif %}
+"""
+footer = ""
+trim = true
+
+[git]
+conventional_commits = false
+filter_unconventional = false
+tag_pattern = "v[0-9]*"
+sort_commits = "oldest"
