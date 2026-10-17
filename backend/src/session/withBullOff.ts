@@ -45,9 +45,10 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
     return { ...s, stage: 'game', game: hooks.applyStartOrder(s.game, order) }
   }
 
-  // Pass a game-stage result through, keeping the wrapper around it.
+  // Pass a game-stage result through, keeping the wrapper around it (the same one when the
+  // game's state didn't change, so the engine sees a refused action as no change)
   function inGame(s: WithBullOffState<S>, r: { state: S; effects?: Effect[] }) {
-    return { state: { ...s, game: r.state }, effects: r.effects }
+    return { state: r.state === s.game ? s : { ...s, game: r.state }, effects: r.effects }
   }
 
   const teamsOf = game.teamsOf?.bind(game)
