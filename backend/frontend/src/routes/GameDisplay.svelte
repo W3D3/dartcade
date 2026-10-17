@@ -182,7 +182,7 @@
         const queue = !call.length
         const checkout = settings.callerCheckouts ? checkoutFor(before.x01, next.x01) : null
         if (checkout && checkoutMemory(checkout, settings.callerCheckoutRepeat)) call.push(requirePart(checkout.remaining))
-        if (call.length) void callerClips.then(c => c && caller.say(call, c, { queue }))
+        if (call.length) void caller.say(call, callerClips, { queue })
       }
       const g = next.x01 ?? next.atc
       if (g) {

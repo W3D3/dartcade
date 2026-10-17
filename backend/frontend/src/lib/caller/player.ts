@@ -3,6 +3,7 @@
 
 import { audioContext } from '../sounds.js'
 import { pickClips, type Call } from './calls.js'
+import type { Clips } from './voices.js'
 
 // Quieter than this on every channel is padding: about −50 dBFS
 const QUIET = 10 ** (-50 / 20)
@@ -85,8 +86,8 @@ export function createCaller(volume: () => number) {
   }
 
   /** Says `call`, cutting off whatever is playing or loading; with `queue` it leaves that be and
-   *  starts once it has ended. */
-  function say(call: Call, clips: Record<string, string[]>, { queue = false } = {}): Promise<void> {
+   *  starts once it has ended. `clips` may still be loading: stop() drops the call then too. */
+  function say(call: Call, clips: Clips | Promise<Clips | null>, { queue = false } = {}): Promise<void> {
     if (!queue) {
       turn++
       silence()
@@ -96,11 +97,13 @@ export function createCaller(volume: () => number) {
     return tail
   }
 
-  async function play(call: Call, clips: Record<string, string[]>, mine: number, after: Promise<void>) {
+  async function play(call: Call, clips: Clips | Promise<Clips | null>, mine: number, after: Promise<void>) {
     const vol = volume()
     const ctx = audioContext()
     if (!ctx || vol <= 0) return
-    const loaded = await Promise.all(pickClips(call, clips).map(url => load(ctx, url)))
+    const voice = await clips
+    if (!voice) return
+    const loaded = await Promise.all(pickClips(call, voice).map(url => load(ctx, url)))
     await after
     if (mine !== turn) return
     if (!gain) {

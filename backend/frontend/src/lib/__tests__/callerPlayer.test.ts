@@ -211,4 +211,25 @@ describe('createCaller', () => {
     await queued
     expect(started).toEqual(['/d/fast'])
   })
+
+  it('waits for the voice to load, and drops the call when stopped before it has', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => Promise.resolve(ok(url))),
+    )
+    const { createCaller } = await import('../caller/player.js')
+    const caller = createCaller(() => 1)
+    let loaded: (c: Record<string, string[]>) => void = () => undefined
+    const voice = new Promise<Record<string, string[]>>(r => {
+      loaded = r
+    })
+    // Leaving the match screen while the voice loads
+    const gameOn = caller.say([['gameon']], voice)
+    caller.stop()
+    loaded({ gameon: ['/v/gameon'], '180': ['/v/180'] })
+    await gameOn
+    expect(started).toEqual([])
+    await caller.say([['180']], voice)
+    expect(started).toEqual(['/v/180'])
+  })
 })
