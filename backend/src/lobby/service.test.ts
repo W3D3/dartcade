@@ -111,6 +111,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     expect(statusChanged).toHaveBeenLastCalledWith(['chris'])
   })
 
+  it("doesn't rebuild friends' lists for a change they don't see: ready, the next game", async () => {
+    const statusChanged = vi.fn()
+    lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b), onStatusChange: statusChanged })
+    const { id, code } = await lobbies.create('chris')
+    await lobbies.join('lena', id, code)
+    const lena = (await lobbies.view(id))?.people.find(p => p.userId === 'lena')
+    statusChanged.mockClear()
+    await lobbies.updatePerson('lena', id, lena!.id, { ready: true })
+    await lobbies.update('chris', id, { throwOrder: 'random' })
+    expect((await lobbies.view(id))?.people.find(p => p.userId === 'lena')?.ready).toBe(true)
+    expect(statusChanged).not.toHaveBeenCalled()
+  })
+
   describe('create, join, leave', () => {
     it('keeps the default name within the 48 characters a rename allows', async () => {
       await db.insertInto('user').values(user('long', 'Bartholomew Maximilian von Hohenzollern-Sigmaringen')).execute()

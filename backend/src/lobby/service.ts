@@ -46,7 +46,11 @@ export type LobbyDeps = {
   hub: LobbyHub
   isBoardOnline: (boardId: string) => boolean
   warn?: (message: string, details: unknown) => void
-  /** Members' status changed for their friends (joined, left, lobby closed or its access changed, a game started or ended). */
+  /**
+   * Members' status changed for their friends (joined, left, lobby closed, its name, access or
+   * host changed, an invite came or went, a game started or ended). Not for changes friends
+   * don't see (ready, boards, teams, the next game): each call rebuilds every friend's list.
+   */
   onStatusChange?: (userIds: string[]) => void
   /** Whether the user may pick and start this game mode (its feature flag); every mode when left out. */
   gameAvailable?: (userId: string, gameId: string, config: Record<string, unknown>) => Promise<boolean>
@@ -54,6 +58,9 @@ export type LobbyDeps = {
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
 const memberIds = (l: LobbyState): string[] => l.people.flatMap(p => (p.userId === null ? [] : [p.userId]))
+
+/** Who else gets /ws/me, and whether friends see the change (see LobbyDeps.onStatusChange). */
+type Publish = { alsoUsers?: string[]; status?: boolean }
 
 /** A person's board changing: the board (null for Manual), and who moved them if not themselves. */
 type BoardChange = { boardId: string | null; boardName: string | null; movedBy: string | null }
@@ -224,17 +231,22 @@ export class LobbyService {
     this.deps.hub.sendLobby(lobby.id, msg)
   }
 
-  /** Pushes the lobby to its sockets, and /ws/me to its members, invitees and `alsoUsers`. */
-  private async publish(lobbyId: string, alsoUsers: string[] = []): Promise<void> {
+  /**
+   * Pushes the lobby to its sockets, and /ws/me to its members, invitees and `alsoUsers`; with
+   * `status`, also tells their friends (only for a change friends see, see onStatusChange).
+   */
+  private async publish(lobbyId: string, opts: Publish = {}): Promise<void> {
     const lobby = this.cache.get(lobbyId)
     if (lobby) this.send(lobby)
-    await this.notifyUsers([...(lobby ? [...memberIds(lobby), ...lobby.invites.map(i => i.userId)] : []), ...alsoUsers])
+    const users = [...(lobby ? [...memberIds(lobby), ...lobby.invites.map(i => i.userId)] : []), ...(opts.alsoUsers ?? [])]
+    if (opts.status) await this.notifyUsers(users)
+    else await this.pushMeAll(users)
   }
 
   /** After a change: reloads the lobby and publishes it. Returns the lobby as reloaded. */
-  private async refreshAndPublish(lobbyId: string, alsoUsers: string[] = []): Promise<LobbyState | undefined> {
+  private async refreshAndPublish(lobbyId: string, opts: Publish = {}): Promise<LobbyState | undefined> {
     const lobby = await this.reload(lobbyId)
-    await this.publish(lobbyId, alsoUsers)
+    await this.publish(lobbyId, opts)
     return lobby
   }
 
@@ -333,7 +345,7 @@ export class LobbyService {
         { id: ulid(), userId, addedByUserId: userId, name: joiner.name, boardId: joiner.boardId, ready: false },
       ),
     )
-    const lobby = await this.refreshAndPublish(id)
+    const lobby = await this.refreshAndPublish(id, { status: true })
     if (!lobby) throw new Error(`lobby ${id} missing after insert`)
     return refOf(lobby)
   }
@@ -438,7 +450,7 @@ export class LobbyService {
       if (other !== undefined) throw inLobby(other)
       throw err
     }
-    const fresh = await this.refreshAndPublish(lobby.id, [userId])
+    const fresh = await this.refreshAndPublish(lobby.id, { alsoUsers: [userId], status: true })
     return refOf(fresh ?? lobby)
   }
 
@@ -478,7 +490,7 @@ export class LobbyService {
       WsCloseCode.Forbidden,
       kind === 'left' ? 'left the lobby' : 'removed from the lobby',
     )
-    if ((await this.settleHost(lobby.id)) === 'open') await this.publish(lobby.id, [memberUserId])
+    if ((await this.settleHost(lobby.id)) === 'open') await this.publish(lobby.id, { alsoUsers: [memberUserId], status: true })
     else await this.notifyUsers([memberUserId])
   }
 
@@ -500,7 +512,9 @@ export class LobbyService {
       await q.updateLobby(trx, lobbyId, { host_user_id: next.userId })
       await q.addActivity(trx, lobbyId, 'host_changed', next.userId, { name: next.name })
     })
-    await this.reload(lobbyId)
+    const fresh = await this.reload(lobbyId)
+    // Whether friends of the host may join without a code follows the host
+    if (fresh) this.statusChanged(memberIds(fresh))
     return 'open'
   }
 
@@ -602,7 +616,7 @@ export class LobbyService {
         })
       }
       if (patch.regenerateCode === true) await this.withFreshCode(null, code => q.updateLobby(this.db, lobbyId, { code }))
-      await this.refreshAndPublish(lobbyId)
+      await this.refreshAndPublish(lobbyId, { status: set.name !== undefined || set.access !== undefined })
     })
   }
 
@@ -762,7 +776,8 @@ export class LobbyService {
         if (pgErrorCode(err) === UNIQUE_VIOLATION) throw invitedAlready
         throw err
       }
-      await this.refreshAndPublish(lobbyId)
+      // Members' friend lists mark the invitee
+      await this.refreshAndPublish(lobbyId, { status: true })
       return { id }
     })
   }
@@ -802,7 +817,7 @@ export class LobbyService {
     const { lobbyId } = await this.pendingInvite(userId, inviteId)
     await this.enqueue(lobbyId, async () => {
       await q.setInviteStatus(this.db, inviteId, 'declined')
-      await this.refreshAndPublish(lobbyId, [userId])
+      await this.refreshAndPublish(lobbyId, { alsoUsers: [userId], status: true })
     })
   }
 
