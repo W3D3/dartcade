@@ -9,8 +9,9 @@ history and setup touchpoint a game mode needs.
 **Architecture:** A new `GameModule` `backend/src/games/hilo.ts`, wrapped with `withBullOff`, built
 the way `backend/src/games/p121.ts` is (read it first: it is the worked example for every
 backend task). The snapshot gets a `HiloGame` branch in `schema/game-ws-v1.json`, and the history a
-`HiloDetail` branch in `schema/api-v1.yaml`. The frontend gets `HiloMatch` and `HiloSummary`, wired
-into `GameDisplay.svelte` the way `P121Match`/`P121Summary` are.
+`HiloDetail` branch in `schema/api-v1.yaml`. The frontend gets `HiloMatch`, wired into
+`GameDisplay.svelte` the way `P121Match` is, and its result goes on the shared `WinScreen`
+(a `hiloWin` builder like `atcWin`).
 
 **Tech Stack:** TypeScript, Fastify, vitest, Svelte 5, Tailwind, layerchart, JSON Schema → TS/zod
 (`npm run gen:api`), Playwright.
@@ -57,7 +58,7 @@ into `GameDisplay.svelte` the way `P121Match`/`P121Summary` are.
    can't give. The hint must not suggest it, and there must be no crash. With `matchExtremes` and
    low 0, a 0 total from T1s beats it. Task 1 and Task 4 test this.
 4. **Forfeit mid-game:** `summarize` with no winner must rank the players still in ahead of those
-   who are out, and the end screen must show the standings, not "Loading". Tasks 3 and 6.
+   who are out, and the win screen must still show, with the forfeited player last. Tasks 3 and 6.
 5. **Correction of the miss dart:** a miss corrected into a real segment must un-lock the visit
    and give the life back on refold. Task 1 refold test.
 
@@ -342,7 +343,6 @@ Re-derive any expectation that fails from the rules before changing it, and reco
 - Modify: `backend/frontend/src/lib/lobby/play.ts` (`chosenGame` carries all six hilo fields) and `lib/__tests__/lobbyPlay.test.ts`
 - Modify: `backend/frontend/src/lib/lobby/format.ts` (the next-game line, e.g. "Higher Lower · 41 / 21 · 3 lives") and wherever `GAME_NAMES` / the lobby glyph live (see how p121 was added: `git log --oneline -S"121 Checkout" -- backend/frontend/src`)
 - Modify: `backend/frontend/src/lib/history.ts` (`rulesLine`, `historyStat` showing the place a player went out, e.g. "Out in round 4" or "Winner", `statTiles` entries) and its tests
-- Modify: `backend/frontend/src/lib/winScreen.ts` (`winView` null and `winMeta` for `hilo`)
 - Create: `backend/frontend/src/lib/hilo/view.ts` with its test
 
 **Interfaces:**
@@ -411,45 +411,46 @@ Layout, per the artboards:
 
 ---
 
-### Task 6: The end screen
+### Task 6: The end screen: the shared WinScreen
+
+The user's decision: reuse the win screen the other modes use. Don't build a new one. The
+`HiLo-Result` artboard is only a reference for which numbers matter.
 
 **Files:**
 
-- Create: `backend/frontend/src/lib/hilo/summary.ts` with its test (pure data shaping from `HiloDetail` plus the match stats)
-- Create: `backend/frontend/src/lib/components/hilo/HiloSummary.svelte`, `HiloBarsChart.svelte` (layerchart, in the style of `P121TriesChart`)
-- Modify: `backend/frontend/src/routes/GameDisplay.svelte` (show the summary for a finished hilo game; fetch `/api/games/{id}` for hilo even with no winner; fanfare once), `backend/frontend/src/routes/GameDetails.svelte` (a hilo section without buttons), `lib/details/page.ts` if it switches on mode
+- Modify: `backend/frontend/src/lib/winScreen.ts`:
+  - add a `hiloWin(snapshot)` builder next to `atcWin`/`minigolfWin`
+  - add `'hilo'` to `WinView['mode']`
+  - add a `winView` branch
+  - add the `winMeta` line `hiloRules(...)` + " · A vs B" for two players
+- Modify: `backend/frontend/src/lib/components/WinScreen.svelte`, only if it switches on `mode` and needs the new value
+- Modify: `backend/frontend/src/routes/GameDetails.svelte` and `lib/details/page.ts`, only so a `hilo` game shows the generic result and the match-stats table (no custom section)
+- Test: `backend/frontend/src/lib/winScreen.test.ts` (or wherever `atcWin` is tested)
 
 **Interfaces:**
 
-- Produces:
-  ```ts
-  export type HiloSummaryData = {
-    winner: { seat: number; livesLeft: number } | null
-    tiles: { visitsSurvived: [number, number]; highestSet: { value: number; seat: number; round: number } | null; lowestSet: { value: number; seat: number; round: number } | null; livesLost: { total: number; between: number; miss: number } }
-    series: { visit: number; high: number; low: number; lost: 'between' | 'miss' | null }[]
-    placings: { seat: number; place: number; outRound: number | null; outVisit: { total: number; high: number; low: number } | null; livesLeft: number }[]
-  }
-  export function summaryData(detail: HiloDetail): HiloSummaryData
-  /** Standings from the snapshot alone (spectators, a failed fetch, before the fetch lands); forfeited seats last. */
-  export function snapshotStandings(game: HiloGame, players: { name: string }[], forfeited: boolean[]): { seat: number; name: string; place: number; livesLeft: number }[]
-  ```
+- Consumes: the `HiloGame` snapshot (`seats[].lives/out/place/outRound/visits`, `winner`), `snapshot.seats[i].forfeited`, `outcomeText` from Task 4, `plural`.
+- Produces `hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView`:
+  - `competitors`:
+    - One per seat, ordered by `place` (winner 1st). A forfeited seat ranks after every seat that didn't forfeit.
+    - `score` = lives left.
+    - `sub` = "2 lives left" for the winner, "Out in round 4" for the others.
+    - `cells` = [lives left, bars moved (visits with outcome high or low), out-in round or "–"].
+  - `kicker: 'Last one standing'`, `scoreLabel: 'Lives left'`, `note: 'The rest ranked by when they went out'`.
+  - `checkout: null`, `legs: []`.
+  - `columns: ['Lives', 'Bars moved', 'Out in']`.
+  - Duel `stats`, winner vs runner-up: "Lives left", "Bars moved", "Lives lost to misses", each with its share.
+  - Party `highlights`: the highest bar set and the lowest bar set (who and the value), from the visits.
+  - `layout: players > 2 ? 'party' : 'duel'`.
 
-Layout, per `HiLo-Result`:
-
-- "Last one standing", "<Name> wins", hearts left.
-- Four tiles: visits survived (x/y), highest bar set (with who and in which round), lowest bar set, lives lost (split between and missed).
-- The HIGH/LOW chart over every visit, with the danger area between the bars shaded and markers for lives lost (filled for between, a ring for missed).
-- Placings, each with the round the player went out and the visit that knocked them out ("Out in round 7 · 58 between 4 and 121").
-- "How lives were lost" bars.
-- Buttons from `winActions()`: a primary `rematch` reads "Rematch", the rest use `WIN_LABELS`.
-- On the details page, the same component without buttons, inside a `<main>`.
-
-- [ ] **Step 1: Write the failing tests** for `summaryData` and `snapshotStandings`: a forfeit puts the forfeited player last, and the series has one point per visit.
-- [ ] **Step 2: Implement it, then check the tests pass.**
-- [ ] **Step 3: Build the components and wire them in.** A failed fetch falls back to the standings, never to an endless "Loading".
-- [ ] **Step 4: Check in the dev stack.** Finish a 2-player game with lives 1 (it's quick). Screenshot the end screen, the details page and the phone. Compare them with `HiLo-Result`.
-- [ ] **Step 5: Run the frontend checks.**
-- [ ] **Step 6: Commit.** `feat(hilo): show the higher lower result`
+- [ ] **Step 1: Write the failing tests** for `hiloWin`, mirroring the `atcWin` tests:
+  - a 2-player win (duel: kicker, score, stats rows)
+  - a 4-player game (party: placings by place, highlights)
+  - a forfeit, where the forfeited seat ranks last
+- [ ] **Step 2: Implement it, then check the tests pass.** `GameDisplay.svelte` already shows `WinScreen` whenever `winView` returns a view, with the `winActions()` buttons and the fanfare, so nothing new is needed there. Make sure a hilo game that ends by forfeit (winner null) still shows the screen: check `winView`'s winner guard and follow how the other modes handle a forfeit.
+- [ ] **Step 3: Check it in the dev stack.** Finish a 2-player game with lives 1 and screenshot the win screen. Then open the game's details page from History and screenshot that too.
+- [ ] **Step 4: Run the frontend checks.**
+- [ ] **Step 5: Commit.** `feat(hilo): show the higher lower result on the win screen`
 
 ---
 
@@ -463,7 +464,7 @@ Layout, per `HiLo-Result`:
 - [ ] **Step 1: Write the e2e test.** Admin user, then Play, pick Higher Lower, set lives to 1, add one guest, start.
   - Player 1 throws T20, S1, S1 (62: sets HIGH).
   - The guest throws S20, S5, S5 (30: between). With one life the guest is out, and the game ends.
-  - The summary shows "<name> wins" and "Rematch".
+  - The win screen shows the winner and the Rematch button.
 - [ ] **Step 2: Run it** with the repo's e2e command (see `e2e/package.json` and how 121's ran). It must pass.
 - [ ] **Step 3: Add the AGENTS.md row:**
       `| Higher Lower: two bars, lives, misses; match screen and result | backend/src/games/hilo.ts; frontend lib/components/hilo/, lib/hilo/; behind gamemode.hilo.enabled |`

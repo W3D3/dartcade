@@ -6,7 +6,7 @@ and whatever you score moves that bar for the next player. Land between them and
 The last player with lives left wins.
 
 Design: the **Game · Higher Lower** page of the design canvas. The match screen artboards are
-`HiLo-Duel`, `HiLo-LifeLost`, `HiLo-Party` and `HiLo-Phone`; the end screen is `HiLo-Result`.
+`HiLo-Duel`, `HiLo-LifeLost`, `HiLo-Party` and `HiLo-Phone`; `HiLo-Result` shows the numbers the result should cover (the shared win screen shows them).
 
 ## Rules
 
@@ -108,12 +108,16 @@ Design: the **Game · Higher Lower** page of the design canvas. The match screen
     who are out.
   - `HiloMatch`: the layouts (duel, party, phone), wired into `GameDisplay.svelte` like
     `P121Match`. The slots come from `DartSlots`, plus Undo and Next.
-  - `HiloSummary`: the end screen per `HiLo-Result`. It shows the winner and lives left, four stat
-    tiles, the HIGH and LOW chart over every visit (layerchart, with life-lost and miss markers),
-    the placings with the round each player went out, and how the lives were lost. It's fed by
-    `GET /api/games/{id}`, falls back to standings from the snapshot when that fails, and has the
-    `winActions()` buttons. The Match details page uses it as the Higher Lower section, without
-    buttons.
+- **End of the game:** the shared `WinScreen`, like the other modes, through a `hiloWin` builder
+  in `lib/winScreen.ts`.
+  - Competitors are ordered by place, with forfeited seats last. The big number is lives left.
+  - The sub line reads "2 lives left" for the winner and "Out in round 4" for the others.
+  - Standings columns: Lives, Bars moved, Out in.
+  - Duel stats: lives left, bars moved, lives lost to misses.
+  - Party highlights: the highest and the lowest bar set.
+  - Kicker "Last one standing".
+  - The Match details page shows the generic result and match-stats table; there is no custom
+    section. `HiLo-Result` is a reference for which numbers matter, not a screen to build.
 - **Everything else a game mode touches** (from the 121 final review):
   - the `GameSettings` branch (Steppers for the bars and lives, toggles for the options)
   - `chosenGame` in `lib/lobby/play.ts` carries every config field
@@ -121,7 +125,6 @@ Design: the **Game · Higher Lower** page of the design canvas. The match screen
   - `gameName` "Higher Lower"
   - `lib/history.ts`: `rulesLine`, plus `historyStat` (the place each player went out) and
     `statTiles`
-  - `winView` returns null for `hilo`
   - the solo layout is never used
 - **Tablet widths:** layouts must fit 1024 px wide (iPad landscape). Below `xl`, panels narrow as in 121.
 
@@ -147,7 +150,7 @@ Bots, teams, caller lines specific to Higher Lower, and a solo survival mode.
   - A last-life loss on the third dart is held for Finish.
   - A miss that knocks out the second-to-last player ends the game.
 - The `HiloDetail` contract test.
-- Frontend unit tests: the view helpers and the summary data.
+- Frontend unit tests: the view helpers and `hiloWin`.
 - Checks at 1024 px wide.
 - One e2e test: a 2-player game played with manual darts until one player is out, ending on the
-  summary.
+  win screen.
