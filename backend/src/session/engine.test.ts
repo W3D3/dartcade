@@ -462,6 +462,22 @@ describe('onUserAction', () => {
     expect((snap.game as any).currentPlayer).toBe(1)
   })
 
+  it('leaves the open visit and undo alone when the game module refuses an action', async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.create('user-1', null, 'x01', x01Module.defaultConfig, [{ name: 'A' }, { name: 'B' }])
+    const S20 = { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 } as const
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+    await engine.onUserAction(sessionId, 'user-1', { type: 'add_dart', segment: S20 })
+    // Too late for a bull off: X01 ignores it
+    await engine.onUserAction(sessionId, 'user-1', { type: 'bulloff_start' })
+    const session = engine.getSession(sessionId)!
+    expect(engine.getSnapshot(sessionId)!.game.currentVisitDarts).toHaveLength(1)
+    expect(session.undoable).toHaveLength(1)
+    expect(session.visitCount).toBe(1)
+  })
+
   it('measures a manually entered bull off dart from its coordinates', async () => {
     const engine = makeEngine()
     const { sessionId } = await engine.create('user-1', null, 'x01', { ...x01Module.defaultConfig, bullOff: 'wdc' }, [
