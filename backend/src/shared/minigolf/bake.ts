@@ -74,7 +74,8 @@ export function bakeOutline(shape: Shape): { ok: true; outline: Pt[] } | { ok: f
   const rings = [ring, ...circles.map(c => circlePolygon(c))].filter(r => r.length >= 3).map(r => [mutable(r)])
   const polys = rings.length ? union(rings[0], ...rings.slice(1)) : []
   if (polys.length === 0) return { ok: false, reason: 'The shape needs an area' }
-  if (polys.length > 1) return { ok: false, reason: 'The circle must overlap the course' }
+  if (polys.length > 1)
+    return { ok: false, reason: circles.length ? 'The circle must overlap the course' : "The outline can't touch itself" }
   if (polys[0].length > 1) return { ok: false, reason: "The shape can't have a hole in the middle" }
   // polyclip winds outer rings with a positive signed area, as the existing outlines are (bake.test.ts checks)
   return { ok: true, outline: mergeClose(polys[0][0].slice(0, -1)) }
