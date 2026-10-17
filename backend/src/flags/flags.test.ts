@@ -1,11 +1,24 @@
-import { describe, it, expect, beforeAll } from 'vitest'
-import { contextFor, evaluateAll, envFlagValues, flagEnabled, flagNumber, modeFlag, setupFlags, envFlagsOn } from './index.js'
+import { describe, it, expect, beforeAll, afterEach } from 'vitest'
+import {
+  contextFor,
+  currentOverrides,
+  evaluateAll,
+  envFlagValues,
+  flagEnabled,
+  flagNumber,
+  modeFlag,
+  setupFlags,
+  setOverrides,
+  envFlagsOn,
+} from './index.js'
 
 const admin = { id: 'a', email: 'boss@x', role: 'admin' }
 const player = { id: 'p', email: 'p@x', role: null }
+const other = { id: 'o', email: 'o@x', role: null }
 
 describe('flags', () => {
   beforeAll(() => setupFlags(new Set()))
+  afterEach(() => setOverrides(new Map()))
 
   it('turns Minigolf on for admins only', async () => {
     expect(await flagEnabled('gamemode.minigolf.enabled', admin)).toBe(true)
@@ -79,5 +92,69 @@ describe('flags', () => {
   it('knows which modes have a flag', () => {
     expect(modeFlag('minigolf')).toBe('gamemode.minigolf.enabled')
     expect(modeFlag('x01')).toBeNull()
+  })
+
+  describe('overrides', () => {
+    const key = 'gamemode.p121.enabled' // admins-only by default, so 'off' and 'admins' modes change nothing observable but the rule
+
+    it('off: nobody, admin included', async () => {
+      await setOverrides(new Map([[key, { mode: 'off', userIds: [] }]]))
+      expect(await flagEnabled(key, admin)).toBe(false)
+      expect(await flagEnabled(key, player)).toBe(false)
+      expect(await flagEnabled(key, null)).toBe(false)
+    })
+
+    it('admins: only ctx.admin === true', async () => {
+      await setOverrides(new Map([[key, { mode: 'admins', userIds: [] }]]))
+      expect(await flagEnabled(key, admin)).toBe(true)
+      expect(await flagEnabled(key, player)).toBe(false)
+      expect(await flagEnabled(key, null)).toBe(false)
+    })
+
+    it('users: admins and the listed users, nobody else', async () => {
+      await setOverrides(new Map([[key, { mode: 'users', userIds: [player.id] }]]))
+      expect(await flagEnabled(key, admin)).toBe(true)
+      expect(await flagEnabled(key, player)).toBe(true)
+      expect(await flagEnabled(key, other)).toBe(false)
+      expect(await flagEnabled(key, null)).toBe(false)
+    })
+
+    it('users mode ignores an id nobody has (a deleted user) rather than matching anyone', async () => {
+      await setOverrides(new Map([[key, { mode: 'users', userIds: ['long-gone'] }]]))
+      expect(await flagEnabled(key, player)).toBe(false)
+      expect(await flagEnabled(key, other)).toBe(false)
+    })
+
+    it('on: everyone, signed out too', async () => {
+      await setOverrides(new Map([[key, { mode: 'on', userIds: [] }]]))
+      expect(await flagEnabled(key, player)).toBe(true)
+      expect(await flagEnabled(key, null)).toBe(true)
+    })
+
+    it('a number override wins over FLAG_VALUES', async () => {
+      await setupFlags(new Set(), new Map([['matchmaking.visitSeconds', 45]]))
+      await setOverrides(new Map([['matchmaking.visitSeconds', { number: 90 }]]))
+      expect(await flagNumber('matchmaking.visitSeconds', 0, player)).toBe(90)
+      await setupFlags(new Set())
+    })
+
+    it('setOverrides(new Map()) returns to defaults, with and without FLAGS_ON', async () => {
+      await setOverrides(new Map([[key, { mode: 'on', userIds: [] }]]))
+      await setOverrides(new Map())
+      expect(await flagEnabled(key, player)).toBe(false)
+
+      await setupFlags(new Set([key]))
+      await setOverrides(new Map([[key, { mode: 'off', userIds: [] }]]))
+      await setOverrides(new Map())
+      expect(await flagEnabled(key, player)).toBe(true)
+      await setupFlags(new Set())
+    })
+
+    it('setupFlags after setOverrides keeps the overrides', async () => {
+      await setOverrides(new Map([[key, { mode: 'on', userIds: [] }]]))
+      await setupFlags(new Set())
+      expect(await flagEnabled(key, player)).toBe(true)
+      expect(currentOverrides().get(key)).toEqual({ mode: 'on', userIds: [] })
+    })
   })
 })
