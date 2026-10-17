@@ -1,7 +1,7 @@
 import { join, dirname } from 'path'
 import { gameAvailable, loadFlagUser } from './flags/index.js'
 import { fileURLToPath } from 'url'
-import { db } from './db/index.js'
+import { db, takeInstanceLock, url as dbUrl } from './db/index.js'
 import { runMigrations } from './db/queries.js'
 import { listCourses, publishedCourse, publishedOfficialHoles, seedOfficialCourses } from './db/minigolfCourses.js'
 import { setCourseSource } from './games/minigolfCourseSource.js'
@@ -20,6 +20,13 @@ import { closePool, warmPool } from './games/minigolfPool.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 const PORT = parseInt(process.env.PORT ?? '3000', 10)
+
+// shortcut: lobby start serialization, one game per user/lobby/board and presence live in this
+// process's memory, so one backend per database; move them to Postgres before running replicas
+if (!(await takeInstanceLock(dbUrl))) {
+  console.error('Another dartcade backend is already running on this database. Stop it first: only one may run at a time.')
+  process.exit(1)
+}
 
 // Rapier's WASM: Minigolf's 3D shots are simulated synchronously, from the rebuild below on
 await initPhysics3d()
