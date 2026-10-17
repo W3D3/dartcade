@@ -136,8 +136,9 @@ would be much bigger than the problem.
   release notes show the app as it is.
 - After a release, rewrite its notes by hand (`gh release edit vX.Y.Z --notes-file …`): group the
   changes by area under emoji headers (🎯 New games, 🎮 Playing, 🗣️ Caller, 📊 Stats, ⚙️ Settings,
-  🐛 Fixes, 🐳 Self-hosting), describe each in a player's words, mark what is still behind a flag,
-  and show big features with their screenshot from `docs/`, linked at the tag
+  🐛 Fixes, 🐳 Self-hosting), describe each in a player's words, end each line with the PR(s) it
+  came from (`([#204](https://github.com/W3D3/dartcade/pull/204))`), mark what is still behind a
+  flag, and show big features with their screenshot from `docs/`, linked at the tag
   (`https://raw.githubusercontent.com/W3D3/dartcade/vX.Y.Z/docs/<feature>/<file>.png`).
 
 ## UI design
