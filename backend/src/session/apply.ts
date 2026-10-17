@@ -48,6 +48,15 @@ export function awaitsFinish(session: Session): boolean {
   return hasWinner(session, after)
 }
 
+/**
+ * A visit is three darts: the board's darts past that, and its visit.opened while darts are
+ * open (Undo put a visit back, or darts were entered by hand), neither grow nor restart it.
+ */
+export function overflowsVisit(session: Session, event: BoardEvent): boolean {
+  const darts = dartEvents(session).length
+  return (event.kind === 'visit.opened' && darts > 0) || (event.kind === 'dart.detected' && darts >= 3)
+}
+
 // Adds `delta` darts to the thrower in `state`, unless that's the bull off
 function countDarts(session: Session, state: unknown, delta: number): void {
   if (inBullOff(session, state)) return
@@ -89,7 +98,8 @@ function applyBoardEvent(session: Session, event: BoardEvent, at: Date): ApplyOu
 
     case 'dart.corrected': {
       const darts = dartEvents(session)
-      const pos = darts.findIndex(e => e.data.index === event.data.index)
+      // Darts of another visit (put back by Undo, entered by hand) can share its index
+      const pos = darts.findIndex(e => e.data.visit_id === event.data.visit_id && e.data.index === event.data.index)
       if (pos !== -1) {
         const target = darts[pos]
         session.openVisitEvents[session.openVisitEvents.indexOf(target)] = {
