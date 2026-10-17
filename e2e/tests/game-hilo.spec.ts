@@ -2,7 +2,7 @@ import { test, expect } from '../fixtures/auth.js'
 import { startGame } from '../fixtures/lobby.js'
 
 test('higher lower: a duel ends on the win screen once a life is lost at 1 life', async ({ adminPage: page }, testInfo) => {
-  // Higher Lower is behind gamemode.hilo.enabled, admins only: adminPage (ADMIN_EMAILS in docker-compose.e2e.yaml)
+  // Higher Lower is behind gamemode.hilo.enabled, admins only: adminPage (made an admin by the auth fixture)
   await startGame(page, {
     mode: 'Higher Lower',
     guests: ['Guest One'],
