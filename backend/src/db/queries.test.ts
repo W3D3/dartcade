@@ -15,6 +15,7 @@ import {
   getPairingCode,
   claimPairingCode,
   consumePairingToken,
+  deletePairingCodesExpiredBefore,
   insertBoard,
   deleteBoard,
   searchUsers,
@@ -373,6 +374,20 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
       const row = await getPairingCode(db, code)
       expect(row!.raw_token).toBeNull()
       expect(row!.claimed_at).not.toBeNull()
+    })
+
+    it('deletePairingCodesExpiredBefore drops codes expired before the cutoff, claimed or not', async () => {
+      const hourAgo = new Date(Date.now() - 60 * 60 * 1000)
+      await insertPairingCode(db, { code: 'OLDCODE1', expiresAt: new Date(hourAgo.getTime() - 1000) })
+      await insertPairingCode(db, { code: 'OLDCODE2', expiresAt: new Date(hourAgo.getTime() - 1000) })
+      await claimPairingCode(db, { code: 'OLDCODE2', rawToken: 'never-fetched', boardId: 'board-pair-1' })
+      await insertPairingCode(db, { code: 'LAPSED01', expiresAt: new Date(Date.now() - 1000) })
+      await deletePairingCodesExpiredBefore(db, hourAgo)
+      expect(await getPairingCode(db, 'OLDCODE1')).toBeUndefined()
+      expect(await getPairingCode(db, 'OLDCODE2')).toBeUndefined()
+      // Expired just now: a bridge may still make its last poll
+      expect(await getPairingCode(db, 'LAPSED01')).toBeDefined()
+      expect(await getPairingCode(db, code)).toBeDefined()
     })
   })
 
