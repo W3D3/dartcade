@@ -518,7 +518,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Every flag for the signed-in user (signed out, an anonymous user: every flag off)
+         * Every flag for the signed-in user (signed out, for an anonymous user: only what everyone gets)
          * @description The request's context is ignored; flags are evaluated for the session's user. An ETag comes with the result; a matching If-None-Match answers 304.
          */
         post: operations["ofrepEvaluateFlags"];
