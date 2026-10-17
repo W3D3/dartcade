@@ -59,7 +59,18 @@ describe('boardToApply', () => {
 })
 
 describe('chosenGame', () => {
-  const games = [{ id: 'atc' }, { id: 'x01' }, { id: 'minigolf' }, { id: 'p121' }]
+  // Each mode's configMeta, as GET /api/games sends it: only the keys matter here
+  const meta = (...keys: string[]) => Object.fromEntries(keys.map(k => [k, { label: k }]))
+  const games = [
+    { id: 'atc', configMeta: meta('finishOn', 'order', 'multiplierAdvances', 'throwAgainOnAllHit') },
+    {
+      id: 'x01',
+      configMeta: meta('format', 'startScore', 'inMode', 'outMode', 'bullOff', 'botSpeed', 'bullValue', 'maxRounds', 'firstTo'),
+    },
+    { id: 'minigolf', configMeta: meta('course', 'tries', 'maxStrokes', 'ballContact', 'aimAssist', 'shotPreview', 'physics') },
+    { id: 'p121', configMeta: meta('startTarget', 'tries', 'dartsPerTry', 'outMode', 'missRule', 'lock', 'bullOff') },
+    { id: 'hilo', configMeta: meta('rounds', 'bullOff') },
+  ]
 
   it("keeps Minigolf's own fields, and only those", () => {
     const config = {
@@ -69,16 +80,18 @@ describe('chosenGame', () => {
       ballContact: true,
       aimAssist: false,
       shotPreview: true,
+      physics: '3d',
       startScore: 501,
     }
     expect(chosenGame(games, 'minigolf', config)).toEqual({
       gameId: 'minigolf',
-      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, aimAssist: false, shotPreview: true },
+      config: { course: 'test', tries: 1, maxStrokes: 5, ballContact: true, aimAssist: false, shotPreview: true, physics: '3d' },
     })
   })
 
-  it("carries the x01 form's botSpeed through, alongside its other fields", () => {
+  it("keeps all of x01's fields, botSpeed included", () => {
     const config = {
+      format: 'singles',
       startScore: 301,
       inMode: 'straight',
       outMode: 'double',
@@ -87,22 +100,16 @@ describe('chosenGame', () => {
       maxRounds: 50,
       firstTo: 3,
       botSpeed: 'fast',
-      // Not in the x01 whitelist: must not leak into the saved config
-      format: 'singles',
+      // Another mode's field: must not leak into the saved config
+      finishOn: 'bull',
     }
-    expect(chosenGame(games, 'x01', config)).toEqual({
-      gameId: 'x01',
-      config: {
-        startScore: 301,
-        inMode: 'straight',
-        outMode: 'double',
-        bullOff: 'off',
-        bullValue: '25_50',
-        maxRounds: 50,
-        firstTo: 3,
-        botSpeed: 'fast',
-      },
-    })
+    const { finishOn: _, ...x01 } = config
+    expect(chosenGame(games, 'x01', config)).toEqual({ gameId: 'x01', config: x01 })
+  })
+
+  it('keeps the X01 Teams format, and leaves teams and teamStart to the lobby', () => {
+    const config = { format: 'teams', startScore: 501, teams: [0, 1], teamStart: 'random' }
+    expect(chosenGame(games, 'x01', config)?.config).toEqual({ format: 'teams', startScore: 501 })
   })
 
   it("keeps 121's own fields, and only those", () => {
@@ -114,7 +121,7 @@ describe('chosenGame', () => {
       missRule: 'reset',
       lock: false,
       bullOff: 'off',
-      // Not in the 121 whitelist: must not leak into the saved config
+      // Not a 121 field: must not leak into the saved config
       startScore: 501,
     }
     expect(chosenGame(games, 'p121', config)).toEqual({
@@ -129,9 +136,23 @@ describe('chosenGame', () => {
     expect(picked?.config).not.toHaveProperty('botSpeed')
   })
 
+  it("keeps the settings of a mode with no special handling, not X01's", () => {
+    const config = { rounds: 10, bullOff: 'wdc', startScore: 501, format: 'singles' }
+    expect(chosenGame(games, 'hilo', config)).toEqual({ gameId: 'hilo', config: { rounds: 10, bullOff: 'wdc' } })
+  })
+
   it('falls back to a 501 game, then the first one, when the picked mode is unknown to the backend', () => {
-    expect(chosenGame([{ id: 'x501' }, { id: 'other' }], 'missing', {})?.gameId).toBe('x501')
-    expect(chosenGame([{ id: 'other' }], 'missing', {})?.gameId).toBe('other')
+    expect(
+      chosenGame(
+        [
+          { id: 'x501', configMeta: {} },
+          { id: 'other', configMeta: {} },
+        ],
+        'missing',
+        {},
+      )?.gameId,
+    ).toBe('x501')
+    expect(chosenGame([{ id: 'other', configMeta: {} }], 'missing', {})?.gameId).toBe('other')
   })
 
   it('null when the backend has no games', () => {
