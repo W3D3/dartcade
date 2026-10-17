@@ -370,8 +370,8 @@ Internals:
   at connect.
 - **Raw and derived events are both sent.** Every Board Manager frame is sent once as
   `bm.frame`, unchanged apart from redaction. Derived events refer to it with
-  `data.source_seq`. The full data is always stored, and derived events can be rebuilt from
-  `bm.frame` if the normaliser changes.
+  `data.source_seq`. The backend stores only the derived events: `bm.frame` and `motion` are
+  telemetry, acked without being stored.
 
 ### 5.2 Kinds
 
@@ -381,7 +381,7 @@ Internals:
 | `bm.link`          | BM WS up or down                                                                                                                       | `{up: bool, reason?}`                                                                         |
 | `bm.frame`         | every WS frame and poll result                                                                                                         | `{source: "ws"\|"poll"}` + `raw`                                                              |
 | `board.status`     | change in `status`, `event` or `running`                                                                                               | `{status, event, running, connected}`. `connected` is passed on but documented as unreliable. |
-| `board.resync`     | first snapshot after (re)connect                                                                                                       | `{throws: Dart[]}`. **A baseline, not new darts.** Consumers must not score these.            |
+| `board.resync`     | first snapshot at bridge start (5.3)                                                                                                   | `{throws: Dart[]}`. **A baseline, not new darts.** Consumers must not score these.            |
 | `visit.opened`     | first dart after the board is empty                                                                                                    | `{visit_id}`                                                                                  |
 | `dart.detected`    | `throws[i]` newly present                                                                                                              | `{visit_id, index, dart: Dart, source_seq}`                                                   |
 | `dart.corrected`   | `throws[i]` segment changed                                                                                                            | `{visit_id, index, dart: Dart, previous: Dart, source_seq}`                                   |
@@ -414,9 +414,11 @@ Internals:
   reset came first.
 - `0 < len(cur) < len(prev)`: partial takeout. No score change (HACSAutodarts treats removed
   darts the same way). The visit stays open until the board is empty.
-- **After any reconnect** to Board Manager or to the backend, emit `board.resync` and never
-  replay the snapshot as new darts. A dart that landed during a gap is not delivered as a
-  `dart.detected`; the backend sees it in the resync and asks the user (§5.4).
+- **On bridge start**, the first snapshot is a `board.resync`, never new darts. After a
+  Board Manager reconnect the snapshot is diffed against `prev` as usual (a dart thrown in
+  the gap is a `dart.detected`), unless a dart still on the board changed segment: then it is
+  a resync too. A backend reconnect replays the outbox. `schema/diff-rules.md` §1 has the
+  rule.
 
 ### 5.4 How a rule engine consumes this
 
