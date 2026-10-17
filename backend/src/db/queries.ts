@@ -11,6 +11,19 @@ import { groupBy } from '../util/groupBy.js'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
 export async function runMigrations(db: Kysely<Database>, opts: { until?: string; dir?: string } = {}): Promise<void> {
+  // Two backends booting together would run the same migration: one at a time per schema, on
+  // one connection (a session lock belongs to the connection that took it)
+  await db.connection().execute(async conn => {
+    await sql`SELECT pg_advisory_lock(hashtext('dartcade.migrations.' || current_schema()))`.execute(conn)
+    try {
+      await migrate(conn, opts)
+    } finally {
+      await sql`SELECT pg_advisory_unlock(hashtext('dartcade.migrations.' || current_schema()))`.execute(conn)
+    }
+  })
+}
+
+async function migrate(db: Kysely<Database>, opts: { until?: string; dir?: string }): Promise<void> {
   await sql
     .raw(
       `

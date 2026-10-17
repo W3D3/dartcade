@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
-import { createDb } from './index.js'
+import { createDb, takeInstanceLock } from './index.js'
 import { runMigrations } from './queries.js'
 import type { Database } from './schema.js'
 
@@ -88,5 +88,42 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('013_unique_names migration', ()
       code: '23505',
     })
     await sql`INSERT INTO "user" (id, name, email, name_needs_change) VALUES ('u8', 'Luke', 'u8@x', true)`.execute(db)
+  })
+})
+
+describe.skipIf(!process.env.TEST_DATABASE_URL)('two backends on one database', () => {
+  const SCHEMA_LOCK = 'mig_lock_test'
+  const schemaUrl = `${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_LOCK}`
+  let admin: Kysely<Database>
+
+  beforeAll(async () => {
+    admin = createDb(url)
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_LOCK} CASCADE`).execute(admin)
+    await sql.raw(`CREATE SCHEMA ${SCHEMA_LOCK}`).execute(admin)
+  })
+
+  afterAll(async () => {
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_LOCK} CASCADE`).execute(admin)
+    await admin.destroy()
+  })
+
+  it('run the migrations one after the other when they boot together', async () => {
+    const a = createDb(schemaUrl)
+    const b = createDb(schemaUrl)
+    try {
+      await Promise.all([runMigrations(a), runMigrations(b)])
+    } finally {
+      await Promise.all([a.destroy(), b.destroy()])
+    }
+  })
+
+  it('lets only one hold the instance lock, until it stops', async () => {
+    const first = await takeInstanceLock(schemaUrl)
+    expect(first).not.toBeNull()
+    expect(await takeInstanceLock(schemaUrl)).toBeNull()
+    await first?.end()
+    const next = await takeInstanceLock(schemaUrl)
+    expect(next).not.toBeNull()
+    await next?.end()
   })
 })
