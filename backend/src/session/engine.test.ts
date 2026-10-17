@@ -594,6 +594,47 @@ describe('onUserAction', () => {
   })
 })
 
+describe('a visit put back by Undo', () => {
+  const T20 = { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 } as const
+  const S20 = { name: 'S20', number: 20, bed: 'SingleOuter', multiplier: 1 } as const
+  const S5 = { name: 'S5', number: 5, bed: 'SingleOuter', multiplier: 1 } as const
+
+  it("takes no darts of the board's next visit, nor their corrections, unlogged", async () => {
+    const store = makeStore()
+    const engine = new SessionEngine(store, push)
+    const { sessionId } = await engine.create('user-1', 'board-1', 'x01', x01Module.defaultConfig, [{ name: 'A' }, { name: 'B' }])
+    const dart = (visit_id: string, index: number, segment: typeof T20 | typeof S20) => ({
+      visit_id,
+      index,
+      source_seq: index,
+      dart: { segment, score: segment.number * segment.multiplier },
+    })
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'a' })
+    for (const i of [0, 1, 2]) await engine.onBridgeEvent('board-1', 'dart.detected', dart('a', i, T20))
+    await engine.onBridgeEvent('board-1', 'takeout.finished', {})
+    await engine.onUserAction(sessionId, 'user-1', { type: 'undo_dart' })
+
+    const logged = store.appendEvent.mock.calls.length
+    await engine.onBridgeEvent('board-1', 'visit.opened', { visit_id: 'b' })
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart('b', 0, S20))
+    await engine.onBridgeEvent('board-1', 'dart.detected', dart('b', 1, S20))
+    expect(store.appendEvent).toHaveBeenCalledTimes(logged)
+    // A correction of the dropped dart doesn't touch the put-back dart at the same index
+    await engine.onBridgeEvent('board-1', 'dart.corrected', {
+      ...dart('b', 1, S20),
+      dart: { segment: S5, score: 5 },
+      previous: { segment: S20, score: 20 },
+    })
+    expect(engine.getSnapshot(sessionId)!.game.currentVisitDarts).toEqual([0, 1, 2].map(() => ({ segment: T20, score: 60 })))
+
+    await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
+    expect((engine.getSnapshot(sessionId)!.game as X01Game).scores).toEqual([321, 501])
+    expect(store.insertDarts).toHaveBeenLastCalledWith(
+      [0, 1, 2].map(i => expect.objectContaining({ visit: 0, dart_index: i, segment: T20 })),
+    )
+  })
+})
+
 describe('rebuild', () => {
   it('aborts a session whose events fail to load, and restores the other', async () => {
     const good: StoredGameSession = {

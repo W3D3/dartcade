@@ -1,6 +1,6 @@
 import { ulid } from 'ulid'
 import { games } from '../games/index.js'
-import { applyInput, awaitsFinish, type GameInput } from './apply.js'
+import { applyInput, awaitsFinish, overflowsVisit, type GameInput } from './apply.js'
 import type { GameConfig, Session, Player, Seat, FinishedSeat, UserAction, Snapshot } from './types.js'
 import { parseBoardEvent, readBoardStatus } from './boardEvent.js'
 import { authorizeAction, currentSeat } from './access.js'
@@ -371,6 +371,9 @@ export class SessionEngine {
       session.dartsLeftOnBoard = false
       return false
     }
+    // The board's darts after a visit's third, or its new visit while one is open, are dropped
+    // unlogged too (older logs replay as played)
+    if (input.source === 'board' && overflowsVisit(session, input.event)) return false
     const at = new Date()
     await prefetchShots(session, input, at)
     await this.logInput(session, input, raw, origin, at)
