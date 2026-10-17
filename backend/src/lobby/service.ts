@@ -438,6 +438,16 @@ export class LobbyService {
     return refOf(fresh ?? lobby)
   }
 
+  /** A member renamed their account: the lobby, and the seat the next game gives them, show the new name. */
+  async renamed(userId: string, name: string): Promise<void> {
+    const lobbyId = await q.getOpenLobbyIdOfUser(this.db, userId)
+    if (lobbyId === undefined) return
+    await this.enqueue(lobbyId, async () => {
+      await q.renameMember(this.db, userId, name)
+      await this.refreshAndPublish(lobbyId)
+    })
+  }
+
   async leave(userId: string, lobbyId: string): Promise<void> {
     await this.enqueue(lobbyId, async () => {
       const lobby = await this.openFor(lobbyId, userId)

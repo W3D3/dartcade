@@ -67,7 +67,10 @@ describe('/api/me', () => {
     expect(JSON.parse(res.body)).not.toHaveProperty('role')
   })
 
-  it('renames and answers with the account as it is now', async () => {
+  it('renames, tells the lobby, and answers with the account as it is now', async () => {
+    const onRenamed = vi.fn().mockResolvedValue(undefined)
+    const a = createFastify()
+    a.register(meApiPlugin, { db: {} as any, onRenamed })
     vi.mocked(getAccount).mockResolvedValue({
       id: 'old',
       name: 'Phil_T',
@@ -77,9 +80,10 @@ describe('/api/me', () => {
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
     })
-    const res = await app().inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
+    const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
     expect(res.statusCode).toBe(200)
     expect(renameUser).toHaveBeenCalledWith({}, 'old', 'Phil_T')
+    expect(onRenamed).toHaveBeenCalledWith('old', 'Phil_T')
     expect(JSON.parse(res.body)).toMatchObject({ name: 'Phil_T', nameNeedsChange: false, suggestedName: null })
   })
 

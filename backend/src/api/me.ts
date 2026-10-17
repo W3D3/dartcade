@@ -13,6 +13,8 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
   /** Name or Invisible changed: friends see it. */
   onChanged?: (userId: string) => void
+  /** Name changed: their row in their open lobby follows it. */
+  onRenamed?: (userId: string, name: string) => Promise<void>
 }
 
 /** The signed-in account: GET shows it, PATCH changes the name or Invisible. */
@@ -33,7 +35,10 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
   app.get<Route<'getMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('getMe') }, async req => me(req.userId))
 
   app.patch<Route<'updateMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('updateMe') }, async req => {
-    if (req.body.name !== undefined) await renameUser(db, req.userId, req.body.name)
+    if (req.body.name !== undefined) {
+      const name = await renameUser(db, req.userId, req.body.name)
+      await opts.onRenamed?.(req.userId, name)
+    }
     if (req.body.invisible !== undefined) await setInvisible(db, req.userId, req.body.invisible)
     opts.onChanged?.(req.userId)
     return me(req.userId)

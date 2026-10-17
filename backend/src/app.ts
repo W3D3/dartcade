@@ -140,6 +140,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
     onChanged: userId => {
       friends.touch([userId])
     },
+    onRenamed: (userId, name) => lobbies.renamed(userId, name),
   })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
