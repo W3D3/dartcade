@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { sharedBoard, winMeta, winView } from '../winScreen.js'
-import type { GameDetail, Snapshot } from '../api'
+import type { GameDetail, HiloGame, Snapshot } from '../api'
 
-const seat = (o: { userId?: string | null; boardName?: string | null } = {}) => ({
+const seat = (o: { userId?: string | null; boardName?: string | null; forfeited?: boolean } = {}) => ({
   controllerUserId: 'u1',
   userId: o.userId === undefined ? 'u1' : o.userId,
   boardId: 'b1',
@@ -10,7 +10,7 @@ const seat = (o: { userId?: string | null; boardName?: string | null } = {}) => 
   boardOnline: true,
   controllerConnected: true,
   disconnectedAt: null,
-  forfeited: false,
+  forfeited: o.forfeited ?? false,
   bot: null,
 })
 
@@ -244,5 +244,201 @@ describe('winMeta / sharedBoard', () => {
     const s = x01()
     s.seats[1] = seat({ boardName: "Lena's place" })
     expect(sharedBoard(s)).toBeNull()
+  })
+})
+
+// A Higher Lower visit: round, total and outcome.
+const hv = (round: number, total: number, outcome: 'high' | 'low' | 'between' | 'miss') => ({ round, total, outcome })
+type HiloSeatFixture = {
+  lives: number
+  out?: boolean
+  place: number | null
+  outRound?: number | null
+  visits?: ReturnType<typeof hv>[]
+  forfeited?: boolean
+}
+
+function hilo(
+  players: string[],
+  seats: HiloSeatFixture[],
+  winner: number | null,
+  o: { guests?: number[] } = {},
+): Snapshot & { game: HiloGame } {
+  return {
+    type: 'snapshot',
+    sessionId: 's1',
+    gameId: 'hilo',
+    boardId: 'b1',
+    lobbyId: null,
+    lobbyName: null,
+    players: players.map(name => ({ name })),
+    game: {
+      cfg: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true },
+      phase: winner === null ? 'game' : 'finished',
+      high: 41,
+      low: 21,
+      round: 5,
+      currentPlayer: 0,
+      nextPlayer: null,
+      winner,
+      visitLocked: false,
+      visitTotal: 0,
+      seats: seats.map(s => ({
+        lives: s.lives,
+        out: s.out ?? false,
+        place: s.place,
+        outRound: s.outRound ?? null,
+        visits: s.visits ?? [],
+      })),
+      lastResult: null,
+      bullOff: null,
+      currentVisitDarts: [],
+      totalDarts: seats.map(() => 0),
+      totalVisits: seats.map(() => 0),
+    },
+    bmStatus: null,
+    status: 'finished',
+    finishPending: false,
+    canUndoVisit: false,
+    ownerUserId: 'u1',
+    seats: players.map((_, i) => seat({ userId: o.guests?.includes(i) ? null : `u${i + 1}`, forfeited: seats[i]?.forfeited ?? false })),
+    mySeats: [0],
+  } as unknown as Snapshot & { game: HiloGame }
+}
+
+describe('hiloWin', () => {
+  it('duel: the winner first, lives left, bars moved and lives lost to misses', () => {
+    const snap = hilo(
+      ['Christoph', 'Guest 1'],
+      [
+        { lives: 2, place: 1, visits: [hv(1, 45, 'high'), hv(2, 15, 'low'), hv(3, 10, 'between')] },
+        {
+          lives: 0,
+          out: true,
+          place: 2,
+          outRound: 4,
+          visits: [hv(1, 60, 'high'), hv(2, 5, 'miss'), hv(3, 30, 'between'), hv(4, 35, 'between')],
+        },
+      ],
+      0,
+      { guests: [1] },
+    )
+    const v = winView(snap, null)!
+    expect(v.mode).toBe('hilo')
+    expect(v.layout).toBe('duel')
+    expect(v.kicker).toBe('Last one standing')
+    expect(v.scoreLabel).toBe('Lives left')
+    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.guest, c.sub, c.cells])).toEqual([
+      ['Christoph', 1, 2, false, '2 lives left', ['2', '2', '–']],
+      ['Guest 1', 2, 0, true, 'Out in round 4', ['0', '1', '4']],
+    ])
+    expect(v.stats).toEqual([
+      { label: 'Lives left', values: ['2', '0'], share: 1 },
+      { label: 'Bars moved', values: ['2', '1'], share: expect.closeTo(0.667, 2) },
+      { label: 'Lives lost to misses', values: ['0', '1'], share: 0 },
+    ])
+    expect(v.highlights).toEqual([
+      { name: 'Guest 1', guest: true, label: 'Highest bar', text: 'Set HIGH 60.' },
+      { name: 'Christoph', guest: false, label: 'Lowest bar', text: 'Set LOW 15.' },
+    ])
+    expect(v.checkout).toBeNull()
+    expect(v.legs).toEqual([])
+    expect(v.columns).toEqual(['Lives', 'Bars moved', 'Out in'])
+  })
+
+  it('party: placed by place, highest and lowest bar set across everyone', () => {
+    const snap = hilo(
+      ['Christoph', 'Lena', 'Guest 1', 'Max'],
+      [
+        { lives: 1, place: 1, visits: [hv(1, 70, 'high')] },
+        { lives: 0, out: true, place: 2, outRound: 5, visits: [hv(1, 10, 'low'), hv(5, 33, 'between')] },
+        { lives: 0, out: true, place: 4, outRound: 2, visits: [hv(2, 5, 'miss')] },
+        { lives: 0, out: true, place: 3, outRound: 3, visits: [hv(3, 62, 'high')] },
+      ],
+      0,
+      { guests: [2] },
+    )
+    const v = winView(snap, null)!
+    expect(v.layout).toBe('party')
+    expect(v.competitors.map(c => [c.name, c.placement, c.sub, c.cells])).toEqual([
+      ['Christoph', 1, '1 life left', ['1', '1', '–']],
+      ['Lena', 2, 'Out in round 5', ['0', '1', '5']],
+      ['Max', 3, 'Out in round 3', ['0', '1', '3']],
+      ['Guest 1', 4, 'Out in round 2', ['0', '0', '2']],
+    ])
+    expect(v.highlights).toEqual([
+      { name: 'Christoph', guest: false, label: 'Highest bar', text: 'Set HIGH 70.' },
+      { name: 'Lena', guest: false, label: 'Lowest bar', text: 'Set LOW 10.' },
+    ])
+  })
+
+  it('a forfeit: the forfeited seat ranks last even with more lives left, winner null', () => {
+    const snap = hilo(
+      ['Christoph', 'Guest 1'],
+      [
+        { lives: 1, place: null },
+        { lives: 3, place: null, forfeited: true },
+      ],
+      null,
+      { guests: [1] },
+    )
+    expect(snap.game.winner).toBeNull()
+    const v = winView(snap, null)!
+    expect(v).not.toBeNull()
+    expect(v.competitors.map(c => [c.name, c.placement, c.score, c.sub])).toEqual([
+      ['Christoph', 1, 1, '1 life left'],
+      ['Guest 1', 2, 3, 'Forfeited'],
+    ])
+  })
+
+  it('a 3+ player forfeit: a seat still in ranks ahead of one already out, mirroring compareSeats', () => {
+    // hilo.ts's compareSeats puts every seat still in ahead of every seat that's out, same as
+    // here: A (in, 3 lives) must rank ahead of B (out, engine place 3), even though B's place
+    // is a smaller number than "no place yet".
+    const snap = hilo(
+      ['A', 'B', 'C'],
+      [
+        { lives: 3, place: null },
+        { lives: 0, out: true, place: 3, outRound: 2 },
+        { lives: 1, place: null, forfeited: true },
+      ],
+      null,
+    )
+    const v = winView(snap, null)!
+    expect(v.competitors.map(c => [c.name, c.placement])).toEqual([
+      ['A', 1],
+      ['B', 2],
+      ['C', 3],
+    ])
+  })
+
+  it('a forfeit among seats tied on lives: the tie stands, the forfeit still ranks last', () => {
+    const snap = hilo(
+      ['Mia', 'Noah', 'Ivy'],
+      [
+        { lives: 2, place: null },
+        { lives: 2, place: null },
+        { lives: 1, place: null, forfeited: true },
+      ],
+      null,
+    )
+    const v = winView(snap, null)!
+    expect(v.competitors.map(c => [c.name, c.placement])).toEqual([
+      ['Mia', 1],
+      ['Noah', 1],
+      ['Ivy', 3],
+    ])
+  })
+
+  it('names the rules, and both players in a duel', () => {
+    const snap = hilo(
+      ['Christoph', 'Guest 1'],
+      [
+        { lives: 2, place: 1 },
+        { lives: 0, out: true, place: 2, outRound: 2 },
+      ],
+      0,
+    )
+    expect(winMeta(snap)).toBe('41 / 21 · 3 lives · Christoph vs Guest 1')
   })
 })

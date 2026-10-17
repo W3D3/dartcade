@@ -77,6 +77,32 @@ describe('details page helpers', () => {
     expect(highlightDefault(d)).toBe(0)
     expect(highlightDefault({ ...d, game: { ...d.game, mySeat: null } })).toBe(1)
   })
+
+  it('a hilo game gets the generic result (no big number, no custom section)', () => {
+    const players = [seat(0, 'Christoph', 1, { livesLeft: 2 }), seat(1, 'Guest 1', 2, { livesLeft: 0, outRound: 4 })]
+    const d: GameDetail = {
+      game: {
+        id: 'g1',
+        mode: 'hilo',
+        config: { startHigh: 41, startLow: 21, lives: 3 },
+        createdAt: '2026-09-26T19:00:00.000Z',
+        finishedAt: '2026-09-26T19:14:00.000Z',
+        board: { id: 'b', name: 'Living room' },
+        mySeat: 0,
+        players,
+      },
+      detail: { mode: 'hilo', start: { high: 41, low: 21 }, visits: [], seats: [] },
+      stats: { rows: [], seats: players.map(p => ({ index: p.seat, values: p.stats })) },
+    } as unknown as GameDetail
+    expect(layoutOf(d)).toBe('duel')
+    const sides = detailSides(d)
+    expect(sides.map(s => [s.name, s.placement])).toEqual([
+      ['Christoph', 1],
+      ['Guest 1', 2],
+    ])
+    expect(headline(d, sides)).toEqual({ big: '', caption: '' })
+    expect(metaLine(d)).toMatch(/^41 \/ 21 · 3 lives · 26 Sep 2026, \d\d:\d\d · Living room$/)
+  })
 })
 
 describe('isGameDetail', () => {
