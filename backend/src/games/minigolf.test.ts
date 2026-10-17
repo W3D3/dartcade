@@ -62,6 +62,14 @@ describe('minigolf', () => {
     expect(M.validate!(cfg({ physics: '4d' as '3d' }), two)).toBe('Unknown physics')
   })
 
+  it('refuses option values it does not offer and a fractional stroke cap', () => {
+    expect(M.validate!(cfg({ tries: 2 as 3 }), two)).toBe('Unknown darts per stroke')
+    expect(M.validate!(cfg({ tries: '3' as unknown as 3 }), two)).toBe('Unknown darts per stroke')
+    expect(M.validate!(cfg({ aimAssist: 'yes' as unknown as boolean }), two)).toBe('Unknown aim assist')
+    expect(M.validate!(cfg({ maxStrokes: 4.5 }), two)).toBe('Max strokes must be between 3 and 10')
+    expect(M.validate!({ ...cfg(), shotPreview: undefined } as unknown as MinigolfConfig, two)).toBeNull()
+  })
+
   it('draws the same mixed holes for the same seed', () => {
     const a = M.init(cfg({ course: 'mixed' }), two, seededRng(7))
     const b = M.init(cfg({ course: 'mixed' }), two, seededRng(7))
