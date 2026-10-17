@@ -142,11 +142,15 @@ export class LobbyService {
 
   /**
    * At start-up, after the games are rebuilt: every open lobby without a running game gets
-   * its host settled, and an empty one closes. Catches a game end the lobby never heard of.
+   * the after-game reset (resetAfterGame), so a game end the lobby never heard of (the server
+   * died right then) still resets it, settles its host and closes it if empty.
    */
   async settleAll(): Promise<void> {
     for (const lobbyId of await q.getOpenLobbyIds(this.db)) {
-      await this.enqueue(lobbyId, () => this.settleHost(lobbyId))
+      await this.enqueue(lobbyId, async () => {
+        // A lobby mid-game resets when that game ends
+        if (!this.deps.engine.getLobbySession(lobbyId)) await this.resetAfterGame(lobbyId)
+      })
     }
   }
 
@@ -919,15 +923,16 @@ export class LobbyService {
     })
   }
 
-  // Runs in the lobby's queue, after its game ended (see onGameEnded)
-  private async resetAfterGame(lobbyId: string, e: GameEnded): Promise<void> {
+  // Runs in the lobby's queue, after its game ended (see onGameEnded), or at start-up without
+  // the game (settleAll): then the feed gets no line
+  private async resetAfterGame(lobbyId: string, e?: GameEnded): Promise<void> {
     const lobby = await this.reload(lobbyId)
     if (!lobby || lobby.closedAt !== null) return
     await this.db.transaction().execute(async trx => {
       await q.resetAfterGame(trx, lobbyId)
       // Everyone is back in: whoever sat out without a team gets one
       await this.fillTeams(trx, lobbyId, lobby.nextGame)
-      await addGameEndActivity(trx, lobbyId, e)
+      if (e) await addGameEndActivity(trx, lobbyId, e)
     })
     if ((await this.settleHost(lobbyId)) === 'open') await this.publish(lobbyId)
   }

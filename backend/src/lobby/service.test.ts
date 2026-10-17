@@ -1234,6 +1234,32 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await lobbies.view(id)).toBeNull()
     })
 
+    it('at start-up, a lobby whose game ended unheard gets the after-game reset; one mid-game keeps its people as they are', async () => {
+      await lobbies.join('max', id, code)
+      await lobbies.updatePerson('chris', id, (await person('Max')).id, { plays: false })
+      await setReady('chris', 'Christoph')
+      await setReady('lena', 'Lena')
+      const { sessionId } = await lobbies.start('chris', id, true)
+      const asBefore = [
+        ['Christoph', true, true],
+        ['Lena', true, true],
+        ['Max', false, false],
+      ]
+      const people = async () => (await lobbies.view(id))?.people.map(p => [p.name, p.plays, p.ready])
+      await lobbies.settleAll()
+      expect(await people()).toEqual(asBefore)
+      const hook = vi.spyOn(lobbies, 'onGameEnded').mockImplementation(() => Promise.resolve())
+      await engine.deleteSession(sessionId, 'chris')
+      hook.mockRestore()
+      expect(await people()).toEqual(asBefore)
+      await lobbies.settleAll()
+      expect(await people()).toEqual([
+        ['Christoph', true, false],
+        ['Lena', true, false],
+        ['Max', true, false],
+      ])
+    })
+
     it('a lobby everyone left during a game closes when the game ends', async () => {
       const { sessionId } = await lobbies.start('chris', id, true)
       await lobbies.leave('chris', id)
