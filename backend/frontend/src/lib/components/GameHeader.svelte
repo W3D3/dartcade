@@ -185,26 +185,6 @@
         <Badge variant="live" class="h-7 px-[10px] text-[12px] xl:h-[30px] xl:px-3 xl:text-[13px]">LIVE</Badge>
       {/if}
 
-      {#if myBoard}
-        {#if myBoard.online}
-          <span
-            title="Board connected"
-            class="h-[30px] px-3 inline-flex items-center gap-[7px] rounded-full border border-line-chip text-ink-2 text-[13px] font-medium whitespace-nowrap"
-          >
-            <span class="w-2 h-2 shrink-0 rounded-full bg-accent"></span><span class="max-w-[160px] xl:max-w-none truncate"
-              >{myBoard.name}</span
-            >
-          </span>
-        {:else}
-          <span
-            role="status"
-            class="h-[30px] px-3 inline-flex items-center gap-[7px] rounded-full border border-warn-line bg-warn-soft text-warn text-[13px] font-semibold whitespace-nowrap"
-          >
-            <span class="w-2 h-2 box-border rounded-full border-[1.5px] border-warn"></span>{myBoard.name} · offline
-          </span>
-        {/if}
-      {/if}
-
       {#each boards as b (b.id)}
         <BoardStatusPanel board={b} />
       {/each}
