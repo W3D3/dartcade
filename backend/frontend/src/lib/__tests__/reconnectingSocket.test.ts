@@ -9,6 +9,7 @@ class FakeSocket {
   onclose: ((e: { code: number }) => void) | null = null
   onerror: (() => void) | null = null
   closed = false
+  readyState: number = WebSocket.CONNECTING
   sent: string[] = []
   constructor(readonly url: string) {
     FakeSocket.opened.push(this)
@@ -17,6 +18,8 @@ class FakeSocket {
     this.closed = true
   }
   send(data: string) {
+    // Like the browser's: sending before the socket opens throws
+    if (this.readyState !== WebSocket.OPEN) throw new Error('InvalidStateError')
     this.sent.push(data)
   }
   drop(code = 1006) {
@@ -105,10 +108,16 @@ describe('reconnectingSocket', () => {
     s.stop()
   })
 
-  it('sends on the current socket', () => {
+  it('sends on the current socket only while it is open', () => {
     const s = start()
+    s.send('connecting')
+    last().readyState = WebSocket.OPEN
     s.send('x')
-    expect(FakeSocket.opened[0].sent).toEqual(['x'])
+    last().drop()
+    s.send('reconnecting')
+    waitForReconnect()
+    s.send('connecting again')
+    expect(FakeSocket.opened.map(f => f.sent)).toEqual([['x'], []])
     s.stop()
   })
 

@@ -16,7 +16,7 @@ export interface SocketHandlers {
 }
 
 export interface ReconnectingSocket {
-  /** Sends on the current socket, if any. */
+  /** Sends on the current socket while it is open; otherwise drops the message (never queued: a dart sent late could land in the wrong visit). */
   send(data: string): void
   /** Closes the socket and never reconnects; a closed socket's events are ignored from here on. */
   stop(): void
@@ -67,7 +67,7 @@ export function reconnectingSocket(url: string, handlers: SocketHandlers, open: 
 
   return {
     send(data) {
-      ws?.send(data)
+      if (ws?.readyState === WebSocket.OPEN) ws.send(data)
     },
     stop() {
       stopped = true
