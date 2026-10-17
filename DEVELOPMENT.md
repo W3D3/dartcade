@@ -59,7 +59,8 @@ Once the bridge connects, open http://localhost:5173, pick your board in the dro
 
 **No board?** Start a game without one and enter the darts by tapping the board or using the keypad.
 
-**Dev logins.** In development the backend seeds an `Admin` account (with a `Dev Board`) and four
+**Dev logins.** In development the backend seeds an `Admin` account (with a `Dev Board` and
+better-auth's `admin` role, which admin pages and admin-only flags check) and four
 players: Luke, Phil, Michael and Gerwyn (`<name>@dartcade.local`). The sign-in page has a button
 for each, and the account menu (the avatar on phones, the side nav on desktop) switches between them
 in one tap. To try a game with two people on one machine, sign in as one of them in a private
@@ -95,7 +96,6 @@ Backend-only (set automatically by the dev compose, documented here for manual r
 | `DATABASE_URL`      | Postgres connection string                                                                                                                                                                                                                                    |
 | `PORT`              | HTTP/WS listen port (default `3000`)                                                                                                                                                                                                                          |
 | `TEST_DATABASE_URL` | Override DB URL for `npm test`                                                                                                                                                                                                                                |
-| `ADMIN_EMAILS`      | Comma-separated emails that are admins (the minigolf test bench at `#/admin/minigolf`). The dev compose names `admin@dartcade.local`, which the dev seed also gives `role = 'admin'`; setting `role = 'admin'` on a user in the DB works too                  |
 | `RATE_LIMIT_MAX`    | Requests per minute per IP before the API answers 429 (default `200`); the e2e stack raises it                                                                                                                                                                |
 | `TRUST_PROXY`       | Behind a reverse proxy: `true`, the number of proxies, or their addresses, so rate limits count each client's address (from `X-Forwarded-For`) instead of the proxy's. Unset when the backend is reached directly                                             |
 | `FLAGS_ON`          | Comma-separated feature flags turned on for everyone (e.g. `gamemode.minigolf.enabled` once Minigolf ships; `gamemode.minigolf.flat` brings back the flat 2D game instead of 3D); otherwise each flag's own rule decides (`backend/src/flags/definitions.ts`) |
