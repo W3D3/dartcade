@@ -23,6 +23,7 @@ import { friendsApiPlugin } from './api/friends.js'
 import { rankedApiPlugin } from './api/ranked.js'
 import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
 import { adminUsersApiPlugin } from './api/adminUsers.js'
+import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
@@ -172,6 +173,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   await app.register(rankedApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })
   await app.register(adminUsersApiPlugin, { db })
+  await app.register(adminFlagsApiPlugin, { db })
 
   // Any unmatched method+path under our reserved prefixes gets our ErrorResponse 404
   // (not Fastify's default `{ message, error: 'Not Found', statusCode }`); an unmatched
