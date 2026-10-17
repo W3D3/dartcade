@@ -260,7 +260,7 @@ describe('handleBridgeConnection', () => {
 
     // hello was processed (not dropped) → no 4400, and the event was acked
     expect(socket.close).not.toHaveBeenCalledWith(4400, 'expected bridge.hello')
-    expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ ack: 1 }))
+    expect(socket.send).toHaveBeenCalledWith(JSON.stringify({ ack: 1, boot_id: 'boot' }))
 
     // both versions from the hello are kept on the connection
     const conn = bridgeConnections.get('board-1')
@@ -312,7 +312,7 @@ describe('handleBridgeConnection', () => {
 
     // The next ack would silently cover it on the bridge side: the warning is the only trace
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('envelope'), expect.objectContaining({ kind: 'dart.detected', seq: 5 }))
-    expect(socket.send).not.toHaveBeenCalledWith(JSON.stringify({ ack: 5 }))
+    expect(socket.send).not.toHaveBeenCalledWith(JSON.stringify({ ack: 5, boot_id: 'boot' }))
     warn.mockRestore()
   })
 
@@ -361,7 +361,7 @@ describe('handleBridgeConnection', () => {
     socket.emit('message', event(3, 'dart.detected'))
     for (let i = 0; i < 5; i++) await flush()
 
-    expect(socket.send.mock.calls.map(c => c[0])).toEqual([1, 2, 3].map(ack => JSON.stringify({ ack })))
+    expect(socket.send.mock.calls.map(c => c[0])).toEqual([1, 2, 3].map(ack => JSON.stringify({ ack, boot_id: 'boot' })))
     expect(vi.mocked(queries.insertBridgeEvent).mock.calls.map(c => c[1].kind)).toEqual(['dart.detected'])
     expect(engine.onBridgeEvent.mock.calls.map((c: unknown[]) => c[1])).toEqual(['dart.detected'])
   })

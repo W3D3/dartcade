@@ -225,10 +225,13 @@ export function handleBridgeConnection(
           conn.bootId = bootId
         }
 
+        // Acks name the boot: a restarted bridge replays an earlier boot's events, whose seqs
+        // overlap its own
+
         // Not stored: one idle board sends tens of thousands a day and nothing reads them. Acking
         // it is safe: events run in order and stop at a failed store, so every earlier one is stored
         if (TELEMETRY_KINDS.has(kind)) {
-          socket.send(JSON.stringify({ ack: seq }))
+          socket.send(JSON.stringify({ ack: seq, boot_id: bootId }))
           return
         }
 
@@ -242,7 +245,7 @@ export function handleBridgeConnection(
           data,
         })
 
-        socket.send(JSON.stringify({ ack: seq }))
+        socket.send(JSON.stringify({ ack: seq, boot_id: bootId }))
         if (!inserted) return
 
         bridgeConnections.recordEvent(boardDbId, { at: recvWall, kind, data })

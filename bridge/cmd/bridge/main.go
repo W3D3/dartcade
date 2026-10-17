@@ -5,6 +5,7 @@ import (
 	"flag"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"slices"
 	"syscall"
@@ -157,6 +158,7 @@ func main() {
 		BMVersion:     client.BMVersion(),
 		BMUrl:         cfg.BoardURL,
 		BridgeVersion: buildVersion(),
+		OutboxPath:    outboxPath(cfgPath),
 	}, commands)
 
 	// After a dart, a correction, a takeout or a resync: a new still from each camera,
@@ -197,6 +199,15 @@ func main() {
 
 	runDiffer(ctx, client.Frames(), eventCh)
 	log.Info("shutting down")
+}
+
+// outboxPath is where the transport keeps unacked game data across restarts: next to
+// bridge.toml (the volume a container keeps); none without a config path.
+func outboxPath(cfgPath string) string {
+	if cfgPath == "" {
+		return ""
+	}
+	return filepath.Join(filepath.Dir(cfgPath), "outbox.json")
 }
 
 // runDiffer turns Board Manager frames into event batches on eventCh until ctx ends or

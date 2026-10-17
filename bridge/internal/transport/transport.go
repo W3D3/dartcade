@@ -65,6 +65,8 @@ type Config struct {
 	BMUrl     string // Board Manager base URL, reported in bridge.hello
 	// Bridge build version (main.version), reported in bridge.hello
 	BridgeVersion string
+	// File that keeps unacked game data across restarts (see persist.go); empty: memory only
+	OutboxPath string
 }
 
 // Commands are the backend commands the bridge runs, by name; any other name is refused.
@@ -78,6 +80,10 @@ type Transport struct {
 	mu       sync.Mutex
 	outbox   []outboxEntry
 	seq      uint64
+	// Unacked game data from earlier boots (the outbox file), sent before this boot's outbox
+	replay []Envelope
+	// Signalled when the game data to keep in the outbox file changed
+	dirty chan struct{}
 	// Signalled after Send adds to the outbox, so the live connection flushes it
 	wake chan struct{}
 	// Allowed backend commands waiting for runCommands
@@ -106,6 +112,8 @@ func New(cfg Config, commands Commands) *Transport {
 		wake:     make(chan struct{}, 1),
 		commands: make(chan command, commandQueue),
 		stills:   make(chan any, 2*camera.MaxCameras),
+		replay:   loadOutbox(cfg.OutboxPath),
+		dirty:    make(chan struct{}, 1),
 	}
 }
 
@@ -166,6 +174,9 @@ func (t *Transport) Start(ctx context.Context) error {
 		opts.HTTPHeader = http.Header{"Authorization": {"Bearer " + t.cfg.Token}}
 	}
 	go t.runCommands(ctx)
+	if t.cfg.OutboxPath != "" {
+		go t.runPersist(ctx)
+	}
 	delay := 500 * time.Millisecond
 	for {
 		if ctx.Err() != nil {
@@ -237,21 +248,24 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 		t.onConnect()
 	}
 
-	// Replay unacknowledged outbox entries. Advance sentUpTo so the first wake
-	// signal after replay doesn't re-deliver the whole outbox.
+	// Replay unacknowledged entries: earlier boots' first, in the order they happened, then
+	// this boot's outbox. Advance sentUpTo so the first wake signal after replay doesn't
+	// re-deliver the whole outbox.
 	t.mu.Lock()
-	snapshot := make([]Envelope, len(t.outbox))
-	for i, e := range t.outbox {
-		snapshot[i] = e.env
+	snapshot := slices.Clone(t.replay)
+	for _, e := range t.outbox {
+		snapshot = append(snapshot, e.env)
+	}
+	var sentUpTo uint64
+	if len(t.outbox) > 0 {
+		sentUpTo = t.outbox[len(t.outbox)-1].env.Seq
 	}
 	t.mu.Unlock()
 
-	var sentUpTo uint64
 	for _, e := range snapshot {
 		if err := write(ctx, conn, e); err != nil {
 			return
 		}
-		sentUpTo = e.Seq
 	}
 
 	heartbeat := time.NewTicker(20 * time.Second)
@@ -404,6 +418,9 @@ func (t *Transport) enqueue(evs []differ.Event) {
 		}
 
 		t.outbox = append(t.outbox, outboxEntry{env: env, telemetry: isTelemetry})
+		if !isTelemetry {
+			t.markDirty()
+		}
 	next:
 	}
 }
@@ -425,19 +442,38 @@ func marshalData(ev differ.Event, bmFrameSeq uint64) (json.RawMessage, error) {
 // handleMessage handles a message from the backend: an ack or a command. It must not block.
 func (t *Transport) handleMessage(msg []byte) {
 	var ack struct {
-		Ack *uint64 `json:"ack"`
+		Ack    *uint64 `json:"ack"`
+		BootID string  `json:"boot_id"`
 	}
 	json.Unmarshal(msg, &ack)
 	if ack.Ack != nil {
 		t.mu.Lock()
-		newBox := t.outbox[:0]
-		for _, e := range t.outbox {
-			if e.env.Seq > *ack.Ack {
-				newBox = append(newBox, e)
+		defer t.mu.Unlock()
+		boot := ack.BootID
+		if boot == "" {
+			// A backend that doesn't name the boot: it acks in the order sent, earlier boots first
+			boot = t.cfg.BootID
+			if len(t.replay) > 0 {
+				boot = t.replay[0].BootID
 			}
 		}
-		t.outbox = newBox
-		t.mu.Unlock()
+		n := len(t.replay)
+		t.replay = slices.DeleteFunc(t.replay, func(e Envelope) bool { return e.BootID == boot && e.Seq <= *ack.Ack })
+		changed := len(t.replay) != n
+		if boot == t.cfg.BootID {
+			newBox := t.outbox[:0]
+			for _, e := range t.outbox {
+				if e.env.Seq > *ack.Ack {
+					newBox = append(newBox, e)
+				} else if !e.telemetry {
+					changed = true
+				}
+			}
+			t.outbox = newBox
+		}
+		if changed {
+			t.markDirty()
+		}
 		return
 	}
 
