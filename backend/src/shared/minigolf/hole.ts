@@ -1,6 +1,10 @@
 // Checks a hole before it's played: readable errors instead of a broken simulation.
 import { pointInPolygon, segmentsIntersect } from './geometry.js'
-import type { Hole, Pt } from './types.js'
+import { BALL_R, type Hole, type Pt } from './types.js'
+
+/** mm across the outline either way: far above any real hole (the official ones are under 3.5 m),
+ *  low enough that the 3D ground stays cheap to build. holeSchema caps the counts. */
+const MAX_SPAN = 20_000
 
 const finite = (pts: readonly Pt[]) => pts.every(([x, y]) => Number.isFinite(x) && Number.isFinite(y))
 
@@ -26,11 +30,15 @@ export function validateHole(hole: Hole): string[] {
   const errors: string[] = []
   checkPolygon(errors, 'outline', hole.outline)
   const outlineOk = errors.length === 0
+  if (outlineOk) {
+    const span = (k: 0 | 1) => Math.max(...hole.outline.map(p => p[k])) - Math.min(...hole.outline.map(p => p[k]))
+    if (Math.max(span(0), span(1)) > MAX_SPAN) errors.push(`outline is more than ${MAX_SPAN / 1000} m across`)
+  }
   if (!finite([hole.tee])) errors.push('tee has a non-finite number')
   else if (outlineOk && !pointInPolygon(hole.tee, hole.outline)) errors.push('tee is outside the outline')
   if (!finite([hole.cup.at])) errors.push('cup has a non-finite number')
   else if (outlineOk && !pointInPolygon(hole.cup.at, hole.outline)) errors.push('cup is outside the outline')
-  if (!(hole.cup.r > 0)) errors.push('cup radius must be positive')
+  if (!(hole.cup.r > BALL_R)) errors.push(`cup radius must be more than the ball's (${BALL_R} mm)`)
   if (!(hole.par >= 1)) errors.push('par must be at least 1')
   if (hole.shape) {
     const { corners, curves, circles } = hole.shape

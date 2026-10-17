@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateHole } from './hole.js'
+import { holeSchema } from './holeSchema.js'
 import type { Curve, Hole, Pt } from './types.js'
 
 const ok: Hole = {
@@ -58,7 +59,8 @@ describe('validateHole', () => {
   })
   it('rejects non-finite numbers and bad sizes', () => {
     expect(validateHole({ ...ok, tee: [Number.NaN, 0] })).toContain('tee has a non-finite number')
-    expect(validateHole({ ...ok, cup: { at: [200, 150], r: 0 } })).toContain('cup radius must be positive')
+    expect(validateHole({ ...ok, cup: { at: [200, 150], r: 0 } })).toContain("cup radius must be more than the ball's (21.35 mm)")
+    expect(validateHole({ ...ok, cup: { at: [200, 150], r: 15 } })).toContain("cup radius must be more than the ball's (21.35 mm)")
     expect(validateHole({ ...ok, bumpers: [{ at: [200, 600], r: -1 }] })).toContain('bumper 1 radius must be positive')
     expect(validateHole({ ...ok, walls: [{ points: [[10, 10]] }] })).toContain('wall 1 needs at least 2 points')
     expect(
@@ -114,5 +116,24 @@ describe('validateHole', () => {
     expect(validateHole({ ...ok, terrain: [{ mesa: { ...mesa, height: NaN } }] })).toContain('terrain 1 has a non-finite number')
     expect(validateHole({ ...ok, terrain: [{ mesa: { ...mesa, edges: [50, 0, 50, 50] } }] })).toContain('terrain 1 edges must be positive')
     expect(validateHole({ ...ok, terrain: [{ mesa: { ...mesa, to: [0, 100] } }] })).toContain('terrain 1 needs an area')
+  })
+  it('rejects an outline over 20 m across', () => {
+    const strip: Pt[] = [
+      [0, 0],
+      [600, 0],
+      [600, 400_000],
+      [0, 400_000],
+    ]
+    expect(validateHole({ ...ok, outline: strip })).toContain('outline is more than 20 m across')
+  })
+})
+
+describe('holeSchema', () => {
+  it('refuses holes with absurdly many points or pieces', () => {
+    expect(holeSchema.safeParse(ok).success).toBe(true)
+    const outline = Array.from({ length: 2001 }, (_, k): Pt => [Math.cos(k), Math.sin(k)])
+    expect(holeSchema.safeParse({ ...ok, outline }).success).toBe(false)
+    const bumpers = Array.from({ length: 101 }, () => ({ at: [200, 600], r: 30 }))
+    expect(holeSchema.safeParse({ ...ok, bumpers }).success).toBe(false)
   })
 })
