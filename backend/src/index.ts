@@ -1,5 +1,6 @@
 import { join, dirname } from 'path'
-import { loadFlagUser, modeAvailable } from './flags/index.js'
+import { loadFlagUser, modeAvailable, setOverrides } from './flags/index.js'
+import { loadOverrides } from './db/flagOverrides.js'
 import { fileURLToPath } from 'url'
 import { db, takeInstanceLock, url as dbUrl } from './db/index.js'
 import { deletePairingCodesExpiredBefore, runMigrations } from './db/queries.js'
@@ -109,6 +110,8 @@ const idleSweep = setInterval(
 idleSweep.unref()
 
 const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../frontend/dist') })
+// buildApp's setupFlags only set the env defaults; apply what's stored before serving any request
+await setOverrides(await loadOverrides(db))
 warn = (message, details) => {
   app.log.warn({ details }, message)
 }

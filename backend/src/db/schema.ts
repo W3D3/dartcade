@@ -268,6 +268,22 @@ export interface MinigolfCoursesTable {
   published_at: ColumnType<Date | null, Date | null | undefined, Date | null>
 }
 
+/** A flag's override, set at runtime (migration 025); no row for a key means today's default. */
+export interface FeatureFlagOverridesTable {
+  key: string
+  /** Null for a number override. */
+  mode: ColumnType<
+    'off' | 'admins' | 'users' | 'on' | null,
+    'off' | 'admins' | 'users' | 'on' | null | undefined,
+    'off' | 'admins' | 'users' | 'on' | null
+  >
+  user_ids: ColumnType<string[], string[] | undefined, string[]>
+  /** Null for a mode override. */
+  number: number | null
+  updated_by: string | null
+  updated_at: ColumnType<Date, Date | undefined, Date>
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -289,4 +305,5 @@ export interface Database {
   ranked_results: RankedResultsTable
   minigolf_holes: MinigolfHolesTable
   minigolf_courses: MinigolfCoursesTable
+  feature_flag_overrides: FeatureFlagOverridesTable
 }

@@ -5,6 +5,7 @@ import type { Kysely } from 'kysely'
 import { isAdmin } from '../auth/admin.js'
 import type { Database } from '../db/schema.js'
 import { getRoleAndEmail } from '../db/users.js'
+import type { FlagOverride } from '../db/flagOverrides.js'
 import { flagDefinitions } from './definitions.js'
 
 export type FlagUser = { id: string; email: string; role: string | null } | null
@@ -43,8 +44,32 @@ export function envFlagValues(): Map<string, number> {
   return out
 }
 
+// The env defaults and the stored overrides, kept here so either can change without losing the
+// other: setupFlags runs once at startup (buildApp), setOverrides again once the DB is up (index.ts)
+// and again whenever the admin API (api/adminFlags.ts) writes an override.
+let envFlagsOnState: ReadonlySet<string> = new Set()
+let envValuesState: ReadonlyMap<string, number> = new Map()
+let overridesState: ReadonlyMap<string, FlagOverride> = new Map()
+
+async function rebuildProvider(): Promise<void> {
+  await OpenFeature.setProviderAndWait(new TypedInMemoryProvider(flagDefinitions(envFlagsOnState, envValuesState, overridesState)))
+}
+
 export async function setupFlags(flagsOn: ReadonlySet<string>, values: ReadonlyMap<string, number> = new Map()): Promise<void> {
-  await OpenFeature.setProviderAndWait(new TypedInMemoryProvider(flagDefinitions(flagsOn, values)))
+  envFlagsOnState = flagsOn
+  envValuesState = values
+  await rebuildProvider()
+}
+
+/** Replaces the stored overrides (db/flagOverrides.ts) and rebuilds the provider with them. */
+export async function setOverrides(overrides: ReadonlyMap<string, FlagOverride>): Promise<void> {
+  overridesState = overrides
+  await rebuildProvider()
+}
+
+/** The overrides currently applied (the admin API shows them). */
+export function currentOverrides(): ReadonlyMap<string, FlagOverride> {
+  return overridesState
 }
 
 export function contextFor(user: FlagUser): EvaluationContext {
