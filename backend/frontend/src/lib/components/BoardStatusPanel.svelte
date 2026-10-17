@@ -16,17 +16,22 @@
   let busy = $state<string | null>(null)
   let bmStatus = $state<BoardStatus | null>(null)
 
+  // Primitives, so a new board object with the same id and status (every snapshot) doesn't restart polling
+  const boardId = $derived(board.id)
+  const online = $derived(board.online)
+
   // Polls this board's live Board Manager status while it's online; stops (and clears the
   // status) the moment it isn't, or when a different board is passed in.
   $effect(() => {
-    if (!board.online) {
+    if (!online) {
       bmStatus = null
       return
     }
+    const id = boardId
     let cancelled = false
     const load = async () => {
       try {
-        const { data } = await api.GET('/api/boards/{id}/status', { params: { path: { id: board.id } } })
+        const { data } = await api.GET('/api/boards/{id}/status', { params: { path: { id } } })
         if (!cancelled) bmStatus = data ?? null
       } catch {
         if (!cancelled) bmStatus = null

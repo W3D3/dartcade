@@ -153,6 +153,8 @@ describe('myBoardsInUse', () => {
   })
 
   it("takes the snapshot's live online state over the one fetched with the boards", () => {
+    // Loaded while the bridge was reconnecting; the snapshot has it back
+    expect(myBoardsInUse(remote(), [{ ...boardA, online: false }])).toEqual([boardA])
     expect(myBoardsInUse(remote({ seats: [{ boardOnline: false }] }), [boardA])).toEqual([{ ...boardA, online: false }])
   })
 
