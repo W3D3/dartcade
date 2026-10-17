@@ -1397,6 +1397,37 @@ export interface components {
                 } | null;
             }[];
         };
+        HiloDetail: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            mode: "hilo";
+            /** @description The bars the game started with */
+            start: {
+                high: number;
+                low: number;
+            };
+            /** @description Every visit of the game, in order */
+            visits: {
+                seat: number;
+                round: number;
+                total: number;
+                /** @enum {string} */
+                outcome: "high" | "low" | "between" | "miss";
+                /** @description The high bar after this visit */
+                high: number;
+                /** @description The low bar after this visit */
+                low: number;
+            }[];
+            /** @description One per seat, in seat order */
+            seats: {
+                place: number;
+                /** @description The round the seat went out in; null while still in */
+                outRound: number | null;
+                livesLeft: number;
+            }[];
+        };
         AtcDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -1546,7 +1577,7 @@ export interface components {
         };
         GameDetail: {
             game: components["schemas"]["GameSummary"];
-            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"];
+            detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"];
             stats: components["schemas"]["MatchStats"];
         };
         /** @description The game's match stats, the same shape for every game mode. Rows say how to show each value, so a mode adds stats without a frontend change. */

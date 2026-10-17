@@ -6,6 +6,8 @@ import { SessionEngine, type EngineStore } from './engine.js'
 import { x01Module } from '../games/x01.js'
 import { atcModule } from '../games/atc.js'
 import { minigolfModule } from '../games/minigolf.js'
+import { p121Module } from '../games/p121.js'
+import { hiloModule } from '../games/hilo.js'
 import { SnapshotSchema } from '../schema/zod.js'
 
 // ajv-formats is CommonJS: under NodeNext, TypeScript types its default import as the
@@ -122,6 +124,24 @@ describe('snapshots match schema/game-ws-v1.json', () => {
     const snap = e.getSnapshot(sessionId)!
     expect((snap.game as { bullOff: { result: unknown } }).bullOff.result).not.toBeNull()
     expectValid(snap)
+  })
+
+  it('121, after a visit', async () => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', 'p121', p121Module.defaultConfig, players)
+    expectValid(e.getSnapshot(sessionId))
+    await play(e, ['visit.opened', { visit_id: 'v' }], ['dart.detected', dart(0.3)], ['takeout.finished', {}])
+    expectValid(e.getSnapshot(sessionId))
+  })
+
+  it('Higher Lower, after a couple of visits', async () => {
+    const e = engine()
+    const { sessionId } = await e.create('u1', 'board-1', 'hilo', hiloModule.defaultConfig, players)
+    expectValid(e.getSnapshot(sessionId))
+    await play(e, ['visit.opened', { visit_id: 'a' }], ['dart.detected', dart(0.3)], ['takeout.finished', {}])
+    expectValid(e.getSnapshot(sessionId))
+    await play(e, ['visit.opened', { visit_id: 'b' }], ['dart.detected', dart(0.3)], ['takeout.finished', {}])
+    expectValid(e.getSnapshot(sessionId))
   })
 
   it("a game with a board per seat, as a seat's controller sees it", async () => {

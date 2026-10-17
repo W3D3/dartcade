@@ -1,7 +1,6 @@
 // Higher Lower: two bars, high and low. A visit lands above the high bar or below the low bar
 // to move it; anything else (or a miss that isn't already safe high) costs a life. The last
 // player with lives left wins. See docs/superpowers/specs/2026-10-17-higher-lower-design.md.
-// view()/summarize()/detail() are stubbed here; Tasks 2-3 fill them in.
 import type {
   ConfigFieldMeta,
   GameModule,
@@ -9,6 +8,8 @@ import type {
   BoardEvent,
   CommittedVisit,
   Dart,
+  HiloDetail,
+  MatchStats,
   SeatResult,
   SummaryContext,
   UserAction,
@@ -16,6 +17,7 @@ import type {
 import type { HiloView } from '../session/views.js'
 import { withBullOff } from '../session/withBullOff.js'
 import { effectiveDartScore } from './outRules.js'
+import { row, values } from './matchStats.js'
 import { rankSeats } from './ranking.js'
 
 export type HiloConfig = {
@@ -55,9 +57,6 @@ export type HiloState = {
   lastResult: HiloResult | null
 }
 
-/** Placeholder until Task 3 fills in the real history detail. */
-export type HiloDetail = { mode: 'hilo' }
-
 /** A total that can take any further dart (it's a miss-proof position): above the high bar,
  *  or already matching a 180 high bar with the extremes option. */
 export function safeHigh(total: number, high: number, cfg: HiloConfig): boolean {
@@ -86,6 +85,28 @@ export function compareSeats(s: HiloState, a: number, b: number): number {
   if (aIn) return s.lives[b] - s.lives[a]
   return (s.outAt[b] ?? 0) - (s.outAt[a] ?? 0)
 }
+
+/** 1-based placement per seat: in before out, more lives first, later out first (see compareSeats). */
+export function placementsOf(s: HiloState): number[] {
+  return rankSeats(s.lives.length, s.winner, (a, b) => compareSeats(s, a, b))
+}
+
+const visitsOf = (visits: HiloVisit[], seat: number) => visits.filter(v => v.seat === seat)
+const highestSet = (visits: HiloVisit[]): number | undefined => {
+  const hs = visits.filter(v => v.outcome === 'high').map(v => v.total)
+  return hs.length ? Math.max(...hs) : undefined
+}
+const lowestSet = (visits: HiloVisit[]): number | undefined => {
+  const ls = visits.filter(v => v.outcome === 'low').map(v => v.total)
+  return ls.length ? Math.min(...ls) : undefined
+}
+
+const MATCH_STATS_ROWS = [
+  row('visitsSurvived', 'Visits survived', 'ratio', 'higher', { of: 'visits' }),
+  row('highestSet', 'Highest set', 'integer', 'higher', { compact: true }),
+  row('lowestSet', 'Lowest set', 'integer', 'lower', { compact: true }),
+  row('livesLost', 'Lives lost', 'integer', 'lower'),
+]
 
 // Judges the open visit, applies it (moves a bar or costs a life), pushes the HiloVisit and
 // records lastResult (the bars before it). Doesn't advance the turn — see advance().
@@ -241,7 +262,7 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
   },
 
   view(s: HiloState): HiloView {
-    const placements = rankSeats(s.lives.length, s.winner, (a, b) => compareSeats(s, a, b))
+    const placements = placementsOf(s)
     const seats = s.lives.map((lives, i) => {
       const outAt = s.outAt[i]
       const out = outAt !== null
@@ -280,13 +301,60 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
     return [...s.order]
   },
 
-  summarize(s: HiloState, _ctx: SummaryContext): SeatResult[] {
-    const placements = rankSeats(s.lives.length, s.winner, (a, b) => compareSeats(s, a, b))
-    return s.lives.map((lives, i) => ({ placement: placements[i], stats: { livesLeft: lives } }))
+  summarize(s: HiloState, ctx: SummaryContext): SeatResult[] {
+    const placements = placementsOf(s)
+    return s.lives.map((lives, i) => {
+      const mine = visitsOf(s.visits, i)
+      const outAt = s.outAt[i]
+      const highest = highestSet(mine)
+      const lowest = lowestSet(mine)
+      return {
+        placement: placements[i],
+        stats: {
+          livesLeft: lives,
+          visits: mine.length,
+          livesLostBetween: mine.filter(v => v.outcome === 'between').length,
+          livesLostMiss: mine.filter(v => v.outcome === 'miss').length,
+          dartsThrown: ctx.totalDarts[i] ?? 0,
+          ...(highest !== undefined && { highestSet: highest }),
+          ...(lowest !== undefined && { lowestSet: lowest }),
+          ...(outAt !== null && { outRound: s.visits[outAt].round }),
+        },
+      }
+    })
   },
 
-  detail(_visits: CommittedVisit<HiloState>[], _final: HiloState): HiloDetail {
-    return { mode: 'hilo' }
+  detail(_visits: CommittedVisit<HiloState>[], final: HiloState): HiloDetail {
+    const placements = placementsOf(final)
+    return {
+      mode: 'hilo',
+      start: { high: final.cfg.startHigh, low: final.cfg.startLow },
+      visits: final.visits.map(v => ({ seat: v.seat, round: v.round, total: v.total, outcome: v.outcome, high: v.high, low: v.low })),
+      seats: final.lives.map((lives, i) => {
+        const outAt = final.outAt[i]
+        return { place: placements[i], outRound: outAt !== null ? final.visits[outAt].round : null, livesLeft: lives }
+      }),
+    }
+  },
+
+  matchStats(_visits: CommittedVisit<HiloState>[], final: HiloState): MatchStats {
+    return {
+      rows: MATCH_STATS_ROWS,
+      seats: final.lives.map((_lives, i) => {
+        const mine = visitsOf(final.visits, i)
+        const lost = mine.filter(v => v.outcome === 'between' || v.outcome === 'miss').length
+        return {
+          index: i,
+          values: values({
+            visitsSurvived: mine.length - lost,
+            visits: mine.length,
+            highestSet: highestSet(mine),
+            lowestSet: lowestSet(mine),
+            livesLost: lost,
+          }),
+        }
+      }),
+    }
   },
 }
 

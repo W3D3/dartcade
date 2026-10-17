@@ -6,6 +6,7 @@ import { x01Game } from './x01.js'
 import { atcModule } from './atc.js'
 import { minigolfModule } from './minigolf.js'
 import { p121Game, type P121Config } from './p121.js'
+import { hiloGame, type HiloConfig } from './hilo.js'
 import type { BoardEvent } from '../session/types.js'
 
 const addFormats = addFormatsModule.default
@@ -141,6 +142,33 @@ describe('module detail() matches schema/api-v1.yaml', () => {
     const validateDetail = ajv.compile(schemas.P121Detail)
     expect(validateDetail(d), JSON.stringify(validateDetail.errors)).toBe(true)
     const m = p121Game.matchStats!([], s)
+    const validateStats = ajv.compile(schemas.MatchStats)
+    expect(validateStats(m), JSON.stringify(validateStats.errors)).toBe(true)
+  })
+  it('HiloDetail and MatchStats', () => {
+    const hiloCfg: HiloConfig = { startHigh: 41, startLow: 21, lives: 1, t1Zero: false, matchExtremes: true, bullOff: 'off' }
+    const open: BoardEvent = { kind: 'visit.opened', data: {} }
+    const takeoutEvent: BoardEvent = { kind: 'takeout.finished', data: {} }
+    const hiloDart = (number: number, multiplier: number, index: number): BoardEvent =>
+      ({
+        kind: 'dart.detected',
+        data: {
+          visit_id: 'v',
+          index,
+          dart: { segment: { name: '', number, bed: '', multiplier }, score: number * multiplier },
+          source_seq: 1,
+        },
+      }) as any
+    let s = hiloGame.init(hiloCfg, [{ name: 'A' }, { name: 'B' }])
+    s = hiloGame.onBoardEvent(s, open).state
+    s = hiloGame.onBoardEvent(s, hiloDart(20, 1, 0)).state
+    s = hiloGame.onBoardEvent(s, hiloDart(5, 1, 1)).state
+    s = hiloGame.onBoardEvent(s, hiloDart(5, 1, 2)).state // 30, between: A's last life
+    s = hiloGame.onBoardEvent(s, takeoutEvent).state
+    const d = hiloGame.detail([], s)
+    const validateDetail = ajv.compile(schemas.HiloDetail)
+    expect(validateDetail(d), JSON.stringify(validateDetail.errors)).toBe(true)
+    const m = hiloGame.matchStats!([], s)
     const validateStats = ajv.compile(schemas.MatchStats)
     expect(validateStats(m), JSON.stringify(validateStats.errors)).toBe(true)
   })
