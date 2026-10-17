@@ -7,7 +7,7 @@ import { fileURLToPath } from 'url'
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
 /** Gives a user better-auth's admin role in the e2e stack's database, as a deployment would. */
-function makeAdmin(email: string): void {
+export function makeAdmin(email: string): void {
   const sql = `UPDATE "user" SET role = 'admin' WHERE email = '${email}'`
   execFileSync('docker', ['compose', '-f', 'docker-compose.e2e.yaml', 'exec', '-T', 'postgres', 'psql', '-U', 'dartgames', '-d', 'dartgames', '-c', sql], {
     cwd: root,
