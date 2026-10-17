@@ -367,7 +367,9 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
         return { state: { ...counted, scores } }
       }
 
-      case 'takeout.finished': {
+      // A Reset after a checkout still ends the leg (#213)
+      case 'takeout.finished':
+      case 'visit.cleared': {
         const cp = s.currentPlayer
         const t = s.teamOf[cp]
         const done = committedVisit(s)
@@ -382,21 +384,6 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           return { state: { ...s, ...done, legs, bestCheckout, ...freshLeg(s, legs) } }
         }
 
-        const { nextPlayer, turn, round } = nextTurn(s)
-
-        if (round > s.cfg.maxRounds) {
-          return {
-            state: { ...s, ...done, currentPlayer: nextPlayer, turn, round, winner: roundLimitWinner(s.scores), phase: 'finished' },
-          }
-        }
-
-        return {
-          state: { ...s, ...done, currentPlayer: nextPlayer, turn, round, bustThisVisit: false, visitOpenedScores: [...s.scores] },
-        }
-      }
-
-      case 'visit.cleared': {
-        const done = committedVisit(s)
         const { nextPlayer, turn, round } = nextTurn(s)
 
         if (round > s.cfg.maxRounds) {
