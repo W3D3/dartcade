@@ -19,7 +19,6 @@ function makeState(overrides: Partial<ATCState> = {}): ATCState {
     sequence,
     targets: [1, 1],
     currentPlayer: 0,
-    allHitThisVisit: true,
     winner: null,
     cfg,
     playerCount: 2,
@@ -74,7 +73,6 @@ describe('init', () => {
     expect(s.targets).toEqual([1, 1])
     expect(s.currentPlayer).toBe(0)
     expect(s.winner).toBeNull()
-    expect(s.allHitThisVisit).toBe(false)
   })
 
   it('desc: starts all players at first sequence element (20)', () => {
@@ -101,7 +99,7 @@ describe('onBoardEvent dart.detected', () => {
     const s = makeState({ targets: [5, 1] })
     const { state } = atcModule.onBoardEvent(s, dartEvent(7, 'SingleOuter', 1))
     expect(state.targets[0]).toBe(5)
-    expect(state.allHitThisVisit).toBe(false)
+    expect(state.currentVisitHits).toEqual([false])
   })
 
   it('sets winner when target exceeds sequence (twenty)', () => {
@@ -115,15 +113,15 @@ describe('onBoardEvent dart.detected', () => {
     const s = makeState({ targets: [5, 1] })
     const { state } = atcModule.onBoardEvent(s, dartEvent(5, 'Outside', 0))
     expect(state.targets[0]).toBe(5)
-    expect(state.allHitThisVisit).toBe(false)
+    expect(state.currentVisitHits).toEqual([false])
   })
 })
 
 describe('onBoardEvent visit.opened', () => {
-  it('resets allHitThisVisit to true', () => {
-    const s = makeState({ allHitThisVisit: false })
+  it('clears the visit hits', () => {
+    const s = makeState({ currentVisitHits: [true, false] })
     const { state } = atcModule.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v2' } })
-    expect(state.allHitThisVisit).toBe(true)
+    expect(state.currentVisitHits).toEqual([])
   })
 })
 
@@ -147,21 +145,42 @@ describe('onBoardEvent takeout.finished', () => {
   })
 
   it('throwAgainOnAllHit: does not advance when all darts hit', () => {
-    const s = makeState({ cfg: { ...defaultCfg, throwAgainOnAllHit: true }, allHitThisVisit: true, currentPlayer: 0 })
+    const s = makeState({ cfg: { ...defaultCfg, throwAgainOnAllHit: true }, currentVisitHits: [true, true, true], currentPlayer: 0 })
     const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
+  })
+
+  it('throwAgainOnAllHit: advances when fewer than 3 darts were seen, even if they all hit', () => {
+    // One hit, two bounce-outs the board never saw
+    let s = makeState({ cfg: { ...defaultCfg, throwAgainOnAllHit: true }, currentPlayer: 0 })
+    s = atcModule.onBoardEvent(s, { kind: 'visit.opened', data: { visit_id: 'v1' } }).state
+    s = atcModule.onBoardEvent(s, dartEvent(1, 'SingleOuter', 1)).state
+    s = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state
+    expect(s.currentPlayer).toBe(1)
   })
 
   it('throwAgainOnAllHit at win: session ends, no extra throw granted', () => {
     const s = makeState({
       cfg: { ...defaultCfg, throwAgainOnAllHit: true },
-      allHitThisVisit: true,
+      currentVisitHits: [true, true, true],
       winner: 0,
       currentPlayer: 0,
     })
     const { state } = atcModule.onBoardEvent(s, { kind: 'takeout.finished', data: {} })
     expect(state.currentPlayer).toBe(0)
     expect(state.winner).toBe(0)
+  })
+})
+
+describe('onBoardEvent visit.cleared', () => {
+  it('advances currentPlayer', () => {
+    const { state } = atcModule.onBoardEvent(makeState({ currentPlayer: 0 }), { kind: 'visit.cleared', data: {} })
+    expect(state.currentPlayer).toBe(1)
+  })
+
+  it('a Reset after the winning dart keeps the turn', () => {
+    const { state } = atcModule.onBoardEvent(makeState({ winner: 0, currentPlayer: 0 }), { kind: 'visit.cleared', data: {} })
+    expect(state.currentPlayer).toBe(0)
   })
 })
 
