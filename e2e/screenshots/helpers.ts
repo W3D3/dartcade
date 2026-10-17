@@ -77,6 +77,7 @@ export function api(page: Page) {
     get: async (url: string) => check(`GET ${url}`, await page.request.get(url, { headers })),
     post: async (url: string, data: object = {}) => check(`POST ${url}`, await page.request.post(url, { data, headers })),
     patch: async (url: string, data: object) => check(`PATCH ${url}`, await page.request.patch(url, { data, headers })),
+    put: async (url: string, data: object) => check(`PUT ${url}`, await page.request.put(url, { data, headers })),
     /** Status only, for calls allowed to fail (leaving a lobby you aren't in). */
     tryPost: async (url: string, data: object = {}) => (await page.request.post(url, { data, headers })).status(),
   }

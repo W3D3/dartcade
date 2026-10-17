@@ -5,6 +5,9 @@ import { makeAdmin } from '../fixtures/auth.js'
 // Two concurrent identities (admin + a non-admin player) need two browser contexts: the
 // fixtures/auth.ts `adminPage`/`authedPage` fixtures both key off the single `page` fixture, so
 // requesting both in one test would sign them in on the same cookie jar.
+//
+// This flips FLAG_KEY for everyone on the shared e2e backend while it runs (cleared after): other
+// specs running in parallel mustn't assert what 121 looks like by default for a non-admin.
 const ORIGIN = 'http://localhost:5174'
 const FLAG_KEY = 'gamemode.p121.enabled'
 
