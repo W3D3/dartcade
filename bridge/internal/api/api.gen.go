@@ -49,6 +49,9 @@ type PairingTokenStatus struct {
 // PairingTokenStatusStatus defines model for PairingTokenStatus.Status.
 type PairingTokenStatusStatus string
 
+// AdminUserId defines model for AdminUserId.
+type AdminUserId = string
+
 // BoardId defines model for BoardId.
 type BoardId = string
 

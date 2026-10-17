@@ -77,6 +77,10 @@
       "description": "Ranked matchmaking (ratings and ranks per mode)"
     },
     {
+      "name": "admin",
+      "description": "Admin-only account management (list users, promote or demote admins)"
+    },
+    {
       "name": "minigolf",
       "description": "Minigolf courses and holes (admin-only drafts and writes; players read published official courses)"
     },
@@ -1067,6 +1071,100 @@
           },
           "400": {
             "$ref": "#/components/responses/BadRequest"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "operationId": "listAdminUsers",
+        "summary": "Every account, newest first, at most 50 (admin)",
+        "tags": [
+          "admin"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "description": "Filter by name or email, case-insensitive, contains",
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The accounts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUserList"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/role": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/AdminUserId"
+        }
+      ],
+      "put": {
+        "operationId": "setUserRole",
+        "summary": "Promote or demote an admin; refused if it would leave no admin (admin)",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SetUserRoleRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/LastAdminConflict"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -3159,6 +3257,15 @@
           "type": "string",
           "minLength": 1
         }
+      },
+      "AdminUserId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "minLength": 1
+        }
       }
     },
     "responses": {
@@ -3311,6 +3418,19 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/MinigolfPublishRefusal"
+            }
+          }
+        }
+      },
+      "LastAdminConflict": {
+        "description": "Would leave no user with the admin role",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            },
+            "example": {
+              "error": "There must be at least one admin"
             }
           }
         }
@@ -5401,6 +5521,69 @@
             "items": {
               "$ref": "#/components/schemas/UserSummary"
             }
+          }
+        }
+      },
+      "AdminUser": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "email",
+          "role",
+          "createdAt"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "admin",
+              null
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the account was made"
+          }
+        }
+      },
+      "AdminUserList": {
+        "type": "object",
+        "required": [
+          "users"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AdminUser"
+            }
+          }
+        }
+      },
+      "SetUserRoleRequest": {
+        "type": "object",
+        "required": [
+          "admin"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "admin": {
+            "type": "boolean",
+            "description": "true: grant the admin role; false: revoke it"
           }
         }
       },

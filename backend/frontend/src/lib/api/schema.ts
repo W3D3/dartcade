@@ -416,6 +416,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Every account, newest first, at most 50 (admin) */
+        get: operations["listAdminUsers"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Promote or demote an admin; refused if it would leave no admin (admin) */
+        put: operations["setUserRole"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/ofrep/v1/evaluate/flags": {
         parameters: {
             query?: never;
@@ -1745,6 +1781,25 @@ export interface components {
         UserList: {
             users: components["schemas"]["UserSummary"][];
         };
+        AdminUser: {
+            id: string;
+            name: string;
+            email: string;
+            /** @enum {string|null} */
+            role: "admin" | null;
+            /**
+             * Format: date-time
+             * @description When the account was made
+             */
+            createdAt: string;
+        };
+        AdminUserList: {
+            users: components["schemas"]["AdminUser"][];
+        };
+        SetUserRoleRequest: {
+            /** @description true: grant the admin role; false: revoke it */
+            admin: boolean;
+        };
         Me: {
             id: string;
             /** @description Your handle, shown as @name */
@@ -2363,6 +2418,20 @@ export interface components {
                 "application/json": components["schemas"]["MinigolfPublishRefusal"];
             };
         };
+        /** @description Would leave no user with the admin role */
+        LastAdminConflict: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                /**
+                 * @example {
+                 *       "error": "There must be at least one admin"
+                 *     }
+                 */
+                "application/json": components["schemas"]["ErrorResponse"];
+            };
+        };
     };
     parameters: {
         BoardId: string;
@@ -2378,6 +2447,7 @@ export interface components {
         FriendUserId: string;
         MinigolfCourseId: string;
         MinigolfHoleId: string;
+        AdminUserId: string;
     };
     requestBodies: never;
     headers: never;
@@ -2991,6 +3061,63 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listAdminUsers: {
+        parameters: {
+            query?: {
+                /** @description Filter by name or email, case-insensitive, contains */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The accounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUserList"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setUserRole: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserRoleRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["LastAdminConflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };
