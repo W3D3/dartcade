@@ -15,9 +15,33 @@ env:
   TAG: ${{ inputs.tag || github.ref_name }}
 
 jobs:
+  # The release and its notes: one line per merged PR since the last tag (cliff.toml)
+  release-notes:
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Write the notes
+        uses: orhun/git-cliff-action@v4
+        with:
+          args: --current --strip all
+        env:
+          OUTPUT: NOTES.md
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release create "$TAG" --title "$TAG" --notes-file NOTES.md --verify-tag
+
   release-bridge-binaries:
     # The binaries are attached to the release when the tag is pushed; a rebuild leaves them be
     if: github.event_name == 'push'
+    needs: release-notes
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -53,7 +77,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: bridge/${{ matrix.name }}
-          generate_release_notes: true
 
   # Each image is built natively per architecture (arm64 on an ARM runner: QEMU crashed Node
   # with "Illegal instruction" and hung the job), pushed by digest, then joined into one tag
