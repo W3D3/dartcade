@@ -319,13 +319,16 @@ func TestProcess_SpuriousTakeout(t *testing.T) {
 	assertNoKindCount(t, all, "takeout.finished", 1)
 }
 
+// The bridge starts mid-visit (a resync baseline), then a dart lands while the BM WS is
+// down: the reconnect diffs it in as a new dart of that visit.
 func TestProcess_Resync(t *testing.T) {
 	all, _ := runFixture(t, "resync.jsonl")
-	assertNoKindCount(t, all, "dart.detected", 1)
 	assertNoKindCount(t, all, "visit.opened", 1)
-	c := countKind(all, "board.resync")
-	if c != 2 {
-		t.Errorf("board.resync count=%d want 2", c)
+	if c := countKind(all, "board.resync"); c != 1 {
+		t.Errorf("board.resync count=%d want 1", c)
+	}
+	if c := countKind(all, "dart.detected"); c != 1 {
+		t.Errorf("dart.detected count=%d want 1", c)
 	}
 }
 

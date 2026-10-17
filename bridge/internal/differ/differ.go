@@ -26,6 +26,7 @@ type State struct {
 	VisitID          ulid.ULID // zero value = no open visit
 	InTakeout        bool
 	ExpectResync     bool
+	Reconnected      bool // the next state frame is the first since a BM WS reconnect
 	PrevStatus       string
 	PrevEvent        string
 	PrevRunning      bool
@@ -72,7 +73,7 @@ func Process(s State, frame bm.BMFrame) (State, []Event) {
 		s.ExpectResync = true
 		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: true}, RecvWall: wall, RecvMonoNs: mono}}
 	case "bm_reconnect":
-		s.ExpectResync = true
+		s.Reconnected = true
 		return s, []Event{{Kind: "bm.link", Data: &schema.BmLinkData{Up: true}, RecvWall: wall, RecvMonoNs: mono}}
 	case "bm_disconnect":
 		reason := "disconnected"
@@ -100,8 +101,11 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 	wall, mono := frame.RecvWall, frame.RecvMonoNs
 	evs := []Event{frameEvent(frame)}
 
-	// 1. Resync
-	if s.ExpectResync {
+	// 1. Resync: on the first connect, or on a reconnect when a dart still on the board
+	// changed (a correction or a new visit while we weren't looking: a diff can't tell which)
+	reconnected := s.Reconnected
+	s.Reconnected = false
+	if s.ExpectResync || reconnected && dartChanged(s.PrevThrows, cur.Throws) {
 		throws := make([]schema.Dart, len(cur.Throws))
 		for i, t := range cur.Throws {
 			throws[i] = toDart(t)
@@ -224,6 +228,16 @@ func processState(s State, frame bm.BMFrame) (State, []Event) {
 	}
 
 	return s.remember(cur), evs
+}
+
+// dartChanged reports whether a dart on both boards has a different segment in cur.
+func dartChanged(prev, cur []bm.BMThrow) bool {
+	for i := 0; i < min(len(prev), len(cur)); i++ {
+		if prev[i].Segment != cur[i].Segment {
+			return true
+		}
+	}
+	return false
 }
 
 // remember makes cur the frame the next one is compared against.

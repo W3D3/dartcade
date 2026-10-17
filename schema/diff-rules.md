@@ -12,15 +12,24 @@ spec for that logic. Confirmed against hardware (Board Manager 1.0.7, 2026-09-24
 
 ## Rules (evaluate in order)
 
-### 1. Reconnect baseline
+### 1. Resync baseline
 
-After any reconnect to Board Manager (WS drop + reconnect, or bridge restart), emit
+On the first `state` frame after the bridge connects to Board Manager (bridge start), emit
 `board.resync` with `cur` as-is. Set `prev = cur`. Do **not** apply any of the rules
 below for this frame.
 
 If `cur` is not empty, a visit is in progress: give it a new ULID `visit_id` (without
 emitting `visit.opened`) so the darts, takeout and clear that follow carry one. If `cur`
 is empty, no visit is open.
+
+After a WS **reconnect** the bridge still has `prev` (kept current by polling while the WS
+was down, or as it was when the link dropped), so the first `state` frame is diffed by
+the rules below like any other: darts thrown in the gap come out as `dart.detected`, a
+takeout in the gap as `takeout.finished` or `visit.cleared` (rule 6). The only exception:
+if a dart on both boards changed segment (`cur[i] != prev[i]` for some `i` below
+`min(len(cur), len(prev))`), emit the resync above instead. That is either a correction
+or a takeout and a new visit while the bridge wasn't looking, and a diff can't tell which:
+read as a correction it would put the new visit's darts in the old one.
 
 ### 2. Spurious takeout guard
 
