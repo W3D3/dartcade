@@ -32,6 +32,8 @@ import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 export type AppDeps = {
   engine: SessionEngine
@@ -71,9 +73,20 @@ const swaggerUiConfig = {
   'urls.primaryName': 'Dartcade API',
 }
 
+/** The SPA's index.html with its link-preview URLs made absolute from PUBLIC_URL (crawlers need that); relative when unset. */
+function readIndex(frontendDist: string): string | undefined {
+  try {
+    const origin = (process.env.PUBLIC_URL ?? '').replace(/\/+$/, '')
+    return readFileSync(join(frontendDist, 'index.html'), 'utf8').replaceAll('__ORIGIN__', origin)
+  } catch {
+    return undefined // not built yet
+  }
+}
+
 /** All HTTP/WebSocket routes of the backend, without listening or touching the database. */
 export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
   const app = createFastify()
+  const indexHtml = frontendDist ? readIndex(frontendDist) : undefined
   if (onRoute) app.addHook('onRoute', onRoute)
   // Feature flags (OpenFeature): the provider is set before any route evaluates one
   await setupFlags(envFlagsOn(), envFlagValues())
@@ -115,7 +128,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
 
   if (frontendDist) {
     try {
-      await app.register(fastifyStatic, { root: frontendDist, wildcard: false })
+      await app.register(fastifyStatic, { root: frontendDist, wildcard: false, index: false })
     } catch {
       /* not built yet */
     }
@@ -163,12 +176,8 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
   // GET elsewhere falls through to the SPA's index.html for client-side routing.
   app.setNotFoundHandler((req, reply) => {
     const reserved = req.url.startsWith('/api') || req.url.startsWith('/ws') || req.url.startsWith('/bridge')
-    if (!reserved && req.method === 'GET') {
-      try {
-        return reply.sendFile('index.html')
-      } catch {
-        /* not built yet */
-      }
+    if (!reserved && req.method === 'GET' && indexHtml) {
+      return reply.header('cache-control', 'no-cache').type('text/html').send(indexHtml)
     }
     return reply.code(404).send({ error: 'not found' })
   })

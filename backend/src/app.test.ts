@@ -1,5 +1,8 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import type { AddressInfo } from 'net'
+import { mkdtempSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { buildApp, WS_MAX_PAYLOAD } from './app.js'
 
 vi.mock('./db/queries.js', async orig => ({
@@ -36,6 +39,30 @@ describe('unmatched routes', () => {
     const res = await app.inject({ method: 'GET', url: '/some/spa/route' })
     expect(res.statusCode).toBe(404)
     expect(JSON.parse(res.body)).toEqual({ error: 'not found' })
+    await app.close()
+  })
+})
+
+describe('link previews', () => {
+  const frontendDist = mkdtempSync(join(tmpdir(), 'dist-'))
+  writeFileSync(join(frontendDist, 'index.html'), '<meta property="og:image" content="__ORIGIN__/og-image.png">')
+  afterEach(() => vi.unstubAllEnvs())
+
+  it.each(['/', '/some/spa/route'])('GET %s serves index.html with absolute URLs from PUBLIC_URL', async url => {
+    vi.stubEnv('PUBLIC_URL', 'https://darts.example.com/')
+    const app = await buildApp({ ...deps(), frontendDist })
+    const res = await app.inject({ method: 'GET', url })
+    expect(res.statusCode).toBe(200)
+    expect(res.headers['content-type']).toContain('text/html')
+    expect(res.body).toBe('<meta property="og:image" content="https://darts.example.com/og-image.png">')
+    await app.close()
+  })
+
+  it('leaves the URLs relative without PUBLIC_URL', async () => {
+    vi.stubEnv('PUBLIC_URL', '')
+    const app = await buildApp({ ...deps(), frontendDist })
+    const res = await app.inject({ method: 'GET', url: '/' })
+    expect(res.body).toBe('<meta property="og:image" content="/og-image.png">')
     await app.close()
   })
 })
