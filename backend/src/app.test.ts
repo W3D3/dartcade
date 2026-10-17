@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
+import type { AddressInfo } from 'net'
 import { buildApp, WS_MAX_PAYLOAD } from './app.js'
+
+vi.mock('./db/queries.js', async orig => ({
+  ...(await orig<typeof import('./db/queries.js')>()),
+  getBoardByTokenHash: () => new Promise(() => {}),
+}))
 
 const deps = () => ({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any })
 
@@ -51,10 +57,19 @@ describe('malformed requests', () => {
     }
   })
 
-  it('caps WebSocket messages at WS_MAX_PAYLOAD, before any socket is authenticated', async () => {
+  it('closes a socket sent a message over WS_MAX_PAYLOAD (1009), before it is authenticated', async () => {
     const app = await buildApp(deps())
-    // The socket routes need a real db to stay open, so check the server-wide limit ws enforces
-    expect(app.websocketServer.options.maxPayload).toBe(WS_MAX_PAYLOAD)
-    await app.close()
+    await app.listen({ port: 0, host: '127.0.0.1' })
+    try {
+      const { port } = app.server.address() as AddressInfo
+      // The bridge socket stays open while its token is checked, which here never answers
+      const ws = new WebSocket(`ws://127.0.0.1:${port}/bridge`)
+      await new Promise(resolve => ws.addEventListener('open', resolve))
+      const closed = new Promise(resolve => ws.addEventListener('close', e => resolve(e.code)))
+      ws.send(new Uint8Array(WS_MAX_PAYLOAD + 1))
+      expect(await Promise.race([closed, new Promise(resolve => setTimeout(() => resolve('still open'), 2000))])).toBe(1009)
+    } finally {
+      await app.close()
+    }
   })
 })
