@@ -93,12 +93,14 @@ export const GAME_MODES: GameMode[] = [
   },
   {
     id: 'hilo',
+    glyph: 'HiLo',
     name: 'Higher Lower',
-    desc: 'Call it: next visit higher or lower?',
+    desc: 'Land above the high bar or below the low bar.',
     cat: 'practice',
     img: hiloImg,
-    available: false,
+    available: true,
     small: true,
+    flag: 'gamemode.hilo.enabled',
   },
   {
     id: 'catch40',

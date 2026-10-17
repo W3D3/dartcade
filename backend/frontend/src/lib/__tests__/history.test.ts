@@ -53,6 +53,9 @@ describe('rulesLine', () => {
     expect(
       rulesLine(game({ mode: 'p121', config: { startTarget: 121, tries: 10, dartsPerTry: 9, outMode: 'double', missRule: 'reset' } })),
     ).toBe('121 · 10 tries · 9 darts · Double out')
+    expect(rulesLine(game({ mode: 'hilo', config: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true } }))).toBe(
+      '41 / 21 · 3 lives',
+    )
   })
   it('names the course for Minigolf', () => {
     expect(rulesLine(game({ mode: 'minigolf', config: { course: 'test', tries: 3, ballContact: false } }))).toBe(
@@ -115,6 +118,27 @@ describe('historyStat', () => {
     expect(historyStat(p121({ checkouts: 0, tries: 10, dartsThrown: 90 }))).toBeNull()
     expect(historyStat(game({ mode: 'soccer' }))).toBeNull()
   })
+
+  it('Higher Lower: lives left, as a number with its own unit (singular at 1)', () => {
+    const hilo = (stats: Record<string, number>) => game({ mode: 'hilo', players: [{ ...game().players[0], stats }] })
+    // A winner with lives still to spare
+    expect(historyStat(hilo({ livesLeft: 2, dartsThrown: 30 }))).toEqual({ value: '2', label: 'lives left' })
+    // Went out: 0 lives left (outRound doesn't change what's shown — placement/resultLabel say won/lost)
+    expect(historyStat(hilo({ livesLeft: 0, outRound: 4, dartsThrown: 20 }))).toEqual({ value: '0', label: 'lives left' })
+    expect(historyStat(hilo({ livesLeft: 1, dartsThrown: 25 }))).toEqual({ value: '1', label: 'life left' })
+  })
+
+  it("Higher Lower: a forfeit tie at placement 1 shows each seat's own lives left, never the word Winner", () => {
+    const tied = game({
+      mode: 'hilo',
+      players: [
+        { ...game().players[0], placement: 1, stats: { livesLeft: 2, dartsThrown: 20 } },
+        { ...game().players[1], placement: 1, stats: { livesLeft: 1, dartsThrown: 18 } },
+      ],
+    })
+    expect(historyStat(tied)).toEqual({ value: '2', label: 'lives left' })
+    expect(historyStat({ ...tied, mySeat: 1 })).toEqual({ value: '1', label: 'life left' })
+  })
 })
 
 describe('playerBadges', () => {
@@ -164,6 +188,12 @@ describe('statTiles', () => {
         contested: 0,
         stats: { highestMade: agg(123, 122, 124, 246), checkouts: agg(3, 2, 4, 6), dartsThrown: agg(80, 70, 90, 160) },
       },
+      hilo: {
+        matches: 2,
+        wins: 1,
+        contested: 2,
+        stats: { highestSet: agg(65, 60, 70, 130), lowestSet: agg(10, 5, 15, 20), dartsThrown: agg(30, 25, 35, 60) },
+      },
     },
     ...o,
   })
@@ -172,7 +202,7 @@ describe('statTiles', () => {
     expect(statTiles(stats(), null, title)).toEqual([
       { label: 'Matches · 30 days', value: '23', note: null, trend: null },
       { label: 'Won', value: '14', note: '64%', trend: null },
-      { label: 'Darts thrown', value: '3,572', note: null, trend: null },
+      { label: 'Darts thrown', value: '3,632', note: null, trend: null },
       { label: 'Most played', value: 'X01', note: '12 matches', trend: null },
     ])
   })
@@ -198,6 +228,14 @@ describe('statTiles', () => {
       { label: 'Won', value: '–', note: null, trend: null },
       { label: 'Highest made', value: '124', note: null, trend: null },
       { label: 'Checkouts', value: '6', note: null, trend: null },
+    ])
+  })
+  it('Higher Lower: its matches, won, highest and lowest set', () => {
+    expect(statTiles(stats(), 'hilo', title)).toEqual([
+      { label: 'hilo matches · 30 days', value: '2', note: null, trend: null },
+      { label: 'Won', value: '1', note: '50%', trend: null },
+      { label: 'Highest set', value: '70', note: null, trend: null },
+      { label: 'Lowest set', value: '5', note: null, trend: null },
     ])
   })
   it('shows – without data, and only matches and won for an unknown mode', () => {

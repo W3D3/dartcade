@@ -40,6 +40,7 @@ describe('lobby text', () => {
     expect(gameName('x01')).toBe('X01')
     expect(gameName('atc')).toBe('Around the Clock')
     expect(gameName('p121')).toBe('121 Checkout')
+    expect(gameName('hilo')).toBe('Higher Lower')
     expect(gameName('cricket')).toBe('cricket')
   })
 
@@ -70,6 +71,11 @@ describe('lobby text', () => {
       nextGameSummary({ gameId: 'p121', config: { startTarget: 81, tries: 5, dartsPerTry: 6, bullOff: 'wdc' } }, { outMode: 'master' }),
     ).toBe('81 · 5 tries · 6 darts · Master out · Bull off (WDC)')
     expect(nextGameSummary({ gameId: 'p121', config: { startTarget: '121' } })).toBe('')
+    expect(nextGameSummary({ gameId: 'hilo', config: { startHigh: 41, startLow: 21, lives: 3 } })).toBe('41 / 21 · 3 lives')
+    expect(nextGameSummary({ gameId: 'hilo', config: { startHigh: 60, startLow: 15, lives: 1, bullOff: 'pdc' } }, { lives: 3 })).toBe(
+      '60 / 15 · 1 life · Bull off (PDC)',
+    )
+    expect(nextGameSummary({ gameId: 'hilo', config: { startHigh: '41' } })).toBe('')
     expect(nextGameSummary({ gameId: 'x01', config: { startScore: 'lots' } })).toBe('')
     expect(nextGameSummary(null)).toBe('')
   })
@@ -309,6 +315,7 @@ describe('invite lines', () => {
     expect(nextGameLine({ gameId: 'x01', config: { startScore: 501, outMode: 'double', firstTo: 3 } })).toBe(
       'X01 · 501 · Double out · First to 3 legs',
     )
+    expect(nextGameLine({ gameId: 'hilo', config: { startHigh: 41, startLow: 21, lives: 3 } })).toBe('Higher Lower · 41 / 21 · 3 lives')
     expect(nextGameLine({ gameId: 'soccer', config: {} })).toBe('soccer')
   })
 
