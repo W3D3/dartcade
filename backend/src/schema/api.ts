@@ -69,6 +69,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/legal/{doc}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** A legal text of this deployment (Terms, Privacy Policy, Imprint), as HTML */
+        get: operations["getLegalDoc"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gamemodes": {
         parameters: {
             query?: never;
@@ -1832,6 +1849,11 @@ export interface components {
             /** @description New accounts confirm their email before signing in */
             verification: boolean;
         };
+        LegalDoc: {
+            html: string;
+            /** @description When the text last changed (LEGAL_UPDATED) */
+            updated: string | null;
+        };
         ConfigFieldMeta: {
             label: string;
             tooltip?: string;
@@ -3008,6 +3030,30 @@ export interface operations {
                     "application/json": components["schemas"]["AuthInfo"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getLegalDoc: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                doc: "terms" | "privacy" | "imprint";
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The text */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LegalDoc"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             429: components["responses"]["TooManyRequests"];
         };
     };

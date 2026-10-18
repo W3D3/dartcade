@@ -7,6 +7,7 @@
   import AuthHero from '$lib/components/AuthHero.svelte'
   import NameField from '$lib/components/NameField.svelte'
   import PasswordStrength from '$lib/components/PasswordStrength.svelte'
+  import AuthFooter from '$lib/components/AuthFooter.svelte'
   import { get } from 'svelte/store'
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
@@ -91,9 +92,12 @@
           />
           <PasswordStrength {password} />
         </div>
-        <label class="flex items-center gap-[10px] text-[15px] text-ink-2 min-h-[44px] cursor-pointer">
-          <input type="checkbox" bind:checked={acceptTerms} class="w-[18px] h-[18px] m-0 accent-accent" />
-          I agree to the <a href="#/terms" class="font-semibold">terms of service</a>
+        <label class="flex items-start gap-[10px] text-[15px] leading-[1.45] text-ink-2 min-h-[44px] cursor-pointer">
+          <input type="checkbox" bind:checked={acceptTerms} class="mt-[2px] w-[18px] h-[18px] m-0 accent-accent flex-shrink-0" />
+          <span
+            >I agree to the <a href="#/terms" class="font-semibold">Terms</a> and
+            <a href="#/privacy" class="font-semibold">Privacy Policy</a>.</span
+          >
         </label>
       </div>
 
@@ -114,6 +118,8 @@
         Already have an account?
         <a href="#/login" class="font-semibold no-underline">Sign in</a>
       </p>
+
+      <AuthFooter />
     </form>
   </main>
 </div>

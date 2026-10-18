@@ -10,6 +10,7 @@
   import Verify from './routes/Verify.svelte'
   import Forgot from './routes/Forgot.svelte'
   import Reset from './routes/Reset.svelte'
+  import Legal from './routes/Legal.svelte'
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
   import History from './routes/History.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
@@ -70,6 +71,9 @@
     '/verify': Verify,
     '/forgot': Forgot,
     '/reset': Reset,
+    '/terms': Legal,
+    '/privacy': Legal,
+    '/imprint': Legal,
     // Boards moved into Settings; old links (and ?pair) still land there
     '/boards': BoardsRedirect,
     '/history/:id': wrap({ asyncComponent: loadGameDetails }),

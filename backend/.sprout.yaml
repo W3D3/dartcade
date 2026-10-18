@@ -14,6 +14,11 @@ preview:
     # ({commit_sha} is GITHUB_SHA, the PR's merge commit that was built); the SPA stays 'dev'
     APP_VERSION: 'pr-{pr_id}'
     APP_COMMIT: '{commit_sha}'
+    # Example operator for the legal pages, so previews don't show {{…}} placeholders
+    LEGAL_OPERATOR_NAME: Preview Operator (example)
+    LEGAL_ADDRESS: Example Street 1, 1010 Vienna, Austria
+    LEGAL_CONTACT_EMAIL: legal@example.org
+    LEGAL_UPDATED: '2026-10-17'
 health:
   path: /health
   interval: 2s

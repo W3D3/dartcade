@@ -110,6 +110,23 @@ paths:
               schema: { $ref: '#/components/schemas/AuthInfo' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/legal/{doc}:
+    get:
+      operationId: getLegalDoc
+      summary: A legal text of this deployment (Terms, Privacy Policy, Imprint), as HTML
+      tags: [system]
+      security: []
+      parameters:
+        - { name: doc, in: path, required: true, schema: { type: string, enum: [terms, privacy, imprint] } }
+      responses:
+        '200':
+          description: The text
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LegalDoc' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/gamemodes:
     get:
       operationId: listGameModes
@@ -2436,6 +2453,14 @@ components:
       properties:
         mail: { type: boolean, description: Password reset and mailed confirmations are available }
         verification: { type: boolean, description: New accounts confirm their email before signing in }
+
+    LegalDoc:
+      type: object
+      required: [html, updated]
+      additionalProperties: false
+      properties:
+        html: { type: string }
+        updated: { type: string, nullable: true, description: When the text last changed (LEGAL_UPDATED) }
 
     ConfigFieldMeta:
       type: object
