@@ -147,15 +147,15 @@ export class LightsService {
     }
   }
 
-  /** The bridge said hello: devices, then the current scene. Nothing while lights are off (a fresh bridge has an empty allowlist). */
+  /** The bridge said hello: same as a devices change (devices.ts calls this instead for an API
+   *  change that doesn't involve a fresh connection) — darkens a strip left on while lights are
+   *  off, otherwise sends the devices and the current scene. */
   async onBridgeHello(boardId: string): Promise<void> {
-    return this.enqueue(boardId, async () => {
-      if (!(await this.deps.enabled(boardId))) return
-      await this.sendDevicesAndScene(boardId)
-    })
+    return this.devicesChanged(boardId)
   }
 
-  /** Same as onBridgeHello, except lights off darkens the strip and clears the allowlist instead of sending nothing. */
+  /** Lights off: darkens every device and clears the bridge's allowlist. Otherwise sends the
+   *  devices, then the current scene. */
   async devicesChanged(boardId: string): Promise<void> {
     return this.enqueue(boardId, async () => {
       if (!(await this.deps.enabled(boardId))) {
@@ -163,6 +163,21 @@ export class LightsService {
         return
       }
       await this.sendDevicesAndScene(boardId)
+    })
+  }
+
+  /** Darkens one device directly (a DELETE): sent before devicesChanged's new allowlist, since
+   *  once it's out of the allowlist a pending off would never reach it otherwise. Nothing for an
+   *  unsupported bridge, like every other send. */
+  async darkenDevice(boardId: string, deviceId: string): Promise<void> {
+    return this.enqueue(boardId, () => {
+      if (!supportsLights(this.deps.bridgeVersion(boardId))) return Promise.resolve()
+      try {
+        this.deps.send(boardId, { kind: 'wled.apply', data: { device_id: deviceId, state: { on: false } } })
+      } catch (err) {
+        this.deps.warn('lights darken device failed', err)
+      }
+      return Promise.resolve()
     })
   }
 
@@ -229,10 +244,18 @@ export class LightsService {
     await this.fire(boardId, { kind: 'idle', local: true }, null, { seatCount: 1 })
   }
 
-  /** Lights off: darken every device, then clear the bridge's allowlist. */
+  /** Lights off: darken every device, then clear the bridge's allowlist. Nothing for an
+   *  unsupported bridge, like every other send. The devices list goes out first, before any off:
+   *  a bridge that just (re)connected has no workers yet, and an apply for a device the bridge
+   *  doesn't know about is dropped as unpaired rather than queued. */
   private async darken(boardId: string): Promise<void> {
+    if (!supportsLights(this.deps.bridgeVersion(boardId))) return
     try {
       const devices = await this.deps.devices(boardId)
+      this.deps.send(boardId, {
+        kind: 'wled.devices',
+        data: { devices: devices.map(d => ({ id: d.id, mac: d.mac, host: d.host, max_bri: d.max_bri })) },
+      })
       for (const d of devices) this.deps.send(boardId, { kind: 'wled.apply', data: { device_id: d.id, state: { on: false } } })
       this.deps.send(boardId, { kind: 'wled.devices', data: { devices: [] } })
     } catch (err) {

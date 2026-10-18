@@ -46,6 +46,8 @@ tags:
     description: >-
       Minigolf courses and holes (admin-only drafts and writes; players read published official
       courses)
+  - name: lights
+    description: WLED devices paired to a board, and the light profile that drives them as games change
   - name: bridge
     description: Operations the Go bridge depends on
 security:
@@ -420,6 +422,216 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
         '502': { $ref: '#/components/responses/BoardError' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/lights:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    get:
+      operationId: getBoardLights
+      summary: The board's WLED devices, what its bridge found, and the light profile
+      tags: [lights]
+      responses:
+        '200':
+          description: Lights
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BoardLights' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    put:
+      operationId: setBoardLights
+      summary: Turn the board's lights on or off (devices and rules are kept)
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [enabled]
+              additionalProperties: false
+              properties:
+                enabled: { type: boolean }
+      responses:
+        '204': { description: Saved }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/lights/scan:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: scanBoardLights
+      summary: Ask the bridge to look for WLED devices now
+      tags: [lights]
+      responses:
+        '202': { description: Asked }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/lights/probe:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: probeBoardLights
+      summary: Ask the bridge whether a WLED answers at this address
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [host]
+              additionalProperties: false
+              properties:
+                host: { type: string, minLength: 1, maxLength: 253, pattern: '^[A-Za-z0-9.\-:\[\]]+$' }
+      responses:
+        '202': { description: Asked }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/lights/blink:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: blinkBoardLights
+      summary: Blink a found or paired WLED device so you can tell which one it is
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                host: { type: string, maxLength: 253 }
+                deviceId: { type: string }
+      responses:
+        '202': { description: Asked }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+        '503': { $ref: '#/components/responses/BoardUnavailable' }
+
+  /api/boards/{id}/lights/devices:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: addWledDevice
+      summary: Pair a WLED device the bridge found
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mac, name, segmentMode, maxBri]
+              additionalProperties: false
+              properties:
+                mac: { type: string }
+                name: { type: string, minLength: 1, maxLength: 40 }
+                segmentMode: { type: string, enum: [whole, perSeat, wled] }
+                maxBri: { type: integer, minimum: 1, maximum: 255 }
+      responses:
+        '201':
+          description: Paired
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WledDevice' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/lights/devices/{deviceId}:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+      - name: deviceId
+        in: path
+        required: true
+        schema: { type: string, minLength: 1 }
+    patch:
+      operationId: updateWledDevice
+      summary: Rename a device or change its segments or brightness cap
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                name: { type: string, minLength: 1, maxLength: 40 }
+                segmentMode: { type: string, enum: [whole, perSeat, wled] }
+                maxBri: { type: integer, minimum: 1, maximum: 255 }
+      responses:
+        '200':
+          description: Saved
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/WledDevice' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      operationId: deleteWledDevice
+      summary: Unpair a device
+      tags: [lights]
+      responses:
+        '204': { description: Removed }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/boards/{id}/lights/test:
+    parameters:
+      - $ref: '#/components/parameters/BoardId'
+    post:
+      operationId: testBoardLight
+      summary: Play one rule of the board's light profile on its devices
+      tags: [lights]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [rule]
+              additionalProperties: false
+              properties:
+                rule: { type: integer, minimum: 0 }
+      responses:
+        '202': { description: Played }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
         '503': { $ref: '#/components/responses/BoardUnavailable' }
 
   /api/pairing/request:
@@ -2514,6 +2726,103 @@ components:
       additionalProperties: false
       properties:
         status: { type: integer, description: HTTP status Board Manager answered with }
+
+    WledDevice:
+      type: object
+      required: [id, mac, name, host, leds, version, segments, segmentMode, maxBri, reachable]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        mac: { type: string }
+        name: { type: string }
+        host: { type: string }
+        leds: { type: integer }
+        version: { type: string }
+        segments: { type: integer }
+        segmentMode: { type: string, enum: [whole, perSeat, wled] }
+        maxBri: { type: integer }
+        reachable: { type: boolean, nullable: true, description: 'null until the bridge has sent to it' }
+        error: { type: string }
+        since: { type: string, format: date-time }
+    FoundWledDevice:
+      type: object
+      required: [mac, host, name, leds, version, segments]
+      additionalProperties: false
+      properties:
+        mac: { type: string }
+        host: { type: string }
+        name: { type: string }
+        leds: { type: integer }
+        version: { type: string }
+        segments: { type: integer }
+        onBoard: { type: string, description: Name of another of your boards this device is paired to }
+    LightRule:
+      type: object
+      required: [when, type, look]
+      additionalProperties: false
+      properties:
+        when:
+          type: object
+          required: [trigger, seats]
+          additionalProperties: false
+          properties:
+            trigger: { type: string }
+            seats: { type: string, enum: [any, mine, other] }
+            total:
+              type: object
+              required: [op, n]
+              additionalProperties: false
+              properties:
+                op: { type: string, enum: ['=', '>='] }
+                n: { type: integer }
+            game: { type: string }
+        type: { type: string, enum: [scene, flash] }
+        look:
+          type: object
+          required: [color, fx, bri]
+          additionalProperties: false
+          properties:
+            color: { type: string }
+            fx: { type: integer }
+            bri: { type: integer }
+            speed: { type: integer }
+        holdMs: { type: integer }
+    LightProfile:
+      type: object
+      required: [id, name, builtIn, rules]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        builtIn: { type: boolean }
+        rules:
+          type: array
+          items: { $ref: '#/components/schemas/LightRule' }
+    BoardLights:
+      type: object
+      required: [enabled, bridgeOnline, bridgeOutdated, devices, found, lastScanAt, probe, profile, scanError]
+      additionalProperties: false
+      properties:
+        enabled: { type: boolean }
+        bridgeOnline: { type: boolean }
+        bridgeOutdated: { type: boolean }
+        devices:
+          type: array
+          items: { $ref: '#/components/schemas/WledDevice' }
+        found:
+          type: array
+          items: { $ref: '#/components/schemas/FoundWledDevice' }
+        lastScanAt: { type: string, format: date-time, nullable: true }
+        probe:
+          type: object
+          nullable: true
+          required: [host]
+          additionalProperties: false
+          properties:
+            host: { type: string }
+            error: { type: string }
+        profile: { $ref: '#/components/schemas/LightProfile' }
+        scanError: { type: string, nullable: true, description: "The board's bridge couldn't complete its last scan" }
 
     PairingCode:
       type: object

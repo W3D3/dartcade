@@ -14,6 +14,7 @@ import { lobbyGwPlugin } from './browser-gw/lobby.js'
 import { sessionsApiPlugin } from './api/sessions.js'
 import { gamesApiPlugin } from './api/games.js'
 import { boardsApiPlugin } from './api/boards.js'
+import { lightsApiPlugin } from './api/lights.js'
 import { pairingApiPlugin } from './api/pairing.js'
 import { usersApiPlugin } from './api/users.js'
 import { meApiPlugin } from './api/me.js'
@@ -184,6 +185,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
     getSessionByBoard: boardId => engine.getSessionByBoard(boardId),
     isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
   })
+  await app.register(lightsApiPlugin, { db, lights })
   await app.register(pairingApiPlugin, { db })
   await app.register(voicesApiPlugin, { db })
   await app.register(friendsApiPlugin, { friends })

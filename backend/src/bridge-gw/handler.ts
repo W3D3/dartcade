@@ -27,8 +27,6 @@ type Opts = FastifyPluginOptions & {
   /** The bridge said hello: its board id (the lights service probes it once it can). A rejection is
    *  logged by callHook, never left unhandled. */
   onBridgeHello?: (boardId: string) => void | Promise<void>
-  /** The bridge's connection is gone for good (not a reconnect replaced by a fresh one). */
-  onBridgeGone?: (boardId: string) => void
   /** A bridge event was applied to the game. A rejection is logged by callHook, never left unhandled. */
   onBoardEvent?: (boardId: string, kind: string) => void | Promise<void>
   /** The lights store has fresh devices for this board, after a scan or a probe. A rejection is
@@ -149,8 +147,6 @@ export function handleBridgeConnection(
     lights?: LightsStore
     /** The bridge said hello: its board id (the lights service probes this board once it can). */
     onBridgeHello?: (boardId: string) => void | Promise<void>
-    /** The bridge's connection is gone for good (not a reconnect replaced by a fresh one). */
-    onBridgeGone?: (boardId: string) => void
     /** A bridge event was applied to the game. */
     onBoardEvent?: (boardId: string, kind: string) => void | Promise<void>
     /** The lights store has fresh devices for this board, after a scan or a probe. */
@@ -328,7 +324,6 @@ export function handleBridgeConnection(
     if (!bridgeConnections.isOnline(boardDbId)) {
       stills.clear(boardDbId)
       lights.clear(boardDbId)
-      callHook('onBridgeGone', boardDbId, () => opts.onBridgeGone?.(boardDbId))
     }
     presence(boardDbId)
   })
@@ -348,7 +343,6 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
         onCameraStill: opts.onCameraStill,
         lights: opts.lights,
         onBridgeHello: opts.onBridgeHello,
-        onBridgeGone: opts.onBridgeGone,
         onBoardEvent: opts.onBoardEvent,
         onLightsFound: opts.onLightsFound,
       },

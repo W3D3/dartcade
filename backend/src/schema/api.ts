@@ -342,6 +342,142 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/lights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        /** The board's WLED devices, what its bridge found, and the light profile */
+        get: operations["getBoardLights"];
+        /** Turn the board's lights on or off (devices and rules are kept) */
+        put: operations["setBoardLights"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/scan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the bridge to look for WLED devices now */
+        post: operations["scanBoardLights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ask the bridge whether a WLED answers at this address */
+        post: operations["probeBoardLights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/blink": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Blink a found or paired WLED device so you can tell which one it is */
+        post: operations["blinkBoardLights"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/devices": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pair a WLED device the bridge found */
+        post: operations["addWledDevice"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/devices/{deviceId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Unpair a device */
+        delete: operations["deleteWledDevice"];
+        options?: never;
+        head?: never;
+        /** Rename a device or change its segments or brightness cap */
+        patch: operations["updateWledDevice"];
+        trace?: never;
+    };
+    "/api/boards/{id}/lights/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Play one rule of the board's light profile on its devices */
+        post: operations["testBoardLight"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/pairing/request": {
         parameters: {
             query?: never;
@@ -1876,6 +2012,77 @@ export interface components {
             /** @description HTTP status Board Manager answered with */
             status: number;
         };
+        WledDevice: {
+            id: string;
+            mac: string;
+            name: string;
+            host: string;
+            leds: number;
+            version: string;
+            segments: number;
+            /** @enum {string} */
+            segmentMode: "whole" | "perSeat" | "wled";
+            maxBri: number;
+            /** @description null until the bridge has sent to it */
+            reachable: boolean | null;
+            error?: string;
+            /** Format: date-time */
+            since?: string;
+        };
+        FoundWledDevice: {
+            mac: string;
+            host: string;
+            name: string;
+            leds: number;
+            version: string;
+            segments: number;
+            /** @description Name of another of your boards this device is paired to */
+            onBoard?: string;
+        };
+        LightRule: {
+            when: {
+                trigger: string;
+                /** @enum {string} */
+                seats: "any" | "mine" | "other";
+                total?: {
+                    /** @enum {string} */
+                    op: "=" | ">=";
+                    n: number;
+                };
+                game?: string;
+            };
+            /** @enum {string} */
+            type: "scene" | "flash";
+            look: {
+                color: string;
+                fx: number;
+                bri: number;
+                speed?: number;
+            };
+            holdMs?: number;
+        };
+        LightProfile: {
+            id: string;
+            name: string;
+            builtIn: boolean;
+            rules: components["schemas"]["LightRule"][];
+        };
+        BoardLights: {
+            enabled: boolean;
+            bridgeOnline: boolean;
+            bridgeOutdated: boolean;
+            devices: components["schemas"]["WledDevice"][];
+            found: components["schemas"]["FoundWledDevice"][];
+            /** Format: date-time */
+            lastScanAt: string | null;
+            probe: {
+                host: string;
+                error?: string;
+            } | null;
+            profile: components["schemas"]["LightProfile"];
+            /** @description The board's bridge couldn't complete its last scan */
+            scanError: string | null;
+        };
         PairingCode: {
             code: string;
             /** Format: date-time */
@@ -3181,6 +3388,286 @@ export interface operations {
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             502: components["responses"]["BoardError"];
+            503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    getBoardLights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Lights */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BoardLights"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setBoardLights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    enabled: boolean;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    scanBoardLights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asked */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    probeBoardLights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    host: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Asked */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    blinkBoardLights: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    host?: string;
+                    deviceId?: string;
+                };
+            };
+        };
+        responses: {
+            /** @description Asked */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+            503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    addWledDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    mac: string;
+                    name: string;
+                    /** @enum {string} */
+                    segmentMode: "whole" | "perSeat" | "wled";
+                    maxBri: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Paired */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WledDevice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    deleteWledDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Removed */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    updateWledDevice: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+                deviceId: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    name?: string;
+                    /** @enum {string} */
+                    segmentMode?: "whole" | "perSeat" | "wled";
+                    maxBri?: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Saved */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WledDevice"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    testBoardLight: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    rule: number;
+                };
+            };
+        };
+        responses: {
+            /** @description Played */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
             503: components["responses"]["BoardUnavailable"];
         };
     };
