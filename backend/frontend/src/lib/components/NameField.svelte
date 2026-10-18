@@ -13,6 +13,8 @@
     own = null,
     status = $bindable({ kind: 'empty' }),
     action,
+    placeholder,
+    prefix = true,
   }: {
     id: string
     label: string
@@ -22,6 +24,9 @@
     status?: NameStatus
     /** Next to the input, e.g. Settings' Save button. */
     action?: Snippet
+    placeholder?: string
+    /** The "@" shown before the input. Off for Register, where the artboard has a plain full-width field. */
+    prefix?: boolean
   } = $props()
 
   const check = createNameCheck(lookupName, () => own)
@@ -42,7 +47,9 @@
 <div class="flex flex-col gap-2">
   <label for={id} class="field-label">{label}</label>
   <div class="flex items-center gap-2 min-w-0">
-    <span aria-hidden="true" class="font-mono text-text-dim">@</span>
+    {#if prefix}
+      <span aria-hidden="true" class="font-mono text-text-dim">@</span>
+    {/if}
     <Input
       {id}
       bind:value
@@ -51,6 +58,7 @@
       autocapitalize="off"
       spellcheck="false"
       maxlength={64}
+      {placeholder}
       class="flex-grow min-w-0"
     />
     {@render action?.()}
