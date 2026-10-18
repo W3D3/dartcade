@@ -20,16 +20,17 @@ type Device struct {
 type Report func(msg any)
 
 type Manager struct {
-	hc     *http.Client
-	report Report
-	minGap time.Duration
+	hc       *http.Client
+	report   Report
+	minGap   time.Duration
+	blinkFor time.Duration
 
 	mu      sync.Mutex
 	workers map[string]*worker // by device id
 }
 
 func New(report Report) *Manager {
-	return &Manager{hc: NewHTTPClient(), report: report, minGap: 100 * time.Millisecond, workers: map[string]*worker{}}
+	return &Manager{hc: NewHTTPClient(), report: report, minGap: 100 * time.Millisecond, blinkFor: 3 * time.Second, workers: map[string]*worker{}}
 }
 
 // SetDevices replaces the allowlist: workers for devices no longer listed stop.
