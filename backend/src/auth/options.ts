@@ -4,10 +4,11 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { MailConfig } from '../mail/config.js'
 import type { Mailer } from '../mail/transport.js'
-import { resetMail, verifyMail } from '../mail/templates.js'
+import { deleteMail, resetMail, verifyMail } from '../mail/templates.js'
 import { lastLoginHooks } from './lastLogin.js'
 import { nameHooks } from './nameHooks.js'
 import { termsGate } from './termsGate.js'
+import { runAccountCleanup } from './cleanup.js'
 
 export type AuthDeps = { db: Kysely<Database>; mail: MailConfig; mailer: Mailer | null; trustedOrigins: string[] }
 
@@ -48,6 +49,21 @@ export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
         : undefined,
     user: {
       additionalFields: { termsAcceptedAt: { type: 'date', required: false, input: false, fieldName: 'terms_accepted_at' } },
+      deleteUser: {
+        enabled: true,
+        // Leaves lobbies and forfeits running games before the row goes; a throw here aborts
+        // the deletion (better-auth doesn't call deleteUser), leaving the account intact.
+        beforeDelete: async user => {
+          await runAccountCleanup(user.id)
+        },
+        sendDeleteAccountVerification: mailer
+          ? // better-auth's sendDeleteAccountVerification must return a Promise; mailer.send fires without awaiting
+            // oxlint-disable-next-line typescript/require-await
+            async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
+              mailer.send(deleteMail(user.email, user.name, url))
+            }
+          : undefined,
+      },
     },
     databaseHooks: { ...nameHooks(db), ...lastLoginHooks(db) },
     hooks: { before: termsGate },

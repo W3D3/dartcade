@@ -13,6 +13,7 @@
   import AuthFooter from '$lib/components/AuthFooter.svelte'
 
   const justReset = new URLSearchParams($querystring ?? '').get('reset') === '1'
+  const justDeleted = new URLSearchParams($querystring ?? '').get('deleted') === '1'
 
   let email = $state('')
   let password = $state('')
@@ -66,6 +67,9 @@
 
       {#if justReset}
         <p class="m-0 text-[14px] text-accent">Password changed. Sign in with the new one.</p>
+      {/if}
+      {#if justDeleted}
+        <p class="m-0 text-[14px] text-accent">Your account was deleted.</p>
       {/if}
 
       <div class="flex flex-col gap-[18px]">

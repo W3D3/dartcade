@@ -87,7 +87,7 @@ export const deleteMail = (to: string, name: string, url: string): Mail =>
     name,
     'Delete your account',
     "This can't be undone.",
-    'Open this link to delete your account. This cannot be undone:',
+    "Open this link in the browser where you're signed in to Dartcade to delete your account. This cannot be undone:",
     'Delete my account',
     'danger',
     url,

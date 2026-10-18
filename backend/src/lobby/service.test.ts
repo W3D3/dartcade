@@ -4,6 +4,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { insertBoard } from '../db/queries.js'
 import { SessionEngine, type EngineStore } from '../session/engine.js'
+import { setAccountCleanup, runAccountCleanup, cleanUpAccount } from '../auth/cleanup.js'
 import { LobbyHub } from './hub.js'
 import { LobbyService } from './service.js'
 
@@ -1377,6 +1378,75 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       hub.addMeSocket('max', maxWs, await lobbies.meMessage('max'), friendsMsg)
       await lobbies.start('chris', id, true)
       expect(lastMsg(maxWs).game).toBeNull()
+    })
+  })
+
+  describe('account cleanup', () => {
+    // The real cleanUpAccount, against this file's real lobbies/engine — exactly index.ts's wiring
+    function wireCleanup() {
+      setAccountCleanup(userId => cleanUpAccount({ engine, lobbies }, userId))
+    }
+
+    it("a playing host's cleanup leaves the lobby and forfeits their game: the other member becomes host, lobby stays open", async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+      const { sessionId } = await lobbies.start('chris', id, true)
+
+      wireCleanup()
+      await runAccountCleanup('chris')
+      await lobbies.whenIdle(id)
+
+      const lobby = await lobbies.view(id)
+      expect(lobby).not.toBeNull()
+      expect(lobby?.hostUserId).toBe('lena')
+      expect(engine.getSession(sessionId)?.forfeited).toEqual([0])
+    })
+
+    it("a non-playing host's cleanup leaves the lobby but leaves the others' game alone; it keeps running on a null owner and the lobby gets a host again once it ends", async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.join('max', id, code)
+      const chrisId = (await lobbies.view(id))?.people.find(p => p.name === 'Christoph')?.id
+      if (!chrisId) throw new Error('chris is not in the lobby')
+      await lobbies.updatePerson('chris', id, chrisId, { plays: false })
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      // Chris hosts (and runs) the game without a seat of his own: found only via ownerUserId
+      expect(engine.getSession(sessionId)?.ownerUserId).toBe('chris')
+      expect(
+        engine
+          .getSession(sessionId)
+          ?.seats.map(s => s.name)
+          .sort(),
+      ).toEqual(['Lena', 'Max'])
+
+      wireCleanup()
+      await runAccountCleanup('chris')
+      await lobbies.whenIdle(id)
+
+      // Chris left the lobby, but his cleanup never touched the game: no live seat to forfeit
+      expect(await lobbies.current('chris')).toBeNull()
+      expect(engine.getSession(sessionId)?.status).toBe('active')
+      expect(engine.getSession(sessionId)?.forfeited).toEqual([])
+
+      // better-auth removes the user row only after beforeDelete (this cleanup) returns; simulate
+      // that here and check the two real ON DELETE SET NULL FKs it trips (006_game_history.sql,
+      // 009_lobbies.sql) don't break anything already running
+      await db.deleteFrom('user').where('id', '=', 'chris').execute()
+      const row = await db.selectFrom('lobbies').select('host_user_id').where('id', '=', id).executeTakeFirstOrThrow()
+      expect(row.host_user_id).toBeNull()
+
+      // The engine keeps working on the in-memory session (ownerUserId is just a string to it,
+      // not a live FK lookup): Lena can still act, and forfeiting to Max finishes the game
+      const r = await engine.onUserAction(sessionId, 'lena', { type: 'forfeit' })
+      expect(r).toEqual({ ok: true })
+      expect(engine.getSession(sessionId)?.status).toBe('finished')
+      await lobbies.whenIdle(id)
+
+      // The lobby had no host (null, not just "not a member") until the game ending re-ran
+      // settleHost: it gets one again, the member who's been there longest
+      expect((await lobbies.view(id))?.hostUserId).toBe('lena')
     })
   })
 })
