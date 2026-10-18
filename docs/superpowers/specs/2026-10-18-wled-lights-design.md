@@ -58,7 +58,8 @@ Bridge → backend (telemetry like `camera.still`: not sequenced, not stored):
 
 ## 2. Bridge (`bridge/internal/wled`)
 
-- **Client:** `GET /json/info` (name, LED count, version, MAC, segments) and `POST /json/state`. No
+- **Client:** `GET /json/info` (name, LED count, version, MAC), `GET /json/state` (segment count; the
+  state to restore after a blink, or after a flash with no scene yet) and `POST /json/state`. No
   other paths, and the backend never sends a URL or a path.
 - **Allowlist:** `apply` goes only to devices in the latest `wled.devices`. `probe` and `blink` go only
   to RFC 1918, link-local or `.local` hosts.
@@ -153,12 +154,14 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 - On bridge connect: send `wled.devices`, then the game scene (or the `idle` scene if no game is active).
 - Bridges older than the first version with `wled` support (checked from `bridge.hello`'s
   `bridge_version`) get nothing; the API reports `bridgeOutdated: true`.
+- Turning lights off sends `{on: false}` to every device, then an empty `wled.devices`, so the strip goes
+  dark instead of keeping its last scene.
 - Lights never block or fail the game: send errors are logged and dropped.
 
 ### Storage (migration `025_wled_lights.sql`)
 
 - `wled_devices`: `id` (ulid), `board_id` (FK, `on delete cascade`), `mac`, `name`, `host`, `leds`,
-  `version`, `segment_mode` (`whole` | `perSeat` | `wled`), `max_bri` (1–255, default 178 = 70%),
+  `version`, `segments`, `segment_mode` (`whole` | `perSeat` | `wled`), `max_bri` (1–255, default 178 = 70%),
   `created_at`; unique `(board_id, mac)`.
 - `boards.lights_enabled boolean not null default true`.
 - Found devices and live status: in memory per board (`backend/src/lights/store.ts`), like the camera
