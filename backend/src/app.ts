@@ -34,6 +34,8 @@ import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
 import { authInfoApiPlugin } from './api/authInfo.js'
+import { legalApiPlugin } from './api/legal.js'
+import { loadLegal, legalValues } from './legal/load.js'
 import { createFastify } from './api/fastify.js'
 import { auth, mailConfig } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
@@ -101,6 +103,11 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   if (onRoute) app.addHook('onRoute', onRoute)
   // Feature flags (OpenFeature): the provider is set before any route evaluates one
   await setupFlags(envFlagsOn(), envFlagValues())
+
+  const legalDocs = await loadLegal(process.env.LEGAL_DIR, legalValues(process.env))
+  for (const [doc, { missing }] of Object.entries(legalDocs)) {
+    if (missing.length) app.log.warn({ doc, missing }, 'legal text has unfilled placeholders')
+  }
 
   await app.register(fastifyWebsocket, { options: { maxPayload: WS_MAX_PAYLOAD } })
   // RATE_LIMIT_MAX: the e2e stack raises it, since every test browser shares one IP
@@ -185,6 +192,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(ofrepApiPlugin, { db })
   await app.register(previewApiPlugin, { preview: parsePreview(process.env) })
   await app.register(authInfoApiPlugin, { mail: mailConfig.smtpUrl !== null, verification: mailConfig.verification })
+  await app.register(legalApiPlugin, { docs: legalDocs })
   await app.register(boardsApiPlugin, {
     db,
     releaseBoard: boardId => lobbies.releaseBoard(boardId),

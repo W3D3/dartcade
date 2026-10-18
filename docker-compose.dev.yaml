@@ -42,6 +42,10 @@ services:
       BOARD_LIVE_CAMERA: ${BOARD_LIVE_CAMERA:-on}
       SMTP_URL: smtp://mailpit:1025
       MAIL_FROM: Dartcade Dev <noreply@dartcade.local>
+      LEGAL_OPERATOR_NAME: Dev Operator
+      LEGAL_ADDRESS: Musterstraße 1, 8010 Graz, Austria
+      LEGAL_CONTACT_EMAIL: dev@dartcade.local
+      LEGAL_UPDATED: '2026-10-17'
     ports:
       - '3000:3000'
     depends_on:

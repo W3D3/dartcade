@@ -10,6 +10,7 @@
   import { sessionStore, takeReturn, peekReturn } from '$lib/returnTo'
   import { verifyCallback } from '$lib/verify'
   import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
+  import AuthFooter from '$lib/components/AuthFooter.svelte'
 
   const justReset = new URLSearchParams($querystring ?? '').get('reset') === '1'
 
@@ -114,6 +115,8 @@
         New to Dartcade?
         <a href="#/register" class="font-semibold no-underline">Create an account</a>
       </p>
+
+      <AuthFooter />
     </form>
   </main>
 </div>
