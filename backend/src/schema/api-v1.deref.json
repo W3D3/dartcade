@@ -335,6 +335,82 @@
         }
       }
     },
+    "/api/auth-info": {
+      "get": {
+        "operationId": "getAuthInfo",
+        "summary": "Whether this deployment sends mail and requires email verification",
+        "tags": [
+          "system"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The deployment's sign-up settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "mail",
+                    "verification"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "mail": {
+                      "type": "boolean",
+                      "description": "Password reset and mailed confirmations are available"
+                    },
+                    "verification": {
+                      "type": "boolean",
+                      "description": "New accounts confirm their email before signing in"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/gamemodes": {
       "get": {
         "operationId": "listGameModes",
@@ -29892,6 +29968,24 @@
                 }
               }
             }
+          }
+        }
+      },
+      "AuthInfo": {
+        "type": "object",
+        "required": [
+          "mail",
+          "verification"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mail": {
+            "type": "boolean",
+            "description": "Password reset and mailed confirmations are available"
+          },
+          "verification": {
+            "type": "boolean",
+            "description": "New accounts confirm their email before signing in"
           }
         }
       },

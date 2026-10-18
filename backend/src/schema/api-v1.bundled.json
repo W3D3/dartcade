@@ -169,6 +169,31 @@
         }
       }
     },
+    "/api/auth-info": {
+      "get": {
+        "operationId": "getAuthInfo",
+        "summary": "Whether this deployment sends mail and requires email verification",
+        "tags": [
+          "system"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "The deployment's sign-up settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AuthInfo"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/gamemodes": {
       "get": {
         "operationId": "listGameModes",
@@ -5494,6 +5519,24 @@
                 }
               }
             }
+          }
+        }
+      },
+      "AuthInfo": {
+        "type": "object",
+        "required": [
+          "mail",
+          "verification"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mail": {
+            "type": "boolean",
+            "description": "Password reset and mailed confirmations are available"
+          },
+          "verification": {
+            "type": "boolean",
+            "description": "New accounts confirm their email before signing in"
           }
         }
       },

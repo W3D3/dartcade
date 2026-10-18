@@ -18,15 +18,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('better-auth name hooks', () => 
     await close()
   })
 
-  it('stores a sign-up name normalized', async () => {
-    await expect(hooks.user.create.before({ name: ' Jürgen ', email: 'j@example.com' })).resolves.toEqual({
-      data: { name: 'Jürgen', email: 'j@example.com' },
-    })
+  const signUpCtx = { path: '/sign-up/email' } as Parameters<typeof hooks.user.create.before>[1]
+
+  it('stores a sign-up name normalized, and records when the terms were accepted', async () => {
+    const result = await hooks.user.create.before({ name: ' Jürgen ', email: 'j@example.com' }, signUpCtx)
+    expect(result).toMatchObject({ data: { name: 'Jürgen', email: 'j@example.com' } })
+    expect(result.data.termsAcceptedAt).toBeInstanceOf(Date)
+  })
+
+  it("doesn't stamp terms acceptance for a user created some other way (e.g. the admin plugin)", async () => {
+    const result = await hooks.user.create.before({ name: 'RobCross', email: 'rc@example.com' }, {
+      path: '/admin/create-user',
+    } as Parameters<typeof hooks.user.create.before>[1])
+    expect(result.data).not.toHaveProperty('termsAcceptedAt')
   })
 
   it('refuses a sign-up name that is taken in another case, or breaks the rules', async () => {
-    await expect(hooks.user.create.before({ name: 'LUKE' })).rejects.toMatchObject({ body: { message: 'That name is taken' } })
-    await expect(hooks.user.create.before({ name: 'Phil Taylor' })).rejects.toMatchObject({
+    await expect(hooks.user.create.before({ name: 'LUKE' }, signUpCtx)).rejects.toMatchObject({ body: { message: 'That name is taken' } })
+    await expect(hooks.user.create.before({ name: 'Phil Taylor' }, signUpCtx)).rejects.toMatchObject({
       body: { message: expect.stringContaining('no spaces') },
     })
   })

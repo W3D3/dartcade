@@ -33,7 +33,7 @@ test('login then sign out lands on login page', async ({ page }) => {
   // Register a fresh user
   const u = uniqueUser('logout')
   await page.request.post('http://localhost:5174/api/auth/sign-up/email', {
-    data: { name: u.name, email: u.email, password: u.password },
+    data: { name: u.name, email: u.email, password: u.password, acceptTerms: true },
     headers: { Origin: 'http://localhost:5174' },
   })
 

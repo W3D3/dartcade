@@ -26,7 +26,7 @@ export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
 
     // Register via API (Origin header satisfies better-auth CSRF check)
     const signUp = await page.request.post('http://localhost:5174/api/auth/sign-up/email', {
-      data: { name, email, password },
+      data: { name, email, password, acceptTerms: true },
       headers: { Origin: 'http://localhost:5174' },
     })
     expect(signUp.ok(), `sign-up failed: ${signUp.status()} ${await signUp.text()}`).toBeTruthy()
@@ -47,7 +47,7 @@ export const test = base.extend<{ authedPage: Page; adminPage: Page }>({
     const password = 'TestPass1!'
     const headers = { Origin: 'http://localhost:5174' }
     // Signing up again in a later test fails (the user exists): only the sign-in must succeed
-    await page.request.post('http://localhost:5174/api/auth/sign-up/email', { data: { name: `e2eadmin${testInfo.parallelIndex}`, email, password }, headers })
+    await page.request.post('http://localhost:5174/api/auth/sign-up/email', { data: { name: `e2eadmin${testInfo.parallelIndex}`, email, password, acceptTerms: true }, headers })
     makeAdmin(email)
     const signIn = await page.request.post('http://localhost:5174/api/auth/sign-in/email', { data: { email, password }, headers })
     expect(signIn.ok(), `admin sign-in failed: ${signIn.status()}`).toBeTruthy()

@@ -33,8 +33,9 @@ import type { LightsService } from './lights/service.js'
 import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
+import { authInfoApiPlugin } from './api/authInfo.js'
 import { createFastify } from './api/fastify.js'
-import { auth } from './auth/index.js'
+import { auth, mailConfig } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
@@ -125,6 +126,10 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   )
 
   app.all('/api/auth/*', async (req, reply) => {
+    // better-auth only trusts a single-valued X-Forwarded-For, never the socket; req.ip is
+    // Fastify's own resolution (honouring TRUST_PROXY). Overwrite unconditionally — a client-sent
+    // value here must not survive, or it could be spoofed into hitting someone else's rate limit.
+    req.raw.headers['x-dartcade-client-ip'] = req.ip
     // Fastify consumes the body stream; expose parsed body so better-call's fallback can re-serialize it
     if (req.body !== undefined) Object.assign(req.raw, { body: req.body })
     // better-call throws on a malformed Host or X-Forwarded-Proto; unhandled, that would exit Node
@@ -179,6 +184,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(gamesApiPlugin, { db })
   await app.register(ofrepApiPlugin, { db })
   await app.register(previewApiPlugin, { preview: parsePreview(process.env) })
+  await app.register(authInfoApiPlugin, { mail: mailConfig.smtpUrl !== null, verification: mailConfig.verification })
   await app.register(boardsApiPlugin, {
     db,
     releaseBoard: boardId => lobbies.releaseBoard(boardId),

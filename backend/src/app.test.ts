@@ -10,6 +10,23 @@ vi.mock('./db/queries.js', async orig => ({
   getBoardByTokenHash: () => new Promise(() => {}),
 }))
 
+// Spy on the raw request better-call sees, to check what the /api/auth/* handler did to its
+// headers, without needing a real session or DB round-trip.
+let seenClientIpHeader: string | string[] | undefined
+vi.mock('better-auth/node', async orig => {
+  const mod = await orig<typeof import('better-auth/node')>()
+  return {
+    ...mod,
+    toNodeHandler: (...args: Parameters<typeof mod.toNodeHandler>) => {
+      const handler = mod.toNodeHandler(...args)
+      return (req: Parameters<typeof handler>[0], res: Parameters<typeof handler>[1]) => {
+        seenClientIpHeader = req.headers['x-dartcade-client-ip']
+        return handler(req, res)
+      }
+    },
+  }
+})
+
 const deps = () => ({ engine: {} as any, db: {} as any, lobbies: {} as any, hub: {} as any, friends: {} as any })
 
 describe('unmatched routes', () => {
@@ -95,6 +112,21 @@ describe('malformed requests', () => {
       const closed = new Promise(resolve => ws.addEventListener('close', e => resolve(e.code)))
       ws.send(new Uint8Array(WS_MAX_PAYLOAD + 1))
       expect(await Promise.race([closed, new Promise(resolve => setTimeout(() => resolve('still open'), 2000))])).toBe(1009)
+    } finally {
+      await app.close()
+    }
+  })
+})
+
+describe('/api/auth/* client IP', () => {
+  it("overwrites a client-sent x-dartcade-client-ip with Fastify's own req.ip, so it can't be spoofed", async () => {
+    seenClientIpHeader = undefined
+    const app = await buildApp(deps())
+    try {
+      const res = await app.inject({ method: 'GET', url: '/api/auth/get-session', headers: { 'x-dartcade-client-ip': '6.6.6.6' } })
+      expect(res.statusCode).toBeLessThan(500)
+      expect(seenClientIpHeader).toBeDefined()
+      expect(seenClientIpHeader).not.toBe('6.6.6.6')
     } finally {
       await app.close()
     }
