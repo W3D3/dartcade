@@ -6,6 +6,16 @@ services:
     environment:
       DATABASE_URL: postgres://dartgames:${POSTGRES_PASSWORD}@postgres:5432/dartgames
       BRIDGE_SECRET: ${BRIDGE_SECRET}
+      # Unset here (empty string) is read as unset: mail stays off, legal placeholders stay as they are.
+      SMTP_URL: ${SMTP_URL:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      EMAIL_VERIFICATION: ${EMAIL_VERIFICATION:-}
+      LEGAL_DIR: ${LEGAL_DIR:-}
+      LEGAL_OPERATOR_NAME: ${LEGAL_OPERATOR_NAME:-}
+      LEGAL_ADDRESS: ${LEGAL_ADDRESS:-}
+      LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
+      LEGAL_UPDATED: ${LEGAL_UPDATED:-}
+      BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
     depends_on:
       postgres:
         condition: service_healthy
