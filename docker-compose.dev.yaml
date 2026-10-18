@@ -19,6 +19,11 @@ services:
       timeout: 5s
       retries: 5
 
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - '8025:8025'
+
   backend:
     image: node:22-alpine
     working_dir: /app
@@ -35,11 +40,15 @@ services:
       BETTER_AUTH_TRUSTED_ORIGINS: http://localhost:5173,${DARTCADE_EXTRA_ORIGINS:-}
       VOICE_STORAGE_LIMIT_MB: ${VOICE_STORAGE_LIMIT_MB:-50}
       BOARD_LIVE_CAMERA: ${BOARD_LIVE_CAMERA:-on}
+      SMTP_URL: smtp://mailpit:1025
+      MAIL_FROM: Dartcade Dev <noreply@dartcade.local>
     ports:
       - '3000:3000'
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     healthcheck:
       test: ['CMD', 'wget', '-qO-', 'http://127.0.0.1:3000/health']
       interval: 5s
