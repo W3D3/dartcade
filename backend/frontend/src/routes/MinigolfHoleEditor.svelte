@@ -13,7 +13,9 @@
   import { api } from '$lib/api'
   import Layout from '$lib/components/Layout.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Modal } from '$lib/components/ui/modal/index.js'
+  import { minigolfHoleTrail } from '$lib/admin/breadcrumbs'
   import HoleView from '$lib/components/minigolf/HoleView.svelte'
   import Playtest from '$lib/components/minigolf/Playtest.svelte'
   import CheckList from '$lib/components/minigolf/editor/CheckList.svelte'
@@ -244,11 +246,9 @@
   {#if $currentUser?.isAdmin}
     <main class="flex min-h-0 flex-grow flex-col overflow-y-auto">
       <header class="flex flex-wrap items-center gap-3 border-b border-line px-4 py-3 md:px-5">
-        <a
-          href={back}
-          class="flex h-10 max-w-[220px] items-center gap-1 rounded-[10px] border border-line-3 pl-2 pr-3 text-[14px] text-ink-2 no-underline"
-          ><ChevronLeft size={18} class="shrink-0" /><span class="truncate">{course?.name ?? 'Courses'}</span></a
-        >
+        <!-- Replaces the old "back to the course" link: a breadcrumb would collide with the rest of
+             this single-row toolbar, so it takes that link's spot instead of a line of its own. -->
+        <Breadcrumb items={minigolfHoleTrail(course?.name ?? null, back, hole?.name ?? 'Hole')} />
         {#if courseId && at >= 0}
           <nav aria-label="Holes" class="flex items-center gap-1 text-[13px] label-caps text-text-muted">
             <Button variant="ghost" size="icon" href={holeHref(holeIds[at - 1] ?? '')} disabled={at === 0} aria-label="Previous hole"

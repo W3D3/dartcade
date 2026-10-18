@@ -3,6 +3,7 @@
   import { push } from 'svelte-spa-router'
   import { ChevronRight } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { currentUser } from '$lib/auth'
   import { ADMIN_TOOLS } from '$lib/admin/tools'
 
@@ -15,6 +16,7 @@
 <Layout title="Admin">
   <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
     <header class="hidden md:flex flex-col gap-[6px]">
+      <Breadcrumb items={[{ label: 'Admin' }]} />
       <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Admin</h1>
       <p class="m-0 text-[15px] text-text-muted">Tools for running this dartcade</p>
     </header>

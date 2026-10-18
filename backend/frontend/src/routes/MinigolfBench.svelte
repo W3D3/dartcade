@@ -15,6 +15,8 @@
   import Playtest from '$lib/components/minigolf/Playtest.svelte'
   import PhysicsPanel from '$lib/components/minigolf/PhysicsPanel.svelte'
   import { Toggle } from '$lib/components/ui/toggle/index.js'
+  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
+  import { minigolfBenchTrail } from '$lib/admin/breadcrumbs'
   import {
     aimDial,
     aimLines,
@@ -189,6 +191,8 @@
   {#if $currentUser?.isAdmin}
     <main class="flex min-h-0 flex-grow flex-col gap-4 box-border overflow-y-auto p-4 md:p-[28px_32px] lg:overflow-hidden">
       <header class="flex flex-col gap-3">
+        <!-- On phones the app's header already shows the title, same cutoff as it -->
+        <div class="hidden md:block"><Breadcrumb items={minigolfBenchTrail()} /></div>
         <div class="flex flex-wrap items-center gap-3">
           <!-- On phones the app's header already shows the title -->
           <h1 class="m-0 mr-2 hidden font-display font-bold text-[36px] leading-none uppercase tracking-[0.02em] md:block">

@@ -10,6 +10,8 @@
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
+  import { usersTrail } from '$lib/admin/breadcrumbs'
   import { buttonVariants } from '$lib/components/ui/button/button-variants.js'
   import { DataTable, ColumnToggle, type Features } from '$lib/components/ui/data-table/index.js'
   import { currentUser } from '$lib/auth'
@@ -211,6 +213,7 @@
   {#if $currentUser?.isAdmin}
     <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
       <header class="hidden md:flex flex-col gap-[6px]">
+        <Breadcrumb items={usersTrail()} />
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Users</h1>
         <p class="m-0 text-[15px] text-text-muted">Search accounts, promote or demote admins</p>
       </header>

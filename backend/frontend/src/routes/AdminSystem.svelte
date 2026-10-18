@@ -7,9 +7,11 @@
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { currentUser } from '$lib/auth'
   import { SPA_BUILD, commitUrl, isStale, serverVersion, shortCommit } from '$lib/version'
+  import { systemTrail } from '$lib/admin/breadcrumbs'
   import { buildLabel, debugMarkdown, formatBytes, formatDuration, loadSystem, type AdminSystem } from '$lib/admin/system'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
@@ -78,6 +80,7 @@
     <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
       <header class="flex flex-wrap items-end justify-between gap-3">
         <div class="hidden md:flex flex-col gap-[6px]">
+          <Breadcrumb items={systemTrail()} />
           <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">System</h1>
           <p class="m-0 text-[15px] text-text-muted">What this server runs, and what it's doing right now</p>
         </div>

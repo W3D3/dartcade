@@ -1,12 +1,15 @@
 <script lang="ts">
-  // The course editor's header: back to the list, the draft's status, Preview round, Discard
-  // draft and Publish changes, with what refused the last publish listed underneath.
-  import { ChevronLeft, Play } from '@lucide/svelte'
+  // The course editor's header: a breadcrumb back to the list, the draft's status, Preview
+  // round, Discard draft and Publish changes, with what refused the last publish listed underneath.
+  import { Play } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
+  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
+  import { minigolfCoursesTrail } from '$lib/admin/breadcrumbs'
   import type { DraftStatus } from '$lib/minigolf/editor/store.svelte'
 
   let {
     courseId,
+    courseName = null,
     status,
     savedAt,
     hasDraft,
@@ -20,6 +23,8 @@
     onreload,
   }: {
     courseId: string | null
+    /** The open course's name, for the breadcrumb (null: still loading, or none picked). */
+    courseName?: string | null
     status: DraftStatus | null
     savedAt: Date | null
     /** Unpublished changes, the course's own or its holes' (or never published). */
@@ -56,12 +61,8 @@
 </script>
 
 <header class="flex flex-col gap-2 border-b border-line px-4 py-3 md:px-5">
+  <Breadcrumb items={minigolfCoursesTrail(courseId ? courseName : null)} />
   <div class="flex flex-wrap items-center gap-3">
-    <a
-      href="#/admin/minigolf/courses"
-      class="flex h-10 items-center gap-1 rounded-[10px] border border-line-3 pl-2 pr-3 text-[14px] text-ink-2 no-underline"
-      ><ChevronLeft size={18} />Courses</a
-    >
     <h1 class="m-0 font-display font-bold text-[24px] uppercase tracking-[0.04em]">Course editor</h1>
     <span
       title="You can edit official courses"
