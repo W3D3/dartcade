@@ -18,6 +18,7 @@
   import { loadSettings, saveSettings } from '$lib/gameSettings.js'
   import { accountSettings, writeThrough } from '$lib/accountSettings'
   import { SETTINGS_SECTIONS, sectionOf } from '$lib/settings/sections'
+  import { commitUrl, serverVersion, shortCommit } from '$lib/version'
 
   let { params = {} }: { params?: { section?: string } } = $props()
 
@@ -141,5 +142,17 @@
         </div>
       {/if}
     </div>
+
+    {#if $serverVersion}
+      <p class="m-0 mt-auto pt-2 text-[12px] text-text-dim">
+        dartcade {$serverVersion.version}{#if $serverVersion.commit}
+          · <a
+            href={commitUrl($serverVersion.commit)}
+            target="_blank"
+            rel="noopener noreferrer"
+            class="font-mono !text-text-dim hover:!text-text-muted">{shortCommit($serverVersion.commit)}</a
+          >{/if}
+      </p>
+    {/if}
   </main>
 </Layout>
