@@ -25,6 +25,11 @@ export type AdminUser = Schemas['AdminUser']
 export type AdminFlag = Schemas['AdminFlag']
 export type AdminSystem = Schemas['AdminSystem']
 export type BuildInfo = Schemas['BuildInfo']
+export type BoardLights = Schemas['BoardLights']
+export type WledDevice = Schemas['WledDevice']
+export type FoundWledDevice = Schemas['FoundWledDevice']
+export type LightProfile = Schemas['LightProfile']
+export type LightRule = Schemas['LightRule']
 
 export type { Snapshot, UserAction, Segment, BullOffView, X01Game, AtcGame, MinigolfGame, MinigolfHole, HiloGame } from './game-ws'
 export { WsCloseCode } from './game-ws'
