@@ -209,6 +209,7 @@
     <main class="flex min-h-0 flex-grow flex-col overflow-y-auto">
       <CourseHeader
         {courseId}
+        courseName={content?.name ?? null}
         status={store?.status ?? null}
         savedAt={store?.savedAt ?? null}
         {hasDraft}

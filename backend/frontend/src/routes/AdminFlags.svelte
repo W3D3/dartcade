@@ -20,11 +20,13 @@
   import { Input } from '$lib/components/ui/input/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { DataTable, type Features } from '$lib/components/ui/data-table/index.js'
   import { currentUser } from '$lib/auth'
   import { refreshFlags } from '$lib/flags'
   import { inviteTime } from '$lib/lobby/format'
   import { createUserSearch, type AdminUser } from '$lib/admin/users'
+  import { flagsTrail } from '$lib/admin/breadcrumbs'
   import {
     applyDraft,
     changedCellText,
@@ -218,6 +220,21 @@
     closePanel()
   }
 
+  // "Feature flags" in the trail goes back to the list the same way the panel's own close
+  // button does: through tryClose, so a dirty draft gets the discard confirm instead of a raw nav.
+  const trail = $derived.by(() => {
+    const t = flagsTrail(openFlag?.key)
+    if (openFlag)
+      t[1] = {
+        ...t[1],
+        onclick: (e: MouseEvent) => {
+          e.preventDefault()
+          tryClose()
+        },
+      }
+    return t
+  })
+
   function confirmDiscardChanges(): void {
     confirmDiscard = false
     const next = pendingOpen
@@ -383,6 +400,7 @@
   {#if $currentUser?.isAdmin}
     <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
       <header class="hidden md:flex flex-col gap-[6px]">
+        <Breadcrumb items={trail} />
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Feature flags</h1>
         <p class="m-0 text-[15px] text-text-muted">Turn a flag on or off at runtime, no restart. Open tabs pick it up within 30s.</p>
       </header>
