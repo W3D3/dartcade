@@ -8,7 +8,11 @@ COPY frontend/ .
 # (backend/, per docker-compose.yaml's build: .) — vite.config.ts's alias expects it at
 # ../src/shared relative to the frontend dir, i.e. /app/src/shared here.
 COPY src/shared /app/src/shared
-RUN npm run build
+# The build stamp (release.yml passes it); the SPA compares its own with /api/version to spot a stale tab
+ARG VERSION=dev
+ARG COMMIT=
+ARG BUILD_TIME=
+RUN VITE_APP_VERSION=$VERSION VITE_APP_COMMIT=$COMMIT VITE_APP_BUILD_TIME=$BUILD_TIME npm run build
 
 # Stage 2: Build backend
 FROM node:22-alpine AS backend-build
@@ -27,6 +31,9 @@ COPY --from=backend-build /app/dist ./dist
 COPY --from=backend-build /app/src/db/migrations ./dist/db/migrations
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
-ENV NODE_ENV=production
+ARG VERSION=dev
+ARG COMMIT=
+ARG BUILD_TIME=
+ENV NODE_ENV=production APP_VERSION=$VERSION APP_COMMIT=$COMMIT APP_BUILD_TIME=$BUILD_TIME
 EXPOSE 3000
 CMD ["node", "dist/index.js"]

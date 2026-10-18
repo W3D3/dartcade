@@ -10,6 +10,10 @@ preview:
     PREVIEW_PR: '{pr_id}'
     PREVIEW_PR_URL: 'https://github.com/W3D3/dartcade/pull/{pr_id}'
     NODE_ENV: development
+    # Sprout builds the image without build args: the version is stamped at runtime instead
+    # ({commit_sha} is GITHUB_SHA, the PR's merge commit that was built); the SPA stays 'dev'
+    APP_VERSION: 'pr-{pr_id}'
+    APP_COMMIT: '{commit_sha}'
 health:
   path: /health
   interval: 2s
