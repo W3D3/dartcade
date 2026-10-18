@@ -112,6 +112,32 @@ Backend-only (set automatically by the dev compose, documented here for manual r
 
 Dev mail lands in Mailpit at http://localhost:8025.
 
+### Mail in production
+
+Any SMTP relay works; [Resend](https://resend.com) is a simple example:
+
+```
+SMTP_URL=smtps://resend:<api-key>@smtp.resend.com:465
+MAIL_FROM=Dartcade <noreply@your-domain.org>
+```
+
+Resend requires `MAIL_FROM`'s domain to be verified (SPF/DKIM records) before it will relay for
+it. Its free tier caps outgoing mail per day and per month — enough for verification and
+password-reset mail on a small instance, not for high-volume sending.
+
+`BETTER_AUTH_URL` must be the public https URL once mail is on: verification, reset and delete
+links are built from it, and a `localhost` or `http://` link mailed to a user is useless outside
+your machine.
+
+Turning `SMTP_URL` on later turns email verification on by default too (see `EMAIL_VERIFICATION`
+above). Accounts created while it was off aren't retroactively verified: each has to verify at
+their next sign-in, which mails them a fresh link, unless you set `EMAIL_VERIFICATION=off` to
+keep verification off regardless of `SMTP_URL`.
+
+An operator in Austria must fill the `LEGAL_*` values (`LEGAL_OPERATOR_NAME`, `LEGAL_ADDRESS`,
+`LEGAL_CONTACT_EMAIL`), or the Imprint page shows its `{{…}}` placeholders publicly instead of
+real text.
+
 ## Running backend tests
 
 The DB tests require a live Postgres:

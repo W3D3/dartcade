@@ -73,6 +73,12 @@ reach it over `https://`/`wss://`. More env vars worth knowing about (all option
   Boards page loses the live camera preview, the board status and the Start/Stop/Reset/Calibrate
   buttons (games are not affected)
 
+**Mail and legal pages**: without `SMTP_URL` set, there's no verification mail, password reset
+or account-deletion mail, and sign-up skips verification. Pass `SMTP_URL`, `MAIL_FROM` and
+`BETTER_AUTH_URL` (plus `LEGAL_OPERATOR_NAME`, `LEGAL_ADDRESS`, `LEGAL_CONTACT_EMAIL` if you're
+in Austria) through to the backend service, as in `backend/docker-compose.yaml`. See
+[`DEVELOPMENT.md`](../DEVELOPMENT.md#mail-in-production)'s "Mail in production" for details.
+
 **Admins** (the minigolf course editor, features still behind a flag) are users with
 better-auth's `admin` role. The first one comes from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (see "First
 start"), and admins promote others on `#/admin/users`. Without those variables, sign up, then give
