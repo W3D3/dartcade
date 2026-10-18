@@ -101,15 +101,49 @@ describe('LightsService', () => {
     expect(back.state).toEqual(turn)
   })
 
-  it('lights off or an old bridge sends nothing', async () => {
+  it('onPush sends nothing when lights are off or the bridge is too old', async () => {
     for (const over of [{ enabled: () => Promise.resolve(false) }, { bridgeVersion: () => '0.3.1' }]) {
       const { svc, sent, snaps, sessions } = setup(over)
       sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }] })
       snaps.set('s', x01({}))
       await svc.onPush('s')
-      await svc.onBridgeHello('b1')
       expect(sent).toEqual([])
     }
+  })
+
+  it('onBridgeHello sends nothing for an old bridge', async () => {
+    const { svc, sent } = setup({ bridgeVersion: () => '0.3.1' })
+    await svc.onBridgeHello('b1')
+    expect(sent).toEqual([])
+  })
+
+  it('onBridgeHello sends nothing when lights are off and the bridge is too old', async () => {
+    const { svc, sent } = setup({ enabled: () => Promise.resolve(false), bridgeVersion: () => '0.3.1' })
+    await svc.onBridgeHello('b1')
+    expect(sent).toEqual([])
+  })
+
+  it('onBridgeHello darkens when lights are off, so a strip left on while the bridge was offline goes dark on reconnect', async () => {
+    const { svc, sent } = setup({ enabled: () => Promise.resolve(false) })
+    await svc.onBridgeHello('b1')
+    // A restarted bridge has no workers yet: the devices list goes first, so the off applies land
+    // on real workers instead of being dropped as unpaired, before the allowlist is cleared.
+    expect(sent.map(s => s.msg.kind)).toEqual(['wled.devices', 'wled.apply', 'wled.devices'])
+    expect(sent[0].msg.data).toEqual({ devices: [{ id: 'dev-b1', mac: 'dev-b1', host: '192.168.1.2', max_bri: 178 }] })
+    expect(sent[1].msg.data).toEqual({ device_id: 'dev-b1', state: { on: false } })
+    expect(sent[2].msg.data).toEqual({ devices: [] })
+  })
+
+  it('darkenDevice sends {on:false} to just that device, for a DELETE before the new allowlist goes out', async () => {
+    const { svc, sent } = setup()
+    await svc.darkenDevice('b1', 'd1')
+    expect(sent).toEqual([{ board: 'b1', msg: { kind: 'wled.apply', data: { device_id: 'd1', state: { on: false } } } }])
+  })
+
+  it('darkenDevice sends nothing for an old bridge', async () => {
+    const { svc, sent } = setup({ bridgeVersion: () => '0.3.1' })
+    await svc.darkenDevice('b1', 'd1')
+    expect(sent).toEqual([])
   })
 
   it('a reconnecting bridge gets its devices, then the scene', async () => {
@@ -155,12 +189,13 @@ describe('LightsService', () => {
     expect(warns.length).toBeGreaterThan(0)
   })
 
-  it('turning lights off darkens the strip, then clears the allowlist', async () => {
+  it('turning lights off sends the devices, darkens the strip, then clears the allowlist', async () => {
     const { svc, sent } = setup({ enabled: () => Promise.resolve(false) })
     await svc.devicesChanged('b1')
-    expect(sent.map(s => s.msg.kind)).toEqual(['wled.apply', 'wled.devices'])
-    expect(sent[0].msg.data.state).toEqual({ on: false })
-    expect(sent[1].msg.data).toEqual({ devices: [] })
+    expect(sent.map(s => s.msg.kind)).toEqual(['wled.devices', 'wled.apply', 'wled.devices'])
+    expect(sent[0].msg.data).toEqual({ devices: [{ id: 'dev-b1', mac: 'dev-b1', host: '192.168.1.2', max_bri: 178 }] })
+    expect(sent[1].msg.data.state).toEqual({ on: false })
+    expect(sent[2].msg.data).toEqual({ devices: [] })
   })
 
   it('test plays a rule as a flash for seat 1', async () => {
