@@ -4,7 +4,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import type { MailConfig } from '../mail/config.js'
 import type { Mailer } from '../mail/transport.js'
-import { verifyMail } from '../mail/templates.js'
+import { resetMail, verifyMail } from '../mail/templates.js'
 import { lastLoginHooks } from './lastLogin.js'
 import { nameHooks } from './nameHooks.js'
 import { termsGate } from './termsGate.js'
@@ -17,7 +17,19 @@ export type AuthDeps = { db: Kysely<Database>; mail: MailConfig; mailer: Mailer 
 export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
   return {
     database: { db, type: 'pg' as const },
-    emailAndPassword: { enabled: true, requireEmailVerification: mail.verification },
+    emailAndPassword: {
+      enabled: true,
+      requireEmailVerification: mail.verification,
+      revokeSessionsOnPasswordReset: true,
+      resetPasswordTokenExpiresIn: 3600,
+      sendResetPassword: mailer
+        ? // better-auth's sendResetPassword must return a Promise; mailer.send fires without awaiting
+          // oxlint-disable-next-line typescript/require-await
+          async ({ user, url }: { user: { email: string; name: string }; url: string }) => {
+            mailer.send(resetMail(user.email, user.name, url))
+          }
+        : undefined,
+    },
     emailVerification:
       mailer && mail.verification
         ? {

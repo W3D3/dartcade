@@ -8,6 +8,8 @@
   import Login from './routes/Login.svelte'
   import Register from './routes/Register.svelte'
   import Verify from './routes/Verify.svelte'
+  import Forgot from './routes/Forgot.svelte'
+  import Reset from './routes/Reset.svelte'
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
   import History from './routes/History.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
@@ -66,6 +68,8 @@
     '/login': Login,
     '/register': Register,
     '/verify': Verify,
+    '/forgot': Forgot,
+    '/reset': Reset,
     // Boards moved into Settings; old links (and ?pair) still land there
     '/boards': BoardsRedirect,
     '/history/:id': wrap({ asyncComponent: loadGameDetails }),

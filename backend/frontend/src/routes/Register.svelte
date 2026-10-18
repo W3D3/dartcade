@@ -6,6 +6,7 @@
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
   import NameField from '$lib/components/NameField.svelte'
+  import PasswordStrength from '$lib/components/PasswordStrength.svelte'
   import { get } from 'svelte/store'
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
@@ -20,19 +21,6 @@
   let acceptTerms = $state(false)
   let error = $state('')
   let loading = $state(false)
-
-  let strength = $derived.by(() => {
-    if (!password) return 0
-    let s = 0
-    if (password.length >= 8) s++
-    if (password.length >= 12) s++
-    if (/[A-Z]/.test(password) && /[a-z]/.test(password)) s++
-    if (/[0-9]/.test(password) || /[^a-zA-Z0-9]/.test(password)) s++
-    return s
-  })
-
-  const strengthLabels = ['', 'Weak', 'Fair', 'Good', 'Strong']
-  const strengthColors = ['', '#ff5a4f', '#f59e0b', '#84cc16', '#c6f24e']
 
   async function submit() {
     if (!acceptTerms) {
@@ -101,19 +89,7 @@
             placeholder="At least 8 characters"
             required
           />
-          {#if password}
-            <div class="flex gap-1 mt-1">
-              {#each [1, 2, 3, 4] as lvl (lvl)}
-                <div
-                  class="h-1 flex-1 rounded-full transition-colors"
-                  style:background={lvl <= strength ? strengthColors[strength] : 'var(--color-line-2)'}
-                ></div>
-              {/each}
-            </div>
-            <p class="m-0 text-[13px]" style:color={strengthColors[strength]}>
-              {strengthLabels[strength]}
-            </p>
-          {/if}
+          <PasswordStrength {password} />
         </div>
         <label class="flex items-center gap-[10px] text-[15px] text-ink-2 min-h-[44px] cursor-pointer">
           <input type="checkbox" bind:checked={acceptTerms} class="w-[18px] h-[18px] m-0 accent-accent" />

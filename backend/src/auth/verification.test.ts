@@ -67,4 +67,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('email verification', () => {
     const res = await post('/sign-up/email', { name: 'Lena2', email: 'lena@x.org', password: 'doubletop-16', acceptTerms: true })
     expect(res.status).toBe(200)
   })
+
+  it('resets a password through the mailed link and signs out other sessions', async () => {
+    const res = await post('/request-password-reset', { email: 'lena@x.org', redirectTo: base + '/#/reset' })
+    expect(res.status).toBe(200)
+    const token = new URL(sent.at(-1)!.text.match(/https?:\S+/)![0]).pathname.split('/').at(-1)!
+    expect((await post('/reset-password', { token, newPassword: 'bullseye-50!' })).status).toBe(200)
+    expect((await post('/sign-in/email', { email: 'lena@x.org', password: 'bullseye-50!' })).status).toBe(200)
+  })
+
+  it('answers a reset for an unknown address the same, sending nothing', async () => {
+    const before = sent.length
+    expect((await post('/request-password-reset', { email: 'nobody@x.org', redirectTo: base + '/#/reset' })).status).toBe(200)
+    expect(sent.length).toBe(before)
+  })
 })

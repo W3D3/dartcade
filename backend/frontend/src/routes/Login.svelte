@@ -1,14 +1,17 @@
 <script lang="ts">
-  import { push } from 'svelte-spa-router'
+  import { push, querystring } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Input } from '$lib/components/ui/input/index.js'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
   import { authClient, currentUser } from '$lib/auth'
+  import { authInfo } from '$lib/authInfo'
   import { sessionStore, takeReturn, peekReturn } from '$lib/returnTo'
   import { verifyCallback } from '$lib/verify'
   import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
+
+  const justReset = new URLSearchParams($querystring ?? '').get('reset') === '1'
 
   let email = $state('')
   let password = $state('')
@@ -60,6 +63,10 @@
         <p class="hidden md:block m-0 text-[16px] text-text-muted">Welcome back. Your boards are waiting.</p>
       </div>
 
+      {#if justReset}
+        <p class="m-0 text-[14px] text-accent">Password changed. Sign in with the new one.</p>
+      {/if}
+
       <div class="flex flex-col gap-[18px]">
         <div class="flex flex-col gap-2">
           <label for="login-email" class="field-label">Email</label>
@@ -69,7 +76,9 @@
         <div class="flex flex-col gap-2">
           <div class="flex justify-between items-baseline">
             <label for="login-password" class="field-label">Password</label>
-            <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
+            {#if $authInfo.mail}
+              <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
+            {/if}
           </div>
           <Input
             id="login-password"
