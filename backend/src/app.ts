@@ -27,6 +27,8 @@ import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { getOpenLobbyIds } from './db/lobbies.js'
+import { rehostWledDevices } from './db/lights.js'
+import type { LightsService } from './lights/service.js'
 import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
@@ -49,6 +51,8 @@ export type AppDeps = {
   hub: LobbyHub
   /** Friend requests and friends' status (see friends/service.ts). */
   friends: FriendsService
+  /** Sends wled scenes/flashes as games change (see lights/service.ts); omitted in tests that don't exercise it. */
+  lights?: LightsService
   /** Built frontend to serve; omitted in tests. */
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
@@ -89,7 +93,7 @@ function readIndex(frontendDist: string): string | undefined {
 }
 
 /** All HTTP/WebSocket routes of the backend, without listening or touching the database. */
-export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({ engine, db, lobbies, hub, friends, lights, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
   const app = createFastify()
   const indexHtml = frontendDist ? readIndex(frontendDist) : undefined
   if (onRoute) app.addHook('onRoute', onRoute)
@@ -148,6 +152,16 @@ export async function buildApp({ engine, db, lobbies, hub, friends, frontendDist
     onCameraStill: (boardId, cam, version) => {
       pushCamera(engine, boardId, cam, version)
     },
+    // Returned (not discarded with `void`): callHook only catches a rejection it can see, so a
+    // thrown/rejected hook is logged there instead of becoming an unhandled rejection.
+    onBridgeHello: lights ? boardId => lights.onBridgeHello(boardId) : undefined,
+    onBoardEvent: lights ? (boardId, kind) => lights.onBoardEvent(boardId, kind) : undefined,
+    onLightsFound: lights
+      ? (boardId, found) =>
+          rehostWledDevices(db, boardId, found).then(changed => {
+            if (changed) return lights.devicesChanged(boardId)
+          })
+      : undefined,
   })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends })

@@ -24,14 +24,16 @@ type Opts = FastifyPluginOptions & {
   onCameraStill?: OnCameraStill
   /** Where wled devices found on a board's network are kept (tests pass their own). */
   lights?: LightsStore
-  /** The bridge said hello: its board id (the lights service probes it once it can). */
-  onBridgeHello?: (boardId: string) => void
+  /** The bridge said hello: its board id (the lights service probes it once it can). A rejection is
+   *  logged by callHook, never left unhandled. */
+  onBridgeHello?: (boardId: string) => void | Promise<void>
   /** The bridge's connection is gone for good (not a reconnect replaced by a fresh one). */
   onBridgeGone?: (boardId: string) => void
-  /** A bridge event was applied to the game. */
-  onBoardEvent?: (boardId: string, kind: string) => void
-  /** The lights store has fresh devices for this board, after a scan or a probe. */
-  onLightsFound?: (boardId: string, devices: FoundDevice[]) => void
+  /** A bridge event was applied to the game. A rejection is logged by callHook, never left unhandled. */
+  onBoardEvent?: (boardId: string, kind: string) => void | Promise<void>
+  /** The lights store has fresh devices for this board, after a scan or a probe. A rejection is
+   *  logged by callHook, never left unhandled. */
+  onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
 }
 
 export type OnCameraStill = (boardId: string, cam: number, version: number) => void
@@ -146,13 +148,13 @@ export function handleBridgeConnection(
     /** Where wled devices found on the board's network are kept (tests pass their own). */
     lights?: LightsStore
     /** The bridge said hello: its board id (the lights service probes this board once it can). */
-    onBridgeHello?: (boardId: string) => void
+    onBridgeHello?: (boardId: string) => void | Promise<void>
     /** The bridge's connection is gone for good (not a reconnect replaced by a fresh one). */
     onBridgeGone?: (boardId: string) => void
     /** A bridge event was applied to the game. */
-    onBoardEvent?: (boardId: string, kind: string) => void
+    onBoardEvent?: (boardId: string, kind: string) => void | Promise<void>
     /** The lights store has fresh devices for this board, after a scan or a probe. */
-    onLightsFound?: (boardId: string, devices: FoundDevice[]) => void
+    onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
   },
 ): void {
   const { db, engine, stills = cameraStills, lights = lightsStore } = opts

@@ -14,6 +14,8 @@ import { buildApp } from './app.js'
 import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
+import { getLightsEnabled, listWledDevices } from './db/lights.js'
+import { LightsService } from './lights/service.js'
 import { FriendsService } from './friends/service.js'
 import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
@@ -50,6 +52,19 @@ const hub = new LobbyHub()
 let warn = (message: string, details: unknown) => {
   console.warn(message, details)
 }
+// Lights (#135): reads engine lazily, the same way the push closure below does
+const lights: LightsService = new LightsService({
+  send: (b, m) => bridgeConnections.send(b, m),
+  bridgeVersion: b => bridgeConnections.get(b)?.bridgeVersion,
+  devices: b => listWledDevices(db, b),
+  enabled: b => getLightsEnabled(db, b),
+  getSession: id => engine.getSession(id),
+  getSnapshot: id => engine.getSnapshot(id),
+  sessionOnBoard: b => engine.getSessionByBoard(b)?.id ?? null,
+  warn: (message, details) => {
+    warn(message, details)
+  },
+})
 // The other callbacks only run after the engine and the lobbies exist
 const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
@@ -58,6 +73,9 @@ const engine: SessionEngine = new SessionEngine(
     lobbies.onSessionPush(sessionId).catch((err: unknown) => {
       warn('lobby indicator push failed', { sessionId, error: String(err) })
     })
+    lights.onPush(sessionId).catch((err: unknown) => {
+      warn('lights push failed', { sessionId, error: String(err) })
+    })
   },
   (message, details) => {
     warn(message, details)
@@ -65,9 +83,20 @@ const engine: SessionEngine = new SessionEngine(
   (sessionId, userIds, notice) => {
     pushNotice(sessionId, userIds, notice)
   },
-  ended => lobbies.onGameEnded(ended),
+  ended => {
+    // Not awaited (like the push callback's lights.onPush): a board going idle is not on the game path
+    lights.onGameEnded(ended.sessionId).catch((err: unknown) => {
+      warn('lights game-end failed', { sessionId: ended.sessionId, error: String(err) })
+    })
+    return lobbies.onGameEnded(ended)
+  },
   started => lobbies.onGameStarted(started),
-  { forgotten: forgetSession },
+  {
+    forgotten: id => {
+      forgetSession(id)
+      lights.onForgotten(id)
+    },
+  },
 )
 const friends = new FriendsService({
   db,
@@ -109,7 +138,7 @@ const idleSweep = setInterval(
 )
 idleSweep.unref()
 
-const app = await buildApp({ engine, db, lobbies, hub, friends, frontendDist: join(__dirname, '../frontend/dist') })
+const app = await buildApp({ engine, db, lobbies, hub, friends, lights, frontendDist: join(__dirname, '../frontend/dist') })
 // buildApp's setupFlags only set the env defaults; apply what's stored before serving any request
 await setOverrides(await loadOverrides(db))
 warn = (message, details) => {
