@@ -52,6 +52,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/auth-info": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Whether this deployment sends mail and requires email verification */
+        get: operations["getAuthInfo"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gamemodes": {
         parameters: {
             query?: never;
@@ -1809,6 +1826,12 @@ export interface components {
                 };
             };
         };
+        AuthInfo: {
+            /** @description Password reset and mailed confirmations are available */
+            mail: boolean;
+            /** @description New accounts confirm their email before signing in */
+            verification: boolean;
+        };
         ConfigFieldMeta: {
             label: string;
             tooltip?: string;
@@ -2962,6 +2985,27 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BuildInfo"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAuthInfo: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The deployment's sign-up settings */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AuthInfo"];
                 };
             };
             429: components["responses"]["TooManyRequests"];

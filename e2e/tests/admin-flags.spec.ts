@@ -14,7 +14,7 @@ const FLAG_KEY = 'gamemode.p121.enabled'
 async function signIn(page: Page, email: string, name: string, password = 'TestPass1!'): Promise<void> {
   const headers = { Origin: ORIGIN }
   // The admin account may already exist from an earlier run/worker: only the sign-in must succeed
-  await page.request.post(`${ORIGIN}/api/auth/sign-up/email`, { data: { name, email, password }, headers })
+  await page.request.post(`${ORIGIN}/api/auth/sign-up/email`, { data: { name, email, password, acceptTerms: true }, headers })
   const res = await page.request.post(`${ORIGIN}/api/auth/sign-in/email`, { data: { email, password }, headers })
   expect(res.ok(), `sign-in failed for ${email}: ${res.status()} ${await res.text()}`).toBeTruthy()
 }

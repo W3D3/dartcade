@@ -1,6 +1,8 @@
 // Where to go after signing in: a join link or QR code opened while signed out comes back to
 // its page (with the code) instead of the start page. Kept in sessionStorage, for this tab only.
 
+import { isPublicRoute } from './publicRoutes.js'
+
 const KEY = 'dartcade:returnTo'
 
 type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
@@ -8,7 +10,7 @@ type Store = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 /** A route of this app ("/join/K7Q4MD"), not the sign-in pages; anything else is null. */
 function route(path: string): string | null {
   if (!/^\/[^/]/.test(path)) return null
-  if (/^\/(login|register)(?:[/?]|$)/.test(path)) return null
+  if (isPublicRoute('#' + path)) return null
   return path
 }
 
@@ -31,6 +33,16 @@ export function takeReturn(storage: Store | null): string {
     return (path && route(path)) ?? '/'
   } catch {
     return '/'
+  }
+}
+
+/** The remembered page, without forgetting it; null when there is none. */
+export function peekReturn(storage: Store | null): string | null {
+  try {
+    const path = storage?.getItem(KEY) ?? null
+    return path && route(path)
+  } catch {
+    return null
   }
 }
 

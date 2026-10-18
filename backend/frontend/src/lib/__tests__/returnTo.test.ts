@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { rememberReturn, takeReturn } from '../returnTo.js'
+import { rememberReturn, takeReturn, peekReturn } from '../returnTo.js'
 
 function memory(): Storage {
   const m = new Map<string, string>()
@@ -58,9 +58,32 @@ describe('return after sign-in', () => {
     }
   })
 
+  it('remembers nothing for the verify or legal pages either', () => {
+    for (const hash of ['#/verify', '#/verify?email=a%40b', '#/terms']) {
+      const s = memory()
+      rememberReturn(s, hash)
+      expect(takeReturn(s), hash).toBe('/')
+    }
+  })
+
   it('ignores a stored value that is not a route of this app', () => {
     const s = memory()
     s.setItem('dartcade:returnTo', '//evil.example')
     expect(takeReturn(s)).toBe('/')
+  })
+})
+
+describe('peekReturn', () => {
+  it('reads the remembered page without removing it', () => {
+    const s = memory()
+    rememberReturn(s, '#/join/K7Q4MD')
+    expect(peekReturn(s)).toBe('/join/K7Q4MD')
+    expect(peekReturn(s)).toBe('/join/K7Q4MD')
+    expect(takeReturn(s)).toBe('/join/K7Q4MD')
+  })
+
+  it('is null with nothing remembered, or without storage', () => {
+    expect(peekReturn(memory())).toBeNull()
+    expect(peekReturn(null)).toBeNull()
   })
 })

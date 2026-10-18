@@ -7,6 +7,7 @@
   import GameDisplay from './routes/GameDisplay.svelte'
   import Login from './routes/Login.svelte'
   import Register from './routes/Register.svelte'
+  import Verify from './routes/Verify.svelte'
   import BoardsRedirect from './routes/BoardsRedirect.svelte'
   import History from './routes/History.svelte'
   import RouteLoading from './routes/RouteLoading.svelte'
@@ -30,6 +31,8 @@
   import { gameModes } from '$lib/gameModes'
   import { me } from '$lib/lobby/sockets'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
+  import { isPublicRoute } from '$lib/publicRoutes'
+  import { authRedirect } from '$lib/authRedirect'
 
   // Match details pulls in LayerChart for its two charts; load it only when someone opens it.
   // `RouteLoadFailed` is a static import (not another dynamic one) so a failed chunk fetch —
@@ -62,6 +65,7 @@
     '/session/:id': GameDisplay,
     '/login': Login,
     '/register': Register,
+    '/verify': Verify,
     // Boards moved into Settings; old links (and ?pair) still land there
     '/boards': BoardsRedirect,
     '/history/:id': wrap({ asyncComponent: loadGameDetails }),
@@ -88,8 +92,15 @@
   let checked = $state(false)
 
   onMount(async () => {
-    const currentHash = window.location.hash
-    if (currentHash.startsWith('#/login') || currentHash.startsWith('#/register')) {
+    // better-auth's verify-email callback can land a failed link here with ?error=… before the
+    // hash, aimed at whatever page verification was going to continue to, not at #/verify itself.
+    const redirect = authRedirect(window.location.search, window.location.hash)
+    if (redirect.stripQuery) {
+      void push(redirect.hash.slice(1))
+      history.replaceState(null, '', window.location.pathname + window.location.hash)
+    }
+    const currentHash = redirect.hash
+    if (isPublicRoute(currentHash)) {
       void startFlags(null)
       checked = true
       return

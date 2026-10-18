@@ -6,9 +6,12 @@
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
   import NameField from '$lib/components/NameField.svelte'
+  import { get } from 'svelte/store'
   import { authClient, currentUser } from '$lib/auth'
+  import { authInfo } from '$lib/authInfo'
   import { nameSendable, type NameStatus } from '$lib/names'
-  import { sessionStore, takeReturn } from '$lib/returnTo'
+  import { sessionStore, takeReturn, peekReturn } from '$lib/returnTo'
+  import { verifyCallback } from '$lib/verify'
 
   let name = $state('')
   let nameStatus = $state<NameStatus>({ kind: 'empty' })
@@ -39,9 +42,19 @@
     loading = true
     error = ''
     try {
-      const { error: err } = await authClient.signUp.email({ name, email, password })
+      const callbackURL = verifyCallback(peekReturn(sessionStore()))
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- acceptTerms isn't in better-auth's client types; the backend's termsGate requires it in the body
+      const { error: err } = await authClient.signUp.email({ name, email, password, acceptTerms: true, callbackURL } as Parameters<
+        typeof authClient.signUp.email
+      >[0])
       if (err) {
         error = err.message ?? 'Registration failed'
+        return
+      }
+      // loadOnce's subscribe-triggered fetch may not have resolved yet; wait for a fresh read
+      await authInfo.refresh()
+      if (get(authInfo).verification) {
+        void push(`/verify?email=${encodeURIComponent(email)}`)
         return
       }
       await currentUser.refresh()

@@ -6,7 +6,8 @@
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
   import { authClient, currentUser } from '$lib/auth'
-  import { sessionStore, takeReturn } from '$lib/returnTo'
+  import { sessionStore, takeReturn, peekReturn } from '$lib/returnTo'
+  import { verifyCallback } from '$lib/verify'
   import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
 
   let email = $state('')
@@ -21,6 +22,14 @@
     try {
       const { error: err } = await authClient.signIn.email({ email, password })
       if (err) {
+        if (err.code === 'EMAIL_NOT_VERIFIED') {
+          // sendOnSignIn is off (it would mail a link back to "/"); send our own, with the
+          // right callbackURL. Don't pass callbackURL to signIn.email itself: the client then
+          // does a full-page redirect on success instead of letting us route in the SPA.
+          await authClient.sendVerificationEmail({ email, callbackURL: verifyCallback(peekReturn(sessionStore())) })
+          void push(`/verify?email=${encodeURIComponent(email)}&sent=1`)
+          return
+        }
         error = err.message ?? 'Invalid credentials'
         return
       }

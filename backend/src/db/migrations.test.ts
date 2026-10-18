@@ -91,6 +91,34 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('013_unique_names migration', ()
   })
 })
 
+describe.skipIf(!process.env.TEST_DATABASE_URL)('028_email_verification migration', () => {
+  const SCHEMA_028 = 'mig_028_test'
+  let admin: Kysely<Database>
+  let db: Kysely<Database>
+
+  beforeAll(async () => {
+    admin = createDb(url)
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_028} CASCADE`).execute(admin)
+    await sql.raw(`CREATE SCHEMA ${SCHEMA_028}`).execute(admin)
+    db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_028}`)
+    await runMigrations(db, { until: '027_wled_lights.sql' })
+    await sql`INSERT INTO "user" (id, name, email, "emailVerified") VALUES ('u1', 'Luke', 'u1@x', false)`.execute(db)
+    await runMigrations(db)
+  })
+
+  afterAll(async () => {
+    await db.destroy()
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_028} CASCADE`).execute(admin)
+    await admin.destroy()
+  })
+
+  it('counts accounts from before verification as verified, with no terms acceptance recorded', async () => {
+    const row = await db.selectFrom('user').select(['emailVerified', 'terms_accepted_at']).where('id', '=', 'u1').executeTakeFirstOrThrow()
+    expect(row.emailVerified).toBe(true)
+    expect(row.terms_accepted_at).toBeNull()
+  })
+})
+
 describe.skipIf(!process.env.TEST_DATABASE_URL)('two backends on one database', () => {
   const SCHEMA_LOCK = 'mig_lock_test'
   const schemaUrl = `${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_LOCK}`
