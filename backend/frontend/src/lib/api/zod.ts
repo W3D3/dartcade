@@ -28,4 +28,8 @@ export const BaseEnvelopeSchema = z.object({ "v": z.literal(1), "schema": z.lite
 
 export const CameraStillMessageSchema = z.object({ "kind": z.literal("camera.still"), "data": z.object({ "cam": z.number().int().gte(0).lte(3), "captured_at": z.string().datetime({ offset: true }), "content_type": z.literal("image/jpeg"), "data": z.string().base64() }) })
 
+export const WledFoundMessageSchema = z.object({ "kind": z.literal("wled.found"), "data": z.object({ "devices": z.array(z.object({ "mac": z.string(), "host": z.string(), "name": z.string(), "leds": z.number().int().gte(0), "version": z.string(), "segments": z.number().int().gte(0) })), "scanned_at": z.string().datetime({ offset: true }), "probe_host": z.string().optional(), "probe_error": z.string().optional() }) })
+
+export const WledStatusMessageSchema = z.object({ "kind": z.literal("wled.status"), "data": z.object({ "device_id": z.string(), "reachable": z.boolean(), "version": z.string().optional(), "error": z.string().optional() }) })
+
 export const FeedEventDataSchema = z.object({ "dart": z.object({ "segment": z.object({ "name": z.string(), "number": z.number().int().gte(0).lte(50), "bed": z.enum(["SingleInner","SingleOuter","Single","Double","Triple","Outside"]), "multiplier": z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]) }), "score": z.number().int().gte(0), "coords": z.object({ "x": z.number(), "y": z.number() }).optional(), "polar": z.object({ "r": z.number().gte(0), "theta_deg": z.number() }).optional(), "bouncer": z.boolean().optional() }).optional() }).catchall(z.unknown())
