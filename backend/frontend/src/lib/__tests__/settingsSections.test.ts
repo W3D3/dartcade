@@ -7,16 +7,16 @@ import GamePrefs from '../components/settings/GamePrefs.svelte'
 import BoardsEmpty from '../components/boards/BoardsEmpty.svelte'
 
 describe('Settings sections', () => {
-  it("lists the sections in the design's order, Lights as soon", () => {
+  it("lists the sections in the design's order, Lights behind its flag", () => {
     expect(SETTINGS_SECTIONS.map(s => s.id)).toEqual(['profile', 'game', 'boards', 'lights', 'caller'])
-    expect(SETTINGS_SECTIONS.find(s => s.id === 'lights')).toMatchObject({ soon: true })
+    expect(SETTINGS_SECTIONS.find(s => s.id === 'lights')).toMatchObject({ flag: 'lights.enabled' })
   })
 
-  it('opens a known section; the bare route, Lights and unknown ones are none', () => {
+  it('opens a known section; the bare route and unknown ones are none', () => {
     expect(sectionOf('boards')).toBe('boards')
     expect(sectionOf('caller')).toBe('caller')
+    expect(sectionOf('lights')).toBe('lights')
     expect(sectionOf(undefined)).toBeNull()
-    expect(sectionOf('lights')).toBeNull()
     expect(sectionOf('nope')).toBeNull()
   })
 
