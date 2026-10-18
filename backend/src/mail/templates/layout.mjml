@@ -1,0 +1,39 @@
+<mjml>
+  <mj-head>
+    <mj-title>Dartcade</mj-title>
+    <mj-preview>{{preheader}}</mj-preview>
+    <mj-font name="Barlow Condensed" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&amp;display=swap" />
+    <mj-font name="Instrument Sans" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&amp;display=swap" />
+    <mj-attributes>
+      <mj-all font-family="'Instrument Sans', system-ui, Arial, sans-serif" />
+      <mj-text font-size="16px" color="#a3a498" line-height="1.6" />
+    </mj-attributes>
+  </mj-head>
+  <mj-body background-color="#0f100e" width="560px">
+    <mj-section background-color="#131511" border="1px solid #2a2d27" border-radius="12px" padding="40px 32px">
+      <mj-column>
+        <mj-text align="center" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="700" text-transform="uppercase" letter-spacing="0.06em" font-size="20px" color="#efeee6" padding="0 0 28px 0">
+          Dartcade
+        </mj-text>
+        <mj-text align="center" font-family="'Barlow Condensed', 'Arial Narrow', Arial, sans-serif" font-weight="700" text-transform="uppercase" font-size="32px" line-height="1.15" color="#efeee6" padding="0 0 16px 0">
+          {{heading}}
+        </mj-text>
+        <mj-text align="left" padding="0 0 28px 0">
+          Hi <span style="color:#efeee6">{{name}}</span>,<br />
+          {{lead}}
+        </mj-text>
+        <mj-raw><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:separate;"><tr><td align="center" bgcolor="{{buttonBg}}" style="background-color:{{buttonBg}};border:{{buttonBorder}};border-radius:10px;padding:0;"><a href="{{url}}" target="_blank" style="display:block;padding:18px 24px;font-family:'Barlow Condensed','Arial Narrow',Arial,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;font-size:16px;line-height:1;color:{{buttonColor}};text-decoration:none;">{{buttonLabel}}</a></td></tr></table></mj-raw>
+        <mj-text align="center" font-size="13px" color="#828379" padding="24px 0 0 0">
+          If the button doesn't work, paste this link into your browser:<br />
+          <a href="{{url}}" style="color:#c6f24e;word-break:break-all;">{{url}}</a>
+        </mj-text>
+        <mj-text align="center" font-size="13px" color="#828379" padding="20px 0 0 0">
+          {{ignore}}
+        </mj-text>
+        <mj-text align="center" font-size="13px" color="#828379" padding="28px 0 0 0">
+          Dartcade &middot; darts with friends
+        </mj-text>
+      </mj-column>
+    </mj-section>
+  </mj-body>
+</mjml>

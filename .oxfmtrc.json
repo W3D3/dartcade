@@ -19,6 +19,7 @@
     "bridge/",
     "spike/",
     "fixtures/",
+    "backend/src/mail/templates/*.mjml",
     "package-lock.json",
     "dist/",
     "AGENTS.md",

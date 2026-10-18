@@ -29,6 +29,7 @@ WORKDIR /app
 COPY --from=backend-build /app/node_modules ./node_modules
 COPY --from=backend-build /app/dist ./dist
 COPY --from=backend-build /app/src/db/migrations ./dist/db/migrations
+COPY --from=backend-build /app/src/mail/templates ./dist/mail/templates
 COPY --from=frontend-build /app/frontend/dist ./frontend/dist
 
 ARG VERSION=dev
