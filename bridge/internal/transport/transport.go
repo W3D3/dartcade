@@ -81,6 +81,7 @@ type Transport struct {
 	stills    chan any
 	connected atomic.Bool
 	onConnect func()
+	onMessage func(kind string, data json.RawMessage)
 }
 
 type outboxEntry struct {
@@ -93,7 +94,7 @@ func New(cfg Config) *Transport {
 	return &Transport{
 		cfg:    cfg,
 		wake:   make(chan struct{}, 1),
-		stills: make(chan any, 2*camera.MaxCameras),
+		stills: make(chan any, 2*camera.MaxCameras+16),
 		replay: loadOutbox(cfg.OutboxPath),
 		dirty:  make(chan struct{}, 1),
 	}
@@ -102,6 +103,10 @@ func New(cfg Config) *Transport {
 // OnConnect sets a hook run each time the backend connection comes up (after bridge.hello).
 // It runs on the send loop, so it must not block. Set it before Start.
 func (t *Transport) OnConnect(f func()) { t.onConnect = f }
+
+// OnMessage receives every backend message with a kind (wled.*). It runs on the reader
+// goroutine, so it must not block. Set it before Start.
+func (t *Transport) OnMessage(f func(kind string, data json.RawMessage)) { t.onMessage = f }
 
 // Connected reports whether the backend connection is up.
 func (t *Transport) Connected() bool { return t.connected.Load() }
@@ -122,14 +127,18 @@ func StillMessage(st camera.Still) any {
 
 // SendStill sends a camera still on the live connection. Stills are never stored or
 // replayed: while the backend is unreachable (or the queue is full) they are dropped.
-func (t *Transport) SendStill(st camera.Still) {
+func (t *Transport) SendStill(st camera.Still) { t.SendMessage(StillMessage(st)) }
+
+// SendMessage queues a telemetry message (no envelope, not stored) on the live connection.
+// It is dropped while the backend is unreachable, or if the queue is full.
+func (t *Transport) SendMessage(v any) {
 	if !t.connected.Load() {
 		return
 	}
 	select {
-	case t.stills <- StillMessage(st):
+	case t.stills <- v:
 	default:
-		log.Debug("camera still queue full, dropping", "cam", st.Cam)
+		log.Debug("telemetry queue full, dropping")
 	}
 }
 
@@ -420,8 +429,20 @@ func marshalData(ev differ.Event, bmFrameSeq uint64) (json.RawMessage, error) {
 	return json.Marshal(ev.Data)
 }
 
-// handleMessage handles a message from the backend: an ack. It must not block.
+// handleMessage handles a message from the backend: an ack, or a kinded message (wled.*).
+// It must not block.
 func (t *Transport) handleMessage(msg []byte) {
+	var m struct {
+		Kind string          `json:"kind"`
+		Data json.RawMessage `json:"data"`
+	}
+	if json.Unmarshal(msg, &m) == nil && m.Kind != "" {
+		if t.onMessage != nil {
+			t.onMessage(m.Kind, m.Data)
+		}
+		return
+	}
+
 	var ack struct {
 		Ack    *uint64 `json:"ack"`
 		BootID string  `json:"boot_id"`

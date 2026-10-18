@@ -1,12 +1,25 @@
 package wled
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 )
+
+// countingBrowser counts how many times Browse is called, to check the scan-on-error debounce.
+type countingBrowser struct {
+	hosts []string
+	calls *int32
+}
+
+func (c countingBrowser) Browse(context.Context) ([]string, error) {
+	atomic.AddInt32(c.calls, 1)
+	return c.hosts, nil
+}
 
 type reports struct {
 	mu   sync.Mutex
@@ -93,6 +106,50 @@ func TestDifferentMacStopsSends(t *testing.T) {
 	}
 }
 
+func TestSetDevicesResetsReachableForKeptWorkers(t *testing.T) {
+	f := newFakeWLED(t, "aa")
+	m, r := newTestManager(t)
+	m.SetDevices([]Device{{ID: "d1", Mac: "aa", Host: f.host(), MaxBri: 255}})
+	m.Apply("d1", json.RawMessage(`{"on":true}`), 0)
+	recv(t, f)
+	none(t, f, 100*time.Millisecond) // let the first reachable report land
+	r.mu.Lock()
+	before := len(r.msgs)
+	r.mu.Unlock()
+	// The backend re-sends wled.devices on every hello, even for an unchanged device: a worker
+	// that was already reachable must report again, not stay silent because nothing changed —
+	// otherwise a dead device that went quiet while the bridge was offline still shows green.
+	m.SetDevices([]Device{{ID: "d1", Mac: "aa", Host: f.host(), MaxBri: 255}})
+	m.Apply("d1", json.RawMessage(`{"on":true}`), 0)
+	recv(t, f)
+	none(t, f, 100*time.Millisecond)
+	r.mu.Lock()
+	after := len(r.msgs)
+	r.mu.Unlock()
+	if after <= before {
+		t.Fatalf("want a fresh wled.status after SetDevices resent an unchanged device, got %d msgs (was %d)", after, before)
+	}
+}
+
+// A device that changed IP (a MAC mismatch at its old host) must not wait up to 5 min for the
+// periodic scan: the manager rescans itself, which rehosts it by MAC, so the next apply reaches it.
+func TestMacMismatchTriggersRescanAndRehosts(t *testing.T) {
+	old := newFakeWLED(t, "bb")   // the paired device moved off this host; it now answers as another one
+	moved := newFakeWLED(t, "aa") // where mDNS finds it now
+	var scans int32
+	browser := countingBrowser{hosts: []string{moved.host()}, calls: &scans}
+	m, _ := newTestManager(t)
+	m.SetBrowser(browser)
+	m.SetDevices([]Device{{ID: "d1", Mac: "aa", Host: old.host(), MaxBri: 255}})
+	m.Apply("d1", json.RawMessage(`{"on":true}`), 0)
+	none(t, old, 300*time.Millisecond) // the mismatch triggers a rescan, which rehosts d1 to moved
+	m.Apply("d1", json.RawMessage(`{"on":true}`), 0)
+	recv(t, moved)
+	if got := atomic.LoadInt32(&scans); got != 1 {
+		t.Fatalf("browse calls = %d, want exactly 1 (debounced)", got)
+	}
+}
+
 func TestRehostMovesDevice(t *testing.T) {
 	old := newFakeWLED(t, "bb")
 	moved := newFakeWLED(t, "aa")
@@ -157,6 +214,18 @@ func TestPendingScenesCoalesce(t *testing.T) {
 		t.Fatalf("got %s, want only the latest scene", p)
 	}
 	none(t, f, 300*time.Millisecond)
+}
+
+func TestUnpairFlushesPendingScene(t *testing.T) {
+	f := newFakeWLED(t, "aa")
+	m, _ := newTestManager(t)
+	ctx := context.Background()
+	m.Handle(ctx, fakeBrowser{}, "wled.devices", json.RawMessage(`{"devices":[{"id":"d1","mac":"aa","host":"`+f.host()+`","max_bri":255}]}`))
+	m.Handle(ctx, fakeBrowser{}, "wled.apply", json.RawMessage(`{"device_id":"d1","state":{"on":false}}`))
+	m.Handle(ctx, fakeBrowser{}, "wled.devices", json.RawMessage(`{"devices":[]}`)) // d1 unpaired right behind the apply
+	if p := recv(t, f); !strings.Contains(p, `"on":false`) {
+		t.Fatalf("posted %s, want the pending off to still go out", p)
+	}
 }
 
 func TestUnpairDuringFlashSkipsRestore(t *testing.T) {

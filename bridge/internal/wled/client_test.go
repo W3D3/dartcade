@@ -22,10 +22,11 @@ func TestMain(m *testing.M) {
 
 // fakeWLED answers like a WLED device and records POST bodies.
 type fakeWLED struct {
-	srv   *httptest.Server
-	mac   string
-	posts chan string
-	state string
+	srv      *httptest.Server
+	mac      string
+	posts    chan string
+	state    string
+	slowPost time.Duration // delays every POST /json/state response, so a test can overlap calls for real
 }
 
 func newFakeWLED(t *testing.T, mac string) *fakeWLED {
@@ -37,6 +38,9 @@ func newFakeWLED(t *testing.T, mac string) *fakeWLED {
 		case r.Method == http.MethodGet && r.URL.Path == "/json/state":
 			io.WriteString(w, f.state)
 		case r.Method == http.MethodPost && r.URL.Path == "/json/state":
+			if f.slowPost > 0 {
+				time.Sleep(f.slowPost)
+			}
 			b, _ := io.ReadAll(r.Body)
 			f.posts <- string(b)
 			io.WriteString(w, `{"success":true}`)

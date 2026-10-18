@@ -114,10 +114,14 @@ func (m *Manager) Scan(ctx context.Context, b Browser) {
 	m.report(map[string]any{"kind": "wled.found", "data": data})
 }
 
+// Probe reports a fixed error to the browser on failure, never the real one (which host, what
+// refused it): that would let a probe box double as a port-scan oracle. The real error is kept in
+// the bridge's own debug log.
 func (m *Manager) Probe(ctx context.Context, host string) {
 	data := map[string]any{"devices": []found{}, "scanned_at": time.Now().UTC(), "probe_host": host}
 	if d, err := m.describe(ctx, host); err != nil {
-		data["probe_error"] = err.Error()
+		log.Debug("wled: probe failed", "host", host, "err", err)
+		data["probe_error"] = "no WLED answered"
 	} else {
 		data["devices"] = []found{d}
 	}
@@ -145,11 +149,29 @@ func (m *Manager) pairedMaxBri(host string) (int, bool) {
 // Blink plays the pairing check on a local host, then puts back what it showed before. A paired
 // device is capped at its own max_bri, like any other state sent to it; an unpaired device (still
 // being set up) blinks at bri 128.
+//
+// A host already blinking just ignores a new call outright: the host is reserved before this
+// call reads anything, so a second call can never observe lime as its own "prior" state, and
+// there's only ever one restore to run (no timer to double-fire, no shared channel to double-close).
 func (m *Manager) Blink(ctx context.Context, host string) {
 	if !LocalHost(host) {
 		log.Debug("wled: blink refused a non-local host", "host", host)
 		return
 	}
+	m.blinkMu.Lock()
+	if m.blinking[host] {
+		m.blinkMu.Unlock()
+		log.Debug("wled: blink already running for this host, ignored", "host", host)
+		return
+	}
+	m.blinking[host] = true
+	m.blinkMu.Unlock()
+	defer func() {
+		m.blinkMu.Lock()
+		delete(m.blinking, host)
+		m.blinkMu.Unlock()
+	}()
+
 	prior, _, err := GetState(ctx, m.hc, host)
 	if err != nil {
 		log.Debug("wled: blink couldn't read the prior state", "host", host, "err", err)
@@ -168,7 +190,14 @@ func (m *Manager) Blink(ctx context.Context, host string) {
 		log.Debug("wled: blink post failed", "host", host, "err", err)
 		return
 	}
-	time.Sleep(m.blinkFor)
+
+	timer := time.NewTimer(m.blinkFor)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done(): // shutting down (or the request ctx ended): skip the restore
+		return
+	case <-timer.C:
+	}
 	if err := PostState(context.Background(), m.hc, host, prior); err != nil {
 		log.Debug("wled: blink restore failed", "host", host, "err", err)
 	}
