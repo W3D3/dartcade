@@ -1,5 +1,6 @@
 import type { ColumnType, Generated, RawBuilder } from 'kysely'
 import type { components } from '../schema/api.js'
+import type { SegmentMode } from '../shared/lights/types.js'
 
 // Column names match better-auth's camelCase schema
 export interface UserTable {
@@ -32,6 +33,8 @@ export interface BoardsTable {
   token_hash: string
   hardware_id: string | null
   created_at: ColumnType<Date, never, never>
+  /** Lights master switch for this board (migration 027). */
+  lights_enabled: ColumnType<boolean, boolean | undefined, boolean>
 }
 
 export interface PairingCodesTable {
@@ -286,6 +289,21 @@ export interface FeatureFlagOverridesTable {
   updated_at: ColumnType<Date, Date | undefined, Date>
 }
 
+/** WLED devices paired to a board (migration 027). */
+export interface WledDevicesTable {
+  id: string
+  board_id: string
+  mac: string
+  name: string
+  host: string
+  leds: number
+  version: string
+  segments: ColumnType<number, number | undefined, number>
+  segment_mode: SegmentMode
+  max_bri: ColumnType<number, number | undefined, number>
+  created_at: ColumnType<Date, never, never>
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -308,4 +326,5 @@ export interface Database {
   minigolf_holes: MinigolfHolesTable
   minigolf_courses: MinigolfCoursesTable
   feature_flag_overrides: FeatureFlagOverridesTable
+  wled_devices: WledDevicesTable
 }

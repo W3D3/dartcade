@@ -58,7 +58,15 @@ describe('GET /api/boards', () => {
 
   it('returns boards owned by user', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Living Room', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
+      {
+        id: 'board-1',
+        name: 'Living Room',
+        hardware_id: null,
+        created_at: new Date(),
+        owner_user_id: 'user-1',
+        token_hash: 'hash',
+        lights_enabled: true,
+      },
     ])
     const app = makeApp()
     const res = await app.inject({ method: 'GET', url: '/api/boards' })
@@ -159,7 +167,15 @@ describe('DELETE /api/boards/:id', () => {
 describe('GET /api/boards - bridgeVersion', () => {
   it('reports bridge and Board Manager versions separately', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
+      {
+        id: 'board-1',
+        name: 'Board',
+        hardware_id: null,
+        created_at: new Date(),
+        owner_user_id: 'user-1',
+        token_hash: 'hash',
+        lights_enabled: true,
+      },
     ])
     vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(true)
     vi.mocked(connections.bridgeConnections).get.mockReturnValue({
@@ -177,7 +193,15 @@ describe('GET /api/boards - bridgeVersion', () => {
 
   it('keeps the Board Manager port in bmUrl', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
+      {
+        id: 'board-1',
+        name: 'Board',
+        hardware_id: null,
+        created_at: new Date(),
+        owner_user_id: 'user-1',
+        token_hash: 'hash',
+        lights_enabled: true,
+      },
     ])
     vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
     const app = makeApp()
@@ -189,7 +213,15 @@ describe('GET /api/boards - bridgeVersion', () => {
 
   it('bridgeVersion is null when board is offline', async () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([
-      { id: 'board-1', name: 'Board', hardware_id: null, created_at: new Date(), owner_user_id: 'user-1', token_hash: 'hash' },
+      {
+        id: 'board-1',
+        name: 'Board',
+        hardware_id: null,
+        created_at: new Date(),
+        owner_user_id: 'user-1',
+        token_hash: 'hash',
+        lights_enabled: true,
+      },
     ])
     vi.mocked(connections.bridgeConnections).get.mockReturnValue(undefined)
     const app = makeApp()
@@ -419,6 +451,7 @@ describe('PATCH /api/boards/:id', () => {
     created_at: new Date() as any,
     owner_user_id: 'user-1',
     token_hash: 'hash',
+    lights_enabled: true,
   }
 
   it('renames an owned board', async () => {
@@ -452,6 +485,7 @@ describe('GET /api/boards/:id/events', () => {
     created_at: new Date() as any,
     owner_user_id: 'user-1',
     token_hash: 'hash',
+    lights_enabled: true,
   }
 
   it('returns the recent event feed', async () => {
@@ -480,6 +514,7 @@ describe('boards: spec enforcement', () => {
     created_at: new Date('2026-08-12T10:00:00Z') as any,
     owner_user_id: 'user-1',
     token_hash: 'hash',
+    lights_enabled: true,
   }
 
   it('checks auth before the body: signed-out + invalid body is 401, not 400', async () => {
