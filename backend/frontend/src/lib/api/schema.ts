@@ -35,6 +35,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/version": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** The version, commit and build time of the running server */
+        get: operations["getVersion"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/gamemodes": {
         parameters: {
             query?: never;
@@ -408,6 +425,23 @@ export interface paths {
         };
         /** Whether a name can be yours (works signed out, for sign-up; your own name counts as free) */
         get: operations["checkNameAvailable"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/system": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Build, runtime, database, live counts and non-secret config of this server (admin) */
+        get: operations["getAdminSystem"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1567,6 +1601,78 @@ export interface components {
                 url: string;
             } | null;
         };
+        BuildInfo: {
+            /** @description The release tag (v0.3.0), pr-<n> on a preview, dev otherwise */
+            version: string;
+            /** @description The git commit the image was built from */
+            commit: string | null;
+            /** @description When the image was built (ISO 8601) */
+            buildTime: string | null;
+        };
+        AdminSystem: {
+            build: {
+                version: string;
+                commit: string | null;
+                buildTime: string | null;
+                /** @description The pull request this deployment previews; null in production */
+                preview: {
+                    pr: number;
+                    /** Format: uri */
+                    url: string;
+                } | null;
+            };
+            runtime: {
+                node: string;
+                platform: string;
+                arch: string;
+                hostname: string;
+                timezone: string;
+                nodeEnv: string | null;
+                /** Format: date-time */
+                startedAt: string;
+                uptimeSeconds: number;
+                /** @description Bytes */
+                memory: {
+                    rss: number;
+                    heapUsed: number;
+                    heapTotal: number;
+                };
+                /** @description Since the last read */
+                eventLoopDelayMs: {
+                    p50: number;
+                    p99: number;
+                };
+            };
+            database: {
+                serverVersion: string;
+                latestMigration: string | null;
+                sizeBytes: number;
+                pool: {
+                    total: number;
+                    idle: number;
+                    waiting: number;
+                } | null;
+            };
+            live: {
+                /** @description Open browser sockets: games, lobbies and /ws/me */
+                browsers: number;
+                /** @description Connected bridge sockets */
+                bridges: number;
+                boardsOnline: number;
+                runningGames: number;
+                openLobbies: number;
+            };
+            config: {
+                /** @description Non-secret environment variables as set (null when unset) */
+                values: {
+                    [key: string]: string | null;
+                };
+                /** @description Whether each secret environment variable is set; never its value */
+                secrets: {
+                    [key: string]: boolean;
+                };
+            };
+        };
         ConfigFieldMeta: {
             label: string;
             tooltip?: string;
@@ -2627,6 +2733,27 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    getVersion: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The running build */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BuildInfo"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listGameModes: {
         parameters: {
             query?: never;
@@ -3191,6 +3318,29 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAdminSystem: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The system details */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminSystem"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             429: components["responses"]["TooManyRequests"];
         };
     };

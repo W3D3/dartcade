@@ -80,6 +80,20 @@ paths:
               schema: { $ref: '#/components/schemas/PreviewInfo' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/version:
+    get:
+      operationId: getVersion
+      summary: The version, commit and build time of the running server
+      tags: [system]
+      security: []
+      responses:
+        '200':
+          description: The running build
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BuildInfo' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/gamemodes:
     get:
       operationId: listGameModes
@@ -511,6 +525,21 @@ paths:
             application/json:
               schema: { $ref: '#/components/schemas/NameAvailability' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/admin/system:
+    get:
+      operationId: getAdminSystem
+      summary: Build, runtime, database, live counts and non-secret config of this server (admin)
+      tags: [admin]
+      responses:
+        '200':
+          description: The system details
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminSystem' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/admin/users:
@@ -2071,6 +2100,108 @@ components:
           properties:
             pr: { type: integer, minimum: 1 }
             url: { type: string, format: uri, description: The pull request on GitHub }
+
+    BuildInfo:
+      type: object
+      required: [version, commit, buildTime]
+      additionalProperties: false
+      properties:
+        version: { type: string, description: 'The release tag (v0.3.0), pr-<n> on a preview, dev otherwise' }
+        commit: { type: string, nullable: true, description: The git commit the image was built from }
+        buildTime: { type: string, nullable: true, description: 'When the image was built (ISO 8601)' }
+
+    AdminSystem:
+      type: object
+      required: [build, runtime, database, live, config]
+      additionalProperties: false
+      properties:
+        build:
+          type: object
+          required: [version, commit, buildTime, preview]
+          additionalProperties: false
+          properties:
+            version: { type: string }
+            commit: { type: string, nullable: true }
+            buildTime: { type: string, nullable: true }
+            preview:
+              type: object
+              nullable: true
+              required: [pr, url]
+              additionalProperties: false
+              description: The pull request this deployment previews; null in production
+              properties:
+                pr: { type: integer, minimum: 1 }
+                url: { type: string, format: uri }
+        runtime:
+          type: object
+          required: [node, platform, arch, hostname, timezone, nodeEnv, startedAt, uptimeSeconds, memory, eventLoopDelayMs]
+          additionalProperties: false
+          properties:
+            node: { type: string }
+            platform: { type: string }
+            arch: { type: string }
+            hostname: { type: string }
+            timezone: { type: string }
+            nodeEnv: { type: string, nullable: true }
+            startedAt: { type: string, format: date-time }
+            uptimeSeconds: { type: number }
+            memory:
+              type: object
+              required: [rss, heapUsed, heapTotal]
+              additionalProperties: false
+              description: Bytes
+              properties:
+                rss: { type: number }
+                heapUsed: { type: number }
+                heapTotal: { type: number }
+            eventLoopDelayMs:
+              type: object
+              required: [p50, p99]
+              additionalProperties: false
+              description: Since the last read
+              properties:
+                p50: { type: number }
+                p99: { type: number }
+        database:
+          type: object
+          required: [serverVersion, latestMigration, sizeBytes, pool]
+          additionalProperties: false
+          properties:
+            serverVersion: { type: string }
+            latestMigration: { type: string, nullable: true }
+            sizeBytes: { type: number }
+            pool:
+              type: object
+              nullable: true
+              required: [total, idle, waiting]
+              additionalProperties: false
+              properties:
+                total: { type: integer }
+                idle: { type: integer }
+                waiting: { type: integer }
+        live:
+          type: object
+          required: [browsers, bridges, boardsOnline, runningGames, openLobbies]
+          additionalProperties: false
+          properties:
+            browsers: { type: integer, description: 'Open browser sockets: games, lobbies and /ws/me' }
+            bridges: { type: integer, description: Connected bridge sockets }
+            boardsOnline: { type: integer }
+            runningGames: { type: integer }
+            openLobbies: { type: integer }
+        config:
+          type: object
+          required: [values, secrets]
+          additionalProperties: false
+          properties:
+            values:
+              type: object
+              description: Non-secret environment variables as set (null when unset)
+              additionalProperties: { type: string, nullable: true }
+            secrets:
+              type: object
+              description: Whether each secret environment variable is set; never its value
+              additionalProperties: { type: boolean }
 
     ConfigFieldMeta:
       type: object

@@ -19,6 +19,11 @@ export class LobbyHub {
     this.lobbies.forget(lobbyId)
   }
 
+  /** Open lobby and /ws/me sockets. */
+  socketCount(): number {
+    return this.lobbies.socketCount() + this.users.socketCount()
+  }
+
   /** Members with the lobby open: shown online, the others away. */
   online(lobbyId: string): Set<string> {
     return this.lobbies.connectedUsers(lobbyId)
