@@ -66,7 +66,7 @@ Bridge → backend (telemetry like `camera.still`: not sequenced, not stored):
 - **Identity:** a device is its MAC. Before the first send to a host, and after any send error, the
   bridge reads `/json/info`. If the MAC differs, it stops sending to that host, reports
   `wled.status{reachable:false, error:"different device at host"}` and looks the MAC up again over mDNS.
-- **Brightness cap:** clamp `bri` in the top-level state and in every `seg` entry to `max_bri`.
+- **Brightness cap:** clamp the top-level `bri` (the master); segment `bri` is opacity under it.
 - **Queue:** one worker per device, 1 s HTTP timeout, at most 10 requests/s. A new scene replaces a
   pending scene. A new flash replaces a pending or running flash (the restore timer restarts). A scene
   that arrives during a flash becomes the base and is applied when the flash ends.

@@ -27,10 +27,50 @@ type Manager struct {
 
 	mu      sync.Mutex
 	workers map[string]*worker // by device id
+
+	blinkMu  sync.Mutex
+	blinking map[string]bool // by host: a blink is running for it right now
+
+	scanMu     sync.Mutex
+	browser    Browser // set by main.go; nil (no-op) in tests that don't exercise rescan-on-error
+	scanning   bool
+	lastScanAt time.Time
+}
+
+// SetBrowser gives the manager a way to rescan itself (on a MAC mismatch or a dial error,
+// discovery.go triggerRescan), distinct from the Browser callers pass into Handle/Scan/Every.
+func (m *Manager) SetBrowser(b Browser) {
+	m.scanMu.Lock()
+	m.browser = b
+	m.scanMu.Unlock()
+}
+
+// triggerRescan starts one Scan in the background if a Browser is set, none is already running,
+// and the last one wasn't within the last 30 s — so a device flapping between errors can't start
+// a scan per error.
+func (m *Manager) triggerRescan() {
+	m.scanMu.Lock()
+	if m.browser == nil || m.scanning || time.Since(m.lastScanAt) < 30*time.Second {
+		m.scanMu.Unlock()
+		return
+	}
+	m.scanning = true
+	m.lastScanAt = time.Now()
+	b := m.browser
+	m.scanMu.Unlock()
+	go func() {
+		m.Scan(context.Background(), b)
+		m.scanMu.Lock()
+		m.scanning = false
+		m.scanMu.Unlock()
+	}()
 }
 
 func New(report Report) *Manager {
-	return &Manager{hc: NewHTTPClient(), report: report, minGap: 100 * time.Millisecond, blinkFor: 3 * time.Second, workers: map[string]*worker{}}
+	return &Manager{
+		hc: NewHTTPClient(), report: report, minGap: 100 * time.Millisecond, blinkFor: 3 * time.Second,
+		workers: map[string]*worker{}, blinking: map[string]bool{},
+	}
 }
 
 // SetDevices replaces the allowlist: workers for devices no longer listed stop.
@@ -50,7 +90,7 @@ func (m *Manager) SetDevices(ds []Device) {
 	}
 	for id, w := range m.workers {
 		if !keep[id] {
-			w.stop()
+			w.unpair()
 			delete(m.workers, id)
 		}
 	}
@@ -102,6 +142,7 @@ type worker struct {
 	base       json.RawMessage // the scene a flash returns to
 	flashUntil time.Time
 	lastSend   time.Time
+	removing   bool // left the allowlist; run exits once no scene is left to flush (never flashes or restores)
 }
 
 func newWorker(m *Manager, d Device) *worker {
@@ -122,6 +163,11 @@ func (w *worker) update(d Device) {
 		w.verified = false
 	}
 	w.dev = d
+	// The backend sends wled.devices on every hello, including for an unchanged device: forget
+	// what we last reported so the next send reports again, even if it's the same state as
+	// before — otherwise a device that went quiet while the bridge was offline keeps showing
+	// whatever it last was.
+	w.reachable = nil
 	w.mu.Unlock()
 }
 
@@ -135,10 +181,22 @@ func (w *worker) rehost(mac, host string) {
 	w.poke()
 }
 
-// stop cancels any in-flight or future HTTP call and tells run to exit.
+// stop cancels any in-flight or future HTTP call and tells run to exit, right away: used for
+// process shutdown (Close), where nothing should be waited on.
 func (w *worker) stop() {
 	w.cancel()
 	close(w.done)
+}
+
+// unpair leaves the allowlist: a pending *scene* (not a flash, and not a flash's restore) is
+// still sent, at its normal pace, before the worker exits. Always routed through run() (never
+// stops directly here): step() may already be mid-send for a scene that looks "pending" one
+// moment and isn't the next, and cancelling its context out from under it would drop the send.
+func (w *worker) unpair() {
+	w.mu.Lock()
+	w.removing = true
+	w.mu.Unlock()
+	w.poke()
 }
 
 // push queues a scene (hold 0) or a flash; a newer one of the same type replaces the pending one.
@@ -169,10 +227,22 @@ func (w *worker) run() {
 		default:
 		}
 		next := w.step()
+		if w.doneRemoving() {
+			w.stop()
+			return
+		}
 		if next > 0 {
 			timer.Reset(next)
 		}
 	}
+}
+
+// doneRemoving reports whether unpair's pending scene has now been flushed (or failed, which
+// also clears it — either way there's nothing left to wait for).
+func (w *worker) doneRemoving() bool {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	return w.removing && w.scene == nil
 }
 
 // step sends at most one request and returns how long to wait before the next step (0: until woken).
@@ -182,6 +252,11 @@ func (w *worker) step() time.Duration {
 	if gap := w.m.minGap - now.Sub(w.lastSend); gap > 0 {
 		w.mu.Unlock()
 		return gap
+	}
+	if w.removing {
+		// Leaving the allowlist: never flash or restore on the way out, only flush a pending scene.
+		w.flash = nil
+		w.flashUntil = time.Time{}
 	}
 	inFlash := now.Before(w.flashUntil)
 	var body json.RawMessage
@@ -218,6 +293,7 @@ func (w *worker) step() time.Duration {
 	if err := w.verify(ctx, dev); err != nil {
 		log.Debug("wled: verify failed", "device", dev.ID, "err", err)
 		w.setReachable(false, err.Error())
+		w.m.triggerRescan() // a MAC mismatch or a dial error: it may have moved to a new IP
 		return 0
 	}
 	if hold > 0 {
@@ -252,6 +328,7 @@ func (w *worker) step() time.Duration {
 	if err != nil {
 		log.Debug("wled: post failed", "device", dev.ID, "err", err)
 		w.setReachable(false, err.Error())
+		w.m.triggerRescan() // a dial error: it may have moved to a new IP
 		return 0
 	}
 	w.setReachable(true, "")

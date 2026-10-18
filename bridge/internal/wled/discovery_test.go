@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 )
@@ -45,11 +46,13 @@ func TestScanReportsBrowseFailure(t *testing.T) {
 	}
 }
 
+// A probe's real error (which host, what refused it) must never reach the browser: it would let
+// someone use the probe box as a port-scan oracle. The browser always gets the same fixed message.
 func TestProbeRefusesPublicHosts(t *testing.T) {
 	m, r := newTestManager(t)
 	m.Probe(context.Background(), "8.8.8.8")
 	d := r.last()["data"].(map[string]any)
-	if d["probe_host"] != "8.8.8.8" || d["probe_error"] == nil {
+	if d["probe_host"] != "8.8.8.8" || d["probe_error"] != "no WLED answered" {
 		t.Fatalf("got %v", d)
 	}
 }
@@ -75,6 +78,52 @@ func TestBlinkThenRestores(t *testing.T) {
 	if p := recv(t, a); !strings.Contains(p, `"stop":144`) {
 		t.Fatalf("restore %s", p)
 	}
+}
+
+// Each Blink reads the strip's state before posting lime; a naive second blink while the first is
+// still playing would read lime as ITS "prior" and restore to lime forever, or (the timer-based
+// coalescing this replaced) double-fire the restore and double-close a shared channel. A second
+// blink for a host already blinking is just ignored — reserved before the first even reads state,
+// so it can never observe lime as its own prior.
+func TestOverlappingBlinksRestoreTheOriginalOnce(t *testing.T) {
+	a := newFakeWLED(t, "aa")
+	a.slowPost = 50 * time.Millisecond // the first blink's lime POST is still in flight when the second arrives
+	m, _ := newTestManager(t)
+	m.blinkFor = 100 * time.Millisecond
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		m.Blink(context.Background(), a.host())
+	}()
+	time.Sleep(10 * time.Millisecond)
+	// Overlapping: must be ignored outright, not read lime. Called directly, not in its own
+	// goroutine — it's reserved-out and returns at once, and this keeps the test from leaking an
+	// unsynchronized goroutine into later tests (which raced on the package's allowLoopback var).
+	m.Blink(context.Background(), a.host())
+	if p := recv(t, a); !strings.Contains(p, `"fx":1`) {
+		t.Fatalf("lime %s", p)
+	}
+	none(t, a, 60*time.Millisecond) // no second lime POST from the ignored overlapping call
+	if p := recv(t, a); !strings.Contains(p, `"stop":144`) {
+		t.Fatalf("restore %s, want the true original state", p)
+	}
+	wg.Wait() // the first call's goroutine has now fully returned
+}
+
+// Once the first blink has finished (host released), a later blink for the same host runs again.
+func TestBlinkAgainAfterTheFirstFinishes(t *testing.T) {
+	a := newFakeWLED(t, "aa")
+	m, _ := newTestManager(t)
+	m.blinkFor = 20 * time.Millisecond
+	m.Blink(context.Background(), a.host())
+	recv(t, a) // lime
+	recv(t, a) // restore
+	m.Blink(context.Background(), a.host())
+	if p := recv(t, a); !strings.Contains(p, `"fx":1`) {
+		t.Fatalf("second blink's lime %s", p)
+	}
+	recv(t, a) // its restore
 }
 
 func TestBlinkCapsAtPairedMaxBri(t *testing.T) {

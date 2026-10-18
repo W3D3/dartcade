@@ -607,3 +607,27 @@ func TestEventsSentWhileDisconnectedAreDelivered(t *testing.T) {
 		}
 	}
 }
+
+func TestOnMessageGetsKindedMessages(t *testing.T) {
+	got := make(chan string, 1)
+	s := newTestServer(t, func(conn *websocket.Conn) {
+		if _, err := readUntilKind(context.Background(), conn, "bridge.hello"); err != nil {
+			return
+		}
+		wsjson.Write(context.Background(), conn, map[string]any{"kind": "wled.scan", "data": map[string]any{}})
+		time.Sleep(time.Second)
+	})
+	tr := transport.New(transport.Config{BackendURL: wsURL(s), BridgeID: "br", BootID: "bt"})
+	tr.OnMessage(func(kind string, _ json.RawMessage) { got <- kind })
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	go tr.Start(ctx) //nolint
+	select {
+	case k := <-got:
+		if k != "wled.scan" {
+			t.Errorf("kind %q", k)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("no message")
+	}
+}

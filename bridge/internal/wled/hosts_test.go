@@ -25,12 +25,15 @@ func TestLocalHost(t *testing.T) {
 	}
 }
 
+// A segment's "bri" is opacity under the master, not another brightness to cap: WLED computes
+// effective brightness as master bri * (segment bri / 255), so clamping both halves it twice
+// (70% showed as ~49%). Only the top-level (master) "bri" is capped.
 func TestClampBri(t *testing.T) {
 	out, err := ClampBri([]byte(`{"on":true,"bri":255,"seg":[{"id":0,"bri":200},{"id":1,"bri":10},{"id":2,"stop":0}]}`), 178)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"bri":178,"on":true,"seg":[{"bri":178,"id":0},{"bri":10,"id":1},{"id":2,"stop":0}]}`
+	want := `{"bri":178,"on":true,"seg":[{"bri":200,"id":0},{"bri":10,"id":1},{"id":2,"stop":0}]}`
 	if string(out) != want {
 		t.Errorf("got %s\nwant %s", out, want)
 	}
@@ -44,13 +47,27 @@ func TestClampBriNoBriSetsMax(t *testing.T) {
 }
 
 func TestClampBriNonNumericBriClampedToMax(t *testing.T) {
-	// WLED also accepts relative brightness strings ("~255" add, "~+50" relative); neither must
-	// bypass the clamp.
-	out, err := ClampBri([]byte(`{"bri":"~+50","seg":[{"id":0,"bri":"~255"}]}`), 150)
+	// WLED also accepts relative brightness strings ("~255" add, "~+50" relative) for the
+	// top-level (master) "bri"; neither must bypass the clamp there.
+	out, err := ClampBri([]byte(`{"bri":"~+50"}`), 150)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := `{"bri":150,"seg":[{"bri":150,"id":0}]}`
+	want := `{"bri":150}`
+	if string(out) != want {
+		t.Errorf("got %s\nwant %s", out, want)
+	}
+}
+
+// A segment's "bri" is uncappable opacity, not a brightness: a relative string there can't be
+// resolved into an opacity value, so it's dropped rather than replaced with max (which would make
+// it the brightest possible segment instead of leaving it to WLED's own default).
+func TestClampBriNonNumericSegmentBriDropped(t *testing.T) {
+	out, err := ClampBri([]byte(`{"seg":[{"id":0,"bri":"~255"}]}`), 150)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := `{"bri":150,"seg":[{"id":0}]}`
 	if string(out) != want {
 		t.Errorf("got %s\nwant %s", out, want)
 	}

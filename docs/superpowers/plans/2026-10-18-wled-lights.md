@@ -16,7 +16,7 @@
 - Commits: `type(scope): subject`, lower case, imperative, < 72 chars. Scopes: `bridge`, `backend`, `frontend`, `lights`.
 - The bridge only calls `GET /json/info`, `GET /json/state`, `POST /json/state` on WLED. Never a URL or path from the backend.
 - `wled.apply` only to devices in the latest `wled.devices`; `wled.probe` and `wled.blink` only to RFC 1918, link-local or `.local` hosts.
-- Bridge clamps `bri` (top level and every `seg[].bri`) to the device's `max_bri`. Blinks for unpaired devices use `bri` 128.
+- Bridge clamps the top-level `bri` (the master) to the device's `max_bri`; segment `bri` is opacity under it. Blinks for unpaired devices use `bri` 128.
 - Per device: 1 s HTTP timeout, at least 100 ms between requests.
 - `SEAT_COLORS = ['#c6f24e', '#efeee6', '#ff9b45', '#5ad1e6']`, cycled for seats 5+.
 - `max_bri` default 178 (70%). Segment modes: `whole` | `perSeat` | `wled`.
