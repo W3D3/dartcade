@@ -1249,6 +1249,9 @@ type WledFoundData struct {
 	// Set when this answers a wled.probe.
 	ProbeHost *string `json:"probe_host,omitempty,omitzero" yaml:"probe_host,omitempty" mapstructure:"probe_host,omitempty"`
 
+	// Set when the mDNS browse itself failed; devices is then empty, not exhaustive.
+	ScanError *string `json:"scan_error,omitempty,omitzero" yaml:"scan_error,omitempty" mapstructure:"scan_error,omitempty"`
+
 	// ScannedAt corresponds to the JSON schema field "scanned_at".
 	ScannedAt time.Time `json:"scanned_at" yaml:"scanned_at" mapstructure:"scanned_at"`
 }

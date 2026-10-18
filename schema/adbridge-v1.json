@@ -379,7 +379,8 @@
         "devices": { "type": "array", "items": { "$ref": "#/$defs/WledFoundDevice" } },
         "scanned_at": { "type": "string", "format": "date-time" },
         "probe_host": { "type": "string", "description": "Set when this answers a wled.probe." },
-        "probe_error": { "type": "string" }
+        "probe_error": { "type": "string" },
+        "scan_error": { "type": "string", "description": "Set when the mDNS browse itself failed; devices is then empty, not exhaustive." }
       }
     },
     "WledStatusData": {
