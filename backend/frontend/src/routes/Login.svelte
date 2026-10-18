@@ -55,7 +55,7 @@
         e.preventDefault()
         void submit()
       }}
-      class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0"
+      class="flex w-full md:w-[400px] flex-col gap-5 md:gap-[26px] xl:gap-7 box-border px-5 py-6 md:p-0"
     >
       <div class="flex flex-col gap-2">
         <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
@@ -78,7 +78,7 @@
           <div class="flex justify-between items-baseline">
             <label for="login-password" class="field-label">Password</label>
             {#if $authInfo.mail}
-              <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
+              <a href="#/forgot" class="hidden md:inline text-[14px] no-underline">Forgot password?</a>
             {/if}
           </div>
           <Input
@@ -91,7 +91,17 @@
           />
         </div>
 
-        <label class="flex items-center gap-[10px] text-[15px] text-ink-2 min-h-[44px] cursor-pointer">
+        <div class="flex md:hidden justify-between items-center min-h-[44px]">
+          <label class="flex items-center gap-[10px] text-[14px] text-ink-2 cursor-pointer">
+            <input type="checkbox" bind:checked={keepSignedIn} class="w-[18px] h-[18px] m-0 accent-accent" />
+            Keep me signed in
+          </label>
+          {#if $authInfo.mail}
+            <a href="#/forgot" class="text-[14px] no-underline">Forgot password?</a>
+          {/if}
+        </div>
+
+        <label class="hidden md:flex items-center gap-[10px] text-[15px] text-ink-2 min-h-[44px] cursor-pointer">
           <input type="checkbox" bind:checked={keepSignedIn} class="w-[18px] h-[18px] m-0 accent-accent" />
           Keep me signed in on this device
         </label>

@@ -3,11 +3,13 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Input } from '$lib/components/ui/input/index.js'
+  import { ArrowRight } from '@lucide/svelte'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
   import NameField from '$lib/components/NameField.svelte'
   import PasswordStrength from '$lib/components/PasswordStrength.svelte'
   import AuthFooter from '$lib/components/AuthFooter.svelte'
+  import StepBars from '$lib/components/StepBars.svelte'
   import { get } from 'svelte/store'
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
@@ -55,7 +57,7 @@
 </script>
 
 <div class="flex flex-col md:flex-row min-h-dvh bg-bg">
-  <AuthPanel />
+  <AuthPanel variant="register" />
   <AuthHero />
 
   <main class="flex flex-grow md:items-center md:justify-center">
@@ -64,18 +66,24 @@
         e.preventDefault()
         void submit()
       }}
-      class="flex w-full md:w-[400px] flex-col gap-5 md:gap-7 box-border px-5 py-6 md:p-0"
+      class="flex w-full md:w-[400px] flex-col gap-5 md:gap-[26px] box-border px-5 py-6 md:p-0"
     >
-      <div class="flex flex-col gap-2">
-        <p class="m-0 font-mono text-[13px] tracking-[0.08em] text-accent">Step 1 of 2</p>
+      <div class="flex flex-col gap-[14px]">
+        <StepBars step={1} label="Account" />
         <h1 class="m-0 font-display font-bold text-[34px] md:text-[44px] xl:text-[48px] uppercase tracking-[0.02em] leading-none">
           Create account
         </h1>
-        <p class="hidden md:block m-0 text-[16px] text-text-muted">Your name is your handle: friends find you as @name.</p>
       </div>
 
       <div class="flex flex-col gap-[18px]">
-        <NameField id="reg-name" label="Name" bind:value={name} bind:status={nameStatus} />
+        <NameField
+          id="reg-name"
+          label="Player name"
+          placeholder="e.g. OcheGhost"
+          prefix={false}
+          bind:value={name}
+          bind:status={nameStatus}
+        />
         <div class="flex flex-col gap-2">
           <label for="reg-email" class="field-label">Email</label>
           <Input id="reg-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
@@ -95,8 +103,8 @@
         <label class="flex items-start gap-[10px] text-[15px] leading-[1.45] text-ink-2 min-h-[44px] cursor-pointer">
           <input type="checkbox" bind:checked={acceptTerms} class="mt-[2px] w-[18px] h-[18px] m-0 accent-accent flex-shrink-0" />
           <span
-            >I agree to the <a href="#/terms" class="font-semibold">Terms</a> and
-            <a href="#/privacy" class="font-semibold">Privacy Policy</a>.</span
+            >I agree to the <a href="#/terms">Terms</a> and
+            <a href="#/privacy">Privacy Policy</a>.</span
           >
         </label>
       </div>
@@ -112,6 +120,7 @@
         class="w-full mt-auto md:mt-0"
       >
         {loading ? '…' : 'Create account'}
+        {#if !loading}<ArrowRight size={20} strokeWidth={2.2} />{/if}
       </Button>
 
       <p class="m-0 text-[15px] text-text-muted text-center">
