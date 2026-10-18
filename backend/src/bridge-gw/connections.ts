@@ -66,6 +66,14 @@ export class BridgeConnections {
     return { bridges: this.all.size, boards: this.byBoard.size }
   }
 
+  /** Sends a JSON message to the board's bridge; false when it's not connected (or hasn't said hello). */
+  send(boardDbId: string, msg: object): boolean {
+    const conn = this.byBoard.get(boardDbId)
+    if (!conn?.helloReceived || conn.ws.readyState !== conn.ws.OPEN) return false
+    conn.ws.send(JSON.stringify(msg))
+    return true
+  }
+
   recordEvent(boardDbId: string, ev: BoardEvent): void {
     const { at, kind, data } = ev
     // Data that doesn't match the feed's schema (a malformed dart) is left out too
