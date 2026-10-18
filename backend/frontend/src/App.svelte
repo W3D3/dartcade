@@ -22,6 +22,7 @@
   import Admin from './routes/Admin.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
+  import AdminSystem from './routes/AdminSystem.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { loadAccountSettings } from '$lib/accountSettings'
@@ -77,6 +78,7 @@
     '/admin': Admin,
     '/admin/users': AdminUsers,
     '/admin/flags': AdminFlags,
+    '/admin/system': AdminSystem,
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,

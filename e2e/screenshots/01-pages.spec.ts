@@ -201,3 +201,11 @@ test('admin: feature flags', async ({ browser }) => {
   await shot(phone.page, 'admin/flags-phone.png')
   await phone.ctx.close()
 })
+
+test('admin: system', async ({ browser }) => {
+  const { ctx, page } = await open(browser, 'admin', VIEW.desktop)
+  await page.goto('/#/admin/system')
+  await expect(page.getByRole('heading', { name: 'Config' })).toBeVisible()
+  await shot(page, 'admin/system-desktop.png')
+  await ctx.close()
+})
