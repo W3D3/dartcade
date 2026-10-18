@@ -7,8 +7,9 @@ import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '.
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { z } from 'zod'
-import { BaseEnvelopeSchema, CameraStillMessageSchema } from '../schema/zod.js'
+import { BaseEnvelopeSchema, CameraStillMessageSchema, WledFoundMessageSchema, WledStatusMessageSchema } from '../schema/zod.js'
 import { cameraStills, type CameraStills } from '../camera/store.js'
+import { lightsStore, type LightsStore, type FoundDevice } from '../lights/store.js'
 import { onceGone } from '../util/socket.js'
 import { hashBoardToken } from '../boards/token.js'
 
@@ -21,6 +22,16 @@ type Opts = FastifyPluginOptions & {
   onBoardPresence?: (boardId: string) => void
   /** A board has a new camera still (its games' pages fetch it). */
   onCameraStill?: OnCameraStill
+  /** Where wled devices found on a board's network are kept (tests pass their own). */
+  lights?: LightsStore
+  /** The bridge said hello: its board id (the lights service probes it once it can). */
+  onBridgeHello?: (boardId: string) => void
+  /** The bridge's connection is gone for good (not a reconnect replaced by a fresh one). */
+  onBridgeGone?: (boardId: string) => void
+  /** A bridge event was applied to the game. */
+  onBoardEvent?: (boardId: string, kind: string) => void
+  /** The lights store has fresh devices for this board, after a scan or a probe. */
+  onLightsFound?: (boardId: string, devices: FoundDevice[]) => void
 }
 
 export type OnCameraStill = (boardId: string, cam: number, version: number) => void
@@ -95,6 +106,18 @@ function takeStill(boardId: string, msg: unknown, stills: CameraStills, onCamera
   }
   onCameraStill?.(boardId, cam, version)
 }
+// A hook the lights service (or lobbies, via onBoardPresence et al.) plugs in: a thrown error or a
+// rejected promise is logged and swallowed, so a bad hook can't close the bridge socket, get
+// mislabeled as a game-apply failure, or skip the presence update that follows it.
+function callHook(name: string, boardId: string, run: () => unknown): void {
+  try {
+    const result = run()
+    if (result instanceof Promise) result.catch((err: unknown) => console.error('lights hook failed', { hook: name, boardId }, err))
+  } catch (err: unknown) {
+    console.error('lights hook failed', { hook: name, boardId }, err)
+  }
+}
+
 const TokenQuerySchema = z.object({ token: z.string() })
 
 /** The bridge's token: `Authorization: Bearer …`, or the `?token=` query older bridges send. */
@@ -120,9 +143,19 @@ export function handleBridgeConnection(
     onCameraStill?: OnCameraStill
     /** Where camera stills are kept (tests pass their own). */
     stills?: CameraStills
+    /** Where wled devices found on the board's network are kept (tests pass their own). */
+    lights?: LightsStore
+    /** The bridge said hello: its board id (the lights service probes this board once it can). */
+    onBridgeHello?: (boardId: string) => void
+    /** The bridge's connection is gone for good (not a reconnect replaced by a fresh one). */
+    onBridgeGone?: (boardId: string) => void
+    /** A bridge event was applied to the game. */
+    onBoardEvent?: (boardId: string, kind: string) => void
+    /** The lights store has fresh devices for this board, after a scan or a probe. */
+    onLightsFound?: (boardId: string, devices: FoundDevice[]) => void
   },
 ): void {
-  const { db, engine, stills = cameraStills } = opts
+  const { db, engine, stills = cameraStills, lights = lightsStore } = opts
   // A board came online or dropped: its game and the lobbies using it show it
   const presence = (boardId: string) => {
     engine.onBoardPresence(boardId)
@@ -195,6 +228,7 @@ export function handleBridgeConnection(
           conn.bmVersion = hello.bmVersion
           conn.bridgeVersion = hello.bridgeVersion
           conn.bmUrl = hello.bmUrl
+          callHook('onBridgeHello', boardDbId, () => opts.onBridgeHello?.(boardDbId))
           return
         }
 
@@ -204,8 +238,24 @@ export function handleBridgeConnection(
           return
         }
 
-        if (MessageKindSchema.safeParse(parsed).data?.kind === 'camera.still') {
+        const earlyKind = MessageKindSchema.safeParse(parsed).data?.kind
+        if (earlyKind === 'camera.still') {
           takeStill(boardDbId, parsed, stills, opts.onCameraStill)
+          return
+        }
+        if (earlyKind === 'wled.found') {
+          const m = WledFoundMessageSchema.safeParse(parsed)
+          if (m.success) {
+            const { devices, scanned_at: scannedAt, probe_host: probeHost, probe_error: probeError, scan_error: scanError } = m.data.data
+            if (probeHost !== undefined) lights.addProbe(boardDbId, probeHost, devices[0] ?? null, probeError)
+            else lights.setFound(boardDbId, devices, new Date(scannedAt), scanError)
+            callHook('onLightsFound', boardDbId, () => opts.onLightsFound?.(boardDbId, devices))
+          }
+          return
+        }
+        if (earlyKind === 'wled.status') {
+          const m = WledStatusMessageSchema.safeParse(parsed)
+          if (m.success) lights.setStatus(boardDbId, m.data.data.device_id, { reachable: m.data.data.reachable, error: m.data.data.error })
           return
         }
 
@@ -256,7 +306,9 @@ export function handleBridgeConnection(
           await engine.onBridgeEvent(boardDbId, kind, data, id)
         } catch (err: unknown) {
           console.error('Bridge event not applied to the game:', { boardDbId, kind, seq, bridgeEventId: id }, err)
+          return
         }
+        callHook('onBoardEvent', boardDbId, () => opts.onBoardEvent?.(boardDbId, kind))
       })
       .catch((err: unknown) => {
         failed = true
@@ -270,8 +322,12 @@ export function handleBridgeConnection(
     const boardDbId = conn.boardDbId
     bridgeConnections.remove(conn)
     if (!boardDbId) return
-    // Its stills would be old by the time it's back (a replaced connection leaves its successor's)
-    if (!bridgeConnections.isOnline(boardDbId)) stills.clear(boardDbId)
+    // Its stills and devices would be old by the time it's back (a replaced connection leaves its successor's)
+    if (!bridgeConnections.isOnline(boardDbId)) {
+      stills.clear(boardDbId)
+      lights.clear(boardDbId)
+      callHook('onBridgeGone', boardDbId, () => opts.onBridgeGone?.(boardDbId))
+    }
     presence(boardDbId)
   })
 }
@@ -283,7 +339,17 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     handleBridgeConnection(
       connection.socket,
       { token: bridgeToken(req.headers.authorization, req.query) },
-      { db, engine, onBoardPresence: opts.onBoardPresence, onCameraStill: opts.onCameraStill },
+      {
+        db,
+        engine,
+        onBoardPresence: opts.onBoardPresence,
+        onCameraStill: opts.onCameraStill,
+        lights: opts.lights,
+        onBridgeHello: opts.onBridgeHello,
+        onBridgeGone: opts.onBridgeGone,
+        onBoardEvent: opts.onBoardEvent,
+        onLightsFound: opts.onLightsFound,
+      },
     )
   })
   done()

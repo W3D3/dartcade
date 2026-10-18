@@ -8,6 +8,7 @@ import fastifyWebsocket from '@fastify/websocket'
 import { WebSocket as WsClient } from 'ws'
 import { BridgeConnections } from './connections.js'
 import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
+import { LightsStore } from '../lights/store.js'
 
 vi.mock('../db/queries.js', () => ({
   getBoardByTokenHash: vi.fn(),
@@ -179,6 +180,30 @@ describe('bridgeGwPlugin', () => {
   it('exports bridgeConnections instance', async () => {
     const { bridgeConnections } = await import('./handler.js')
     expect(bridgeConnections).toBeDefined()
+  })
+
+  it('forwards the lights hooks from its opts to the connection it handles', async () => {
+    vi.mocked(queries.getBoardByTokenHash)
+      .mockClear()
+      .mockResolvedValue({ id: 'board-plugin-1', hardware_id: null } as any)
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const onBridgeHello = vi.fn()
+    const { bridgeGwPlugin } = await import('./handler.js')
+    const app = Fastify()
+    await app.register(fastifyWebsocket)
+    await app.register(bridgeGwPlugin, { db: {} as any, engine, onBridgeHello })
+    await app.listen({ port: 0, host: '127.0.0.1' })
+    try {
+      const { port } = app.server.address() as AddressInfo
+      const ws = new WsClient(`ws://127.0.0.1:${port}/bridge`, { headers: { authorization: 'Bearer tok' } })
+      await new Promise(resolve => ws.once('open', resolve))
+      ws.send(JSON.stringify({ kind: 'bridge.hello', data: {} }))
+      await new Promise(r => setTimeout(r, 200))
+      expect(onBridgeHello).toHaveBeenCalledWith('board-plugin-1')
+      ws.close()
+    } finally {
+      await app.close()
+    }
   })
 })
 
@@ -491,6 +516,205 @@ describe('BridgeConnections event feed', () => {
     expect(feed[0].at).toBe('10')
     expect(feed.every(e => e.kind === 'dart.detected')).toBe(true)
     expect(bc.recentEvents('other')).toEqual([])
+  })
+})
+
+describe('wled telemetry from the bridge', () => {
+  async function connect(boardId: string) {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: boardId, hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear()
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const lights = new LightsStore()
+    const onLightsFound = vi.fn()
+    const onBridgeHello = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, lights, onLightsFound, onBridgeHello })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    await flush()
+    return { engine, lights, onLightsFound, onBridgeHello, socket }
+  }
+
+  const device = (mac: string) => ({ mac, host: '192.168.1.80', name: 'WLED', leds: 144, version: '0.15.0', segments: 1 })
+
+  it('calls onBridgeHello with the board id once hello is processed', async () => {
+    const { onBridgeHello } = await connect('board-h1')
+    expect(onBridgeHello).toHaveBeenCalledWith('board-h1')
+  })
+
+  it('a scan lands in the store and tells the lights service, without storing or acking an event', async () => {
+    const { engine, lights, onLightsFound, socket } = await connect('board-w1')
+    socket.emit(
+      'message',
+      Buffer.from(JSON.stringify({ kind: 'wled.found', data: { devices: [device('aa')], scanned_at: '2026-10-18T12:00:00Z' } })),
+    )
+    await flush()
+    await flush()
+
+    expect(lights.found('board-w1').devices.map(d => d.mac)).toEqual(['aa'])
+    expect(onLightsFound).toHaveBeenCalledWith('board-w1', [device('aa')])
+    expect(queries.insertBridgeEvent).not.toHaveBeenCalled()
+    expect(engine.onBridgeEvent).not.toHaveBeenCalled()
+    expect(socket.send).not.toHaveBeenCalled()
+  })
+
+  it('a scan with a scan_error lands in the store', async () => {
+    const { lights, socket } = await connect('board-w6')
+    socket.emit(
+      'message',
+      Buffer.from(
+        JSON.stringify({
+          kind: 'wled.found',
+          data: { devices: [], scanned_at: '2026-10-18T12:00:00Z', scan_error: 'mdns browse failed' },
+        }),
+      ),
+    )
+    await flush()
+    await flush()
+
+    expect(lights.found('board-w6').scanError).toBe('mdns browse failed')
+  })
+
+  it('a probe reply records a failed probe', async () => {
+    const { lights, socket } = await connect('board-w2')
+    socket.emit(
+      'message',
+      Buffer.from(
+        JSON.stringify({
+          kind: 'wled.found',
+          data: { devices: [], scanned_at: '2026-10-18T12:00:00Z', probe_host: '192.168.1.90', probe_error: 'not a WLED device' },
+        }),
+      ),
+    )
+    await flush()
+    await flush()
+
+    expect(lights.found('board-w2').probe).toEqual({ host: '192.168.1.90', error: 'not a WLED device' })
+  })
+
+  it('drops an invalid wled.found payload silently', async () => {
+    const { lights, onLightsFound, socket } = await connect('board-w3')
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'wled.found', data: { devices: 'nope' } })))
+    await flush()
+    await flush()
+
+    expect(lights.found('board-w3').devices).toEqual([])
+    expect(onLightsFound).not.toHaveBeenCalled()
+  })
+
+  it('a status report lands in the store', async () => {
+    const { lights, socket } = await connect('board-w4')
+    socket.emit(
+      'message',
+      Buffer.from(JSON.stringify({ kind: 'wled.status', data: { device_id: 'aa', reachable: false, error: 'timeout' } })),
+    )
+    await flush()
+    await flush()
+
+    expect(lights.status('board-w4', 'aa')).toMatchObject({ reachable: false, error: 'timeout' })
+  })
+
+  it('drops an invalid wled.status payload silently', async () => {
+    const { lights, socket } = await connect('board-w5')
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'wled.status', data: { reachable: 'not a boolean' } })))
+    await flush()
+    await flush()
+
+    expect(lights.status('board-w5', 'aa')).toBeNull()
+    expect(socket.send).not.toHaveBeenCalled()
+  })
+
+  it("a throwing onLightsFound doesn't close the socket or stop later messages", async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-w7', hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear()
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const lights = new LightsStore()
+    const onLightsFound = vi.fn().mockImplementation(() => {
+      throw new Error('boom')
+    })
+    const error = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, lights, onLightsFound })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    await flush()
+    socket.emit(
+      'message',
+      Buffer.from(JSON.stringify({ kind: 'wled.found', data: { devices: [device('aa')], scanned_at: '2026-10-18T12:00:00Z' } })),
+    )
+    await flush()
+    await flush()
+
+    expect(onLightsFound).toHaveBeenCalledWith('board-w7', [device('aa')])
+    expect(socket.close).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalledWith('lights hook failed', { hook: 'onLightsFound', boardId: 'board-w7' }, expect.any(Error))
+
+    // the connection keeps processing later messages even though the hook keeps throwing
+    socket.emit(
+      'message',
+      Buffer.from(JSON.stringify({ kind: 'wled.found', data: { devices: [device('bb')], scanned_at: '2026-10-18T12:00:01Z' } })),
+    )
+    await flush()
+    await flush()
+    expect(lights.found('board-w7').devices.map(d => d.mac)).toEqual(['bb'])
+    expect(socket.close).not.toHaveBeenCalled()
+    error.mockRestore()
+  })
+})
+
+describe('onBoardEvent after an event is applied to the game', () => {
+  it('calls onBoardEvent with the board id and kind after the engine call', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-ev1', hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear().mockResolvedValue({ inserted: true, id: 'ev1' })
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const onBoardEvent = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, onBoardEvent })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    socket.emit(
+      'message',
+      Buffer.from(
+        JSON.stringify({
+          v: 1,
+          seq: 1,
+          kind: 'takeout.started',
+          bridge_id: 'br',
+          boot_id: 'boot',
+          recv_wall: new Date().toISOString(),
+          data: {},
+        }),
+      ),
+    )
+    await flush()
+    await flush()
+
+    expect(engine.onBridgeEvent).toHaveBeenCalledWith('board-ev1', 'takeout.started', {}, 'ev1')
+    expect(onBoardEvent).toHaveBeenCalledWith('board-ev1', 'takeout.started')
+  })
+})
+
+describe('BridgeConnections.send', () => {
+  it('sends JSON to a bridge that said hello, false otherwise', () => {
+    const bc = new BridgeConnections()
+    const ws = { readyState: 1, OPEN: 1, close: vi.fn(), send: vi.fn() } as any
+    const conn = {
+      ws,
+      boardDbId: null,
+      hardwareBoardId: null,
+      bridgeId: null,
+      bootId: null,
+      bmVersion: null,
+      bmUrl: null,
+      helloReceived: false,
+    }
+    bc.add(conn)
+    bc.register(conn, 'board-send-1')
+    expect(bc.send('board-send-1', { kind: 'wled.apply' })).toBe(false)
+    expect(ws.send).not.toHaveBeenCalled()
+
+    conn.helloReceived = true
+    expect(bc.send('board-send-1', { kind: 'wled.apply' })).toBe(true)
+    expect(ws.send).toHaveBeenCalledWith(JSON.stringify({ kind: 'wled.apply' }))
+
+    expect(bc.send('unknown-board', { kind: 'wled.apply' })).toBe(false)
   })
 })
 
