@@ -100,6 +100,9 @@ What happens the first time this comes up, in order:
    host can read it. Once any admin exists they do nothing; you only need them again to recover
    from a lockout.
 
+Settings shows everyone the running version at the bottom; admins see the build, runtime,
+database and live connections on `#/admin/system` (with a Copy debug info button for bug reports).
+
 **Locked out** (no admin can sign in): clear the role from every admin
 (`UPDATE "user" SET role = NULL WHERE role = 'admin'`) and restart with `ADMIN_EMAIL` and
 `ADMIN_PASSWORD` set, so the first-start rules above run again. Or give an account the role

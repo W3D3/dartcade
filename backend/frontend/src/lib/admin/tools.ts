@@ -1,5 +1,5 @@
 import type { Component } from 'svelte'
-import { Flag, Map as MapIcon, ToggleRight, Users } from '@lucide/svelte'
+import { Flag, Map as MapIcon, Server, ToggleRight, Users } from '@lucide/svelte'
 
 export type AdminTool = { href: string; title: string; desc: string; icon: Component }
 
@@ -9,4 +9,5 @@ export const ADMIN_TOOLS: AdminTool[] = [
   { href: '/admin/minigolf', title: 'Minigolf bench', desc: 'Try shots and physics on any hole', icon: Flag },
   { href: '/admin/users', title: 'Users', desc: 'Search accounts, promote or demote admins', icon: Users },
   { href: '/admin/flags', title: 'Feature flags', desc: 'Turn flags on or off at runtime', icon: ToggleRight },
+  { href: '/admin/system', title: 'System', desc: 'Version, runtime, database and live connections', icon: Server },
 ]
