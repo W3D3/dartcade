@@ -4,7 +4,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { listUsers, getUser, setAdmin, type AdminUserRow } from '../db/adminUsers.js'
+import { listUsers, getUser, setAdmin, setVerified, type AdminUserRow } from '../db/adminUsers.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -12,7 +12,15 @@ import type { Route } from './route.js'
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
 function serialize(row: AdminUserRow) {
-  return { id: row.id, name: row.name, email: row.email, role: row.role, createdAt: row.createdAt.toISOString() }
+  return {
+    id: row.id,
+    name: row.name,
+    email: row.email,
+    emailVerified: row.emailVerified,
+    role: row.role,
+    createdAt: row.createdAt.toISOString(),
+    lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
+  }
 }
 
 /** Every route here is admin-only. */
@@ -32,6 +40,19 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
     if (!user) throw new ApiError(404, { error: 'not found' })
     return serialize(user)
   })
+
+  app.put<Route<'setUserVerified'>>(
+    '/api/admin/users/:id/verified',
+    { preValidation: adminOnly, schema: fromSpec('setUserVerified') },
+    async req => {
+      const result = await setVerified(db, req.params.id, req.body.verified)
+      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      const user = await getUser(db, req.params.id)
+      if (!user) throw new ApiError(404, { error: 'not found' })
+      req.log.info({ targetId: req.params.id, verified: req.body.verified, adminId: req.userId }, 'admin set user verified')
+      return serialize(user)
+    },
+  )
 
   done()
 }

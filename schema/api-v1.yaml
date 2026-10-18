@@ -516,7 +516,7 @@ paths:
   /api/admin/users:
     get:
       operationId: listAdminUsers
-      summary: Every account, newest first, at most 50 (admin)
+      summary: Every account, newest first, at most 200 (admin)
       tags: [admin]
       parameters:
         - {
@@ -558,6 +558,30 @@ paths:
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/LastAdminConflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/admin/users/{id}/verified:
+    parameters:
+      - $ref: '#/components/parameters/AdminUserId'
+    put:
+      operationId: setUserVerified
+      summary: Mark an account's email as verified or unverified (admin)
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SetUserVerifiedRequest' }
+      responses:
+        '200':
+          description: The updated account
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminUser' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/admin/flags:
@@ -2465,14 +2489,16 @@ components:
           items: { $ref: '#/components/schemas/UserSummary' }
     AdminUser:
       type: object
-      required: [id, name, email, role, createdAt]
+      required: [id, name, email, emailVerified, role, createdAt, lastLoginAt]
       additionalProperties: false
       properties:
         id: { type: string }
         name: { type: string }
         email: { type: string }
+        emailVerified: { type: boolean }
         role: { type: string, nullable: true, enum: [admin, null] }
         createdAt: { type: string, format: date-time, description: When the account was made }
+        lastLoginAt: { type: string, format: date-time, nullable: true, description: Last sign-in; null if never }
     AdminUserList:
       type: object
       required: [users]
@@ -2487,6 +2513,12 @@ components:
       additionalProperties: false
       properties:
         admin: { type: boolean, description: 'true: grant the admin role; false: revoke it' }
+    SetUserVerifiedRequest:
+      type: object
+      required: [verified]
+      additionalProperties: false
+      properties:
+        verified: { type: boolean, description: "true: mark the account's email verified; false: unverified" }
     FlagRange:
       type: array
       description: '[min, max], number flags only'

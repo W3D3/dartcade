@@ -6285,7 +6285,7 @@
     "/api/admin/users": {
       "get": {
         "operationId": "listAdminUsers",
-        "summary": "Every account, newest first, at most 50 (admin)",
+        "summary": "Every account, newest first, at most 200 (admin)",
         "tags": [
           "admin"
         ],
@@ -6322,8 +6322,10 @@
                           "id",
                           "name",
                           "email",
+                          "emailVerified",
                           "role",
-                          "createdAt"
+                          "createdAt",
+                          "lastLoginAt"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -6335,6 +6337,9 @@
                           },
                           "email": {
                             "type": "string"
+                          },
+                          "emailVerified": {
+                            "type": "boolean"
                           },
                           "role": {
                             "type": "string",
@@ -6348,6 +6353,12 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "When the account was made"
+                          },
+                          "lastLoginAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true,
+                            "description": "Last sign-in; null if never"
                           }
                         }
                       }
@@ -6526,8 +6537,10 @@
                     "id",
                     "name",
                     "email",
+                    "emailVerified",
                     "role",
-                    "createdAt"
+                    "createdAt",
+                    "lastLoginAt"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -6539,6 +6552,9 @@
                     },
                     "email": {
                       "type": "string"
+                    },
+                    "emailVerified": {
+                      "type": "boolean"
                     },
                     "role": {
                       "type": "string",
@@ -6552,6 +6568,12 @@
                       "type": "string",
                       "format": "date-time",
                       "description": "When the account was made"
+                    },
+                    "lastLoginAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Last sign-in; null if never"
                     }
                   }
                 }
@@ -6713,6 +6735,296 @@
                 },
                 "example": {
                   "error": "There must be at least one admin"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/users/{id}/verified": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "put": {
+        "operationId": "setUserVerified",
+        "summary": "Mark an account's email as verified or unverified (admin)",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "verified"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "verified": {
+                    "type": "boolean",
+                    "description": "true: mark the account's email verified; false: unverified"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "name",
+                    "email",
+                    "emailVerified",
+                    "role",
+                    "createdAt",
+                    "lastLoginAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "email": {
+                      "type": "string"
+                    },
+                    "emailVerified": {
+                      "type": "boolean"
+                    },
+                    "role": {
+                      "type": "string",
+                      "nullable": true,
+                      "enum": [
+                        "admin",
+                        null
+                      ]
+                    },
+                    "createdAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "description": "When the account was made"
+                    },
+                    "lastLoginAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true,
+                      "description": "Last sign-in; null if never"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -29015,8 +29327,10 @@
           "id",
           "name",
           "email",
+          "emailVerified",
           "role",
-          "createdAt"
+          "createdAt",
+          "lastLoginAt"
         ],
         "additionalProperties": false,
         "properties": {
@@ -29028,6 +29342,9 @@
           },
           "email": {
             "type": "string"
+          },
+          "emailVerified": {
+            "type": "boolean"
           },
           "role": {
             "type": "string",
@@ -29041,6 +29358,12 @@
             "type": "string",
             "format": "date-time",
             "description": "When the account was made"
+          },
+          "lastLoginAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Last sign-in; null if never"
           }
         }
       },
@@ -29059,8 +29382,10 @@
                 "id",
                 "name",
                 "email",
+                "emailVerified",
                 "role",
-                "createdAt"
+                "createdAt",
+                "lastLoginAt"
               ],
               "additionalProperties": false,
               "properties": {
@@ -29072,6 +29397,9 @@
                 },
                 "email": {
                   "type": "string"
+                },
+                "emailVerified": {
+                  "type": "boolean"
                 },
                 "role": {
                   "type": "string",
@@ -29085,6 +29413,12 @@
                   "type": "string",
                   "format": "date-time",
                   "description": "When the account was made"
+                },
+                "lastLoginAt": {
+                  "type": "string",
+                  "format": "date-time",
+                  "nullable": true,
+                  "description": "Last sign-in; null if never"
                 }
               }
             }
@@ -29101,6 +29435,19 @@
           "admin": {
             "type": "boolean",
             "description": "true: grant the admin role; false: revoke it"
+          }
+        }
+      },
+      "SetUserVerifiedRequest": {
+        "type": "object",
+        "required": [
+          "verified"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "verified": {
+            "type": "boolean",
+            "description": "true: mark the account's email verified; false: unverified"
           }
         }
       },

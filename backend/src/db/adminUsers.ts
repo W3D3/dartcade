@@ -6,21 +6,35 @@ export type AdminUserRow = {
   id: string
   name: string
   email: string
+  emailVerified: boolean
   role: 'admin' | null
   createdAt: Date
+  lastLoginAt: Date | null
 }
 
-const toRow = (r: { id: string; name: string; email: string; role: string | null; createdAt: Date }): AdminUserRow => ({
+const COLUMNS = ['id', 'name', 'email', 'emailVerified', 'role', 'createdAt', 'last_login_at'] as const
+
+const toRow = (r: {
+  id: string
+  name: string
+  email: string
+  emailVerified: boolean
+  role: string | null
+  createdAt: Date
+  last_login_at: Date | null
+}): AdminUserRow => ({
   id: r.id,
   name: r.name,
   email: r.email,
+  emailVerified: r.emailVerified,
   role: r.role === 'admin' ? 'admin' : null,
   createdAt: r.createdAt,
+  lastLoginAt: r.last_login_at,
 })
 
-/** Every user, newest first, at most 50; `q`, if given, matches name or email (case-insensitive, contains). */
+/** Every user, newest first, at most 200; `q`, if given, matches name or email (case-insensitive, contains). */
 export async function listUsers(db: Kysely<Database>, q?: string): Promise<AdminUserRow[]> {
-  let query = db.selectFrom('user').select(['id', 'name', 'email', 'role', 'createdAt']).orderBy('createdAt', 'desc').limit(50)
+  let query = db.selectFrom('user').select(COLUMNS).orderBy('createdAt', 'desc').limit(200)
   if (q) {
     // shortcut: % and _ in q aren't escaped for LIKE; an admin search box, a wrong match here is low-risk
     const pattern = `%${q}%`
@@ -31,8 +45,14 @@ export async function listUsers(db: Kysely<Database>, q?: string): Promise<Admin
 
 /** One user, for the response after a role change. */
 export async function getUser(db: Kysely<Database>, id: string): Promise<AdminUserRow | undefined> {
-  const row = await db.selectFrom('user').select(['id', 'name', 'email', 'role', 'createdAt']).where('id', '=', id).executeTakeFirst()
+  const row = await db.selectFrom('user').select(COLUMNS).where('id', '=', id).executeTakeFirst()
   return row && toRow(row)
+}
+
+/** Sets emailVerified. */
+export async function setVerified(db: Kysely<Database>, id: string, verified: boolean): Promise<'ok' | 'not-found'> {
+  const result = await db.updateTable('user').set({ emailVerified: verified }).where('id', '=', id).executeTakeFirst()
+  return result.numUpdatedRows > 0n ? 'ok' : 'not-found'
 }
 
 /**
