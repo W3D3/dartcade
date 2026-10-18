@@ -61,6 +61,11 @@ export class BridgeConnections {
     return this.byBoard.has(boardDbId)
   }
 
+  /** Connected bridge sockets, and the boards they registered. */
+  counts(): { bridges: number; boards: number } {
+    return { bridges: this.all.size, boards: this.byBoard.size }
+  }
+
   recordEvent(boardDbId: string, ev: BoardEvent): void {
     const { at, kind, data } = ev
     // Data that doesn't match the feed's schema (a malformed dart) is left out too

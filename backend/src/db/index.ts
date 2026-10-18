@@ -2,10 +2,19 @@ import { Kysely, PostgresDialect } from 'kysely'
 import pg from 'pg'
 import type { Database } from './schema.js'
 
+// Each db's pg pool, for the admin System page's connection counts (Kysely keeps it private)
+const pools = new WeakMap<Kysely<Database>, pg.Pool>()
+
 export function createDb(url: string): Kysely<Database> {
-  return new Kysely<Database>({
-    dialect: new PostgresDialect({ pool: new pg.Pool({ connectionString: url }) }),
-  })
+  const pool = new pg.Pool({ connectionString: url })
+  const db = new Kysely<Database>({ dialect: new PostgresDialect({ pool }) })
+  pools.set(db, pool)
+  return db
+}
+
+/** The pg pool behind a db made by createDb. */
+export function poolOf(db: Kysely<Database>): pg.Pool | undefined {
+  return pools.get(db)
 }
 
 /**

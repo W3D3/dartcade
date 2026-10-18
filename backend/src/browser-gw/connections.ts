@@ -66,6 +66,13 @@ export class BrowserConnections {
     }
   }
 
+  /** Open sockets under every key. */
+  socketCount(): number {
+    let n = 0
+    for (const m of this.sessions.values()) n += m.size
+    return n
+  }
+
   /** Whether any socket is open under this key. */
   has(key: string): boolean {
     return (this.sessions.get(key)?.size ?? 0) > 0
