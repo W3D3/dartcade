@@ -2,6 +2,7 @@
   // Settings' Profile: the account itself (Settings board). Read-only for now, plus Sign out.
   import { LogOut } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
+  import DeleteAccount from './DeleteAccount.svelte'
 
   const user = $derived($currentUser)
   const joined = $derived(new Date(user?.createdAt ?? NaN))
@@ -39,5 +40,7 @@
     >
       <LogOut size={16} />Sign out
     </button>
+    <div class="h-px bg-surface-paused"></div>
+    <DeleteAccount />
   </section>
 {/if}

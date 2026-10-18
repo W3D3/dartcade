@@ -11,6 +11,7 @@ import { forgetSession, pushNotice, pushSnapshot } from './browser-gw/handler.js
 import { seedDev } from './auth/seed.js'
 import { bootstrapAdmin } from './auth/bootstrap.js'
 import { mailConfig } from './auth/index.js'
+import { setAccountCleanup, cleanUpAccount } from './auth/cleanup.js'
 import { buildApp } from './app.js'
 import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
@@ -121,6 +122,7 @@ const lobbies: LobbyService = new LobbyService({
     friends.touch(userIds)
   },
 })
+setAccountCleanup(userId => cleanUpAccount({ engine, lobbies }, userId))
 await engine.rebuild()
 // A game that ended while the server was down never told its lobby: settle the lobbies now
 await lobbies.settleAll()
