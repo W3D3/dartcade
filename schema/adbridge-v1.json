@@ -312,6 +312,98 @@
         "kind": { "type": "string", "const": "camera.still" },
         "data": { "$ref": "#/$defs/CameraStillData" }
       }
+    },
+
+    "WledDevice": {
+      "type": "object",
+      "required": ["id", "mac", "host", "max_bri"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string" },
+        "mac": { "type": "string", "description": "Lower-case hex without separators, as WLED's /json/info reports it." },
+        "host": { "type": "string", "description": "IP or .local name, no scheme, no path." },
+        "max_bri": { "type": "integer", "minimum": 1, "maximum": 255 }
+      }
+    },
+    "WledDevicesData": {
+      "type": "object",
+      "required": ["devices"],
+      "additionalProperties": false,
+      "properties": { "devices": { "type": "array", "items": { "$ref": "#/$defs/WledDevice" } } }
+    },
+    "WledApplyData": {
+      "type": "object",
+      "required": ["device_id", "state"],
+      "additionalProperties": false,
+      "properties": {
+        "device_id": { "type": "string" },
+        "state": { "type": "object", "description": "A WLED /json/state body." },
+        "hold_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 60000,
+          "description": "Set: a flash, the base comes back after it. Unset: a scene, the new base."
+        }
+      }
+    },
+    "WledProbeData": {
+      "type": "object",
+      "required": ["host"],
+      "additionalProperties": false,
+      "properties": { "host": { "type": "string" } }
+    },
+    "WledBlinkData": {
+      "type": "object",
+      "required": ["host"],
+      "additionalProperties": false,
+      "properties": { "host": { "type": "string" } }
+    },
+    "WledFoundDevice": {
+      "type": "object",
+      "required": ["mac", "host", "name", "leds", "version", "segments"],
+      "additionalProperties": false,
+      "properties": {
+        "mac": { "type": "string" },
+        "host": { "type": "string" },
+        "name": { "type": "string" },
+        "leds": { "type": "integer", "minimum": 0 },
+        "version": { "type": "string" },
+        "segments": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "WledFoundData": {
+      "type": "object",
+      "required": ["devices", "scanned_at"],
+      "additionalProperties": false,
+      "properties": {
+        "devices": { "type": "array", "items": { "$ref": "#/$defs/WledFoundDevice" } },
+        "scanned_at": { "type": "string", "format": "date-time" },
+        "probe_host": { "type": "string", "description": "Set when this answers a wled.probe." },
+        "probe_error": { "type": "string" }
+      }
+    },
+    "WledStatusData": {
+      "type": "object",
+      "required": ["device_id", "reachable"],
+      "additionalProperties": false,
+      "properties": {
+        "device_id": { "type": "string" },
+        "reachable": { "type": "boolean" },
+        "version": { "type": "string" },
+        "error": { "type": "string" }
+      }
+    },
+    "WledFoundMessage": {
+      "type": "object",
+      "required": ["kind", "data"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "const": "wled.found" }, "data": { "$ref": "#/$defs/WledFoundData" } }
+    },
+    "WledStatusMessage": {
+      "type": "object",
+      "required": ["kind", "data"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "const": "wled.status" }, "data": { "$ref": "#/$defs/WledStatusData" } }
     }
   },
 

@@ -1104,3 +1104,353 @@ func (j *VisitOpenedData) UnmarshalJSON(value []byte) error {
 	*j = VisitOpenedData(plain)
 	return nil
 }
+
+type WledApplyData struct {
+	// DeviceId corresponds to the JSON schema field "device_id".
+	DeviceId string `json:"device_id" yaml:"device_id" mapstructure:"device_id"`
+
+	// Set: a flash, the base comes back after it. Unset: a scene, the new base.
+	HoldMs *int `json:"hold_ms,omitempty,omitzero" yaml:"hold_ms,omitempty" mapstructure:"hold_ms,omitempty"`
+
+	// A WLED /json/state body.
+	State WledApplyDataState `json:"state" yaml:"state" mapstructure:"state"`
+}
+
+// A WLED /json/state body.
+type WledApplyDataState map[string]interface{}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledApplyData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["device_id"]; raw != nil && !ok {
+		return fmt.Errorf("field device_id in WledApplyData: required")
+	}
+	if _, ok := raw["state"]; raw != nil && !ok {
+		return fmt.Errorf("field state in WledApplyData: required")
+	}
+	type Plain WledApplyData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.HoldMs != nil && 60000 < *plain.HoldMs {
+		return fmt.Errorf("field %s: must be <= %v", "hold_ms", 60000)
+	}
+	if plain.HoldMs != nil && 1 > *plain.HoldMs {
+		return fmt.Errorf("field %s: must be >= %v", "hold_ms", 1)
+	}
+	*j = WledApplyData(plain)
+	return nil
+}
+
+type WledBlinkData struct {
+	// Host corresponds to the JSON schema field "host".
+	Host string `json:"host" yaml:"host" mapstructure:"host"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledBlinkData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["host"]; raw != nil && !ok {
+		return fmt.Errorf("field host in WledBlinkData: required")
+	}
+	type Plain WledBlinkData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = WledBlinkData(plain)
+	return nil
+}
+
+type WledDevice struct {
+	// IP or .local name, no scheme, no path.
+	Host string `json:"host" yaml:"host" mapstructure:"host"`
+
+	// Id corresponds to the JSON schema field "id".
+	Id string `json:"id" yaml:"id" mapstructure:"id"`
+
+	// Lower-case hex without separators, as WLED's /json/info reports it.
+	Mac string `json:"mac" yaml:"mac" mapstructure:"mac"`
+
+	// MaxBri corresponds to the JSON schema field "max_bri".
+	MaxBri int `json:"max_bri" yaml:"max_bri" mapstructure:"max_bri"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledDevice) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["host"]; raw != nil && !ok {
+		return fmt.Errorf("field host in WledDevice: required")
+	}
+	if _, ok := raw["id"]; raw != nil && !ok {
+		return fmt.Errorf("field id in WledDevice: required")
+	}
+	if _, ok := raw["mac"]; raw != nil && !ok {
+		return fmt.Errorf("field mac in WledDevice: required")
+	}
+	if _, ok := raw["max_bri"]; raw != nil && !ok {
+		return fmt.Errorf("field max_bri in WledDevice: required")
+	}
+	type Plain WledDevice
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if 255 < plain.MaxBri {
+		return fmt.Errorf("field %s: must be <= %v", "max_bri", 255)
+	}
+	if 1 > plain.MaxBri {
+		return fmt.Errorf("field %s: must be >= %v", "max_bri", 1)
+	}
+	*j = WledDevice(plain)
+	return nil
+}
+
+type WledDevicesData struct {
+	// Devices corresponds to the JSON schema field "devices".
+	Devices []WledDevice `json:"devices" yaml:"devices" mapstructure:"devices"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledDevicesData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["devices"]; raw != nil && !ok {
+		return fmt.Errorf("field devices in WledDevicesData: required")
+	}
+	type Plain WledDevicesData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = WledDevicesData(plain)
+	return nil
+}
+
+type WledFoundData struct {
+	// Devices corresponds to the JSON schema field "devices".
+	Devices []WledFoundDevice `json:"devices" yaml:"devices" mapstructure:"devices"`
+
+	// ProbeError corresponds to the JSON schema field "probe_error".
+	ProbeError *string `json:"probe_error,omitempty,omitzero" yaml:"probe_error,omitempty" mapstructure:"probe_error,omitempty"`
+
+	// Set when this answers a wled.probe.
+	ProbeHost *string `json:"probe_host,omitempty,omitzero" yaml:"probe_host,omitempty" mapstructure:"probe_host,omitempty"`
+
+	// ScannedAt corresponds to the JSON schema field "scanned_at".
+	ScannedAt time.Time `json:"scanned_at" yaml:"scanned_at" mapstructure:"scanned_at"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledFoundData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["devices"]; raw != nil && !ok {
+		return fmt.Errorf("field devices in WledFoundData: required")
+	}
+	if _, ok := raw["scanned_at"]; raw != nil && !ok {
+		return fmt.Errorf("field scanned_at in WledFoundData: required")
+	}
+	type Plain WledFoundData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = WledFoundData(plain)
+	return nil
+}
+
+type WledFoundDevice struct {
+	// Host corresponds to the JSON schema field "host".
+	Host string `json:"host" yaml:"host" mapstructure:"host"`
+
+	// Leds corresponds to the JSON schema field "leds".
+	Leds int `json:"leds" yaml:"leds" mapstructure:"leds"`
+
+	// Mac corresponds to the JSON schema field "mac".
+	Mac string `json:"mac" yaml:"mac" mapstructure:"mac"`
+
+	// Name corresponds to the JSON schema field "name".
+	Name string `json:"name" yaml:"name" mapstructure:"name"`
+
+	// Segments corresponds to the JSON schema field "segments".
+	Segments int `json:"segments" yaml:"segments" mapstructure:"segments"`
+
+	// Version corresponds to the JSON schema field "version".
+	Version string `json:"version" yaml:"version" mapstructure:"version"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledFoundDevice) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["host"]; raw != nil && !ok {
+		return fmt.Errorf("field host in WledFoundDevice: required")
+	}
+	if _, ok := raw["leds"]; raw != nil && !ok {
+		return fmt.Errorf("field leds in WledFoundDevice: required")
+	}
+	if _, ok := raw["mac"]; raw != nil && !ok {
+		return fmt.Errorf("field mac in WledFoundDevice: required")
+	}
+	if _, ok := raw["name"]; raw != nil && !ok {
+		return fmt.Errorf("field name in WledFoundDevice: required")
+	}
+	if _, ok := raw["segments"]; raw != nil && !ok {
+		return fmt.Errorf("field segments in WledFoundDevice: required")
+	}
+	if _, ok := raw["version"]; raw != nil && !ok {
+		return fmt.Errorf("field version in WledFoundDevice: required")
+	}
+	type Plain WledFoundDevice
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if 0 > plain.Leds {
+		return fmt.Errorf("field %s: must be >= %v", "leds", 0)
+	}
+	if 0 > plain.Segments {
+		return fmt.Errorf("field %s: must be >= %v", "segments", 0)
+	}
+	*j = WledFoundDevice(plain)
+	return nil
+}
+
+type WledFoundMessage struct {
+	// Data corresponds to the JSON schema field "data".
+	Data WledFoundData `json:"data" yaml:"data" mapstructure:"data"`
+
+	// Kind corresponds to the JSON schema field "kind".
+	Kind string `json:"kind" yaml:"kind" mapstructure:"kind"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledFoundMessage) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in WledFoundMessage: required")
+	}
+	if _, ok := raw["kind"]; raw != nil && !ok {
+		return fmt.Errorf("field kind in WledFoundMessage: required")
+	}
+	type Plain WledFoundMessage
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Kind != "wled.found" {
+		return fmt.Errorf("field %s: must be equal to %s", "kind", "wled.found")
+	}
+	*j = WledFoundMessage(plain)
+	return nil
+}
+
+type WledProbeData struct {
+	// Host corresponds to the JSON schema field "host".
+	Host string `json:"host" yaml:"host" mapstructure:"host"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledProbeData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["host"]; raw != nil && !ok {
+		return fmt.Errorf("field host in WledProbeData: required")
+	}
+	type Plain WledProbeData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = WledProbeData(plain)
+	return nil
+}
+
+type WledStatusData struct {
+	// DeviceId corresponds to the JSON schema field "device_id".
+	DeviceId string `json:"device_id" yaml:"device_id" mapstructure:"device_id"`
+
+	// Error corresponds to the JSON schema field "error".
+	Error *string `json:"error,omitempty,omitzero" yaml:"error,omitempty" mapstructure:"error,omitempty"`
+
+	// Reachable corresponds to the JSON schema field "reachable".
+	Reachable bool `json:"reachable" yaml:"reachable" mapstructure:"reachable"`
+
+	// Version corresponds to the JSON schema field "version".
+	Version *string `json:"version,omitempty,omitzero" yaml:"version,omitempty" mapstructure:"version,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledStatusData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["device_id"]; raw != nil && !ok {
+		return fmt.Errorf("field device_id in WledStatusData: required")
+	}
+	if _, ok := raw["reachable"]; raw != nil && !ok {
+		return fmt.Errorf("field reachable in WledStatusData: required")
+	}
+	type Plain WledStatusData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = WledStatusData(plain)
+	return nil
+}
+
+type WledStatusMessage struct {
+	// Data corresponds to the JSON schema field "data".
+	Data WledStatusData `json:"data" yaml:"data" mapstructure:"data"`
+
+	// Kind corresponds to the JSON schema field "kind".
+	Kind string `json:"kind" yaml:"kind" mapstructure:"kind"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *WledStatusMessage) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in WledStatusMessage: required")
+	}
+	if _, ok := raw["kind"]; raw != nil && !ok {
+		return fmt.Errorf("field kind in WledStatusMessage: required")
+	}
+	type Plain WledStatusMessage
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Kind != "wled.status" {
+		return fmt.Errorf("field %s: must be equal to %s", "kind", "wled.status")
+	}
+	*j = WledStatusMessage(plain)
+	return nil
+}

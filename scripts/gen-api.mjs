@@ -97,6 +97,8 @@ async function genZod() {
     DartCorrectedDataSchema: ab.$defs.DartCorrectedData,
     BaseEnvelopeSchema: ab.$defs.BaseEnvelope,
     CameraStillMessageSchema: ab.$defs.CameraStillMessage,
+    WledFoundMessageSchema: ab.$defs.WledFoundMessage,
+    WledStatusMessageSchema: ab.$defs.WledStatusMessage,
     FeedEventDataSchema: api.components.schemas.BoardEvent.properties.data,
   }
   const body =

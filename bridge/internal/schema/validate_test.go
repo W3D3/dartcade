@@ -121,3 +121,25 @@ func TestCameraStillMessageValidates(t *testing.T) {
 		t.Errorf("camera.still does not match the schema: %v\n%s", err, b)
 	}
 }
+
+// wled.found, like camera.still, has no envelope.
+func TestWledFoundMessageValidates(t *testing.T) {
+	schemaPath, err := filepath.Abs("../../../schema/adbridge-v1.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	sch, err := jsonschema.NewCompiler().Compile("file://" + schemaPath + "#/$defs/WledFoundMessage")
+	if err != nil {
+		t.Fatal(err)
+	}
+	msg := map[string]any{"kind": "wled.found", "data": map[string]any{
+		"devices":    []any{map[string]any{"mac": "a8032a7f3a2c", "host": "192.168.1.80", "name": "WLED", "leds": 144, "version": "0.15.0", "segments": 1}},
+		"scanned_at": "2026-10-18T12:00:00Z",
+	}}
+	b, _ := json.Marshal(msg)
+	var v any
+	json.Unmarshal(b, &v)
+	if err := sch.Validate(v); err != nil {
+		t.Errorf("wled.found does not match the schema: %v\n%s", err, b)
+	}
+}
