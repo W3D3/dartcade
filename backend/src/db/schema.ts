@@ -21,6 +21,8 @@ export interface UserTable {
   banned: ColumnType<boolean | null, boolean | undefined, boolean>
   banReason: string | null
   banExpires: Date | null
+  /** Set on every sign-in (databaseHooks.session.create.after, auth/index.ts; migration 026); null until then. */
+  last_login_at: Date | null
 }
 
 export interface BoardsTable {

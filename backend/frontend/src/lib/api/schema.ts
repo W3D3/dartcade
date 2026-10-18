@@ -423,7 +423,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Every account, newest first, at most 50 (admin) */
+        /** Every account, newest first, at most 200 (admin) */
         get: operations["listAdminUsers"];
         put?: never;
         post?: never;
@@ -445,6 +445,25 @@ export interface paths {
         get?: never;
         /** Promote or demote an admin; refused if it would leave no admin (admin) */
         put: operations["setUserRole"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/users/{id}/verified": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /** Mark an account's email as verified or unverified (admin) */
+        put: operations["setUserVerified"];
         post?: never;
         delete?: never;
         options?: never;
@@ -1822,6 +1841,7 @@ export interface components {
             id: string;
             name: string;
             email: string;
+            emailVerified: boolean;
             /** @enum {string|null} */
             role: "admin" | null;
             /**
@@ -1829,6 +1849,11 @@ export interface components {
              * @description When the account was made
              */
             createdAt: string;
+            /**
+             * Format: date-time
+             * @description Last sign-in; null if never
+             */
+            lastLoginAt: string | null;
         };
         AdminUserList: {
             users: components["schemas"]["AdminUser"][];
@@ -1836,6 +1861,10 @@ export interface components {
         SetUserRoleRequest: {
             /** @description true: grant the admin role; false: revoke it */
             admin: boolean;
+        };
+        SetUserVerifiedRequest: {
+            /** @description true: mark the account's email verified; false: unverified */
+            verified: boolean;
         };
         /** @description [min, max], number flags only */
         FlagRange: number[];
@@ -3219,6 +3248,37 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["LastAdminConflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setUserVerified: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetUserVerifiedRequest"];
+            };
+        };
+        responses: {
+            /** @description The updated account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

@@ -40,9 +40,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
     await db
       .insertInto('user')
       .values([
-        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: false, image: null, role: 'admin' },
+        { id: 'admin', name: 'Admin', email: 'admin@example.com', emailVerified: true, image: null, role: 'admin' },
         { id: 'player', name: 'Player', email: 'player@example.com', emailVerified: false, image: null, role: null },
       ])
+      .execute()
+    await db
+      .updateTable('user')
+      .set({ last_login_at: new Date('2026-01-01T00:00:00Z') })
+      .where('id', '=', 'admin')
       .execute()
     // Warm the pg pool with a few concurrent connections: cold, the concurrency test below
     // can see one request's whole transaction finish before the other's first query even lands.
@@ -66,6 +71,46 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
 
     const role = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asPlayer, payload: { admin: true } })
     expect(role.statusCode).toBe(403)
+
+    const verified = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/player/verified',
+      headers: asPlayer,
+      payload: { verified: true },
+    })
+    expect(verified.statusCode).toBe(403)
+  })
+
+  it('includes emailVerified and lastLoginAt, null until a sign-in sets it', async () => {
+    const res = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asAdmin })
+    const byId = Object.fromEntries(res.json().users.map((u: { id: string }) => [u.id, u]))
+    expect(byId.admin).toMatchObject({ emailVerified: true, lastLoginAt: '2026-01-01T00:00:00.000Z' })
+    expect(byId.player).toMatchObject({ emailVerified: false, lastLoginAt: null })
+  })
+
+  it('caps the list at 200, newest first', async () => {
+    const rows = Array.from({ length: 199 }, (_, i) => ({
+      id: `bulk${i}`,
+      name: `Bulk${i}`,
+      email: `bulk${i}@example.com`,
+      emailVerified: false,
+      image: null,
+      role: null,
+    }))
+    await db.insertInto('user').values(rows).execute()
+    try {
+      const res = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asAdmin })
+      expect(res.json().users).toHaveLength(200)
+    } finally {
+      await db
+        .deleteFrom('user')
+        .where(
+          'id',
+          'in',
+          rows.map(r => r.id),
+        )
+        .execute()
+    }
   })
 
   it('lists users and filters by q, case-insensitive, matching name or email', async () => {
@@ -95,6 +140,38 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   it('404s an unknown id', async () => {
     const res = await app().inject({ method: 'PUT', url: '/api/admin/users/nope/role', headers: asAdmin, payload: { admin: true } })
     expect(res.statusCode).toBe(404)
+
+    const verified = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/nope/verified',
+      headers: asAdmin,
+      payload: { verified: true },
+    })
+    expect(verified.statusCode).toBe(404)
+  })
+
+  it('400s a verified body that is not a boolean', async () => {
+    const res = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/player/verified',
+      headers: asAdmin,
+      payload: { verified: 'yes' },
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  // Fastify's default Ajv options strip unknown body fields (removeAdditional, see fastify.ts) on every
+  // route, this one included: an extra field is dropped, not rejected, and the request still succeeds.
+  it('drops an unknown field from a verified body instead of rejecting it', async () => {
+    const res = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/player/verified',
+      headers: asAdmin,
+      payload: { verified: true, admin: true },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toMatchObject({ id: 'player', emailVerified: true })
+    await app().inject({ method: 'PUT', url: '/api/admin/users/player/verified', headers: asAdmin, payload: { verified: false } })
   })
 
   it('promotes then demotes a user', async () => {
@@ -105,6 +182,32 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
     const demoted = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asAdmin, payload: { admin: false } })
     expect(demoted.statusCode).toBe(200)
     expect(demoted.json()).toMatchObject({ id: 'player', role: null })
+  })
+
+  it('verifies then unverifies an email, visible in the list', async () => {
+    const verified = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/player/verified',
+      headers: asAdmin,
+      payload: { verified: true },
+    })
+    expect(verified.statusCode).toBe(200)
+    expect(verified.json()).toMatchObject({ id: 'player', emailVerified: true })
+
+    const afterVerify = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asAdmin })
+    expect(afterVerify.json().users.find((u: { id: string }) => u.id === 'player')).toMatchObject({ emailVerified: true })
+
+    const unverified = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/player/verified',
+      headers: asAdmin,
+      payload: { verified: false },
+    })
+    expect(unverified.statusCode).toBe(200)
+    expect(unverified.json()).toMatchObject({ id: 'player', emailVerified: false })
+
+    const afterUnverify = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asAdmin })
+    expect(afterUnverify.json().users.find((u: { id: string }) => u.id === 'player')).toMatchObject({ emailVerified: false })
   })
 
   it('refuses to demote the only admin', async () => {
