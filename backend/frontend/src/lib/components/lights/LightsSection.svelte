@@ -1,7 +1,7 @@
 <script lang="ts">
   // Settings' Lights section (Settings-Lights board): pick a board, turn its lights on or off,
   // manage its paired WLED devices and the ones the bridge found, and the built-in light
-  // profile. Pairing and editing a device open a dialog (Task 13); this only holds the hook.
+  // profile. Pairing and editing a device open PairWledDialog, which reloads this section on save.
   import { onDestroy, onMount } from 'svelte'
   import { querystring } from 'svelte-spa-router'
   import { RotateCcw } from '@lucide/svelte'
@@ -12,6 +12,7 @@
   import WledDeviceRow from './WledDeviceRow.svelte'
   import FoundDevices from './FoundDevices.svelte'
   import LightProfileCard from './LightProfileCard.svelte'
+  import PairWledDialog from './PairWledDialog.svelte'
   import { api, type Board, type BoardLights, type FoundWledDevice, type WledDevice } from '$lib/api'
 
   let boards = $state<Board[]>([])
@@ -36,7 +37,7 @@
   let testError = $state<string | null>(null)
   let enabledError = $state<string | null>(null)
 
-  /** The next task's pair/edit dialog hook. */
+  /** Which pair/edit dialog is open, if any. */
   let dialog = $state<{ mode: 'pair'; device: FoundWledDevice } | { mode: 'edit'; device: WledDevice } | null>(null)
 
   let pollTimer: ReturnType<typeof setInterval> | null = null
@@ -264,8 +265,19 @@
       </div>
     {/if}
   </div>
-  {#if dialog}
-    <!-- Task 13 renders the pair/edit dialog here, from `dialog` -->
+  {#if dialog && selectedId}
+    {@const id = selectedId}
+    <PairWledDialog
+      boardId={id}
+      {boards}
+      found={lights?.found ?? []}
+      device={dialog.mode === 'edit' ? dialog.device : undefined}
+      mac={dialog.mode === 'pair' ? dialog.device.mac : undefined}
+      onclose={() => {
+        dialog = null
+      }}
+      onsaved={() => void loadLights(id)}
+    />
   {/if}
 {:else if boardsError}
   <div class="flex items-center gap-3">
