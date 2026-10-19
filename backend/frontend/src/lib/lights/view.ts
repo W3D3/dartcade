@@ -22,6 +22,7 @@ const TRIGGER_LABELS: Record<string, string> = {
 const COLOR_NAMES: Record<string, string> = {
   '#ffffff': 'white',
   '#ff3b30': 'red',
+  '#c6f24e': 'lime',
 }
 
 // WLED effect ids used by the built-in profile
