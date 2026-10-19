@@ -36,6 +36,8 @@ export const DEFAULT_PROFILE: Profile = {
     flash('golf.sunk', { color: 'seat', fx: SPARKLE, bri: 255 }, 2000),
     flash('bulloff.won', { color: 'seat', fx: BLINK, bri: 255 }, 2000),
     { when: { trigger: 'takeout.started', seats: 'any' }, type: 'scene', look: { color: '#ffa000', fx: BREATHE, bri: 255, speed: 60 } },
+    // WLED fx 41 "Lighthouse": a comet travelling around the strip leaving a fading trail
+    { when: { trigger: 'calibration.started', seats: 'any' }, type: 'scene', look: { color: '#a855f7', fx: 41, bri: 255, speed: 128 } },
     { when: { trigger: 'idle', seats: 'any' }, type: 'scene', look: { color: '#c6f24e', fx: BREATHE, bri: 60, speed: 40 } },
   ],
 }

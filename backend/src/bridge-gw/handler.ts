@@ -28,7 +28,7 @@ type Opts = FastifyPluginOptions & {
    *  logged by callHook, never left unhandled. */
   onBridgeHello?: (boardId: string) => void | Promise<void>
   /** A bridge event was applied to the game. A rejection is logged by callHook, never left unhandled. */
-  onBoardEvent?: (boardId: string, kind: string) => void | Promise<void>
+  onBoardEvent?: (boardId: string, kind: string, data: unknown) => void | Promise<void>
   /** The lights store has fresh devices for this board, after a scan or a probe. A rejection is
    *  logged by callHook, never left unhandled. */
   onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
@@ -148,7 +148,7 @@ export function handleBridgeConnection(
     /** The bridge said hello: its board id (the lights service probes this board once it can). */
     onBridgeHello?: (boardId: string) => void | Promise<void>
     /** A bridge event was applied to the game. */
-    onBoardEvent?: (boardId: string, kind: string) => void | Promise<void>
+    onBoardEvent?: (boardId: string, kind: string, data: unknown) => void | Promise<void>
     /** The lights store has fresh devices for this board, after a scan or a probe. */
     onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
   },
@@ -306,7 +306,7 @@ export function handleBridgeConnection(
           console.error('Bridge event not applied to the game:', { boardDbId, kind, seq, bridgeEventId: id }, err)
           return
         }
-        callHook('onBoardEvent', boardDbId, () => opts.onBoardEvent?.(boardDbId, kind))
+        callHook('onBoardEvent', boardDbId, () => opts.onBoardEvent?.(boardDbId, kind, data))
       })
       .catch((err: unknown) => {
         failed = true

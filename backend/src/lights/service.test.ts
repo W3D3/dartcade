@@ -101,6 +101,67 @@ describe('LightsService', () => {
     expect(back.state).toEqual(turn)
   })
 
+  const status = (s: string) => ({ status: s, event: '', running: true, connected: true })
+
+  it('Running to Calibrating sends the purple comet scene', async () => {
+    const { svc, sent, snaps, sessions } = setup()
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    sent.length = 0
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    const [purple] = applies(sent, 'b1')
+    expect((purple.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[168, 85, 247]])
+  })
+
+  it('Calibrating to Running restores the remembered game scene', async () => {
+    const { svc, sent, snaps, sessions } = setup()
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    const turn = applies(sent, 'b1')[0].state
+    sent.length = 0
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    const [, back] = applies(sent, 'b1')
+    expect(back.state).toEqual(turn)
+  })
+
+  it('repeated Calibrating statuses do not resend', async () => {
+    const { svc, sent, snaps, sessions } = setup()
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    sent.length = 0
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    expect(applies(sent, 'b1')).toHaveLength(1)
+  })
+
+  it('ignores malformed board.status data', async () => {
+    const { svc, sent } = setup()
+    await svc.onBoardEvent('b1', 'board.status', null)
+    await svc.onBoardEvent('b1', 'board.status', { event: 'no status field' })
+    await svc.onBoardEvent('b1', 'board.status', 'Calibrating')
+    expect(sent).toEqual([])
+  })
+
+  it('a game scene change during calibration is remembered, the same as during a takeout', async () => {
+    const { svc, sent, snaps, sessions } = setup()
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    sent.length = 0
+    // None of these are awaited before the next is issued, the same race the takeout test above covers.
+    const started = svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    snaps.set('s', x01({ currentPlayer: 1 }))
+    const pushed = svc.onPush('s')
+    const finished = svc.onBoardEvent('b1', 'board.status', status('Running'))
+    await Promise.all([started, pushed, finished])
+    const last = applies(sent, 'b1').at(-1)
+    expect((last?.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[239, 238, 230]]) // seat 1's colour
+  })
+
   it('onPush sends nothing when lights are off or the bridge is too old', async () => {
     for (const over of [{ enabled: () => Promise.resolve(false) }, { bridgeVersion: () => '0.3.1' }]) {
       const { svc, sent, snaps, sessions } = setup(over)
