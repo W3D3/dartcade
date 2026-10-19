@@ -2,7 +2,7 @@
 // segment layout and "since" timestamps, and whether a flagged settings section shows.
 import type { LightRule } from '$lib/api'
 
-type SegmentMode = 'whole' | 'perSeat' | 'wled'
+export type SegmentMode = 'whole' | 'perSeat' | 'wled'
 
 const TRIGGER_LABELS: Record<string, string> = {
   turn: 'Turn changes',
