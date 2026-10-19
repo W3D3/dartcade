@@ -18,7 +18,6 @@
     endMode = 'end',
     showViewToggle = true,
     compact = false,
-    lobbyName = null,
     paused = false,
     myBoard = null,
     settings = $bindable(),
@@ -39,8 +38,6 @@
     showViewToggle?: boolean
     /** The phone header: back, title with LIVE and meta, keypad toggle, end, settings. */
     compact?: boolean
-    /** The lobby the game was started from (lobby games). */
-    lobbyName?: string | null
     /** The game waits for a disconnected player: PAUSED instead of LIVE. */
     paused?: boolean
     /** Remote games: the viewer's own board, and whether its bridge is connected. */
@@ -88,13 +85,6 @@
           >
             <span class="w-[6px] h-[6px] rounded-full bg-live"></span>LIVE
           </span>
-        {/if}
-        {#if lobbyName}
-          <span
-            title="Lobby game"
-            class="h-[18px] px-[6px] min-w-0 inline-flex items-center rounded-full border border-accent-line text-accent text-[10px] font-semibold"
-            ><span class="truncate">{lobbyName}</span></span
-          >
         {/if}
       </span>
       {#if meta}<span class="text-[12px] text-text-muted truncate">{meta}</span>{/if}
@@ -144,13 +134,6 @@
     <div class="flex items-baseline gap-[10px] xl:gap-3 min-w-0">
       <h1 class="m-0 font-display font-bold text-[24px] xl:text-[26px] uppercase tracking-[0.04em] leading-none shrink-0">{title}</h1>
       {#if meta}<span class="text-[13px] xl:text-[14px] text-text-muted truncate">{meta}</span>{/if}
-      {#if lobbyName}
-        <span
-          title="Lobby game"
-          class="self-center min-w-0 xl:shrink-0 max-w-[240px] h-7 px-[10px] inline-flex items-center rounded-full bg-surface-active border border-accent-line text-accent text-[13px] font-semibold"
-          ><span class="truncate">{lobbyName}</span></span
-        >
-      {/if}
     </div>
 
     <div class="ml-auto flex items-center gap-[10px] xl:gap-4 shrink-0">
