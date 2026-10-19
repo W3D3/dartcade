@@ -145,7 +145,7 @@
       <ThrowOrderField {lobby} gameId={game?.gameId ?? null} onchange={(throwOrder: ThrowOrder) => void onupdate({ throwOrder })} />
     </div>
     <div class="flex flex-col gap-[6px] md:ml-auto md:items-end">
-      <Button size="xl" class="w-full md:w-auto md:px-7" disabled={!game || running || busy} onclick={() => onstart()}>
+      <Button size="xl" class="w-full md:w-auto md:px-7" disabled={!game || running || busy || c.playing === 0} onclick={() => onstart()}>
         Start · {c.playing}
         {c.playing === 1 ? 'player' : 'players'}<ArrowRight size={20} strokeWidth={2.2} />
       </Button>
