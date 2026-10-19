@@ -27,7 +27,7 @@
   import type { PillKind } from '../lib/components/pills.js'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
   import { get } from 'svelte/store'
-  import { accountSettings } from '$lib/accountSettings'
+  import { accountSettings, writeThrough } from '$lib/accountSettings'
   import { audioContext, createSounds } from '../lib/sounds.js'
   import { callsFor, checkoutFor, createCheckoutMemory, requirePart } from '$lib/caller/calls'
   import { createCaller } from '$lib/caller/player'
@@ -79,8 +79,8 @@
 
   // ── Settings and sound ────────────────────────────────────────────────────
   let settings = $state<GameSettings>(loadSettings(typeof localStorage === 'undefined' ? null : localStorage))
-  // The account's settings loading after this page opened (sign-in) win; until they load again, the
-  // drawer's changes stay on this device (the cache read above already holds the loaded ones)
+  // The account's settings loading after this page opened (sign-in) win; the drawer's changes go to
+  // the account too, or the next load would put the account's older values back
   const accountAtOpen = get(accountSettings)
   $effect(() => {
     const account = $accountSettings
@@ -88,6 +88,7 @@
   })
   $effect(() => {
     saveSettings(localStorage, settings)
+    writeThrough($state.snapshot(settings))
   })
   const sounds = createSounds(() => settings.volume)
 
