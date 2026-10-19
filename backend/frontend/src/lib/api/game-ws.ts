@@ -584,6 +584,10 @@ export interface HiloGame {
     lives: number
     t1Zero: boolean
     matchExtremes: boolean
+    /**
+     * Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost.
+     */
+    keepBarsOnLifeLost: boolean
   }
   phase: 'bulloff' | 'game' | 'finished'
   high: number

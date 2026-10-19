@@ -84,7 +84,7 @@
 
   // Higher Lower's toggles in display order — populated from backend configMeta (bullOff comes from withBullOff);
   // startHigh/startLow/lives have no options (they're Steppers, below)
-  const HILO_TOGGLE_ORDER = ['t1Zero', 'matchExtremes', 'bullOff'] as const
+  const HILO_TOGGLE_ORDER = ['t1Zero', 'matchExtremes', 'keepBarsOnLifeLost', 'bullOff'] as const
 
   // A numeric config field, or its default when missing or not a number
   const num = (v: unknown, d: number) => (typeof v === 'number' ? v : d)

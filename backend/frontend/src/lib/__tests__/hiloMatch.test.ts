@@ -14,7 +14,7 @@ const twoDarts = [
 
 // HiLo-Duel: round 4, Anna on 25 after S20, S5, bars at 60 and 15
 const game = (o: Partial<HiloGame> = {}): HiloGame => ({
-  cfg: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true },
+  cfg: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, keepBarsOnLifeLost: false },
   phase: 'game',
   high: 60,
   low: 15,

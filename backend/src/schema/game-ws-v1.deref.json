@@ -3674,7 +3674,8 @@
             "startLow",
             "lives",
             "t1Zero",
-            "matchExtremes"
+            "matchExtremes",
+            "keepBarsOnLifeLost"
           ],
           "additionalProperties": false,
           "properties": {
@@ -3698,6 +3699,10 @@
             },
             "matchExtremes": {
               "type": "boolean"
+            },
+            "keepBarsOnLifeLost": {
+              "type": "boolean",
+              "description": "Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost."
             }
           }
         },
@@ -4197,7 +4202,8 @@
                 "startLow",
                 "lives",
                 "t1Zero",
-                "matchExtremes"
+                "matchExtremes",
+                "keepBarsOnLifeLost"
               ],
               "additionalProperties": false,
               "properties": {
@@ -4221,6 +4227,10 @@
                 },
                 "matchExtremes": {
                   "type": "boolean"
+                },
+                "keepBarsOnLifeLost": {
+                  "type": "boolean",
+                  "description": "Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost."
                 }
               }
             },
@@ -11359,7 +11369,8 @@
                     "startLow",
                     "lives",
                     "t1Zero",
-                    "matchExtremes"
+                    "matchExtremes",
+                    "keepBarsOnLifeLost"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -11383,6 +11394,10 @@
                     },
                     "matchExtremes": {
                       "type": "boolean"
+                    },
+                    "keepBarsOnLifeLost": {
+                      "type": "boolean",
+                      "description": "Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost."
                     }
                   }
                 },

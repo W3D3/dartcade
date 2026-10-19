@@ -146,7 +146,15 @@ describe('module detail() matches schema/api-v1.yaml', () => {
     expect(validateStats(m), JSON.stringify(validateStats.errors)).toBe(true)
   })
   it('HiloDetail and MatchStats', () => {
-    const hiloCfg: HiloConfig = { startHigh: 41, startLow: 21, lives: 1, t1Zero: false, matchExtremes: true, bullOff: 'off' }
+    const hiloCfg: HiloConfig = {
+      startHigh: 41,
+      startLow: 21,
+      lives: 1,
+      t1Zero: false,
+      matchExtremes: true,
+      keepBarsOnLifeLost: false,
+      bullOff: 'off',
+    }
     const open: BoardEvent = { kind: 'visit.opened', data: {} }
     const takeoutEvent: BoardEvent = { kind: 'takeout.finished', data: {} }
     const hiloDart = (number: number, multiplier: number, index: number): BoardEvent =>

@@ -1206,7 +1206,7 @@
       "properties": {
         "cfg": {
           "type": "object",
-          "required": ["startHigh", "startLow", "lives", "t1Zero", "matchExtremes"],
+          "required": ["startHigh", "startLow", "lives", "t1Zero", "matchExtremes", "keepBarsOnLifeLost"],
           "additionalProperties": false,
           "properties": {
             "startHigh": {
@@ -1229,6 +1229,10 @@
             },
             "matchExtremes": {
               "type": "boolean"
+            },
+            "keepBarsOnLifeLost": {
+              "type": "boolean",
+              "description": "Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost."
             }
           }
         },

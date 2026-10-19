@@ -3,7 +3,15 @@ import { hiloGame, hiloModule, judge, compareSeats, type HiloConfig, type HiloSt
 import type { BoardEvent } from '../session/types.js'
 import { refoldVisit } from '../session/refold.js'
 
-const cfg: HiloConfig = { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, bullOff: 'off' }
+const cfg: HiloConfig = {
+  startHigh: 41,
+  startLow: 21,
+  lives: 3,
+  t1Zero: false,
+  matchExtremes: true,
+  keepBarsOnLifeLost: false,
+  bullOff: 'off',
+}
 const dart = (number: number, multiplier: number, index = 0): BoardEvent =>
   ({
     kind: 'dart.detected',
@@ -50,12 +58,21 @@ describe('a visit', () => {
     expect(s.visits[0]).toEqual({ seat: 0, round: 1, total: 62, outcome: 'high', high: 62, low: 21 })
   })
   it('below the low bar sets it', () => expect(play(duo(), [S1, S1, [5, 1]]).low).toBe(7))
-  it('between costs a life, bars stay', () => {
+  it('between costs a life and resets the bars to the start (the default)', () => {
     const s = play(duo(), [S20, [5, 1], [5, 1]]) // 30
     expect(s).toMatchObject({ high: 41, low: 21, lives: [2, 3] })
     expect(s.lastResult).toEqual({ seat: 0, total: 30, outcome: 'between', high: 41, low: 21 })
   })
-  it('a miss below the high bar costs a life and locks the visit', () => {
+  it('a life lost resets both bars to the start, even after they moved', () => {
+    // A sets the high bar to 62, then B sets the low bar to 7; A then goes between and loses a life
+    const s = play(duo(), [T20, S1, S1], [[5, 1], S1, S1], [S20, [5, 1], [5, 1]])
+    expect(s).toMatchObject({ high: 41, low: 21, lives: [2, 3] })
+  })
+  it('keepBarsOnLifeLost keeps the bars where they were', () => {
+    const s = play(duo({ keepBarsOnLifeLost: true }), [T20, S1, S1], [S20, [5, 1], [5, 1]])
+    expect(s).toMatchObject({ high: 62, low: 21, lives: [3, 2] })
+  })
+  it('a miss below the high bar costs a life, locks the visit and resets the bars', () => {
     let s = hiloGame.onBoardEvent(duo(), opened).state
     s = hiloGame.onBoardEvent(s, dart(5, 1, 0)).state
     s = hiloGame.onBoardEvent(s, dart(0, 0, 1)).state
