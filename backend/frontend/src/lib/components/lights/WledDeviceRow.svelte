@@ -49,8 +49,12 @@
   <div class="flex flex-col gap-1 min-w-0 flex-grow">
     <span class="flex items-center gap-2 text-[15px] font-semibold">
       <span
-        title={device.reachable === false ? 'Not answering' : 'Reachable'}
-        class="w-2 h-2 rounded-full shrink-0 {device.reachable === false ? 'bg-live' : 'bg-accent'}"
+        title={device.reachable === false ? 'Not answering' : device.reachable === true ? 'Reachable' : 'Not checked yet'}
+        class="w-2 h-2 rounded-full shrink-0 {device.reachable === false
+          ? 'bg-live'
+          : device.reachable === true
+            ? 'bg-accent'
+            : 'bg-text-dim'}"
       ></span>
       {device.name}
     </span>

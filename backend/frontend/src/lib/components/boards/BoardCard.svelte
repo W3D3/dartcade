@@ -1,10 +1,16 @@
 <script lang="ts">
-  // A board on the Boards page: online or not, its name and Board Manager host, bridge and games.
+  // A board on the Boards page: online or not, its name and Board Manager host, bridge, games and lights.
   import { Badge } from '$lib/components/ui/badge/index.js'
   import type { Board } from '$lib/api'
   import { bmHost, fmtVersion } from '$lib/boards'
 
-  let { board, active, justPaired, onselect }: { board: Board; active: boolean; justPaired: boolean; onselect: () => void } = $props()
+  let {
+    board,
+    active,
+    justPaired,
+    onselect,
+    lights,
+  }: { board: Board; active: boolean; justPaired: boolean; onselect: () => void; lights?: number } = $props()
 </script>
 
 <button
@@ -12,6 +18,7 @@
   onclick={onselect}
   aria-pressed={active}
   class="text-left box-border p-[22px] md:max-xl:p-5 rounded-[14px] flex flex-col gap-[18px] md:max-xl:gap-4 transition-colors
+         outline-none focus-visible:[outline:2px_solid_var(--color-accent)] focus-visible:[outline-offset:2px]
          {justPaired || active ? 'bg-surface-2 border-2 border-accent' : 'bg-surface-2 border border-line-2 hover:border-line'}"
 >
   <div class="flex justify-between items-center">
@@ -45,7 +52,7 @@
     {/if}
   </div>
 
-  <dl class="m-0 mt-auto grid grid-cols-2 gap-3 pt-4 md:max-xl:pt-[14px] border-t border-line-2">
+  <dl class="m-0 mt-auto grid {lights === undefined ? 'grid-cols-2' : 'grid-cols-3'} gap-3 pt-4 md:max-xl:pt-[14px] border-t border-line-2">
     <div>
       <dt class="text-[12px] text-text-dim">Bridge</dt>
       <dd class="mt-1 m-0 text-[15px] font-semibold">{fmtVersion(board.bridgeVersion) ?? '—'}</dd>
@@ -54,5 +61,11 @@
       <dt class="text-[12px] text-text-dim">Games</dt>
       <dd class="mt-1 m-0 text-[15px] font-semibold">—</dd>
     </div>
+    {#if lights !== undefined}
+      <div>
+        <dt class="text-[12px] text-text-dim">Lights</dt>
+        <dd class="mt-1 m-0 text-[15px] font-semibold">{lights ? `${lights} device${lights === 1 ? '' : 's'}` : '—'}</dd>
+      </div>
+    {/if}
   </dl>
 </button>

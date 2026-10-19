@@ -6,6 +6,7 @@
   import { onMount, onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { hasBoards } from '$lib/hasBoards'
+  import { flag } from '$lib/flags'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Toast } from '$lib/components/ui/toast/index.js'
@@ -30,6 +31,35 @@
   let busy = $state<string | null>(null)
   // The list has come back: until then neither the boards nor the empty state show
   let loaded = $state(false)
+
+  // WLED device count per board, for the card chip and the selected board's detail row
+  const lightsOn = flag('lights.enabled')
+  let lightsCounts = $state<Partial<Record<string, number>>>({})
+  // Guards against a slower, superseded fetch overwriting a fresher one (same idea as
+  // LightsSection's lightsReq)
+  let lightsCountsReq = 0
+
+  async function loadLightsCounts(ids: string[]) {
+    const req = ++lightsCountsReq
+    const entries = await Promise.all(
+      ids.map(async id => {
+        try {
+          const { data } = await api.GET('/api/boards/{id}/lights', { params: { path: { id } } })
+          return [id, data?.devices.length ?? null] as const
+        } catch {
+          return [id, null] as const
+        }
+      }),
+    )
+    if (req !== lightsCountsReq) return // a newer fetch has started since; drop this stale one
+    const next: Partial<Record<string, number>> = {}
+    for (const [id, count] of entries) if (count !== null) next[id] = count
+    lightsCounts = next
+  }
+
+  $effect(() => {
+    if ($lightsOn && boards.length) void loadLightsCounts(boards.map(b => b.id))
+  })
 
   async function loadBmStatus(boardId: string) {
     try {
@@ -382,6 +412,25 @@
         <dt class="text-text-muted">Paired</dt>
         <dd class="m-0">{fmtDate(selected.createdAt)}</dd>
       </div>
+      {#if $lightsOn}
+        {@const n = lightsCounts[selected.id]}
+        <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
+          <dt class="text-text-muted">Lights</dt>
+          <dd class="m-0">
+            {#if n === undefined}
+              —
+            {:else}
+              <a
+                href="#/settings/lights?board={selected.id}"
+                class="cursor-pointer !text-text underline decoration-line-3 underline-offset-4 transition-colors
+                     hover:!text-accent hover:decoration-accent"
+              >
+                {n === 0 ? 'Add WLED lights' : `${n} WLED device${n === 1 ? '' : 's'} · Manage`}
+              </a>
+            {/if}
+          </dd>
+        </div>
+      {/if}
     </dl>
 
     <!-- Live events -->
@@ -483,6 +532,7 @@
             {board}
             active={board.id === selectedId}
             justPaired={board.id === justPairedId}
+            lights={$lightsOn ? lightsCounts[board.id] : undefined}
             onselect={() => (selectedId = board.id)}
           />
         {/each}
