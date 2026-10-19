@@ -82,3 +82,18 @@ export function since(iso: string | undefined, now: Date): string {
 export function sectionVisible(s: { flag?: string; [key: string]: unknown }, flags: Partial<Record<string, boolean>>): boolean {
   return !s.flag || flags[s.flag] === true
 }
+
+/** A board button's count label in the picker: the device count once it's loaded, an em dash
+ * while it hasn't (never "0 devices" for a board we haven't heard back from), or "offline". */
+export function boardDeviceLabel(online: boolean, count: number | undefined): string {
+  if (!online) return 'offline'
+  if (count === undefined) return '—'
+  return `${count} device${count === 1 ? '' : 's'}`
+}
+
+/** What LightsSection shows below the board picker: the devices/profile panel once this
+ * board's lights have loaded, an inline retry error if the load failed, or nothing while the
+ * first poll is still in flight. */
+export function lightsLoadState(hasLights: boolean, loadFailed: boolean): 'panel' | 'error' | 'loading' {
+  return hasLights ? 'panel' : loadFailed ? 'error' : 'loading'
+}

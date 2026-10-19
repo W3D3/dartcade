@@ -14,6 +14,7 @@
   import LightProfileCard from './LightProfileCard.svelte'
   import PairWledDialog from './PairWledDialog.svelte'
   import { api, type Board, type BoardLights, type FoundWledDevice, type WledDevice } from '$lib/api'
+  import { lightsLoadState } from '$lib/lights/view'
 
   let boards = $state<Board[]>([])
   // The board list has come back; until then, show neither it nor the empty state
@@ -32,6 +33,10 @@
   // switch always calls loadLights directly, bypassing that check.
   let lightsReq = 0
   let pendingReq: number | null = null
+  // The most recent completed loadLights call for the selected board failed (any non-2xx or a
+  // network error); a later successful poll clears it.
+  let loadFailed = $state(false)
+  const panelState = $derived(lightsLoadState(!!lights, loadFailed))
 
   let deviceError = $state<string | null>(null)
   let testError = $state<string | null>(null)
@@ -46,18 +51,19 @@
   async function loadLights(id: string) {
     const req = ++lightsReq
     pendingReq = req
-    try {
-      const { data } = await api.GET('/api/boards/{id}/lights', { params: { path: { id } } })
-      // A newer call has been issued since: this response is stale, no matter the board
-      if (!data || req !== lightsReq || id !== selectedId) return
-      lights = data
-      deviceCounts = { ...deviceCounts, [id]: data.devices.length }
-    } catch {
-      /* keep the last known state */
-    } finally {
-      // Only clear the pending marker if no newer call has already taken it
-      if (pendingReq === req) pendingReq = null
+    const res = await api.GET('/api/boards/{id}/lights', { params: { path: { id } } }).catch(() => null)
+    // A newer call has been issued since: this response is stale, no matter the board
+    if (req === lightsReq && id === selectedId) {
+      if (!res || res.error) {
+        loadFailed = true
+      } else {
+        loadFailed = false
+        lights = res.data
+        deviceCounts = { ...deviceCounts, [id]: res.data.devices.length }
+      }
     }
+    // Only clear the pending marker if no newer call has already taken it
+    if (pendingReq === req) pendingReq = null
   }
 
   function startPoll(id: string) {
@@ -75,6 +81,7 @@
   $effect(() => {
     const id = selectedId
     lights = null
+    loadFailed = false
     deviceError = null
     testError = null
     enabledError = null
@@ -192,11 +199,11 @@
 
 {#if selected}
   <div class="flex flex-col gap-[18px]">
-    <div class="flex items-center gap-4 flex-wrap">
+    <div class="flex flex-col md:flex-row md:flex-wrap md:items-center gap-4">
       <LightsBoardPicker {boards} {selectedId} {deviceCounts} onselect={(id: string) => (selectedId = id)} />
       {#if lights}
-        <div class="ml-auto flex flex-col items-end gap-1">
-          <div class="flex items-center gap-3 px-[10px] py-2 pl-[14px] rounded-[12px] card">
+        <div class="flex flex-col gap-1 md:items-end md:ml-auto">
+          <div class="w-full md:w-auto flex items-center gap-3 px-[10px] py-2 pl-[14px] rounded-[12px] card">
             <SettingSwitch
               id="lights-enabled"
               label="Lights on {selected.name}"
@@ -216,7 +223,12 @@
       <p class="m-0 text-[13px] text-live-text">The bridge is offline.</p>
     {/if}
 
-    {#if lights}
+    {#if panelState === 'error'}
+      <div class="flex items-center gap-3">
+        <ErrorText>Couldn't load this board's lights.</ErrorText>
+        <Button variant="outline" size="sm" onclick={() => selectedId && void loadLights(selectedId)}>Retry</Button>
+      </div>
+    {:else if lights}
       {@const canAct = lights.bridgeOnline && !lights.bridgeOutdated}
       {@const canTest = canAct && lights.enabled}
       <div class="grid grid-cols-1 xl:grid-cols-[1fr_1.08fr] gap-[18px] items-start">
