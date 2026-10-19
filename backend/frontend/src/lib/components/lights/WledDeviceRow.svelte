@@ -58,11 +58,15 @@
       ></span>
       {device.name}
     </span>
-    <span class="font-mono text-[12px] text-text-dim whitespace-nowrap">{device.host} · {device.leds} LEDs · v{device.version}</span>
+    <span class="font-mono text-[12px] text-text-dim flex flex-col md:flex-row md:items-baseline gap-x-1.5 min-w-0">
+      <span class="truncate">{device.host}</span>
+      <span class="hidden md:inline" aria-hidden="true">·</span>
+      <span class="truncate">{device.leds} LEDs · v{device.version}</span>
+    </span>
     {#if device.reachable === false}
-      <span class="text-[12px] text-live-text">Not answering · {since(device.since, now)}</span>
+      <span class="text-[12px] text-live-text truncate">Not answering · {since(device.since, now)}</span>
     {:else}
-      <span class="text-[12px] text-text-muted">{deviceSummary(device)}</span>
+      <span class="text-[12px] text-text-muted truncate">{deviceSummary(device)}</span>
     {/if}
   </div>
   <Button variant="outline" size="sm" {disabled} onclick={onblink}>Blink</Button>

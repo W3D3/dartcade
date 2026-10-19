@@ -199,7 +199,8 @@
               aria-checked={on}
               disabled={opt.disabled}
               onclick={() => (pairing.segmentMode = opt.value)}
-              class="flex-1 h-10 rounded-[7px] text-[14px] border-0 cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed
+              class="flex-1 min-h-10 px-1 py-1.5 rounded-[7px] text-[14px] text-center leading-tight border-0 cursor-pointer
+                   transition-colors disabled:opacity-40 disabled:cursor-not-allowed
                    {on ? 'bg-line text-text font-semibold' : 'bg-transparent text-ink-2 font-medium'}">{opt.label}</button
             >
           {/each}

@@ -117,7 +117,7 @@
     {/if}
 
     <!-- Phones on the list see no section; larger screens open on Profile -->
-    <div class="{section === null ? 'hidden md:flex' : 'flex'} flex-col flex-grow min-h-0">
+    <div class="{section === null ? 'hidden md:flex' : 'flex'} flex-col flex-grow">
       {#if shown === 'profile'}
         <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-4 md:gap-5 items-start">
           <NameCard />
