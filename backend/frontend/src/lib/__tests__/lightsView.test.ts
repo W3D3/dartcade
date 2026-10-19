@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PROFILE } from '$shared/lights/index.js'
-import { ruleLabel, sectionVisible, segmentHint, since } from '$lib/lights/view'
+import { boardDeviceLabel, lightsLoadState, ruleLabel, sectionVisible, segmentHint, since } from '$lib/lights/view'
 
 describe('lights view', () => {
   it('labels the default rules like the design', () => {
@@ -30,5 +30,19 @@ describe('lights view', () => {
     expect(sectionVisible({ flag: 'lights.enabled' }, {})).toBe(false)
     expect(sectionVisible({ flag: 'lights.enabled' }, { 'lights.enabled': true })).toBe(true)
     expect(sectionVisible({}, {})).toBe(true)
+  })
+  it("a board picker count is an em dash until it's loaded, never 0 devices", () => {
+    expect(boardDeviceLabel(true, undefined)).toBe('—')
+    expect(boardDeviceLabel(true, 0)).toBe('0 devices')
+    expect(boardDeviceLabel(true, 1)).toBe('1 device')
+    expect(boardDeviceLabel(true, 3)).toBe('3 devices')
+    expect(boardDeviceLabel(false, 3)).toBe('offline')
+    expect(boardDeviceLabel(false, undefined)).toBe('offline')
+  })
+  it('the lights panel shows once loaded, an error once a load fails, else nothing yet', () => {
+    expect(lightsLoadState(false, false)).toBe('loading')
+    expect(lightsLoadState(false, true)).toBe('error')
+    expect(lightsLoadState(true, true)).toBe('panel')
+    expect(lightsLoadState(true, false)).toBe('panel')
   })
 })

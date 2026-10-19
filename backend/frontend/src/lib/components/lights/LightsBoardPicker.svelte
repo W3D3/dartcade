@@ -2,6 +2,7 @@
   // Settings' Lights: pick which of your boards to manage lights for. Each button shows its
   // device count, or "offline" when the board itself can't be reached.
   import type { Board } from '$lib/api'
+  import { boardDeviceLabel } from '$lib/lights/view'
 
   let {
     boards,
@@ -37,7 +38,7 @@
         ></span>
         {board.name}
         <span class="text-[12px] font-medium text-text-dim">
-          {board.online ? `${deviceCounts[board.id] ?? 0} device${(deviceCounts[board.id] ?? 0) === 1 ? '' : 's'}` : 'offline'}
+          {boardDeviceLabel(board.online, deviceCounts[board.id])}
         </span>
       </button>
     {/each}
