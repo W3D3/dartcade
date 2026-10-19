@@ -32,10 +32,10 @@ describe('callsFor', () => {
     expect(callsFor(game(), game({ currentPlayer: 1, totalVisits: [1, 0] }))).toEqual([['0']])
   })
 
-  it('a bust says busted', () => {
+  it('a bust prefers busted, falling back to the voice’s own No score clip', () => {
     const before = game({ scores: [32, 501], currentVisitDarts: [dart(20)] })
     const after = game({ scores: [32, 501], currentVisitDarts: [dart(20), dart(13)], visitLocked: true, bustThisVisit: true })
-    expect(callsFor(before, after)).toEqual([['busted']])
+    expect(callsFor(before, after)).toEqual([['busted', '0']])
   })
 
   it('a checkout says game shot and the leg just won; the last leg says match shot', () => {
