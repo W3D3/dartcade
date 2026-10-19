@@ -28,10 +28,12 @@ describe('common triggers', () => {
   it('a seat change is a turn', () => {
     expect(triggersFor(x01(), x01({ currentPlayer: 1 }))).toEqual([{ kind: 'turn', seat: 1 }])
   })
-  it('a win is game.won and no turn', () => {
-    expect(triggersFor(x01({ currentPlayer: 0 }), x01({ currentPlayer: 1, winner: 0, phase: 'finished' }))).toEqual([
-      { kind: 'game.won', seat: 0 },
-    ])
+  it('a non-x01 win is game.won and no turn', () => {
+    const g = (winner: number | null) => snap('atc', { currentPlayer: 0, winner, targets: [1, 1], currentVisitHits: [false] })
+    expect(triggersFor(g(null), g(0))).toEqual([{ kind: 'game.won', seat: 0 }])
+  })
+  it("x01's takeout that sets winner afterwards has no game.won (already shown on the winning dart) and no turn", () => {
+    expect(triggersFor(x01({ currentPlayer: 0 }), x01({ currentPlayer: 1, winner: 0, phase: 'finished' }))).toEqual([])
   })
   it('the end of a bull off is bulloff.won for the first thrower, then their turn', () => {
     const b = x01({ phase: 'bulloff', currentPlayer: 1 })
@@ -63,10 +65,35 @@ describe('x01', () => {
     })
     expect(triggersFor(before, after)).toEqual([{ kind: 'bust', seat: 0 }])
   })
-  it('a checkout', () => {
+  it('a leg checkout that does not win the match', () => {
+    const before = x01({ currentVisitDarts: darts(1), scores: [40, 501], visitStartScores: [40, 501], firstTo: 3 })
+    const after = x01({ currentVisitDarts: darts(2), scores: [0, 501], visitStartScores: [40, 501], visitLocked: true, firstTo: 3 })
+    expect(triggersFor(before, after)).toEqual([{ kind: 'checkout', seat: 0 }])
+  })
+  it('a match-winning checkout dart is game.won, not checkout (the takeout afterwards fires nothing more)', () => {
     const before = x01({ currentVisitDarts: darts(1), scores: [40, 501], visitStartScores: [40, 501] })
     const after = x01({ currentVisitDarts: darts(2), scores: [0, 501], visitStartScores: [40, 501], visitLocked: true })
-    expect(triggersFor(before, after)).toEqual([{ kind: 'checkout', seat: 0 }])
+    expect(triggersFor(before, after)).toEqual([{ kind: 'game.won', seat: 0 }])
+  })
+  it("a team game's match-winning checkout uses the team's legs, not the per-seat count", () => {
+    const g = (overrides: G) =>
+      x01({
+        legs: [0, 0, 0, 0],
+        firstTo: 3,
+        teams: [
+          { id: 'A', name: 'Team A', seats: [0, 2], score: 0, legs: 2 },
+          { id: 'B', name: 'Team B', seats: [1, 3], score: 0, legs: 0 },
+        ],
+        ...overrides,
+      })
+    const before = g({ currentVisitDarts: darts(1), scores: [40, 501, 501, 501], visitStartScores: [40, 501, 501, 501] })
+    const after = g({
+      currentVisitDarts: darts(2),
+      scores: [0, 501, 501, 501],
+      visitStartScores: [40, 501, 501, 501],
+      visitLocked: true,
+    })
+    expect(triggersFor(before, after)).toEqual([{ kind: 'game.won', seat: 0 }])
   })
   it('committing an already-over visit fires nothing more (the turn is the next seat)', () => {
     const before = x01({ currentVisitDarts: darts(3), scores: [321, 501] })

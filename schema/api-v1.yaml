@@ -2778,14 +2778,22 @@ components:
             game: { type: string }
         type: { type: string, enum: [scene, flash] }
         look:
-          type: object
-          required: [color, fx, bri]
-          additionalProperties: false
-          properties:
-            color: { type: string }
-            fx: { type: integer }
-            bri: { type: integer }
-            speed: { type: integer }
+          description: A computed colour/effect look, or the user's own WLED preset state sent back verbatim
+          oneOf:
+            - type: object
+              required: [color, fx, bri]
+              additionalProperties: false
+              properties:
+                color: { type: string }
+                fx: { type: integer }
+                bri: { type: integer }
+                speed: { type: integer }
+            - type: object
+              required: [preset, state]
+              additionalProperties: false
+              properties:
+                preset: { type: string }
+                state: { type: object, additionalProperties: true }
         holdMs: { type: integer }
     LightProfile:
       type: object

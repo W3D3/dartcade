@@ -1,3 +1,4 @@
+import { PRESET_180, PRESET_BUSTED, PRESET_GAMESHOT, PRESET_MATCHSHOT } from './presets.js'
 import type { BoardTrigger, GameId, Profile, Rule } from './types.js'
 
 /** The seats' colours, from the design tokens; seat 5 on wraps around. */
@@ -8,9 +9,7 @@ export const seatColor = (seat: number): string => SEAT_COLORS[((seat % SEAT_COL
 const SOLID = 0,
   BLINK = 1,
   BREATHE = 2,
-  RAINBOW = 9,
-  SPARKLE = 20,
-  FIREWORKS = 42
+  SPARKLE = 20
 const RED = '#ff3b30'
 
 const flash = (trigger: Rule['when']['trigger'], look: Rule['look'], holdMs: number, extra: Partial<Rule['when']> = {}): Rule => ({
@@ -27,16 +26,16 @@ export const DEFAULT_PROFILE: Profile = {
   rules: [
     { when: { trigger: 'turn', seats: 'mine' }, type: 'scene', look: { color: 'seat', fx: SOLID, bri: 255 } },
     { when: { trigger: 'turn', seats: 'other' }, type: 'scene', look: { color: '#ffffff', fx: SOLID, bri: 40 } },
-    flash('visit', { color: 'seat', fx: FIREWORKS, bri: 255 }, 4000, { total: { op: '=', n: 180 } }),
+    flash('visit', { preset: '180', state: PRESET_180 }, 4000, { total: { op: '=', n: 180 } }),
     flash('visit', { color: 'seat', fx: BREATHE, bri: 255 }, 2000, { total: { op: '>=', n: 100 } }),
-    flash('bust', { color: RED, fx: BLINK, bri: 255 }, 1500),
-    flash('checkout', { color: 'seat', fx: SPARKLE, bri: 255 }, 3000),
-    flash('game.won', { color: 'seat', fx: RAINBOW, bri: 255 }, 5000),
+    flash('bust', { preset: 'Busted', state: PRESET_BUSTED }, 1500),
+    flash('checkout', { preset: 'Gameshot', state: PRESET_GAMESHOT }, 3000),
+    flash('game.won', { preset: 'Matchshot', state: PRESET_MATCHSHOT }, 5000),
     flash('atc.hit', { color: 'seat', fx: SOLID, bri: 255 }, 600),
     flash('hilo.lifeLost', { color: RED, fx: BLINK, bri: 255 }, 1500),
     flash('golf.sunk', { color: 'seat', fx: SPARKLE, bri: 255 }, 2000),
     flash('bulloff.won', { color: 'seat', fx: BLINK, bri: 255 }, 2000),
-    { when: { trigger: 'takeout.started', seats: 'any' }, type: 'scene', look: { color: '#ffffff', fx: SOLID, bri: 255 } },
+    { when: { trigger: 'takeout.started', seats: 'any' }, type: 'scene', look: { color: '#ffa000', fx: BREATHE, bri: 255, speed: 60 } },
     { when: { trigger: 'idle', seats: 'any' }, type: 'scene', look: { color: '#c6f24e', fx: BREATHE, bri: 60, speed: 40 } },
   ],
 }

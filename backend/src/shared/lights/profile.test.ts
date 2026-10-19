@@ -1,12 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PROFILE, match } from './index.js'
+import { PRESET_180 } from './presets.js'
 
 const rule = (t: Parameters<typeof match>[1], game: Parameters<typeof match>[2] = 'x01') => match(DEFAULT_PROFILE, t, game)
 
 describe('match', () => {
   it('picks 180 over 100+ because it comes first', () => {
-    expect(rule({ kind: 'visit', seat: 0, total: 180, local: true })?.look.fx).toBe(42)
-    expect(rule({ kind: 'visit', seat: 0, total: 140, local: true })?.look.fx).toBe(2)
+    expect(rule({ kind: 'visit', seat: 0, total: 180, local: true })?.look).toEqual({ preset: '180', state: PRESET_180 })
+    expect(rule({ kind: 'visit', seat: 0, total: 140, local: true })?.look).toEqual({ color: 'seat', fx: 2, bri: 255 })
   })
   it('ignores visits under 100', () => {
     expect(rule({ kind: 'visit', seat: 0, total: 60, local: true })).toBeNull()

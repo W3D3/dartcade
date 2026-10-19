@@ -129,19 +129,21 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 | --- | ---------------------- | ----------- | ------------------------------- |
 | 1   | `turn` · mine          | scene       | seat colour · solid · 255       |
 | 2   | `turn` · other         | scene       | white · solid · 40 ("Waiting")  |
-| 3   | `visit` = 180 · mine   | flash 4 s   | seat colour · fireworks         |
+| 3   | `visit` = 180 · mine   | flash 4 s   | user preset "180"               |
 | 4   | `visit` ≥ 100 · mine   | flash 2 s   | seat colour · breathe           |
-| 5   | `bust` · mine          | flash 1.5 s | `#ff3b30` · blink               |
-| 6   | `checkout` · mine      | flash 3 s   | seat colour · sparkle           |
-| 7   | `game.won` · mine      | flash 5 s   | rainbow                         |
+| 5   | `bust` · mine          | flash 1.5 s | user preset "Busted"            |
+| 6   | `checkout` · mine      | flash 3 s   | user preset "Gameshot"          |
+| 7   | `game.won` · mine      | flash 5 s   | user preset "Matchshot"         |
 | 8   | `atc.hit` · mine       | flash 0.6 s | seat colour · solid             |
 | 9   | `hilo.lifeLost` · mine | flash 1.5 s | `#ff3b30` · blink               |
 | 10  | `golf.sunk` · mine     | flash 2 s   | seat colour · sparkle           |
 | 11  | `bulloff.won` · mine   | flash 2 s   | seat colour · blink             |
-| 12  | `takeout.started`      | scene       | white · solid · 255             |
+| 12  | `takeout.started`      | scene       | `#ffa000` · breathe · 255       |
 | 13  | `idle`                 | scene       | `#c6f24e` · breathe · 60 · slow |
 
 `takeout.finished` has no rule: the service re-applies the board's game scene (see below).
+
+A won X01 match plays only the game.won look, on the winning dart.
 
 ### Service (`backend/src/lights/service.ts`)
 
