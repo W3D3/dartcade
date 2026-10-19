@@ -3,9 +3,9 @@
   // with its mode tiles), who plays, throw order and Start.
   import { ArrowRight } from '@lucide/svelte'
   import { untrack } from 'svelte'
+  import { push } from 'svelte-spa-router'
   import type { Lobby, TeamId, ThrowOrder } from '$lib/api/lobby-ws'
   import { Button } from '$lib/components/ui/button/index.js'
-  import ChangeGameDialog from './ChangeGameDialog.svelte'
   import NextGameSettingsPanel from './NextGameSettingsPanel.svelte'
   import NextGameSummary from './NextGameSummary.svelte'
   import ReadyCount from './ReadyCount.svelte'
@@ -54,7 +54,6 @@
   const config = $derived(
     game ? withDefaults({ ...game.config, ...(pending?.gameId === game.gameId ? pending.config : {}) }, defaults) : {},
   )
-  let picking = $state(false)
   let settingsOpen = $state(false)
   const teamGame = $derived(isTeamFormat(info?.teams, config))
   const hasBot = $derived(lobby.people.some(p => p.bot !== null))
@@ -97,13 +96,6 @@
       pending = Object.keys(left).length > 0 ? { gameId, config: left } : null
     }
   }
-  function pickGame(gameId: string) {
-    picking = false
-    pending = null
-    settled = {}
-    const defaultConfig = $gameModes.find(g => g.id === gameId)?.defaultConfig ?? {}
-    void onupdate({ nextGame: { gameId, config: { ...defaultConfig } } })
-  }
 </script>
 
 <section
@@ -115,12 +107,8 @@
     {#if game}
       <SettingsToggleButton open={settingsOpen} ontoggle={() => (settingsOpen = !settingsOpen)} class={cls} />
     {/if}
-    <Button
-      variant="outline"
-      size="md"
-      class="font-semibold {cls} {game ? '' : 'col-span-2'}"
-      aria-haspopup="dialog"
-      onclick={() => (picking = true)}>{game ? 'Change game' : 'Pick a game'}</Button
+    <Button variant="outline" size="md" class="font-semibold {cls} {game ? '' : 'col-span-2'}" onclick={() => push('/')}
+      >{game ? 'Change game' : 'Pick a game'}</Button
     >
   {/snippet}
   <div class="flex items-start gap-[18px]">
@@ -165,7 +153,3 @@
     </div>
   </div>
 </section>
-
-{#if picking}
-  <ChangeGameDialog current={game?.gameId ?? null} games={$gameModes} onpick={pickGame} oncancel={() => (picking = false)} />
-{/if}
