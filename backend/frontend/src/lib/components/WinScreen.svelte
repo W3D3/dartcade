@@ -342,9 +342,6 @@
     class="rise r5 relative z-[2] shrink-0 box-border flex items-center gap-3 px-4 md:px-7 pt-[18px] pb-[calc(18px+env(safe-area-inset-bottom))] border-t border-line bg-surface-1"
   >
     {#if saved}
-      <span class="hidden md:inline-flex items-center gap-2 text-[14px] text-text-muted"
-        ><Check size={16} strokeWidth={2.6} class="text-accent" />Saved to History · counts in stats</span
-      >
       <button
         type="button"
         onclick={onhistory}

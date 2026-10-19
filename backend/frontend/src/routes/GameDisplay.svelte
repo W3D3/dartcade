@@ -782,7 +782,7 @@
           onclick: () => void finishWin(winButtons.primary),
         }}
         secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
-        onhistory={() => push('/history')}
+        onhistory={() => push(`/history/${sessionId}`)}
       />
     {:else}
       <GameHeader
