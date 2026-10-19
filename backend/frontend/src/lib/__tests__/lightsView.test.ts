@@ -9,10 +9,14 @@ describe('lights view', () => {
       when: 'Visit scored',
       filter: '= 180',
       type: 'Flash',
-      look: 'seat colour · fireworks · 4 s',
+      look: '180 preset · 4 s',
     })
-    expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ when: 'Bust', filter: null, type: 'Flash', look: 'red · blink · 1.5 s' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ when: 'Bust', filter: null, type: 'Flash', look: 'Busted preset · 1.5 s' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[5])).toEqual({ when: 'Checkout', filter: null, type: 'Flash', look: 'Gameshot preset · 3 s' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[6])).toEqual({ when: 'Game won', filter: null, type: 'Flash', look: 'Matchshot preset · 5 s' })
     expect(ruleLabel(DEFAULT_PROFILE.rules[1]).filter).toBe('other board')
+    // The takeout scene is an amber pulse, so players see the board isn't ready
+    expect(ruleLabel(DEFAULT_PROFILE.rules[11])).toEqual({ when: 'Takeout', filter: null, type: 'Scene', look: 'amber · pulse' })
     // The idle rule uses the lime seat-1 colour directly (not 'seat'); name it instead of the hex
     expect(ruleLabel(DEFAULT_PROFILE.rules[12])).toEqual({ when: 'No game', filter: null, type: 'Scene', look: 'lime · pulse' })
   })
