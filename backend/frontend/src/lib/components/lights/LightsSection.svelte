@@ -203,7 +203,7 @@
       <LightsBoardPicker {boards} {selectedId} {deviceCounts} onselect={(id: string) => (selectedId = id)} />
       {#if lights}
         <div class="flex flex-col gap-1 md:items-end md:ml-auto">
-          <div class="w-full md:w-auto flex items-center gap-3 px-[10px] py-2 pl-[14px] rounded-[12px] card">
+          <div class="w-full md:w-auto flex items-center gap-3 px-[10px] py-2 pl-[14px] rounded-[12px] card [&>div]:flex-1">
             <SettingSwitch
               id="lights-enabled"
               label="Lights on {selected.name}"

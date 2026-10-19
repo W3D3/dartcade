@@ -13,6 +13,13 @@ describe('lights view', () => {
     })
     expect(ruleLabel(DEFAULT_PROFILE.rules[4])).toEqual({ when: 'Bust', filter: null, type: 'Flash', look: 'red · blink · 1.5 s' })
     expect(ruleLabel(DEFAULT_PROFILE.rules[1]).filter).toBe('other board')
+    // The idle rule uses the lime seat-1 colour directly (not 'seat'); name it instead of the hex
+    expect(ruleLabel(DEFAULT_PROFILE.rules[12])).toEqual({ when: 'No game', filter: null, type: 'Scene', look: 'lime · pulse' })
+  })
+  it('falls back to the hex for an unnamed colour', () => {
+    expect(ruleLabel({ when: { trigger: 'idle', seats: 'any' }, type: 'scene', look: { color: '#123456', fx: 0, bri: 1 } }).look).toBe(
+      '#123456 · solid',
+    )
   })
   it('segment hints', () => {
     expect(segmentHint(144, 'perSeat', 4, 1)).toBe('4 × 36 LEDs')
