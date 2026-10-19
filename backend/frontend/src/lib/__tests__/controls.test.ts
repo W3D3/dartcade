@@ -15,8 +15,15 @@ describe('nextButton', () => {
   it('the visit that wins the game: finish game, even mid-visit on a board', () => {
     expect(nextButton({ ...base, finish: true })).toEqual({ label: 'Finish game', prominent: true, enabled: true })
   })
+  it('the visit that wins a leg (not the match): next leg, prominent', () => {
+    expect(nextButton({ ...base, locked: true, legWon: true })).toEqual({ label: 'Next leg', prominent: true, enabled: true })
+  })
+  it('finish wins over legWon (the last leg also wins the match)', () => {
+    expect(nextButton({ ...base, finish: true, legWon: true }).label).toBe('Finish game')
+  })
   it('not your turn: disabled', () => {
     expect(nextButton({ ...base, active: false }).enabled).toBe(false)
     expect(nextButton({ ...base, active: false, finish: true }).enabled).toBe(false)
+    expect(nextButton({ ...base, active: false, legWon: true }).enabled).toBe(false)
   })
 })

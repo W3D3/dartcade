@@ -29,7 +29,8 @@ const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0)
 // What the visit took off the score, not the dart faces: darts before a double/master in score nothing.
 const visitTotal = (g: CallGame) => (g.visitStartScores[g.currentPlayer] ?? 0) - g.scores[g.currentPlayer]
 const legsPlayed = (g: CallGame) => (g.teams ? sum(g.teams.map(t => t.legs)) : sum(g.legs))
-const legsOf = (g: CallGame, seat: number) => {
+/** The legs won so far by a seat's team (or the seat itself, outside a team game). */
+export const legsOf = (g: CallGame, seat: number) => {
   const teamLegs = g.teams?.find(t => t.seats.includes(seat))?.legs
   return teamLegs !== undefined ? teamLegs : g.legs[seat] || 0
 }
