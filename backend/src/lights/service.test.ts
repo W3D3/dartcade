@@ -87,7 +87,7 @@ describe('LightsService', () => {
     expect(applies(sent, 'b2')[0].hold_ms).toBeUndefined()
   })
 
-  it('takeout lights white, then the game scene comes back', async () => {
+  it('takeout lights amber, then the game scene comes back', async () => {
     const { svc, sent, snaps, sessions } = setup()
     sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
     snaps.set('s', x01({}))
@@ -96,8 +96,8 @@ describe('LightsService', () => {
     sent.length = 0
     await svc.onBoardEvent('b1', 'takeout.started')
     await svc.onBoardEvent('b1', 'takeout.finished')
-    const [white, back] = applies(sent, 'b1')
-    expect((white.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[255, 255, 255]])
+    const [amber, back] = applies(sent, 'b1')
+    expect((amber.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[255, 160, 0]])
     expect(back.state).toEqual(turn)
   })
 
@@ -223,7 +223,7 @@ describe('LightsService', () => {
       sent.length = 0
       // None of these are awaited before the next is issued, the way the bridge handler fires
       // onPush (from the push callback) and onBoardEvent back to back without awaiting either.
-      const started = svc.onBoardEvent('b1', 'takeout.started') // white, not remembered
+      const started = svc.onBoardEvent('b1', 'takeout.started') // amber, not remembered
       snaps.set('s', x01({ currentPlayer: 1 }))
       const pushed = svc.onPush('s') // turn seat 1
       const finished = svc.onBoardEvent('b1', 'takeout.finished') // must resend turn seat 1, not the stale seat 0

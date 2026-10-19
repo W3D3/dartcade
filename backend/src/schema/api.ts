@@ -2053,11 +2053,17 @@ export interface components {
             };
             /** @enum {string} */
             type: "scene" | "flash";
+            /** @description A computed colour/effect look, or the user's own WLED preset state sent back verbatim */
             look: {
                 color: string;
                 fx: number;
                 bri: number;
                 speed?: number;
+            } | {
+                preset: string;
+                state: {
+                    [key: string]: unknown;
+                };
             };
             holdMs?: number;
         };

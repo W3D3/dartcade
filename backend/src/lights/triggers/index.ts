@@ -9,7 +9,11 @@ import { x01Triggers } from './x01.js'
 /** What the lights react to between two snapshots of one game; `before` null: the game is new here. */
 export function triggersFor(before: Snapshot | null, after: Snapshot): Trigger[] {
   const prev = before?.gameId === after.gameId ? before : null
-  return [...gameTriggers(prev, after), ...commonTriggers(prev?.game ?? null, after.game)]
+  const common = commonTriggers(prev?.game ?? null, after.game)
+  // X01 already emits game.won on the winning dart (x01Triggers); drop the common one fired later,
+  // at takeout, so Matchshot plays once.
+  const filtered = after.gameId === 'x01' ? common.filter(t => t.kind !== 'game.won') : common
+  return [...gameTriggers(prev, after), ...filtered]
 }
 
 function gameTriggers(before: Snapshot | null, after: Snapshot): Trigger[] {

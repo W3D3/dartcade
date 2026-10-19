@@ -22,7 +22,13 @@ export type TriggerKind = Trigger['kind']
 /** A trigger plus whether it happened on this board (vs. a remote seat in the same game). */
 export type BoardTrigger = Trigger & { local: boolean }
 
-export type Look = { color: 'seat' | 'team' | `#${string}`; fx: number; bri: number; speed?: number }
+/** A raw WLED state, as sent back verbatim for a preset look (e.g. GET /json/state of a saved preset). */
+export type WledPresetState = Record<string, unknown>
+
+export type ColorLook = { color: 'seat' | 'team' | `#${string}`; fx: number; bri: number; speed?: number }
+/** The strip's own WLED preset, sent back verbatim instead of a computed colour/fx. */
+export type PresetLook = { preset: string; state: WledPresetState }
+export type Look = ColorLook | PresetLook
 
 export type Rule = {
   when: { trigger: TriggerKind; total?: { op: '=' | '>='; n: number }; seats: 'any' | 'mine' | 'other'; game?: GameId }

@@ -1,5 +1,5 @@
 import { seatColor } from './profile.js'
-import type { BoardTrigger, LightDevice, Rule, SeatLayout, WledSeg, WledState } from './types.js'
+import type { BoardTrigger, ColorLook, LightDevice, Rule, SeatLayout, WledPresetState, WledSeg, WledState } from './types.js'
 
 // Segments cleared after the ones a whole/perSeat layout uses, so an older layout doesn't linger
 const MAX_SEGMENTS = 16
@@ -13,8 +13,8 @@ const rgb = (hex: string): number[] => {
 
 const seatOf = (t: BoardTrigger): number | null => ('seat' in t ? t.seat : null)
 
-function lookColor(rule: Rule, seat: number | null, layout: SeatLayout): string {
-  const c = rule.look.color
+function lookColor(look: ColorLook, seat: number | null, layout: SeatLayout): string {
+  const c = look.color
   if (c === 'seat') return seatColor(seat ?? 0)
   if (c === 'team') {
     const team = layout.teams?.find(ts => seat !== null && ts.includes(seat))
@@ -24,9 +24,16 @@ function lookColor(rule: Rule, seat: number | null, layout: SeatLayout): string 
 }
 
 /** The WLED state that shows `rule` for trigger `t` on one device. */
-export function patchFor(rule: Rule, t: BoardTrigger, device: LightDevice, layout: SeatLayout): WledState {
+export function patchFor(rule: Rule, t: BoardTrigger, device: LightDevice, layout: SeatLayout): WledState | WledPresetState {
+  if ('preset' in rule.look) return structuredClone(rule.look.state)
   const seat = seatOf(t)
-  const look = { on: true, bri: 255, col: [rgb(lookColor(rule, seat, layout))], fx: rule.look.fx, sx: rule.look.speed ?? DEFAULT_SPEED }
+  const look = {
+    on: true,
+    bri: 255,
+    col: [rgb(lookColor(rule.look, seat, layout))],
+    fx: rule.look.fx,
+    sx: rule.look.speed ?? DEFAULT_SPEED,
+  }
   const part = (i: number) =>
     seat === null || i === seat ? look : { on: true, bri: DIM, col: [rgb(seatColor(i))], fx: 0, sx: DEFAULT_SPEED }
   const clear = (from: number): WledSeg[] => Array.from({ length: MAX_SEGMENTS - from }, (_, k) => ({ id: from + k, stop: 0 }))
