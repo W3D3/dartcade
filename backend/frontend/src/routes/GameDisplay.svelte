@@ -793,7 +793,6 @@
         {gameId}
         {viewMode}
         compact={$isPhone}
-        lobbyName={snapshot.lobbyName}
         paused={remote.kind === 'waiting'}
         myBoard={myBoard(snapshot)}
         {canEnd}
