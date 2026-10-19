@@ -48,6 +48,22 @@ export type LightDevice = { leds: number; segmentMode: SegmentMode; segments: nu
 /** teams: seats per team */
 export type SeatLayout = { seatCount: number; teams?: number[][] }
 
-export type WledSeg = { id: number; start?: number; stop?: number; on?: boolean; bri?: number; col?: number[][]; fx?: number; sx?: number }
+export type WledSeg = {
+  id: number
+  start?: number
+  stop?: number
+  on?: boolean
+  bri?: number
+  col?: number[][]
+  fx?: number
+  sx?: number
+  pal?: number
+  ix?: number
+  grp?: number
+  spc?: number
+  of?: number
+  rev?: boolean
+  mi?: boolean
+}
 
 export type WledState = { on: true; bri: number; seg: WledSeg[] }

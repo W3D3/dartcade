@@ -17,8 +17,41 @@ describe('patchFor', () => {
       { seatCount: 2 },
     ) as WledState
     expect(s.bri).toBe(255)
-    expect(s.seg[0]).toEqual({ id: 0, start: 0, stop: 120, on: true, bri: 255, col: [lime], fx: 0, sx: 128 })
+    expect(s.seg[0]).toEqual({
+      id: 0,
+      start: 0,
+      stop: 120,
+      on: true,
+      bri: 255,
+      col: [lime],
+      fx: 0,
+      sx: 128,
+      pal: 0,
+      ix: 128,
+      grp: 1,
+      spc: 0,
+      of: 0,
+      rev: false,
+      mi: false,
+    })
     expect(s.seg.slice(1)).toEqual(Array.from({ length: 15 }, (_, i) => ({ id: i + 1, stop: 0 })))
+  })
+  it("resets the palette and other segment options, so a preset's leftovers on the device can't leak into a colour look", () => {
+    const preset = patchFor(
+      DEFAULT_PROFILE.rules.find(r => r.when.trigger === 'visit') as Rule,
+      { kind: 'visit', seat: 0, total: 180, local: true },
+      device,
+      layout,
+    )
+    // Sanity: the "180" preset really does carry a non-zero palette, the leftover this guards against
+    expect((preset as { seg: { pal?: number }[] }).seg[0].pal).not.toBe(0)
+    const s = patchFor(
+      turn,
+      { kind: 'turn', seat: 0, local: true },
+      { leds: 10, segmentMode: 'whole', segments: 1 },
+      { seatCount: 1 },
+    ) as WledState
+    expect(s.seg[0]).toMatchObject({ pal: 0, ix: 128, grp: 1, spc: 0, of: 0, rev: false, mi: false })
   })
   it('one per seat: equal parts, remainder to the last, others dimmed in their own colour', () => {
     const s = patchFor(

@@ -27,15 +27,20 @@ function lookColor(look: ColorLook, seat: number | null, layout: SeatLayout): st
 export function patchFor(rule: Rule, t: BoardTrigger, device: LightDevice, layout: SeatLayout): WledState | WledPresetState {
   if ('preset' in rule.look) return structuredClone(rule.look.state)
   const seat = seatOf(t)
+  // A preset the user applied earlier can leave its palette and other segment options behind on the
+  // device; reset them so a colour look's effect (e.g. Breathe) can't inherit them (WLED effects take
+  // their colours from the segment palette, and pal 0 "Default" is the one that uses col[0] as-is).
+  const reset = { pal: 0, ix: 128, grp: 1, spc: 0, of: 0, rev: false, mi: false }
   const look = {
     on: true,
     bri: 255,
     col: [rgb(lookColor(rule.look, seat, layout))],
     fx: rule.look.fx,
     sx: rule.look.speed ?? DEFAULT_SPEED,
+    ...reset,
   }
   const part = (i: number) =>
-    seat === null || i === seat ? look : { on: true, bri: DIM, col: [rgb(seatColor(i))], fx: 0, sx: DEFAULT_SPEED }
+    seat === null || i === seat ? look : { on: true, bri: DIM, col: [rgb(seatColor(i))], fx: 0, sx: DEFAULT_SPEED, ...reset }
   const clear = (from: number): WledSeg[] => Array.from({ length: MAX_SEGMENTS - from }, (_, k) => ({ id: from + k, stop: 0 }))
 
   if (device.segmentMode === 'whole') {
