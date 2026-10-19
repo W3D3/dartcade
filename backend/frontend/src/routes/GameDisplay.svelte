@@ -29,7 +29,7 @@
   import { get } from 'svelte/store'
   import { accountSettings } from '$lib/accountSettings'
   import { audioContext, createSounds } from '../lib/sounds.js'
-  import { callsFor, checkoutFor, createCheckoutMemory, requirePart } from '$lib/caller/calls'
+  import { callsFor, checkoutFor, createCheckoutMemory, legsOf, requirePart } from '$lib/caller/calls'
   import { createCaller } from '$lib/caller/player'
   import { voiceClips, type Clips } from '$lib/caller/voices'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
@@ -462,8 +462,12 @@
   // again) — available whenever the viewer's own seat (bot included) is up, even though `canThrow`
   // excludes a bot: the host may still need to correct a misdetected bot throw.
   const canUndo = $derived(connected && isActive && myTurn && (darts.length > 0 || snapshot?.canUndoVisit === true))
+  // A visit that wins a leg (not the match): same check as the leg-won caller line in endOfVisit
+  const legWon = $derived(
+    x01 !== null && x01.visitLocked && x01.scores[x01.currentPlayer] === 0 && legsOf(x01, x01.currentPlayer) + 1 < x01.firstTo,
+  )
   const next = $derived(
-    nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending }),
+    nextButton({ manual: isManualTurn(snapshot), dartCount: darts.length, locked, active: canThrow, finish: finishPending, legWon }),
   )
   const addManualDart = (segment: Segment) => send({ type: 'add_dart', segment })
   // Clicking the board keeps the exact spot, so the dart shows where it landed
