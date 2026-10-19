@@ -162,6 +162,22 @@ describe('LightsService', () => {
     expect((last?.state as { seg: { col: number[][] }[] }).seg[0].col).toEqual([[239, 238, 230]]) // seat 1's colour
   })
 
+  it('takeout.finished during calibration does not restore the game scene (calibration.finished does it later)', async () => {
+    const { svc, sent, snaps, sessions } = setup()
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    const turn = applies(sent, 'b1')[0].state
+    sent.length = 0
+    await svc.onBoardEvent('b1', 'board.status', status('Calibrating'))
+    sent.length = 0
+    await svc.onBoardEvent('b1', 'takeout.finished')
+    expect(applies(sent, 'b1')).toEqual([]) // still calibrating; no restore yet
+    await svc.onBoardEvent('b1', 'board.status', status('Running'))
+    const [back] = applies(sent, 'b1')
+    expect(back.state).toEqual(turn)
+  })
+
   it('onPush sends nothing when lights are off or the bridge is too old', async () => {
     for (const over of [{ enabled: () => Promise.resolve(false) }, { bridgeVersion: () => '0.3.1' }]) {
       const { svc, sent, snaps, sessions } = setup(over)

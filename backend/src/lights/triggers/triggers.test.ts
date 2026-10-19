@@ -32,8 +32,9 @@ describe('common triggers', () => {
     const g = (winner: number | null) => snap('atc', { currentPlayer: 0, winner, targets: [1, 1], currentVisitHits: [false] })
     expect(triggersFor(g(null), g(0))).toEqual([{ kind: 'game.won', seat: 0 }])
   })
-  it("x01's takeout that sets winner afterwards has no game.won (already shown on the winning dart) and no turn", () => {
-    expect(triggersFor(x01({ currentPlayer: 0 }), x01({ currentPlayer: 1, winner: 0, phase: 'finished' }))).toEqual([])
+  it("x01's takeout that sets winner afterwards by a checkout has no game.won (already shown on the winning dart) and no turn", () => {
+    const after = x01({ currentPlayer: 1, winner: 0, phase: 'finished', scores: [0, 501] })
+    expect(triggersFor(x01({ currentPlayer: 0 }), after)).toEqual([])
   })
   it('the end of a bull off is bulloff.won for the first thrower, then their turn', () => {
     const b = x01({ phase: 'bulloff', currentPlayer: 1 })
@@ -112,6 +113,22 @@ describe('x01', () => {
     expect(triggersFor(before, after)).toEqual([
       { kind: 'visit', seat: 0, total: 100 },
       { kind: 'turn', seat: 1 },
+    ])
+  })
+  it('a round-limit win (no checkout) still yields game.won', () => {
+    const before = x01({ currentVisitDarts: darts(2), scores: [310, 350], visitStartScores: [320, 350] })
+    const after = x01({
+      currentPlayer: 1,
+      currentVisitDarts: [],
+      scores: [310, 350],
+      visitStartScores: [320, 350],
+      totalVisits: [1, 0],
+      winner: 0,
+      phase: 'finished',
+    })
+    expect(triggersFor(before, after)).toEqual([
+      { kind: 'visit', seat: 0, total: 10 },
+      { kind: 'game.won', seat: 0 },
     ])
   })
   it('a correction to a visit that was already over does not flash again', () => {

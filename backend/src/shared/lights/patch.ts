@@ -13,6 +13,22 @@ const rgb = (hex: string): number[] => {
 
 const seatOf = (t: BoardTrigger): number | null => ('seat' in t ? t.seat : null)
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
+
+/** For segmentMode 'wled': a preset's `seg` carries explicit start/stop (and other geometry) on the
+ *  segments it sets, plus filler entries (`{stop: 0}`) that delete every segment beyond them. Sent
+ *  as-is, that would destroy the user's own WLED segment layout, which the `wled` restore (no
+ *  start/stop, no clearing) can't repair. So the filler entries are dropped and the geometry keys
+ *  are stripped from what's left, leaving only the look (col, fx, …) applied to the existing segments. */
+function withoutSegmentGeometry(state: WledPresetState): WledPresetState {
+  const seg = state.seg
+  if (!Array.isArray(seg)) return state
+  const kept = seg
+    .filter((s): s is Record<string, unknown> => isRecord(s) && s.stop !== 0)
+    .map(({ start: _start, stop: _stop, len: _len, grp: _grp, spc: _spc, of: _of, ...rest }) => rest)
+  return { ...state, seg: kept }
+}
+
 function lookColor(look: ColorLook, seat: number | null, layout: SeatLayout): string {
   const c = look.color
   if (c === 'seat') return seatColor(seat ?? 0)
@@ -25,7 +41,10 @@ function lookColor(look: ColorLook, seat: number | null, layout: SeatLayout): st
 
 /** The WLED state that shows `rule` for trigger `t` on one device. */
 export function patchFor(rule: Rule, t: BoardTrigger, device: LightDevice, layout: SeatLayout): WledState | WledPresetState {
-  if ('preset' in rule.look) return structuredClone(rule.look.state)
+  if ('preset' in rule.look) {
+    const state = structuredClone(rule.look.state)
+    return device.segmentMode === 'wled' ? withoutSegmentGeometry(state) : state
+  }
   const seat = seatOf(t)
   // A preset the user applied earlier can leave its palette and other segment options behind on the
   // device; reset them so a colour look's effect (e.g. Breathe) can't inherit them (WLED effects take
