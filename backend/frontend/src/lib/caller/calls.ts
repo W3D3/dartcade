@@ -66,7 +66,9 @@ export function callsFor(before: CallGame | null, after: CallGame): Call {
 }
 
 function endOfVisit(g: CallGame): Call {
-  if (g.bustThisVisit) return [['busted']]
+  // Prefer a dedicated "busted" clip; a voice without one (e.g. most Autodarts packs) falls back
+  // to its own "No score" clip, same as the real Autodarts caller does on a bust.
+  if (g.bustThisVisit) return [['busted', '0']]
   const cp = g.currentPlayer
   if (g.visitLocked && g.scores[cp] === 0) {
     if (legsOf(g, cp) + 1 >= g.firstTo) return [['matchshot', 'gameshot']]
