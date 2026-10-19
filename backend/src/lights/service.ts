@@ -45,6 +45,15 @@ const isLocal = (s: SessionLike, seat: number, board: string): boolean => (s.sea
 
 const isTurn = (t: Trigger): t is Trigger & { kind: 'turn'; seat: number } => t.kind === 'turn'
 
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
+
+/** The `status` of a board.status event (BoardStatusData, schema/adbridge-v1.json), or null for anything malformed. */
+function statusOf(data: unknown): string | null {
+  if (!isRecord(data)) return null
+  const status = data.status
+  return typeof status === 'string' ? status : null
+}
+
 /** Seats in the view, for games whose session has no seats of its own (a local game). */
 function seatCountOf(snap: Snapshot): number {
   switch (snap.gameId) {
@@ -72,6 +81,8 @@ function sampleTrigger(kind: TriggerKind): Trigger {
     case 'idle':
     case 'takeout.started':
     case 'takeout.finished':
+    case 'calibration.started':
+    case 'calibration.finished':
       return { kind }
     case 'visit':
       return { kind, seat: 0, total: 180 }
@@ -89,6 +100,9 @@ export class LightsService {
   private last = new Map<string, Snapshot>()
   /** The scene currently shown on a board, so a reconnect or a takeout can bring it back. */
   private scene = new Map<string, RememberedScene>()
+  /** Boards the Board Manager currently reports as "Calibrating" (board.status), so a repeated
+   *  status doesn't resend and leaving the status knows to restore the scene. */
+  private calibrating = new Set<string>()
   /** Every board-affecting call is chained on its board's queue, so sends land in call order,
    *  never completion order (a takeout racing the push that changed the turn, a slow devices()
    *  call racing a faster later one, onGameEnded racing an in-flight scene fire, …). */
@@ -138,12 +152,25 @@ export class LightsService {
     this.last.delete(sessionId)
   }
 
-  async onBoardEvent(boardId: string, kind: string): Promise<void> {
+  async onBoardEvent(boardId: string, kind: string, data?: unknown): Promise<void> {
     if (kind === 'takeout.started') {
       return this.enqueue(boardId, () => this.fire(boardId, { kind: 'takeout.started', local: true }, null, { seatCount: 1 }))
     }
     if (kind === 'takeout.finished') {
       return this.enqueue(boardId, () => this.resendOrIdle(boardId))
+    }
+    if (kind === 'board.status') {
+      const status = statusOf(data)
+      if (status === null) return
+      const wasCalibrating = this.calibrating.has(boardId)
+      if (status === 'Calibrating' && !wasCalibrating) {
+        this.calibrating.add(boardId)
+        return this.enqueue(boardId, () => this.fire(boardId, { kind: 'calibration.started', local: true }, null, { seatCount: 1 }))
+      }
+      if (status !== 'Calibrating' && wasCalibrating) {
+        this.calibrating.delete(boardId)
+        return this.enqueue(boardId, () => this.resendOrIdle(boardId))
+      }
     }
   }
 
@@ -273,7 +300,8 @@ export class LightsService {
       const rule = match(DEFAULT_PROFILE, t, game)
       if (!rule) return
       for (const device of devices) this.send(board, device, rule, t, layout, rule.type === 'flash' ? rule.holdMs : undefined)
-      if (rule.type === 'scene' && t.kind !== 'takeout.started') this.scene.set(board, { t, game, layout })
+      if (rule.type === 'scene' && t.kind !== 'takeout.started' && t.kind !== 'calibration.started')
+        this.scene.set(board, { t, game, layout })
     } catch (err) {
       this.deps.warn('lights fire failed', err)
     }

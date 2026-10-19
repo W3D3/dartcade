@@ -83,22 +83,23 @@ Bridge → backend (telemetry like `camera.still`: not sequenced, not stored):
 One pure function per game: `(before: View | null, after: View) => Trigger[]`, in the style of the
 caller's `callsFor`. Undo or a correction that reopens a visit must not fire the visit's triggers twice.
 
-| Trigger                               | Fields          | Source                                                                   |
-| ------------------------------------- | --------------- | ------------------------------------------------------------------------ |
-| `turn`                                | `seat`          | every game: the current seat changed, or the game started                |
-| `game.won`                            | `seat`          | every game                                                               |
-| `idle`                                | —               | no active game on the board: after a game ends, on bridge connect        |
-| `takeout.started`, `takeout.finished` | —               | bridge board events, from the gateway                                    |
-| `visit`                               | `seat, total`   | X01: a visit was committed                                               |
-| `bust`                                | `seat`          | X01                                                                      |
-| `checkout`                            | `seat`          | X01: the leg was checked out (precedes `game.won` when it ends the game) |
-| `atc.hit`                             | `seat, target`  | Around the Clock                                                         |
-| `hilo.lifeLost`                       | `seat`          | Higher Lower                                                             |
-| `golf.sunk`                           | `seat, strokes` | Minigolf                                                                 |
-| `bulloff.won`                         | `seat`          | bull off, in any game                                                    |
+| Trigger                                       | Fields          | Source                                                                               |
+| --------------------------------------------- | --------------- | ------------------------------------------------------------------------------------ |
+| `turn`                                        | `seat`          | every game: the current seat changed, or the game started                            |
+| `game.won`                                    | `seat`          | every game                                                                           |
+| `idle`                                        | —               | no active game on the board: after a game ends, on bridge connect                    |
+| `takeout.started`, `takeout.finished`         | —               | bridge board events, from the gateway                                                |
+| `calibration.started`, `calibration.finished` | —               | bridge `board.status` events: the Board Manager's status enters/leaves `Calibrating` |
+| `visit`                                       | `seat, total`   | X01: a visit was committed                                                           |
+| `bust`                                        | `seat`          | X01                                                                                  |
+| `checkout`                                    | `seat`          | X01: the leg was checked out (precedes `game.won` when it ends the game)             |
+| `atc.hit`                                     | `seat, target`  | Around the Clock                                                                     |
+| `hilo.lifeLost`                               | `seat`          | Higher Lower                                                                         |
+| `golf.sunk`                                   | `seat, strokes` | Minigolf                                                                             |
+| `bulloff.won`                                 | `seat`          | bull off, in any game                                                                |
 
-For each board, the service adds `local: boolean` (the seat plays on this board). Takeout and idle are
-always local.
+For each board, the service adds `local: boolean` (the seat plays on this board). Takeout, calibration
+and idle are always local.
 
 ### Rules and patches (`backend/src/shared/lights/`, shared with the frontend)
 
@@ -123,7 +124,7 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 - `SEAT_COLORS = ['#c6f24e', '#efeee6', '#ff9b45', '#5ad1e6']` (design tokens), cycled for seats 5+.
   `team` uses the team's first seat's colour.
 
-**Dartcade default** (WLED effect IDs: 0 Solid, 1 Blink, 2 Breathe, 9 Rainbow, 20 Sparkle, 42 Fireworks):
+**Dartcade default** (WLED effect IDs: 0 Solid, 1 Blink, 2 Breathe, 9 Rainbow, 20 Sparkle, 41 Lighthouse, 42 Fireworks):
 
 | #   | When                   | Type        | Look                            |
 | --- | ---------------------- | ----------- | ------------------------------- |
@@ -139,20 +140,26 @@ type Profile = { id: 'default'; name: string; rules: Rule[] }
 | 10  | `golf.sunk` · mine     | flash 2 s   | seat colour · sparkle           |
 | 11  | `bulloff.won` · mine   | flash 2 s   | seat colour · blink             |
 | 12  | `takeout.started`      | scene       | `#ffa000` · breathe · 255       |
-| 13  | `idle`                 | scene       | `#c6f24e` · breathe · 60 · slow |
+| 13  | `calibration.started`  | scene       | `#a855f7` · lighthouse · 255    |
+| 14  | `idle`                 | scene       | `#c6f24e` · breathe · 60 · slow |
 
-`takeout.finished` has no rule: the service re-applies the board's game scene (see below).
+`takeout.finished` and `calibration.finished` have no rule: the service re-applies the board's game
+scene (see below).
 
 A won X01 match plays only the game.won look, on the winning dart.
 
 ### Service (`backend/src/lights/service.ts`)
 
 - Called after every engine state push with `(session, beforeView, afterView)`, and from the bridge
-  gateway for `takeout.*` events, bridge connects and game ends.
+  gateway for `takeout.*` events, `board.status` events, bridge connects and game ends.
 - For each board in the game whose lights are on and that has devices: derive triggers, add `local`,
   `match` each trigger, and send `wled.apply` with `patchFor` to every device through `bridgeConnections`.
-- Keeps each board's **game scene** (the last scene from a non-takeout trigger). `takeout.started` sends
-  its scene without replacing the game scene. `takeout.finished` re-sends the game scene.
+- Keeps each board's **game scene** (the last scene from a non-takeout, non-calibration trigger).
+  `takeout.started`/`calibration.started` send their scene without replacing the game scene.
+  `takeout.finished`/`calibration.finished` re-send the game scene.
+- Tracks, per board, whether the Board Manager's last `board.status` reported `Calibrating`: entering
+  it fires `calibration.started`, leaving it fires the `takeout.finished`-style restore. A repeated
+  status (still/not yet `Calibrating`) does nothing, and malformed `board.status` data is ignored.
 - On bridge connect: send `wled.devices`, then the game scene (or the `idle` scene if no game is active).
 - Bridges older than the first version with `wled` support (checked from `bridge.hello`'s
   `bridge_version`) get nothing; the API reports `bridgeOutdated: true`.

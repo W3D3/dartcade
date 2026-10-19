@@ -9,6 +9,8 @@ export type Trigger =
   | { kind: 'idle' }
   | { kind: 'takeout.started' }
   | { kind: 'takeout.finished' }
+  | { kind: 'calibration.started' }
+  | { kind: 'calibration.finished' }
   | { kind: 'visit'; seat: number; total: number }
   | { kind: 'bust'; seat: number }
   | { kind: 'checkout'; seat: number }

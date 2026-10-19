@@ -687,7 +687,36 @@ describe('onBoardEvent after an event is applied to the game', () => {
     await flush()
 
     expect(engine.onBridgeEvent).toHaveBeenCalledWith('board-ev1', 'takeout.started', {}, 'ev1')
-    expect(onBoardEvent).toHaveBeenCalledWith('board-ev1', 'takeout.started')
+    expect(onBoardEvent).toHaveBeenCalledWith('board-ev1', 'takeout.started', {})
+  })
+
+  it('forwards the event data (board.status) to onBoardEvent', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-ev2', hardware_id: null } as any)
+    vi.mocked(queries.insertBridgeEvent).mockClear().mockResolvedValue({ inserted: true, id: 'ev2' })
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const onBoardEvent = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, onBoardEvent })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    const data = { status: 'Calibrating', event: 'Started', running: true, connected: true }
+    socket.emit(
+      'message',
+      Buffer.from(
+        JSON.stringify({
+          v: 1,
+          seq: 1,
+          kind: 'board.status',
+          bridge_id: 'br',
+          boot_id: 'boot',
+          recv_wall: new Date().toISOString(),
+          data,
+        }),
+      ),
+    )
+    await flush()
+    await flush()
+
+    expect(onBoardEvent).toHaveBeenCalledWith('board-ev2', 'board.status', data)
   })
 })
 

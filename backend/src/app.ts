@@ -156,7 +156,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
     // Returned (not discarded with `void`): callHook only catches a rejection it can see, so a
     // thrown/rejected hook is logged there instead of becoming an unhandled rejection.
     onBridgeHello: lights ? boardId => lights.onBridgeHello(boardId) : undefined,
-    onBoardEvent: lights ? (boardId, kind) => lights.onBoardEvent(boardId, kind) : undefined,
+    onBoardEvent: lights ? (boardId, kind, data) => lights.onBoardEvent(boardId, kind, data) : undefined,
     onLightsFound: lights
       ? (boardId, found) =>
           rehostWledDevices(db, boardId, found).then(changed => {
