@@ -1,8 +1,16 @@
 // Pure helpers for Settings' Lights section: formatting a light profile's rules, a device's
 // segment layout and "since" timestamps, and whether a flagged settings section shows.
-import type { LightRule } from '$lib/api'
 
 export type SegmentMode = 'whole' | 'perSeat' | 'wled'
+
+/** A rule's shape as seen here: loose enough for both the generated `LightRule` (from `$lib/api`)
+ *  and the shared `Rule` (from `$shared/lights`, used directly in tests). */
+type RuleLike = {
+  when: { trigger: string; seats: string; total?: { op: string; n: number } }
+  type: string
+  look: { color: string; fx: number; bri: number; speed?: number } | { preset: string; state: unknown }
+  holdMs?: number
+}
 
 const TRIGGER_LABELS: Record<string, string> = {
   turn: 'Turn changes',
@@ -23,6 +31,7 @@ const COLOR_NAMES: Record<string, string> = {
   '#ffffff': 'white',
   '#ff3b30': 'red',
   '#c6f24e': 'lime',
+  '#ffa000': 'amber',
 }
 
 // WLED effect ids used by the built-in profile
@@ -37,11 +46,13 @@ const fxLabel = (fx: number): string => FX_NAMES[fx] ?? `fx ${fx}`
 const holdLabel = (holdMs: number): string => `${Number((holdMs / 1000).toFixed(1))} s`
 
 /** A rule's row in the Light profile card: when it fires, its filter chip, type and look. */
-export function ruleLabel(rule: LightRule): { when: string; filter: string | null; type: 'Scene' | 'Flash'; look: string } {
+export function ruleLabel(rule: RuleLike): { when: string; filter: string | null; type: 'Scene' | 'Flash'; look: string } {
   const totalPart = rule.when.total ? `${rule.when.total.op === '=' ? '=' : '≥'} ${rule.when.total.n}` : null
   const otherPart = rule.when.seats === 'other' ? 'other board' : null
   const filterParts = [totalPart, otherPart].filter((p): p is string => p !== null)
-  const look = `${colorLabel(rule.look.color)} · ${fxLabel(rule.look.fx)}${rule.holdMs ? ` · ${holdLabel(rule.holdMs)}` : ''}`
+  const holdPart = rule.holdMs ? ` · ${holdLabel(rule.holdMs)}` : ''
+  const look =
+    'preset' in rule.look ? `${rule.look.preset} preset${holdPart}` : `${colorLabel(rule.look.color)} · ${fxLabel(rule.look.fx)}${holdPart}`
   return {
     when: TRIGGER_LABELS[rule.when.trigger] ?? rule.when.trigger,
     filter: filterParts.length ? filterParts.join(' · ') : null,
