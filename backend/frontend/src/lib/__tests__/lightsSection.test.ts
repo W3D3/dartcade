@@ -7,11 +7,11 @@ import LightProfileCard from '../components/lights/LightProfileCard.svelte'
 const profile: LightProfile = { ...DEFAULT_PROFILE, builtIn: true }
 
 describe('LightProfileCard', () => {
-  it("shows the built-in default's 13 rules, disabled Duplicate/Import/Export", () => {
+  it("shows the built-in default's 14 rules, disabled Duplicate/Import/Export", () => {
     const html = render(LightProfileCard, { props: { profile, canTest: true, ontest: () => {} } }).body
     expect(html).toContain('Dartcade default')
     expect(html).toContain('built in')
-    for (let i = 1; i <= 13; i++) expect(html).toContain(`>${i}<`)
+    for (let i = 1; i <= 14; i++) expect(html).toContain(`>${i}<`)
     for (const label of ['Duplicate', 'Import', 'Export']) {
       const attrs = new RegExp(`<button([^>]*)>(?:<!--[^>]*-->)*\\s*${label}`).exec(html)?.[1]
       expect(attrs).toBeDefined()
@@ -22,7 +22,7 @@ describe('LightProfileCard', () => {
   it("every ▶ Test button is disabled when lights can't be tested (bridge offline)", () => {
     const html = render(LightProfileCard, { props: { profile, canTest: false, ontest: () => {} } }).body
     const testButtons = [...html.matchAll(/<button([^>]*aria-label="Test rule \d+:[^"]*"[^>]*)>/g)]
-    expect(testButtons.length).toBe(13)
+    expect(testButtons.length).toBe(14)
     for (const [, attrs] of testButtons) expect(attrs).toContain('disabled')
   })
 

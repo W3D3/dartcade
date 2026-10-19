@@ -17,8 +17,10 @@ describe('lights view', () => {
     expect(ruleLabel(DEFAULT_PROFILE.rules[1]).filter).toBe('other board')
     // The takeout scene is an amber pulse, so players see the board isn't ready
     expect(ruleLabel(DEFAULT_PROFILE.rules[11])).toEqual({ when: 'Takeout', filter: null, type: 'Scene', look: 'amber · pulse' })
+    // The calibration scene is a purple comet travelling around the strip
+    expect(ruleLabel(DEFAULT_PROFILE.rules[12])).toEqual({ when: 'Calibrating', filter: null, type: 'Scene', look: 'purple · comet' })
     // The idle rule uses the lime seat-1 colour directly (not 'seat'); name it instead of the hex
-    expect(ruleLabel(DEFAULT_PROFILE.rules[12])).toEqual({ when: 'No game', filter: null, type: 'Scene', look: 'lime · pulse' })
+    expect(ruleLabel(DEFAULT_PROFILE.rules[13])).toEqual({ when: 'No game', filter: null, type: 'Scene', look: 'lime · pulse' })
   })
   it('falls back to the hex for an unnamed colour', () => {
     expect(ruleLabel({ when: { trigger: 'idle', seats: 'any' }, type: 'scene', look: { color: '#123456', fx: 0, bri: 1 } }).look).toBe(

@@ -24,6 +24,8 @@ const TRIGGER_LABELS: Record<string, string> = {
   'bulloff.won': 'Bull off won',
   'takeout.started': 'Takeout',
   'takeout.finished': 'Takeout',
+  'calibration.started': 'Calibrating',
+  'calibration.finished': 'Calibrating',
   idle: 'No game',
 }
 
@@ -32,10 +34,11 @@ const COLOR_NAMES: Record<string, string> = {
   '#ff3b30': 'red',
   '#c6f24e': 'lime',
   '#ffa000': 'amber',
+  '#a855f7': 'purple',
 }
 
 // WLED effect ids used by the built-in profile
-const FX_NAMES: Record<number, string> = { 0: 'solid', 1: 'blink', 2: 'pulse', 9: 'rainbow', 20: 'sparkle', 42: 'fireworks' }
+const FX_NAMES: Record<number, string> = { 0: 'solid', 1: 'blink', 2: 'pulse', 9: 'rainbow', 20: 'sparkle', 41: 'comet', 42: 'fireworks' }
 
 const colorLabel = (color: string): string =>
   color === 'seat' ? 'seat colour' : color === 'team' ? 'team colour' : (COLOR_NAMES[color] ?? color)
