@@ -83,7 +83,7 @@
           >
             {label.type}
           </span>
-          <span class="min-w-0 flex-1 text-[12px] text-text-muted">{label.look}</span>
+          <span class="whitespace-nowrap text-[12px] text-text-muted">{label.look}</span>
         </span>
 
         <Button
