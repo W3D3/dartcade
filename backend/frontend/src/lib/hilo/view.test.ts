@@ -3,7 +3,7 @@ import { hiloMeta, needsLine, highHint, outcomeText, bannerText, zoneOf } from '
 import type { HiloGame } from '../api/game-ws'
 
 const game = (o: Partial<HiloGame> = {}): HiloGame => ({
-  cfg: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true },
+  cfg: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, keepBarsOnLifeLost: false },
   phase: 'game',
   high: 60,
   low: 15,

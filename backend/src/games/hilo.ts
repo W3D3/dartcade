@@ -26,6 +26,7 @@ export type HiloConfig = {
   lives: number
   t1Zero: boolean
   matchExtremes: boolean
+  keepBarsOnLifeLost: boolean
   bullOff: 'off' | 'wdc' | 'pdc'
 }
 
@@ -126,6 +127,11 @@ function endVisit(s: HiloState): HiloState {
   } else {
     lives = s.lives.map((l, i) => (i === cp ? l - 1 : l))
     if (lives[cp] === 0) outAt = s.outAt.map((o, i) => (i === cp ? s.visits.length : o))
+    // Back to the starting numbers on a life lost, unless the option keeps them where they are
+    if (!s.cfg.keepBarsOnLifeLost) {
+      high = s.cfg.startHigh
+      low = s.cfg.startLow
+    }
   }
 
   const visit: HiloVisit = { seat: cp, round: s.round, total: s.visitTotal, outcome, high, low }
@@ -180,6 +186,14 @@ export const configMeta: Record<Exclude<keyof HiloConfig, 'bullOff'>, ConfigFiel
       { value: true, label: 'On' },
     ],
   },
+  keepBarsOnLifeLost: {
+    label: 'Keep bars after a life lost',
+    tooltip: 'Off (the default) resets the high and low bars back to their starting numbers whenever a life is lost.',
+    options: [
+      { value: false, label: 'Off' },
+      { value: true, label: 'On' },
+    ],
+  },
 }
 
 const isInt = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n)
@@ -187,7 +201,7 @@ const isInt = (n: unknown): n is number => typeof n === 'number' && Number.isInt
 export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloDetail> = {
   id: 'hilo',
   version: 1,
-  defaultConfig: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, bullOff: 'off' },
+  defaultConfig: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, keepBarsOnLifeLost: false, bullOff: 'off' },
   configMeta,
 
   validate(cfg: HiloConfig, players: Player[]): string | null {
@@ -282,6 +296,7 @@ export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloD
         lives: s.cfg.lives,
         t1Zero: s.cfg.t1Zero,
         matchExtremes: s.cfg.matchExtremes,
+        keepBarsOnLifeLost: s.cfg.keepBarsOnLifeLost,
       },
       phase: s.phase,
       high: s.high,
