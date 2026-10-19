@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PROFILE, patchFor, type ColorLook, type Rule, type WledState } from './index.js'
+import { DEFAULT_PROFILE, patchFor, type ColorLook, type Rule, type WledPresetState, type WledState } from './index.js'
 import { PRESET_180, PRESET_BUSTED, PRESET_GAMESHOT, PRESET_MATCHSHOT } from './presets.js'
 
 const turn = DEFAULT_PROFILE.rules[0] // seat colour, solid, 255
@@ -146,5 +146,36 @@ describe('patchFor a preset look', () => {
   it('a match win sends the "Matchshot" preset verbatim', () => {
     const s = patchFor(presetRule('game.won'), { kind: 'game.won', seat: 0, local: true }, device, layout)
     expect(s).toEqual(PRESET_MATCHSHOT)
+  })
+  it('a perSeat device also gets the preset verbatim (its own restore resends the geometry)', () => {
+    const perSeatDevice = { ...device, segmentMode: 'perSeat' as const }
+    const s = patchFor(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, perSeatDevice, layout)
+    expect(s).toEqual(PRESET_180)
+  })
+  it("a wled device strips the preset's segment geometry, so it can't overwrite the user's own segment layout", () => {
+    const wledDevice = { ...device, segmentMode: 'wled' as const, segments: 2 }
+    const s = patchFor(presetRule('visit'), { kind: 'visit', seat: 0, total: 180, local: true }, wledDevice, layout) as WledPresetState
+    const seg = s.seg as Record<string, unknown>[]
+    // The two real segments survive; the stop:0 filler entries that delete every other segment don't
+    expect(seg).toHaveLength(2)
+    for (const g of seg) for (const key of ['start', 'stop', 'len', 'grp', 'spc', 'of']) expect(g).not.toHaveProperty(key)
+    expect(seg[0]).toMatchObject({
+      id: 0,
+      on: true,
+      fx: 89,
+      col: [
+        [43, 255, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+      ],
+    })
+    expect(seg[1]).toMatchObject({
+      id: 1,
+      col: [
+        [255, 170, 0],
+        [0, 0, 0],
+        [0, 0, 0],
+      ],
+    })
   })
 })

@@ -157,6 +157,9 @@ export class LightsService {
       return this.enqueue(boardId, () => this.fire(boardId, { kind: 'takeout.started', local: true }, null, { seatCount: 1 }))
     }
     if (kind === 'takeout.finished') {
+      // Still calibrating (a takeout mid-calibration, however unlikely): don't restore yet,
+      // calibration.finished does it when the Board Manager actually leaves Calibrating.
+      if (this.calibrating.has(boardId)) return
       return this.enqueue(boardId, () => this.resendOrIdle(boardId))
     }
     if (kind === 'board.status') {

@@ -1,4 +1,5 @@
 // Verbatim WLED state from the default strip's presets "180", "Busted", "Gameshot" and "Matchshot".
+// `on: true` added to the three without it, so a switched-off strip lights for them too.
 import type { WledPresetState } from './types.js'
 
 export const PRESET_180: WledPresetState = {
@@ -93,6 +94,7 @@ export const PRESET_180: WledPresetState = {
 }
 
 export const PRESET_BUSTED: WledPresetState = {
+  on: true,
   mainseg: 0,
   seg: [
     {
@@ -150,6 +152,7 @@ export const PRESET_BUSTED: WledPresetState = {
 }
 
 export const PRESET_GAMESHOT: WledPresetState = {
+  on: true,
   mainseg: 0,
   seg: [
     {
@@ -204,6 +207,7 @@ export const PRESET_GAMESHOT: WledPresetState = {
 }
 
 export const PRESET_MATCHSHOT: WledPresetState = {
+  on: true,
   mainseg: 0,
   seg: [
     {

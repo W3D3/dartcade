@@ -10,9 +10,12 @@ import { x01Triggers } from './x01.js'
 export function triggersFor(before: Snapshot | null, after: Snapshot): Trigger[] {
   const prev = before?.gameId === after.gameId ? before : null
   const common = commonTriggers(prev?.game ?? null, after.game)
-  // X01 already emits game.won on the winning dart (x01Triggers); drop the common one fired later,
-  // at takeout, so Matchshot plays once.
-  const filtered = after.gameId === 'x01' ? common.filter(t => t.kind !== 'game.won') : common
+  // X01 already emits game.won on the winning dart when the match ends in a checkout (x01Triggers);
+  // drop the common one fired later, at takeout, so Matchshot plays once. A round-limit win (no
+  // checkout, backend/src/games/x01.ts's roundLimitWinner) never fires it from x01Triggers, so the
+  // common one here is the only one and must stay.
+  const checkedOut = after.gameId === 'x01' && after.game.winner !== null && after.game.scores[after.game.winner] === 0
+  const filtered = checkedOut ? common.filter(t => t.kind !== 'game.won') : common
   return [...gameTriggers(prev, after), ...filtered]
 }
 
