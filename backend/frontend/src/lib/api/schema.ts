@@ -620,6 +620,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/games": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every game on the platform, newest started first (admin)
+         * @description Finished games by default; `status` also lists aborted and active ones.
+         */
+        get: operations["listAdminGames"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/games/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * A finished game with its per-mode detail, whoever played it (admin)
+         * @description Account ids of every seat are included.
+         */
+        get: operations["getAdminGame"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users": {
         parameters: {
             query?: never;
@@ -1916,6 +1958,42 @@ export interface components {
         };
         GameList: {
             games: components["schemas"]["GameSummary"][];
+            nextCursor: string | null;
+        };
+        AdminGameSeat: {
+            seat: number;
+            name: string;
+            /** @description The seat's account; null for guests and bots */
+            userId: string | null;
+            bot: {
+                level: number;
+            } | null;
+            /** @description null while the game has no result */
+            placement: number | null;
+            forfeited: boolean;
+        };
+        AdminGameSummary: {
+            id: string;
+            mode: string;
+            /** @enum {string} */
+            status: "finished" | "aborted" | "active";
+            config: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            createdAt: string;
+            /** Format: date-time */
+            finishedAt: string | null;
+            board: {
+                id: string;
+                name: string;
+            } | null;
+            /** @description The game moved ranked ratings */
+            ranked: boolean;
+            players: components["schemas"]["AdminGameSeat"][];
+        };
+        AdminGameList: {
+            games: components["schemas"]["AdminGameSummary"][];
             nextCursor: string | null;
         };
         StatAggregate: {
@@ -3924,6 +4002,73 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    listAdminGames: {
+        parameters: {
+            query?: {
+                status?: "finished" | "aborted" | "active" | "all";
+                /** @description Only this game mode */
+                mode?: string;
+                /** @description A seat's name contains this (case-insensitive), or its account id is this */
+                player?: string;
+                /** @description Only games on this board id */
+                board?: string;
+                /** @description true: only ranked games */
+                ranked?: boolean;
+                /** @description Started at or after */
+                from?: string;
+                /** @description Started before */
+                to?: string;
+                limit?: number;
+                /** @description nextCursor of the previous page */
+                cursor?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description A page of games */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGameList"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getAdminGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The game */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

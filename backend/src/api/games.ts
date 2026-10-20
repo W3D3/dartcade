@@ -27,8 +27,8 @@ async function liveConfigMeta(m: AnyGameModule): Promise<NonNullable<AnyGameModu
   return Object.fromEntries(live.map(([key, options]) => [key, options ? { ...meta[key], options } : meta[key]]))
 }
 
-/** The API shape of a game; account ids only for someone who holds a seat. */
-function toSummary(g: HistoryGame): GameSummary {
+/** The API shape of a game; account ids only for someone who holds a seat (or with `allIds`, for admins). */
+export function toSummary(g: HistoryGame, allIds = false): GameSummary {
   return {
     id: g.id,
     mode: g.game_id,
@@ -40,7 +40,7 @@ function toSummary(g: HistoryGame): GameSummary {
     players: g.seats.map(s => ({
       seat: s.seat,
       name: s.name,
-      userId: g.mySeat === null ? null : s.user_id,
+      userId: allIds || g.mySeat !== null ? s.user_id : null,
       bot: s.bot_level === null ? null : { level: s.bot_level },
       placement: s.placement,
       throwPosition: s.throw_position,
@@ -77,7 +77,7 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
     const after = cursor === undefined ? null : decodeCursor(cursor)
     if (cursor !== undefined && after === null) return reply.code(400).send({ error: 'invalid cursor' })
     const page = await listFinishedGames(db, req.userId, { mode, limit, after })
-    return reply.send({ games: page.games.map(toSummary), nextCursor: page.next ? encodeCursor(page.next) : null })
+    return reply.send({ games: page.games.map(g => toSummary(g)), nextCursor: page.next ? encodeCursor(page.next) : null })
   })
 
   app.get<Route<'getGameStats'>>('/api/games/stats', { preValidation: requireAuth, schema: fromSpec('getGameStats') }, async req => {

@@ -201,3 +201,12 @@ export async function getViewableGame(db: Kysely<Database>, id: string, userId: 
   if (seats.length === 0) return undefined
   return toGame(row, seats, row.my_seat)
 }
+
+/** Any finished game with a result, whoever played it (admins). `mySeat` is null. */
+export async function getFinishedGame(db: Kysely<Database>, id: string): Promise<HistoryGame | undefined> {
+  const row = await finishedGames(db).where('gs.id', '=', id).executeTakeFirst()
+  if (!row) return undefined
+  const seats = (await placedSeats(db, [id])).get(id) ?? []
+  if (seats.length === 0) return undefined
+  return toGame(row, seats, null)
+}
