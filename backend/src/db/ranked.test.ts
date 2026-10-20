@@ -2,7 +2,16 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
-import { type RankedSide, getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult, x01Average } from './ranked.js'
+import {
+  type RankedSide,
+  getRatings,
+  onlineAverage,
+  ratingChangeSince,
+  recentRanked,
+  recalculateRatings,
+  recordRankedResult,
+  x01Average,
+} from './ranked.js'
 import { rankIndexFor } from '../shared/ranked.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
@@ -57,13 +66,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     await db
       .insertInto('user')
       .values(
-        ['chris', 'anna', 'lena', 'ben', 'tom', 'ida'].map(id => ({
-          id,
-          name: id[0].toUpperCase() + id.slice(1),
-          email: `${id}@x`,
-          emailVerified: false,
-          image: null,
-        })),
+        ['chris', 'anna', 'lena', 'ben', 'tom', 'ida', 'sam', 'tim', 'ruth', 'sam2', 'tim2', 'ruth2', 'zoe', 'yan', 'eli', 'liv'].map(
+          id => ({
+            id,
+            name: id[0].toUpperCase() + id.slice(1),
+            email: `${id}@x`,
+            emailVerified: false,
+            image: null,
+          }),
+        ),
       )
       .execute()
   })
@@ -197,5 +208,92 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     const change = await ratingChangeSince(db, 'chris', at(1))
     expect(change['2v2']).toBe(0)
     expect(change['1v1']).toBe(recent[1].change)
+  })
+  describe('recalculateRatings', () => {
+    // Four games between three players, played in order; the same games again without the second one for a twin trio
+    const script: [string, string, number][] = [
+      ['sam', 'tim', 21],
+      ['ruth', 'sam', 22],
+      ['ruth', 'tim', 23],
+      ['sam', 'ruth', 24],
+    ]
+    const twin = (id: string) => `${id}2`
+    const ids: string[] = []
+    const snapshot = (users: string[]) => Promise.all(users.map(async u => (await getRatings(db, u))['1v1']))
+
+    beforeAll(async () => {
+      for (const [winner, loser, day] of script) {
+        const sessionId = await game()
+        ids.push(sessionId)
+        await recordRankedResult(db, { sessionId, mode: '1v1', at: at(day), sides: duel(winner, loser, 60, 40) })
+      }
+      // The twins never played the second game
+      for (const [winner, loser, day] of script.filter((_, i) => i !== 1)) {
+        await recordRankedResult(db, { sessionId: await game(), mode: '1v1', at: at(day), sides: duel(twin(winner), twin(loser), 60, 40) })
+      }
+    })
+
+    it('changes nothing when no game is excluded', async () => {
+      const before = await snapshot(['sam', 'tim', 'ruth'])
+      const results = await db
+        .selectFrom('ranked_results')
+        .selectAll()
+        .where('session_id', 'in', ids)
+        .orderBy('session_id')
+        .orderBy('user_id')
+        .execute()
+      await recalculateRatings(db, '1v1')
+      expect(await snapshot(['sam', 'tim', 'ruth'])).toEqual(before)
+      expect(
+        await db.selectFrom('ranked_results').selectAll().where('session_id', 'in', ids).orderBy('session_id').orderBy('user_id').execute(),
+      ).toEqual(results)
+    })
+
+    it('rates the later games as if an excluded one was never played', async () => {
+      await recalculateRatings(db, '1v1', new Set([ids[1] ?? '']))
+      const [sam, tim, ruth] = await snapshot(['sam', 'tim', 'ruth'])
+      const [sam2, tim2, ruth2] = await snapshot(['sam2', 'tim2', 'ruth2'])
+      expect(sam).toEqual(sam2)
+      expect(tim).toEqual(tim2)
+      expect(ruth).toEqual(ruth2)
+      expect(sam.matches).toBe(2)
+      // The twin trio's rating_before/after per game match too
+      const rowsOf = (u: string) =>
+        db
+          .selectFrom('ranked_results')
+          .select(['rating_before', 'rating_after', 'placement'])
+          .where('user_id', '=', u)
+          .where('session_id', '!=', ids[1] ?? '')
+          .orderBy('created_at')
+          .execute()
+      expect(await rowsOf('ruth')).toEqual(await rowsOf('ruth2'))
+      // The excluded game keeps its own row, untouched (a deleted game's rows are gone with it)
+      expect(
+        await db
+          .selectFrom('ranked_results')
+          .select('user_id')
+          .where('session_id', '=', ids[1] ?? '')
+          .execute(),
+      ).toHaveLength(2)
+    })
+
+    it('drops the rating of a player whose only game is gone, and recounts the others', async () => {
+      const only = await game()
+      await recordRankedResult(db, { sessionId: only, mode: '1v1', at: at(25), sides: duel('zoe', 'yan', 50, 50) })
+      expect((await getRatings(db, 'yan'))['1v1'].matches).toBe(1)
+      await db.deleteFrom('game_sessions').where('id', '=', only).execute()
+      await recalculateRatings(db, '1v1')
+      expect(await db.selectFrom('ranked_ratings').select('user_id').where('user_id', 'in', ['zoe', 'yan']).execute()).toEqual([])
+      // Back to a new player: the next game seeds them again
+      expect((await getRatings(db, 'zoe'))['1v1']).toMatchObject({ rating: 1200, matches: 0, rankIndex: null })
+    })
+
+    it("keeps a survivor's recorded change when the opponent's account is gone", async () => {
+      await recordRankedResult(db, { sessionId: await game(), mode: '1v1', at: at(26), sides: duel('eli', 'liv', 60, 40) })
+      const recorded = (await getRatings(db, 'eli'))['1v1']
+      await db.deleteFrom('user').where('id', '=', 'liv').execute()
+      await recalculateRatings(db, '1v1')
+      expect((await getRatings(db, 'eli'))['1v1']).toEqual(recorded)
+    })
   })
 })

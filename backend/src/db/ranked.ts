@@ -1,14 +1,15 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
+import { groupBy } from '../util/groupBy.js'
 import {
   PLACEMENT_MATCHES,
   START_RATING,
-  nextRankIndex,
-  performance,
-  ratingChange,
+  applyResult,
+  rateGame,
   seedRating,
-  sideRating,
   type RankedMode,
+  type RatedSide,
+  type RatingState,
 } from '../shared/ranked.js'
 
 export type RatingRow = {
@@ -134,12 +135,15 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
   }))
 }
 
-export type RankedSide = { won: boolean; players: { userId: string; average: number | null }[] }
+export type RankedSide = RatedSide
+
+/** Held by a mode's game recording and recalculation alike, so neither reads ratings the other is rewriting. */
+async function lockMode(trx: Kysely<Database>, mode: RankedMode): Promise<void> {
+  await sql`SELECT pg_advisory_xact_lock(hashtext('dartcade.ranked.mode.' || ${mode}))`.execute(trx)
+}
 
 /**
- * Moves the ratings for a finished ranked game. Each side is rated on its players' average rating.
- * A ranked player gains or loses the side's stakes; a player still placing moves by their
- * placement score instead (result and the sides' match averages, shared/ranked.ts ratingChange).
+ * Moves the ratings for a finished ranked game (`rateGame`, shared/ranked.ts).
  * Someone's first game in a mode starts them from their X01 average. Writes one ranked_results row
  * per player. Recording the same game twice changes nothing.
  */
@@ -151,6 +155,7 @@ export async function recordRankedResult(
   await db.transaction().execute(async trx => {
     // A second call for the same game waits here, then finds it done
     await sql`SELECT pg_advisory_xact_lock(hashtext('dartcade.ranked.' || ${game.sessionId}))`.execute(trx)
+    await lockMode(trx, game.mode)
     const done = await trx.selectFrom('ranked_results').select('user_id').where('session_id', '=', game.sessionId).executeTakeFirst()
     if (done) return
     const userIds = game.sides.flatMap(s => s.players.map(p => p.userId))
@@ -177,53 +182,110 @@ export async function recordRankedResult(
       .where('user_id', 'in', userIds)
       .forUpdate()
       .execute()
-    const byUser = new Map(rows.map(r => [r.user_id, r]))
-    const row = (userId: string) => {
-      const r = byUser.get(userId)
-      if (!r) throw new Error(`no ${game.mode} rating for ${userId}`)
-      return r
-    }
-    const ratingOf = (s: RankedSide) => sideRating(s.players.map(p => row(p.userId).rating))
-    const averageOf = (s: RankedSide) => {
-      const all = s.players.map(p => p.average)
-      return all.every(a => a !== null) ? all.reduce((a, b) => a + b, 0) / all.length : null
-    }
-    for (const [i, side] of game.sides.entries()) {
-      const other = game.sides[1 - i]
-      const own = ratingOf(side)
-      const opp = ratingOf(other)
-      const ownAvg = averageOf(side)
-      const oppAvg = averageOf(other)
-      const perf = ownAvg !== null && oppAvg !== null ? performance(ownAvg, oppAvg) : null
-      for (const p of side.players) {
-        const r = row(p.userId)
-        const placing = r.matches < PLACEMENT_MATCHES
-        const change = ratingChange({ rating: own, opponent: opp, won: side.won, placing, performance: perf })
-        const rating = Math.max(0, r.rating + change)
-        const matches = r.matches + 1
-        const rankIndex = matches < PLACEMENT_MATCHES ? null : nextRankIndex(r.rank_index, rating)
-        const streak = side.won ? Math.max(0, r.streak) + 1 : Math.min(0, r.streak) - 1
-        await trx
-          .updateTable('ranked_ratings')
-          .set({ rating, rank_index: rankIndex, matches, wins: r.wins + (side.won ? 1 : 0), streak, updated_at: at })
-          .where('user_id', '=', p.userId)
-          .where('mode', '=', game.mode)
-          .execute()
-        await trx
-          .insertInto('ranked_results')
-          .values({
-            session_id: game.sessionId,
-            user_id: p.userId,
-            mode: game.mode,
-            won: side.won,
-            placement: placing,
-            rating_before: r.rating,
-            rating_after: rating,
-            average: p.average,
-            created_at: at,
-          })
-          .execute()
-      }
+    const states = new Map<string, RatingState>(
+      rows.map(r => [r.user_id, { rating: r.rating, rankIndex: r.rank_index, matches: r.matches, wins: r.wins, streak: r.streak }]),
+    )
+    for (const p of rateGame(states, game.sides)) {
+      await trx
+        .updateTable('ranked_ratings')
+        .set({ ...ratingColumns(p.after), updated_at: at })
+        .where('user_id', '=', p.userId)
+        .where('mode', '=', game.mode)
+        .execute()
+      await trx
+        .insertInto('ranked_results')
+        .values({
+          session_id: game.sessionId,
+          user_id: p.userId,
+          mode: game.mode,
+          won: p.won,
+          placement: p.placement,
+          rating_before: p.before.rating,
+          rating_after: p.after.rating,
+          average: p.average,
+          created_at: at,
+        })
+        .execute()
     }
   })
+}
+
+function ratingColumns(s: RatingState) {
+  return { rating: s.rating, rank_index: s.rankIndex, matches: s.matches, wins: s.wins, streak: s.streak }
+}
+
+/**
+ * Replays a mode's ranked games from the start, in the order they were played, and rewrites every
+ * rating (ranked_ratings, and rating_before/after and placement of each ranked_results row) as if
+ * the `exclude`d games had never counted. Deleting a game calls this, as ratings depend on game order.
+ * A player starts from the seed their first game in the mode recorded (the excluded games included),
+ * so their X01 average is never looked at again; a player left with no games loses their rating row
+ * and is seeded afresh by their next game. Runs inside `db`'s transaction when it is one.
+ */
+export async function recalculateRatings(db: Kysely<Database>, mode: RankedMode, exclude: ReadonlySet<string> = new Set()): Promise<void> {
+  if (db.isTransaction) return replay(db, mode, exclude)
+  await db.transaction().execute(trx => replay(trx, mode, exclude))
+}
+
+async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: ReadonlySet<string>): Promise<void> {
+  await lockMode(trx, mode)
+  const rows = await trx
+    .selectFrom('ranked_results')
+    .select(['session_id', 'user_id', 'won', 'average', 'rating_before', 'rating_after', 'created_at'])
+    .where('mode', '=', mode)
+    .orderBy('created_at')
+    .orderBy('session_id')
+    .execute()
+  const states = new Map<string, RatingState>()
+  const lastGame = new Map<string, Date>()
+  for (const r of rows) {
+    if (!states.has(r.user_id)) states.set(r.user_id, { rating: r.rating_before, rankIndex: null, matches: 0, wins: 0, streak: 0 })
+  }
+  const games = groupBy(
+    rows.filter(r => !exclude.has(r.session_id)),
+    r => r.session_id,
+  )
+  for (const [sessionId, players] of games) {
+    const side = (won: boolean): RatedSide => ({
+      won,
+      players: players.filter(p => p.won === won).map(p => ({ userId: p.user_id, average: p.average })),
+    })
+    const [winners, losers] = [side(true), side(false)]
+    // A side's accounts can be gone (their rows cascade away): nothing to rate against, so a
+    // survivor keeps the change the game recorded for them
+    const outcomes =
+      winners.players.length > 0 && losers.players.length > 0
+        ? rateGame(states, [winners, losers])
+        : players.map(p => {
+            const before = states.get(p.user_id) ?? { rating: p.rating_before, rankIndex: null, matches: 0, wins: 0, streak: 0 }
+            const after = applyResult(before, p.won, p.rating_after - p.rating_before)
+            return { userId: p.user_id, placement: before.matches < PLACEMENT_MATCHES, before, after }
+          })
+    for (const p of outcomes) {
+      states.set(p.userId, p.after)
+      lastGame.set(p.userId, players[0]?.created_at ?? new Date())
+      await trx
+        .updateTable('ranked_results')
+        .set({ rating_before: p.before.rating, rating_after: p.after.rating, placement: p.placement })
+        .where('session_id', '=', sessionId)
+        .where('user_id', '=', p.userId)
+        .execute()
+    }
+  }
+  for (const [userId, state] of states) {
+    const at = lastGame.get(userId)
+    if (at !== undefined) {
+      await trx
+        .updateTable('ranked_ratings')
+        .set({ ...ratingColumns(state), updated_at: at })
+        .where('user_id', '=', userId)
+        .where('mode', '=', mode)
+        .execute()
+    }
+  }
+  // Nobody is left with a game they were rated on: seeded afresh by their next one
+  const rated = [...lastGame.keys()]
+  let gone = trx.deleteFrom('ranked_ratings').where('mode', '=', mode)
+  if (rated.length > 0) gone = gone.where('user_id', 'not in', rated)
+  await gone.execute()
 }

@@ -135,3 +135,65 @@ export function ratingChange(g: { rating: number; opponent: number; won: boolean
 export function sideRating(ratings: readonly number[]): number {
   return Math.round(ratings.reduce((a, b) => a + b, 0) / ratings.length)
 }
+
+/** What a player's rating row holds (db ranked_ratings). */
+export type RatingState = { rating: number; rankIndex: number | null; matches: number; wins: number; streak: number }
+
+export type RatedSide = { won: boolean; players: { userId: string; average: number | null }[] }
+
+export type PlayerRating = {
+  userId: string
+  won: boolean
+  /** One of the player's placement matches. */
+  placement: boolean
+  average: number | null
+  before: RatingState
+  after: RatingState
+}
+
+/** A player's state after a game that moved their rating by `change`. */
+export function applyResult(before: RatingState, won: boolean, change: number): RatingState {
+  const rating = Math.max(0, before.rating + change)
+  const matches = before.matches + 1
+  return {
+    rating,
+    rankIndex: matches < PLACEMENT_MATCHES ? null : nextRankIndex(before.rankIndex, rating),
+    matches,
+    wins: before.wins + (won ? 1 : 0),
+    streak: won ? Math.max(0, before.streak) + 1 : Math.min(0, before.streak) - 1,
+  }
+}
+
+/**
+ * What one finished ranked game does to each player: the live path and the replay that follows a
+ * deleted game both rate games with this. `states` holds every player's rating before the game.
+ * Each side is rated on its players' average rating; a ranked player gains or loses the side's
+ * stakes, one still placing moves by their placement score (`ratingChange`).
+ */
+export function rateGame(states: ReadonlyMap<string, RatingState>, sides: readonly [RatedSide, RatedSide]): PlayerRating[] {
+  const state = (userId: string): RatingState => {
+    const s = states.get(userId)
+    if (!s) throw new Error(`no rating for ${userId}`)
+    return s
+  }
+  const ratingOf = (s: RatedSide) => sideRating(s.players.map(p => state(p.userId).rating))
+  const averageOf = (s: RatedSide) => {
+    const all = s.players.map(p => p.average)
+    return all.every(a => a !== null) ? all.reduce((a, b) => a + b, 0) / all.length : null
+  }
+  return sides.flatMap((side, i) => {
+    const other = sides[1 - i]
+    const own = ratingOf(side)
+    const opp = ratingOf(other)
+    const ownAvg = averageOf(side)
+    const oppAvg = averageOf(other)
+    const perf = ownAvg !== null && oppAvg !== null ? performance(ownAvg, oppAvg) : null
+    return side.players.map(p => {
+      const before = state(p.userId)
+      const placing = before.matches < PLACEMENT_MATCHES
+      const change = ratingChange({ rating: own, opponent: opp, won: side.won, placing, performance: perf })
+      const after = applyResult(before, side.won, change)
+      return { userId: p.userId, won: side.won, placement: placing, average: p.average, before, after }
+    })
+  })
+}
