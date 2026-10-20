@@ -46,7 +46,7 @@ describe('GET /api/users/name-available', () => {
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body)).toEqual({ available: false, reason: 'taken' })
     expect(checkName).toHaveBeenLastCalledWith({}, 'Luke', null)
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'luke' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'luke', impersonatedBy: null })
     vi.mocked(checkName).mockResolvedValue({ ok: true, name: 'Luke' })
     expect(JSON.parse((await app.inject({ method: 'GET', url: '/api/users/name-available?name=Luke' })).body)).toEqual({ available: true })
     expect(checkName).toHaveBeenLastCalledWith({}, 'Luke', 'luke')

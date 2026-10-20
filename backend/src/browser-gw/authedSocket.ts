@@ -14,7 +14,7 @@ import { isOpen } from '../util/socket.js'
 export function withAuthedSocket(
   connection: SocketStream,
   req: FastifyRequest,
-  setup: (socket: WebSocket, userId: string) => Promise<void>,
+  setup: (socket: WebSocket, userId: string, impersonated: boolean) => Promise<void>,
 ): void {
   const socket = connection.socket
   getAuthUser(req)
@@ -24,7 +24,7 @@ export function withAuthedSocket(
         socket.close(WsCloseCode.Unauthorized, 'unauthorized')
         return
       }
-      await setup(socket, user.userId)
+      await setup(socket, user.userId, user.impersonatedBy !== null)
     })
     .catch(() => {
       socket.close(WsCloseCode.InternalError, 'internal error')

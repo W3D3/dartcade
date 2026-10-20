@@ -8432,6 +8432,7 @@
           "invisible",
           "isAdmin",
           "isModerator",
+          "impersonating",
           "createdAt",
           "avatar",
           "pictures"
@@ -8475,6 +8476,10 @@
           "isModerator": {
             "type": "boolean",
             "description": "May look at any game and invalidate it (admins and moderators)"
+          },
+          "impersonating": {
+            "type": "boolean",
+            "description": "An admin is viewing the app as this account (admin impersonation); the page shows a banner with a way back"
           },
           "createdAt": {
             "type": "string",

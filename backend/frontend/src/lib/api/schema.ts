@@ -2722,6 +2722,8 @@ export interface components {
             isAdmin: boolean;
             /** @description May look at any game and invalidate it (admins and moderators) */
             isModerator: boolean;
+            /** @description An admin is viewing the app as this account (admin impersonation); the page shows a banner with a way back */
+            impersonating: boolean;
             /**
              * Format: date-time
              * @description When the account was made (Member since)

@@ -5,7 +5,7 @@ import type { Database } from '../db/schema.js'
 import type { MailConfig } from '../mail/config.js'
 import type { Mailer } from '../mail/transport.js'
 import { deleteMail, resetMail, verifyMail } from '../mail/templates.js'
-import { lastLoginHooks } from './lastLogin.js'
+import { sessionHooks } from './sessionHooks.js'
 import { nameHooks } from './nameHooks.js'
 import { termsGate } from './termsGate.js'
 import { runAccountCleanup } from './cleanup.js'
@@ -65,7 +65,7 @@ export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
           : undefined,
       },
     },
-    databaseHooks: { ...nameHooks(db), ...lastLoginHooks(db) },
+    databaseHooks: { ...nameHooks(db), ...sessionHooks(db) },
     hooks: { before: termsGate },
     trustedOrigins,
     // No `enabled` override: better-auth's own default (NODE_ENV === 'production' only) is what

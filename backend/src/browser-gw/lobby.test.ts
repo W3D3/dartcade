@@ -41,14 +41,14 @@ describe('/ws/lobby', () => {
     const lobbyAccess = vi.fn((lobbyId: string) => Promise.resolve(lobbyId === 'gone' ? 'not_found' : 'forbidden'))
     const port = await serve({ lobbyAccess, refreshPresence: vi.fn() }, new LobbyHub())
     expect(await closeCode(`ws://127.0.0.1:${port}/ws/lobby?lobbyId=l1`)).toBe(WsCloseCode.Unauthorized)
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'max' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'max', impersonatedBy: null })
     expect(await closeCode(`ws://127.0.0.1:${port}/ws/lobby`)).toBe(WsCloseCode.MissingSession)
     expect(await closeCode(`ws://127.0.0.1:${port}/ws/lobby?lobbyId=gone`)).toBe(WsCloseCode.NotFound)
     expect(await closeCode(`ws://127.0.0.1:${port}/ws/lobby?lobbyId=l1`)).toBe(WsCloseCode.Forbidden)
   })
 
   it('a member gets the lobby and counts as online until the socket closes', async () => {
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'chris' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'chris', impersonatedBy: null })
     const hub = new LobbyHub()
     const refreshPresence = vi.fn((lobbyId: string) => {
       hub.sendLobby(lobbyId, { type: 'lobby_closed', lobbyId }) // any message: the service builds the real one
@@ -81,7 +81,7 @@ describe('/ws/lobby', () => {
   })
 
   it('closes for a member removed while the socket was opening', async () => {
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'max' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'max', impersonatedBy: null })
     const hub = new LobbyHub()
     let member = true
     const lobbies = {
@@ -121,7 +121,7 @@ describe('/ws/me', () => {
     const port = await serve({ meMessage: vi.fn().mockResolvedValue(me) }, hub, friends)
     expect(await closeCode(`ws://127.0.0.1:${port}/ws/me`)).toBe(WsCloseCode.Unauthorized)
     expect(friends.connected).not.toHaveBeenCalled()
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena', impersonatedBy: null })
     const ws = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
     expect(await messages(ws, 2)).toEqual([me, friendsMsg])
     expect(hub.hasMe('lena')).toBe(true)
@@ -136,7 +136,7 @@ describe('/ws/me', () => {
     const hub = new LobbyHub()
     const friends = fakeFriends()
     const port = await serve({ meMessage: vi.fn().mockResolvedValue({ type: 'me', invites: [], lobby: null }) }, hub, friends)
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena', impersonatedBy: null })
     const a = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
     const b = new WebSocket(`ws://127.0.0.1:${port}/ws/me`)
     await Promise.all([messages(a, 2), messages(b, 2)])

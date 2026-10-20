@@ -15,12 +15,12 @@ beforeEach(() => {
 
 describe('withAuthedSocket', () => {
   it('hands a signed-in socket and its user to setup', async () => {
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'chris' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'chris', impersonatedBy: null })
     const socket = fakeSocket()
     const setup = vi.fn().mockResolvedValue(undefined)
     withAuthedSocket({ socket } as any, {} as any, setup)
     await flush()
-    expect(setup).toHaveBeenCalledWith(socket, 'chris')
+    expect(setup).toHaveBeenCalledWith(socket, 'chris', false)
     expect(socket.close).not.toHaveBeenCalled()
   })
 
@@ -35,7 +35,7 @@ describe('withAuthedSocket', () => {
   })
 
   it('drops a socket that closed while sign-in was checked', async () => {
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'chris' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'chris', impersonatedBy: null })
     const socket = fakeSocket(3)
     const setup = vi.fn()
     withAuthedSocket({ socket } as any, {} as any, setup)
@@ -45,7 +45,7 @@ describe('withAuthedSocket', () => {
   })
 
   it('closes with an internal error when sign-in or setup fails', async () => {
-    vi.mocked(getAuthUser).mockRejectedValueOnce(new Error('db down')).mockResolvedValueOnce({ userId: 'chris' })
+    vi.mocked(getAuthUser).mockRejectedValueOnce(new Error('db down')).mockResolvedValueOnce({ userId: 'chris', impersonatedBy: null })
     const first = fakeSocket()
     withAuthedSocket({ socket: first } as any, {} as any, vi.fn())
     const second = fakeSocket()
