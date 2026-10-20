@@ -131,7 +131,6 @@ jobs:
 
   test-e2e:
     runs-on: ubuntu-latest
-    continue-on-error: true
     permissions:
       contents: read
       pull-requests: write
