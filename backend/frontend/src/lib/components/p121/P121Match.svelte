@@ -104,7 +104,7 @@
 
 {#snippet board()}
   {#if keypad}
-    <div class="flex-1 min-h-0">
+    <div class="flex-1 min-h-[220px]">
       <DartKeypad
         onDart={keyDart}
         replacing={openDart}
