@@ -6,6 +6,8 @@ const ADMIN: BreadcrumbItem = { label: 'Admin', href: '#/admin' }
 
 export const usersTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Users' }]
 
+export const gamesTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Games' }]
+
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 
 /** `flagKey` set: a flag's details are open, so "Feature flags" becomes a link back to the list. */

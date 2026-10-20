@@ -25,6 +25,7 @@
   import Ranks from './routes/Ranks.svelte'
   import Admin from './routes/Admin.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
+  import AdminGames from './routes/AdminGames.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
   import { get } from 'svelte/store'
@@ -89,6 +90,8 @@
     '/matchmaking/ranks': Ranks,
     '/admin': Admin,
     '/admin/users': AdminUsers,
+    '/admin/games': AdminGames,
+    '/admin/games/:id': wrap({ asyncComponent: loadGameDetails, props: { admin: true } }),
     '/admin/flags': AdminFlags,
     '/admin/system': AdminSystem,
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
