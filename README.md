@@ -30,7 +30,10 @@ at their own boards across town, from a computer, tablet or from your phone.
 
 ## Getting started
 
-**[→ Get dartcade running on your board](GETTING_STARTED.md)**
+**[→ Play now at play.dartca.de](https://play.dartca.de)**: the official hosted dartcade, nothing to
+deploy. Create an account, then [connect your board](GETTING_STARTED.md) with the bridge.
+
+Prefer to run it yourself? [Self-host dartcade](docs/SELFHOSTING.md) with Docker.
 
 ## Features
 
@@ -61,7 +64,7 @@ at their own boards across town, from a computer, tablet or from your phone.
 
 ## Learn more
 
-- [`GETTING_STARTED.md`](GETTING_STARTED.md): deploy the app and install the bridge.
+- [`GETTING_STARTED.md`](GETTING_STARTED.md): use the hosted app (or deploy your own) and install the bridge.
 - [`DEVELOPMENT.md`](DEVELOPMENT.md): run it yourself, connect a board, run the tests.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): how the bridge, backend and frontend fit together.
 
