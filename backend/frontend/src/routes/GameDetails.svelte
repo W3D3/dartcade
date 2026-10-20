@@ -19,7 +19,9 @@
   import { api, type GameDetail } from '$lib/api'
   import { detailSides, highlightDefault, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
 
-  let { params }: { params: { id: string } } = $props()
+  // `admin`: opened from the admin game list, so any finished game, with every seat's account
+  let { params, admin = false }: { params: { id: string }; admin?: boolean } = $props()
+  const back = $derived(admin ? { href: '#/admin/games', label: 'Games' } : { href: '#/history', label: 'History' })
   let detail = $state<GameDetail | null>(null)
   let phase = $state<'loading' | 'ready' | 'missing' | 'failed'>('loading')
   let atcHighlight = $state<number | null>(null)
@@ -27,7 +29,8 @@
   async function load() {
     phase = 'loading'
     try {
-      const res = await api.GET('/api/games/{id}', { params: { path: { id: params.id } } })
+      const path = { params: { path: { id: params.id } } }
+      const res = await (admin ? api.GET('/api/admin/games/{id}', path) : api.GET('/api/games/{id}', path))
       if (res.data && isGameDetail(res.data)) {
         detail = res.data
         phase = 'ready'
@@ -52,7 +55,7 @@
     {:else if phase === 'missing'}
       <div class="flex flex-col items-start gap-3 p-8">
         <p class="m-0 text-[17px] font-semibold">This game isn't available</p>
-        <a href="#/history" class="font-semibold no-underline">Back to History</a>
+        <a href={back.href} class="font-semibold no-underline">Back to {back.label}</a>
       </div>
     {:else if phase === 'failed' || !detail}
       {@render errorCard(() => void load())}
@@ -61,7 +64,7 @@
       <svelte:boundary onerror={(error: unknown) => console.error('details page render failed', error)}>
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
-        <DetailsHeader detail={d} />
+        <DetailsHeader detail={d} {back} />
         {#if d.detail.mode === 'p121'}
           <!-- 121's summary has its own standings and stats, so it takes the whole page -->
           {@const players = [...d.game.players].sort((a, b) => a.seat - b.seat)}

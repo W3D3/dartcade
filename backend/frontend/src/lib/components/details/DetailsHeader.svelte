@@ -6,7 +6,7 @@
   import { resultLabel } from '$lib/history'
   import { metaLine } from '$lib/details/page'
 
-  let { detail }: { detail: GameDetail } = $props()
+  let { detail, back = { href: '#/history', label: 'History' } }: { detail: GameDetail; back?: { href: string; label: string } } = $props()
   const result = $derived(resultLabel(detail.game))
 </script>
 
@@ -14,9 +14,9 @@
   class="shrink-0 flex flex-wrap items-center gap-x-6 gap-y-2 min-h-14 md:min-h-16 box-border px-4 md:px-7 py-2 border-b border-line bg-surface-1"
 >
   <a
-    href="#/history"
+    href={back.href}
     class="h-11 flex items-center gap-2 pl-[10px] pr-[14px] rounded-[10px] border border-line-strong text-ink-2 no-underline text-[14px] font-medium hover:text-text"
-    ><ArrowLeft size={16} />History</a
+    ><ArrowLeft size={16} />{back.label}</a
   >
   <div class="flex items-baseline gap-3 min-w-0 flex-wrap">
     <h1 class="m-0 font-display font-bold text-[24px] md:text-[26px] uppercase tracking-[0.04em]">{getGameView(detail.game.mode).title}</h1>
