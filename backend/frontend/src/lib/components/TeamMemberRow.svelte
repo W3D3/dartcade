@@ -46,17 +46,23 @@
     gap="gap-[1px]"
   >
     {#snippet below()}
-      <span class="flex items-center gap-1 min-w-0 text-[12px] text-text-dim">
-        {#if seat}<SeatBoardLine line={seat} size="sm" /><span class="shrink-0">·</span>{/if}
-        <span class="shrink-0 whitespace-nowrap">{seat ? 'avg' : 'Avg'} {member.avg}</span>
-      </span>
+      <!-- No room for it next to the pill once the panel is this narrow (phones, side by side) -->
+      {#if !compact}
+        <span class="flex items-center gap-1 min-w-0 text-[12px] text-text-dim">
+          {#if seat}<SeatBoardLine line={seat} size="sm" /><span class="shrink-0">·</span>{/if}
+          <span class="shrink-0 whitespace-nowrap">{seat ? 'avg' : 'Avg'} {member.avg}</span>
+        </span>
+      {/if}
     {/snippet}
   </PlayerName>
-  <span class="ml-auto shrink-0 flex items-center">
-    {#if member.role === 'throwing' || member.role === 'up-next'}
-      <PlayerPill kind={member.role} small />
-    {:else if member.role === 'after'}
-      <span class="text-[13px] text-text-dim">after</span>
-    {/if}
-  </span>
+  {#if !compact}
+    <!-- The row's own colour already carries this in compact; no room for the pill too -->
+    <span class="ml-auto shrink-0 flex items-center">
+      {#if member.role === 'throwing' || member.role === 'up-next'}
+        <PlayerPill kind={member.role} small />
+      {:else if member.role === 'after'}
+        <span class="text-[13px] text-text-dim">after</span>
+      {/if}
+    </span>
+  {/if}
 </div>

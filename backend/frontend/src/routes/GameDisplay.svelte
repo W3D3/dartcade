@@ -900,15 +900,17 @@
              Many players scroll, and the thrower is kept in view. -->
           <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
             {#if teams.length}
-              <!-- Teams: both panels stacked; with the keypad on a short screen only the throwing team's -->
-              {#each teams as team, t (team.id)}
-                <div
-                  data-up={team.active ? upKey : undefined}
-                  class="flex {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}"
-                >
-                  {@render teamPanel(t, true)}
-                </div>
-              {/each}
+              <!-- Teams: side by side, compact; with the keypad on a short screen only the throwing team's -->
+              <div class="grid grid-cols-2 gap-2 items-stretch">
+                {#each teams as team, t (team.id)}
+                  <div
+                    data-up={team.active ? upKey : undefined}
+                    class="flex min-w-0 {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}"
+                  >
+                    {@render teamPanel(t, true)}
+                  </div>
+                {/each}
+              </div>
             {:else}
               {#each players as player, i (i)}
                 {@const up = i === currentPlayer}

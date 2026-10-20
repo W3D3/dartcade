@@ -26,7 +26,8 @@
     /** Per seat (the snapshot's seat order): its bot info, else null. */
     bots: ({ level: number } | null)[]
     chalkboard: boolean
-    /** Phones and narrow screens, where the two panels are stacked: smaller score, no chalkboard. */
+    /** Phones (side by side) and narrow screens (stacked): smaller score that shrinks to fit the
+     * panel's width, no chalkboard, and only the team avg and darts, not the match-wide stats. */
     compact?: boolean
     /** Covers the score and stats, below the players (the waiting card while a player of this team is away). */
     overlay?: Snippet
@@ -34,17 +35,25 @@
 
   const up = $derived(team.members.find(m => m.role === 'throwing') ?? team.members.find(m => m.role === 'up-next') ?? null)
   const status = $derived(up ? `${up.name} ${up.role === 'throwing' ? 'throwing' : 'up next'}` : team.won ? 'winner' : 'waiting')
-  const stats = $derived([
-    { label: 'Team avg', value: team.teamAvg, dim: false },
-    { label: 'Match avg', value: team.matchAvg, dim: true },
-    { label: 'Checkout', value: team.checkout, dim: true },
-    { label: 'Darts', value: String(team.darts), dim: false },
-  ])
+  // Compact (phones, side by side): just the team avg and darts thrown, not the match-wide stats
+  const stats = $derived(
+    compact
+      ? [
+          { label: 'Team avg', value: team.teamAvg, dim: false },
+          { label: 'Darts', value: String(team.darts), dim: false },
+        ]
+      : [
+          { label: 'Team avg', value: team.teamAvg, dim: false },
+          { label: 'Match avg', value: team.matchAvg, dim: true },
+          { label: 'Checkout', value: team.checkout, dim: true },
+          { label: 'Darts', value: String(team.darts), dim: false },
+        ],
+  )
 </script>
 
 <section
   aria-label="{team.name}, {status}, {team.remaining} left"
-  class="flex-1 min-w-0 min-h-0 box-border rounded-[18px] flex flex-col overflow-hidden
+  class="flex-1 min-w-0 min-h-0 box-border rounded-[18px] flex flex-col overflow-hidden [container-type:inline-size]
          {compact ? 'px-[14px] py-3 gap-2' : 'px-[26px] py-6 gap-[14px]'}
          {playerCard(team.active)}"
 >
@@ -68,7 +77,7 @@
   <div class="relative flex-1 min-h-0 flex flex-col {compact ? 'gap-2' : 'gap-[14px]'}">
     <span
       class="font-display font-bold leading-[0.8] tracking-[-0.02em] tabular-nums
-                 {compact ? 'text-[min(104px,9vh)]' : 'text-[min(220px,24vh)]'} {team.active ? 'text-text' : 'text-ink-3'}"
+                 {compact ? 'text-[min(22cqw,104px,9vh)]' : 'text-[min(220px,24vh)]'} {team.active ? 'text-text' : 'text-ink-3'}"
       ><RollingNumber {...x01Roll(team)} /></span
     >
 
