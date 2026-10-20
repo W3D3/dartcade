@@ -46,6 +46,13 @@ describe('GET /health', () => {
     expect(JSON.parse(res.body).ok).toBe(true)
   })
 
+  it('answers HEAD with the same status and no body (Fastify auto-adds it for every GET)', async () => {
+    const { app } = makeApp()
+    const res = await app.inject({ method: 'HEAD', url: '/health' })
+    expect(res.statusCode).toBe(200)
+    expect(res.body).toBe('')
+  })
+
   it('answers a 429 over the rate limit with an ErrorResponse body', async () => {
     const engine = {
       create: vi.fn().mockResolvedValue({ sessionId: 'sess-1' }),
