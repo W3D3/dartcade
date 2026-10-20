@@ -52,7 +52,7 @@
 </script>
 
 {#snippet pipRow(size: string)}
-  <div role="img" aria-label="{used} of {game.cfg.dartsPerTry} darts used" class="flex gap-[21px]">
+  <div role="img" aria-label="{used} of {game.cfg.dartsPerTry} darts used" class="flex flex-wrap gap-[21px]">
     {#each pips as group, g (g)}
       <span class="flex gap-[7px]">
         {#each group as p, i (i)}
@@ -104,12 +104,10 @@
         <span class="font-display font-bold text-[28px] leading-none text-accent">{s.target}</span>
       </span>
     </div>
-    <div class="flex items-end justify-between gap-3">
-      <span class="font-display font-bold text-[120px] leading-[0.85] tracking-[-0.02em]">{s.left}</span>
-      <span class="flex flex-col items-end gap-2 pb-2">
-        <span class={label}>{plural(game.cfg.dartsPerTry - used, 'dart')} left</span>
-        {@render pipRow('w-[14px] h-[14px]')}
-      </span>
+    <span class="font-display font-bold text-[120px] leading-[0.85] tracking-[-0.02em]">{s.left}</span>
+    <div class="flex items-center justify-between gap-3">
+      <span class={label}>{plural(game.cfg.dartsPerTry - used, 'dart')} left</span>
+      {@render pipRow('w-[14px] h-[14px]')}
     </div>
     {@render hintLine()}
   {:else}
