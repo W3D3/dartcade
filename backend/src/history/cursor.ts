@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-/** Where a page of the history ends: keyset on (finished_at, id), newest first. */
+/** Where a page of the history ends: keyset on (finished_at, id), newest first. (The admin game list sorts by start time and keeps that in `finishedAt`.) */
 export type Cursor = { finishedAt: Date; id: string }
 
 const CursorSchema = z.tuple([z.iso.datetime(), z.string().min(1)])
