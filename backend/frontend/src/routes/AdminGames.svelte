@@ -6,6 +6,7 @@
   import Layout from '$lib/components/Layout.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
+  import { Select } from '$lib/components/ui/select/index.js'
   import { api, type GameInfo } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { gamesTrail } from '$lib/admin/breadcrumbs'
@@ -101,33 +102,30 @@
             class="min-w-0 flex-grow border-0 bg-transparent text-[14px] text-text outline-none"
           />
         </label>
-        <label class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
+        <div class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
           Mode
-          <select
-            class={field}
+          <Select
+            label="Mode"
             value={filters.mode ?? ''}
-            onchange={e => {
-              filters.mode = e.currentTarget.value || null
+            options={[{ value: '', label: 'All modes' }, ...modes.map(m => ({ value: m.id, label: getGameView(m.id).title }))]}
+            onchange={(v: string) => {
+              filters.mode = v || null
               void reload()
             }}
-          >
-            <option value="">All modes</option>
-            {#each modes as m (m.id)}<option value={m.id}>{getGameView(m.id).title}</option>{/each}
-          </select>
-        </label>
-        <label class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
+          />
+        </div>
+        <div class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
           Status
-          <select
-            class={field}
+          <Select
+            label="Status"
             value={filters.status}
-            onchange={e => {
-              filters.status = STATUS_OPTIONS.find(o => o.id === e.currentTarget.value)?.id ?? DEFAULT_FILTERS.status
+            options={STATUS_OPTIONS.map(o => ({ value: o.id, label: o.label }))}
+            onchange={(v: string) => {
+              filters.status = STATUS_OPTIONS.find(o => o.id === v)?.id ?? DEFAULT_FILTERS.status
               void reload()
             }}
-          >
-            {#each STATUS_OPTIONS as s (s.id)}<option value={s.id}>{s.label}</option>{/each}
-          </select>
-        </label>
+          />
+        </div>
         <label class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
           From
           <input type="date" class={field} bind:value={filters.from} onchange={() => void reload()} />
