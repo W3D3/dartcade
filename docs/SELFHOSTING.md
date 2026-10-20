@@ -1,5 +1,8 @@
 # Self-hosting dartcade
 
+Just want to play? The official instance at [play.dartca.de](https://play.dartca.de) needs no setup:
+see [`GETTING_STARTED.md`](../GETTING_STARTED.md). This page is for running your own.
+
 You need a host that can run Docker and reach the internet (or your boards' network, for the
 live camera preview — see `BOARD_LIVE_CAMERA` below).
 

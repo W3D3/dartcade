@@ -1,12 +1,16 @@
 # Getting started
 
-Two pieces to stand up: the **app** (backend + database, one deployment for everyone who plays)
-and the **bridge** (a small binary next to each physical board, talking to its Board Manager).
+Two pieces: the **app** (backend + database, one deployment for everyone who plays) and the
+**bridge** (a small binary next to each physical board, talking to its Board Manager).
 
 ## 1. Get the app
 
-**Hosted dartcade is in progress** — a ready-to-use instance with nothing to deploy yourself.
-Until it's out, self-host it with Docker: see [`docs/SELFHOSTING.md`](docs/SELFHOSTING.md).
+**Use the official instance at [play.dartca.de](https://play.dartca.de).** Open it, create an
+account and you're ready: nothing to deploy yourself. Then continue with step 2.
+
+Want your own instance instead (your data, your network)? Self-host it with Docker: see
+[`docs/SELFHOSTING.md`](docs/SELFHOSTING.md), and use your own address wherever the steps below
+say `play.dartca.de`.
 
 ## 2. Install the bridge
 
@@ -23,7 +27,7 @@ as `ghcr.io/w3d3/dartcade-bridge`.
 ## 3. Run the bridge and pair a board
 
 ```bash
-dartcade-bridge --board-url http://<board-ip>:3180 --backend-url wss://<your-dartcade-host>
+dartcade-bridge --board-url http://<board-ip>:3180 --backend-url wss://play.dartca.de
 ```
 
 With no token configured yet, it prints a pairing code such as `7KQ4-M2XD`. In dartcade, open
