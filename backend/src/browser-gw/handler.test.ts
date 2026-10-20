@@ -172,7 +172,7 @@ describe('WS auth', () => {
 
   it('closes with 4403 when the session belongs to another user', async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'user-1' })
+    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'user-1', impersonatedBy: null })
     const engine = {
       getSession: vi.fn().mockReturnValue({ id: 's1', ownerUserId: 'user-2', seats: [] }),
       getSnapshot: vi.fn().mockReturnValue({ type: 'snapshot' }),
@@ -197,7 +197,7 @@ describe('WS auth', () => {
 
   it("lets a member of the game's lobby open it, without seats", async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'lena' })
+    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'lena', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { x01Module } = await import('../games/x01.js')
     const store = {
@@ -255,7 +255,7 @@ describe('WS client messages', () => {
 
   it('answers a refused action with an error', async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { x01Module } = await import('../games/x01.js')
     const store = {
@@ -307,7 +307,7 @@ describe('WS client messages', () => {
 
   it('ignores malformed messages without closing, then applies a valid action', async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { atcModule } = await import('../games/atc.js')
     const store = {
@@ -356,7 +356,7 @@ describe('WS client messages', () => {
 
   it('strips unknown fields from segment and the action before they reach the engine/snapshot', async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { atcModule } = await import('../games/atc.js')
     const { checkSnapshot } = await import('../session/snapshotValidation.js')
@@ -412,7 +412,7 @@ describe('WS client messages', () => {
 
   it('keeps coords (x, y only) on add_dart, dropping extra fields inside coords', async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { atcModule } = await import('../games/atc.js')
     const store = {
@@ -465,7 +465,7 @@ describe('WS client messages', () => {
 
   it('logs an action the engine fails to apply (e.g. the log write) and keeps the socket open', async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { atcModule } = await import('../games/atc.js')
     const store = {
@@ -558,7 +558,7 @@ describe('WS client messages', () => {
 
   it('remembers nobody leaving a game the engine has forgotten', async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-1', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { atcModule } = await import('../games/atc.js')
     const { browserGwPlugin, browserConnections, forgetSession } = await import('./handler.js')
@@ -615,7 +615,7 @@ describe('WS camera stills', () => {
 
   it("sends the stored stills of the game's boards after the snapshot, and each new one", async () => {
     const { getAuthUser } = await import('../auth/session.js')
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'lena', impersonatedBy: null })
     const { SessionEngine } = await import('../session/engine.js')
     const { x01Module } = await import('../games/x01.js')
     const { CameraStills } = await import('../camera/store.js')

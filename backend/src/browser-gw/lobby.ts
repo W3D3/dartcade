@@ -57,14 +57,15 @@ export function lobbyGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Err
   })
 
   app.get('/ws/me', { websocket: true }, (connection: SocketStream, req) => {
-    withAuthedSocket(connection, req, async (socket, userId) => {
+    withAuthedSocket(connection, req, async (socket, userId, impersonated) => {
       const [first, friendsFirst] = await Promise.all([lobbies.meMessage(userId), friends.message(userId)])
       if (!isOpen(socket)) return
       hub.addMeSocket(userId, socket, first, friendsFirst)
-      friends.connected(userId)
+      // An admin viewing as someone doesn't make them look online to their friends
+      if (!impersonated) friends.connected(userId)
       onceGone(socket, () => {
         hub.removeMeSocket(userId, socket)
-        friends.disconnected(userId)
+        if (!impersonated) friends.disconnected(userId)
       })
     })
   })

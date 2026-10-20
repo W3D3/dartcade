@@ -4,6 +4,8 @@ import { getAuthUser } from './session.js'
 declare module 'fastify' {
   interface FastifyRequest {
     userId: string
+    /** An admin's id when the request is their impersonation session. */
+    impersonatedBy?: string | null
   }
 }
 
@@ -16,6 +18,7 @@ export function requireAuth(req: FastifyRequest, reply: FastifyReply, done: Hook
         return
       }
       req.userId = user.userId
+      req.impersonatedBy = user.impersonatedBy
       done()
     })
     // Also catches a throw from the success path above, so nothing is left unhandled

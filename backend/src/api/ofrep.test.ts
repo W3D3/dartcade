@@ -15,7 +15,7 @@ const app = () => {
   return a
 }
 const signedIn = (role: string | null) => {
-  vi.mocked(getAuthUser).mockResolvedValue({ userId: role ? 'admin-1' : 'player-1' })
+  vi.mocked(getAuthUser).mockResolvedValue({ userId: role ? 'admin-1' : 'player-1', impersonatedBy: null })
   vi.mocked(getRoleAndEmail).mockResolvedValue({ role, email: role ? 'boss@x' : 'p@x' })
 }
 const bulk = (headers: Record<string, string> = {}, payload: object = {}) =>

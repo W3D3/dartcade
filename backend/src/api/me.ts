@@ -49,7 +49,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
 
   const progressionOn = async (userId: string) => flagEnabled('progression.enabled', await loadFlagUser(db, userId))
 
-  async function me(userId: string) {
+  async function me(userId: string, impersonating: boolean) {
     const account = await getAccount(db, userId)
     if (!account) throw new ApiError(404, { error: 'account not found' })
     const { role, ...rest } = account
@@ -57,13 +57,16 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       ...rest,
       isAdmin: isAdmin({ role }),
       isModerator: isModerator({ role }),
+      impersonating,
       suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
       // Pictures are rewards only while progression is on
       pictures: (await progressionOn(userId)) ? await unlockedPictures(db, userId) : AVATAR_PRESETS.map(p => p.id),
     }
   }
 
-  app.get<Route<'getMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('getMe') }, async req => me(req.userId))
+  app.get<Route<'getMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('getMe') }, async req =>
+    me(req.userId, typeof req.impersonatedBy === 'string'),
+  )
 
   app.patch<Route<'updateMe'>>('/api/me', { preValidation: requireAuth, schema: fromSpec('updateMe') }, async req => {
     if (req.body.name !== undefined) {
@@ -86,7 +89,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       await opts.onAvatarChanged?.(req.userId)
     }
     opts.onChanged?.(req.userId)
-    return me(req.userId)
+    return me(req.userId, typeof req.impersonatedBy === 'string')
   })
 
   // Uploads in a scope of their own that takes a JPEG only (as one Buffer); other bodies get a 415
@@ -112,7 +115,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
         await setAvatarUpload(db, req.userId, image, 'image/jpeg')
         await opts.onAvatarChanged?.(req.userId)
         opts.onChanged?.(req.userId)
-        return me(req.userId)
+        return me(req.userId, typeof req.impersonatedBy === 'string')
       },
     )
 
