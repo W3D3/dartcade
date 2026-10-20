@@ -61,13 +61,13 @@ Whole-mode replay is simple and correct; the platform is small. If it gets slow,
 Uses better-auth's `admin()` plugin (`impersonateUser`, `stopImpersonating`), already installed. Every route resolves the user
 through `getAuthUser()`, so the app, `/ws/me` and lobbies act as the target with no per-route change.
 
-- "View as" button on `#/admin/users`; calls the plugin through the auth client, then reloads the SPA.
+- "View as" item in the row menu of `#/admin/users` (not offered for admins or yourself); it calls `authClient.admin.impersonateUser` (the admin client plugin) and reloads the app, so every store, socket and flag starts afresh for the shown account. `lib/admin/impersonate.ts`.
 - Full access while impersonating (start games, settings, friends). Admin pages return 403 while impersonating, since the
-  effective user is not an admin; "Stop" restores the admin session.
+  effective user is not an admin; "Stop" restores the admin session and reloads on the users page.
 - Cannot impersonate another admin (plugin default). Impersonation sessions last 1 h (plugin default).
-- Persistent banner "Viewing as X, Stop" on every page when the session has `impersonatedBy` (`lib/components/admin/ImpersonationBanner.svelte`, mounted in the app shell).
-- Audit rows for start and stop (`admin_audit`).
-- Open point to check while building: friends presence and `lastLogin` must not mark the target as online/last seen because of an impersonation session.
+- `GET /api/me` has `impersonating`; a floating "Viewing as X, Stop" pill on every page while it is true (`lib/components/admin/ImpersonationBanner.svelte`, mounted in `App.svelte`).
+- `auth/sessionHooks.ts`: a session with `impersonatedBy` writes an `admin_audit` row (`user.impersonate`, admin and target) and does not stamp the user's `last_login_at`. Stopping is not audited (the plugin has no hook for it; the start row and the 1 h limit bound it).
+- An impersonating `/ws/me` socket does not count as the user being online for their friends (`withAuthedSocket` passes `impersonated`).
 
 ## Out of scope
 

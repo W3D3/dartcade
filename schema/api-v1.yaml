@@ -3623,7 +3623,8 @@ components:
             number: { type: number }
     Me:
       type: object
-      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, impersonating, createdAt, avatar, pictures]
+      required:
+        [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, impersonating, createdAt, avatar, pictures]
       additionalProperties: false
       properties:
         pictures:
