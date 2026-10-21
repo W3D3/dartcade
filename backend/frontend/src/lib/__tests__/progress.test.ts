@@ -78,7 +78,7 @@ describe('createProgress', () => {
     days: [],
     nextMilestone: { days: 7, xp: 250 },
   }
-  const at = (xp: number) => ({ xp, level: 1, streak })
+  const at = (xp: number) => ({ xp, level: 1, streak, dailyOpen: 3 })
 
   it('reads your progress, shows a push at once and reads again', async () => {
     const xp = writable<XpGainedMessage | null>(null)

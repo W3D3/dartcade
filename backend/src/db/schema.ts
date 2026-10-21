@@ -361,6 +361,24 @@ export interface UserProgressTable {
   updated_at: ColumnType<Date, Date | undefined, Date>
 }
 
+/** One slot of a daily or weekly challenge set (migration 033). */
+export interface UserChallengesTable {
+  id: string
+  user_id: string
+  period: 'daily' | 'weekly'
+  /** DATE; select it as text, like xp_ledger.local_date */
+  period_key: ColumnType<string, string, never>
+  slot: number
+  template_id: string
+  target: number
+  progress: ColumnType<number, number | undefined, number>
+  xp: number
+  completed_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+  reroll: ColumnType<number, number | undefined, number>
+  state: ColumnType<Record<string, unknown>, string | undefined, string>
+  created_at: ColumnType<Date, never, never>
+}
+
 export interface ProgressionBackfillTable {
   done_at: ColumnType<Date, Date | undefined, never>
 }
@@ -392,4 +410,5 @@ export interface Database {
   xp_ledger: XpLedgerTable
   user_progress: UserProgressTable
   progression_backfill: ProgressionBackfillTable
+  user_challenges: UserChallengesTable
 }

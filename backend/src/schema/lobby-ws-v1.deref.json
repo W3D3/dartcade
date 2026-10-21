@@ -3442,6 +3442,10 @@
           "type": "integer",
           "minimum": 0,
           "description": "Darts thrown, 180s hit, the streak day of a daily bonus."
+        },
+        "title": {
+          "type": "string",
+          "description": "A challenge's title."
         }
       }
     },
@@ -3506,6 +3510,10 @@
                 "type": "integer",
                 "minimum": 0,
                 "description": "Darts thrown, 180s hit, the streak day of a daily bonus."
+              },
+              "title": {
+                "type": "string",
+                "description": "A challenge's title."
               }
             }
           }
@@ -3529,6 +3537,35 @@
         "levelAfter": {
           "type": "integer",
           "minimum": 1
+        },
+        "challenges": {
+          "type": "array",
+          "description": "Challenges the game completed (and paid).",
+          "items": {
+            "type": "object",
+            "required": [
+              "title",
+              "xp",
+              "period"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "xp": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "period": {
+                "type": "string",
+                "enum": [
+                  "daily",
+                  "weekly"
+                ]
+              }
+            }
+          }
         },
         "streak": {
           "type": "object",
@@ -4535,6 +4572,10 @@
                     "type": "integer",
                     "minimum": 0,
                     "description": "Darts thrown, 180s hit, the streak day of a daily bonus."
+                  },
+                  "title": {
+                    "type": "string",
+                    "description": "A challenge's title."
                   }
                 }
               }
@@ -4558,6 +4599,35 @@
             "levelAfter": {
               "type": "integer",
               "minimum": 1
+            },
+            "challenges": {
+              "type": "array",
+              "description": "Challenges the game completed (and paid).",
+              "items": {
+                "type": "object",
+                "required": [
+                  "title",
+                  "xp",
+                  "period"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "xp": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "period": {
+                    "type": "string",
+                    "enum": [
+                      "daily",
+                      "weekly"
+                    ]
+                  }
+                }
+              }
             },
             "streak": {
               "type": "object",

@@ -16,6 +16,8 @@ export type XpSeat = {
   stats: Record<string, number>
 }
 export type SeatDarts = { total: number; camera: number; oneEighties: number }
+/** A seat's visit in the game itself (not the bull off), in order. */
+export type SeatVisit = { visit: number; leg: number; segs: { n: number; m: number }[] }
 /** A finished, counted game as XP sees it: the seats, each seat's darts, who had it rated. */
 export type XpGame = {
   id: string
@@ -23,14 +25,20 @@ export type XpGame = {
   finishedAt: Date
   seats: XpSeat[]
   darts: Map<number, SeatDarts>
+  /** Every seat's visits (challenges read them). */
+  visits: Map<number, SeatVisit[]>
   rankedUserIds: Set<string>
+  lobbyId: string | null
+  config: unknown
 }
+
+const SegSchema = z.object({ number: z.number(), multiplier: z.number() }).catch({ number: 0, multiplier: 0 })
 
 /** A finished game that still counts (not invalidated), with its result; undefined otherwise. */
 export async function getXpGame(db: Kysely<Database>, id: string): Promise<XpGame | undefined> {
   const game = await db
     .selectFrom('game_sessions')
-    .select(['id', 'game_id', 'finished_at'])
+    .select(['id', 'game_id', 'finished_at', 'lobby_id', 'config'])
     .where('id', '=', id)
     .where('status', '=', 'finished')
     .where('invalidated_at', 'is', null)
@@ -38,7 +46,7 @@ export async function getXpGame(db: Kysely<Database>, id: string): Promise<XpGam
     .$narrowType<{ finished_at: NotNull }>()
     .executeTakeFirst()
   if (!game) return undefined
-  const [players, darts, ranked] = await Promise.all([
+  const [players, darts, ranked, rawDarts] = await Promise.all([
     db
       .selectFrom('game_players')
       .select(['seat', 'user_id', 'controller_user_id', 'bot_level', 'placement', 'forfeited', 'stats'])
@@ -57,7 +65,27 @@ export async function getXpGame(db: Kysely<Database>, id: string): Promise<XpGam
       ) v
       GROUP BY seat`.execute(db),
     db.selectFrom('ranked_results').select('user_id').where('session_id', '=', id).execute(),
+    db
+      .selectFrom('game_darts')
+      .select(['seat', 'visit', 'leg', 'segment'])
+      .where('session_id', '=', id)
+      .where('phase', '=', 'game')
+      .orderBy('visit')
+      .orderBy('dart_index')
+      .execute(),
   ])
+  const visits = new Map<number, SeatVisit[]>()
+  for (const d of rawDarts) {
+    const seg = SegSchema.parse(d.segment)
+    const list = visits.get(d.seat) ?? []
+    let v = list.at(-1)
+    if (v?.visit !== d.visit) {
+      v = { visit: d.visit, leg: d.leg, segs: [] }
+      list.push(v)
+    }
+    v.segs.push({ n: seg.number, m: seg.multiplier })
+    visits.set(d.seat, list)
+  }
   return {
     id: game.id,
     gameId: game.game_id,
@@ -72,7 +100,10 @@ export async function getXpGame(db: Kysely<Database>, id: string): Promise<XpGam
       stats: StatsSchema.parse(p.stats),
     })),
     darts: new Map(darts.rows.map(r => [r.seat, { total: r.total, camera: r.camera, oneEighties: r.one_eighties }])),
+    visits,
     rankedUserIds: new Set(ranked.map(r => r.user_id)),
+    lobbyId: game.lobby_id,
+    config: game.config,
   }
 }
 
