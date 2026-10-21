@@ -656,7 +656,11 @@ export interface paths {
         get: operations["getAdminGame"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete a finished or aborted game for good, and recalculate the ratings it counted in (admin only)
+         * @description Moderators invalidate instead. The game, its seats, darts and input log go with it, invalidated or not, so history and stats follow. Ranked ratings of the modes it was rated in are replayed without it. A game in progress is refused.
+         */
+        delete: operations["deleteAdminGame"];
         options?: never;
         head?: never;
         patch?: never;
@@ -4145,6 +4149,41 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    deleteAdminGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGameRecalculated"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The game is in progress */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };

@@ -27,12 +27,13 @@ the game, its seats, darts and input log stay, so an investigation can still ope
 - An audit row (`admin_audit`: id, user id, action `game.invalidate`, target, JSON detail with the reason, created_at) is written in the same transaction.
   It is shared with impersonation (PR 3), so the migration lands here.
 - Restore: `POST /api/admin/games/:id/restore` clears the three columns and replays the ratings with the game again (it slots back in where it was played), with a `game.restore` audit row. Moderators get a Restore button on the list row and in the details banner. The replay writes `ranked_ratings` as an upsert, so a player whose rating row went away while their only ranked game was invalidated gets it back.
+- Hard delete, admins only (`DELETE /api/admin/games/:id`, `requireAdmin`; a moderator gets 403): the game row goes, and its seats, darts, input log and `ranked_results` cascade, invalidated or not, so it cannot be restored. A game in progress is refused (409). The ratings of the modes it was rated in are replayed without it, and a `game.delete` audit row records it (with whether it was invalidated and why). Admins get a Delete button next to Invalidate on the list row and in the details header, with a confirmation that says it is permanent.
 
 ## Moderators
 
 `user.role = 'moderator'` (better-auth's admin role column; `admin` keeps meaning admin). `isModerator` is true for both; `GET /api/me` says so.
-A moderator gets the all-games page, a game's details and invalidate, and the hub card for them; the users, flags, system and minigolf tools
-stay admin-only. Admins set the role on `#/admin/users` (`PUT /api/admin/users/:id/role` with `admin`, `moderator` or `null`);
+A moderator gets the all-games page, a game's details, and invalidate and restore, and the hub card for them; the hard delete, and the users, flags,
+system and minigolf tools, stay admin-only. Admins set the role on `#/admin/users` (`PUT /api/admin/users/:id/role` with `admin`, `moderator` or `null`);
 the last admin cannot be turned into anything else.
 
 ### Recalculating ratings
