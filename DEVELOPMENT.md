@@ -218,6 +218,7 @@ itself) and connects out to your dartcade backend.
    ```bash
    dartcade-bridge --board-url http://<board-ip>:3180 --backend-url wss://<your-dartcade-host>
    ```
+   Without `--backend-url` the bridge connects to the hosted dartcade at `play.dartca.de`.
 3. With no token configured, the bridge prints a pairing code such as `7KQ4-M2XD`.
 4. In dartcade, open **Boards → Pair a board**, enter the code and give the board a name.
 

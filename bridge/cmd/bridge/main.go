@@ -78,7 +78,7 @@ func main() {
 
 	fs := flag.NewFlagSet("bridge", flag.ExitOnError)
 	boardURL := fs.String("board-url", "", "Board Manager base URL (e.g. http://192.168.1.10:3180)")
-	backendURL := fs.String("backend-url", "", "Backend WSS URL")
+	backendURL := fs.String("backend-url", "", "Backend URL (e.g. wss://host; default: "+defaultBackendURL+")")
 	bridgeID := fs.String("bridge-id", "", "Stable bridge identifier (auto-generated if empty)")
 	logLevel := fs.String("log-level", "", "Log level: debug, info, warn, error")
 	verbose := fs.Bool("verbose", false, "Verbose (debug-level) logging")

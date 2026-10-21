@@ -20,6 +20,9 @@ import (
 	"dartcade/bridge/internal/api"
 )
 
+// defaultBackendURL is the hosted dartcade, used when no backend_url is set.
+const defaultBackendURL = "wss://play.dartca.de/bridge"
+
 // Config holds the bridge runtime configuration.
 type Config struct {
 	BoardURL   string `koanf:"board_url"`
@@ -37,6 +40,7 @@ func loadConfig(overrides map[string]string, cfgPath string) (Config, error) {
 	k := koanf.New(".")
 
 	k.Set("log_level", "info")
+	k.Set("backend_url", defaultBackendURL)
 
 	if cfgPath != "" {
 		if _, err := os.Stat(cfgPath); err == nil {
@@ -66,9 +70,6 @@ func loadConfig(overrides map[string]string, cfgPath string) (Config, error) {
 
 	if cfg.BoardURL == "" {
 		return cfg, fmt.Errorf("board_url is required (--board-url or DARTCADE_BOARD_URL)")
-	}
-	if cfg.BackendURL == "" {
-		return cfg, fmt.Errorf("backend_url is required (--backend-url or DARTCADE_BACKEND_URL)")
 	}
 	u, err := url.Parse(cfg.BackendURL)
 	if err != nil || u.Host == "" {

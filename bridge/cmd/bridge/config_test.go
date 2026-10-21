@@ -157,6 +157,16 @@ func TestLoadConfig_DefaultsBackendPathToBridge(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_DefaultsBackendURLToHosted(t *testing.T) {
+	cfg, err := loadConfig(map[string]string{"board_url": "ws://board:3180", "bridge_id": "br_test"}, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cfg.BackendURL != defaultBackendURL {
+		t.Errorf("got %q, want %q", cfg.BackendURL, defaultBackendURL)
+	}
+}
+
 func TestLoadConfig_RejectsMalformedBackendURL(t *testing.T) {
 	for _, bad := range []string{"localhost:3000/bridge", "not a url", "ws://%zz"} {
 		_, err := loadConfig(map[string]string{
