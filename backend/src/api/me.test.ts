@@ -162,9 +162,9 @@ describe('/api/me', () => {
     const a = createFastify()
     a.register(meApiPlugin, { db: {} as any, onChanged })
     vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
-    const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { avatar: { kind: 'preset', preset: 'cat' } } })
+    const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { avatar: { kind: 'preset', preset: 'crosshair' } } })
     expect(res.statusCode).toBe(200)
-    expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'cat' })
+    expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'crosshair' })
     expect(onChanged).toHaveBeenCalledWith('old')
   })
 

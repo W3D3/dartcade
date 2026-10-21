@@ -45,10 +45,10 @@ describe('Avatar', () => {
   })
 
   it("shows a preset's icon on its own colour instead of the initial, when avatar.kind is 'preset'", () => {
-    const out = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'cat' } })
-    expect(out).toContain('lucide-cat')
+    const out = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'crosshair' } })
+    expect(out).toContain('lucide-crosshair')
     expect(out).not.toContain('>L<')
-    expect(out).toContain('background-color: #5e3d73')
+    expect(out).toContain('background-color: #73503d')
     expect(out).not.toContain(avatarColor('Lena'))
   })
 
@@ -70,9 +70,9 @@ describe('Avatar', () => {
   })
 
   it('a bot glyph still wins over a preset or uploaded avatar — the more specific identity', () => {
-    const preset = html({ name: 'Bot Lvl 4', bot: { level: 4 }, avatar: { kind: 'preset', preset: 'ghost' } })
+    const preset = html({ name: 'Bot Lvl 4', bot: { level: 4 }, avatar: { kind: 'preset', preset: 'medal' } })
     expect(preset).toContain('lucide-bot')
-    expect(preset).not.toContain('lucide-ghost')
+    expect(preset).not.toContain('lucide-medal')
     const upload = html({ name: 'Bot Lvl 4', bot: { level: 4 }, userId: 'x', avatar: { kind: 'upload', version: 1 } })
     expect(upload).toContain('lucide-bot')
     expect(upload).not.toContain('<img')
