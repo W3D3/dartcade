@@ -69,7 +69,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
     const list = await app().inject({ method: 'GET', url: '/api/admin/users', headers: asPlayer })
     expect(list.statusCode).toBe(403)
 
-    const role = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asPlayer, payload: { admin: true } })
+    const role = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asPlayer, payload: { role: 'admin' } })
     expect(role.statusCode).toBe(403)
 
     const verified = await app().inject({
@@ -138,7 +138,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   })
 
   it('404s an unknown id', async () => {
-    const res = await app().inject({ method: 'PUT', url: '/api/admin/users/nope/role', headers: asAdmin, payload: { admin: true } })
+    const res = await app().inject({ method: 'PUT', url: '/api/admin/users/nope/role', headers: asAdmin, payload: { role: 'admin' } })
     expect(res.statusCode).toBe(404)
 
     const verified = await app().inject({
@@ -175,13 +175,42 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   })
 
   it('promotes then demotes a user', async () => {
-    const promoted = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asAdmin, payload: { admin: true } })
+    const promoted = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/player/role',
+      headers: asAdmin,
+      payload: { role: 'admin' },
+    })
     expect(promoted.statusCode).toBe(200)
     expect(promoted.json()).toMatchObject({ id: 'player', role: 'admin' })
 
-    const demoted = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asAdmin, payload: { admin: false } })
+    const demoted = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asAdmin, payload: { role: null } })
     expect(demoted.statusCode).toBe(200)
     expect(demoted.json()).toMatchObject({ id: 'player', role: null })
+  })
+
+  it('makes a moderator, and a moderator is no admin (403 on the user routes)', async () => {
+    const made = await app().inject({
+      method: 'PUT',
+      url: '/api/admin/users/player/role',
+      headers: asAdmin,
+      payload: { role: 'moderator' },
+    })
+    expect(made.statusCode).toBe(200)
+    expect(made.json()).toMatchObject({ id: 'player', role: 'moderator' })
+    expect((await app().inject({ method: 'GET', url: '/api/admin/users', headers: asPlayer })).statusCode).toBe(403)
+    const demoted = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asAdmin, payload: { role: null } })
+    expect(demoted.json()).toMatchObject({ id: 'player', role: null })
+  })
+
+  it('400s an unknown role', async () => {
+    const res = await app().inject({ method: 'PUT', url: '/api/admin/users/player/role', headers: asAdmin, payload: { role: 'owner' } })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('refuses to turn the only admin into a moderator', async () => {
+    const res = await app().inject({ method: 'PUT', url: '/api/admin/users/admin/role', headers: asAdmin, payload: { role: 'moderator' } })
+    expect(res.statusCode).toBe(409)
   })
 
   it('verifies then unverifies an email, visible in the list', async () => {
@@ -211,7 +240,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
   })
 
   it('refuses to demote the only admin', async () => {
-    const res = await app().inject({ method: 'PUT', url: '/api/admin/users/admin/role', headers: asAdmin, payload: { admin: false } })
+    const res = await app().inject({ method: 'PUT', url: '/api/admin/users/admin/role', headers: asAdmin, payload: { role: null } })
     expect(res.statusCode).toBe(409)
     expect(res.json()).toEqual({ error: 'There must be at least one admin' })
   })
@@ -227,8 +256,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
       const a = app()
       await a.ready()
       const [r1, r2] = await Promise.all([
-        a.inject({ method: 'PUT', url: '/api/admin/users/admin2/role', headers: asAdmin, payload: { admin: false } }),
-        a.inject({ method: 'PUT', url: '/api/admin/users/admin/role', headers: { 'x-user': 'admin2' }, payload: { admin: false } }),
+        a.inject({ method: 'PUT', url: '/api/admin/users/admin2/role', headers: asAdmin, payload: { role: null } }),
+        a.inject({ method: 'PUT', url: '/api/admin/users/admin/role', headers: { 'x-user': 'admin2' }, payload: { role: null } }),
       ])
       const codes = [r1.statusCode, r2.statusCode]
       // 403 if the first request demotes before the second's requireAdmin check; 409 if the last-admin guard catches it.

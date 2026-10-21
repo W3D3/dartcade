@@ -47,6 +47,7 @@ describe('/api/me', () => {
       nameNeedsChange: true,
       invisible: false,
       isAdmin: false,
+      isModerator: false,
       suggestedName: 'Phil.Taylor',
       createdAt: '2026-08-01T10:00:00.000Z',
     })
@@ -63,8 +64,22 @@ describe('/api/me', () => {
       createdAt: '2026-08-01T10:00:00.000Z',
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
-    expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true })
+    expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true, isModerator: true })
     expect(JSON.parse(res.body)).not.toHaveProperty('role')
+  })
+
+  it('tells moderators they moderate, but are no admin', async () => {
+    vi.mocked(getAccount).mockResolvedValue({
+      id: 'm',
+      name: 'Mod',
+      email: 'm@x',
+      nameNeedsChange: false,
+      invisible: false,
+      role: 'moderator',
+      createdAt: '2026-08-01T10:00:00.000Z',
+    })
+    const res = await app().inject({ method: 'GET', url: '/api/me' })
+    expect(JSON.parse(res.body)).toMatchObject({ isAdmin: false, isModerator: true })
   })
 
   it('renames, tells the lobby, and answers with the account as it is now', async () => {

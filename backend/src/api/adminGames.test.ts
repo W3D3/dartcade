@@ -11,7 +11,7 @@ vi.mock('../auth/middleware.js', () => ({
   }),
 }))
 vi.mock('../auth/admin.js', () => ({
-  requireAdmin: vi.fn((_req: any, _reply: any, done: () => void) => done()),
+  requireModerator: vi.fn((_req: any, _reply: any, done: () => void) => done()),
 }))
 vi.mock('../db/history.js', () => ({ getFinishedGame: vi.fn() }))
 vi.mock('../db/adminGames.js', () => ({ listAllGames: vi.fn() }))
@@ -58,11 +58,11 @@ function makeApp() {
 beforeEach(() => vi.clearAllMocks())
 
 describe('admin games API', () => {
-  it('is admin-only', async () => {
-    vi.mocked(admin.requireAdmin).mockImplementation((_req: any, reply: any) => reply.code(403).send({ error: 'forbidden' }))
+  it('is for admins and moderators only', async () => {
+    vi.mocked(admin.requireModerator).mockImplementation((_req: any, reply: any) => reply.code(403).send({ error: 'forbidden' }))
     expect((await makeApp().inject({ method: 'GET', url: '/api/admin/games' })).statusCode).toBe(403)
     expect((await makeApp().inject({ method: 'GET', url: '/api/admin/games/g1' })).statusCode).toBe(403)
-    vi.mocked(admin.requireAdmin).mockImplementation((_req: any, _reply: any, done: () => void) => done())
+    vi.mocked(admin.requireModerator).mockImplementation((_req: any, _reply: any, done: () => void) => done())
   })
 
   it('lists finished games by default and passes the filters on', async () => {

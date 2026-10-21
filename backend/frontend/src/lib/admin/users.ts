@@ -1,4 +1,4 @@
-// Admin user management: list accounts, and promote or demote admins (schema/api-v1.yaml, tag admin).
+// Admin user management: list accounts, and set their role (admin, moderator, none) (schema/api-v1.yaml, tag admin).
 import { api, type AdminUser } from '$lib/api'
 import { createRequestGuard } from '$lib/requestGuard'
 
@@ -32,10 +32,56 @@ export function createUserSearch(
   }
 }
 
-/** Promote or demote. On a refusal (the last admin, or a 404 if they were just removed), the message to show inline. */
-export async function setUserRole(id: string, admin: boolean): Promise<{ user: AdminUser } | { error: string }> {
-  const res = await api.PUT('/api/admin/users/{id}/role', { params: { path: { id } }, body: { admin } })
+export type Role = AdminUser['role']
+
+/** Set a role (null: none). On a refusal (the last admin, or a 404 if they were just removed), the message to show inline. */
+export async function setUserRole(id: string, role: Role): Promise<{ user: AdminUser } | { error: string }> {
+  const res = await api.PUT('/api/admin/users/{id}/role', { params: { path: { id } }, body: { role } })
   return res.data ? { user: res.data } : { error: res.error.error }
+}
+
+/** The role changes the row menu offers: every role the account doesn't have. */
+export function roleActions(current: Role): { role: Role; label: string }[] {
+  return [
+    { role: 'admin' as const, label: 'Make admin' },
+    { role: 'moderator' as const, label: 'Make moderator' },
+    { role: null, label: current === 'admin' ? 'Demote' : 'Remove role' },
+  ].filter(a => a.role !== current)
+}
+
+/** The confirmation for giving `user` a role: what changes for them, and whether it takes something away. */
+export function roleChange(
+  user: Pick<AdminUser, 'name' | 'role'>,
+  role: Role,
+  isSelf: boolean,
+): { title: string; body: string; confirm: string; danger: boolean } {
+  const losesAdmin = user.role === 'admin' && role !== 'admin'
+  const lose = losesAdmin && isSelf ? " You'll lose access to the admin pages." : ''
+  if (role === 'admin') {
+    return {
+      title: 'Make admin?',
+      body: `${user.name} will be able to manage users, feature flags, games and the system.`,
+      confirm: 'Make admin',
+      danger: false,
+    }
+  }
+  if (role === 'moderator') {
+    return {
+      title: 'Make moderator?',
+      body: `${user.name} will be able to look at any game and invalidate it, and nothing else of the admin tools.${losesAdmin ? ' They lose their admin access.' : ''}${lose}`,
+      confirm: 'Make moderator',
+      danger: losesAdmin,
+    }
+  }
+  return {
+    title: user.role === 'admin' ? 'Remove admin access?' : 'Remove moderator access?',
+    body:
+      user.role === 'admin'
+        ? `${user.name} won't be able to manage users, feature flags or games anymore.${lose}`
+        : `${user.name} won't be able to look at or invalidate games anymore.`,
+    confirm: user.role === 'admin' ? 'Demote' : 'Remove',
+    danger: true,
+  }
 }
 
 /** Mark an account's email verified or unverified. On a refusal (a 404 if they were just removed), the message to show inline. */

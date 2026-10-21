@@ -1,10 +1,10 @@
-// Admin-only user management: list accounts, promote or demote admins (schema/api-v1.yaml, tag admin).
+// Admin-only user management: list accounts, set their role (schema/api-v1.yaml, tag admin).
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { listUsers, getUser, setAdmin, setVerified, type AdminUserRow } from '../db/adminUsers.js'
+import { listUsers, getUser, setRole, setVerified, type AdminUserRow } from '../db/adminUsers.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -33,7 +33,7 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
   }))
 
   app.put<Route<'setUserRole'>>('/api/admin/users/:id/role', { preValidation: adminOnly, schema: fromSpec('setUserRole') }, async req => {
-    const result = await setAdmin(db, req.params.id, req.body.admin)
+    const result = await setRole(db, req.params.id, req.body.role)
     if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
     if (result === 'last-admin') throw new ApiError(409, { error: 'There must be at least one admin' })
     const user = await getUser(db, req.params.id)

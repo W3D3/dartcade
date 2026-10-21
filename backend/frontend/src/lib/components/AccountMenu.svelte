@@ -151,7 +151,7 @@
             label="{friends.requests} friend {friends.requests === 1 ? 'request' : 'requests'}"
           />{/if}
       </a>
-      {#if $currentUser?.isAdmin}
+      {#if $currentUser?.isModerator}
         <a href="#/admin" role="menuitem" onclick={closeMenu} class={ITEM}>
           <ShieldCheck size={18} strokeWidth={1.8} />
           Admin

@@ -9607,7 +9607,7 @@
     "/api/admin/games": {
       "get": {
         "operationId": "listAdminGames",
-        "summary": "Every game on the platform, newest started first (admin)",
+        "summary": "Every game on the platform, newest started first (admin or moderator)",
         "description": "Finished games by default; `status` also lists aborted and active ones.",
         "tags": [
           "admin"
@@ -10023,7 +10023,7 @@
       ],
       "get": {
         "operationId": "getAdminGame",
-        "summary": "A finished game with its per-mode detail, whoever played it (admin)",
+        "summary": "A finished game with its per-mode detail, whoever played it (admin or moderator)",
         "description": "Account ids of every seat are included.",
         "tags": [
           "admin"
@@ -11286,6 +11286,7 @@
                             "nullable": true,
                             "enum": [
                               "admin",
+                              "moderator",
                               null
                             ]
                           },
@@ -11442,7 +11443,7 @@
       ],
       "put": {
         "operationId": "setUserRole",
-        "summary": "Promote or demote an admin; refused if it would leave no admin (admin)",
+        "summary": "Set a user's role; refused if it would leave no admin (admin)",
         "tags": [
           "admin"
         ],
@@ -11453,13 +11454,19 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "admin"
+                  "role"
                 ],
                 "additionalProperties": false,
                 "properties": {
-                  "admin": {
-                    "type": "boolean",
-                    "description": "true: grant the admin role; false: revoke it"
+                  "role": {
+                    "type": "string",
+                    "nullable": true,
+                    "enum": [
+                      "admin",
+                      "moderator",
+                      null
+                    ],
+                    "description": "The role to give: admin (everything), moderator (look at and invalidate games), or null for none"
                   }
                 }
               }
@@ -11501,6 +11508,7 @@
                       "nullable": true,
                       "enum": [
                         "admin",
+                        "moderator",
                         null
                       ]
                     },
@@ -11514,6 +11522,45 @@
                       "format": "date-time",
                       "nullable": true,
                       "description": "Last sign-in; null if never"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -11794,6 +11841,7 @@
                       "nullable": true,
                       "enum": [
                         "admin",
+                        "moderator",
                         null
                       ]
                     },
@@ -13159,6 +13207,7 @@
                     "suggestedName",
                     "invisible",
                     "isAdmin",
+                    "isModerator",
                     "createdAt"
                   ],
                   "additionalProperties": false,
@@ -13189,6 +13238,10 @@
                     "isAdmin": {
                       "type": "boolean",
                       "description": "May open admin pages (the minigolf test bench)"
+                    },
+                    "isModerator": {
+                      "type": "boolean",
+                      "description": "May look at any game and invalidate it (admins and moderators)"
                     },
                     "createdAt": {
                       "type": "string",
@@ -13362,6 +13415,7 @@
                     "suggestedName",
                     "invisible",
                     "isAdmin",
+                    "isModerator",
                     "createdAt"
                   ],
                   "additionalProperties": false,
@@ -13392,6 +13446,10 @@
                     "isAdmin": {
                       "type": "boolean",
                       "description": "May open admin pages (the minigolf test bench)"
+                    },
+                    "isModerator": {
+                      "type": "boolean",
+                      "description": "May look at any game and invalidate it (admins and moderators)"
                     },
                     "createdAt": {
                       "type": "string",
@@ -35514,6 +35572,7 @@
             "nullable": true,
             "enum": [
               "admin",
+              "moderator",
               null
             ]
           },
@@ -35569,6 +35628,7 @@
                   "nullable": true,
                   "enum": [
                     "admin",
+                    "moderator",
                     null
                   ]
                 },
@@ -35591,13 +35651,19 @@
       "SetUserRoleRequest": {
         "type": "object",
         "required": [
-          "admin"
+          "role"
         ],
         "additionalProperties": false,
         "properties": {
-          "admin": {
-            "type": "boolean",
-            "description": "true: grant the admin role; false: revoke it"
+          "role": {
+            "type": "string",
+            "nullable": true,
+            "enum": [
+              "admin",
+              "moderator",
+              null
+            ],
+            "description": "The role to give: admin (everything), moderator (look at and invalidate games), or null for none"
           }
         }
       },
@@ -36023,6 +36089,7 @@
           "suggestedName",
           "invisible",
           "isAdmin",
+          "isModerator",
           "createdAt"
         ],
         "additionalProperties": false,
@@ -36053,6 +36120,10 @@
           "isAdmin": {
             "type": "boolean",
             "description": "May open admin pages (the minigolf test bench)"
+          },
+          "isModerator": {
+            "type": "boolean",
+            "description": "May look at any game and invalidate it (admins and moderators)"
           },
           "createdAt": {
             "type": "string",

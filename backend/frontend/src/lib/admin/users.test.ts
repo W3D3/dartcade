@@ -6,6 +6,8 @@ import {
   compareLastLogin,
   loadColumnVisibility,
   saveColumnVisibility,
+  roleActions,
+  roleChange,
   type AdminUser,
 } from './users'
 
@@ -129,5 +131,44 @@ describe('saveColumnVisibility', () => {
       },
     }
     expect(() => saveColumnVisibility(throwing, { verified: false })).not.toThrow()
+  })
+})
+
+describe('roleActions', () => {
+  it('offers every role the account does not have', () => {
+    expect(roleActions(null).map(a => a.label)).toEqual(['Make admin', 'Make moderator'])
+    expect(roleActions('moderator').map(a => a.label)).toEqual(['Make admin', 'Remove role'])
+    expect(roleActions('admin').map(a => a.label)).toEqual(['Make moderator', 'Demote'])
+  })
+})
+
+describe('roleChange', () => {
+  const ann = { name: 'Ann' }
+  it('says what an admin may do', () => {
+    expect(roleChange({ ...ann, role: null }, 'admin', false)).toMatchObject({ title: 'Make admin?', danger: false })
+  })
+
+  it('a moderator may only look at and invalidate games', () => {
+    const c = roleChange({ ...ann, role: null }, 'moderator', false)
+    expect(c).toMatchObject({ title: 'Make moderator?', confirm: 'Make moderator', danger: false })
+    expect(c.body).toContain('invalidate')
+  })
+
+  it('warns when making an admin a moderator takes admin away, and you lose the pages if it is you', () => {
+    const other = roleChange({ ...ann, role: 'admin' }, 'moderator', false)
+    expect(other).toMatchObject({ danger: true })
+    expect(other.body).toContain('lose their admin access')
+    expect(other.body).not.toContain("You'll lose")
+    expect(roleChange({ ...ann, role: 'admin' }, 'moderator', true).body).toContain("You'll lose access to the admin pages")
+  })
+
+  it('removing a role names the one being removed', () => {
+    expect(roleChange({ ...ann, role: 'admin' }, null, true)).toMatchObject({
+      title: 'Remove admin access?',
+      confirm: 'Demote',
+      danger: true,
+    })
+    expect(roleChange({ ...ann, role: 'admin' }, null, true).body).toContain("You'll lose access")
+    expect(roleChange({ ...ann, role: 'moderator' }, null, false)).toMatchObject({ title: 'Remove moderator access?', confirm: 'Remove' })
   })
 })

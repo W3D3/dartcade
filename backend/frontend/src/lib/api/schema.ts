@@ -628,7 +628,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Every game on the platform, newest started first (admin)
+         * Every game on the platform, newest started first (admin or moderator)
          * @description Finished games by default; `status` also lists aborted and active ones.
          */
         get: operations["listAdminGames"];
@@ -650,7 +650,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * A finished game with its per-mode detail, whoever played it (admin)
+         * A finished game with its per-mode detail, whoever played it (admin or moderator)
          * @description Account ids of every seat are included.
          */
         get: operations["getAdminGame"];
@@ -689,7 +689,7 @@ export interface paths {
             cookie?: never;
         };
         get?: never;
-        /** Promote or demote an admin; refused if it would leave no admin (admin) */
+        /** Set a user's role; refused if it would leave no admin (admin) */
         put: operations["setUserRole"];
         post?: never;
         delete?: never;
@@ -2285,7 +2285,7 @@ export interface components {
             email: string;
             emailVerified: boolean;
             /** @enum {string|null} */
-            role: "admin" | null;
+            role: "admin" | "moderator" | null;
             /**
              * Format: date-time
              * @description When the account was made
@@ -2301,8 +2301,11 @@ export interface components {
             users: components["schemas"]["AdminUser"][];
         };
         SetUserRoleRequest: {
-            /** @description true: grant the admin role; false: revoke it */
-            admin: boolean;
+            /**
+             * @description The role to give: admin (everything), moderator (look at and invalidate games), or null for none
+             * @enum {string|null}
+             */
+            role: "admin" | "moderator" | null;
         };
         SetUserVerifiedRequest: {
             /** @description true: mark the account's email verified; false: unverified */
@@ -2384,6 +2387,8 @@ export interface components {
             invisible: boolean;
             /** @description May open admin pages (the minigolf test bench) */
             isAdmin: boolean;
+            /** @description May look at any game and invalidate it (admins and moderators) */
+            isModerator: boolean;
             /**
              * Format: date-time
              * @description When the account was made (Member since)
@@ -4122,6 +4127,7 @@ export interface operations {
                     "application/json": components["schemas"]["AdminUser"];
                 };
             };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
