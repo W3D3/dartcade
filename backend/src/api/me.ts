@@ -113,7 +113,8 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     '/api/me/preferences',
     { preValidation: requireAuth, schema: fromSpec('updatePreferences') },
     async req => {
-      return (await updatePreferences(db, req.userId, req.body)) ?? {}
+      const { equipped: _equipped, ...changes } = req.body
+      return (await updatePreferences(db, req.userId, changes)) ?? {}
     },
   )
 

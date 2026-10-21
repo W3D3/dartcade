@@ -505,6 +505,10 @@ export interface XpGainedMessage {
   levelBefore: number
   levelAfter: number
   /**
+   * Perks newly unlocked (shared/progression.ts PERKS ids).
+   */
+  unlocks?: string[]
+  /**
    * Challenges the game completed (and paid).
    */
   challenges?: {

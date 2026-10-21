@@ -1,6 +1,16 @@
 // What one finished game pays one account: a pure function of the game's facts and what the
 // account already earned that day. The service (service.ts) loads the facts and writes the rows.
-import { MANUAL_GAME_FACTOR, MANUAL_GAMES_PER_DAY, XP, dailyBonus, dailyGameFactor, type StreakStep } from '../shared/progression.js'
+import {
+  MANUAL_GAME_FACTOR,
+  MANUAL_GAMES_PER_DAY,
+  XP,
+  dailyBonus,
+  dailyGameFactor,
+  levelPerks,
+  PERKS,
+  streakPerks,
+  type StreakStep,
+} from '../shared/progression.js'
 
 export type XpKind = 'dart' | 'game' | 'win' | 'ranked' | 'highlight' | 'daily' | 'challenge' | 'milestone' | 'freeze'
 
@@ -99,4 +109,31 @@ export function streakAwards(step: StreakStep, today: string, sessionId: string)
       meta: { days: step.milestone.days },
     })
   return awards
+}
+
+/** What a game's account has now reached: its level, its streak, and the deeds this game did. */
+export type Reached = {
+  level: number
+  streak: number
+  game: PlayerGame | null
+  ranked: { wins: number; bestRank: number | null }
+}
+
+/** Every perk `r` reaches (unlocking is idempotent: the store keeps the ones already held). */
+export function reachedPerks(r: Reached): { id: string; source: string }[] {
+  const events = new Set<string>()
+  const g = r.game
+  if (g && !isManual(g) && g.darts.oneEighties > 0) events.add('oneEighty')
+  // Around the Clock finished: the stats carry the darts it took
+  if (g?.gameId === 'atc' && !isManual(g) && g.stats.dartsToFinish !== undefined) events.add('atc')
+  if (r.ranked.wins >= 10) events.add('rankedWins')
+  if ((r.ranked.bestRank ?? -1) >= 15) events.add('rankedGold')
+  return [
+    // The level 1 perks need no row
+    ...levelPerks(r.level)
+      .filter(p => !levelPerks(1).includes(p))
+      .map(p => ({ id: p.id, source: 'level' })),
+    ...streakPerks(r.streak).map(p => ({ id: p.id, source: 'streak' })),
+    ...PERKS.filter(p => 'event' in p.unlock && events.has(p.unlock.event)).map(p => ({ id: p.id, source: 'event' })),
+  ]
 }

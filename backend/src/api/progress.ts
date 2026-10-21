@@ -3,7 +3,13 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
-import { gameLines, getProgress, getStreak, lockUser, streakDays, userTimeZone } from '../db/progression.js'
+import { gameLines, getProgress, getStreak, lockUser, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
+import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.js'
+import { getRatings, x01Average } from '../db/ranked.js'
+import { areFriends } from '../db/friends.js'
+import { getPreferences, updatePreferences } from '../db/users.js'
+import { PERKS, equippedOf, levelPerks, perk, streakNow, type Equipped, type PerkKind } from '../shared/progression.js'
+import { RANKED_MODES } from '../shared/ranked.js'
 import { xpLine } from '../progression/service.js'
 import { addDays, levelOf, localDate } from '../shared/progression.js'
 import { dayStreak } from '../progression/view.js'
@@ -25,17 +31,19 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
   app.get<Route<'getMyProgress'>>('/api/progress/me', { preValidation: requireAuth, schema: fromSpec('getMyProgress') }, async req => {
     await requireProgression(req.userId)
     const today = localDate(new Date(), await userTimeZone(db, req.userId))
-    const [{ xp }, streak, days, sets] = await Promise.all([
+    const [{ xp }, streak, days, sets, perks] = await Promise.all([
       getProgress(db, req.userId),
       getStreak(db, req.userId),
       streakDays(db, req.userId, addDays(today, -6), today),
       ensureSets(db, req.userId, today),
+      perksOf(req.userId),
     ])
     return {
       xp,
       level: levelOf(xp).level,
       streak: dayStreak(streak, today, days.played, days.frozen),
       dailyOpen: sets.daily.filter(c => c.completedAt === null).length,
+      perks,
     }
   })
 
@@ -50,6 +58,79 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       xp,
     }
   })
+
+  // The level 1 perks are everyone's; the rest are the rows unlocking wrote
+  async function perksOf(userId: string): Promise<{ unlocked: string[]; equipped: Equipped }> {
+    const [rows, prefs] = await Promise.all([unlockedPerks(db, userId), getPreferences(db, userId)])
+    return {
+      unlocked: [...levelPerks(1).map(p => p.id), ...rows.filter(id => perk(id) !== undefined)],
+      equipped: equippedOf(prefs?.equipped),
+    }
+  }
+
+  app.put<Route<'equipPerks'>>('/api/progress/equip', { preValidation: requireAuth, schema: fromSpec('equipPerks') }, async req => {
+    await requireProgression(req.userId)
+    const { unlocked, equipped } = await perksOf(req.userId)
+    const next: Equipped = { ...equipped }
+    for (const kind of ['title', 'banner', 'colors', 'emblem'] as const satisfies readonly PerkKind[]) {
+      const id = req.body[kind]
+      if (id === undefined) continue
+      if (id === null && kind === 'emblem') {
+        next.emblem = null
+        continue
+      }
+      if (id === null || perk(id)?.kind !== kind || !unlocked.includes(id)) throw new ApiError(409, { error: `${kind} is not unlocked` })
+      next[kind] = id
+    }
+    await updatePreferences(db, req.userId, { equipped: next })
+    return { unlocked, equipped: next }
+  })
+
+  app.get<Route<'getPlayerProfile'>>(
+    '/api/users/:id/profile',
+    { preValidation: requireAuth, schema: fromSpec('getPlayerProfile') },
+    async req => {
+      await requireProgression(req.userId)
+      const id = req.params.id
+      const user = await profileUser(db, id)
+      if (!user) throw new ApiError(404, { error: 'not found' })
+      const self = id === req.userId
+      const friend = !self && (await areFriends(db, req.userId, id))
+      const [{ xp }, streak, modes, ratings, average, h2h, recent, unlocked, zone] = await Promise.all([
+        getProgress(db, id),
+        getStreak(db, id),
+        modeCounts(db, id),
+        getRatings(db, id),
+        x01Average(db, id),
+        self ? null : headToHead(db, req.userId, id),
+        recentGames(db, id, req.userId),
+        self ? unlockedPerks(db, id) : [],
+        userTimeZone(db, id),
+      ])
+      return {
+        id: user.id,
+        name: user.name,
+        memberSince: user.createdAt.toISOString(),
+        relation: self ? 'self' : friend ? 'friend' : 'stranger',
+        look: equippedOf(user.equipped),
+        level: levelOf(xp).level,
+        // The rating stays hidden until the player is placed
+        ranked: RANKED_MODES.map(mode => {
+          const r = ratings[mode]
+          return { mode, rankIndex: r.rankIndex, rating: r.rankIndex === null ? null : r.rating, matches: r.matches, wins: r.wins }
+        }),
+        streak: self || friend ? streakNow(streak, localDate(new Date(), zone)) : null,
+        average,
+        favourite: modes[0]?.mode ?? null,
+        matches: modes.reduce((a, m) => a + m.games, 0),
+        headToHead: h2h,
+        playsMost: modes.slice(0, 3),
+        recent: recent.map(g => ({ ...g, finishedAt: g.finishedAt.toISOString() })),
+        xp: self ? xp : null,
+        collection: self ? { unlocked: levelPerks(1).length + unlocked.filter(p => perk(p)).length, total: PERKS.length } : null,
+      }
+    },
+  )
 
   app.get<Route<'getChallenges'>>('/api/challenges', { preValidation: requireAuth, schema: fromSpec('getChallenges') }, async req => {
     await requireProgression(req.userId)

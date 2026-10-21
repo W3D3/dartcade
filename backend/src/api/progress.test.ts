@@ -16,11 +16,21 @@ vi.mock('../db/progression.js', () => ({
   getStreak: vi.fn(),
   streakDays: vi.fn(),
   userTimeZone: vi.fn(),
+  unlockedPerks: vi.fn(),
+  lockUser: vi.fn(),
 }))
+vi.mock('../db/users.js', () => ({ getPreferences: vi.fn(), updatePreferences: vi.fn() }))
+vi.mock('../db/friends.js', () => ({ areFriends: vi.fn() }))
+vi.mock('../db/ranked.js', () => ({ getRatings: vi.fn(), x01Average: vi.fn() }))
+vi.mock('../db/profile.js', () => ({ profileUser: vi.fn(), modeCounts: vi.fn(), headToHead: vi.fn(), recentGames: vi.fn() }))
 
 import { flagEnabled } from '../flags/index.js'
 import { ensureSets } from '../progression/challengeSets.js'
-import { gameLines, getProgress, getStreak, streakDays, userTimeZone } from '../db/progression.js'
+import { gameLines, getProgress, getStreak, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
+import { getPreferences, updatePreferences } from '../db/users.js'
+import { areFriends } from '../db/friends.js'
+import { getRatings, x01Average } from '../db/ranked.js'
+import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.js'
 
 const app = () => {
   const a = createFastify()
@@ -35,6 +45,31 @@ beforeEach(() => {
   vi.mocked(userTimeZone).mockReset().mockResolvedValue('Europe/Vienna')
   vi.mocked(getStreak).mockReset().mockResolvedValue({ current: 0, best: 0, lastDate: null, freezes: 1 })
   vi.mocked(streakDays).mockReset().mockResolvedValue({ played: [], frozen: [] })
+  vi.mocked(unlockedPerks).mockReset().mockResolvedValue(['title.oche-regular'])
+  vi.mocked(getPreferences)
+    .mockReset()
+    .mockResolvedValue({ equipped: { title: 'title.oche-regular' } })
+  vi.mocked(updatePreferences).mockReset().mockResolvedValue({})
+  vi.mocked(areFriends).mockReset().mockResolvedValue(false)
+  const rating = { rating: 1200, rankIndex: null, matches: 0, wins: 0, streak: 0 }
+  vi.mocked(getRatings)
+    .mockReset()
+    .mockResolvedValue({
+      '1v1': { ...rating, mode: '1v1', rankIndex: 15, rating: 1310, matches: 12, wins: 8 },
+      '2v2': { ...rating, mode: '2v2' },
+    })
+  vi.mocked(x01Average).mockReset().mockResolvedValue(61.2)
+  vi.mocked(profileUser)
+    .mockReset()
+    .mockResolvedValue({ id: 'anna', name: 'Anna', createdAt: new Date('2026-08-01T00:00:00Z'), equipped: { colors: 'colors.night' } })
+  vi.mocked(modeCounts)
+    .mockReset()
+    .mockResolvedValue([
+      { mode: 'x01', games: 20 },
+      { mode: 'atc', games: 3 },
+    ])
+  vi.mocked(headToHead).mockReset().mockResolvedValue({ wins: 1, losses: 2 })
+  vi.mocked(recentGames).mockReset().mockResolvedValue([])
   const row = {
     period: 'daily' as const,
     periodKey: '2026-10-21',
@@ -95,5 +130,59 @@ describe('/api/progress', () => {
 
   it('is 404 for a game that paid nothing (yet)', async () => {
     expect((await app().inject({ method: 'GET', url: '/api/progress/games/g1' })).statusCode).toBe(404)
+  })
+
+  it('shows your perks with the level 1 ones', async () => {
+    const res = await app().inject({ method: 'GET', url: '/api/progress/me' })
+    expect(JSON.parse(res.body).perks).toEqual({
+      unlocked: ['title.rookie', 'banner.plain', 'colors.dartcade', 'emblem.dart', 'title.oche-regular'],
+      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade', emblem: null },
+    })
+  })
+
+  it('equips an unlocked perk, and nothing locked or of the wrong kind', async () => {
+    const put = (body: object) => app().inject({ method: 'PUT', url: '/api/progress/equip', payload: body })
+    const ok = await put({ banner: 'banner.plain', emblem: 'emblem.dart' })
+    expect(ok.statusCode).toBe(200)
+    expect(vi.mocked(updatePreferences)).toHaveBeenCalledWith(expect.anything(), 'chris', {
+      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade', emblem: 'emblem.dart' },
+    })
+    expect((await put({ title: 'title.maximum' })).statusCode).toBe(409)
+    expect((await put({ title: 'banner.plain' })).statusCode).toBe(409)
+    expect((await put({ emblem: null })).statusCode).toBe(200)
+  })
+
+  it("shows a stranger's profile without their streak, XP or collection", async () => {
+    const res = await app().inject({ method: 'GET', url: '/api/users/anna/profile' })
+    expect(res.statusCode).toBe(200)
+    expect(JSON.parse(res.body)).toMatchObject({
+      name: 'Anna',
+      relation: 'stranger',
+      look: { colors: 'colors.night', title: 'title.rookie' },
+      level: 14,
+      streak: null,
+      xp: null,
+      collection: null,
+      favourite: 'x01',
+      matches: 23,
+      average: 61.2,
+      headToHead: { wins: 1, losses: 2 },
+      ranked: [
+        { mode: '1v1', rankIndex: 15, rating: 1310, matches: 12, wins: 8 },
+        { mode: '2v2', rankIndex: null, rating: null, matches: 0, wins: 0 },
+      ],
+    })
+  })
+
+  it("shows a friend's streak", async () => {
+    vi.mocked(areFriends).mockResolvedValue(true)
+    const res = await app().inject({ method: 'GET', url: '/api/users/anna/profile' })
+    expect(JSON.parse(res.body)).toMatchObject({ relation: 'friend', streak: 0, xp: null })
+  })
+
+  it('shows your own XP and collection, and no head-to-head', async () => {
+    vi.mocked(profileUser).mockResolvedValue({ id: 'chris', name: 'Chris', createdAt: new Date(), equipped: null })
+    const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })
+    expect(JSON.parse(res.body)).toMatchObject({ relation: 'self', xp: 6780, headToHead: null, collection: { unlocked: 5, total: 27 } })
   })
 })

@@ -196,3 +196,94 @@ export function streakNow(s: StreakState, today: string): number {
   if (gap === 2 && s.freezes > 0) return s.current
   return 0
 }
+
+// ---- Cosmetics -------------------------------------------------------------------------------
+// Everything a level, a streak milestone or a deed unlocks is cosmetic: a title, a banner, card
+// colours and an emblem on the profile card. Nothing changes a game, a rating or a queue, and the
+// avatar ring is never one (it means online status).
+
+export type PerkKind = 'title' | 'banner' | 'colors' | 'emblem'
+/** What unlocks a perk: a level, a day-streak milestone, or something done once. */
+export type Unlock = { level: number } | { streak: number } | { event: 'oneEighty' | 'atc' | 'rankedWins' | 'rankedGold' }
+export type Perk = { id: string; kind: PerkKind; name: string; unlock: Unlock }
+
+/** Card colours: a fixed background and foreground pair, picked together (no free colour picker). */
+export const CARD_COLORS: Record<string, { bg: string; fg: string }> = {
+  dartcade: { bg: '#181a16', fg: '#c6f24e' },
+  chalk: { bg: '#26301d', fg: '#e9f5c8' },
+  treble: { bg: '#1e3a2b', fg: '#f2dca0' },
+  'oche-red': { bg: '#3a1a17', fg: '#ffb4ac' },
+  night: { bg: '#14202e', fg: '#9ec8ff' },
+  'gold-leaf': { bg: '#2b230c', fg: '#f2b94e' },
+  paper: { bg: '#e9dfc4', fg: '#1a1a17' },
+  bullseye: { bg: '#4a1f1c', fg: '#ffd9d5' },
+}
+
+export const PERKS: readonly Perk[] = [
+  { id: 'title.rookie', kind: 'title', name: 'Rookie', unlock: { level: 1 } },
+  { id: 'title.oche-regular', kind: 'title', name: 'Oche Regular', unlock: { level: 15 } },
+  { id: 'title.finisher', kind: 'title', name: 'Finisher', unlock: { level: 35 } },
+  { id: 'title.maximum', kind: 'title', name: 'Maximum', unlock: { level: 40 } },
+  { id: 'title.fortnight', kind: 'title', name: 'Fortnight', unlock: { streak: 14 } },
+  { id: 'title.never-misses', kind: 'title', name: 'Never Misses', unlock: { streak: 100 } },
+  { id: 'banner.plain', kind: 'banner', name: 'Plain', unlock: { level: 1 } },
+  { id: 'banner.chalk', kind: 'banner', name: 'Chalkboard', unlock: { level: 10 } },
+  { id: 'banner.treble', kind: 'banner', name: 'Treble ring', unlock: { level: 25 } },
+  { id: 'banner.bullseye', kind: 'banner', name: 'Bullseye', unlock: { level: 50 } },
+  { id: 'banner.gold', kind: 'banner', name: 'Gold', unlock: { streak: 30 } },
+  { id: 'colors.dartcade', kind: 'colors', name: 'Dartcade', unlock: { level: 1 } },
+  { id: 'colors.night', kind: 'colors', name: 'Night', unlock: { level: 5 } },
+  { id: 'colors.chalk', kind: 'colors', name: 'Chalk', unlock: { level: 10 } },
+  { id: 'colors.treble', kind: 'colors', name: 'Treble', unlock: { level: 25 } },
+  { id: 'colors.paper', kind: 'colors', name: 'Paper', unlock: { level: 35 } },
+  { id: 'colors.bullseye', kind: 'colors', name: 'Bullseye', unlock: { level: 50 } },
+  { id: 'colors.oche-red', kind: 'colors', name: 'Oche red', unlock: { event: 'rankedGold' } },
+  { id: 'colors.gold-leaf', kind: 'colors', name: 'Gold leaf', unlock: { streak: 30 } },
+  { id: 'emblem.dart', kind: 'emblem', name: 'Dart', unlock: { level: 1 } },
+  { id: 'emblem.target', kind: 'emblem', name: 'Target', unlock: { level: 20 } },
+  { id: 'emblem.star', kind: 'emblem', name: 'Star', unlock: { level: 30 } },
+  { id: 'emblem.crown', kind: 'emblem', name: 'Crown', unlock: { level: 40 } },
+  { id: 'emblem.flame', kind: 'emblem', name: 'Flame', unlock: { streak: 7 } },
+  { id: 'emblem.180', kind: 'emblem', name: '180 sign', unlock: { event: 'oneEighty' } },
+  { id: 'emblem.shield', kind: 'emblem', name: 'Shield', unlock: { event: 'rankedWins' } },
+  { id: 'emblem.clock', kind: 'emblem', name: 'Clock', unlock: { event: 'atc' } },
+]
+
+export const perk = (id: string): Perk | undefined => PERKS.find(p => p.id === id)
+
+/** What a player wears: one perk id per kind; no emblem until one is picked. */
+export type Equipped = { title: string; banner: string; colors: string; emblem: string | null }
+/** Everyone's look until they pick: the level 1 perks. */
+export const DEFAULT_EQUIPPED: Equipped = { title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade', emblem: null }
+
+/** The perks level `level` has reached. */
+export const levelPerks = (level: number): Perk[] => PERKS.filter(p => 'level' in p.unlock && p.unlock.level <= level)
+/** The perks a streak of `days` has reached. */
+export const streakPerks = (days: number): Perk[] => PERKS.filter(p => 'streak' in p.unlock && p.unlock.streak <= days)
+/** The next perk a level unlocks after `level`. */
+export const nextLevelPerk = (level: number): Perk | null =>
+  PERKS.filter(p => 'level' in p.unlock && p.unlock.level > level).sort((a, b) => levelOfUnlock(a) - levelOfUnlock(b))[0] ?? null
+const levelOfUnlock = (p: Perk): number => ('level' in p.unlock ? p.unlock.level : Infinity)
+
+/** Where a perk comes from, in a few words: 'Level 15', '14-day streak', 'Hit a 180'. */
+export function unlockText(u: Unlock): string {
+  if ('level' in u) return `Level ${u.level}`
+  if ('streak' in u) return `${u.streak}-day streak`
+  return { oneEighty: 'Hit a 180', atc: 'Finish Around the Clock', rankedWins: 'Win 10 ranked games', rankedGold: 'Reach ranked Gold' }[
+    u.event
+  ]
+}
+
+/** A stored look, with every missing, unknown or wrong-kind pick back at its default. */
+export function equippedOf(stored: Partial<Record<string, unknown>> | null | undefined): Equipped {
+  const pick = (kind: PerkKind): string | null => {
+    const id = stored?.[kind]
+    return typeof id === 'string' && perk(id)?.kind === kind ? id : null
+  }
+  return {
+    title: pick('title') ?? DEFAULT_EQUIPPED.title,
+    banner: pick('banner') ?? DEFAULT_EQUIPPED.banner,
+    colors: pick('colors') ?? DEFAULT_EQUIPPED.colors,
+    emblem: pick('emblem'),
+  }
+}
