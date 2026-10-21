@@ -620,26 +620,23 @@ export class LobbyService {
       }
       if (patch.nextGame) await this.checkAvailable(userId, patch.nextGame.gameId)
       // A bot seat can only be driven by a module that defines botTarget (see addGuest's same
-      // guard): a bot already seated blocks switching to a game that doesn't, not just adding
-      // one to such a lobby. Without this, a running game with a bot seat but no botTarget
-      // throws synchronously inside the engine's push() on the bot's first turn.
-      if (
-        patch.nextGame !== undefined &&
-        patch.nextGame !== null &&
-        !supportsBots(patch.nextGame.gameId) &&
-        lobby.people.some(p => p.bot !== null)
-      ) {
-        throw LobbyError.badRequest("can't switch to a game that doesn't support bots while a bot is in the lobby — remove the bot first")
-      }
+      // guard), so switching to a game without one drops the bots from the lobby.
+      const kickBots = patch.nextGame ? !supportsBots(patch.nextGame.gameId) : false
+      const bots = kickBots ? lobby.people.filter(p => p.bot !== null) : []
       if (patch.throwOrder !== undefined || patch.nextGame !== undefined) {
         const coupled = rules.coupleBullOff(lobby, patch, gameId => 'bullOff' in (games[gameId]?.defaultConfig ?? {}))
         if ('error' in coupled) throw LobbyError.badRequest(coupled.error)
         if (coupled.throwOrderChanged) set.throw_order = coupled.throwOrder
         if (coupled.nextGameChanged) set.next_game = coupled.nextGame
       }
-      if (Object.keys(set).length > 0) {
+      if (Object.keys(set).length > 0 || bots.length > 0) {
         await this.db.transaction().execute(async trx => {
-          await q.updateLobby(trx, lobbyId, set)
+          if (bots.length > 0)
+            await q.deletePeople(
+              trx,
+              bots.map(b => b.id),
+            )
+          if (Object.keys(set).length > 0) await q.updateLobby(trx, lobbyId, set)
           if (set.next_game !== undefined) await this.fillTeams(trx, lobbyId, set.next_game)
         })
       }
