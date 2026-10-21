@@ -1,6 +1,7 @@
 <script lang="ts">
   // One friend in the Friends drawer: avatar with a status ring, name, status line and the action
   // (In lobby / Join / Invite / Invited). Removing a friend stays on the Friends page.
+  import ProfilePopover from '../progress/ProfilePopover.svelte'
   import { Check } from '@lucide/svelte'
   import type { Friend } from '$lib/api/lobby-ws'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -26,7 +27,9 @@
     <StatusRing kind={friend.status.kind} />
   </span>
   <span class="flex flex-col gap-px min-w-0 flex-grow">
-    <span class="text-[15px] font-semibold truncate {offline ? 'text-ink-2' : 'text-text'}">{friend.name}</span>
+    <ProfilePopover userId={friend.id} name={friend.name}>
+      <span class="text-[15px] font-semibold truncate {offline ? 'text-ink-2' : 'text-text'}">{friend.name}</span>
+    </ProfilePopover>
     <span class="text-[12px] truncate {TONE[line.tone]}">{line.text}</span>
   </span>
   {#if action === 'in-lobby'}

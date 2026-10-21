@@ -1,18 +1,29 @@
 // What a player's profile (popup and page) shows about them, from the viewer's side.
 import { sql, type Kysely, type NotNull } from 'kysely'
 import type { Database } from './schema.js'
+import { toAvatar, type Avatar } from './users.js'
 
-/** Name, joined, and the stored look (user.preferences.equipped). */
+/** Name, joined, their picture and the stored look (user.preferences.equipped). */
 export async function profileUser(
   db: Kysely<Database>,
   userId: string,
-): Promise<{ id: string; name: string; createdAt: Date; equipped: Record<string, unknown> | null } | undefined> {
+): Promise<{ id: string; name: string; createdAt: Date; avatar: Avatar; equipped: Record<string, unknown> | null } | undefined> {
   const row = await db
     .selectFrom('user')
-    .select(['id', 'name', 'createdAt', sql<Record<string, unknown> | null>`preferences->'equipped'`.as('equipped')])
+    .select([
+      'id',
+      'name',
+      'createdAt',
+      'avatar_kind',
+      'avatar_preset',
+      'avatar_color',
+      'avatar_fg_color',
+      'avatar_version',
+      sql<Record<string, unknown> | null>`preferences->'equipped'`.as('equipped'),
+    ])
     .where('id', '=', userId)
     .executeTakeFirst()
-  return row
+  return row && { id: row.id, name: row.name, createdAt: row.createdAt, avatar: toAvatar(row), equipped: row.equipped }
 }
 
 const counted = (db: Kysely<Database>) =>

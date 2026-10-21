@@ -1,12 +1,20 @@
-// The built-in avatar picture (Settings → Profile): the Dartcade mark on a background colour,
-// with its own foreground (icon) colour — chosen independently, from a short list of basic
-// colours. There's only one icon for now; more (and more colours) unlock through XP progression
-// later, so `preset` stays a real field rather than being dropped, even with one value in it.
+// The built-in avatar pictures (Settings → Profile, and Customise on your profile): an icon on a
+// background colour, with its own foreground (icon) colour, chosen independently from a short list
+// of basic colours. The Dartcade mark is everyone's; the others unlock through progression
+// (`picture.<id>` in shared/progression.ts PERKS: levels, a streak milestone, deeds).
 export interface AvatarPreset {
   id: string
 }
 
-export const AVATAR_PRESETS: readonly AvatarPreset[] = [{ id: 'logo' }] as const
+export const AVATAR_PRESETS: readonly AvatarPreset[] = [
+  { id: 'logo' },
+  { id: 'dart' },
+  { id: 'target' },
+  { id: 'star' },
+  { id: 'crown' },
+  { id: 'flame' },
+  { id: 'shield' },
+] as const
 
 // A short list of basic colours a preset's background or foreground can be set to.
 export const AVATAR_COLORS: readonly string[] = [

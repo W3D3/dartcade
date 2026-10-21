@@ -3,7 +3,7 @@
   // Invisible), Friends, Admin (admins only), Settings, Sign out. Phones: the avatar
   // in the header (menu below it). Tablets: the avatar at the foot of the rail (menu beside
   // it). Desktops: a row with your name and status at the foot of the side nav (menu above it).
-  import { ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UsersRound } from '@lucide/svelte'
+  import { ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UserRound, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
@@ -156,6 +156,10 @@
           />{/if}
       </a>
       {#if level !== null}
+        <a href="#/profile" role="menuitem" onclick={closeMenu} class={ITEM}>
+          <UserRound size={18} strokeWidth={1.8} />
+          Your profile
+        </a>
         <a href="#/progress" role="menuitem" onclick={closeMenu} class={ITEM}>
           <TrendingUp size={18} strokeWidth={1.8} />
           Progress

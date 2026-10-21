@@ -198,13 +198,14 @@ export function streakNow(s: StreakState, today: string): number {
 }
 
 // ---- Cosmetics -------------------------------------------------------------------------------
-// Everything a level, a streak milestone or a deed unlocks is cosmetic: a title, a banner, card
-// colours and an emblem on the profile card. Nothing changes a game, a rating or a queue, and the
-// avatar ring is never one (it means online status).
+// Everything a level, a streak milestone or a deed unlocks is cosmetic: a title, a banner and card
+// colours on the profile card, and profile pictures (the avatar presets of shared/avatarPresets.ts).
+// Nothing changes a game, a rating or a queue, and the avatar ring is never
+// one (it means online status).
 
-export type PerkKind = 'title' | 'banner' | 'colors' | 'emblem'
+export type PerkKind = 'title' | 'banner' | 'colors' | 'picture'
 /** What unlocks a perk: a level, a day-streak milestone, or something done once. */
-export type Unlock = { level: number } | { streak: number } | { event: 'oneEighty' | 'atc' | 'rankedWins' | 'rankedGold' }
+export type Unlock = { level: number } | { streak: number } | { event: 'rankedWins' | 'rankedGold' }
 export type Perk = { id: string; kind: PerkKind; name: string; unlock: Unlock }
 
 /** Card colours: a fixed background and foreground pair, picked together (no free colour picker). */
@@ -239,22 +240,25 @@ export const PERKS: readonly Perk[] = [
   { id: 'colors.bullseye', kind: 'colors', name: 'Bullseye', unlock: { level: 50 } },
   { id: 'colors.oche-red', kind: 'colors', name: 'Oche red', unlock: { event: 'rankedGold' } },
   { id: 'colors.gold-leaf', kind: 'colors', name: 'Gold leaf', unlock: { streak: 30 } },
-  { id: 'emblem.dart', kind: 'emblem', name: 'Dart', unlock: { level: 1 } },
-  { id: 'emblem.target', kind: 'emblem', name: 'Target', unlock: { level: 20 } },
-  { id: 'emblem.star', kind: 'emblem', name: 'Star', unlock: { level: 30 } },
-  { id: 'emblem.crown', kind: 'emblem', name: 'Crown', unlock: { level: 40 } },
-  { id: 'emblem.flame', kind: 'emblem', name: 'Flame', unlock: { streak: 7 } },
-  { id: 'emblem.180', kind: 'emblem', name: '180 sign', unlock: { event: 'oneEighty' } },
-  { id: 'emblem.shield', kind: 'emblem', name: 'Shield', unlock: { event: 'rankedWins' } },
-  { id: 'emblem.clock', kind: 'emblem', name: 'Clock', unlock: { event: 'atc' } },
+  // Pictures: `picture.<preset>` is the avatar preset of that id
+  { id: 'picture.logo', kind: 'picture', name: 'Dartcade mark', unlock: { level: 1 } },
+  { id: 'picture.dart', kind: 'picture', name: 'Dart', unlock: { level: 3 } },
+  { id: 'picture.target', kind: 'picture', name: 'Target', unlock: { level: 20 } },
+  { id: 'picture.star', kind: 'picture', name: 'Star', unlock: { level: 30 } },
+  { id: 'picture.crown', kind: 'picture', name: 'Crown', unlock: { level: 40 } },
+  { id: 'picture.flame', kind: 'picture', name: 'Flame', unlock: { streak: 7 } },
+  { id: 'picture.shield', kind: 'picture', name: 'Shield', unlock: { event: 'rankedWins' } },
 ]
+
+/** The perk that unlocks avatar preset `preset`. */
+export const pictureFor = (preset: string): string => `picture.${preset}`
 
 export const perk = (id: string): Perk | undefined => PERKS.find(p => p.id === id)
 
-/** What a player wears: one perk id per kind; no emblem until one is picked. */
-export type Equipped = { title: string; banner: string; colors: string; emblem: string | null }
+/** What a player's card wears: one perk id per kind (the picture is their avatar, set apart). */
+export type Equipped = { title: string; banner: string; colors: string }
 /** Everyone's look until they pick: the level 1 perks. */
-export const DEFAULT_EQUIPPED: Equipped = { title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade', emblem: null }
+export const DEFAULT_EQUIPPED: Equipped = { title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade' }
 
 /** The perks level `level` has reached. */
 export const levelPerks = (level: number): Perk[] => PERKS.filter(p => 'level' in p.unlock && p.unlock.level <= level)
@@ -265,13 +269,11 @@ export const nextLevelPerk = (level: number): Perk | null =>
   PERKS.filter(p => 'level' in p.unlock && p.unlock.level > level).sort((a, b) => levelOfUnlock(a) - levelOfUnlock(b))[0] ?? null
 const levelOfUnlock = (p: Perk): number => ('level' in p.unlock ? p.unlock.level : Infinity)
 
-/** Where a perk comes from, in a few words: 'Level 15', '14-day streak', 'Hit a 180'. */
+/** Where a perk comes from, in a few words: 'Level 15', '14-day streak', 'Reach ranked Gold'. */
 export function unlockText(u: Unlock): string {
   if ('level' in u) return `Level ${u.level}`
   if ('streak' in u) return `${u.streak}-day streak`
-  return { oneEighty: 'Hit a 180', atc: 'Finish Around the Clock', rankedWins: 'Win 10 ranked games', rankedGold: 'Reach ranked Gold' }[
-    u.event
-  ]
+  return { rankedWins: 'Win 10 ranked games', rankedGold: 'Reach ranked Gold' }[u.event]
 }
 
 /** A stored look, with every missing, unknown or wrong-kind pick back at its default. */
@@ -284,6 +286,5 @@ export function equippedOf(stored: Partial<Record<string, unknown>> | null | und
     title: pick('title') ?? DEFAULT_EQUIPPED.title,
     banner: pick('banner') ?? DEFAULT_EQUIPPED.banner,
     colors: pick('colors') ?? DEFAULT_EQUIPPED.colors,
-    emblem: pick('emblem'),
   }
 }

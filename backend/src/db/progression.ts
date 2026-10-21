@@ -2,7 +2,7 @@ import { sql, type Kysely, type NotNull } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import type { Award, DayTally } from '../progression/rules.js'
-import { levelOf, type StreakState } from '../shared/progression.js'
+import { PERKS, levelOf, levelPerks, type StreakState } from '../shared/progression.js'
 
 const StatsSchema = z.record(z.string(), z.number()).catch({})
 
@@ -345,4 +345,22 @@ export async function rankedDeeds(db: Kysely<Database>, userId: string): Promise
       .executeTakeFirst(),
   ])
   return { wins: wins.n, bestRank: rank?.best ?? null }
+}
+
+/** Whether the account holds perk `perkId` (the level 1 ones everyone does). */
+export async function hasPerk(db: Kysely<Database>, userId: string, perkId: string): Promise<boolean> {
+  if (levelPerks(1).some(p => p.id === perkId)) return true
+  const row = await db
+    .selectFrom('user_unlocks')
+    .select('perk_id')
+    .where('user_id', '=', userId)
+    .where('perk_id', '=', perkId)
+    .executeTakeFirst()
+  return row !== undefined
+}
+
+/** The pictures the account may wear: avatar preset ids. */
+export async function unlockedPictures(db: Kysely<Database>, userId: string): Promise<string[]> {
+  const held = new Set([...levelPerks(1).map(p => p.id), ...(await unlockedPerks(db, userId))])
+  return PERKS.filter(p => p.kind === 'picture' && held.has(p.id)).map(p => p.id.slice('picture.'.length))
 }

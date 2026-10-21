@@ -18,7 +18,9 @@ import {
   levelPerks,
   nextLevelPerk,
   streakPerks,
+  pictureFor,
 } from './progression.js'
+import { AVATAR_PRESETS } from './avatarPresets.js'
 
 describe('perks', () => {
   // WCAG relative luminance and contrast ratio
@@ -42,20 +44,25 @@ describe('perks', () => {
     for (const p of PERKS.filter(x => x.kind === 'colors')) expect(CARD_COLORS[p.id.slice('colors.'.length)], p.id).toBeDefined()
   })
 
+  it('has an avatar preset for every picture but the photo, and a picture for every preset', () => {
+    const pictures = PERKS.filter(p => p.kind === 'picture').map(p => p.id)
+    expect(AVATAR_PRESETS.map(p => pictureFor(p.id)).sort()).toEqual(pictures.sort())
+  })
+
   it('unlocks by level and streak', () => {
-    expect(levelPerks(1).map(p => p.id)).toEqual(['title.rookie', 'banner.plain', 'colors.dartcade', 'emblem.dart'])
+    expect(levelPerks(1).map(p => p.id)).toEqual(['title.rookie', 'banner.plain', 'colors.dartcade', 'picture.logo'])
     expect(levelPerks(15).map(p => p.id)).toContain('title.oche-regular')
-    expect(streakPerks(7).map(p => p.id)).toEqual(['emblem.flame'])
+    expect(streakPerks(7).map(p => p.id)).toEqual(['picture.flame'])
     expect(nextLevelPerk(14)?.id).toBe('title.oche-regular')
     expect(nextLevelPerk(50)).toBeNull()
   })
 
   it('reads a stored look, dropping what is unknown or the wrong kind', () => {
-    expect(equippedOf(null)).toEqual({ title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade', emblem: null })
-    expect(equippedOf({ title: 'banner.gold', banner: 'banner.gold', emblem: 'emblem.nope' })).toMatchObject({
+    expect(equippedOf(null)).toEqual({ title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade' })
+    expect(equippedOf({ title: 'banner.gold', banner: 'banner.gold', colors: 'colors.nope' })).toMatchObject({
       title: 'title.rookie',
       banner: 'banner.gold',
-      emblem: null,
+      colors: 'colors.dartcade',
     })
   })
 })

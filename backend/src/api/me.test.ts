@@ -22,6 +22,7 @@ vi.mock('../db/users.js', () => ({
   UnknownAvatarColorError: class UnknownAvatarColorError extends Error {},
 }))
 vi.mock('../users/account.js', () => ({ renameUser: vi.fn(), suggestName: vi.fn() }))
+vi.mock('../db/progression.js', () => ({ hasPerk: vi.fn(), unlockedPictures: vi.fn() }))
 
 import {
   getAccount,
@@ -34,6 +35,7 @@ import {
   UnknownAvatarPresetError,
 } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
+import { hasPerk, unlockedPictures } from '../db/progression.js'
 
 const app = () => {
   const a = createFastify()
@@ -57,6 +59,8 @@ beforeEach(() => {
   vi.mocked(setInvisible).mockReset()
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
   vi.mocked(renameUser).mockReset().mockResolvedValue('Phil_T')
+  vi.mocked(hasPerk).mockReset().mockResolvedValue(true)
+  vi.mocked(unlockedPictures).mockReset().mockResolvedValue(['logo', 'dart'])
 })
 
 describe('/api/me', () => {
@@ -74,6 +78,7 @@ describe('/api/me', () => {
       suggestedName: 'Phil.Taylor',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
+      pictures: ['logo', 'dart'],
     })
   })
 
@@ -175,6 +180,24 @@ describe('/api/me', () => {
     expect(res.statusCode).toBe(200)
     expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'crosshair', color: '#4a6b3a' })
     expect(onChanged).toHaveBeenCalledWith('old')
+  })
+
+  it('refuses a picture that is not unlocked yet', async () => {
+    vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
+    vi.mocked(hasPerk).mockResolvedValue(false)
+    const res = await app().inject({
+      method: 'PATCH',
+      url: '/api/me',
+      payload: { avatar: { kind: 'preset', preset: 'crown', color: '#000000', fgColor: '#ffffff' } },
+    })
+    expect(res.statusCode).toBe(409)
+    expect(hasPerk).toHaveBeenCalledWith({}, 'old', 'picture.crown')
+    expect(setAvatar).not.toHaveBeenCalled()
+  })
+
+  it('lists the pictures you may wear', async () => {
+    const res = await app().inject({ method: 'GET', url: '/api/me' })
+    expect(JSON.parse(res.body).pictures).toEqual(['logo', 'dart'])
   })
 
   it('answers 400 for an unknown preset id', async () => {
