@@ -222,7 +222,9 @@
 </script>
 
 <Layout title="New game">
-  <main class="flex flex-grow flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:p-[30px_36px] xl:p-[36px_44px]">
+  <main
+    class="flex flex-grow min-h-0 flex-col gap-4 md:gap-[22px] box-border min-w-0 overflow-y-auto p-4 md:p-[30px_36px] xl:p-[36px_44px]"
+  >
     <!-- Phones and tablets: the way back to your invites once the toast is closed (desktops have Invites in the nav) -->
     {#if invites > 0}<div class="xl:hidden"><InvitesBanner count={invites} /></div>{/if}
     <!-- Phones and tablets have no side nav, where desktops get this card -->

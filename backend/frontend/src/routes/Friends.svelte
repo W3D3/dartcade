@@ -54,7 +54,7 @@
 
 <Layout title="Friends" headerAction={onlineCount}>
   <main
-    class="flex flex-grow flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-11 xl:py-10"
+    class="flex flex-grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-11 xl:py-10"
   >
     <header class="hidden md:flex flex-wrap items-end justify-between gap-x-6 gap-y-4">
       <div class="flex flex-col gap-[6px]">

@@ -24,7 +24,7 @@
 
 <Layout title="Invites">
   {#snippet headerAction()}{#if invites.length}<span class="text-[13px] text-text-muted">{invites.length} pending</span>{/if}{/snippet}
-  <main class="flex flex-grow flex-col gap-3 box-border w-full max-w-[560px] min-w-0 overflow-y-auto p-4 md:px-8 xl:px-11 md:py-10">
+  <main class="flex flex-grow min-h-0 flex-col gap-3 box-border w-full max-w-[560px] min-w-0 overflow-y-auto p-4 md:px-8 xl:px-11 md:py-10">
     <h2 class="hidden md:block m-0 font-display font-bold text-[48px] leading-none uppercase">Invites</h2>
     <InviteFeedback {actions} />
     {#if invites.length === 0}
