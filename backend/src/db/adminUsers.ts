@@ -7,7 +7,7 @@ export type AdminUserRow = {
   name: string
   email: string
   emailVerified: boolean
-  role: 'admin' | null
+  role: 'admin' | 'moderator' | null
   createdAt: Date
   lastLoginAt: Date | null
 }
@@ -27,7 +27,7 @@ const toRow = (r: {
   name: r.name,
   email: r.email,
   emailVerified: r.emailVerified,
-  role: r.role === 'admin' ? 'admin' : null,
+  role: r.role === 'admin' || r.role === 'moderator' ? r.role : null,
   createdAt: r.createdAt,
   lastLoginAt: r.last_login_at,
 })
@@ -56,21 +56,21 @@ export async function setVerified(db: Kysely<Database>, id: string, verified: bo
 }
 
 /**
- * Grants or revokes the admin role. Locks every admin row first (`FOR UPDATE`), so two concurrent
- * demotes serialize: the second one re-counts admins against the first one's committed result,
- * and refuses rather than leaving no admin.
+ * Sets a user's role: admin, moderator, or none. Locks every admin row first (`FOR UPDATE`), so two
+ * concurrent demotions serialize: the second one re-counts admins against the first one's committed
+ * result, and refuses rather than leaving no admin.
  */
-export async function setAdmin(db: Kysely<Database>, id: string, admin: boolean): Promise<'ok' | 'not-found' | 'last-admin'> {
+export async function setRole(
+  db: Kysely<Database>,
+  id: string,
+  role: 'admin' | 'moderator' | null,
+): Promise<'ok' | 'not-found' | 'last-admin'> {
   return db.transaction().execute(async trx => {
     const admins = await trx.selectFrom('user').select('id').where('role', '=', 'admin').forUpdate().execute()
     const user = await trx.selectFrom('user').select(['id', 'role']).where('id', '=', id).executeTakeFirst()
     if (!user) return 'not-found'
-    if (!admin && user.role === 'admin' && admins.length <= 1) return 'last-admin'
-    await trx
-      .updateTable('user')
-      .set({ role: admin ? 'admin' : null })
-      .where('id', '=', id)
-      .execute()
+    if (role !== 'admin' && user.role === 'admin' && admins.length <= 1) return 'last-admin'
+    await trx.updateTable('user').set({ role }).where('id', '=', id).execute()
     return 'ok'
   })
 }

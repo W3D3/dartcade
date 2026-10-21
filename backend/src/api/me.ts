@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { isAdmin } from '../auth/admin.js'
+import { isAdmin, isModerator } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
 import { getAccount, getPreferences, setInvisible, updatePreferences } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
@@ -28,6 +28,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     return {
       ...rest,
       isAdmin: isAdmin({ role }),
+      isModerator: isModerator({ role }),
       suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
     }
   }

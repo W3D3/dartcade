@@ -16,7 +16,7 @@
 
   const matchmaking = flag('matchmaking.enabled')
 
-  const links = $derived(sideLinks($activeSessionId, $matchmaking, $currentUser?.isAdmin))
+  const links = $derived(sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator))
 </script>
 
 <nav

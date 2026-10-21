@@ -788,7 +788,7 @@ paths:
   /api/admin/games:
     get:
       operationId: listAdminGames
-      summary: Every game on the platform, newest started first (admin)
+      summary: Every game on the platform, newest started first (admin or moderator)
       description: Finished games by default; `status` also lists aborted and active ones.
       tags: [admin]
       parameters:
@@ -823,7 +823,7 @@ paths:
       - $ref: '#/components/parameters/GameId'
     get:
       operationId: getAdminGame
-      summary: A finished game with its per-mode detail, whoever played it (admin)
+      summary: A finished game with its per-mode detail, whoever played it (admin or moderator)
       description: Account ids of every seat are included.
       tags: [admin]
       responses:
@@ -865,7 +865,7 @@ paths:
       - $ref: '#/components/parameters/AdminUserId'
     put:
       operationId: setUserRole
-      summary: Promote or demote an admin; refused if it would leave no admin (admin)
+      summary: Set a user's role; refused if it would leave no admin (admin)
       tags: [admin]
       requestBody:
         required: true
@@ -878,6 +878,7 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/AdminUser' }
+        '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
@@ -3092,7 +3093,7 @@ components:
         name: { type: string }
         email: { type: string }
         emailVerified: { type: boolean }
-        role: { type: string, nullable: true, enum: [admin, null] }
+        role: { type: string, nullable: true, enum: [admin, moderator, null] }
         createdAt: { type: string, format: date-time, description: When the account was made }
         lastLoginAt: { type: string, format: date-time, nullable: true, description: Last sign-in; null if never }
     AdminUserList:
@@ -3105,10 +3106,14 @@ components:
           items: { $ref: '#/components/schemas/AdminUser' }
     SetUserRoleRequest:
       type: object
-      required: [admin]
+      required: [role]
       additionalProperties: false
       properties:
-        admin: { type: boolean, description: 'true: grant the admin role; false: revoke it' }
+        role:
+          type: string
+          nullable: true
+          enum: [admin, moderator, null]
+          description: 'The role to give: admin (everything), moderator (look at and invalidate games), or null for none'
     SetUserVerifiedRequest:
       type: object
       required: [verified]
@@ -3208,7 +3213,7 @@ components:
             number: { type: number }
     Me:
       type: object
-      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, createdAt]
+      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, createdAt]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -3222,6 +3227,7 @@ components:
         suggestedName: { type: string, nullable: true, description: 'A free name close to yours, while nameNeedsChange' }
         invisible: { type: boolean, description: 'Friends see you as offline' }
         isAdmin: { type: boolean, description: 'May open admin pages (the minigolf test bench)' }
+        isModerator: { type: boolean, description: 'May look at any game and invalidate it (admins and moderators)' }
         createdAt: { type: string, format: date-time, description: 'When the account was made (Member since)' }
     UpdateMeRequest:
       type: object

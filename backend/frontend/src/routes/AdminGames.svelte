@@ -1,4 +1,4 @@
-<!-- Every game on the platform (`#/admin/games`), for investigating. Finished games by default; aborted and active ones on request. -->
+<!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate. Finished games by default; aborted and active ones on request. -->
 <script lang="ts">
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
@@ -17,7 +17,7 @@
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
   $effect(() => {
-    if ($currentUser && !$currentUser.isAdmin) void push('/')
+    if ($currentUser && !$currentUser.isModerator) void push('/')
   })
 
   // Only the most recently started request may apply its result (a quick filter change leaves older ones in flight)
@@ -82,7 +82,7 @@
 </script>
 
 <Layout title="Games">
-  {#if $currentUser?.isAdmin}
+  {#if $currentUser?.isModerator}
     <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
       <header class="hidden md:flex flex-col gap-[6px]">
         <Breadcrumb items={gamesTrail()} />

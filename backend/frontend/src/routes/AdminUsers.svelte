@@ -1,4 +1,4 @@
-<!-- Admin user management (`#/admin/users`): search accounts, promote or demote admins. -->
+<!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none). -->
 <script lang="ts">
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
@@ -23,9 +23,12 @@
     compareLastLogin,
     loadColumnVisibility,
     saveColumnVisibility,
+    roleActions,
+    roleChange,
     setUserRole,
     setVerified,
     type AdminUser,
+    type Role,
   } from '$lib/admin/users'
 
   // Not an admin: nothing to see here (signed-out users are sent to the login page by App)
@@ -66,13 +69,13 @@
   })
 
   // The row asking to confirm a promote/demote or verify/unverify, and the one mid-request
-  let confirmAction = $state<{ kind: 'role' | 'verified'; user: AdminUser } | null>(null)
+  let confirmAction = $state<{ kind: 'role'; user: AdminUser; role: Role } | { kind: 'verified'; user: AdminUser } | null>(null)
   let busyId = $state<string | null>(null)
   let rowError = $state<{ id: string; text: string } | null>(null)
 
-  function askRole(user: AdminUser): void {
+  function askRole(user: AdminUser, role: Role): void {
     rowError = null
-    confirmAction = { kind: 'role', user }
+    confirmAction = { kind: 'role', user, role }
   }
 
   function askVerified(user: AdminUser): void {
@@ -84,9 +87,9 @@
     const action = confirmAction
     if (!action) return
     confirmAction = null
-    const { kind, user } = action
+    const { user } = action
     busyId = user.id
-    const result = kind === 'role' ? await setUserRole(user.id, user.role !== 'admin') : await setVerified(user.id, !user.emailVerified)
+    const result = action.kind === 'role' ? await setUserRole(user.id, action.role) : await setVerified(user.id, !user.emailVerified)
     busyId = null
     if ('error' in result) {
       rowError = { id: user.id, text: result.error }
@@ -94,7 +97,7 @@
     }
     users = users.map(u => (u.id === user.id ? result.user : u))
     // Demoting yourself: the guard above only redirects once $currentUser reflects it
-    if (kind === 'role' && user.id === $currentUser?.id) await currentUser.refresh()
+    if (action.kind === 'role' && user.id === $currentUser?.id) await currentUser.refresh()
   }
 
   // Newest first by default; the columns menu can hide any of these but user and actions
@@ -166,8 +169,8 @@
   {/if}
 {/snippet}
 
-{#snippet roleCell(role: 'admin' | null)}
-  {#if role === 'admin'}<Badge variant="paired">Admin</Badge>{/if}
+{#snippet roleCell(role: Role)}
+  {#if role === 'admin'}<Badge variant="paired">Admin</Badge>{:else if role === 'moderator'}<Badge variant="pending">Moderator</Badge>{/if}
 {/snippet}
 
 {#snippet actionsCell(user: AdminUser)}
@@ -187,15 +190,17 @@
           class="z-[60] min-w-[220px] box-border p-[6px] rounded-xl bg-surface-hover border border-line-popover
                  [box-shadow:0_18px_44px_rgba(0,0,0,0.55)] flex flex-col gap-[2px] outline-none"
         >
-          <DropdownMenu.Item
-            onSelect={() => askRole(user)}
-            class="flex h-10 items-center rounded-lg px-[10px] text-[14px] cursor-pointer outline-none data-[highlighted]:bg-surface-paused {user.role ===
-            'admin'
-              ? 'text-live-text'
-              : 'text-text'}"
-          >
-            {user.role === 'admin' ? 'Demote' : 'Promote to admin'}
-          </DropdownMenu.Item>
+          {#each roleActions(user.role) as action (action.role ?? 'none')}
+            <DropdownMenu.Item
+              onSelect={() => askRole(user, action.role)}
+              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] cursor-pointer outline-none data-[highlighted]:bg-surface-paused {action.role ===
+              null
+                ? 'text-live-text'
+                : 'text-text'}"
+            >
+              {action.label}
+            </DropdownMenu.Item>
+          {/each}
           <DropdownMenu.Item
             onSelect={() => askVerified(user)}
             class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
@@ -215,7 +220,7 @@
       <header class="hidden md:flex flex-col gap-[6px]">
         <Breadcrumb items={usersTrail()} />
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Users</h1>
-        <p class="m-0 text-[15px] text-text-muted">Search accounts, promote or demote admins</p>
+        <p class="m-0 text-[15px] text-text-muted">Search accounts, set their role</p>
       </header>
 
       <div class="flex flex-wrap items-center gap-3">
@@ -245,15 +250,12 @@
     </main>
 
     {#if confirmAction?.kind === 'role'}
-      {@const user = confirmAction.user}
-      {@const isSelf = user.id === $currentUser.id}
+      {@const change = roleChange(confirmAction.user, confirmAction.role, confirmAction.user.id === $currentUser.id)}
       <ConfirmModal
-        title={user.role === 'admin' ? 'Remove admin access?' : 'Promote to admin?'}
-        body={user.role === 'admin'
-          ? `${user.name} won't be able to manage users or feature flags anymore.${isSelf ? " You'll lose access to the admin pages." : ''}`
-          : `${user.name} will be able to manage users and feature flags.`}
-        confirmLabel={user.role === 'admin' ? 'Demote' : 'Promote'}
-        danger={user.role === 'admin'}
+        title={change.title}
+        body={change.body}
+        confirmLabel={change.confirm}
+        danger={change.danger}
         onconfirm={() => void confirmPick()}
         oncancel={() => (confirmAction = null)}
       />
