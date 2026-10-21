@@ -22616,7 +22616,7 @@
     "/api/progress/me": {
       "get": {
         "operationId": "getMyProgress",
-        "summary": "Your XP and level",
+        "summary": "Your XP, level and day streak",
         "tags": [
           "progress"
         ],
@@ -22629,7 +22629,8 @@
                   "type": "object",
                   "required": [
                     "xp",
-                    "level"
+                    "level",
+                    "streak"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -22641,6 +22642,96 @@
                     "level": {
                       "type": "integer",
                       "minimum": 1
+                    },
+                    "streak": {
+                      "type": "object",
+                      "description": "The day streak, counted in your time zone (preferences.timeZone)",
+                      "required": [
+                        "current",
+                        "best",
+                        "freezes",
+                        "playedToday",
+                        "bonus",
+                        "days",
+                        "nextMilestone",
+                        "today"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "current": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Days in a row, as it stands today (0: lost)"
+                        },
+                        "best": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "freezes": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Banked freezes; one covers a single missed day"
+                        },
+                        "playedToday": {
+                          "type": "boolean",
+                          "description": "Today already counts"
+                        },
+                        "bonus": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "Today's first-game bonus (what it paid, or will pay)"
+                        },
+                        "today": {
+                          "type": "string",
+                          "format": "date"
+                        },
+                        "days": {
+                          "type": "array",
+                          "description": "The last 7 days, oldest first, today last",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "date",
+                              "state"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "date": {
+                                "type": "string",
+                                "format": "date"
+                              },
+                              "state": {
+                                "type": "string",
+                                "enum": [
+                                  "played",
+                                  "frozen",
+                                  "missed",
+                                  "today"
+                                ]
+                              }
+                            }
+                          }
+                        },
+                        "nextMilestone": {
+                          "type": "object",
+                          "nullable": true,
+                          "required": [
+                            "days",
+                            "xp"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "days": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "xp": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
+                      }
                     }
                   }
                 }
@@ -40867,7 +40958,8 @@
         "type": "object",
         "required": [
           "xp",
-          "level"
+          "level",
+          "streak"
         ],
         "additionalProperties": false,
         "properties": {
@@ -40879,6 +40971,186 @@
           "level": {
             "type": "integer",
             "minimum": 1
+          },
+          "streak": {
+            "type": "object",
+            "description": "The day streak, counted in your time zone (preferences.timeZone)",
+            "required": [
+              "current",
+              "best",
+              "freezes",
+              "playedToday",
+              "bonus",
+              "days",
+              "nextMilestone",
+              "today"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "current": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Days in a row, as it stands today (0: lost)"
+              },
+              "best": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "freezes": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Banked freezes; one covers a single missed day"
+              },
+              "playedToday": {
+                "type": "boolean",
+                "description": "Today already counts"
+              },
+              "bonus": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Today's first-game bonus (what it paid, or will pay)"
+              },
+              "today": {
+                "type": "string",
+                "format": "date"
+              },
+              "days": {
+                "type": "array",
+                "description": "The last 7 days, oldest first, today last",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "date",
+                    "state"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "date": {
+                      "type": "string",
+                      "format": "date"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "played",
+                        "frozen",
+                        "missed",
+                        "today"
+                      ]
+                    }
+                  }
+                }
+              },
+              "nextMilestone": {
+                "type": "object",
+                "nullable": true,
+                "required": [
+                  "days",
+                  "xp"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "days": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "xp": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "DayStreak": {
+        "type": "object",
+        "description": "The day streak, counted in your time zone (preferences.timeZone)",
+        "required": [
+          "current",
+          "best",
+          "freezes",
+          "playedToday",
+          "bonus",
+          "days",
+          "nextMilestone",
+          "today"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Days in a row, as it stands today (0: lost)"
+          },
+          "best": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "freezes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Banked freezes; one covers a single missed day"
+          },
+          "playedToday": {
+            "type": "boolean",
+            "description": "Today already counts"
+          },
+          "bonus": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Today's first-game bonus (what it paid, or will pay)"
+          },
+          "today": {
+            "type": "string",
+            "format": "date"
+          },
+          "days": {
+            "type": "array",
+            "description": "The last 7 days, oldest first, today last",
+            "items": {
+              "type": "object",
+              "required": [
+                "date",
+                "state"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "date": {
+                  "type": "string",
+                  "format": "date"
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "played",
+                    "frozen",
+                    "missed",
+                    "today"
+                  ]
+                }
+              }
+            }
+          },
+          "nextMilestone": {
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "days",
+              "xp"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "days": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "xp": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
           }
         }
       },

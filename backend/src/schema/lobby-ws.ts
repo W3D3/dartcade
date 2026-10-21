@@ -478,7 +478,7 @@ export interface XpLine {
     'dart' | 'game' | 'win' | 'ranked' | 'oneEighty' | 'checkout' | 'personalBest' | 'daily' | 'challenge' | 'milestone'
   amount: number
   /**
-   * Darts thrown, 180s hit.
+   * Darts thrown, 180s hit, the streak day of a daily bonus.
    */
   count?: number
 }
@@ -500,4 +500,19 @@ export interface XpGainedMessage {
   xpAfter: number
   levelBefore: number
   levelAfter: number
+  /**
+   * The game was the day's first: the day streak it extended.
+   */
+  streak?: {
+    current: number
+    freezes: number
+    /**
+     * The missed day a freeze covered.
+     */
+    frozeDay: string | null
+    /**
+     * The streak milestone reached (7, 14, …).
+     */
+    milestone: number | null
+  }
 }

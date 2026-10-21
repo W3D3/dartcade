@@ -1377,7 +1377,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Your XP and level */
+        /** Your XP, level and day streak */
         get: operations["getMyProgress"];
         put?: never;
         post?: never;
@@ -2643,6 +2643,32 @@ export interface components {
             /** @description Total XP */
             xp: number;
             level: number;
+            streak: components["schemas"]["DayStreak"];
+        };
+        /** @description The day streak, counted in your time zone (preferences.timeZone) */
+        DayStreak: {
+            /** @description Days in a row, as it stands today (0: lost) */
+            current: number;
+            best: number;
+            /** @description Banked freezes; one covers a single missed day */
+            freezes: number;
+            /** @description Today already counts */
+            playedToday: boolean;
+            /** @description Today's first-game bonus (what it paid, or will pay) */
+            bonus: number;
+            /** Format: date */
+            today: string;
+            /** @description The last 7 days, oldest first, today last */
+            days: {
+                /** Format: date */
+                date: string;
+                /** @enum {string} */
+                state: "played" | "frozen" | "missed" | "today";
+            }[];
+            nextMilestone: {
+                days: number;
+                xp: number;
+            } | null;
         };
         XpLine: {
             /** @enum {string} */

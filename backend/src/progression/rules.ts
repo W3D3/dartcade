@@ -1,11 +1,11 @@
 // What one finished game pays one account: a pure function of the game's facts and what the
 // account already earned that day. The service (service.ts) loads the facts and writes the rows.
-import { MANUAL_GAME_FACTOR, MANUAL_GAMES_PER_DAY, XP, dailyGameFactor } from '../shared/progression.js'
+import { MANUAL_GAME_FACTOR, MANUAL_GAMES_PER_DAY, XP, dailyBonus, dailyGameFactor, type StreakStep } from '../shared/progression.js'
 
-export type XpKind = 'dart' | 'game' | 'win' | 'ranked' | 'highlight' | 'daily' | 'challenge' | 'milestone'
+export type XpKind = 'dart' | 'game' | 'win' | 'ranked' | 'highlight' | 'daily' | 'challenge' | 'milestone' | 'freeze'
 
-/** One ledger row to write; `sourceType` + the game id keep it unique per account. */
-export type Award = { kind: XpKind; sourceType: string; amount: number; meta: Record<string, unknown> }
+/** One ledger row to write; `sourceType` + `sourceId` (the game's id unless set) keep it unique per account. */
+export type Award = { kind: XpKind; sourceType: string; sourceId?: string; amount: number; meta: Record<string, unknown> }
 
 /** The account's own seat in a finished game, and who it played. */
 export type PlayerGame = {
@@ -70,5 +70,33 @@ export function gameAwards(g: PlayerGame, day: DayTally): Award[] {
   if (pb && value !== undefined && g.previousBest !== null && (pb.higher ? value > g.previousBest : value < g.previousBest)) {
     add('highlight', 'game:best', XP.personalBest, { mode: g.gameId, value })
   }
+  return awards
+}
+
+/**
+ * What the day streak pays when a qualifying game is the day's first: the daily bonus, a milestone's
+ * gift, and a zero row for a freeze spent (so the streak strip can show it).
+ */
+export function streakAwards(step: StreakStep, today: string, sessionId: string): Award[] {
+  if (!step.counted) return []
+  const awards: Award[] = [
+    {
+      kind: 'daily',
+      sourceType: 'day',
+      sourceId: today,
+      amount: dailyBonus(step.next.current),
+      meta: { streak: step.next.current, sessionId },
+    },
+  ]
+  if (step.frozeDay) awards.push({ kind: 'freeze', sourceType: 'day', sourceId: step.frozeDay, amount: 0, meta: { sessionId } })
+  // One-off: a milestone reached again after a reset pays nothing
+  if (step.milestone)
+    awards.push({
+      kind: 'milestone',
+      sourceType: 'streak',
+      sourceId: String(step.milestone.days),
+      amount: step.milestone.xp,
+      meta: { days: step.milestone.days },
+    })
   return awards
 }

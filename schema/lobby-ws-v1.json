@@ -379,7 +379,7 @@
           "enum": ["dart", "game", "win", "ranked", "oneEighty", "checkout", "personalBest", "daily", "challenge", "milestone"]
         },
         "amount": { "type": "integer", "minimum": 0 },
-        "count": { "type": "integer", "minimum": 0, "description": "Darts thrown, 180s hit." }
+        "count": { "type": "integer", "minimum": 0, "description": "Darts thrown, 180s hit, the streak day of a daily bonus." }
       }
     },
     "XpGainedMessage": {
@@ -396,7 +396,19 @@
         "xpBefore": { "type": "integer", "minimum": 0 },
         "xpAfter": { "type": "integer", "minimum": 0 },
         "levelBefore": { "type": "integer", "minimum": 1 },
-        "levelAfter": { "type": "integer", "minimum": 1 }
+        "levelAfter": { "type": "integer", "minimum": 1 },
+        "streak": {
+          "type": "object",
+          "description": "The game was the day's first: the day streak it extended.",
+          "required": ["current", "freezes", "frozeDay", "milestone"],
+          "additionalProperties": false,
+          "properties": {
+            "current": { "type": "integer", "minimum": 1 },
+            "freezes": { "type": "integer", "minimum": 0 },
+            "frozeDay": { "type": ["string", "null"], "format": "date", "description": "The missed day a freeze covered." },
+            "milestone": { "type": ["integer", "null"], "description": "The streak milestone reached (7, 14, …)." }
+          }
+        }
       }
     },
     "MeServerMessage": {
