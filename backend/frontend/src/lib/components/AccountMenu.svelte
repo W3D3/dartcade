@@ -42,6 +42,12 @@
     statusError = (await setInvisible(next)) ?? ''
   }
 
+  // The Friends drawer is a modal dialog drawn over the menu, so opening the menu closes it.
+  function toggle() {
+    open = !open
+    if (open) friendsDrawerOpen.set(false)
+  }
+
   // Closing by any route (Escape, an outside click, choosing an item) returns focus to the trigger.
   function closeMenu() {
     open = false
@@ -81,7 +87,7 @@
     <button
       bind:this={triggerEl}
       type="button"
-      onclick={() => (open = !open)}
+      onclick={toggle}
       aria-label={triggerLabel}
       aria-haspopup="menu"
       aria-expanded={open}
@@ -99,7 +105,7 @@
     <button
       bind:this={triggerEl}
       type="button"
-      onclick={() => (open = !open)}
+      onclick={toggle}
       aria-label={triggerLabel}
       aria-haspopup="menu"
       aria-expanded={open}
