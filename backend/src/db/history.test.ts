@@ -147,6 +147,20 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     expect(await getBestStat(db, 'u1', 'p121', 'tieStat')).toEqual({ value: 150, finishedAt: t(10) })
   })
 
+  it('an invalidated game stays in my history and details, marked, but not in stats or best values', async () => {
+    const mark = (at: Date | null) => db.updateTable('game_sessions').set({ invalidated_at: at }).where('id', '=', 'p-1').execute()
+    await mark(t(20))
+    const { games } = await listFinishedGames(db, 'u1', { mode: 'p121', limit: 10, after: null })
+    expect(games.filter(g => g.id === 'p-1' || g.id === 'p-2').map(g => [g.id, g.invalidated])).toEqual([
+      ['p-2', false],
+      ['p-1', true],
+    ])
+    expect((await getViewableGame(db, 'p-1', 'u1'))?.invalidated).toBe(true)
+    expect(await getBestStat(db, 'u1', 'p121', 'highestMade')).toEqual({ value: 124, finishedAt: t(7) })
+    expect((await getStatRows(db, 'u1', t(0))).some(r => r.mode === 'p121' && r.finishedAt.getTime() === t(6).getTime())).toBe(false)
+    await mark(null)
+  })
+
   it('a game is viewable by its seats; private games are 404 for others until public', async () => {
     expect((await getViewableGame(db, 'x-1', 'u1'))?.mySeat).toBe(0)
     expect(await getViewableGame(db, 'x-1', 'u2')).toBeUndefined()

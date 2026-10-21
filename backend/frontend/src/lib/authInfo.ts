@@ -3,11 +3,11 @@ import { createApi } from './api/client.js'
 
 const quietApi = createApi({ onUnauthorized: () => undefined })
 
-/** Whether this deployment sends mail and requires email verification (GET /api/auth-info), loaded once for the whole app. */
+/** Whether this deployment sends mail and requires email verification, and its contact email (GET /api/auth-info), loaded once for the whole app. */
 export const authInfo = loadOnce(
   async () => {
     const { data } = await quietApi.GET('/api/auth-info')
-    return data ?? { mail: false, verification: false }
+    return data ?? { mail: false, verification: false, contactEmail: null }
   },
-  { mail: false, verification: false },
+  { mail: false, verification: false, contactEmail: null },
 )
