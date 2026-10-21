@@ -59,6 +59,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: "Lets players import Autodarts' caller voices in Settings → Caller.",
     defaultRule: 'admins',
   },
+  'avatar.upload.enabled': {
+    kind: 'boolean',
+    description: 'Lets players upload a photo as their avatar in Settings → Profile (presets stay available either way).',
+    defaultRule: 'admins',
+  },
   'matchmaking.visitSeconds': {
     kind: 'number',
     description: 'How long a ranked player has for each visit, in seconds.',
@@ -133,6 +138,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('caller.autodartsImport', isAdmin),
+    },
+    'avatar.upload.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('avatar.upload.enabled', isAdmin),
     },
     'matchmaking.visitSeconds': number('matchmaking.visitSeconds', VISIT_SECONDS),
     'matchmaking.reserveSeconds': number('matchmaking.reserveSeconds', RESERVE_SECONDS),

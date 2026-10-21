@@ -13,6 +13,9 @@ import {
   x01Average,
 } from './ranked.js'
 import { rankIndexFor } from '../shared/ranked.js'
+import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
+
+const defaultAvatar = { kind: 'preset' as const, preset: DEFAULT_AVATAR_PRESET, color: DEFAULT_AVATAR_BG, fgColor: DEFAULT_AVATAR_FG }
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
   let db: Kysely<Database>
@@ -197,8 +200,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     expect(recent).toHaveLength(3)
     expect(recent[0]).toMatchObject({ mode: '2v2', won: false, change: null })
     expect(recent[0].opponents).toEqual([
-      { userId: 'anna', name: 'Anna', rating: null, avatar: { kind: 'none' } },
-      { userId: 'ben', name: 'Ben', rating: null, avatar: { kind: 'none' } },
+      { userId: 'anna', name: 'Anna', rating: null, avatar: defaultAvatar },
+      { userId: 'ben', name: 'Ben', rating: null, avatar: defaultAvatar },
     ])
     expect(recent[1]).toMatchObject({ mode: '1v1', won: true })
     expect(recent[1].change).toBeGreaterThan(0)

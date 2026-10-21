@@ -1653,7 +1653,7 @@ export interface components {
         };
         /**
          * Avatar
-         * @description A profile picture: none (initials), a built-in preset, or an uploaded photo
+         * @description A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo
          */
         Avatar: {
             /** @enum {string} */
@@ -1662,6 +1662,10 @@ export interface components {
             /** @enum {string} */
             kind: "preset";
             preset: string;
+            /** @description The preset's background colour (hex) */
+            color: string;
+            /** @description The preset's icon colour (hex) */
+            fgColor: string;
         } | {
             /** @enum {string} */
             kind: "upload";
@@ -1670,13 +1674,17 @@ export interface components {
         };
         /**
          * AvatarChoice
-         * @description What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset is required, and validated against the known ids, when kind is 'preset'. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.
+         * @description What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset, color and fgColor are required, and each validated against its own known list, when kind is 'preset' — background and foreground chosen independently, so any colour can go with any other. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.
          */
         AvatarChoice: {
             /** @enum {string} */
             kind: "none" | "preset";
-            /** @description A built-in preset id (Settings shows the choices); required when kind is 'preset' */
+            /** @description A built-in preset icon id (Settings shows the choices); required when kind is 'preset' */
             preset?: string;
+            /** @description A built-in swatch (hex, Settings shows the choices); required when kind is 'preset' */
+            color?: string;
+            /** @description A built-in swatch for the icon itself (hex, Settings shows the choices); required when kind is 'preset' */
+            fgColor?: string;
         };
         FriendRequest: {
             /** @description Their exact name, any case; a leading @ is fine */
@@ -4686,6 +4694,7 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
             415: components["responses"]["UnsupportedMediaType"];
             429: components["responses"]["TooManyRequests"];
         };

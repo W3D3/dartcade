@@ -4,6 +4,9 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { FriendsService } from './service.js'
 import { LobbyHub } from '../lobby/hub.js'
+import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
+
+const defaultAvatar = { kind: 'preset' as const, preset: DEFAULT_AVATAR_PRESET, color: DEFAULT_AVATAR_BG, fgColor: DEFAULT_AVATAR_FG }
 
 const user = (id: string, name: string, flagged = false) => ({
   id,
@@ -53,10 +56,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     expect(r).toEqual({ id: expect.any(String), status: 'pending' })
     expect(onChange).toHaveBeenCalledWith(['chris', 'lena'])
     expect((await friends.list('chris')).outgoing).toEqual([
-      { id: r.id, to: { id: 'lena', name: 'Lena', avatar: { kind: 'none' } }, createdAt: expect.any(String) },
+      { id: r.id, to: { id: 'lena', name: 'Lena', avatar: defaultAvatar }, createdAt: expect.any(String) },
     ])
     expect((await friends.list('lena')).incoming).toEqual([
-      { id: r.id, from: { id: 'chris', name: 'Christoph', avatar: { kind: 'none' } }, mutualFriends: 0, createdAt: expect.any(String) },
+      { id: r.id, from: { id: 'chris', name: 'Christoph', avatar: defaultAvatar }, mutualFriends: 0, createdAt: expect.any(String) },
     ])
     expect((await friends.list('oldlena')).incoming).toEqual([])
   })

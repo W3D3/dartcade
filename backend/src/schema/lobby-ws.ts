@@ -24,6 +24,14 @@ export type Avatar =
   | {
       kind: 'preset'
       preset: string
+      /**
+       * The preset's background colour (hex)
+       */
+      color: string
+      /**
+       * The preset's icon colour (hex)
+       */
+      fgColor: string
     }
   | {
       kind: 'upload'
@@ -39,7 +47,7 @@ export type TeamId = 'A' | 'B'
  */
 export type LobbyServerMessage = LobbyMessage | LobbyClosedMessage
 /**
- * A profile picture: none (initials), a built-in preset, or an uploaded photo
+ * A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo
  */
 export type Avatar1 =
   | {
@@ -48,6 +56,14 @@ export type Avatar1 =
   | {
       kind: 'preset'
       preset: string
+      /**
+       * The preset's background colour (hex)
+       */
+      color: string
+      /**
+       * The preset's icon colour (hex)
+       */
+      fgColor: string
     }
   | {
       kind: 'upload'

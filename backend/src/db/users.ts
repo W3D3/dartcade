@@ -1,7 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import type { components } from '../schema/api.js'
-import { isAvatarPreset } from '../shared/avatarPresets.js'
+import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, isAvatarColor, isAvatarPreset } from '../shared/avatarPresets.js'
 
 export type Preferences = components['schemas']['Preferences']
 export type Avatar = components['schemas']['Avatar']
@@ -21,9 +21,21 @@ export type Account = {
   avatar: Avatar
 }
 
-/** The Avatar union shape from the four avatar_* columns (migration 029). */
-export function toAvatar(row: { avatar_kind: 'none' | 'preset' | 'upload'; avatar_preset: string | null; avatar_version: number }): Avatar {
-  if (row.avatar_kind === 'preset') return { kind: 'preset', preset: row.avatar_preset ?? '' }
+/** The Avatar union shape from the avatar_* columns (migration 031). */
+export function toAvatar(row: {
+  avatar_kind: 'none' | 'preset' | 'upload'
+  avatar_preset: string | null
+  avatar_color: string | null
+  avatar_fg_color: string | null
+  avatar_version: number
+}): Avatar {
+  if (row.avatar_kind === 'preset')
+    return {
+      kind: 'preset',
+      preset: row.avatar_preset ?? '',
+      color: row.avatar_color ?? DEFAULT_AVATAR_BG,
+      fgColor: row.avatar_fg_color ?? DEFAULT_AVATAR_FG,
+    }
   if (row.avatar_kind === 'upload') return { kind: 'upload', version: row.avatar_version }
   return { kind: 'none' }
 }
@@ -41,6 +53,8 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       'createdAt',
       'avatar_kind',
       'avatar_preset',
+      'avatar_color',
+      'avatar_fg_color',
       'avatar_version',
     ])
     .where('id', '=', userId)
@@ -59,18 +73,26 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
   )
 }
 
-/** Thrown when a PATCH /api/me avatar choice names an unknown preset id. */
+/** Thrown when a PATCH /api/me avatar choice names an unknown preset icon id. */
 export class UnknownAvatarPresetError extends Error {}
 
-/** Sets the avatar to none, a built-in preset, or (internally) an uploaded photo; bumps avatar_version. */
+/** Thrown when a PATCH /api/me avatar choice names an unknown swatch colour. */
+export class UnknownAvatarColorError extends Error {}
+
+/** Sets the avatar to none, a built-in preset (background and foreground chosen independently), or (internally) an uploaded photo; bumps avatar_version. */
 export async function setAvatar(db: Kysely<Database>, userId: string, choice: AvatarChoice): Promise<void> {
-  if (choice.kind === 'preset' && (choice.preset === undefined || !isAvatarPreset(choice.preset)))
-    throw new UnknownAvatarPresetError(choice.preset ?? '(none given)')
+  if (choice.kind === 'preset') {
+    if (choice.preset === undefined || !isAvatarPreset(choice.preset)) throw new UnknownAvatarPresetError(choice.preset ?? '(none given)')
+    if (choice.color === undefined || !isAvatarColor(choice.color)) throw new UnknownAvatarColorError(choice.color ?? '(none given)')
+    if (choice.fgColor === undefined || !isAvatarColor(choice.fgColor)) throw new UnknownAvatarColorError(choice.fgColor ?? '(none given)')
+  }
   await db
     .updateTable('user')
     .set(eb => ({
       avatar_kind: choice.kind,
       avatar_preset: choice.kind === 'preset' ? choice.preset : null,
+      avatar_color: choice.kind === 'preset' ? choice.color : null,
+      avatar_fg_color: choice.kind === 'preset' ? choice.fgColor : null,
       avatar_image: null,
       avatar_content_type: null,
       avatar_version: eb('avatar_version', '+', 1),
@@ -86,6 +108,8 @@ export async function setAvatarUpload(db: Kysely<Database>, userId: string, imag
     .set(eb => ({
       avatar_kind: 'upload',
       avatar_preset: null,
+      avatar_color: null,
+      avatar_fg_color: null,
       avatar_image: image,
       avatar_content_type: contentType,
       avatar_version: eb('avatar_version', '+', 1),

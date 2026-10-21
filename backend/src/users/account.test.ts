@@ -4,6 +4,9 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { getAccount } from '../db/users.js'
 import { checkName, renameUser, suggestName } from './account.js'
+import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
+
+const defaultAvatar = { kind: 'preset' as const, preset: DEFAULT_AVATAR_PRESET, color: DEFAULT_AVATAR_BG, fgColor: DEFAULT_AVATAR_FG }
 
 const user = (id: string, name: string, flagged = false) => ({
   id,
@@ -66,7 +69,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('account names', () => {
       nameNeedsChange: false,
       invisible: false,
       role: null,
-      avatar: { kind: 'none' },
+      avatar: defaultAvatar,
       createdAt: expect.any(String),
     })
     await expect(renameUser(db, 'dup', 'luke')).rejects.toMatchObject({ statusCode: 409, body: { error: 'That name is taken' } })

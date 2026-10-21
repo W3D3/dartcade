@@ -97,13 +97,15 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     other_invisible: boolean
     other_avatar_kind: 'none' | 'preset' | 'upload'
     other_avatar_preset: string | null
+    other_avatar_color: string | null
+    other_avatar_fg_color: string | null
     other_avatar_version: number
     created_at: Date
     responded_at: Date | null
   }>`
     SELECT f.id, f.status, f.requester_id, f.addressee_id, u.id AS other_id, u.name AS other_name, u.invisible AS other_invisible,
-      u.avatar_kind AS other_avatar_kind, u.avatar_preset AS other_avatar_preset, u.avatar_version AS other_avatar_version,
-      f.created_at, f.responded_at
+      u.avatar_kind AS other_avatar_kind, u.avatar_preset AS other_avatar_preset, u.avatar_color AS other_avatar_color,
+      u.avatar_fg_color AS other_avatar_fg_color, u.avatar_version AS other_avatar_version, f.created_at, f.responded_at
     FROM friendships f
     JOIN "user" u ON u.id = CASE WHEN f.requester_id = ${userId} THEN f.addressee_id ELSE f.requester_id END
     WHERE f.requester_id = ${userId} OR f.addressee_id = ${userId}
@@ -119,6 +121,8 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     otherAvatar: toAvatar({
       avatar_kind: r.other_avatar_kind,
       avatar_preset: r.other_avatar_preset,
+      avatar_color: r.other_avatar_color,
+      avatar_fg_color: r.other_avatar_fg_color,
       avatar_version: r.other_avatar_version,
     }),
     createdAt: r.created_at,

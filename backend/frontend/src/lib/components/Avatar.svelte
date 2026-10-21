@@ -1,18 +1,21 @@
 <script lang="ts">
-  // A person's round avatar: their initial, a preset icon, an uploaded photo, or a robot glyph
+  // A person's round avatar: their initial, a preset icon (the Dartcade mark, for now) on
+  // independently-chosen background and foreground colours, an uploaded photo, or a robot glyph
   // for a bot (coloured by its level — calm green at Level 1 up to intense red at Level 10 —
-  // instead of the name-hash colour). `avatar` (and `userId`, to build the photo's URL) is the
-  // profile picture they've set, if any — omit it (or pass 'none') to always show the initial,
-  // which is what every caller that hasn't been updated yet still does. Tones: the default chip
-  // (name/preset colour, or the bot's level colour), `accent` for the thrower or yourself, `guest`
-  // dashed, `quiet` a darker chip (bull off) — these override the identity colour the same way
-  // for a bot as for a human, except `guest`: a bot has no account either (`userId: null`, same
-  // as a guest), so a caller that derives `guest` from that naturally sets it for a bot seat too;
-  // `bot` wins there, since the glyph and level colour are the more specific identity. Size:
-  // `size` in px (the glyph scales with it), or classes in `class` for responsive sizes. A dot
-  // while a member has the lobby open.
+  // instead of the name-hash colour). `avatar` (and
+  // `userId`, to build the photo's URL) is the profile picture they've set, if any — omit it (or
+  // pass 'none') to always show the initial, which is what every caller that hasn't been updated
+  // yet still does. Tones: the default chip (name colour, a preset's own colour, or the bot's
+  // level colour), `accent` for the thrower or yourself, `guest` dashed, `quiet` a darker chip
+  // (bull off) — these restyle the fallback (initials, or a bot's glyph) the same way for a bot
+  // as for a human, except `guest`: a bot has no account either (`userId: null`, same as a
+  // guest), so a caller that derives `guest` from that naturally sets it for a bot seat too;
+  // `bot` wins there, since the glyph and level colour are the more specific identity. A real
+  // picture (a preset or an upload) always shows as chosen, whatever the tone — a chip that's
+  // "you" or "quiet" still has to be recognizably your own avatar. Size: `size` in px (the glyph
+  // scales with it), or classes in `class` for responsive sizes. A dot while a member has the
+  // lobby open.
   import { Bot as BotIcon } from '@lucide/svelte'
-  import { AVATAR_PRESETS } from '$shared/avatarPresets.js'
   import { avatarColor } from '$lib/avatarColor'
   import { AVATAR_PRESET_ICONS } from '$lib/avatarPresetIcons'
   import type { components } from '$lib/api/schema'
@@ -49,7 +52,10 @@
     userId?: string | null
   } = $props()
 
-  const presetColor = (id: string): string | undefined => AVATAR_PRESETS.find(p => p.id === id)?.color
+  // A real picture (a preset icon+colour, or an uploaded photo) always shows as chosen — tone
+  // only restyles the fallback chip (initials, or a bot's glyph), never hides a picture that's
+  // actually set (Settings' own preview needs to show the real thing, not a forced accent green).
+  const hasPicture = $derived(avatar?.kind === 'preset' || avatar?.kind === 'upload')
 
   const TONE: Record<Exclude<Tone, 'default'>, string> = {
     accent: 'bg-accent text-accent-fg',
@@ -63,21 +69,23 @@
         : TONE[tone]
       : guest
         ? TONE.guest
-        : tone === 'default'
-          ? avatar?.kind === 'preset'
-            ? 'text-text'
-            : `${avatarColor(name)} text-text`
-          : TONE[tone],
+        : hasPicture
+          ? 'text-text'
+          : tone === 'default'
+            ? `${avatarColor(name)} text-text`
+            : TONE[tone],
   )
-  // A preset's colour is a hex value (not a Tailwind class), so it's set as an inline style instead.
-  const presetBg = $derived(!bot && !guest && tone === 'default' && avatar?.kind === 'preset' ? presetColor(avatar.preset) : undefined)
+  // A preset's background and foreground colours, chosen independently of each other, are hex
+  // values (not Tailwind classes), so they're set as inline styles instead.
+  const presetBg = $derived(!bot && !guest && avatar?.kind === 'preset' ? avatar.color : undefined)
+  const presetFg = $derived(!bot && !guest && avatar?.kind === 'preset' ? avatar.fgColor : undefined)
   const px = $derived(size ?? (className ? null : 36))
   const sizeStyle = $derived(px == null ? '' : `width: ${px}px; height: ${px}px; font-size: ${Math.round(px * 0.42)}px;`)
 </script>
 
 <span
   aria-hidden="true"
-  style="{sizeStyle}{presetBg ? `background-color: ${presetBg};` : ''}"
+  style="{sizeStyle}{presetBg ? `background-color: ${presetBg};` : ''}{presetFg ? `color: ${presetFg};` : ''}"
   class="{presence
     ? 'relative'
     : ''} shrink-0 box-border rounded-full overflow-hidden flex items-center justify-center font-bold {look} {className}"
