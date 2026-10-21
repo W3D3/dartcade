@@ -41,7 +41,7 @@
 
 <Layout title="Ranks">
   <main
-    class="flex flex-grow flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
+    class="flex flex-grow min-h-0 flex-col gap-[14px] md:gap-[22px] box-border min-w-0 overflow-y-auto px-4 pt-[14px] pb-5 md:px-[30px] md:py-7 xl:px-10 xl:py-9"
   >
     <header class="flex flex-col gap-[6px]">
       <a href="#/matchmaking" class="flex items-center gap-1 text-[14px] font-semibold text-text-muted no-underline"

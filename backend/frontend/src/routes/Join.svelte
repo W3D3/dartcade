@@ -108,7 +108,7 @@
 {:else}
   <Layout title="Join lobby">
     <main
-      class="flex flex-grow flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10"
+      class="flex flex-grow min-h-0 flex-col gap-[22px] box-border w-full max-w-[480px] min-w-0 overflow-y-auto px-5 py-7 md:px-8 xl:px-11 md:py-10"
     >
       <div class="flex flex-col gap-2">
         <h2 class="m-0 font-display font-bold text-[34px] leading-none uppercase">Enter the lobby code</h2>
