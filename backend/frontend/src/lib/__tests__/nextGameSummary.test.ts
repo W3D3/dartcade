@@ -19,7 +19,6 @@ describe('NextGameSummary', () => {
     const body = text(render(NextGameSummary, { props: { lobby: lobby('p121', config), pickedBy: 'Host' } }).body)
     expect(body).toContain(' 121 ')
     expect(body).not.toContain('P121')
-    expect(body).toContain('121 Checkout')
     expect(body).toContain('121 · 10 tries · 9 darts · Double out')
   })
 

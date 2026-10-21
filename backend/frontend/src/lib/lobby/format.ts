@@ -9,7 +9,7 @@ const GAME_NAMES: Record<string, string> = {
   x01: 'X01',
   atc: 'Around the Clock',
   minigolf: 'Minigolf',
-  p121: '121 Checkout',
+  p121: '121',
   hilo: 'Higher Lower',
 }
 

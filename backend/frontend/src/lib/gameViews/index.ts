@@ -16,10 +16,10 @@ const titles: Partial<Record<string, string>> = {
   x01: 'X01',
   atc: 'Around the Clock',
   minigolf: 'Minigolf',
-  p121: '121 CHECKOUT',
+  p121: '121',
   hilo: 'Higher Lower',
 }
-const shortTitles: Partial<Record<string, string>> = { atc: 'ATC', p121: '121' }
+const shortTitles: Partial<Record<string, string>> = { atc: 'ATC' }
 
 export function getGameView(gameId: string): GameView {
   return {

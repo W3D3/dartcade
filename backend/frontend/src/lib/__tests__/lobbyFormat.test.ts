@@ -39,7 +39,7 @@ describe('lobby text', () => {
   it('names game modes, and passes unknown ones through', () => {
     expect(gameName('x01')).toBe('X01')
     expect(gameName('atc')).toBe('Around the Clock')
-    expect(gameName('p121')).toBe('121 Checkout')
+    expect(gameName('p121')).toBe('121')
     expect(gameName('hilo')).toBe('Higher Lower')
     expect(gameName('cricket')).toBe('cricket')
   })
