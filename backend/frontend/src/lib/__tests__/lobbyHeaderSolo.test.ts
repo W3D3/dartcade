@@ -36,6 +36,7 @@ const member = (id: string, name: string): LobbyPerson => ({
   team: null,
   presence: 'online',
   bot: null,
+  avatar: { kind: 'none' },
 })
 
 const lobbyOf = (people: LobbyPerson[], solo: boolean): Lobby => ({

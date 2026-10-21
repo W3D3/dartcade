@@ -37,7 +37,7 @@ beforeEach(() => {
         won: true,
         change: 17,
         at: new Date('2026-10-14T20:14:00Z'),
-        opponents: [{ userId: 'anna', name: 'Anna K.', rating: 1301 }],
+        opponents: [{ userId: 'anna', name: 'Anna K.', rating: 1301, avatar: { kind: 'none' } }],
       },
     ])
 })
@@ -59,7 +59,7 @@ describe('/api/ranked/me', () => {
           won: true,
           change: 17,
           at: '2026-10-14T20:14:00.000Z',
-          opponents: [{ userId: 'anna', name: 'Anna K.', rating: 1301 }],
+          opponents: [{ userId: 'anna', name: 'Anna K.', rating: 1301, avatar: { kind: 'none' } }],
         },
       ],
     })

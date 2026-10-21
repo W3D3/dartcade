@@ -42,6 +42,7 @@ const person = (id: string, userId: string, name: string, boardId: string, posit
   usualBoardName: boardId,
   team: null,
   bot: null,
+  avatar: { kind: 'none' },
 })
 const lobby: LobbyState = {
   id: 'l1',

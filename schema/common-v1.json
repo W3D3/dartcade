@@ -108,12 +108,54 @@
         }
       }
     },
+    "AvatarChoice": {
+      "title": "AvatarChoice",
+      "description": "What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset is required, and validated against the known ids, when kind is 'preset'. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.",
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "type": "string", "enum": ["none", "preset"] },
+        "preset": { "type": "string", "description": "A built-in preset id (Settings shows the choices); required when kind is 'preset'" }
+      }
+    },
+    "Avatar": {
+      "title": "Avatar",
+      "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "additionalProperties": false,
+          "properties": { "kind": { "type": "string", "enum": ["none"] } }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "preset"],
+          "additionalProperties": false,
+          "properties": { "kind": { "type": "string", "enum": ["preset"] }, "preset": { "type": "string" } }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "version"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "type": "string", "enum": ["upload"] },
+            "version": { "type": "integer", "description": "Cache-busts GET /api/users/{id}/avatar?v=" }
+          }
+        }
+      ]
+    },
     "UserRef": {
       "title": "UserRef",
       "type": "object",
-      "required": ["id", "name"],
+      "required": ["id", "name", "avatar"],
       "additionalProperties": false,
-      "properties": { "id": { "type": "string" }, "name": { "type": "string", "description": "Their handle, shown as @name" } }
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string", "description": "Their handle, shown as @name" },
+        "avatar": { "$ref": "#/$defs/Avatar" }
+      }
     },
     "FriendPlaying": {
       "title": "FriendPlaying",
@@ -162,7 +204,7 @@
     "Friend": {
       "title": "Friend",
       "type": "object",
-      "required": ["id", "name", "friendsSince", "status", "inYourLobby", "invited"],
+      "required": ["id", "name", "friendsSince", "status", "inYourLobby", "invited", "avatar"],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
@@ -173,7 +215,8 @@
           "type": "boolean",
           "description": "They're in the lobby you're in (shown even while they're Invisible: you see them there anyway)"
         },
-        "invited": { "type": "boolean", "description": "They have a pending invite to your lobby" }
+        "invited": { "type": "boolean", "description": "They have a pending invite to your lobby" },
+        "avatar": { "$ref": "#/$defs/Avatar" }
       }
     },
     "IncomingFriendRequest": {

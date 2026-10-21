@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { groupBy } from '../util/groupBy.js'
+import { toAvatar, type Avatar } from './users.js'
 import {
   PLACEMENT_MATCHES,
   START_RATING,
@@ -105,7 +106,7 @@ export type RecentRanked = {
   change: number | null
   at: Date
   /** The other side, with their ratings going into the game (null while they were placing). */
-  opponents: { userId: string; name: string; rating: number | null }[]
+  opponents: { userId: string; name: string; rating: number | null; avatar: Avatar }[]
 }
 
 /** The player's last ranked games, newest first, with who they played. */
@@ -122,7 +123,17 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
   const others = await db
     .selectFrom('ranked_results as r')
     .innerJoin('user as u', 'u.id', 'r.user_id')
-    .select(['r.session_id', 'r.user_id', 'r.won', 'r.placement', 'r.rating_before', 'u.name'])
+    .select([
+      'r.session_id',
+      'r.user_id',
+      'r.won',
+      'r.placement',
+      'r.rating_before',
+      'u.name',
+      'u.avatar_kind',
+      'u.avatar_preset',
+      'u.avatar_version',
+    ])
     .where(
       'r.session_id',
       'in',
@@ -140,7 +151,7 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
     at: m.created_at,
     opponents: others
       .filter(o => o.session_id === m.session_id && o.won !== m.won)
-      .map(o => ({ userId: o.user_id, name: o.name, rating: o.placement ? null : o.rating_before })),
+      .map(o => ({ userId: o.user_id, name: o.name, rating: o.placement ? null : o.rating_before, avatar: toAvatar(o) })),
   }))
 }
 

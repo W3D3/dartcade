@@ -7,6 +7,7 @@
   import { ChevronLeft, ChevronRight, Lightbulb, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import AccountCard from '$lib/components/settings/AccountCard.svelte'
+  import AvatarCard from '$lib/components/settings/AvatarCard.svelte'
   import CallerDefaults from '$lib/components/settings/CallerDefaults.svelte'
   import CallerVoices from '$lib/components/settings/CallerVoices.svelte'
   import GamePrefs from '$lib/components/settings/GamePrefs.svelte'
@@ -120,7 +121,10 @@
     <div class="{section === null ? 'hidden md:flex' : 'flex'} flex-col flex-grow">
       {#if shown === 'profile'}
         <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-4 md:gap-5 items-start">
-          <NameCard />
+          <div class="flex flex-col gap-4 md:gap-5">
+            <AvatarCard />
+            <NameCard />
+          </div>
           <AccountCard />
         </div>
       {:else if shown === 'game'}

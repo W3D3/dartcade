@@ -68,7 +68,9 @@ describe('LobbyHub', () => {
     expect(ws.send).toHaveBeenCalledTimes(2)
     hub.sendFriends('lena', {
       ...friendsMsg,
-      incoming: [{ id: 'f1', from: { id: 'max', name: 'Max' }, mutualFriends: 0, createdAt: '2026-10-04T10:00:00.000Z' }],
+      incoming: [
+        { id: 'f1', from: { id: 'max', name: 'Max', avatar: { kind: 'none' } }, mutualFriends: 0, createdAt: '2026-10-04T10:00:00.000Z' },
+      ],
     })
     expect(ws.send).toHaveBeenCalledTimes(3)
     hub.sendFriends('max', friendsMsg) // no /ws/me open: nothing to send to
@@ -79,7 +81,10 @@ describe('LobbyHub', () => {
     const hub = new LobbyHub()
     const a = sock()
     const b = sock()
-    const changed = { ...friendsMsg, outgoing: [{ id: 'f1', to: { id: 'max', name: 'Max' }, createdAt: '2026-10-04T10:00:00.000Z' }] }
+    const changed = {
+      ...friendsMsg,
+      outgoing: [{ id: 'f1', to: { id: 'max', name: 'Max', avatar: { kind: 'none' as const } }, createdAt: '2026-10-04T10:00:00.000Z' }],
+    }
     hub.addMeSocket('lena', a, me(0), friendsMsg)
     hub.addMeSocket('lena', b, me(0), changed) // built after a change tab a hasn't got yet
     hub.sendFriends('lena', changed)

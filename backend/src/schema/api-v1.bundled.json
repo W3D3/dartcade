@@ -1618,6 +1618,69 @@
         }
       }
     },
+    "/api/users/{id}/avatar": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "description": "The user's id",
+          "schema": {
+            "type": "string"
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getUserAvatar",
+        "summary": "A user's uploaded profile picture",
+        "description": "404 unless they have an uploaded photo (none/preset avatars have nothing to fetch; the frontend renders those itself). With `v` matching their avatar's current version, the browser may cache it for good.",
+        "tags": [
+          "users"
+        ],
+        "parameters": [
+          {
+            "name": "v",
+            "in": "query",
+            "required": false,
+            "description": "The avatar's version (Avatar.version); when it is the latest, the answer is cacheable for good",
+            "schema": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The photo",
+            "headers": {
+              "Cache-Control": {
+                "description": "`private, max-age=31536000, immutable` for the latest version asked for with `v`, otherwise `no-store`",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/users/name-available": {
       "get": {
         "operationId": "checkNameAvailable",
@@ -2424,6 +2487,52 @@
           },
           "409": {
             "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/me/avatar": {
+      "post": {
+        "operationId": "uploadAvatar",
+        "summary": "Set your profile picture to an uploaded photo",
+        "description": "A JPEG, resized and cropped to a square by the browser before sending. Replaces any preset or earlier photo.",
+        "tags": [
+          "me"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "image/jpeg": {
+              "schema": {
+                "type": "string",
+                "format": "binary",
+                "description": "At most 512 KB"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The account as it is now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Me"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "415": {
+            "$ref": "#/components/responses/UnsupportedMediaType"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -4710,6 +4819,88 @@
           }
         }
       },
+      "Avatar": {
+        "title": "Avatar",
+        "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+        "oneOf": [
+          {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "none"
+                ]
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "preset"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "preset"
+                ]
+              },
+              "preset": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "required": [
+              "kind",
+              "version"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "upload"
+                ]
+              },
+              "version": {
+                "type": "integer",
+                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+              }
+            }
+          }
+        ]
+      },
+      "AvatarChoice": {
+        "title": "AvatarChoice",
+        "description": "What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset is required, and validated against the known ids, when kind is 'preset'. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.",
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "none",
+              "preset"
+            ]
+          },
+          "preset": {
+            "type": "string",
+            "description": "A built-in preset id (Settings shows the choices); required when kind is 'preset'"
+          }
+        }
+      },
       "FriendRequest": {
         "type": "object",
         "required": [
@@ -4824,7 +5015,8 @@
         "required": [
           "userId",
           "name",
-          "rating"
+          "rating",
+          "avatar"
         ],
         "additionalProperties": false,
         "properties": {
@@ -4838,6 +5030,9 @@
             "type": "integer",
             "nullable": true,
             "description": "Their rating going into the game; null while they were placing"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           }
         }
       },
@@ -7480,7 +7675,8 @@
           "emailVerified",
           "role",
           "createdAt",
-          "lastLoginAt"
+          "lastLoginAt",
+          "avatar"
         ],
         "additionalProperties": false,
         "properties": {
@@ -7515,6 +7711,9 @@
             "format": "date-time",
             "nullable": true,
             "description": "Last sign-in; null if never"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           }
         }
       },
@@ -7805,7 +8004,8 @@
           "invisible",
           "isAdmin",
           "isModerator",
-          "createdAt"
+          "createdAt",
+          "avatar"
         ],
         "additionalProperties": false,
         "properties": {
@@ -7844,6 +8044,9 @@
             "type": "string",
             "format": "date-time",
             "description": "When the account was made (Member since)"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           }
         }
       },
@@ -7859,6 +8062,9 @@
           },
           "invisible": {
             "type": "boolean"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/AvatarChoice"
           }
         }
       },
@@ -8080,16 +8286,26 @@
         "type": "object",
         "description": "Someone in a lobby, for an avatar stack. guest means no account and not a bot.",
         "required": [
+          "userId",
           "name",
-          "guest"
+          "guest",
+          "avatar"
         ],
         "additionalProperties": false,
         "properties": {
+          "userId": {
+            "type": "string",
+            "nullable": true,
+            "description": "To fetch an uploaded avatar; null for a guest or bot."
+          },
           "name": {
             "type": "string"
           },
           "guest": {
             "type": "boolean"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           }
         }
       },
@@ -9385,7 +9601,8 @@
           "friendsSince",
           "status",
           "inYourLobby",
-          "invited"
+          "invited",
+          "avatar"
         ],
         "additionalProperties": false,
         "properties": {
@@ -9409,6 +9626,9 @@
           "invited": {
             "type": "boolean",
             "description": "They have a pending invite to your lobby"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           }
         }
       },
@@ -9417,7 +9637,8 @@
         "type": "object",
         "required": [
           "id",
-          "name"
+          "name",
+          "avatar"
         ],
         "additionalProperties": false,
         "properties": {
@@ -9427,6 +9648,9 @@
           "name": {
             "type": "string",
             "description": "Their handle, shown as @name"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           }
         }
       },

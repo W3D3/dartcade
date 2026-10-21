@@ -197,8 +197,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     expect(recent).toHaveLength(3)
     expect(recent[0]).toMatchObject({ mode: '2v2', won: false, change: null })
     expect(recent[0].opponents).toEqual([
-      { userId: 'anna', name: 'Anna', rating: null },
-      { userId: 'ben', name: 'Ben', rating: null },
+      { userId: 'anna', name: 'Anna', rating: null, avatar: { kind: 'none' } },
+      { userId: 'ben', name: 'Ben', rating: null, avatar: { kind: 'none' } },
     ])
     expect(recent[1]).toMatchObject({ mode: '1v1', won: true })
     expect(recent[1].change).toBeGreaterThan(0)

@@ -31,6 +31,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   usualBoardName: null,
   team: null,
   bot: null,
+  avatar: { kind: 'none' },
   ...over,
 })
 const at = new Date(Date.UTC(2026, 9, 2, 18, 0))
@@ -188,9 +189,9 @@ describe('lobbySummary', () => {
       solo: false,
       hasBot: false,
       faces: [
-        { name: 'Christoph', guest: false },
-        { name: 'Max', guest: false },
-        { name: 'Guest 1', guest: true },
+        { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
+        { userId: 'max', name: 'Max', guest: false, avatar: { kind: 'none' } },
+        { userId: null, name: 'Guest 1', guest: true, avatar: { kind: 'none' } },
       ],
     })
     expect(lobbySummary(lobby, 'max', session).youThrowNext).toBe(false)
@@ -216,10 +217,10 @@ describe('lobbySummary', () => {
       hostName: 'Christoph',
       peopleCount: 5,
       faces: [
-        { name: 'Christoph', guest: false },
-        { name: 'Max', guest: false },
-        { name: 'Guest 1', guest: true },
-        { name: 'Anna', guest: true },
+        { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
+        { userId: 'max', name: 'Max', guest: false, avatar: { kind: 'none' } },
+        { userId: null, name: 'Guest 1', guest: true, avatar: { kind: 'none' } },
+        { userId: null, name: 'Anna', guest: true, avatar: { kind: 'none' } },
       ],
       nextGame: more.nextGame,
       boardNames: ['Living room', 'Garage'],
@@ -236,7 +237,12 @@ describe('lobbySummary', () => {
     expect(lobbySummary(lobby, 'chris', undefined).hasBot).toBe(false)
     const withBot: LobbyState = { ...lobby, people: [...lobby.people, person({ id: 'b', name: 'Bot Lvl 5', bot: { level: 5 } })] }
     expect(lobbySummary(withBot, 'chris', undefined).hasBot).toBe(true)
-    expect(lobbySummary(withBot, 'chris', undefined).faces[3]).toEqual({ name: 'Bot Lvl 5', guest: false })
+    expect(lobbySummary(withBot, 'chris', undefined).faces[3]).toEqual({
+      userId: null,
+      name: 'Bot Lvl 5',
+      guest: false,
+      avatar: { kind: 'none' },
+    })
   })
 
   it("youThrowNext is false for the bot's own controller: they control the seat but don't throw for it", async () => {

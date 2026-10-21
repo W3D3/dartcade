@@ -174,15 +174,20 @@ export class FriendsService {
           ),
           inYourLobby: myLobby !== null && lobby?.id === myLobby.id,
           invited: invited.has(r.otherId),
+          avatar: r.otherAvatar,
         }
       }),
       incoming: incoming.map(r => ({
         id: r.id,
-        from: { id: r.otherId, name: r.otherName },
+        from: { id: r.otherId, name: r.otherName, avatar: r.otherAvatar },
         mutualFriends: mutual.get(r.otherId) ?? 0,
         createdAt: r.createdAt.toISOString(),
       })),
-      outgoing: outgoing.map(r => ({ id: r.id, to: { id: r.otherId, name: r.otherName }, createdAt: r.createdAt.toISOString() })),
+      outgoing: outgoing.map(r => ({
+        id: r.id,
+        to: { id: r.otherId, name: r.otherName, avatar: r.otherAvatar },
+        createdAt: r.createdAt.toISOString(),
+      })),
     }
   }
 

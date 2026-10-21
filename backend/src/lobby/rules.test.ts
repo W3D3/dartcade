@@ -36,6 +36,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   usualBoardName: null,
   team: null,
   bot: null,
+  avatar: { kind: 'none' },
   ...over,
 })
 const lobbyOf = (people: LobbyPerson[], hostUserId: string | null = 'chris'): LobbyState => ({

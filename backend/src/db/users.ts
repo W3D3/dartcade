@@ -1,8 +1,11 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import type { components } from '../schema/api.js'
+import { isAvatarPreset } from '../shared/avatarPresets.js'
 
 export type Preferences = components['schemas']['Preferences']
+export type Avatar = components['schemas']['Avatar']
+export type AvatarChoice = components['schemas']['AvatarChoice']
 
 /** The signed-in account as /api/me shows it. */
 export type Account = {
@@ -15,12 +18,31 @@ export type Account = {
   role: string | null
   /** When the account was made, ISO 8601. */
   createdAt: string
+  avatar: Avatar
+}
+
+/** The Avatar union shape from the four avatar_* columns (migration 029). */
+export function toAvatar(row: { avatar_kind: 'none' | 'preset' | 'upload'; avatar_preset: string | null; avatar_version: number }): Avatar {
+  if (row.avatar_kind === 'preset') return { kind: 'preset', preset: row.avatar_preset ?? '' }
+  if (row.avatar_kind === 'upload') return { kind: 'upload', version: row.avatar_version }
+  return { kind: 'none' }
 }
 
 export async function getAccount(db: Kysely<Database>, userId: string): Promise<Account | undefined> {
   const row = await db
     .selectFrom('user')
-    .select(['id', 'name', 'email', 'name_needs_change', 'invisible', 'role', 'createdAt'])
+    .select([
+      'id',
+      'name',
+      'email',
+      'name_needs_change',
+      'invisible',
+      'role',
+      'createdAt',
+      'avatar_kind',
+      'avatar_preset',
+      'avatar_version',
+    ])
     .where('id', '=', userId)
     .executeTakeFirst()
   return (
@@ -32,8 +54,58 @@ export async function getAccount(db: Kysely<Database>, userId: string): Promise<
       invisible: row.invisible,
       role: row.role,
       createdAt: row.createdAt.toISOString(),
+      avatar: toAvatar(row),
     }
   )
+}
+
+/** Thrown when a PATCH /api/me avatar choice names an unknown preset id. */
+export class UnknownAvatarPresetError extends Error {}
+
+/** Sets the avatar to none, a built-in preset, or (internally) an uploaded photo; bumps avatar_version. */
+export async function setAvatar(db: Kysely<Database>, userId: string, choice: AvatarChoice): Promise<void> {
+  if (choice.kind === 'preset' && (choice.preset === undefined || !isAvatarPreset(choice.preset)))
+    throw new UnknownAvatarPresetError(choice.preset ?? '(none given)')
+  await db
+    .updateTable('user')
+    .set(eb => ({
+      avatar_kind: choice.kind,
+      avatar_preset: choice.kind === 'preset' ? choice.preset : null,
+      avatar_image: null,
+      avatar_content_type: null,
+      avatar_version: eb('avatar_version', '+', 1),
+    }))
+    .where('id', '=', userId)
+    .execute()
+}
+
+/** Sets the avatar to an uploaded photo; bumps avatar_version so GET /api/users/{id}/avatar?v= cache-busts. */
+export async function setAvatarUpload(db: Kysely<Database>, userId: string, image: Buffer, contentType: string): Promise<void> {
+  await db
+    .updateTable('user')
+    .set(eb => ({
+      avatar_kind: 'upload',
+      avatar_preset: null,
+      avatar_image: image,
+      avatar_content_type: contentType,
+      avatar_version: eb('avatar_version', '+', 1),
+    }))
+    .where('id', '=', userId)
+    .execute()
+}
+
+/** The bytes and content type of a user's uploaded avatar; undefined if they have none (or aren't using an upload). */
+export async function getAvatarUpload(
+  db: Kysely<Database>,
+  userId: string,
+): Promise<{ image: Buffer; contentType: string; version: number } | undefined> {
+  const row = await db
+    .selectFrom('user')
+    .select(['avatar_kind', 'avatar_image', 'avatar_content_type', 'avatar_version'])
+    .where('id', '=', userId)
+    .executeTakeFirst()
+  if (!row || row.avatar_kind !== 'upload' || row.avatar_image === null || row.avatar_content_type === null) return undefined
+  return { image: row.avatar_image, contentType: row.avatar_content_type, version: row.avatar_version }
 }
 
 /** What decides whether someone is an admin (auth/admin.ts). */

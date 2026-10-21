@@ -52,9 +52,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('FriendsService', () => {
     const r = await friends.request('chris', '  @lena ')
     expect(r).toEqual({ id: expect.any(String), status: 'pending' })
     expect(onChange).toHaveBeenCalledWith(['chris', 'lena'])
-    expect((await friends.list('chris')).outgoing).toEqual([{ id: r.id, to: { id: 'lena', name: 'Lena' }, createdAt: expect.any(String) }])
+    expect((await friends.list('chris')).outgoing).toEqual([
+      { id: r.id, to: { id: 'lena', name: 'Lena', avatar: { kind: 'none' } }, createdAt: expect.any(String) },
+    ])
     expect((await friends.list('lena')).incoming).toEqual([
-      { id: r.id, from: { id: 'chris', name: 'Christoph' }, mutualFriends: 0, createdAt: expect.any(String) },
+      { id: r.id, from: { id: 'chris', name: 'Christoph', avatar: { kind: 'none' } }, mutualFriends: 0, createdAt: expect.any(String) },
     ])
     expect((await friends.list('oldlena')).incoming).toEqual([])
   })

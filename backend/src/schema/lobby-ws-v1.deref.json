@@ -60,7 +60,8 @@
         "ready",
         "team",
         "presence",
-        "bot"
+        "bot",
+        "avatar"
       ],
       "additionalProperties": false,
       "properties": {
@@ -71,6 +72,66 @@
           "type": [
             "string",
             "null"
+          ]
+        },
+        "avatar": {
+          "description": "{kind: 'none'} for a guest or bot (no account to carry one).",
+          "title": "Avatar",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "none"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "preset"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "preset"
+                  ]
+                },
+                "preset": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "version"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "upload"
+                  ]
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                }
+              }
+            }
           ]
         },
         "addedByUserId": {
@@ -515,7 +576,8 @@
               "ready",
               "team",
               "presence",
-              "bot"
+              "bot",
+              "avatar"
             ],
             "additionalProperties": false,
             "properties": {
@@ -526,6 +588,66 @@
                 "type": [
                   "string",
                   "null"
+                ]
+              },
+              "avatar": {
+                "description": "{kind: 'none'} for a guest or bot (no account to carry one).",
+                "title": "Avatar",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "none"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "preset"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "preset"
+                        ]
+                      },
+                      "preset": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "upload"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                      }
+                    }
+                  }
                 ]
               },
               "addedByUserId": {
@@ -939,7 +1061,8 @@
                   "ready",
                   "team",
                   "presence",
-                  "bot"
+                  "bot",
+                  "avatar"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -950,6 +1073,66 @@
                     "type": [
                       "string",
                       "null"
+                    ]
+                  },
+                  "avatar": {
+                    "description": "{kind: 'none'} for a guest or bot (no account to carry one).",
+                    "title": "Avatar",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "preset"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "preset": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
                     ]
                   },
                   "addedByUserId": {
@@ -1386,7 +1569,8 @@
                       "ready",
                       "team",
                       "presence",
-                      "bot"
+                      "bot",
+                      "avatar"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -1397,6 +1581,66 @@
                         "type": [
                           "string",
                           "null"
+                        ]
+                      },
+                      "avatar": {
+                        "description": "{kind: 'none'} for a guest or bot (no account to carry one).",
+                        "title": "Avatar",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "preset"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "preset": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
                         ]
                       },
                       "addedByUserId": {
@@ -1761,16 +2005,85 @@
             "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
             "type": "object",
             "required": [
+              "userId",
               "name",
-              "guest"
+              "guest",
+              "avatar"
             ],
             "additionalProperties": false,
             "properties": {
+              "userId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "To fetch an uploaded avatar; null for a guest or bot."
+              },
               "name": {
                 "type": "string"
               },
               "guest": {
                 "type": "boolean"
+              },
+              "avatar": {
+                "title": "Avatar",
+                "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "none"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "preset"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "preset"
+                        ]
+                      },
+                      "preset": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "upload"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -1814,16 +2127,85 @@
       "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
       "type": "object",
       "required": [
+        "userId",
         "name",
-        "guest"
+        "guest",
+        "avatar"
       ],
       "additionalProperties": false,
       "properties": {
+        "userId": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "To fetch an uploaded avatar; null for a guest or bot."
+        },
         "name": {
           "type": "string"
         },
         "guest": {
           "type": "boolean"
+        },
+        "avatar": {
+          "title": "Avatar",
+          "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "kind"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "none"
+                  ]
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "preset"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "preset"
+                  ]
+                },
+                "preset": {
+                  "type": "string"
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "version"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "upload"
+                  ]
+                },
+                "version": {
+                  "type": "integer",
+                  "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                }
+              }
+            }
+          ]
         }
       }
     },
@@ -1936,16 +2318,85 @@
             "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
             "type": "object",
             "required": [
+              "userId",
               "name",
-              "guest"
+              "guest",
+              "avatar"
             ],
             "additionalProperties": false,
             "properties": {
+              "userId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "To fetch an uploaded avatar; null for a guest or bot."
+              },
               "name": {
                 "type": "string"
               },
               "guest": {
                 "type": "boolean"
+              },
+              "avatar": {
+                "title": "Avatar",
+                "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "none"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "preset"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "preset"
+                        ]
+                      },
+                      "preset": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "upload"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -2066,16 +2517,85 @@
                   "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
                   "type": "object",
                   "required": [
+                    "userId",
                     "name",
-                    "guest"
+                    "guest",
+                    "avatar"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "userId": {
+                      "type": [
+                        "string",
+                        "null"
+                      ],
+                      "description": "To fetch an uploaded avatar; null for a guest or bot."
+                    },
                     "name": {
                       "type": "string"
                     },
                     "guest": {
                       "type": "boolean"
+                    },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "preset"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "preset": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
                     }
                   }
                 }
@@ -2226,16 +2746,85 @@
                     "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
                     "type": "object",
                     "required": [
+                      "userId",
                       "name",
-                      "guest"
+                      "guest",
+                      "avatar"
                     ],
                     "additionalProperties": false,
                     "properties": {
+                      "userId": {
+                        "type": [
+                          "string",
+                          "null"
+                        ],
+                        "description": "To fetch an uploaded avatar; null for a guest or bot."
+                      },
                       "name": {
                         "type": "string"
                       },
                       "guest": {
                         "type": "boolean"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "preset"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "preset": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
                       }
                     }
                   }
@@ -2316,7 +2905,8 @@
               "friendsSince",
               "status",
               "inYourLobby",
-              "invited"
+              "invited",
+              "avatar"
             ],
             "additionalProperties": false,
             "properties": {
@@ -2425,6 +3015,66 @@
               "invited": {
                 "type": "boolean",
                 "description": "They have a pending invite to your lobby"
+              },
+              "avatar": {
+                "title": "Avatar",
+                "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "none"
+                        ]
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "preset"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "preset"
+                        ]
+                      },
+                      "preset": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  {
+                    "type": "object",
+                    "required": [
+                      "kind",
+                      "version"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "kind": {
+                        "type": "string",
+                        "enum": [
+                          "upload"
+                        ]
+                      },
+                      "version": {
+                        "type": "integer",
+                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -2450,7 +3100,8 @@
                 "type": "object",
                 "required": [
                   "id",
-                  "name"
+                  "name",
+                  "avatar"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -2460,6 +3111,66 @@
                   "name": {
                     "type": "string",
                     "description": "Their handle, shown as @name"
+                  },
+                  "avatar": {
+                    "title": "Avatar",
+                    "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "preset"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "preset": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
+                    ]
                   }
                 }
               },
@@ -2495,7 +3206,8 @@
                 "type": "object",
                 "required": [
                   "id",
-                  "name"
+                  "name",
+                  "avatar"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -2505,6 +3217,66 @@
                   "name": {
                     "type": "string",
                     "description": "Their handle, shown as @name"
+                  },
+                  "avatar": {
+                    "title": "Avatar",
+                    "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "preset"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "preset": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
+                    ]
                   }
                 }
               },
@@ -2601,16 +3373,85 @@
                       "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
                       "type": "object",
                       "required": [
+                        "userId",
                         "name",
-                        "guest"
+                        "guest",
+                        "avatar"
                       ],
                       "additionalProperties": false,
                       "properties": {
+                        "userId": {
+                          "type": [
+                            "string",
+                            "null"
+                          ],
+                          "description": "To fetch an uploaded avatar; null for a guest or bot."
+                        },
                         "name": {
                           "type": "string"
                         },
                         "guest": {
                           "type": "boolean"
+                        },
+                        "avatar": {
+                          "title": "Avatar",
+                          "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                          "oneOf": [
+                            {
+                              "type": "object",
+                              "required": [
+                                "kind"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "none"
+                                  ]
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "kind",
+                                "preset"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "preset"
+                                  ]
+                                },
+                                "preset": {
+                                  "type": "string"
+                                }
+                              }
+                            },
+                            {
+                              "type": "object",
+                              "required": [
+                                "kind",
+                                "version"
+                              ],
+                              "additionalProperties": false,
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "upload"
+                                  ]
+                                },
+                                "version": {
+                                  "type": "integer",
+                                  "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                }
+                              }
+                            }
+                          ]
                         }
                       }
                     }
@@ -2761,16 +3602,85 @@
                         "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
                         "type": "object",
                         "required": [
+                          "userId",
                           "name",
-                          "guest"
+                          "guest",
+                          "avatar"
                         ],
                         "additionalProperties": false,
                         "properties": {
+                          "userId": {
+                            "type": [
+                              "string",
+                              "null"
+                            ],
+                            "description": "To fetch an uploaded avatar; null for a guest or bot."
+                          },
                           "name": {
                             "type": "string"
                           },
                           "guest": {
                             "type": "boolean"
+                          },
+                          "avatar": {
+                            "title": "Avatar",
+                            "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                            "oneOf": [
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "none"
+                                    ]
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "preset"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "preset"
+                                    ]
+                                  },
+                                  "preset": {
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              {
+                                "type": "object",
+                                "required": [
+                                  "kind",
+                                  "version"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "upload"
+                                    ]
+                                  },
+                                  "version": {
+                                    "type": "integer",
+                                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                  }
+                                }
+                              }
+                            ]
                           }
                         }
                       }
@@ -2851,7 +3761,8 @@
                   "friendsSince",
                   "status",
                   "inYourLobby",
-                  "invited"
+                  "invited",
+                  "avatar"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -2960,6 +3871,66 @@
                   "invited": {
                     "type": "boolean",
                     "description": "They have a pending invite to your lobby"
+                  },
+                  "avatar": {
+                    "title": "Avatar",
+                    "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "none"
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "preset"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "preset"
+                            ]
+                          },
+                          "preset": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "version"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "upload"
+                            ]
+                          },
+                          "version": {
+                            "type": "integer",
+                            "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                          }
+                        }
+                      }
+                    ]
                   }
                 }
               }
@@ -2985,7 +3956,8 @@
                     "type": "object",
                     "required": [
                       "id",
-                      "name"
+                      "name",
+                      "avatar"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -2995,6 +3967,66 @@
                       "name": {
                         "type": "string",
                         "description": "Their handle, shown as @name"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "preset"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "preset": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
                       }
                     }
                   },
@@ -3030,7 +4062,8 @@
                     "type": "object",
                     "required": [
                       "id",
-                      "name"
+                      "name",
+                      "avatar"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -3040,6 +4073,66 @@
                       "name": {
                         "type": "string",
                         "description": "Their handle, shown as @name"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "preset"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "preset": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
                       }
                     }
                   },

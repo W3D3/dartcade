@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
+import { toAvatar } from './users.js'
 import {
   ACTIVITY_KINDS,
   type ActivityData,
@@ -171,6 +172,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
   const people = await db
     .selectFrom('lobby_people as p')
     .leftJoin('boards as b', 'b.id', 'p.board_id')
+    .leftJoin('user as u', 'u.id', 'p.user_id')
     .select([
       'p.id',
       'p.user_id',
@@ -186,6 +188,9 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       'p.joined_at',
       'p.team',
       'p.bot_level',
+      'u.avatar_kind',
+      'u.avatar_preset',
+      'u.avatar_version',
     ])
     .where('p.lobby_id', '=', id)
     .orderBy('p.position')
@@ -237,6 +242,11 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       usualBoardName: p.user_id === null ? null : (usual.get(p.user_id)?.name ?? null),
       team: p.team,
       bot: p.bot_level === null ? null : { level: p.bot_level },
+      // Guests and bots have no account row to join, so no avatar to show either.
+      avatar:
+        p.avatar_kind === null
+          ? ({ kind: 'none' } as const)
+          : toAvatar({ avatar_kind: p.avatar_kind, avatar_preset: p.avatar_preset, avatar_version: p.avatar_version ?? 0 }),
     })),
     invites: invites.map(i => ({
       id: i.id,

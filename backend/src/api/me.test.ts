@@ -9,10 +9,26 @@ vi.mock('../auth/middleware.js', () => ({
     done()
   }),
 }))
-vi.mock('../db/users.js', () => ({ getAccount: vi.fn(), setInvisible: vi.fn(), getPreferences: vi.fn(), updatePreferences: vi.fn() }))
+vi.mock('../db/users.js', () => ({
+  getAccount: vi.fn(),
+  setInvisible: vi.fn(),
+  setAvatar: vi.fn(),
+  setAvatarUpload: vi.fn(),
+  getPreferences: vi.fn(),
+  updatePreferences: vi.fn(),
+  UnknownAvatarPresetError: class UnknownAvatarPresetError extends Error {},
+}))
 vi.mock('../users/account.js', () => ({ renameUser: vi.fn(), suggestName: vi.fn() }))
 
-import { getAccount, getPreferences, setInvisible, updatePreferences } from '../db/users.js'
+import {
+  getAccount,
+  getPreferences,
+  setAvatar,
+  setAvatarUpload,
+  setInvisible,
+  updatePreferences,
+  UnknownAvatarPresetError,
+} from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
 
 const app = () => {
@@ -22,15 +38,18 @@ const app = () => {
 }
 
 beforeEach(() => {
-  vi.mocked(getAccount).mockReset().mockResolvedValue({
-    id: 'old',
-    name: 'Phil Taylor',
-    email: 'p@x',
-    nameNeedsChange: true,
-    invisible: false,
-    role: null,
-    createdAt: '2026-08-01T10:00:00.000Z',
-  })
+  vi.mocked(getAccount)
+    .mockReset()
+    .mockResolvedValue({
+      id: 'old',
+      name: 'Phil Taylor',
+      email: 'p@x',
+      nameNeedsChange: true,
+      invisible: false,
+      role: null,
+      createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
+    })
   vi.mocked(setInvisible).mockReset()
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
   vi.mocked(renameUser).mockReset().mockResolvedValue('Phil_T')
@@ -50,6 +69,7 @@ describe('/api/me', () => {
       isModerator: false,
       suggestedName: 'Phil.Taylor',
       createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
     })
   })
 
@@ -62,6 +82,7 @@ describe('/api/me', () => {
       invisible: false,
       role: 'admin',
       createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: true, isModerator: true })
@@ -94,6 +115,7 @@ describe('/api/me', () => {
       invisible: false,
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { name: 'Phil_T' } })
     expect(res.statusCode).toBe(200)
@@ -125,6 +147,7 @@ describe('/api/me', () => {
       invisible: true,
       role: null,
       createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
     })
     const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { invisible: true } })
     expect(res.statusCode).toBe(200)
@@ -132,6 +155,67 @@ describe('/api/me', () => {
     expect(renameUser).not.toHaveBeenCalled()
     expect(onChanged).toHaveBeenCalledWith('old')
     expect(JSON.parse(res.body).invisible).toBe(true)
+  })
+
+  it('sets the avatar to a preset and tells friends', async () => {
+    const onChanged = vi.fn()
+    const a = createFastify()
+    a.register(meApiPlugin, { db: {} as any, onChanged })
+    vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
+    const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { avatar: { kind: 'preset', preset: 'cat' } } })
+    expect(res.statusCode).toBe(200)
+    expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'cat' })
+    expect(onChanged).toHaveBeenCalledWith('old')
+  })
+
+  it('answers 400 for an unknown preset id', async () => {
+    vi.mocked(setAvatar).mockReset().mockRejectedValue(new UnknownAvatarPresetError('nope'))
+    const res = await app().inject({ method: 'PATCH', url: '/api/me', payload: { avatar: { kind: 'preset', preset: 'nope' } } })
+    expect(res.statusCode).toBe(400)
+  })
+})
+
+describe('/api/me/avatar', () => {
+  const jpeg = Buffer.from([0xff, 0xd8, 0, 0, 0xff, 0xd9])
+
+  beforeEach(() => {
+    vi.mocked(setAvatarUpload).mockReset().mockResolvedValue(undefined)
+  })
+
+  it('uploads a JPEG and tells friends', async () => {
+    const onChanged = vi.fn()
+    const a = createFastify()
+    a.register(meApiPlugin, { db: {} as any, onChanged })
+    const res = await a.inject({
+      method: 'POST',
+      url: '/api/me/avatar',
+      headers: { 'content-type': 'image/jpeg' },
+      payload: jpeg,
+    })
+    expect(res.statusCode).toBe(200)
+    expect(setAvatarUpload).toHaveBeenCalledWith({}, 'old', jpeg, 'image/jpeg')
+    expect(onChanged).toHaveBeenCalledWith('old')
+  })
+
+  it("refuses bytes that aren't a JPEG", async () => {
+    const res = await app().inject({
+      method: 'POST',
+      url: '/api/me/avatar',
+      headers: { 'content-type': 'image/jpeg' },
+      payload: Buffer.from('not a jpeg'),
+    })
+    expect(res.statusCode).toBe(400)
+    expect(setAvatarUpload).not.toHaveBeenCalled()
+  })
+
+  it('refuses a body of a different content type', async () => {
+    const res = await app().inject({
+      method: 'POST',
+      url: '/api/me/avatar',
+      headers: { 'content-type': 'image/png' },
+      payload: jpeg,
+    })
+    expect(res.statusCode).toBe(415)
   })
 })
 

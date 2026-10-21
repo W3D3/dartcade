@@ -8,7 +8,7 @@
 </script>
 
 <div class="flex items-center gap-[10px] md:gap-3 min-h-11 md:min-h-[52px] pl-3 pr-1 md:pr-[6px] rounded-[10px] bg-surface-row">
-  <span class="hidden md:flex"><Avatar name={request.to.name} size={32} guest /></span>
+  <span class="hidden md:flex"><Avatar name={request.to.name} avatar={request.to.avatar} userId={request.to.id} size={32} guest /></span>
   <span class="flex items-baseline md:items-start md:flex-col gap-[10px] md:gap-px min-w-0 flex-grow">
     <span class="font-mono text-[13px] text-text truncate">{`@${request.to.name}`}</span>
     <span class="text-[12px] text-text-dim truncate">{outgoingMeta(request, now)}</span>

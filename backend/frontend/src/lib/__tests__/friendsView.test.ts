@@ -20,6 +20,7 @@ const friend = (f: Partial<Friend> = {}): Friend => ({
   status: { kind: 'online' },
   inYourLobby: false,
   invited: false,
+  avatar: { kind: 'none' },
   ...f,
 })
 const now = new Date('2026-10-04T20:00:00')
@@ -55,7 +56,14 @@ describe('lists and counts', () => {
   it('splits online from offline and counts the tabs', () => {
     const list = {
       friends: [friend(), friend({ id: 'max', status: { kind: 'offline' } })],
-      incoming: [{ id: 'f1', from: { id: 'sam', name: 'sam.180' }, mutualFriends: 3, createdAt: '2026-10-04T19:50:00' }],
+      incoming: [
+        {
+          id: 'f1',
+          from: { id: 'sam', name: 'sam.180', avatar: { kind: 'none' as const } },
+          mutualFriends: 3,
+          createdAt: '2026-10-04T19:50:00',
+        },
+      ],
       outgoing: [],
     }
     expect(splitOnline(list.friends)).toEqual({ online: [list.friends[0]], offline: [list.friends[1]] })
@@ -63,9 +71,9 @@ describe('lists and counts', () => {
     expect(incomingMeta(list.incoming[0], now)).toBe('3 friends in common · 10 min ago')
     expect(incomingMeta({ ...list.incoming[0], mutualFriends: 1 }, now)).toBe('1 friend in common · 10 min ago')
     expect(incomingMeta({ ...list.incoming[0], mutualFriends: 0 }, now)).toBe('10 min ago')
-    expect(outgoingMeta({ id: 'f2', to: { id: 'nina', name: 'nina_darts' }, createdAt: '2026-10-03T18:40:00' }, now)).toBe(
-      'Sent yesterday, 18:40',
-    )
+    expect(
+      outgoingMeta({ id: 'f2', to: { id: 'nina', name: 'nina_darts', avatar: { kind: 'none' } }, createdAt: '2026-10-03T18:40:00' }, now),
+    ).toBe('Sent yesterday, 18:40')
   })
 })
 
