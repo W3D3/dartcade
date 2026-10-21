@@ -263,3 +263,54 @@ export async function restoreGame(
     return { recalculated: modes }
   })
 }
+
+/**
+ * Deletes a finished or aborted game for good, invalidated or not (admins only; moderators
+ * invalidate): its seats, darts and input log go with it (cascade), so history, stats and best
+ * values follow. Ranked ratings of every mode it was rated in are replayed without it
+ * (recalculateRatings). A game in progress is refused. One transaction, with an audit row.
+ */
+export async function deleteGame(
+  db: Kysely<Database>,
+  id: string,
+  adminUserId: string,
+): Promise<'not-found' | 'active' | { recalculated: RankedMode[] }> {
+  return db.transaction().execute(async trx => {
+    const game = await trx
+      .selectFrom('game_sessions')
+      .select(['id', 'game_id', 'status', 'owner_user_id', 'invalidated_at', 'invalidation_reason'])
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst()
+    if (!game) return 'not-found'
+    if (game.status === 'active') return 'active'
+    const players = await trx
+      .selectFrom('game_players')
+      .select(['seat', 'name', 'user_id'])
+      .where('session_id', '=', id)
+      .orderBy('seat')
+      .execute()
+    const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
+    const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
+    await trx.deleteFrom('game_sessions').where('id', '=', id).execute()
+    for (const mode of modes) await recalculateRatings(trx, mode)
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: adminUserId,
+        action: 'game.delete',
+        target: id,
+        detail: JSON.stringify({
+          mode: game.game_id,
+          status: game.status,
+          ownerUserId: game.owner_user_id,
+          players,
+          wasInvalidated: game.invalidated_at !== null,
+          wasInvalidatedFor: game.invalidation_reason,
+          recalculated: modes,
+        }),
+      })
+      .execute()
+    return { recalculated: modes }
+  })
+}

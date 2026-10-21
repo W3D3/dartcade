@@ -2,9 +2,19 @@
   // A finished game's details (X01-Details*, ATC-Details* boards): the result, the match stats
   // for any mode, and the mode's own section. Finished games don't change: loaded once.
   import { onMount } from 'svelte'
+  import { push } from 'svelte-spa-router'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
-  import { invalidateGame, invalidationText, restoreGame, RESTORE_WARNING, type Invalidation } from '$lib/admin/games'
+  import { currentUser } from '$lib/auth'
+  import {
+    DELETE_WARNING,
+    deleteGame,
+    invalidateGame,
+    invalidationText,
+    restoreGame,
+    RESTORE_WARNING,
+    type Invalidation,
+  } from '$lib/admin/games'
   import Scorecard from '$lib/components/minigolf/Scorecard.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -67,6 +77,16 @@
     else await load()
   }
 
+  // Admins only: delete it for good, then back to the list
+  let confirmingDelete = $state(false)
+  async function confirmDelete(): Promise<void> {
+    confirmingDelete = false
+    invalidateError = ''
+    const result = await deleteGame(params.id)
+    if ('error' in result) invalidateError = result.error
+    else void push('/admin/games')
+  }
+
   // ... and take it back
   let confirmingRestore = $state(false)
   async function confirmRestore(): Promise<void> {
@@ -100,7 +120,12 @@
       <svelte:boundary onerror={(error: unknown) => console.error('details page render failed', error)}>
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
-        <DetailsHeader detail={d} {back} oninvalidate={admin && !invalidated ? () => (confirmingInvalidate = true) : undefined} />
+        <DetailsHeader
+          detail={d}
+          {back}
+          oninvalidate={admin && !invalidated ? () => (confirmingInvalidate = true) : undefined}
+          ondelete={admin && $currentUser?.isAdmin ? () => (confirmingDelete = true) : undefined}
+        />
         {#if invalidated}
           <div
             role="status"
@@ -180,6 +205,17 @@
       </svelte:boundary>
     {/if}
   </div>
+  {#if confirmingDelete}
+    <ConfirmModal
+      title="Delete this game for good?"
+      body={DELETE_WARNING}
+      confirmLabel="Delete"
+      cancelLabel="Keep it"
+      danger
+      onconfirm={() => void confirmDelete()}
+      oncancel={() => (confirmingDelete = false)}
+    />
+  {/if}
   {#if confirmingRestore}
     <ConfirmModal
       title="Restore this game?"

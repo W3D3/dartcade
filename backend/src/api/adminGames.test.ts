@@ -12,12 +12,14 @@ vi.mock('../auth/middleware.js', () => ({
 }))
 vi.mock('../auth/admin.js', () => ({
   requireModerator: vi.fn((_req: any, _reply: any, done: () => void) => done()),
+  requireAdmin: vi.fn((_req: any, _reply: any, done: () => void) => done()),
 }))
 vi.mock('../db/history.js', () => ({ getFinishedGame: vi.fn() }))
 vi.mock('../db/adminGames.js', () => ({
   listAllGames: vi.fn(),
   invalidateGame: vi.fn(),
   restoreGame: vi.fn(),
+  deleteGame: vi.fn(),
   getInvalidation: vi.fn().mockResolvedValue(null),
 }))
 vi.mock('../db/queries.js', () => ({ getSessionEvents: vi.fn().mockResolvedValue([]) }))
@@ -196,6 +198,34 @@ describe('admin games API', () => {
       expect((await restore()).statusCode).toBe(404)
       vi.mocked(adminGames.restoreGame).mockResolvedValueOnce('not-invalidated')
       expect((await restore()).statusCode).toBe(409)
+    })
+  })
+
+  describe('DELETE /api/admin/games/:id (admins only)', () => {
+    const del = () => makeApp().inject({ method: 'DELETE', url: '/api/admin/games/g1' })
+
+    it('deletes as the signed-in admin and says which modes were recalculated', async () => {
+      vi.mocked(adminGames.deleteGame).mockResolvedValue({ recalculated: ['1v1'] })
+      const res = await del()
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ recalculated: ['1v1'] })
+      expect(adminGames.deleteGame).toHaveBeenCalledWith(expect.anything(), 'g1', 'admin-1')
+    })
+
+    it('403s a moderator, who may invalidate but not delete', async () => {
+      vi.mocked(admin.requireAdmin).mockImplementationOnce((_req: any, reply: any) => reply.code(403).send({ error: 'forbidden' }))
+      expect((await del()).statusCode).toBe(403)
+      expect(adminGames.deleteGame).not.toHaveBeenCalled()
+      // ...while the moderator guard on the other routes still lets them in
+      vi.mocked(adminGames.invalidateGame).mockResolvedValue({ recalculated: [] })
+      expect((await makeApp().inject({ method: 'POST', url: '/api/admin/games/g1/invalidate', payload: {} })).statusCode).toBe(200)
+    })
+
+    it('404s an unknown game and 409s one in progress', async () => {
+      vi.mocked(adminGames.deleteGame).mockResolvedValueOnce('not-found')
+      expect((await del()).statusCode).toBe(404)
+      vi.mocked(adminGames.deleteGame).mockResolvedValueOnce('active')
+      expect((await del()).statusCode).toBe(409)
     })
   })
 })

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession } from './queries.js'
-import { getInvalidation, invalidateGame, listAllGames, restoreGame, type AdminGameFilter } from './adminGames.js'
+import { deleteGame, getInvalidation, invalidateGame, listAllGames, restoreGame, type AdminGameFilter } from './adminGames.js'
 import { getFinishedGame, getStatRows, getViewableGame, listFinishedGames } from './history.js'
 import { getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult } from './ranked.js'
 import type { Database } from './schema.js'
@@ -324,6 +324,86 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
     it('can be invalidated again after a restore', async () => {
       expect(await invalidateGame(db, 's2', 'u1', null)).toEqual({ recalculated: ['1v1'] })
       expect(await restoreGame(db, 's2', 'u1')).toEqual({ recalculated: ['1v1'] })
+    })
+  })
+  describe('deleteGame', () => {
+    const duel = (winner: string, loser: string) =>
+      [
+        { won: true, players: [{ userId: winner, average: 60 }] },
+        { won: false, players: [{ userId: loser, average: 40 }] },
+      ] as [
+        { won: boolean; players: { userId: string; average: number }[] },
+        { won: boolean; players: { userId: string; average: number }[] },
+      ]
+    const duelists: [string, string | null][] = [
+      ['U9', 'u9'],
+      ['U10', 'u10'],
+    ]
+
+    beforeAll(async () => {
+      await db
+        .insertInto('user')
+        .values(
+          ['u9', 'u10'].map(id => ({
+            id,
+            name: id.toUpperCase(),
+            email: `${id}@example.com`,
+            emailVerified: true,
+            image: null,
+            role: null,
+          })),
+        )
+        .execute()
+      for (const [id, min] of [
+        ['d1', 400],
+        ['d2', 410],
+        ['d3', 420],
+      ] as const)
+        await game(id, 'x01', duelists, 'finished', min)
+      await recordRankedResult(db, { sessionId: 'd1', mode: '1v1', at: t(405), sides: duel('u9', 'u10') })
+      await recordRankedResult(db, { sessionId: 'd2', mode: '1v1', at: t(415), sides: duel('u10', 'u9') })
+      await recordRankedResult(db, { sessionId: 'd3', mode: '1v1', at: t(425), sides: duel('u9', 'u10') })
+      await game('d4', 'x01', duelists, 'aborted', 430)
+      await game('d5', 'x01', duelists, 'active', 440)
+    })
+
+    it('removes the game for good, replays the ratings without it and writes an audit row', async () => {
+      expect((await getRatings(db, 'u9'))['1v1'].matches).toBe(3)
+
+      expect(await deleteGame(db, 'd2', 'u1')).toEqual({ recalculated: ['1v1'] })
+
+      expect(await db.selectFrom('game_sessions').select('id').where('id', '=', 'd2').execute()).toEqual([])
+      expect(await db.selectFrom('game_players').select('seat').where('session_id', '=', 'd2').execute()).toEqual([])
+      expect(await db.selectFrom('ranked_results').select('user_id').where('session_id', '=', 'd2').execute()).toEqual([])
+      expect((await getRatings(db, 'u9'))['1v1']).toMatchObject({ matches: 2, wins: 2, streak: 2 })
+      const [audit] = await db.selectFrom('admin_audit').selectAll().where('target', '=', 'd2').execute()
+      expect(audit).toMatchObject({ admin_user_id: 'u1', action: 'game.delete' })
+      expect(audit.detail).toMatchObject({ mode: 'x01', status: 'finished', wasInvalidated: false, recalculated: ['1v1'] })
+    })
+
+    it('deletes an invalidated game too, which leaves the ratings as invalidating did', async () => {
+      await invalidateGame(db, 'd3', 'u2', 'Wrong board')
+      const invalidated = (await getRatings(db, 'u9'))['1v1']
+      expect(await deleteGame(db, 'd3', 'u1')).toEqual({ recalculated: ['1v1'] })
+      expect(await db.selectFrom('game_sessions').select('id').where('id', '=', 'd3').execute()).toEqual([])
+      expect((await getRatings(db, 'u9'))['1v1']).toEqual(invalidated)
+      const [audit] = await db
+        .selectFrom('admin_audit')
+        .selectAll()
+        .where('target', '=', 'd3')
+        .where('action', '=', 'game.delete')
+        .execute()
+      expect(audit.detail).toMatchObject({ wasInvalidated: true, wasInvalidatedFor: 'Wrong board' })
+    })
+
+    it('deletes an aborted game, which was never rated', async () => {
+      expect(await deleteGame(db, 'd4', 'u1')).toEqual({ recalculated: [] })
+    })
+
+    it('refuses a game in progress and answers not-found for an unknown one', async () => {
+      expect(await deleteGame(db, 'd5', 'u1')).toBe('active')
+      expect(await db.selectFrom('game_sessions').select('id').where('id', '=', 'd5').execute()).toHaveLength(1)
+      expect(await deleteGame(db, 'nope', 'u1')).toBe('not-found')
     })
   })
 })

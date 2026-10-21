@@ -2,9 +2,17 @@
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { requireModerator } from '../auth/admin.js'
+import { requireAdmin, requireModerator } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { getInvalidation, invalidateGame, listAllGames, restoreGame, type AdminGame, type Invalidation } from '../db/adminGames.js'
+import {
+  deleteGame,
+  getInvalidation,
+  invalidateGame,
+  listAllGames,
+  restoreGame,
+  type AdminGame,
+  type Invalidation,
+} from '../db/adminGames.js'
 import { getFinishedGame } from '../db/history.js'
 import { getSessionEvents } from '../db/queries.js'
 import { decodeCursor, encodeCursor } from '../history/cursor.js'
@@ -42,10 +50,11 @@ function serialize(g: AdminGame) {
   }
 }
 
-/** Every route here is for admins and moderators. */
+/** Every route here is for admins and moderators, except the hard delete: admins only. */
 export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
   const moderatorOnly = [requireAuth, requireModerator]
+  const adminOnly = [requireAuth, requireAdmin]
 
   app.get<Route<'listAdminGames'>>('/api/admin/games', { preValidation: moderatorOnly, schema: fromSpec('listAdminGames') }, async req => {
     const { status = 'finished', mode, player, board, ranked, from, to, limit = 25, cursor } = req.query
@@ -104,6 +113,18 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
       if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
       if (result === 'not-invalidated') throw new ApiError(409, { error: 'This game is not invalidated' })
       req.log.info({ gameId: req.params.id, moderatorId: req.userId, recalculated: result.recalculated }, 'moderator restored game')
+      return result
+    },
+  )
+
+  app.delete<Route<'deleteAdminGame'>>(
+    '/api/admin/games/:id',
+    { preValidation: adminOnly, schema: fromSpec('deleteAdminGame') },
+    async req => {
+      const result = await deleteGame(db, req.params.id, req.userId)
+      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'active') throw new ApiError(409, { error: 'A game in progress cannot be deleted' })
+      req.log.info({ gameId: req.params.id, adminId: req.userId, recalculated: result.recalculated }, 'admin deleted game')
       return result
     },
   )

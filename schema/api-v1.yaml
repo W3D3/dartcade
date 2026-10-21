@@ -842,6 +842,27 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+    delete:
+      operationId: deleteAdminGame
+      summary: Delete a finished or aborted game for good, and recalculate the ratings it counted in (admin only)
+      description: Moderators invalidate instead. The game, its seats, darts and input log go with it, invalidated or not, so history and stats follow. Ranked ratings of the modes it was rated in are replayed without it. A game in progress is refused.
+      tags: [admin]
+      responses:
+        '200':
+          description: Deleted
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminGameRecalculated' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The game is in progress
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/admin/games/{id}/invalidate:
     parameters:
       - $ref: '#/components/parameters/GameId'

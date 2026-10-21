@@ -82,6 +82,16 @@ export async function invalidateGame(id: string, reason: string): Promise<{ reca
   return res.data ?? { error: res.error.error }
 }
 
+/** What deleting a game warns about (admins only); the same text on the list and the details page. */
+export const DELETE_WARNING =
+  'The game, its darts and its stats are removed for good, invalidated or not, and cannot be restored. If it was ranked, the ratings it counted in are recalculated without it. Invalidate it instead to keep it for moderators.'
+
+/** Deletes a game for good. On a refusal (in progress, already gone), the message to show. */
+export async function deleteGame(id: string): Promise<{ recalculated: string[] } | { error: string }> {
+  const res = await api.DELETE('/api/admin/games/{id}', { params: { path: { id } } })
+  return res.data ?? { error: res.error.error }
+}
+
 /** What restoring a game says; the same text on the list and the details page. */
 export const RESTORE_WARNING =
   "The game counts again in its players' history, stats and best values. If it was ranked, the ratings are recalculated with it."

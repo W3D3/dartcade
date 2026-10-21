@@ -2,7 +2,7 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import { Ban, ChevronRight, LoaderCircle, Search, Undo2 } from '@lucide/svelte'
+  import { Ban, ChevronRight, LoaderCircle, Search, Trash, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
@@ -16,6 +16,8 @@
   import { gamesTrail } from '$lib/admin/breadcrumbs'
   import {
     DEFAULT_FILTERS,
+    deleteGame,
+    DELETE_WARNING,
     invalidateGame,
     invalidationText,
     restoreGame,
@@ -107,6 +109,19 @@
           }
         : g,
     )
+  }
+
+  // Admins only: the game asking to be deleted for good
+  let deleting = $state<AdminGameSummary | null>(null)
+
+  async function confirmDelete(): Promise<void> {
+    const game = deleting
+    if (!game) return
+    deleting = null
+    invalidateError = ''
+    const result = await deleteGame(game.id)
+    if ('error' in result) invalidateError = result.error
+    else games = games.filter(g => g.id !== game.id)
   }
 
   // The invalidated game asking to be restored
@@ -237,36 +252,45 @@
                     {#if g.invalidated}<span class="basis-full text-[13px] text-live-text">{invalidationText(g.invalidated)}</span>{/if}
                   </span>
                 {/snippet}
-                {#if g.status === 'finished' && !g.invalidated}
-                  <Button
-                    variant="quiet"
-                    size="icon-sm"
-                    aria-label="Invalidate this game"
-                    title="Invalidate"
-                    onclick={() => (confirming = g)}
-                    class="absolute right-11 top-1/2 z-10 -translate-y-1/2 hover:text-live"><Ban size={16} /></Button
-                  >
-                {:else if g.status === 'finished'}
-                  <Button
-                    variant="quiet"
-                    size="icon-sm"
-                    aria-label="Restore this game"
-                    title="Restore"
-                    onclick={() => (restoring = g)}
-                    class="absolute right-11 top-1/2 z-10 -translate-y-1/2"><Undo2 size={16} /></Button
-                  >
-                {/if}
+                <div class="absolute right-11 top-1/2 z-10 flex -translate-y-1/2 gap-1">
+                  {#if g.status === 'finished' && !g.invalidated}
+                    <Button
+                      variant="quiet"
+                      size="icon-sm"
+                      aria-label="Invalidate this game"
+                      title="Invalidate"
+                      onclick={() => (confirming = g)}
+                      class="hover:text-live"><Ban size={16} /></Button
+                    >
+                  {:else if g.status === 'finished'}
+                    <Button variant="quiet" size="icon-sm" aria-label="Restore this game" title="Restore" onclick={() => (restoring = g)}
+                      ><Undo2 size={16} /></Button
+                    >
+                  {/if}
+                  {#if g.status !== 'active' && $currentUser.isAdmin}
+                    <Button
+                      variant="quiet"
+                      size="icon-sm"
+                      aria-label="Delete this game for good"
+                      title="Delete for good"
+                      onclick={() => (deleting = g)}
+                      class="hover:text-live"><Trash size={16} /></Button
+                    >
+                  {/if}
+                </div>
                 {#if g.status === 'finished'}
                   <a
                     href="#/admin/games/{g.id}"
-                    class="relative block px-[22px] pr-20 py-3 text-text no-underline hover:bg-surface-active"
+                    class="relative block px-[22px] {$currentUser.isAdmin
+                      ? 'pr-28'
+                      : 'pr-20'} py-3 text-text no-underline hover:bg-surface-active"
                     aria-label="{getGameView(g.mode).title}, {when.day} {when.time}: details"
                   >
                     {@render row()}
                     <ChevronRight size={18} class="absolute right-4 top-1/2 -translate-y-1/2 text-text-dim" />
                   </a>
                 {:else}
-                  <div class="px-[22px] pr-20 py-3 text-text">{@render row()}</div>
+                  <div class="px-[22px] {$currentUser.isAdmin ? 'pr-28' : 'pr-20'} py-3 text-text">{@render row()}</div>
                 {/if}
               </li>
             {/each}
@@ -284,6 +308,17 @@
     </main>
     {#if confirming}
       <InvalidateGameModal onconfirm={(reason: string) => void confirmInvalidate(reason)} oncancel={() => (confirming = null)} />
+    {/if}
+    {#if deleting}
+      <ConfirmModal
+        title="Delete this game for good?"
+        body={DELETE_WARNING}
+        confirmLabel="Delete"
+        cancelLabel="Keep it"
+        danger
+        onconfirm={() => void confirmDelete()}
+        oncancel={() => (deleting = null)}
+      />
     {/if}
     {#if restoring}
       <ConfirmModal
