@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { isAdmin, isModerator } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
+import { flagEnabled, loadFlagUser } from '../flags/index.js'
 import {
   getAccount,
   getPreferences,
@@ -10,6 +11,7 @@ import {
   setAvatarUpload,
   setInvisible,
   updatePreferences,
+  UnknownAvatarColorError,
   UnknownAvatarPresetError,
 } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
@@ -65,6 +67,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
         await setAvatar(db, req.userId, req.body.avatar)
       } catch (err) {
         if (err instanceof UnknownAvatarPresetError) throw new ApiError(400, { error: `unknown avatar preset: ${err.message}` })
+        if (err instanceof UnknownAvatarColorError) throw new ApiError(400, { error: `unknown avatar color: ${err.message}` })
         throw err
       }
     }
@@ -88,6 +91,8 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
         config: { rateLimit: { max: 10, timeWindow: '1 minute' } },
       },
       async req => {
+        if (!(await flagEnabled('avatar.upload.enabled', await loadFlagUser(db, req.userId))))
+          throw new ApiError(403, { error: 'avatar uploads are disabled' })
         const image = orEmpty(req.body)
         if (!looksLikeJpeg(image)) throw new ApiError(400, { error: 'not a JPEG' })
         await setAvatarUpload(db, req.userId, image, 'image/jpeg')

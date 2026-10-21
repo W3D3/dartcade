@@ -24,6 +24,8 @@ const COLUMNS = [
   'last_login_at',
   'avatar_kind',
   'avatar_preset',
+  'avatar_color',
+  'avatar_fg_color',
   'avatar_version',
 ] as const
 
@@ -37,6 +39,8 @@ const toRow = (r: {
   last_login_at: Date | null
   avatar_kind: 'none' | 'preset' | 'upload'
   avatar_preset: string | null
+  avatar_color: string | null
+  avatar_fg_color: string | null
   avatar_version: number
 }): AdminUserRow => ({
   id: r.id,

@@ -44,12 +44,28 @@ describe('Avatar', () => {
     expect(out).not.toContain('lucide-bot')
   })
 
-  it("shows a preset's icon on its own colour instead of the initial, when avatar.kind is 'preset'", () => {
-    const out = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'crosshair' } })
-    expect(out).toContain('lucide-crosshair')
+  it("shows the Dartcade mark on its chosen background and foreground colours instead of the initial, when avatar.kind is 'preset'", () => {
+    const out = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#808080', fgColor: '#000000' } })
+    expect(out).toContain('lucide-dartcade-mark')
     expect(out).not.toContain('>L<')
-    expect(out).toContain('background-color: #73503d')
+    expect(out).toContain('background-color: #808080')
+    expect(out).toContain('color: #000000')
     expect(out).not.toContain(avatarColor('Lena'))
+  })
+
+  it('background and foreground colours are independent — either can change without the other', () => {
+    const out = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#2d6cdf', fgColor: '#ffffff' } })
+    expect(out).toContain('background-color: #2d6cdf')
+    expect(out).toContain('color: #ffffff')
+  })
+
+  it("shows the preset's real colours even under tone='accent' or 'quiet' — a chosen avatar is never hidden behind a forced chip colour", () => {
+    const accent = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#3a8f4a', fgColor: '#ffffff' }, tone: 'accent' })
+    expect(accent).toContain('background-color: #3a8f4a')
+    expect(accent).not.toContain('bg-accent')
+    const quiet = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#3a8f4a', fgColor: '#ffffff' }, tone: 'quiet' })
+    expect(quiet).toContain('background-color: #3a8f4a')
+    expect(quiet).not.toContain('bg-line-3')
   })
 
   it("shows the uploaded photo instead of the initial, when avatar.kind is 'upload'", () => {
@@ -70,9 +86,13 @@ describe('Avatar', () => {
   })
 
   it('a bot glyph still wins over a preset or uploaded avatar — the more specific identity', () => {
-    const preset = html({ name: 'Bot Lvl 4', bot: { level: 4 }, avatar: { kind: 'preset', preset: 'medal' } })
+    const preset = html({
+      name: 'Bot Lvl 4',
+      bot: { level: 4 },
+      avatar: { kind: 'preset', preset: 'logo', color: '#808080', fgColor: '#000000' },
+    })
     expect(preset).toContain('lucide-bot')
-    expect(preset).not.toContain('lucide-medal')
+    expect(preset).not.toContain('lucide-dartcade-mark')
     const upload = html({ name: 'Bot Lvl 4', bot: { level: 4 }, userId: 'x', avatar: { kind: 'upload', version: 1 } })
     expect(upload).toContain('lucide-bot')
     expect(upload).not.toContain('<img')

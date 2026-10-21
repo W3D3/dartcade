@@ -132,6 +132,8 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
       'u.name',
       'u.avatar_kind',
       'u.avatar_preset',
+      'u.avatar_color',
+      'u.avatar_fg_color',
       'u.avatar_version',
     ])
     .where(

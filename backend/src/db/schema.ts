@@ -26,9 +26,13 @@ export interface UserTable {
   last_login_at: Date | null
   /** When sign-up's acceptTerms was accepted; null for accounts from before it (migration 028). */
   terms_accepted_at: ColumnType<Date | null, Date | null | undefined, Date | null>
-  /** 'none' (initials), a built-in preset, or an uploaded photo (migration 029). */
+  /** 'preset' (the Dartcade mark, default for new accounts), 'none' (bare initials), or an uploaded photo (migration 031). */
   avatar_kind: ColumnType<'none' | 'preset' | 'upload', 'none' | 'preset' | 'upload' | undefined, 'none' | 'preset' | 'upload'>
   avatar_preset: string | null
+  /** The preset's background colour (hex), chosen independently of the foreground. */
+  avatar_color: string | null
+  /** The preset's icon colour (hex), chosen independently of the background. */
+  avatar_fg_color: string | null
   avatar_image: Buffer | null
   avatar_content_type: string | null
   avatar_version: ColumnType<number, number | undefined, number>

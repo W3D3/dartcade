@@ -1,7 +1,8 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { createFastify } from './fastify.js'
 import { meApiPlugin } from './me.js'
 import { ApiError } from './errors.js'
+import { setupFlags } from '../flags/index.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -11,12 +12,14 @@ vi.mock('../auth/middleware.js', () => ({
 }))
 vi.mock('../db/users.js', () => ({
   getAccount: vi.fn(),
+  getRoleAndEmail: vi.fn().mockResolvedValue({ role: null, email: 'p@x' }),
   setInvisible: vi.fn(),
   setAvatar: vi.fn(),
   setAvatarUpload: vi.fn(),
   getPreferences: vi.fn(),
   updatePreferences: vi.fn(),
   UnknownAvatarPresetError: class UnknownAvatarPresetError extends Error {},
+  UnknownAvatarColorError: class UnknownAvatarColorError extends Error {},
 }))
 vi.mock('../users/account.js', () => ({ renameUser: vi.fn(), suggestName: vi.fn() }))
 
@@ -27,6 +30,7 @@ import {
   setAvatarUpload,
   setInvisible,
   updatePreferences,
+  UnknownAvatarColorError,
   UnknownAvatarPresetError,
 } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
@@ -98,6 +102,7 @@ describe('/api/me', () => {
       invisible: false,
       role: 'moderator',
       createdAt: '2026-08-01T10:00:00.000Z',
+      avatar: { kind: 'none' },
     })
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body)).toMatchObject({ isAdmin: false, isModerator: true })
@@ -162,15 +167,33 @@ describe('/api/me', () => {
     const a = createFastify()
     a.register(meApiPlugin, { db: {} as any, onChanged })
     vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
-    const res = await a.inject({ method: 'PATCH', url: '/api/me', payload: { avatar: { kind: 'preset', preset: 'crosshair' } } })
+    const res = await a.inject({
+      method: 'PATCH',
+      url: '/api/me',
+      payload: { avatar: { kind: 'preset', preset: 'crosshair', color: '#4a6b3a' } },
+    })
     expect(res.statusCode).toBe(200)
-    expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'crosshair' })
+    expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'crosshair', color: '#4a6b3a' })
     expect(onChanged).toHaveBeenCalledWith('old')
   })
 
   it('answers 400 for an unknown preset id', async () => {
     vi.mocked(setAvatar).mockReset().mockRejectedValue(new UnknownAvatarPresetError('nope'))
-    const res = await app().inject({ method: 'PATCH', url: '/api/me', payload: { avatar: { kind: 'preset', preset: 'nope' } } })
+    const res = await app().inject({
+      method: 'PATCH',
+      url: '/api/me',
+      payload: { avatar: { kind: 'preset', preset: 'nope', color: '#4a6b3a' } },
+    })
+    expect(res.statusCode).toBe(400)
+  })
+
+  it('answers 400 for an unknown colour', async () => {
+    vi.mocked(setAvatar).mockReset().mockRejectedValue(new UnknownAvatarColorError('#abcdef'))
+    const res = await app().inject({
+      method: 'PATCH',
+      url: '/api/me',
+      payload: { avatar: { kind: 'preset', preset: 'crosshair', color: '#abcdef' } },
+    })
     expect(res.statusCode).toBe(400)
   })
 })
@@ -178,8 +201,24 @@ describe('/api/me', () => {
 describe('/api/me/avatar', () => {
   const jpeg = Buffer.from([0xff, 0xd8, 0, 0, 0xff, 0xd9])
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.mocked(setAvatarUpload).mockReset().mockResolvedValue(undefined)
+    await setupFlags(new Set(['avatar.upload.enabled']))
+  })
+  afterEach(async () => {
+    await setupFlags(new Set())
+  })
+
+  it('refuses with 403 while avatar.upload.enabled is off', async () => {
+    await setupFlags(new Set())
+    const res = await app().inject({
+      method: 'POST',
+      url: '/api/me/avatar',
+      headers: { 'content-type': 'image/jpeg' },
+      payload: jpeg,
+    })
+    expect(res.statusCode).toBe(403)
+    expect(setAvatarUpload).not.toHaveBeenCalled()
   })
 
   it('uploads a JPEG and tells friends', async () => {

@@ -8,6 +8,9 @@ import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { setAccountCleanup, runAccountCleanup, cleanUpAccount } from '../auth/cleanup.js'
 import { LobbyHub } from './hub.js'
 import { LobbyService } from './service.js'
+import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
+
+const defaultAvatar = { kind: 'preset' as const, preset: DEFAULT_AVATAR_PRESET, color: DEFAULT_AVATAR_BG, fgColor: DEFAULT_AVATAR_FG }
 
 const makeStore = () =>
   ({
@@ -185,8 +188,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
         hostName: 'Christoph',
         peopleCount: 2,
         faces: [
-          { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
-          { userId: 'lena', name: 'Lena', guest: false, avatar: { kind: 'none' } },
+          { userId: 'chris', name: 'Christoph', guest: false, avatar: defaultAvatar },
+          { userId: 'lena', name: 'Lena', guest: false, avatar: defaultAvatar },
         ],
         nextGame: null,
         boardNames: ['Living room', "Lena's place"],
@@ -895,8 +898,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
           hostName: 'Christoph',
           peopleCount: 2,
           faces: [
-            { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
-            { userId: 'lena', name: 'Lena', guest: false, avatar: { kind: 'none' } },
+            { userId: 'chris', name: 'Christoph', guest: false, avatar: defaultAvatar },
+            { userId: 'lena', name: 'Lena', guest: false, avatar: defaultAvatar },
           ],
           nextGame: null,
           boardNames: ['Living room', "Lena's place"],

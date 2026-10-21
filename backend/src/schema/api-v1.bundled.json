@@ -2531,6 +2531,9 @@
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
           "415": {
             "$ref": "#/components/responses/UnsupportedMediaType"
           },
@@ -4821,7 +4824,7 @@
       },
       "Avatar": {
         "title": "Avatar",
-        "description": "A profile picture: none (initials), a built-in preset, or an uploaded photo",
+        "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
         "oneOf": [
           {
             "type": "object",
@@ -4842,7 +4845,9 @@
             "type": "object",
             "required": [
               "kind",
-              "preset"
+              "preset",
+              "color",
+              "fgColor"
             ],
             "additionalProperties": false,
             "properties": {
@@ -4854,6 +4859,14 @@
               },
               "preset": {
                 "type": "string"
+              },
+              "color": {
+                "type": "string",
+                "description": "The preset's background colour (hex)"
+              },
+              "fgColor": {
+                "type": "string",
+                "description": "The preset's icon colour (hex)"
               }
             }
           },
@@ -4881,7 +4894,7 @@
       },
       "AvatarChoice": {
         "title": "AvatarChoice",
-        "description": "What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset is required, and validated against the known ids, when kind is 'preset'. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.",
+        "description": "What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset, color and fgColor are required, and each validated against its own known list, when kind is 'preset' — background and foreground chosen independently, so any colour can go with any other. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.",
         "type": "object",
         "required": [
           "kind"
@@ -4897,7 +4910,15 @@
           },
           "preset": {
             "type": "string",
-            "description": "A built-in preset id (Settings shows the choices); required when kind is 'preset'"
+            "description": "A built-in preset icon id (Settings shows the choices); required when kind is 'preset'"
+          },
+          "color": {
+            "type": "string",
+            "description": "A built-in swatch (hex, Settings shows the choices); required when kind is 'preset'"
+          },
+          "fgColor": {
+            "type": "string",
+            "description": "A built-in swatch for the icon itself (hex, Settings shows the choices); required when kind is 'preset'"
           }
         }
       },
