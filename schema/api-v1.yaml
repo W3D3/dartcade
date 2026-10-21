@@ -753,6 +753,41 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/users/{id}/avatar:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: The user's id
+        schema: { type: string }
+    get:
+      operationId: getUserAvatar
+      summary: A user's uploaded profile picture
+      description: >-
+        404 unless they have an uploaded photo (none/preset avatars have nothing to fetch; the
+        frontend renders those itself). With `v` matching their avatar's current version, the
+        browser may cache it for good.
+      tags: [users]
+      parameters:
+        - name: v
+          in: query
+          required: false
+          description: "The avatar's version (Avatar.version); when it is the latest, the answer is cacheable for good"
+          schema: { type: integer, minimum: 0 }
+      responses:
+        '200':
+          description: The photo
+          headers:
+            Cache-Control:
+              description: '`private, max-age=31536000, immutable` for the latest version asked for with `v`, otherwise `no-store`'
+              schema: { type: string }
+          content:
+            image/jpeg:
+              schema: { type: string, format: binary }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/users/name-available:
     get:
       operationId: checkNameAvailable
@@ -1113,6 +1148,30 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409': { $ref: '#/components/responses/Conflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/me/avatar:
+    post:
+      operationId: uploadAvatar
+      summary: Set your profile picture to an uploaded photo
+      description: >-
+        A JPEG, resized and cropped to a square by the browser before sending. Replaces any
+        preset or earlier photo.
+      tags: [me]
+      requestBody:
+        required: true
+        content:
+          image/jpeg:
+            schema: { type: string, format: binary, description: At most 512 KB }
+      responses:
+        '200':
+          description: The account as it is now
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '415': { $ref: '#/components/responses/UnsupportedMediaType' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/me/preferences:
@@ -2129,6 +2188,8 @@ components:
     TeamView: { $ref: 'common-v1.json#/$defs/TeamView' }
 
     FriendList: { $ref: 'common-v1.json#/$defs/FriendList' }
+    Avatar: { $ref: 'common-v1.json#/$defs/Avatar' }
+    AvatarChoice: { $ref: 'common-v1.json#/$defs/AvatarChoice' }
     FriendRequest:
       type: object
       required: [name]
@@ -2174,12 +2235,13 @@ components:
         change30d: { type: integer, description: 'RP gained (or lost) in the last 30 days, placement matches left out' }
     RankedOpponent:
       type: object
-      required: [userId, name, rating]
+      required: [userId, name, rating, avatar]
       additionalProperties: false
       properties:
         userId: { type: string }
         name: { type: string }
         rating: { type: integer, nullable: true, description: 'Their rating going into the game; null while they were placing' }
+        avatar: { $ref: '#/components/schemas/Avatar' }
     RankedGame:
       type: object
       required: [sessionId, mode, won, change, at, opponents]
@@ -3211,7 +3273,7 @@ components:
           items: { $ref: '#/components/schemas/UserSummary' }
     AdminUser:
       type: object
-      required: [id, name, email, emailVerified, role, createdAt, lastLoginAt]
+      required: [id, name, email, emailVerified, role, createdAt, lastLoginAt, avatar]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -3221,6 +3283,7 @@ components:
         role: { type: string, nullable: true, enum: [admin, moderator, null] }
         createdAt: { type: string, format: date-time, description: When the account was made }
         lastLoginAt: { type: string, format: date-time, nullable: true, description: Last sign-in; null if never }
+        avatar: { $ref: '#/components/schemas/Avatar' }
     AdminUserList:
       type: object
       required: [users]
@@ -3338,7 +3401,7 @@ components:
             number: { type: number }
     Me:
       type: object
-      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, createdAt]
+      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, createdAt, avatar]
       additionalProperties: false
       properties:
         id: { type: string }
@@ -3354,6 +3417,7 @@ components:
         isAdmin: { type: boolean, description: 'May open admin pages (the minigolf test bench)' }
         isModerator: { type: boolean, description: 'May look at any game and invalidate it (admins and moderators)' }
         createdAt: { type: string, format: date-time, description: 'When the account was made (Member since)' }
+        avatar: { $ref: '#/components/schemas/Avatar' }
     UpdateMeRequest:
       type: object
       minProperties: 1
@@ -3361,6 +3425,7 @@ components:
       properties:
         name: { type: string, minLength: 1, maxLength: 64 }
         invisible: { type: boolean }
+        avatar: { $ref: '#/components/schemas/AvatarChoice' }
     Preferences:
       type: object
       additionalProperties: false
@@ -3440,11 +3505,13 @@ components:
     LobbyFace:
       type: object
       description: Someone in a lobby, for an avatar stack. guest means no account and not a bot.
-      required: [name, guest]
+      required: [userId, name, guest, avatar]
       additionalProperties: false
       properties:
+        userId: { type: string, nullable: true, description: 'To fetch an uploaded avatar; null for a guest or bot.' }
         name: { type: string }
         guest: { type: boolean }
+        avatar: { $ref: '#/components/schemas/Avatar' }
     UpdateLobbyRequest:
       type: object
       minProperties: 1

@@ -185,8 +185,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
         hostName: 'Christoph',
         peopleCount: 2,
         faces: [
-          { name: 'Christoph', guest: false },
-          { name: 'Lena', guest: false },
+          { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
+          { userId: 'lena', name: 'Lena', guest: false, avatar: { kind: 'none' } },
         ],
         nextGame: null,
         boardNames: ['Living room', "Lena's place"],
@@ -895,8 +895,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
           hostName: 'Christoph',
           peopleCount: 2,
           faces: [
-            { name: 'Christoph', guest: false },
-            { name: 'Lena', guest: false },
+            { userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } },
+            { userId: 'lena', name: 'Lena', guest: false, avatar: { kind: 'none' } },
           ],
           nextGame: null,
           boardNames: ['Living room', "Lena's place"],

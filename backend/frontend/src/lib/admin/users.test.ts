@@ -20,6 +20,7 @@ function user(id: string): AdminUser {
     role: null,
     createdAt: '2026-01-01T00:00:00.000Z',
     lastLoginAt: null,
+    avatar: { kind: 'none' },
   }
 }
 

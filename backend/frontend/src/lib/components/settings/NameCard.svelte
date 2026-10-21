@@ -43,7 +43,13 @@
 <section aria-label="Username" class="box-border p-4 md:p-[22px] card flex flex-col gap-[18px]">
   {#if own}
     <div class="flex items-center gap-4">
-      <Avatar name={own} tone="accent" class="w-14 h-14 md:w-[72px] md:h-[72px] text-[24px] md:text-[30px]" />
+      <Avatar
+        name={own}
+        tone="accent"
+        avatar={$currentUser?.avatar}
+        userId={$currentUser?.id}
+        class="w-14 h-14 md:w-[72px] md:h-[72px] text-[24px] md:text-[30px]"
+      />
       <div class="flex flex-col gap-[3px] min-w-0">
         <span class="text-[20px] md:text-[22px] font-semibold truncate">{own}</span>
         <span class="font-mono text-[14px] text-text-muted truncate">@{own}</span>
@@ -71,7 +77,7 @@
     <div class="flex flex-col gap-2 px-4 py-[14px] rounded-[12px] bg-surface-1 border border-line">
       <span class="text-[12px] font-semibold label-caps text-text-dim">Preview · how others see you</span>
       <div class="flex items-center gap-3 min-w-0">
-        <Avatar name={preview} tone="accent" size={36} />
+        <Avatar name={preview} tone="accent" avatar={$currentUser?.avatar} userId={$currentUser?.id} size={36} />
         <span class="flex flex-col gap-px min-w-0">
           <span class="text-[15px] font-semibold truncate">{preview}</span>
           <span class="font-mono text-[12px] text-accent truncate">@{preview}</span>

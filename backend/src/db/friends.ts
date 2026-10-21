@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import type { UserSummary } from './queries.js'
+import { toAvatar, type Avatar } from './users.js'
 import type { LobbyAccess } from '../lobby/types.js'
 
 export type FriendshipRow = {
@@ -13,6 +14,7 @@ export type FriendshipRow = {
   otherName: string
   /** The other side is Invisible: their friends see them offline. */
   otherInvisible: boolean
+  otherAvatar: Avatar
   createdAt: Date
   respondedAt: Date | null
 }
@@ -93,10 +95,15 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     other_id: string
     other_name: string
     other_invisible: boolean
+    other_avatar_kind: 'none' | 'preset' | 'upload'
+    other_avatar_preset: string | null
+    other_avatar_version: number
     created_at: Date
     responded_at: Date | null
   }>`
-    SELECT f.id, f.status, f.requester_id, f.addressee_id, u.id AS other_id, u.name AS other_name, u.invisible AS other_invisible, f.created_at, f.responded_at
+    SELECT f.id, f.status, f.requester_id, f.addressee_id, u.id AS other_id, u.name AS other_name, u.invisible AS other_invisible,
+      u.avatar_kind AS other_avatar_kind, u.avatar_preset AS other_avatar_preset, u.avatar_version AS other_avatar_version,
+      f.created_at, f.responded_at
     FROM friendships f
     JOIN "user" u ON u.id = CASE WHEN f.requester_id = ${userId} THEN f.addressee_id ELSE f.requester_id END
     WHERE f.requester_id = ${userId} OR f.addressee_id = ${userId}
@@ -109,6 +116,11 @@ export async function friendshipsOf(db: Kysely<Database>, userId: string): Promi
     otherId: r.other_id,
     otherName: r.other_name,
     otherInvisible: r.other_invisible,
+    otherAvatar: toAvatar({
+      avatar_kind: r.other_avatar_kind,
+      avatar_preset: r.other_avatar_preset,
+      avatar_version: r.other_avatar_version,
+    }),
     createdAt: r.created_at,
     respondedAt: r.responded_at,
   }))

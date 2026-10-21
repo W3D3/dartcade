@@ -20,6 +20,7 @@ function serialize(row: AdminUserRow) {
     role: row.role,
     createdAt: row.createdAt.toISOString(),
     lastLoginAt: row.lastLoginAt?.toISOString() ?? null,
+    avatar: row.avatar,
   }
 }
 

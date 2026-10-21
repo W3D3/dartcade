@@ -14,12 +14,48 @@ export type ThrowOrder = 'lobby' | 'random' | 'bulloff'
  * via the `definition` "LobbyAccess".
  */
 export type LobbyAccess = 'friends' | 'invite'
+/**
+ * {kind: 'none'} for a guest or bot (no account to carry one).
+ */
+export type Avatar =
+  | {
+      kind: 'none'
+    }
+  | {
+      kind: 'preset'
+      preset: string
+    }
+  | {
+      kind: 'upload'
+      /**
+       * Cache-busts GET /api/users/{id}/avatar?v=
+       */
+      version: number
+    }
 export type TeamId = 'A' | 'B'
 /**
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "LobbyServerMessage".
  */
 export type LobbyServerMessage = LobbyMessage | LobbyClosedMessage
+/**
+ * A profile picture: none (initials), a built-in preset, or an uploaded photo
+ */
+export type Avatar1 =
+  | {
+      kind: 'none'
+    }
+  | {
+      kind: 'preset'
+      preset: string
+    }
+  | {
+      kind: 'upload'
+      /**
+       * Cache-busts GET /api/users/{id}/avatar?v=
+       */
+      version: number
+    }
 /**
  * What you see of a friend, first match wins: playing (seated in a running game), lobby (in an open lobby), online, offline. Only while they're online and not Invisible.
  */
@@ -57,6 +93,7 @@ export interface NextGame {
 export interface LobbyPerson {
   id: string
   userId: string | null
+  avatar: Avatar
   /**
    * The member themselves; for a guest, who added them (and acts for them in games).
    */
@@ -257,8 +294,13 @@ export interface PendingInvite {
  * via the `definition` "Face".
  */
 export interface Face {
+  /**
+   * To fetch an uploaded avatar; null for a guest or bot.
+   */
+  userId: string | null
   name: string
   guest: boolean
+  avatar: Avatar1
 }
 /**
  * The viewer's lobby for the lobby indicator.
@@ -363,6 +405,7 @@ export interface Friend {
    * They have a pending invite to your lobby
    */
   invited: boolean
+  avatar: Avatar1
 }
 export interface FriendPlaying {
   kind: 'playing'
@@ -401,6 +444,7 @@ export interface UserRef {
    * Their handle, shown as @name
    */
   name: string
+  avatar: Avatar1
 }
 export interface OutgoingFriendRequest {
   id: string

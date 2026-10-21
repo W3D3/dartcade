@@ -42,6 +42,7 @@ export function lobbyView(lobby: LobbyState, ctx: ViewContext): Lobby {
       team: p.team,
       presence: p.userId === null ? null : ctx.online.has(p.userId) ? 'online' : 'away',
       bot: p.bot,
+      avatar: p.avatar,
     })),
     invites: lobby.invites.map(i => ({
       id: i.id,
@@ -72,7 +73,9 @@ export function lobbyGlance(lobby: LobbyState): {
   return {
     hostName: hostNameOf(lobby),
     peopleCount: lobby.people.length,
-    faces: lobby.people.slice(0, 4).map(p => ({ name: p.name, guest: p.userId === null && p.bot === null })),
+    faces: lobby.people
+      .slice(0, 4)
+      .map(p => ({ userId: p.userId, name: p.name, guest: p.userId === null && p.bot === null, avatar: p.avatar })),
     nextGame: lobby.nextGame,
     boardNames: [...new Set(lobby.people.flatMap(p => (p.boardName === null ? [] : [p.boardName])))],
   }

@@ -99,6 +99,7 @@ describe('parsing', () => {
           status: { kind: 'online' },
           inYourLobby: false,
           invited: false,
+          avatar: { kind: 'none' },
         },
       ],
       incoming: [],
@@ -197,7 +198,9 @@ describe('createMeStore', () => {
     FakeSocket.opened[0].receive({
       type: 'friends',
       friends: [],
-      incoming: [{ id: 'f1', from: { id: 'max', name: 'Max' }, mutualFriends: 1, createdAt: '2026-10-04T10:00:00.000Z' }],
+      incoming: [
+        { id: 'f1', from: { id: 'max', name: 'Max', avatar: { kind: 'none' } }, mutualFriends: 1, createdAt: '2026-10-04T10:00:00.000Z' },
+      ],
       outgoing: [],
     })
     expect(get(s)?.friends?.incoming).toHaveLength(1)

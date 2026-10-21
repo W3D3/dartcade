@@ -45,12 +45,17 @@
         "ready",
         "team",
         "presence",
-        "bot"
+        "bot",
+        "avatar"
       ],
       "additionalProperties": false,
       "properties": {
         "id": { "type": "string" },
         "userId": { "type": ["string", "null"] },
+        "avatar": {
+          "$ref": "common-v1.json#/$defs/Avatar",
+          "description": "{kind: 'none'} for a guest or bot (no account to carry one)."
+        },
         "addedByUserId": {
           "type": "string",
           "description": "The member themselves; for a guest, who added them (and acts for them in games)."
@@ -258,9 +263,14 @@
       "title": "Face",
       "description": "Someone in a lobby, for an avatar stack. guest: no account and not a bot.",
       "type": "object",
-      "required": ["name", "guest"],
+      "required": ["userId", "name", "guest", "avatar"],
       "additionalProperties": false,
-      "properties": { "name": { "type": "string" }, "guest": { "type": "boolean" } }
+      "properties": {
+        "userId": { "type": ["string", "null"], "description": "To fetch an uploaded avatar; null for a guest or bot." },
+        "name": { "type": "string" },
+        "guest": { "type": "boolean" },
+        "avatar": { "$ref": "common-v1.json#/$defs/Avatar" }
+      }
     },
     "LobbySummary": {
       "title": "LobbySummary",

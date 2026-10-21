@@ -70,7 +70,7 @@ describe('lobbies API', () => {
       name: 'L',
       hostName: 'Christoph',
       peopleCount: 2,
-      faces: [{ name: 'Christoph', guest: false }],
+      faces: [{ userId: 'chris', name: 'Christoph', guest: false, avatar: { kind: 'none' } }],
       nextGame: { gameId: 'x01', config: { startScore: 501 } },
       boardNames: ['Living room'],
     }
@@ -158,7 +158,7 @@ describe('lobbies API', () => {
       createdAt: new Date(0).toISOString(),
       hostName: 'Lena',
       peopleCount: 1,
-      faces: [{ name: 'Lena', guest: false }],
+      faces: [{ userId: 'lena', name: 'Lena', guest: false, avatar: { kind: 'none' } }],
       nextGame: null,
       boardNames: [],
     }

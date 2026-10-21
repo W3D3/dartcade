@@ -11,10 +11,12 @@ vi.mock('../auth/middleware.js', () => ({
 vi.mock('../db/queries.js', () => ({
   searchUsers: vi.fn().mockResolvedValue([{ id: 'user-2', name: 'Lena' }]),
 }))
+vi.mock('../db/users.js', () => ({ getAvatarUpload: vi.fn() }))
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
 vi.mock('../users/account.js', () => ({ checkName: vi.fn() }))
 
 import * as queries from '../db/queries.js'
+import { getAvatarUpload } from '../db/users.js'
 import { getAuthUser } from '../auth/session.js'
 import { checkName } from '../users/account.js'
 
@@ -48,5 +50,29 @@ describe('GET /api/users/name-available', () => {
     vi.mocked(checkName).mockResolvedValue({ ok: true, name: 'Luke' })
     expect(JSON.parse((await app.inject({ method: 'GET', url: '/api/users/name-available?name=Luke' })).body)).toEqual({ available: true })
     expect(checkName).toHaveBeenLastCalledWith({}, 'Luke', 'luke')
+  })
+})
+
+describe('GET /api/users/:id/avatar', () => {
+  it('serves the bytes, cacheable for good once the version matches', async () => {
+    vi.mocked(getAvatarUpload)
+      .mockReset()
+      .mockResolvedValue({ image: Buffer.from([1, 2, 3]), contentType: 'image/jpeg', version: 2 })
+    const app = createFastify()
+    app.register(usersApiPlugin, { db: {} as any })
+    const stale = await app.inject({ method: 'GET', url: '/api/users/lena/avatar' })
+    expect(stale.statusCode).toBe(200)
+    expect(stale.headers['content-type']).toBe('image/jpeg')
+    expect(stale.headers['cache-control']).toBe('no-store')
+    expect(getAvatarUpload).toHaveBeenCalledWith({}, 'lena')
+    const fresh = await app.inject({ method: 'GET', url: '/api/users/lena/avatar?v=2' })
+    expect(fresh.headers['cache-control']).toBe('private, max-age=31536000, immutable')
+  })
+
+  it('404s when they have no uploaded avatar (none or preset)', async () => {
+    vi.mocked(getAvatarUpload).mockReset().mockResolvedValue(undefined)
+    const app = createFastify()
+    app.register(usersApiPlugin, { db: {} as any })
+    expect((await app.inject({ method: 'GET', url: '/api/users/lena/avatar' })).statusCode).toBe(404)
   })
 })

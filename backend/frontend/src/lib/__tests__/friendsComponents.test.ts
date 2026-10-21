@@ -13,6 +13,7 @@ const lena = {
   status: { kind: 'lobby' as const, lobbyId: 'l1', lobbyName: 'Friday darts', joinable: true },
   inYourLobby: false,
   invited: false,
+  avatar: { kind: 'none' as const },
 }
 const noop = () => {}
 
@@ -46,8 +47,17 @@ describe('RequestsPanel', () => {
     expect(empty).toContain('No open requests.')
     const out = render(RequestsPanel, {
       props: {
-        incoming: [{ id: 'f1', from: { id: 'felix', name: 'Felix' }, mutualFriends: 3, createdAt: new Date().toISOString() }],
-        outgoing: [{ id: 'f2', to: { id: 'nina', name: 'nina_darts' }, createdAt: new Date().toISOString() }],
+        incoming: [
+          {
+            id: 'f1',
+            from: { id: 'felix', name: 'Felix', avatar: { kind: 'none' as const } },
+            mutualFriends: 3,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        outgoing: [
+          { id: 'f2', to: { id: 'nina', name: 'nina_darts', avatar: { kind: 'none' as const } }, createdAt: new Date().toISOString() },
+        ],
         now: new Date(),
         emptyText: 'No open requests.',
         busy: false,

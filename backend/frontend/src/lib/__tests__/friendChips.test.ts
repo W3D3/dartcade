@@ -11,6 +11,7 @@ const f = (id: string, name: string, kind: 'online' | 'offline' | 'playing'): Fr
   status: kind === 'playing' ? { kind, gameId: 'x01' } : { kind },
   inYourLobby: false,
   invited: false,
+  avatar: { kind: 'none' },
 })
 const friends = [f('max', 'Max', 'offline'), f('lena', 'Lena', 'online'), f('jonas', 'Jonas', 'playing'), f('ana', 'Ana', 'offline')]
 

@@ -80,13 +80,21 @@ describe('ranked view', () => {
         change: 14,
         at: new Date(2026, 9, 13, 20).toISOString(),
         opponents: [
-          { userId: 'm', name: 'Marco', rating: 1220 },
-          { userId: 'j', name: 'Jule', rating: 1240 },
+          { userId: 'm', name: 'Marco', rating: 1220, avatar: { kind: 'none' } },
+          { userId: 'j', name: 'Jule', rating: 1240, avatar: { kind: 'none' } },
         ],
       },
       new Date(2026, 9, 14, 12),
     )
-    expect(row).toEqual({ key: 'g1', won: true, name: 'Marco & Jule', meta: '2v2 · Yesterday · 1 230 RP', change: '+14', placement: false })
+    expect(row).toEqual({
+      key: 'g1',
+      won: true,
+      name: 'Marco & Jule',
+      meta: '2v2 · Yesterday · 1 230 RP',
+      change: '+14',
+      placement: false,
+      opponent: null,
+    })
   })
 
   it('a placement game hides its RP, and a placing opponent their rating', () => {
@@ -97,11 +105,19 @@ describe('ranked view', () => {
         won: false,
         change: null,
         at: new Date(2026, 9, 14, 9).toISOString(),
-        opponents: [{ userId: 'b', name: 'Ben', rating: null }],
+        opponents: [{ userId: 'b', name: 'Ben', rating: null, avatar: { kind: 'none' } }],
       },
       new Date(2026, 9, 14, 12),
     )
-    expect(row).toEqual({ key: 'g2', won: false, name: 'Ben', meta: '1v1 · Today, 09:00', change: 'Placement', placement: true })
+    expect(row).toEqual({
+      key: 'g2',
+      won: false,
+      name: 'Ben',
+      meta: '1v1 · Today, 09:00',
+      change: 'Placement',
+      placement: true,
+      opponent: { userId: 'b', avatar: { kind: 'none' } },
+    })
   })
 
   it('the ladder, Elite first, stage V first', () => {

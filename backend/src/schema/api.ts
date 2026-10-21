@@ -586,6 +586,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The user's id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * A user's uploaded profile picture
+         * @description 404 unless they have an uploaded photo (none/preset avatars have nothing to fetch; the frontend renders those itself). With `v` matching their avatar's current version, the browser may cache it for good.
+         */
+        get: operations["getUserAvatar"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/name-available": {
         parameters: {
             query?: never;
@@ -855,6 +878,26 @@ export interface paths {
         head?: never;
         /** Change your name (checked like name-available), or go Invisible / Online */
         patch: operations["updateMe"];
+        trace?: never;
+    };
+    "/api/me/avatar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set your profile picture to an uploaded photo
+         * @description A JPEG, resized and cropped to a square by the browser before sending. Replaces any preset or earlier photo.
+         */
+        post: operations["uploadAvatar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/me/preferences": {
@@ -1608,6 +1651,33 @@ export interface components {
             incoming: components["schemas"]["IncomingFriendRequest"][];
             outgoing: components["schemas"]["OutgoingFriendRequest"][];
         };
+        /**
+         * Avatar
+         * @description A profile picture: none (initials), a built-in preset, or an uploaded photo
+         */
+        Avatar: {
+            /** @enum {string} */
+            kind: "none";
+        } | {
+            /** @enum {string} */
+            kind: "preset";
+            preset: string;
+        } | {
+            /** @enum {string} */
+            kind: "upload";
+            /** @description Cache-busts GET /api/users/{id}/avatar?v= */
+            version: number;
+        };
+        /**
+         * AvatarChoice
+         * @description What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset is required, and validated against the known ids, when kind is 'preset'. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.
+         */
+        AvatarChoice: {
+            /** @enum {string} */
+            kind: "none" | "preset";
+            /** @description A built-in preset id (Settings shows the choices); required when kind is 'preset' */
+            preset?: string;
+        };
         FriendRequest: {
             /** @description Their exact name, any case; a leading @ is fine */
             name: string;
@@ -1645,6 +1715,7 @@ export interface components {
             name: string;
             /** @description Their rating going into the game; null while they were placing */
             rating: number | null;
+            avatar: components["schemas"]["Avatar"];
         };
         RankedGame: {
             sessionId: string;
@@ -2375,6 +2446,7 @@ export interface components {
              * @description Last sign-in; null if never
              */
             lastLoginAt: string | null;
+            avatar: components["schemas"]["Avatar"];
         };
         AdminUserList: {
             users: components["schemas"]["AdminUser"][];
@@ -2473,10 +2545,12 @@ export interface components {
              * @description When the account was made (Member since)
              */
             createdAt: string;
+            avatar: components["schemas"]["Avatar"];
         };
         UpdateMeRequest: {
             name?: string;
             invisible?: boolean;
+            avatar?: components["schemas"]["AvatarChoice"];
         };
         /** @description Account-wide settings (Settings: Game preferences, Caller). Volume and the match screen's view stay on each device. */
         Preferences: {
@@ -2551,8 +2625,11 @@ export interface components {
         };
         /** @description Someone in a lobby, for an avatar stack. guest means no account and not a bot. */
         LobbyFace: {
+            /** @description To fetch an uploaded avatar; null for a guest or bot. */
+            userId: string | null;
             name: string;
             guest: boolean;
+            avatar: components["schemas"]["Avatar"];
         };
         UpdateLobbyRequest: {
             name?: string;
@@ -2908,12 +2985,14 @@ export interface components {
             inYourLobby: boolean;
             /** @description They have a pending invite to your lobby */
             invited: boolean;
+            avatar: components["schemas"]["Avatar"];
         };
         /** UserRef */
         UserRef: {
             id: string;
             /** @description Their handle, shown as @name */
             name: string;
+            avatar: components["schemas"]["Avatar"];
         };
         /** IncomingFriendRequest */
         IncomingFriendRequest: {
@@ -4041,6 +4120,37 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    getUserAvatar: {
+        parameters: {
+            query?: {
+                /** @description The avatar's version (Avatar.version); when it is the latest, the answer is cacheable for good */
+                v?: number;
+            };
+            header?: never;
+            path: {
+                /** @description The user's id */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The photo */
+            200: {
+                headers: {
+                    /** @description `private, max-age=31536000, immutable` for the latest version asked for with `v`, otherwise `no-store` */
+                    "Cache-Control"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/jpeg": string;
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     checkNameAvailable: {
         parameters: {
             query: {
@@ -4549,6 +4659,34 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    uploadAvatar: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "image/jpeg": string;
+            };
+        };
+        responses: {
+            /** @description The account as it is now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Me"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            415: components["responses"]["UnsupportedMediaType"];
             429: components["responses"]["TooManyRequests"];
         };
     };

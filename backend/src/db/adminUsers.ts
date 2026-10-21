@@ -1,6 +1,7 @@
 // Admin-only user listing and role changes (schema/api-v1.yaml, tag admin; api/adminUsers.ts).
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
+import { toAvatar, type Avatar } from './users.js'
 
 export type AdminUserRow = {
   id: string
@@ -10,9 +11,21 @@ export type AdminUserRow = {
   role: 'admin' | 'moderator' | null
   createdAt: Date
   lastLoginAt: Date | null
+  avatar: Avatar
 }
 
-const COLUMNS = ['id', 'name', 'email', 'emailVerified', 'role', 'createdAt', 'last_login_at'] as const
+const COLUMNS = [
+  'id',
+  'name',
+  'email',
+  'emailVerified',
+  'role',
+  'createdAt',
+  'last_login_at',
+  'avatar_kind',
+  'avatar_preset',
+  'avatar_version',
+] as const
 
 const toRow = (r: {
   id: string
@@ -22,6 +35,9 @@ const toRow = (r: {
   role: string | null
   createdAt: Date
   last_login_at: Date | null
+  avatar_kind: 'none' | 'preset' | 'upload'
+  avatar_preset: string | null
+  avatar_version: number
 }): AdminUserRow => ({
   id: r.id,
   name: r.name,
@@ -30,6 +46,7 @@ const toRow = (r: {
   role: r.role === 'admin' || r.role === 'moderator' ? r.role : null,
   createdAt: r.createdAt,
   lastLoginAt: r.last_login_at,
+  avatar: toAvatar(r),
 })
 
 /** Every user, newest first, at most 200; `q`, if given, matches name or email (case-insensitive, contains). */

@@ -98,7 +98,16 @@ export function whenPlayed(at: Date, now: Date): string {
 }
 
 /** `change` is 'Placement' for a placement match, whose RP stay hidden. */
-export type RecentRow = { key: string; won: boolean; name: string; meta: string; change: string; placement: boolean }
+export type RecentRow = {
+  key: string
+  won: boolean
+  name: string
+  meta: string
+  change: string
+  placement: boolean
+  /** The one opponent's avatar in 1v1; null for 2v2 (no single face to show). */
+  opponent: { userId: string; avatar: RankedGame['opponents'][number]['avatar'] } | null
+}
 
 /** One line of Recent ranked matches: "Marco & Jule", "2v2 · Yesterday · 1 230 RP", "+14". */
 export function recentRow(g: RankedGame, now: Date): RecentRow {
@@ -108,7 +117,8 @@ export function recentRow(g: RankedGame, now: Date): RecentRow {
   const opp = known.length === g.opponents.length && known.length > 0 ? Math.round(known.reduce((a, b) => a + b, 0) / known.length) : null
   const meta = [g.mode, whenPlayed(new Date(g.at), now), ...(opp === null ? [] : [`${fmtRp(opp)} RP`])].join(' · ')
   const placement = g.change === null
-  return { key: g.sessionId, won: g.won, name, meta, change: g.change === null ? 'Placement' : signedRp(g.change), placement }
+  const opponent = g.opponents.length === 1 ? { userId: g.opponents[0].userId, avatar: g.opponents[0].avatar } : null
+  return { key: g.sessionId, won: g.won, name, meta, change: g.change === null ? 'Placement' : signedRp(g.change), placement, opponent }
 }
 
 export type TierRow = { tier: Tier; range: string; stages: Rank[] }

@@ -9,6 +9,7 @@ const f = (name: string, kind: 'online' | 'offline' | 'playing', extra: Partial<
   status: kind === 'playing' ? { kind, gameId: 'atc' } : { kind },
   inYourLobby: false,
   invited: false,
+  avatar: { kind: 'none' },
   ...extra,
 })
 

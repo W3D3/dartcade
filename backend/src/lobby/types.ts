@@ -1,3 +1,4 @@
+import type { components } from '../schema/api.js'
 import type { GameConfig } from '../session/types.js'
 
 /** lobby: as the lobby lists people. random: shuffled per game. bulloff: a bull off decides. */
@@ -37,6 +38,8 @@ export type LobbyPerson = {
   team: TeamId | null
   /** A bot's difficulty 1-10; null for a member or guest. */
   bot: { level: number } | null
+  /** {kind: 'none'} for a guest or bot (no account to carry one). */
+  avatar: components['schemas']['Avatar']
 }
 
 /** Someone invited into the lobby who hasn't answered yet. */
