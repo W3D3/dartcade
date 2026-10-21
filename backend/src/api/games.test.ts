@@ -36,6 +36,7 @@ const game = (o: Partial<HistoryGame> = {}): HistoryGame => ({
   finished_at: new Date('2026-10-01T09:30:00Z'),
   board: { id: 'b1', name: 'Living room' },
   mySeat: 0,
+  invalidated: false,
   seats: [
     {
       seat: 0,
@@ -130,6 +131,7 @@ describe('GET /api/games', () => {
       id: 'g1',
       mode: 'x01',
       mySeat: 0,
+      invalidated: false,
       board: { name: 'Living room' },
       finishedAt: '2026-10-01T09:30:00.000Z',
     })

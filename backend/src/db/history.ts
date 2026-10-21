@@ -26,6 +26,8 @@ export type HistoryGame = {
   board: { id: string; name: string } | null
   /** The viewer's seat; null when they don't hold one (a public game). */
   mySeat: number | null
+  /** A moderator invalidated it: it stays in the players' history but no longer counts. */
+  invalidated: boolean
   seats: HistorySeat[]
 }
 
@@ -64,7 +66,7 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
   return by
 }
 
-/** Finished games with a result; the ones a moderator invalidated are left out unless asked for. */
+/** Finished games with a result; the ones a moderator invalidated are left out unless asked for (stats and ratings never ask). */
 function finishedGames(db: Kysely<Database>, includeInvalidated = false) {
   return db
     .selectFrom('game_sessions as gs')
@@ -77,6 +79,7 @@ function finishedGames(db: Kysely<Database>, includeInvalidated = false) {
       'gs.created_at',
       'gs.finished_at',
       'gs.visibility',
+      'gs.invalidated_at',
       'b.id as board_id',
       'b.name as board_name',
     ])
@@ -93,6 +96,7 @@ type GameRow = {
   rng_seed: number
   created_at: Date
   finished_at: Date
+  invalidated_at: Date | null
   board_id: string | null
   board_name: string | null
 }
@@ -107,17 +111,18 @@ function toGame(r: GameRow, seats: HistorySeat[], mySeat: number | null): Histor
     finished_at: r.finished_at,
     board: r.board_id !== null && r.board_name !== null ? { id: r.board_id, name: r.board_name } : null,
     mySeat,
+    invalidated: r.invalidated_at !== null,
     seats,
   }
 }
 
-/** The user's finished, placed games, newest first, one page after `after`. */
+/** The user's finished, placed games, newest first, one page after `after`; invalidated ones are in it, marked. */
 export async function listFinishedGames(
   db: Kysely<Database>,
   userId: string,
   opts: { mode?: string; limit: number; after: Cursor | null },
 ): Promise<{ games: HistoryGame[]; next: Cursor | null }> {
-  let q = finishedGames(db)
+  let q = finishedGames(db, true)
     .innerJoin('game_players as me', 'me.session_id', 'gs.id')
     .select('me.seat as my_seat')
     .where('me.user_id', '=', userId)
@@ -189,9 +194,9 @@ export async function getBestStat(
   return row ? { value: row.value, finishedAt: row.finished_at } : null
 }
 
-/** A finished game the user may see: they hold a seat, or it is public. */
+/** A finished game the user may see: they hold a seat, or it is public. An invalidated one is still shown, marked as such. */
 export async function getViewableGame(db: Kysely<Database>, id: string, userId: string): Promise<HistoryGame | undefined> {
-  const row = await finishedGames(db)
+  const row = await finishedGames(db, true)
     .leftJoin('game_players as me', join => join.onRef('me.session_id', '=', 'gs.id').on('me.user_id', '=', userId))
     .select('me.seat as my_seat')
     .where('gs.id', '=', id)

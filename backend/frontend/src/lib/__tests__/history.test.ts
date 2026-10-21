@@ -10,6 +10,7 @@ const game = (o: Partial<GameSummary> = {}): GameSummary => ({
   finishedAt: '2026-10-01T19:30:00.000Z',
   board: null,
   mySeat: 0,
+  invalidated: false,
   players: [
     {
       seat: 0,

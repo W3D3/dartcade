@@ -22,7 +22,8 @@ the game, its seats, darts and input log stay, so an investigation can still ope
 
 - Migration `030_game_invalidation.sql`: `game_sessions.invalidated_at`, `invalidated_by` (the moderator, `ON DELETE SET NULL`), `invalidation_reason`.
 - Only a finished game that is not invalidated yet. An aborted or active one, or one already invalidated, is refused (409).
-- Out of history, stats and best values for the players: `finishedGames` in `db/history.ts` leaves invalidated games out (only `getFinishedGame`, the moderators' view, includes them), as do the ranked reads in `db/ranked.ts` (`counts()`) and `x01Average`.
+- Out of stats and best values, and ratings, for the players: `finishedGames` in `db/history.ts` leaves invalidated games out unless asked, as do the ranked reads in `db/ranked.ts` (`counts()`) and `x01Average`.
+- Still in the players' history and details, marked: `listFinishedGames` and `getViewableGame` ask for them, `GameSummary.invalidated` says so, the history row shows an "Invalidated" pill and the details page a note. The reason and the moderator stay with moderators. The note points to the operator's contact email (`LEGAL_CONTACT_EMAIL`, served as `contactEmail` by `GET /api/auth-info`) when one is set.
 - Moderators see it in the all-games list (an "invalidated" badge, who, when and why) and can filter for only those (`status=invalidated`); its details page shows a banner and no longer offers the button.
 - An audit row (`admin_audit`: id, user id, action `game.invalidate`, target, JSON detail with the reason, created_at) is written in the same transaction.
   It is shared with impersonation (PR 3), so the migration lands here.

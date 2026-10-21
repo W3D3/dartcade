@@ -103,6 +103,15 @@
   >
 {/snippet}
 
+<!-- A moderator invalidated the game: it stays in the list but doesn't count -->
+{#snippet invalidatedPill(className = '')}
+  <span
+    title="A moderator invalidated this game. It does not count in your stats or ratings."
+    class="{className} inline-flex h-7 items-center rounded-full bg-live-soft px-3 text-[13px] font-bold uppercase tracking-[0.06em] text-live-text"
+    >Invalidated</span
+  >
+{/snippet}
+
 <Layout title="History">
   <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-auto px-4 py-6 md:px-8 xl:px-11 md:py-10">
     <header class="flex flex-wrap items-end justify-between gap-6">
@@ -188,7 +197,7 @@
                       >
                       <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
                     </span>
-                    {@render resultPill(result, 'shrink-0')}
+                    {#if g.invalidated}{@render invalidatedPill('shrink-0')}{:else}{@render resultPill(result, 'shrink-0')}{/if}
                   </div>
                   <div class="flex items-baseline justify-between gap-3">
                     <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
@@ -220,7 +229,9 @@
                   <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-2.5">
                     {#each badges as p (p.n)}{@render badge(p)}{/each}
                   </span>
-                  <span>{@render resultPill(result)}</span>
+                  <span
+                    >{#if g.invalidated}{@render invalidatedPill()}{:else}{@render resultPill(result)}{/if}</span
+                  >
                   <span class="flex flex-col gap-0.5">
                     {#if key}
                       <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>

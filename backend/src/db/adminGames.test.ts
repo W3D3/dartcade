@@ -191,10 +191,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
       expect(await db.selectFrom('game_sessions').select('id').where('id', '=', 'r1').execute()).toHaveLength(1)
       expect(await db.selectFrom('game_players').select('seat').where('session_id', '=', 'r1').execute()).toHaveLength(2)
 
-      // Gone for the players
-      expect((await listFinishedGames(db, 'u3', page)).games.map(g => g.id)).toEqual(['r2'])
+      // Still in the players' history, marked, but not counted
+      expect((await listFinishedGames(db, 'u3', page)).games.map(g => [g.id, g.invalidated])).toEqual([
+        ['r2', false],
+        ['r1', true],
+      ])
       expect(await getStatRows(db, 'u3', t(0))).toHaveLength(1)
-      expect(await getViewableGame(db, 'r1', 'u3')).toBeUndefined()
+      expect(await getViewableGame(db, 'r1', 'u3')).toMatchObject({ id: 'r1', invalidated: true })
       expect(await recentRanked(db, 'u3')).toHaveLength(1)
       expect(await onlineAverage(db, 'u3')).toBe(60)
       expect(await ratingChangeSince(db, 'u3', t(0))).toEqual({ '1v1': 0, '2v2': 0 })
@@ -279,13 +282,21 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
       const before = [await getRatings(db, 'u5'), await getRatings(db, 'u6')]
       await invalidateGame(db, 's2', 'u1', 'Board was misreading')
       expect((await getRatings(db, 'u5'))['1v1'].matches).toBe(2)
-      expect((await listFinishedGames(db, 'u5', page)).games.map(g => g.id)).toEqual(['s3', 's1'])
+      expect((await listFinishedGames(db, 'u5', page)).games.map(g => [g.id, g.invalidated])).toEqual([
+        ['s3', false],
+        ['s2', true],
+        ['s1', false],
+      ])
 
       expect(await restoreGame(db, 's2', 'u2')).toEqual({ recalculated: ['1v1'] })
 
       expect([await getRatings(db, 'u5'), await getRatings(db, 'u6')]).toEqual(before)
-      expect((await listFinishedGames(db, 'u5', page)).games.map(g => g.id)).toEqual(['s3', 's2', 's1'])
-      expect(await getViewableGame(db, 's2', 'u5')).toMatchObject({ id: 's2' })
+      expect((await listFinishedGames(db, 'u5', page)).games.map(g => [g.id, g.invalidated])).toEqual([
+        ['s3', false],
+        ['s2', false],
+        ['s1', false],
+      ])
+      expect(await getViewableGame(db, 's2', 'u5')).toMatchObject({ id: 's2', invalidated: false })
       expect(await getInvalidation(db, 's2')).toBeNull()
       expect(await recentRanked(db, 'u5')).toHaveLength(3)
       const audit = await db.selectFrom('admin_audit').selectAll().where('target', '=', 's2').orderBy('id').execute()

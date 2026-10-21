@@ -679,7 +679,7 @@ export interface paths {
         put?: never;
         /**
          * Invalidate a finished game and recalculate the ratings it counted in (admin or moderator)
-         * @description The game stays, marked invalidated with who did it and an optional reason, but no longer counts in anyone's history, stats or best values. Ranked ratings of the modes it was rated in are replayed without it. Only a finished game that is not invalidated yet can be.
+         * @description The game stays, marked invalidated with who did it and an optional reason, but no longer counts in stats, best values or ratings. Its players still see it in their history, marked invalidated, without the reason or the moderator. Ranked ratings of the modes it was rated in are replayed without it. Only a finished game that is not invalidated yet can be.
          */
         post: operations["invalidateAdminGame"];
         delete?: never;
@@ -1938,6 +1938,8 @@ export interface components {
             mail: boolean;
             /** @description New accounts confirm their email before signing in */
             verification: boolean;
+            /** @description Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set) */
+            contactEmail: string | null;
         };
         LegalDoc: {
             html: string;
@@ -2002,6 +2004,8 @@ export interface components {
                 name: string;
             } | null;
             mySeat: number | null;
+            /** @description A moderator invalidated the game; it stays in the history but does not count in stats or ratings */
+            invalidated: boolean;
             players: components["schemas"]["GameSeat"][];
         };
         GameList: {

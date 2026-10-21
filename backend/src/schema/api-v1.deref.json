@@ -352,7 +352,8 @@
                   "type": "object",
                   "required": [
                     "mail",
-                    "verification"
+                    "verification",
+                    "contactEmail"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -363,6 +364,11 @@
                     "verification": {
                       "type": "boolean",
                       "description": "New accounts confirm their email before signing in"
+                    },
+                    "contactEmail": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set)"
                     }
                   }
                 }
@@ -751,6 +757,7 @@
                           "finishedAt",
                           "board",
                           "mySeat",
+                          "invalidated",
                           "players"
                         ],
                         "additionalProperties": false,
@@ -794,6 +801,10 @@
                             "type": "integer",
                             "minimum": 0,
                             "nullable": true
+                          },
+                          "invalidated": {
+                            "type": "boolean",
+                            "description": "A moderator invalidated the game; it stays in the history but does not count in stats or ratings"
                           },
                           "players": {
                             "type": "array",
@@ -1461,6 +1472,7 @@
                         "finishedAt",
                         "board",
                         "mySeat",
+                        "invalidated",
                         "players"
                       ],
                       "additionalProperties": false,
@@ -1504,6 +1516,10 @@
                           "type": "integer",
                           "minimum": 0,
                           "nullable": true
+                        },
+                        "invalidated": {
+                          "type": "boolean",
+                          "description": "A moderator invalidated the game; it stays in the history but does not count in stats or ratings"
                         },
                         "players": {
                           "type": "array",
@@ -10095,6 +10111,7 @@
                         "finishedAt",
                         "board",
                         "mySeat",
+                        "invalidated",
                         "players"
                       ],
                       "additionalProperties": false,
@@ -10138,6 +10155,10 @@
                           "type": "integer",
                           "minimum": 0,
                           "nullable": true
+                        },
+                        "invalidated": {
+                          "type": "boolean",
+                          "description": "A moderator invalidated the game; it stays in the history but does not count in stats or ratings"
                         },
                         "players": {
                           "type": "array",
@@ -11552,7 +11573,7 @@
       "post": {
         "operationId": "invalidateAdminGame",
         "summary": "Invalidate a finished game and recalculate the ratings it counted in (admin or moderator)",
-        "description": "The game stays, marked invalidated with who did it and an optional reason, but no longer counts in anyone's history, stats or best values. Ranked ratings of the modes it was rated in are replayed without it. Only a finished game that is not invalidated yet can be.",
+        "description": "The game stays, marked invalidated with who did it and an optional reason, but no longer counts in stats, best values or ratings. Its players still see it in their history, marked invalidated, without the reason or the moderator. Ranked ratings of the modes it was rated in are replayed without it. Only a finished game that is not invalidated yet can be.",
         "tags": [
           "admin"
         ],
@@ -32643,7 +32664,8 @@
         "type": "object",
         "required": [
           "mail",
-          "verification"
+          "verification",
+          "contactEmail"
         ],
         "additionalProperties": false,
         "properties": {
@@ -32654,6 +32676,11 @@
           "verification": {
             "type": "boolean",
             "description": "New accounts confirm their email before signing in"
+          },
+          "contactEmail": {
+            "type": "string",
+            "nullable": true,
+            "description": "Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set)"
           }
         }
       },
@@ -32956,6 +32983,7 @@
           "finishedAt",
           "board",
           "mySeat",
+          "invalidated",
           "players"
         ],
         "additionalProperties": false,
@@ -32999,6 +33027,10 @@
             "type": "integer",
             "minimum": 0,
             "nullable": true
+          },
+          "invalidated": {
+            "type": "boolean",
+            "description": "A moderator invalidated the game; it stays in the history but does not count in stats or ratings"
           },
           "players": {
             "type": "array",
@@ -33090,6 +33122,7 @@
                 "finishedAt",
                 "board",
                 "mySeat",
+                "invalidated",
                 "players"
               ],
               "additionalProperties": false,
@@ -33133,6 +33166,10 @@
                   "type": "integer",
                   "minimum": 0,
                   "nullable": true
+                },
+                "invalidated": {
+                  "type": "boolean",
+                  "description": "A moderator invalidated the game; it stays in the history but does not count in stats or ratings"
                 },
                 "players": {
                   "type": "array",
@@ -33885,6 +33922,7 @@
               "finishedAt",
               "board",
               "mySeat",
+              "invalidated",
               "players"
             ],
             "additionalProperties": false,
@@ -33928,6 +33966,10 @@
                 "type": "integer",
                 "minimum": 0,
                 "nullable": true
+              },
+              "invalidated": {
+                "type": "boolean",
+                "description": "A moderator invalidated the game; it stays in the history but does not count in stats or ratings"
               },
               "players": {
                 "type": "array",
@@ -34913,6 +34955,7 @@
               "finishedAt",
               "board",
               "mySeat",
+              "invalidated",
               "players"
             ],
             "additionalProperties": false,
@@ -34956,6 +34999,10 @@
                 "type": "integer",
                 "minimum": 0,
                 "nullable": true
+              },
+              "invalidated": {
+                "type": "boolean",
+                "description": "A moderator invalidated the game; it stays in the history but does not count in stats or ratings"
               },
               "players": {
                 "type": "array",

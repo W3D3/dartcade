@@ -28,6 +28,7 @@ const game: HistoryGame = {
   finished_at: at,
   board: null,
   mySeat: 0,
+  invalidated: false,
   seats: [{ seat: 0, name: 'A', user_id: 'u1', bot_level: null, placement: 1, throw_position: 0, stats: {}, forfeited: false }],
 }
 const dart = (index: number, x: number, y: number) => ({

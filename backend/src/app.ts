@@ -192,7 +192,11 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(gamesApiPlugin, { db })
   await app.register(ofrepApiPlugin, { db })
   await app.register(previewApiPlugin, { preview: parsePreview(process.env) })
-  await app.register(authInfoApiPlugin, { mail: mailConfig.smtpUrl !== null, verification: mailConfig.verification })
+  await app.register(authInfoApiPlugin, {
+    mail: mailConfig.smtpUrl !== null,
+    verification: mailConfig.verification,
+    contactEmail: legalValues(process.env).contactEmail?.trim() || null,
+  })
   await app.register(legalApiPlugin, { docs: legalDocs })
   await app.register(boardsApiPlugin, {
     db,

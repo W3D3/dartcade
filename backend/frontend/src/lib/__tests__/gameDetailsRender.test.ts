@@ -37,6 +37,7 @@ const game = (n: number): GameDetail => ({
     finishedAt: '2026-09-26T19:14:00.000Z',
     board: null,
     mySeat: 0,
+    invalidated: false,
     players: Array.from({ length: n }, (_, i) => seat(i, `P${i}`, i + 1)),
   },
   detail: { mode: 'x01', legs: [] },

@@ -37,6 +37,7 @@ export function toSummary(g: HistoryGame, allIds = false): GameSummary {
     finishedAt: g.finished_at.toISOString(),
     board: g.board,
     mySeat: g.mySeat,
+    invalidated: g.invalidated,
     players: g.seats.map(s => ({
       seat: s.seat,
       name: s.name,

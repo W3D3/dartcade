@@ -71,7 +71,7 @@ export function outcome(g: AdminGameSummary): string {
 
 /** What invalidating a game warns about; the same text on the list and the details page. */
 export const INVALIDATE_WARNING =
-  "The game stays for moderators, but no longer counts in anyone's history, stats or best values. If it was ranked, the ratings it counted in are recalculated without it."
+  'The game stays for moderators, but no longer counts in stats, best values or ratings. Its players still see it in their history, marked as invalidated. If it was ranked, the ratings it counted in are recalculated without it.'
 
 /** Longest reason the server takes. */
 export const REASON_MAX = 500

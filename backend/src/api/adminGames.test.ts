@@ -51,6 +51,7 @@ const finished = (): HistoryGame => ({
   finished_at: new Date('2026-10-01T09:30:00Z'),
   board: null,
   mySeat: null,
+  invalidated: false,
   seats: [
     { seat: 0, name: 'Ann', user_id: 'u1', bot_level: null, placement: 1, throw_position: 0, stats: {}, forfeited: false },
     { seat: 1, name: 'Bob', user_id: 'u2', bot_level: null, placement: 2, throw_position: 1, stats: {}, forfeited: false },

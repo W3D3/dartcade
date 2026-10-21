@@ -6,6 +6,8 @@
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
   import { currentUser } from '$lib/auth'
+  import { authInfo } from '$lib/authInfo'
+  import { invalidatedNote } from '$lib/details/invalidated'
   import {
     DELETE_WARNING,
     deleteGame,
@@ -132,9 +134,18 @@
             class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-live-soft px-4 py-3 text-[14px] text-live-text md:px-7"
           >
             <span class="min-w-0 flex-1 basis-[260px]"
-              >{invalidationText(invalidated)}. It no longer counts in anyone's history, stats or ratings.</span
+              >{invalidationText(invalidated)}. It no longer counts in stats or ratings, and its players see it marked as invalidated.</span
             >
             <Button variant="outline" size="md" onclick={() => (confirmingRestore = true)}>Restore game</Button>
+          </div>
+        {/if}
+        {#if !admin && d.game.invalidated}
+          {@const note = invalidatedNote($authInfo.contactEmail)}
+          <div role="status" class="border-b border-line bg-live-soft px-4 py-3 text-[14px] text-live-text md:px-7">
+            {note.text}
+            {#if note.email}
+              Questions? Write to <a href="mailto:{note.email}" class="font-semibold">{note.email}</a>.
+            {/if}
           </div>
         {/if}
         {#if invalidateError}<div class="px-4 pt-3 md:px-7"><ErrorText>{invalidateError}</ErrorText></div>{/if}
