@@ -11,13 +11,16 @@
   import { currentUser } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { flag } from '$lib/flags'
+  import { progress } from '$lib/progress/store'
 
   const inviteCount = $derived($me?.invites.length ?? 0)
 
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
 
-  const links = $derived(sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator, $progression))
+  const links = $derived(
+    sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator, $progression ? ($progress?.dailyOpen ?? 0) : null),
+  )
 </script>
 
 <nav
@@ -52,6 +55,9 @@
         {link.label}
         {#if link.icon === 'live' && !link.disabled}
           <span class="ml-auto w-2 h-2 rounded-full bg-live" aria-hidden="true"></span>
+        {/if}
+        {#if link.badge}
+          <NavBadge count={link.badge} label={link.badgeLabel ?? ''} class="ml-auto" />
         {/if}
         {#if link.soon}
           <span

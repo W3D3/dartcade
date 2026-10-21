@@ -27,11 +27,7 @@
     <span class="absolute top-[10px] left-1/2 ml-[9px] w-[7px] h-[7px] rounded-full bg-live" aria-hidden="true"></span>
   {/if}
   {#if tab.badge}
-    <NavBadge
-      count={tab.badge}
-      label="{tab.badge} pending {tab.badge === 1 ? 'invite' : 'invites'}"
-      class="absolute top-[6px] left-1/2 ml-[4px] border-2 border-surface-1"
-    />
+    <NavBadge count={tab.badge} label={tab.badgeLabel ?? ''} class="absolute top-[6px] left-1/2 ml-[4px] border-2 border-surface-1" />
   {/if}
   {#if tab.icon === 'play'}<Target size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />
   {:else if tab.icon === 'ranked'}<Swords size={22} strokeWidth={1.8} class={on ? 'text-accent' : ''} />

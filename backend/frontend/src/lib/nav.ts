@@ -7,6 +7,8 @@ export type NavTab = {
   label: string
   icon: 'play' | 'ranked' | 'live' | 'tournaments' | 'progress' | 'history'
   badge?: number
+  /** What the badge counts, read out ('2 pending invites'). */
+  badgeLabel?: string
   /** When the label alone doesn't say it ('Ranked' is the Matchmaking page). */
   aria?: string
   /** Shown dimmed, not a link: Live with no running game, Tournaments until it ships. */
@@ -25,22 +27,32 @@ function liveItem(liveSessionId: string | null, label: string): NavTab {
  * Tournaments (soon) or Progress while progression is on (Mobile-Progress), History; pending
  * invites as a badge on Play.
  */
-export function navTabs(liveSessionId: string | null, invites = 0, ranked = false, progress = false): NavTab[] {
+export function navTabs(liveSessionId: string | null, invites = 0, ranked = false, progress: number | null = null): NavTab[] {
   return [
-    { href: '/', label: 'Play', icon: 'play', ...(invites > 0 ? { badge: invites } : {}) },
+    {
+      href: '/',
+      label: 'Play',
+      icon: 'play',
+      ...(invites > 0 ? { badge: invites, badgeLabel: `${invites} pending ${invites === 1 ? 'invite' : 'invites'}` } : {}),
+    },
     ...(ranked ? [{ href: '/matchmaking', label: 'Ranked', icon: 'ranked' as const, aria: 'Matchmaking' }] : []),
     liveItem(liveSessionId, 'Live'),
-    progress
-      ? { href: '/progress', label: 'Progress', icon: 'progress' }
+    progress !== null
+      ? { href: '/progress', label: 'Progress', icon: 'progress', ...dailyBadge(progress) }
       : { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', aria: 'Tournaments: coming soon', disabled: true },
     { href: '/history', label: 'History', icon: 'history' },
   ]
 }
 
-export type SideLink = Omit<NavTab, 'icon' | 'badge' | 'aria'> & { icon: NavTab['icon'] | 'settings' | 'admin'; soon?: boolean }
+export type SideLink = Omit<NavTab, 'icon' | 'aria'> & { icon: NavTab['icon'] | 'settings' | 'admin'; soon?: boolean }
+
+/** Progress counts today's daily challenges not done yet. */
+function dailyBadge(open: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
+  return open > 0 ? { badge: open, badgeLabel: `${open} daily ${open === 1 ? 'challenge' : 'challenges'} to go` } : {}
+}
 
 /** The desktop side nav: the same pages under their long names, then Progress, Settings and Admin (admins and moderators). */
-export function sideLinks(liveSessionId: string | null, ranked = false, admin = false, progress = false): SideLink[] {
+export function sideLinks(liveSessionId: string | null, ranked = false, admin = false, progress: number | null = null): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
     { href: '/', label: 'Play', icon: 'play' },
@@ -48,7 +60,7 @@ export function sideLinks(liveSessionId: string | null, ranked = false, admin = 
     { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
     { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },
     { href: '/history', label: 'History', icon: 'history' },
-    ...(progress ? [{ href: '/progress', label: 'Progress', icon: 'progress' as const }] : []),
+    ...(progress !== null ? [{ href: '/progress', label: 'Progress', icon: 'progress' as const, ...dailyBadge(progress) }] : []),
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]

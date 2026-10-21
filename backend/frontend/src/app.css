@@ -63,6 +63,9 @@
   --color-ice: #9ec8ff;
   --color-ice-line: #7fb4ff;
   --color-ice-soft: #17202e;
+  /* A challenge one step from done (Progress board) */
+  --color-gold: #f2b94e;
+  --color-gold-line: #6b5a2a;
 
   /* The Board Manager's status dot (lib/boardStatus.ts) */
   --color-bm-green: #84cc16;
