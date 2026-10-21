@@ -8274,10 +8274,18 @@
           "isAdmin",
           "isModerator",
           "createdAt",
-          "avatar"
+          "avatar",
+          "pictures"
         ],
         "additionalProperties": false,
         "properties": {
+          "pictures": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The avatar presets you may wear (progression rewards)"
+          },
           "id": {
             "type": "string"
           },
@@ -8441,10 +8449,6 @@
               },
               "colors": {
                 "type": "string"
-              },
-              "emblem": {
-                "type": "string",
-                "nullable": true
               }
             }
           }
@@ -8485,12 +8489,11 @@
       },
       "Equipped": {
         "type": "object",
-        "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+        "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
         "required": [
           "title",
           "banner",
-          "colors",
-          "emblem"
+          "colors"
         ],
         "additionalProperties": false,
         "properties": {
@@ -8502,10 +8505,6 @@
           },
           "colors": {
             "type": "string"
-          },
-          "emblem": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
@@ -8544,12 +8543,6 @@
           "colors": {
             "type": "string",
             "maxLength": 64
-          },
-          "emblem": {
-            "type": "string",
-            "maxLength": 64,
-            "nullable": true,
-            "description": "null: no emblem"
           }
         }
       },
@@ -8560,6 +8553,7 @@
           "name",
           "memberSince",
           "relation",
+          "avatar",
           "look",
           "level",
           "ranked",
@@ -8592,6 +8586,9 @@
               "friend",
               "stranger"
             ]
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           },
           "look": {
             "$ref": "#/components/schemas/Equipped"

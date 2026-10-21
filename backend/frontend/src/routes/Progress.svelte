@@ -1,16 +1,24 @@
 <script lang="ts">
   // Progress (Progress / Mobile-Progress boards): your level and XP, your day streak, your daily and
-  // weekly challenges. Behind progression.enabled; without it the page says it isn't on.
+  // weekly challenges, and a preview of the rewards (customising is on your profile). Behind progression.enabled; without it the page says it isn't on.
   // Rules: shared/progression.ts, backend progression/.
   import { LoaderCircle } from '@lucide/svelte'
   import ChallengesSection from '$lib/components/progress/ChallengesSection.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import StreakCard from '$lib/components/progress/StreakCard.svelte'
+  import YourCard from '$lib/components/progress/YourCard.svelte'
+  import { currentUser } from '$lib/auth'
+  import { me } from '$lib/lobby/sockets'
+  import { get } from 'svelte/store'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
 
   const progression = flag('progression.enabled')
+  // What you earn while the page is open (not the last game from before you came)
+  const gained = me.xp
+  const before = get(me.xp)
+  const freshGain = $derived($gained && $gained !== before ? $gained.total : null)
 </script>
 
 <Layout title="Progress">
@@ -28,10 +36,13 @@
       <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
     {:else}
       <div class="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <LevelCard xp={$progress.xp} />
+        <LevelCard xp={$progress.xp} title={$progress.perks.equipped.title} gain={freshGain} />
         <StreakCard streak={$progress.streak} />
       </div>
       <ChallengesSection />
+      {#if $currentUser}
+        <YourCard mode="preview" userId={$currentUser.id} unlocked={$progress.perks.unlocked} equipped={$progress.perks.equipped} />
+      {/if}
     {/if}
   </main>
 </Layout>

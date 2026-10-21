@@ -111,21 +111,16 @@ export function streakAwards(step: StreakStep, today: string, sessionId: string)
   return awards
 }
 
-/** What a game's account has now reached: its level, its streak, and the deeds this game did. */
+/** What an account has now reached: its level, its streak and its ranked deeds. */
 export type Reached = {
   level: number
   streak: number
-  game: PlayerGame | null
   ranked: { wins: number; bestRank: number | null }
 }
 
 /** Every perk `r` reaches (unlocking is idempotent: the store keeps the ones already held). */
 export function reachedPerks(r: Reached): { id: string; source: string }[] {
   const events = new Set<string>()
-  const g = r.game
-  if (g && !isManual(g) && g.darts.oneEighties > 0) events.add('oneEighty')
-  // Around the Clock finished: the stats carry the darts it took
-  if (g?.gameId === 'atc' && !isManual(g) && g.stats.dartsToFinish !== undefined) events.add('atc')
   if (r.ranked.wins >= 10) events.add('rankedWins')
   if ((r.ranked.bestRank ?? -1) >= 15) events.add('rankedGold')
   return [

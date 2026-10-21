@@ -72,14 +72,10 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
     await requireProgression(req.userId)
     const { unlocked, equipped } = await perksOf(req.userId)
     const next: Equipped = { ...equipped }
-    for (const kind of ['title', 'banner', 'colors', 'emblem'] as const satisfies readonly PerkKind[]) {
+    for (const kind of ['title', 'banner', 'colors'] as const satisfies readonly PerkKind[]) {
       const id = req.body[kind]
       if (id === undefined) continue
-      if (id === null && kind === 'emblem') {
-        next.emblem = null
-        continue
-      }
-      if (id === null || perk(id)?.kind !== kind || !unlocked.includes(id)) throw new ApiError(409, { error: `${kind} is not unlocked` })
+      if (perk(id)?.kind !== kind || !unlocked.includes(id)) throw new ApiError(409, { error: `${kind} is not unlocked` })
       next[kind] = id
     }
     await updatePreferences(db, req.userId, { equipped: next })
@@ -112,6 +108,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         name: user.name,
         memberSince: user.createdAt.toISOString(),
         relation: self ? 'self' : friend ? 'friend' : 'stranger',
+        avatar: user.avatar,
         look: equippedOf(user.equipped),
         level: levelOf(xp).level,
         // The rating stays hidden until the player is placed

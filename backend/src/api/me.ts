@@ -15,6 +15,9 @@ import {
   UnknownAvatarPresetError,
 } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
+import { hasPerk, unlockedPictures } from '../db/progression.js'
+import { isAvatarPreset } from '../shared/avatarPresets.js'
+import { pictureFor } from '../shared/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -51,6 +54,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       isAdmin: isAdmin({ role }),
       isModerator: isModerator({ role }),
       suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
+      pictures: await unlockedPictures(db, userId),
     }
   }
 
@@ -63,6 +67,10 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     }
     if (req.body.invisible !== undefined) await setInvisible(db, req.userId, req.body.invisible)
     if (req.body.avatar !== undefined) {
+      // A picture is a reward: locked ones can't be worn
+      const preset = req.body.avatar.kind === 'preset' ? req.body.avatar.preset : undefined
+      if (preset && isAvatarPreset(preset) && !(await hasPerk(db, req.userId, pictureFor(preset))))
+        throw new ApiError(409, { error: `avatar preset not unlocked yet: ${preset}` })
       try {
         await setAvatar(db, req.userId, req.body.avatar)
       } catch (err) {

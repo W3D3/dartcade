@@ -144,7 +144,6 @@ export class ProgressionService {
         reachedPerks({
           level: levelOf(after).level,
           streak: streak?.current ?? 0,
-          game: backfill ? null : { ...player, previousBest: null },
           ranked: backfill ? { wins: 0, bestRank: null } : await q.rankedDeeds(trx, userId),
         }),
         game.finishedAt,

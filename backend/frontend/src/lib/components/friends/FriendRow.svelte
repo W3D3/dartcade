@@ -1,6 +1,7 @@
 <script lang="ts">
   // One friend: avatar with a status ring, name and @handle, the status line, the action
   // (In your lobby / Join / Invite to lobby / Invited) and the ⋯ menu. Phones say "Invite" and "In lobby".
+  import ProfilePopover from '../progress/ProfilePopover.svelte'
   import { Check } from '@lucide/svelte'
   import type { Friend } from '$lib/api/lobby-ws'
   import Avatar from '$lib/components/Avatar.svelte'
@@ -38,7 +39,9 @@
   </span>
   <span class="flex flex-col gap-[2px] md:gap-[3px] min-w-0 flex-grow">
     <span class="flex items-baseline gap-2 min-w-0">
-      <span class="text-[15px] md:text-[16px] font-semibold truncate">{friend.name}</span>
+      <ProfilePopover userId={friend.id} name={friend.name}>
+        <span class="text-[15px] md:text-[16px] font-semibold truncate">{friend.name}</span>
+      </ProfilePopover>
       <span class="hidden md:inline font-mono text-[12px] text-text-dim truncate">{`@${friend.name}`}</span>
     </span>
     <span class="text-[12px] md:text-[13px] truncate {TONE[line.tone]}">{line.text}</span>

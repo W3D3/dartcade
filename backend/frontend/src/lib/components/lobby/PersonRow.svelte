@@ -8,6 +8,7 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
   import { personLine } from '$lib/lobby/format'
+  import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
 
   let {
     person,
@@ -50,7 +51,9 @@
   <span class="flex flex-col gap-1 min-w-0">
     <!-- The tags wrap under the name on a narrow row, so the name stays readable -->
     <span class="flex flex-wrap items-center gap-x-[6px] gap-y-1 min-w-0">
-      <span class="max-w-full text-[15px] font-semibold truncate">{person.name}</span>
+      <ProfilePopover userId={person.bot ? null : person.userId} name={person.name}>
+        <span class="max-w-full text-[15px] font-semibold truncate">{person.name}</span>
+      </ProfilePopover>
       {#if person.userId !== null && person.userId === viewerId}<span class="text-[12px] font-medium text-accent shrink-0">· you</span>{/if}
       {#if !lobby.solo && person.userId !== null && person.userId === lobby.hostUserId}<Badge variant="host">Host</Badge>{/if}
       {#if person.bot}<Badge variant="bot">Bot</Badge>{:else if person.userId === null}<Badge variant="guest">Guest</Badge>{/if}

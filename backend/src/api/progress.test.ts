@@ -61,7 +61,13 @@ beforeEach(() => {
   vi.mocked(x01Average).mockReset().mockResolvedValue(61.2)
   vi.mocked(profileUser)
     .mockReset()
-    .mockResolvedValue({ id: 'anna', name: 'Anna', createdAt: new Date('2026-08-01T00:00:00Z'), equipped: { colors: 'colors.night' } })
+    .mockResolvedValue({
+      id: 'anna',
+      name: 'Anna',
+      createdAt: new Date('2026-08-01T00:00:00Z'),
+      avatar: { kind: 'preset', preset: 'star', color: '#2d6cdf', fgColor: '#ffffff' },
+      equipped: { colors: 'colors.night' },
+    })
   vi.mocked(modeCounts)
     .mockReset()
     .mockResolvedValue([
@@ -135,21 +141,20 @@ describe('/api/progress', () => {
   it('shows your perks with the level 1 ones', async () => {
     const res = await app().inject({ method: 'GET', url: '/api/progress/me' })
     expect(JSON.parse(res.body).perks).toEqual({
-      unlocked: ['title.rookie', 'banner.plain', 'colors.dartcade', 'emblem.dart', 'title.oche-regular'],
-      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade', emblem: null },
+      unlocked: ['title.rookie', 'banner.plain', 'colors.dartcade', 'picture.logo', 'title.oche-regular'],
+      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade' },
     })
   })
 
   it('equips an unlocked perk, and nothing locked or of the wrong kind', async () => {
     const put = (body: object) => app().inject({ method: 'PUT', url: '/api/progress/equip', payload: body })
-    const ok = await put({ banner: 'banner.plain', emblem: 'emblem.dart' })
+    const ok = await put({ banner: 'banner.plain', colors: 'colors.dartcade' })
     expect(ok.statusCode).toBe(200)
     expect(vi.mocked(updatePreferences)).toHaveBeenCalledWith(expect.anything(), 'chris', {
-      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade', emblem: 'emblem.dart' },
+      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade' },
     })
     expect((await put({ title: 'title.maximum' })).statusCode).toBe(409)
     expect((await put({ title: 'banner.plain' })).statusCode).toBe(409)
-    expect((await put({ emblem: null })).statusCode).toBe(200)
   })
 
   it("shows a stranger's profile without their streak, XP or collection", async () => {
@@ -159,6 +164,7 @@ describe('/api/progress', () => {
       name: 'Anna',
       relation: 'stranger',
       look: { colors: 'colors.night', title: 'title.rookie' },
+      avatar: { kind: 'preset', preset: 'star' },
       level: 14,
       streak: null,
       xp: null,
@@ -181,8 +187,14 @@ describe('/api/progress', () => {
   })
 
   it('shows your own XP and collection, and no head-to-head', async () => {
-    vi.mocked(profileUser).mockResolvedValue({ id: 'chris', name: 'Chris', createdAt: new Date(), equipped: null })
+    vi.mocked(profileUser).mockResolvedValue({
+      id: 'chris',
+      name: 'Chris',
+      createdAt: new Date(),
+      avatar: { kind: 'none' },
+      equipped: null,
+    })
     const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })
-    expect(JSON.parse(res.body)).toMatchObject({ relation: 'self', xp: 6780, headToHead: null, collection: { unlocked: 5, total: 27 } })
+    expect(JSON.parse(res.body)).toMatchObject({ relation: 'self', xp: 6780, headToHead: null, collection: { unlocked: 5, total: 26 } })
   })
 })

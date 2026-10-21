@@ -14480,10 +14480,18 @@
                     "isAdmin",
                     "isModerator",
                     "createdAt",
-                    "avatar"
+                    "avatar",
+                    "pictures"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "pictures": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The avatar presets you may wear (progression rewards)"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -14789,10 +14797,18 @@
                     "isAdmin",
                     "isModerator",
                     "createdAt",
-                    "avatar"
+                    "avatar",
+                    "pictures"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "pictures": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The avatar presets you may wear (progression rewards)"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -15139,10 +15155,18 @@
                     "isAdmin",
                     "isModerator",
                     "createdAt",
-                    "avatar"
+                    "avatar",
+                    "pictures"
                   ],
                   "additionalProperties": false,
                   "properties": {
+                    "pictures": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "The avatar presets you may wear (progression rewards)"
+                    },
                     "id": {
                       "type": "string"
                     },
@@ -15568,10 +15592,6 @@
                         },
                         "colors": {
                           "type": "string"
-                        },
-                        "emblem": {
-                          "type": "string",
-                          "nullable": true
                         }
                       }
                     }
@@ -15774,10 +15794,6 @@
                       },
                       "colors": {
                         "type": "string"
-                      },
-                      "emblem": {
-                        "type": "string",
-                        "nullable": true
                       }
                     }
                   }
@@ -15895,10 +15911,6 @@
                         },
                         "colors": {
                           "type": "string"
-                        },
-                        "emblem": {
-                          "type": "string",
-                          "nullable": true
                         }
                       }
                     }
@@ -22817,12 +22829,11 @@
                         },
                         "equipped": {
                           "type": "object",
-                          "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+                          "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
                           "required": [
                             "title",
                             "banner",
-                            "colors",
-                            "emblem"
+                            "colors"
                           ],
                           "additionalProperties": false,
                           "properties": {
@@ -22834,10 +22845,6 @@
                             },
                             "colors": {
                               "type": "string"
-                            },
-                            "emblem": {
-                              "type": "string",
-                              "nullable": true
                             }
                           }
                         }
@@ -23202,12 +23209,6 @@
                   "colors": {
                     "type": "string",
                     "maxLength": 64
-                  },
-                  "emblem": {
-                    "type": "string",
-                    "maxLength": 64,
-                    "nullable": true,
-                    "description": "null: no emblem"
                   }
                 }
               }
@@ -23236,12 +23237,11 @@
                     },
                     "equipped": {
                       "type": "object",
-                      "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+                      "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
                       "required": [
                         "title",
                         "banner",
-                        "colors",
-                        "emblem"
+                        "colors"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -23253,10 +23253,6 @@
                         },
                         "colors": {
                           "type": "string"
-                        },
-                        "emblem": {
-                          "type": "string",
-                          "nullable": true
                         }
                       }
                     }
@@ -23495,6 +23491,7 @@
                     "name",
                     "memberSince",
                     "relation",
+                    "avatar",
                     "look",
                     "level",
                     "ranked",
@@ -23528,14 +23525,83 @@
                         "stranger"
                       ]
                     },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "preset",
+                            "color",
+                            "fgColor"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "preset": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string",
+                              "description": "The preset's background colour (hex)"
+                            },
+                            "fgColor": {
+                              "type": "string",
+                              "description": "The preset's icon colour (hex)"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
+                    },
                     "look": {
                       "type": "object",
-                      "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+                      "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
                       "required": [
                         "title",
                         "banner",
-                        "colors",
-                        "emblem"
+                        "colors"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -23547,10 +23613,6 @@
                         },
                         "colors": {
                           "type": "string"
-                        },
-                        "emblem": {
-                          "type": "string",
-                          "nullable": true
                         }
                       }
                     },
@@ -42130,10 +42192,18 @@
           "isAdmin",
           "isModerator",
           "createdAt",
-          "avatar"
+          "avatar",
+          "pictures"
         ],
         "additionalProperties": false,
         "properties": {
+          "pictures": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The avatar presets you may wear (progression rewards)"
+          },
           "id": {
             "type": "string"
           },
@@ -42391,10 +42461,6 @@
               },
               "colors": {
                 "type": "string"
-              },
-              "emblem": {
-                "type": "string",
-                "nullable": true
               }
             }
           }
@@ -42532,12 +42598,11 @@
               },
               "equipped": {
                 "type": "object",
-                "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+                "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
                 "required": [
                   "title",
                   "banner",
-                  "colors",
-                  "emblem"
+                  "colors"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -42549,10 +42614,6 @@
                   },
                   "colors": {
                     "type": "string"
-                  },
-                  "emblem": {
-                    "type": "string",
-                    "nullable": true
                   }
                 }
               }
@@ -42562,12 +42623,11 @@
       },
       "Equipped": {
         "type": "object",
-        "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+        "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
         "required": [
           "title",
           "banner",
-          "colors",
-          "emblem"
+          "colors"
         ],
         "additionalProperties": false,
         "properties": {
@@ -42579,10 +42639,6 @@
           },
           "colors": {
             "type": "string"
-          },
-          "emblem": {
-            "type": "string",
-            "nullable": true
           }
         }
       },
@@ -42603,12 +42659,11 @@
           },
           "equipped": {
             "type": "object",
-            "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+            "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
             "required": [
               "title",
               "banner",
-              "colors",
-              "emblem"
+              "colors"
             ],
             "additionalProperties": false,
             "properties": {
@@ -42620,10 +42675,6 @@
               },
               "colors": {
                 "type": "string"
-              },
-              "emblem": {
-                "type": "string",
-                "nullable": true
               }
             }
           }
@@ -42644,12 +42695,6 @@
           "colors": {
             "type": "string",
             "maxLength": 64
-          },
-          "emblem": {
-            "type": "string",
-            "maxLength": 64,
-            "nullable": true,
-            "description": "null: no emblem"
           }
         }
       },
@@ -42660,6 +42705,7 @@
           "name",
           "memberSince",
           "relation",
+          "avatar",
           "look",
           "level",
           "ranked",
@@ -42693,14 +42739,83 @@
               "stranger"
             ]
           },
+          "avatar": {
+            "title": "Avatar",
+            "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "none"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "preset",
+                  "color",
+                  "fgColor"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "preset"
+                    ]
+                  },
+                  "preset": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string",
+                    "description": "The preset's background colour (hex)"
+                  },
+                  "fgColor": {
+                    "type": "string",
+                    "description": "The preset's icon colour (hex)"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "version"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "upload"
+                    ]
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                  }
+                }
+              }
+            ]
+          },
           "look": {
             "type": "object",
-            "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+            "description": "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar",
             "required": [
               "title",
               "banner",
-              "colors",
-              "emblem"
+              "colors"
             ],
             "additionalProperties": false,
             "properties": {
@@ -42712,10 +42827,6 @@
               },
               "colors": {
                 "type": "string"
-              },
-              "emblem": {
-                "type": "string",
-                "nullable": true
               }
             }
           },

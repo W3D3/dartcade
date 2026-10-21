@@ -11,6 +11,12 @@ import type { components } from '$lib/api/schema'
 export type Progress = components['schemas']['Progress']
 type Source = { xp: Readable<XpGainedMessage | null> }
 
+// Every open progress store, to read again after you change something (your look)
+const reloaders = new Set<() => void>()
+export function reloadProgress(): void {
+  for (const r of reloaders) r()
+}
+
 /** Your progress; null until known. */
 export function createProgress(source: Source = me, fetchProgress = defaultFetchProgress): Readable<Progress | null> {
   return readable<Progress | null>(null, set => {
@@ -27,6 +33,7 @@ export function createProgress(source: Source = me, fetchProgress = defaultFetch
       })
     }
     load()
+    reloaders.add(load)
     const unsub = source.xp.subscribe(m => {
       if (!m) return
       if (current) {
@@ -38,6 +45,7 @@ export function createProgress(source: Source = me, fetchProgress = defaultFetch
     })
     return () => {
       stopped = true
+      reloaders.delete(load)
       unsub()
     }
   })
@@ -71,7 +79,7 @@ export const progress: Readable<Progress | null> = readable<Progress | null>(nul
 export const progressXp: Readable<number | null> = derived(progress, p => p?.xp ?? null)
 
 /** What a game paid you: lines, total, and your XP before and after. */
-export type GameGain = { lines: XpLine[]; total: number; xpBefore: number; xpAfter: number }
+export type GameGain = { lines: XpLine[]; total: number; xpBefore: number; xpAfter: number; unlocks?: string[] }
 
 /** What game `sessionId` paid you; null until it is settled (or it paid nothing). */
 export function createGameGain(sessionId: string, source: Source = me, fetchGain = defaultFetchGain): Readable<GameGain | null> {
@@ -81,7 +89,7 @@ export function createGameGain(sessionId: string, source: Source = me, fetchGain
     const unsub = source.xp.subscribe(m => {
       if (m?.sessionId !== sessionId) return
       pushed = true
-      set({ lines: m.lines, total: m.total, xpBefore: m.xpBefore, xpAfter: m.xpAfter })
+      set({ lines: m.lines, total: m.total, xpBefore: m.xpBefore, xpAfter: m.xpAfter, unlocks: m.unlocks ?? [] })
     })
     // After a reload the push is gone: the API has it (the bar then starts where it ends up)
     void fetchGain(sessionId).then(g => {

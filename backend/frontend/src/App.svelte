@@ -24,6 +24,7 @@
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
   import Progress from './routes/Progress.svelte'
+  import Profile from './routes/Profile.svelte'
   import Admin from './routes/Admin.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
@@ -92,6 +93,8 @@
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
     '/progress': Progress,
+    '/profile': Profile,
+    '/profile/:id': Profile,
     '/admin': Admin,
     '/admin/users': AdminUsers,
     '/admin/games': AdminGames,

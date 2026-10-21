@@ -5,6 +5,8 @@
   // breakdown. Reduced motion shows the end state.
   import { ChevronDown, Flame } from '@lucide/svelte'
   import type { GameGain } from '$lib/progress/store'
+  import { equip } from '$lib/progress/equip'
+  import { perk } from '$shared/progression.js'
   import { chipMotion, fmtXp, levelView, lineLabel, streakLine } from '$lib/progress/view'
 
   let { gain }: { gain: GameGain } = $props()
@@ -12,6 +14,12 @@
   const motion = $derived(chipMotion(gain.xpBefore, gain.xpAfter))
   const after = $derived(levelView(gain.xpAfter))
   const streak = $derived(streakLine(gain.lines))
+  // A level-up names the title it unlocked, one tap from wearing it
+  const newTitle = $derived(gain.unlocks?.map(perk).find(p => p?.kind === 'title') ?? null)
+  let equipped = $state(false)
+  async function wear() {
+    if (newTitle && !(await equip({ title: newTitle.id }))) equipped = true
+  }
   let open = $state(false)
 </script>
 
@@ -36,12 +44,24 @@
       </div>
     </div>
   {/if}
-  {#if motion.levelUp || streak}
-    <p class="lunote m-0 flex items-center gap-3 text-[13px] text-ink-2">
-      {#if motion.levelUp}<b class="font-semibold text-accent">Level {motion.levelAfter}</b>{/if}
-      {#if streak}
-        <span class="ml-auto inline-flex items-center gap-[6px]"
-          ><Flame size={14} class="text-accent" aria-hidden="true" />{streak.days}-day streak · +{fmtXp(streak.bonus)} first game today</span
+  {#if streak}
+    <p class="m-0 flex items-center gap-[6px] text-[13px] text-ink-2">
+      <Flame size={14} class="shrink-0 text-accent" aria-hidden="true" />{streak.days}-day streak · +{fmtXp(streak.bonus)} first game today
+    </p>
+  {/if}
+  {#if motion.levelUp}
+    <p class="lunote m-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px] text-ink-2">
+      <span>
+        <b class="font-semibold text-accent">Level {motion.levelAfter}</b>
+        {#if newTitle}<span class="whitespace-nowrap">· new title: <b class="font-semibold text-text">{newTitle.name}</b></span>{/if}
+      </span>
+      {#if newTitle}
+        <button
+          type="button"
+          disabled={equipped}
+          onclick={() => void wear()}
+          class="rounded-[8px] border border-line-strong bg-transparent px-[10px] py-1 text-[13px] font-semibold text-text cursor-pointer font-[inherit] disabled:cursor-default disabled:text-accent"
+          >{equipped ? 'Equipped' : 'Equip'}</button
         >
       {/if}
     </p>

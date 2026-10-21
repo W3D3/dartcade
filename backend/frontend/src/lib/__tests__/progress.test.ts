@@ -62,7 +62,7 @@ describe('streak copy', () => {
     )
     expect(t).toEqual([
       { icon: 'freeze', title: 'Streak freeze used', text: 'Sunday was missed. Your streak is safe. 1 freeze left.', xp: null },
-      { icon: 'milestone', title: '7-day streak', text: 'New: flame emblem', xp: 250 },
+      { icon: 'milestone', title: '7-day streak', text: 'New: flame picture', xp: 250 },
     ])
     expect(toastsFor(gained())).toEqual([])
     expect(toastsFor(gained({ challenges: [{ title: 'Throw 100 darts on a board', xp: 40, period: 'daily' }] }))).toEqual([
@@ -82,7 +82,7 @@ describe('createProgress', () => {
     days: [] as Progress['streak']['days'],
     nextMilestone: { days: 7, xp: 250 },
   }
-  const perks = { unlocked: [], equipped: { title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade', emblem: null } }
+  const perks = { unlocked: [], equipped: { title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade' } }
   const at = (xp: number): Progress => ({ xp, level: 1, streak, dailyOpen: 3, perks })
 
   it('reads your progress, shows a push at once and reads again', async () => {
@@ -121,7 +121,7 @@ describe('createGameGain', () => {
     await tick()
     expect(get(store)).toBeNull()
     xp.set(gained())
-    expect(get(store)).toEqual({ lines: [{ kind: 'game', amount: 50 }], total: 50, xpBefore: 100, xpAfter: 150 })
+    expect(get(store)).toEqual({ lines: [{ kind: 'game', amount: 50 }], total: 50, xpBefore: 100, xpAfter: 150, unlocks: [] })
     stop()
   })
   it('falls back to the API after a reload', async () => {

@@ -57,7 +57,7 @@ export const weekday = (date: string, style: 'short' | 'long' = 'short'): string
 
 /** The cosmetic a streak milestone unlocks, where it has one. */
 const MILESTONE_REWARDS: Partial<Record<number, string>> = {
-  7: 'flame emblem',
+  7: 'flame picture',
   14: 'title Fortnight',
   30: 'gold banner',
   100: 'title Never Misses',

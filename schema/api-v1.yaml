@@ -3493,9 +3493,13 @@ components:
             number: { type: number }
     Me:
       type: object
-      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, createdAt, avatar]
+      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, createdAt, avatar, pictures]
       additionalProperties: false
       properties:
+        pictures:
+          type: array
+          items: { type: string }
+          description: 'The avatar presets you may wear (progression rewards)'
         id: { type: string }
         name: { type: string, description: 'Your handle, shown as @name' }
         email: { type: string }
@@ -3556,7 +3560,6 @@ components:
             title: { type: string }
             banner: { type: string }
             colors: { type: string }
-            emblem: { type: string, nullable: true }
     Progress:
       type: object
       required: [xp, level, streak, dailyOpen, perks]
@@ -3569,14 +3572,13 @@ components:
         perks: { $ref: '#/components/schemas/Perks' }
     Equipped:
       type: object
-      description: 'The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked'
-      required: [title, banner, colors, emblem]
+      description: "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar"
+      required: [title, banner, colors]
       additionalProperties: false
       properties:
         title: { type: string }
         banner: { type: string }
         colors: { type: string }
-        emblem: { type: string, nullable: true }
     Perks:
       type: object
       required: [unlocked, equipped]
@@ -3591,7 +3593,6 @@ components:
         title: { type: string, maxLength: 64 }
         banner: { type: string, maxLength: 64 }
         colors: { type: string, maxLength: 64 }
-        emblem: { type: string, maxLength: 64, nullable: true, description: 'null: no emblem' }
     PlayerProfile:
       type: object
       required:
@@ -3600,6 +3601,7 @@ components:
           name,
           memberSince,
           relation,
+          avatar,
           look,
           level,
           ranked,
@@ -3619,6 +3621,7 @@ components:
         name: { type: string }
         memberSince: { type: string, format: date-time }
         relation: { type: string, enum: [self, friend, stranger] }
+        avatar: { $ref: '#/components/schemas/Avatar' }
         look: { $ref: '#/components/schemas/Equipped' }
         level: { type: integer, minimum: 1 }
         ranked:

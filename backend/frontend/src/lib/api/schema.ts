@@ -2648,6 +2648,8 @@ export interface components {
             number: number;
         };
         Me: {
+            /** @description The avatar presets you may wear (progression rewards) */
+            pictures: string[];
             id: string;
             /** @description Your handle, shown as @name */
             name: string;
@@ -2718,7 +2720,6 @@ export interface components {
                 title?: string;
                 banner?: string;
                 colors?: string;
-                emblem?: string | null;
             };
         };
         Progress: {
@@ -2730,12 +2731,11 @@ export interface components {
             dailyOpen: number;
             perks: components["schemas"]["Perks"];
         };
-        /** @description The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked */
+        /** @description The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar */
         Equipped: {
             title: string;
             banner: string;
             colors: string;
-            emblem: string | null;
         };
         Perks: {
             /** @description Perk ids unlocked, the level 1 ones included */
@@ -2746,8 +2746,6 @@ export interface components {
             title?: string;
             banner?: string;
             colors?: string;
-            /** @description null: no emblem */
-            emblem?: string | null;
         };
         PlayerProfile: {
             id: string;
@@ -2756,6 +2754,7 @@ export interface components {
             memberSince: string;
             /** @enum {string} */
             relation: "self" | "friend" | "stranger";
+            avatar: components["schemas"]["Avatar"];
             look: components["schemas"]["Equipped"];
             level: number;
             /** @description Both ranked modes; the rating hidden while placing */
