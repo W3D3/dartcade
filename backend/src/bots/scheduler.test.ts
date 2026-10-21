@@ -153,6 +153,31 @@ describe('bot scheduler', () => {
     expect((engine.getSnapshot(sessionId)!.game as X01Game).phase).toBe('game')
   })
 
+  it('with a human seated, the bot leaves the bull-off countdown to the human (never starts the game early)', async () => {
+    const engine = new SessionEngine(makeStore(), vi.fn())
+    const { sessionId } = await engine.createWithSeats({
+      ownerUserId: 'chris',
+      gameId: 'x01',
+      config: { ...x01Module.defaultConfig, bullOff: 'wdc', botSpeed: 'fast' },
+      seats: [seat('Chris', 'chris', null), seat('Bot Lvl 10', 'chris', null, { level: 10 })],
+    })
+    const game = () => engine.getSnapshot(sessionId)!.game as X01Game
+    for (let i = 0; i < 400 && game().phase === 'bulloff' && !game().bullOff?.result; i++) {
+      const s = engine.getSession(sessionId)!
+      if (s.module.getCurrentPlayer(s.currentState) === 0) {
+        const view = game().bullOff
+        if (view && !view.throws[0]) {
+          const bull = { name: 'D25', number: 25, bed: 'Double', multiplier: 2 } as const
+          await engine.onUserAction(sessionId, 'chris', { type: 'add_dart', segment: bull })
+        } else await engine.onUserAction(sessionId, 'chris', { type: 'takeout' })
+      }
+      await vi.advanceTimersByTimeAsync(100)
+    }
+    expect(game().bullOff?.result).toBeTruthy()
+    await vi.advanceTimersByTimeAsync(30000)
+    expect(game().phase).toBe('bulloff')
+  })
+
   it('a bot seat in a non-x01 session never crashes session creation or push: the scheduler no-ops', async () => {
     const push = vi.fn()
     const engine = new SessionEngine(makeStore(), push)
