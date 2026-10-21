@@ -17,6 +17,7 @@ import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { getLightsEnabled, listWledDevices } from './db/lights.js'
+import { boardInOpenLobby } from './db/lobbies.js'
 import { LightsService } from './lights/service.js'
 import { FriendsService } from './friends/service.js'
 import { seatedGame } from './friends/status.js'
@@ -64,6 +65,7 @@ const lights: LightsService = new LightsService({
   getSession: id => engine.getSession(id),
   getSnapshot: id => engine.getSnapshot(id),
   sessionOnBoard: b => engine.getSessionByBoard(b)?.id ?? null,
+  inLobby: b => boardInOpenLobby(db, b),
   warn: (message, details) => {
     warn(message, details)
   },
@@ -120,6 +122,11 @@ const lobbies: LobbyService = new LobbyService({
   },
   onStatusChange: userIds => {
     friends.touch(userIds)
+  },
+  onBoardsChanged: boardIds => {
+    lights.onLobbyBoards(boardIds).catch((err: unknown) => {
+      warn('lights lobby boards failed', { boardIds, error: String(err) })
+    })
   },
 })
 setAccountCleanup(userId => cleanUpAccount({ engine, lobbies }, userId))
