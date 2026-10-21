@@ -6,7 +6,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/progression.js'
 import type { XpGame, LedgerLine } from '../db/progression.js'
-import { gameAwards, PERSONAL_BESTS, streakAwards, type PlayerGame } from './rules.js'
+import { gameAwards, PERSONAL_BESTS, reachedPerks, streakAwards, type PlayerGame } from './rules.js'
 import { levelOf, localDate, stepStreak } from '../shared/progression.js'
 import type { XpGainedMessage, XpLine } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
@@ -137,6 +137,18 @@ export class ProgressionService {
       if (written.length === 0) return null
       const total = written.reduce((a, r) => a + r.amount, 0)
       const { before, after } = await q.addXp(trx, userId, total)
+      // Perks reached: kept for good, whatever the curve does later
+      const unlocks = await q.unlock(
+        trx,
+        userId,
+        reachedPerks({
+          level: levelOf(after).level,
+          streak: streak?.current ?? 0,
+          game: backfill ? null : { ...player, previousBest: null },
+          ranked: backfill ? { wins: 0, bestRank: null } : await q.rankedDeeds(trx, userId),
+        }),
+        game.finishedAt,
+      )
       return {
         type: 'xp.gained',
         sessionId: game.id,
@@ -148,6 +160,7 @@ export class ProgressionService {
         levelAfter: levelOf(after).level,
         ...(streak && { streak }),
         ...(challenges && { challenges }),
+        ...(unlocks.length > 0 && { unlocks }),
       } satisfies XpGainedMessage
     })
   }

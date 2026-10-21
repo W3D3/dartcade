@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { gameAwards, type DayTally, type PlayerGame } from './rules.js'
+import { gameAwards, reachedPerks, type DayTally, type PlayerGame } from './rules.js'
 
 const fresh: DayTally = { games: 0, manualGames: 0, dartXp: 0 }
 const game = (over: Partial<PlayerGame> = {}): PlayerGame => ({
@@ -66,5 +66,25 @@ describe('gameAwards', () => {
   it('backfills game, win and dart XP only', () => {
     const g = game({ ranked: true, stats: { bestCheckout: 121 }, darts: { total: 42, camera: 42, oneEighties: 1 }, backfill: true })
     expect(Object.keys(kinds(g))).toEqual(['dart:game', 'game:game', 'win:game'])
+  })
+})
+
+describe('reachedPerks', () => {
+  const none = { wins: 0, bestRank: null }
+  it('reaches level and streak perks, never the level 1 ones (they need no row)', () => {
+    const ids = reachedPerks({ level: 15, streak: 7, game: null, ranked: none }).map(p => p.id)
+    expect(ids.sort()).toEqual(['banner.chalk', 'colors.chalk', 'colors.night', 'emblem.flame', 'title.oche-regular'])
+  })
+  it('reaches deeds: a 180 on the board, Around the Clock finished, ranked wins and Gold', () => {
+    const g = game({ darts: { total: 30, camera: 30, oneEighties: 1 } })
+    expect(reachedPerks({ level: 1, streak: 0, game: g, ranked: none }).map(p => p.id)).toEqual(['emblem.180'])
+    const typed = game({ darts: { total: 30, camera: 0, oneEighties: 1 } })
+    expect(reachedPerks({ level: 1, streak: 0, game: typed, ranked: none })).toEqual([])
+    const atc = game({ gameId: 'atc', stats: { dartsToFinish: 40 } })
+    expect(reachedPerks({ level: 1, streak: 0, game: atc, ranked: none }).map(p => p.id)).toEqual(['emblem.clock'])
+    expect(reachedPerks({ level: 1, streak: 0, game: null, ranked: { wins: 10, bestRank: 15 } }).map(p => p.id)).toEqual([
+      'colors.oche-red',
+      'emblem.shield',
+    ])
   })
 })

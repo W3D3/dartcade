@@ -1409,6 +1409,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/equip": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Wear unlocked perks on your profile card (only the kinds sent change) */
+        put: operations["equipPerks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /**
+         * A player's profile: their look, level and rank, stats, and what the viewer may see
+         * @description The look, level, rank and stats are public. The day streak shows to friends and yourself; XP and the collection to yourself only. Recent games are public ones and ones the viewer played in (all for yourself).
+         */
+        get: operations["getPlayerProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/challenges": {
         parameters: {
             query?: never;
@@ -2674,6 +2713,13 @@ export interface components {
             x01BullOff?: "off" | "wdc" | "pdc";
             /** @description IANA time zone the day streak and daily limits count days in */
             timeZone?: string;
+            /** @description The perks worn on the profile card; read-only here, set through PUT /api/progress/equip */
+            equipped?: {
+                title?: string;
+                banner?: string;
+                colors?: string;
+                emblem?: string | null;
+            };
         };
         Progress: {
             /** @description Total XP */
@@ -2682,6 +2728,78 @@ export interface components {
             streak: components["schemas"]["DayStreak"];
             /** @description Today's daily challenges not done yet (the nav's count) */
             dailyOpen: number;
+            perks: components["schemas"]["Perks"];
+        };
+        /** @description The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked */
+        Equipped: {
+            title: string;
+            banner: string;
+            colors: string;
+            emblem: string | null;
+        };
+        Perks: {
+            /** @description Perk ids unlocked, the level 1 ones included */
+            unlocked: string[];
+            equipped: components["schemas"]["Equipped"];
+        };
+        EquipRequest: {
+            title?: string;
+            banner?: string;
+            colors?: string;
+            /** @description null: no emblem */
+            emblem?: string | null;
+        };
+        PlayerProfile: {
+            id: string;
+            name: string;
+            /** Format: date-time */
+            memberSince: string;
+            /** @enum {string} */
+            relation: "self" | "friend" | "stranger";
+            look: components["schemas"]["Equipped"];
+            level: number;
+            /** @description Both ranked modes; the rating hidden while placing */
+            ranked: {
+                /** @enum {string} */
+                mode: "1v1" | "2v2";
+                rankIndex: number | null;
+                rating: number | null;
+                matches: number;
+                wins: number;
+            }[];
+            /** @description Day streak; friends and yourself only */
+            streak: number | null;
+            /** @description X01 3-dart average over the last 20 games */
+            average: number | null;
+            /** @description The mode played most */
+            favourite: string | null;
+            matches: number;
+            /** @description The viewer's record against them; null on your own profile */
+            headToHead: {
+                wins: number;
+                losses: number;
+            } | null;
+            playsMost: {
+                mode: string;
+                games: number;
+            }[];
+            recent: {
+                id: string;
+                gameId: string;
+                /** Format: date-time */
+                finishedAt: string;
+                placement: number;
+                players: number;
+                /** @description The other seats, by name */
+                others: string[];
+            }[];
+            /** @description Yourself only */
+            xp: number | null;
+            /** @description Yourself only */
+            collection: {
+                unlocked: number;
+                total: number;
+            } | null;
         };
         ChallengeSet: {
             /**
@@ -5699,6 +5817,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GameXp"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    equipPerks: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EquipRequest"];
+            };
+        };
+        responses: {
+            /** @description Your perks */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Perks"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Not unlocked yet, or not a perk of that kind */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getPlayerProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlayerProfile"];
                 };
             };
             401: components["responses"]["Unauthorized"];

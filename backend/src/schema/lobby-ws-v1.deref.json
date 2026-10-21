@@ -3538,6 +3538,13 @@
           "type": "integer",
           "minimum": 1
         },
+        "unlocks": {
+          "type": "array",
+          "description": "Perks newly unlocked (shared/progression.ts PERKS ids).",
+          "items": {
+            "type": "string"
+          }
+        },
         "challenges": {
           "type": "array",
           "description": "Challenges the game completed (and paid).",
@@ -4599,6 +4606,13 @@
             "levelAfter": {
               "type": "integer",
               "minimum": 1
+            },
+            "unlocks": {
+              "type": "array",
+              "description": "Perks newly unlocked (shared/progression.ts PERKS ids).",
+              "items": {
+                "type": "string"
+              }
             },
             "challenges": {
               "type": "array",

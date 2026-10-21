@@ -12,7 +12,53 @@ import {
   stepStreak,
   streakNow,
   xpForLevel,
+  CARD_COLORS,
+  PERKS,
+  equippedOf,
+  levelPerks,
+  nextLevelPerk,
+  streakPerks,
 } from './progression.js'
+
+describe('perks', () => {
+  // WCAG relative luminance and contrast ratio
+  const lum = (hex: string) => {
+    const [r, g, b] = [1, 3, 5]
+      .map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+      .map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b
+  }
+  const contrast = (a: string, b: string) => {
+    const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x)
+    return (hi + 0.05) / (lo + 0.05)
+  }
+
+  it('gives every card colour pair readable contrast', () => {
+    for (const [id, { bg, fg }] of Object.entries(CARD_COLORS)) expect(contrast(bg, fg), id).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('has a colour pair for every colours perk, and unique ids', () => {
+    expect(new Set(PERKS.map(p => p.id)).size).toBe(PERKS.length)
+    for (const p of PERKS.filter(x => x.kind === 'colors')) expect(CARD_COLORS[p.id.slice('colors.'.length)], p.id).toBeDefined()
+  })
+
+  it('unlocks by level and streak', () => {
+    expect(levelPerks(1).map(p => p.id)).toEqual(['title.rookie', 'banner.plain', 'colors.dartcade', 'emblem.dart'])
+    expect(levelPerks(15).map(p => p.id)).toContain('title.oche-regular')
+    expect(streakPerks(7).map(p => p.id)).toEqual(['emblem.flame'])
+    expect(nextLevelPerk(14)?.id).toBe('title.oche-regular')
+    expect(nextLevelPerk(50)).toBeNull()
+  })
+
+  it('reads a stored look, dropping what is unknown or the wrong kind', () => {
+    expect(equippedOf(null)).toEqual({ title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade', emblem: null })
+    expect(equippedOf({ title: 'banner.gold', banner: 'banner.gold', emblem: 'emblem.nope' })).toMatchObject({
+      title: 'title.rookie',
+      banner: 'banner.gold',
+      emblem: null,
+    })
+  })
+})
 
 describe('dailyBonus', () => {
   it('pays 100, 10 more each streak day, 200 from day 11', () => {

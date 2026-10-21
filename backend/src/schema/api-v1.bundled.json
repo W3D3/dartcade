@@ -3769,6 +3769,102 @@
         }
       }
     },
+    "/api/progress/equip": {
+      "put": {
+        "operationId": "equipPerks",
+        "summary": "Wear unlocked perks on your profile card (only the kinds sent change)",
+        "tags": [
+          "progress"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EquipRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Your perks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Perks"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Not unlocked yet, or not a perk of that kind",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/profile": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getPlayerProfile",
+        "summary": "A player's profile: their look, level and rank, stats, and what the viewer may see",
+        "description": "The look, level, rank and stats are public. The day streak shows to friends and yourself; XP and the collection to yourself only. Recent games are public ones and ones the viewer played in (all for yourself).",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "The profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlayerProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/challenges": {
       "get": {
         "operationId": "getChallenges",
@@ -8331,6 +8427,26 @@
             "minLength": 1,
             "maxLength": 64,
             "description": "IANA time zone the day streak and daily limits count days in"
+          },
+          "equipped": {
+            "type": "object",
+            "description": "The perks worn on the profile card; read-only here, set through PUT /api/progress/equip",
+            "additionalProperties": false,
+            "properties": {
+              "title": {
+                "type": "string"
+              },
+              "banner": {
+                "type": "string"
+              },
+              "colors": {
+                "type": "string"
+              },
+              "emblem": {
+                "type": "string",
+                "nullable": true
+              }
+            }
           }
         }
       },
@@ -8340,7 +8456,8 @@
           "xp",
           "level",
           "streak",
-          "dailyOpen"
+          "dailyOpen",
+          "perks"
         ],
         "additionalProperties": false,
         "properties": {
@@ -8360,6 +8477,296 @@
             "type": "integer",
             "minimum": 0,
             "description": "Today's daily challenges not done yet (the nav's count)"
+          },
+          "perks": {
+            "$ref": "#/components/schemas/Perks"
+          }
+        }
+      },
+      "Equipped": {
+        "type": "object",
+        "description": "The perk worn of each kind (shared/progression.ts PERKS ids); no emblem until one is picked",
+        "required": [
+          "title",
+          "banner",
+          "colors",
+          "emblem"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "banner": {
+            "type": "string"
+          },
+          "colors": {
+            "type": "string"
+          },
+          "emblem": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "Perks": {
+        "type": "object",
+        "required": [
+          "unlocked",
+          "equipped"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "unlocked": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Perk ids unlocked, the level 1 ones included"
+          },
+          "equipped": {
+            "$ref": "#/components/schemas/Equipped"
+          }
+        }
+      },
+      "EquipRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "banner": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "colors": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "emblem": {
+            "type": "string",
+            "maxLength": 64,
+            "nullable": true,
+            "description": "null: no emblem"
+          }
+        }
+      },
+      "PlayerProfile": {
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "memberSince",
+          "relation",
+          "look",
+          "level",
+          "ranked",
+          "streak",
+          "average",
+          "favourite",
+          "matches",
+          "headToHead",
+          "playsMost",
+          "recent",
+          "xp",
+          "collection"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "memberSince": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "relation": {
+            "type": "string",
+            "enum": [
+              "self",
+              "friend",
+              "stranger"
+            ]
+          },
+          "look": {
+            "$ref": "#/components/schemas/Equipped"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ranked": {
+            "type": "array",
+            "description": "Both ranked modes; the rating hidden while placing",
+            "items": {
+              "type": "object",
+              "required": [
+                "mode",
+                "rankIndex",
+                "rating",
+                "matches",
+                "wins"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "1v1",
+                    "2v2"
+                  ]
+                },
+                "rankIndex": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "rating": {
+                  "type": "integer",
+                  "nullable": true
+                },
+                "matches": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "wins": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "streak": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Day streak; friends and yourself only"
+          },
+          "average": {
+            "type": "number",
+            "nullable": true,
+            "description": "X01 3-dart average over the last 20 games"
+          },
+          "favourite": {
+            "type": "string",
+            "nullable": true,
+            "description": "The mode played most"
+          },
+          "matches": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "headToHead": {
+            "type": "object",
+            "nullable": true,
+            "description": "The viewer's record against them; null on your own profile",
+            "required": [
+              "wins",
+              "losses"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "wins": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "losses": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          },
+          "playsMost": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "mode",
+                "games"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "mode": {
+                  "type": "string"
+                },
+                "games": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "gameId",
+                "finishedAt",
+                "placement",
+                "players",
+                "others"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "gameId": {
+                  "type": "string"
+                },
+                "finishedAt": {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                "placement": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "players": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "others": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "The other seats, by name"
+                }
+              }
+            }
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0,
+            "nullable": true,
+            "description": "Yourself only"
+          },
+          "collection": {
+            "type": "object",
+            "nullable": true,
+            "description": "Yourself only",
+            "required": [
+              "unlocked",
+              "total"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "unlocked": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
           }
         }
       },

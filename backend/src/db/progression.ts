@@ -311,3 +311,38 @@ export async function streakDays(
     frozen: rows.filter(r => r.kind === 'freeze').map(r => r.source_id),
   }
 }
+
+/** Writes the unlocks the account doesn't have yet; returns those (perk ids). */
+export async function unlock(db: Kysely<Database>, userId: string, perks: { id: string; source: string }[], at: Date): Promise<string[]> {
+  if (perks.length === 0) return []
+  const rows = await db
+    .insertInto('user_unlocks')
+    .values(perks.map(p => ({ user_id: userId, perk_id: p.id, source: p.source, unlocked_at: at })))
+    .onConflict(oc => oc.columns(['user_id', 'perk_id']).doNothing())
+    .returning('perk_id')
+    .execute()
+  return rows.map(r => r.perk_id)
+}
+
+export async function unlockedPerks(db: Kysely<Database>, userId: string): Promise<string[]> {
+  const rows = await db.selectFrom('user_unlocks').select('perk_id').where('user_id', '=', userId).execute()
+  return rows.map(r => r.perk_id)
+}
+
+/** Ranked deeds that unlock perks: 10 ranked wins, a Gold rank (index 15, Gold I) in any mode. */
+export async function rankedDeeds(db: Kysely<Database>, userId: string): Promise<{ wins: number; bestRank: number | null }> {
+  const [wins, rank] = await Promise.all([
+    db
+      .selectFrom('ranked_results')
+      .select(sql<number>`count(*)::int`.as('n'))
+      .where('user_id', '=', userId)
+      .where('won', '=', true)
+      .executeTakeFirstOrThrow(),
+    db
+      .selectFrom('ranked_ratings')
+      .select(sql<number | null>`max(rank_index)`.as('best'))
+      .where('user_id', '=', userId)
+      .executeTakeFirst(),
+  ])
+  return { wins: wins.n, bestRank: rank?.best ?? null }
+}

@@ -379,6 +379,14 @@ export interface UserChallengesTable {
   created_at: ColumnType<Date, never, never>
 }
 
+/** A cosmetic perk an account has unlocked (migration 034). */
+export interface UserUnlocksTable {
+  user_id: string
+  perk_id: string
+  source: string
+  unlocked_at: ColumnType<Date, Date | undefined, never>
+}
+
 export interface ProgressionBackfillTable {
   done_at: ColumnType<Date, Date | undefined, never>
 }
@@ -411,4 +419,5 @@ export interface Database {
   user_progress: UserProgressTable
   progression_backfill: ProgressionBackfillTable
   user_challenges: UserChallengesTable
+  user_unlocks: UserUnlocksTable
 }
