@@ -22,6 +22,7 @@ import { lobbiesApiPlugin } from './api/lobbies.js'
 import { voicesApiPlugin } from './api/voices.js'
 import { friendsApiPlugin } from './api/friends.js'
 import { rankedApiPlugin } from './api/ranked.js'
+import { progressApiPlugin } from './api/progress.js'
 import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
 import { adminUsersApiPlugin } from './api/adminUsers.js'
 import { adminGamesApiPlugin } from './api/adminGames.js'
@@ -209,6 +210,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(voicesApiPlugin, { db })
   await app.register(friendsApiPlugin, { friends })
   await app.register(rankedApiPlugin, { db })
+  await app.register(progressApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })
   await app.register(adminUsersApiPlugin, { db })
   await app.register(adminGamesApiPlugin, { db })

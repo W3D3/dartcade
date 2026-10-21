@@ -333,6 +333,38 @@ export interface WledDevicesTable {
   created_at: ColumnType<Date, never, never>
 }
 
+/** XP paid to an account for one reason (migration 032): unique per user, kind, source_type and source_id. */
+export interface XpLedgerTable {
+  /** BIGSERIAL; node-postgres returns it as a string */
+  id: Generated<string>
+  user_id: string
+  kind: string
+  source_type: string
+  source_id: string
+  amount: number
+  /** DATE, written as YYYY-MM-DD; select it as `local_date::text` (pg reads a DATE as a Date) */
+  local_date: ColumnType<string, string, never>
+  meta: ColumnType<Record<string, unknown>, string | undefined, never>
+  created_at: ColumnType<Date, Date | undefined, never>
+}
+
+/** An account's XP total, level and day streak (migration 032); rebuildable from xp_ledger. */
+export interface UserProgressTable {
+  user_id: string
+  xp_total: ColumnType<number, number | undefined, number>
+  level: ColumnType<number, number | undefined, number>
+  streak_current: ColumnType<number, number | undefined, number>
+  streak_best: ColumnType<number, number | undefined, number>
+  /** DATE; select it as text, like xp_ledger.local_date */
+  streak_last_date: ColumnType<string | null, string | null | undefined, string | null>
+  freezes: ColumnType<number, number | undefined, number>
+  updated_at: ColumnType<Date, Date | undefined, Date>
+}
+
+export interface ProgressionBackfillTable {
+  done_at: ColumnType<Date, Date | undefined, never>
+}
+
 export interface Database {
   user: UserTable
   boards: BoardsTable
@@ -357,4 +389,7 @@ export interface Database {
   feature_flag_overrides: FeatureFlagOverridesTable
   wled_devices: WledDevicesTable
   admin_audit: AdminAuditTable
+  xp_ledger: XpLedgerTable
+  user_progress: UserProgressTable
+  progression_backfill: ProgressionBackfillTable
 }

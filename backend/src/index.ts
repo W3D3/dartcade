@@ -1,5 +1,5 @@
 import { join, dirname } from 'path'
-import { loadFlagUser, modeAvailable, setOverrides } from './flags/index.js'
+import { flagEnabled, loadFlagUser, modeAvailable, setOverrides } from './flags/index.js'
 import { loadOverrides } from './db/flagOverrides.js'
 import { fileURLToPath } from 'url'
 import { db, takeInstanceLock, url as dbUrl } from './db/index.js'
@@ -23,6 +23,7 @@ import { FriendsService } from './friends/service.js'
 import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 import { closePool, warmPool } from './games/minigolfPool.js'
+import { ProgressionService } from './progression/service.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -51,6 +52,15 @@ await seedDev()
 await bootstrapAdmin(db)
 
 const hub = new LobbyHub()
+const progression = new ProgressionService({
+  db,
+  push: async (userId, msg) => {
+    if (await flagEnabled('progression.enabled', await loadFlagUser(db, userId))) hub.sendXp(userId, msg)
+  },
+  warn: (message, details) => {
+    warn(message, details)
+  },
+})
 // The rebuild below can already warn (a log entry that won't parse), before the app and its
 // logger exist: until then warnings go to the console
 let warn = (message: string, details: unknown) => {
@@ -92,6 +102,10 @@ const engine: SessionEngine = new SessionEngine(
     // Not awaited (like the push callback's lights.onPush): a board going idle is not on the game path
     lights.onGameEnded(ended.sessionId).catch((err: unknown) => {
       warn('lights game-end failed', { sessionId: ended.sessionId, error: String(err) })
+    })
+    // Nor is XP: it reads the saved game, which finish() stored before this runs
+    progression.onGameEnded(ended).catch((err: unknown) => {
+      warn('xp for a finished game failed', { sessionId: ended.sessionId, error: String(err) })
     })
     return lobbies.onGameEnded(ended)
   },
@@ -162,3 +176,12 @@ app.addHook('onClose', async () => {
   await closePool()
 })
 await app.listen({ port: PORT, host: '0.0.0.0' })
+// Games from before progression pay once, in the background
+progression
+  .backfill()
+  .then(n => {
+    if (n > 0) app.log.info({ games: n }, 'progression backfill done')
+  })
+  .catch((err: unknown) => {
+    warn('progression backfill failed', { error: String(err) })
+  })

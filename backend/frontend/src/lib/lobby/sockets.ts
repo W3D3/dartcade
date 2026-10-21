@@ -6,7 +6,7 @@ import { writable, type Readable } from 'svelte/store'
 import { WsCloseCode } from '../api/game-ws'
 import { reconnectingSocket, type OpenSocket, type ReconnectingSocket } from '../reconnectingSocket'
 import { LobbyServerMessageSchema, MeServerMessageSchema } from '../api/zod'
-import type { ActiveGame, FriendsMessage, Lobby, LobbyServerMessage, LobbySummary, MeMessage, PendingInvite } from '../api/lobby-ws'
+import type { ActiveGame, FriendsMessage, Lobby, LobbyServerMessage, LobbySummary, MeServerMessage, PendingInvite } from '../api/lobby-ws'
 
 /** Your friends and friend requests (the friends message on /ws/me, GET /api/friends). */
 export type FriendList = Omit<FriendsMessage, 'type'>
@@ -22,7 +22,7 @@ export function parseLobbyMessage(m: unknown): LobbyServerMessage | null {
   return null
 }
 
-export function parseMeMessage(m: unknown): MeMessage | FriendsMessage | null {
+export function parseMeMessage(m: unknown): MeServerMessage | null {
   const r = MeServerMessageSchema.safeParse(m)
   return r.success ? r.data : null
 }

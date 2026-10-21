@@ -1370,6 +1370,45 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Your XP and level */
+        get: operations["getMyProgress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/progress/games/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        /**
+         * What a game paid you
+         * @description 404 while nothing is paid yet (the game is still being settled, or it paid nothing).
+         */
+        get: operations["getGameXp"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/friends": {
         parameters: {
             query?: never;
@@ -2597,6 +2636,26 @@ export interface components {
              * @enum {string}
              */
             x01BullOff?: "off" | "wdc" | "pdc";
+            /** @description IANA time zone the day streak and daily limits count days in */
+            timeZone?: string;
+        };
+        Progress: {
+            /** @description Total XP */
+            xp: number;
+            level: number;
+        };
+        XpLine: {
+            /** @enum {string} */
+            kind: "dart" | "game" | "win" | "ranked" | "oneEighty" | "checkout" | "personalBest" | "daily" | "challenge" | "milestone";
+            amount: number;
+            /** @description Darts thrown, 180s hit */
+            count?: number;
+        };
+        GameXp: {
+            lines: components["schemas"]["XpLine"][];
+            total: number;
+            /** @description Your total XP now */
+            xp: number;
         };
         NameAvailability: {
             available: boolean;
@@ -5505,6 +5564,54 @@ export interface operations {
                 };
             };
             401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getMyProgress: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Your progress */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Progress"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getGameXp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The XP */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GameXp"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };

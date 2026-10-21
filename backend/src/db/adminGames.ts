@@ -1,6 +1,7 @@
 import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
 import { recalculateRatings } from './ranked.js'
+import { revokeGameXp } from './progression.js'
 import type { Database } from './schema.js'
 import { RANKED_MODES, type RankedMode } from '../shared/ranked.js'
 import type { Cursor } from '../history/cursor.js'
@@ -197,6 +198,7 @@ export async function invalidateGame(
       .set({ invalidated_at: new Date(), invalidated_by: moderatorUserId, invalidation_reason: reason })
       .where('id', '=', id)
       .execute()
+    await revokeGameXp(trx, id)
     for (const mode of modes) await recalculateRatings(trx, mode)
     await trx
       .insertInto('admin_audit')
@@ -293,6 +295,7 @@ export async function deleteGame(
     const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
     const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
     await trx.deleteFrom('game_sessions').where('id', '=', id).execute()
+    await revokeGameXp(trx, id)
     for (const mode of modes) await recalculateRatings(trx, mode)
     await trx
       .insertInto('admin_audit')

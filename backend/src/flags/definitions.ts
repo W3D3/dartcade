@@ -49,6 +49,12 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Turns on ranked play: the Matchmaking page, ratings and ranks.',
     defaultRule: 'admins',
   },
+  'progression.enabled': {
+    kind: 'boolean',
+    description:
+      'Turns on progression: XP and levels, the Progress page, the XP chip on the win screen, day streaks, challenges and profile cosmetics.',
+    defaultRule: 'admins',
+  },
   'lights.enabled': {
     kind: 'boolean',
     description: 'Shows Settings → Lights, so players can pair WLED devices and drive them from games.',
@@ -126,6 +132,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('matchmaking.enabled', isAdmin),
+    },
+    'progression.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('progression.enabled', isAdmin),
     },
     'lights.enabled': {
       variants: { on: true, off: false },
