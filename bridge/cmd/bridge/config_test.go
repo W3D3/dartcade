@@ -135,6 +135,28 @@ func TestPersistToken_RewritesExistingKey(t *testing.T) {
 	}
 }
 
+func TestLoadConfig_DefaultsBackendPathToBridge(t *testing.T) {
+	for in, want := range map[string]string{
+		"wss://play.example":          "wss://play.example/bridge",
+		"wss://play.example/":         "wss://play.example/bridge",
+		"ws://localhost:3000?token=x": "ws://localhost:3000/bridge?token=x",
+		"ws://localhost:3000/bridge":  "ws://localhost:3000/bridge",
+		"wss://host/dartcade/bridge":  "wss://host/dartcade/bridge",
+	} {
+		cfg, err := loadConfig(map[string]string{
+			"board_url":   "ws://board:3180",
+			"backend_url": in,
+			"bridge_id":   "br_test",
+		}, "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if cfg.BackendURL != want {
+			t.Errorf("backend_url %q: got %q, want %q", in, cfg.BackendURL, want)
+		}
+	}
+}
+
 func TestLoadConfig_RejectsMalformedBackendURL(t *testing.T) {
 	for _, bad := range []string{"localhost:3000/bridge", "not a url", "ws://%zz"} {
 		_, err := loadConfig(map[string]string{

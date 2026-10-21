@@ -70,8 +70,14 @@ func loadConfig(overrides map[string]string, cfgPath string) (Config, error) {
 	if cfg.BackendURL == "" {
 		return cfg, fmt.Errorf("backend_url is required (--backend-url or DARTCADE_BACKEND_URL)")
 	}
-	if u, err := url.Parse(cfg.BackendURL); err != nil || u.Host == "" {
+	u, err := url.Parse(cfg.BackendURL)
+	if err != nil || u.Host == "" {
 		return cfg, fmt.Errorf("backend_url %q is not a valid URL (want e.g. wss://host/bridge)", cfg.BackendURL)
+	}
+	// A bare host would reach the SPA, which answers the WebSocket dial with 200.
+	if u.Path == "" || u.Path == "/" {
+		u.Path = "/bridge"
+		cfg.BackendURL = u.String()
 	}
 
 	if cfg.BridgeID == "" {
