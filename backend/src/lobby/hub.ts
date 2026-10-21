@@ -1,6 +1,6 @@
 import type { WebSocket } from 'ws'
 import { BrowserConnections } from '../browser-gw/connections.js'
-import type { FriendsMessage, LobbyServerMessage, MeMessage } from '../schema/lobby-ws.js'
+import type { FriendsMessage, LobbyServerMessage, MeMessage, XpGainedMessage } from '../schema/lobby-ws.js'
 
 /** Open lobby sockets (per lobby) and per-user sockets (/ws/me, per user). */
 export class LobbyHub {
@@ -83,6 +83,11 @@ export class LobbyHub {
     const payload = JSON.stringify(msg)
     if (this.lastFriends.get(userId) === payload) return
     this.lastFriends.set(userId, payload)
+    this.users.pushEach(userId, () => msg)
+  }
+
+  /** Sends the user's /ws/me sockets the XP they just earned (never deduplicated: each is news). */
+  sendXp(userId: string, msg: XpGainedMessage): void {
     this.users.pushEach(userId, () => msg)
   }
 }

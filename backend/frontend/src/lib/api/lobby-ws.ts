@@ -82,7 +82,7 @@ export type FriendStatus = FriendPlaying | FriendInLobby | FriendOnline | Friend
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "MeServerMessage".
  */
-export type MeServerMessage = MeMessage | FriendsMessage
+export type MeServerMessage = MeMessage | FriendsMessage | XpGainedMessage
 
 /**
  * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
@@ -466,4 +466,38 @@ export interface OutgoingFriendRequest {
   id: string
   to: UserRef
   createdAt: string
+}
+/**
+ * One reason XP was paid.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "XpLine".
+ */
+export interface XpLine {
+  kind:
+    'dart' | 'game' | 'win' | 'ranked' | 'oneEighty' | 'checkout' | 'personalBest' | 'daily' | 'challenge' | 'milestone'
+  amount: number
+  /**
+   * Darts thrown, 180s hit.
+   */
+  count?: number
+}
+/**
+ * Pushed on /ws/me when you earn XP (progression.enabled), so the win screen and toasts need no polling.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "XpGainedMessage".
+ */
+export interface XpGainedMessage {
+  type: 'xp.gained'
+  /**
+   * The game that paid it; null for XP from elsewhere.
+   */
+  sessionId: string | null
+  lines: XpLine[]
+  total: number
+  xpBefore: number
+  xpAfter: number
+  levelBefore: number
+  levelAfter: number
 }

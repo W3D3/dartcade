@@ -367,10 +367,42 @@
         "outgoing": { "type": "array", "items": { "$ref": "common-v1.json#/$defs/OutgoingFriendRequest" } }
       }
     },
+    "XpLine": {
+      "title": "XpLine",
+      "description": "One reason XP was paid.",
+      "type": "object",
+      "required": ["kind", "amount"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["dart", "game", "win", "ranked", "oneEighty", "checkout", "personalBest", "daily", "challenge", "milestone"]
+        },
+        "amount": { "type": "integer", "minimum": 0 },
+        "count": { "type": "integer", "minimum": 0, "description": "Darts thrown, 180s hit." }
+      }
+    },
+    "XpGainedMessage": {
+      "title": "XpGainedMessage",
+      "description": "Pushed on /ws/me when you earn XP (progression.enabled), so the win screen and toasts need no polling.",
+      "type": "object",
+      "required": ["type", "sessionId", "lines", "total", "xpBefore", "xpAfter", "levelBefore", "levelAfter"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "const": "xp.gained" },
+        "sessionId": { "type": ["string", "null"], "description": "The game that paid it; null for XP from elsewhere." },
+        "lines": { "type": "array", "items": { "$ref": "#/$defs/XpLine" } },
+        "total": { "type": "integer", "minimum": 0 },
+        "xpBefore": { "type": "integer", "minimum": 0 },
+        "xpAfter": { "type": "integer", "minimum": 0 },
+        "levelBefore": { "type": "integer", "minimum": 1 },
+        "levelAfter": { "type": "integer", "minimum": 1 }
+      }
+    },
     "MeServerMessage": {
       "title": "MeServerMessage",
       "description": "Everything /ws/me pushes.",
-      "oneOf": [{ "$ref": "#/$defs/MeMessage" }, { "$ref": "#/$defs/FriendsMessage" }]
+      "oneOf": [{ "$ref": "#/$defs/MeMessage" }, { "$ref": "#/$defs/FriendsMessage" }, { "$ref": "#/$defs/XpGainedMessage" }]
     }
   }
 }

@@ -77,6 +77,10 @@
       "description": "Ranked matchmaking (ratings and ranks per mode)"
     },
     {
+      "name": "progress",
+      "description": "XP, levels, day streaks, challenges and cosmetics (progression.enabled)"
+    },
+    {
       "name": "admin",
       "description": "Admin-only account management (list users, promote or demote admins) and feature flag overrides"
     },
@@ -15544,6 +15548,12 @@
                         "pdc"
                       ],
                       "description": "New game defaults: X01 throw order (off: lobby order)"
+                    },
+                    "timeZone": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "description": "IANA time zone the day streak and daily limits count days in"
                     }
                   }
                 }
@@ -15724,6 +15734,12 @@
                       "pdc"
                     ],
                     "description": "New game defaults: X01 throw order (off: lobby order)"
+                  },
+                  "timeZone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "description": "IANA time zone the day streak and daily limits count days in"
                   }
                 }
               }
@@ -15819,6 +15835,12 @@
                         "pdc"
                       ],
                       "description": "New game defaults: X01 throw order (off: lobby order)"
+                    },
+                    "timeZone": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64,
+                      "description": "IANA time zone the day streak and daily limits count days in"
                     }
                   }
                 }
@@ -22512,6 +22534,364 @@
           },
           "401": {
             "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/progress/me": {
+      "get": {
+        "operationId": "getMyProgress",
+        "summary": "Your XP and level",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "Your progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "xp",
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "xp": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Total XP"
+                    },
+                    "level": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/progress/games/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getGameXp",
+        "summary": "What a game paid you",
+        "description": "404 while nothing is paid yet (the game is still being settled, or it paid nothing).",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "The XP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "lines",
+                    "total",
+                    "xp"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "lines": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "kind",
+                          "amount"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "kind": {
+                            "type": "string",
+                            "enum": [
+                              "dart",
+                              "game",
+                              "win",
+                              "ranked",
+                              "oneEighty",
+                              "checkout",
+                              "personalBest",
+                              "daily",
+                              "challenge",
+                              "milestone"
+                            ]
+                          },
+                          "amount": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "count": {
+                            "type": "integer",
+                            "minimum": 0,
+                            "description": "Darts thrown, 180s hit"
+                          }
+                        }
+                      }
+                    },
+                    "total": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "xp": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Your total XP now"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -40474,6 +40854,122 @@
               "pdc"
             ],
             "description": "New game defaults: X01 throw order (off: lobby order)"
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "IANA time zone the day streak and daily limits count days in"
+          }
+        }
+      },
+      "Progress": {
+        "type": "object",
+        "required": [
+          "xp",
+          "level"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "xp": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total XP"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "XpLine": {
+        "type": "object",
+        "required": [
+          "kind",
+          "amount"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "dart",
+              "game",
+              "win",
+              "ranked",
+              "oneEighty",
+              "checkout",
+              "personalBest",
+              "daily",
+              "challenge",
+              "milestone"
+            ]
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Darts thrown, 180s hit"
+          }
+        }
+      },
+      "GameXp": {
+        "type": "object",
+        "required": [
+          "lines",
+          "total",
+          "xp"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "lines": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "kind",
+                "amount"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "dart",
+                    "game",
+                    "win",
+                    "ranked",
+                    "oneEighty",
+                    "checkout",
+                    "personalBest",
+                    "daily",
+                    "challenge",
+                    "milestone"
+                  ]
+                },
+                "amount": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Darts thrown, 180s hit"
+                }
+              }
+            }
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Your total XP now"
           }
         }
       },
