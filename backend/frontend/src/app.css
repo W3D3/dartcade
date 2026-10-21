@@ -103,8 +103,18 @@
 }
 
 @layer base {
+  /* The app shell sizes itself to h-dvh and scrolls internally; without this, mobile Safari's
+   * elastic bounce can still rubber-band the whole document past the fixed bottom tab bar. */
+  html {
+    height: 100%;
+    overscroll-behavior-y: none;
+  }
+
   body {
     margin: 0;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior-y: none;
     background: var(--color-bg);
     color: var(--color-text);
     font-family: var(--font-sans);
