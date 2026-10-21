@@ -764,12 +764,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       await expect(lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })).rejects.toMatchObject({ statusCode: 400 })
     })
 
-    it("rejects switching the next game away from X01 while a bot is seated — the bot's own guard works both ways", async () => {
+    it('kicks the bots when switching to a game without bot support', async () => {
       await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: {} } })
       await lobbies.addGuest('chris', id, { name: 'Bot Lvl 5', bot: { level: 5 } })
-      await expect(lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })).rejects.toMatchObject({ statusCode: 400 })
-      // The lobby's next game never changed
-      expect((await lobbies.view(id))?.nextGame).toMatchObject({ gameId: 'x01' })
+      await lobbies.update('chris', id, { nextGame: { gameId: 'atc', config: {} } })
+      expect((await lobbies.view(id))?.nextGame).toMatchObject({ gameId: 'atc' })
+      expect((await lobbies.view(id))?.people.some(p => p.bot !== null)).toBe(false)
     })
 
     it('still allows switching between X01 configs (or to no game) while a bot is seated', async () => {
