@@ -1,7 +1,8 @@
 <script lang="ts">
   // The course editor's header: a breadcrumb back to the list, the draft's status, Preview
-  // round, Discard draft and Publish changes, with what refused the last publish listed underneath.
-  import { Play } from '@lucide/svelte'
+  // round, Unpublish, Delete, Discard draft and Publish changes, with what refused the last
+  // publish listed underneath.
+  import { Play, Trash } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { minigolfCoursesTrail } from '$lib/admin/breadcrumbs'
@@ -14,12 +15,15 @@
     savedAt,
     hasDraft,
     published,
+    builtIn = false,
     loaded,
     problems,
     error = null,
     busy = false,
     onpublish,
     ondiscard,
+    onunpublish,
+    ondelete,
     onreload,
   }: {
     courseId: string | null
@@ -31,6 +35,8 @@
     hasDraft: boolean
     /** Published once: a never-published course has nothing to go back to, so no Discard. */
     published: boolean
+    /** Shipped with the code: it can be unpublished, not deleted. */
+    builtIn?: boolean
     /** The course's content arrived (a failed first load isn't retried: nothing to save or publish). */
     loaded: boolean
     /** Why the last publish was refused, one line each. */
@@ -40,6 +46,8 @@
     busy?: boolean
     onpublish: () => void
     ondiscard: () => void
+    onunpublish: () => void
+    ondelete: () => void
     onreload: () => void
   } = $props()
 
@@ -74,6 +82,8 @@
         <span class="text-[13px] {failing ? 'text-live-text' : 'text-text-muted'}" aria-live="polite">{STATUS[status]()}</span>
         {#if status === 'conflict'}<Button variant="outline" onclick={onreload}>Reload</Button>{/if}
         <Button variant="ghost" href="#/admin/minigolf?course={courseId}&draft=1"><Play size={16} />Preview round</Button>
+        {#if published}<Button variant="outline" disabled={busy || !editable} onclick={onunpublish}>Unpublish</Button>{/if}
+        {#if !builtIn}<Button variant="ghost" disabled={busy || !loaded} onclick={ondelete}><Trash size={16} />Delete</Button>{/if}
         <Button variant="destructive" disabled={busy || !editable || !hasDraft || !published} onclick={ondiscard}>Discard draft</Button>
         <Button variant="accent" class="h-10" disabled={busy || !editable} onclick={onpublish}>Publish changes</Button>
       </div>

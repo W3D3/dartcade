@@ -1,7 +1,7 @@
 import { test, expect } from '../fixtures/auth.js'
 import { endAnyRunningGame, startGame } from '../fixtures/lobby.js'
 
-// A fresh course, not the shared seeded "test" course: this spec publishes a change, and the
+// A fresh course, not a shared seeded one: this spec publishes a change, and the
 // other Minigolf specs (the bench, game-minigolf) must keep working no matter the run order.
 test('an admin edits a hole, publishes a course, and a new game plays it', async ({ adminPage: page }) => {
   test.setTimeout(60_000)

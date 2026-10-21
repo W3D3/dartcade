@@ -14,7 +14,9 @@ import {
   saveCourseDraft,
   publishCourse,
   discardCourseDraft,
+  unpublishCourse,
   deleteCourse,
+  isBuiltInCourse,
   listHoles,
   getHole,
   createHole,
@@ -63,11 +65,12 @@ type ApiCourse = Omit<CourseRow, 'updatedAt' | 'publishedAt' | 'draft'> & {
   publishedAt: string | null
   draft?: CourseRow['draft']
   hasChanges?: boolean
+  builtIn?: boolean
 }
 
 /**
- * A course row as the API returns it. Admins get `draft` and `hasChanges`: its own draft, or a
- * draft of one of its holes (`drafted`, from draftedHoleIds); a player gets neither.
+ * A course row as the API returns it. Admins get `draft`, `hasChanges` (its own draft, or a
+ * draft of one of its holes: `drafted`, from draftedHoleIds) and `builtIn`; a player gets none.
  */
 function serializeCourse(row: CourseRow, drafted: Set<string> | null): ApiCourse {
   const base = {
@@ -81,7 +84,7 @@ function serializeCourse(row: CourseRow, drafted: Set<string> | null): ApiCourse
   }
   if (!drafted) return base
   const hasChanges = row.draft !== null || (row.published?.holeIds ?? []).some(id => drafted.has(id))
-  return { ...base, draft: row.draft, hasChanges }
+  return { ...base, draft: row.draft, hasChanges, builtIn: isBuiltInCourse(row.id) }
 }
 
 type ApiHoleRow = Omit<HoleRow, 'updatedAt' | 'publishedAt' | 'published' | 'draft'> & {
@@ -156,6 +159,7 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
     '/api/minigolf/courses/:id',
     { preValidation: adminOnly, schema: fromSpec('deleteMinigolfCourse') },
     async (req, reply) => {
+      if (isBuiltInCourse(req.params.id)) throw new ApiError(409, { error: 'built-in course' })
       if (!(await deleteCourse(db, req.params.id))) return reply.code(404).send({ error: 'not found' })
       return reply.code(204).send()
     },
@@ -177,6 +181,16 @@ export function minigolfCoursesApiPlugin(app: FastifyInstance, opts: Opts, done:
     { preValidation: adminOnly, schema: fromSpec('discardMinigolfCourse') },
     async req => {
       const result = await discardCourseDraft(db, req.params.id)
+      if (result === 'missing') throw new ApiError(404, { error: 'not found' })
+      return serializeCourse(result, await draftedHoleIds(db))
+    },
+  )
+
+  app.post<Route<'unpublishMinigolfCourse'>>(
+    '/api/minigolf/courses/:id/unpublish',
+    { preValidation: adminOnly, schema: fromSpec('unpublishMinigolfCourse') },
+    async req => {
+      const result = await unpublishCourse(db, req.params.id)
       if (result === 'missing') throw new ApiError(404, { error: 'not found' })
       return serializeCourse(result, await draftedHoleIds(db))
     },

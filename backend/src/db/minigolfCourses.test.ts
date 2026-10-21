@@ -15,6 +15,8 @@ import {
   discardCourseDraft,
   deleteHole,
   deleteCourse,
+  isBuiltInCourse,
+  unpublishCourse,
   publishedCourse,
   publishedOfficialHoles,
   type CourseContent,
@@ -36,8 +38,14 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
     await close()
   })
 
-  it('seeds the official courses, published, with their holes', async () => {
+  it('seeds Greenhorn and Kingfisher, published, with their holes; the test course is not built in', async () => {
     await seedOfficialCourses(db)
+    expect(await getCourse(db, testCourse.id)).toBeUndefined()
+    expect(isBuiltInCourse(greenhornCourse.id)).toBe(true)
+    expect(isBuiltInCourse(kingfisherCourse.id)).toBe(true)
+    expect(isBuiltInCourse(testCourse.id)).toBe(false)
+    // The tests below work on the test course: seeded the same way
+    await seedOfficialCourses(db, [{ course: testCourse, description: 'A short course to try the physics.', difficulty: 1 }])
     for (const [seeded, difficulty] of [
       [testCourse, 1],
       [greenhornCourse, 1],
@@ -401,13 +409,28 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
     expect(await saveHoleDraft(db, 'publish-conflict-hole', 1, hole)).toBe('conflict')
   })
 
-  it('seeding again after every course was deleted recreates the test course without failing on its still-existing holes', async () => {
+  it('unpublishing keeps the published content as the draft (or the draft already there), out of play', async () => {
+    const published = await getCourse(db, 'test')
+    const result = await unpublishCourse(db, 'test')
+    if (result === 'missing') throw new Error('expected the course')
+    expect(result).toMatchObject({ published: null, publishedAt: null, draft: published?.published })
+    expect(result.version).toBeGreaterThan(published?.version ?? 0)
+    expect((await listCourses(db, { drafts: false })).map(c => c.id)).not.toContain('test')
+    expect(await publishedCourse(db, 'test')).toBeUndefined()
+    const draft: CourseContent = { ...result.draft!, name: 'Test, edited' }
+    const saved = await saveCourseDraft(db, 'test', result.version, draft)
+    if (typeof saved === 'string') throw new Error('expected a save')
+    expect((await unpublishCourse(db, 'test')) as { draft: unknown }).toMatchObject({ draft })
+    expect(await unpublishCourse(db, 'nope')).toBe('missing')
+  })
+
+  it('seeding again after every course was deleted recreates Greenhorn without failing on its still-existing holes', async () => {
     for (const c of await listCourses(db, { drafts: true })) await deleteCourse(db, c.id)
     expect(await listCourses(db, { drafts: true })).toEqual([])
 
     await expect(seedOfficialCourses(db)).resolves.toBeUndefined()
 
-    const course = await getCourse(db, 'test')
-    expect(course?.published?.holeIds).toEqual(testCourse.holes.map(h => h.id))
+    const course = await getCourse(db, greenhornCourse.id)
+    expect(course?.published?.holeIds).toEqual(greenhornCourse.holes.map(h => h.id))
   })
 })

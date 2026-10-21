@@ -4363,7 +4363,7 @@
       },
       "delete": {
         "operationId": "deleteMinigolfCourse",
-        "summary": "Delete a course (admin)",
+        "summary": "Delete a course; a built-in course can't be deleted, only unpublished (admin)",
         "tags": [
           "minigolf"
         ],
@@ -4379,6 +4379,9 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -4442,6 +4445,44 @@
         "responses": {
           "200": {
             "description": "The course, draft discarded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MinigolfCourse"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/minigolf/courses/{id}/unpublish": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/MinigolfCourseId"
+        }
+      ],
+      "post": {
+        "operationId": "unpublishMinigolfCourse",
+        "summary": "Take the course out of play: its published content becomes its draft (unless it has one), and Publish brings it back (admin)",
+        "tags": [
+          "minigolf"
+        ],
+        "responses": {
+          "200": {
+            "description": "The course, unpublished",
             "content": {
               "application/json": {
                 "schema": {
@@ -10254,6 +10295,10 @@
           "hasChanges": {
             "type": "boolean",
             "description": "Something to publish: its own draft, or a draft of one of its holes"
+          },
+          "builtIn": {
+            "type": "boolean",
+            "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
           },
           "version": {
             "type": "integer",
