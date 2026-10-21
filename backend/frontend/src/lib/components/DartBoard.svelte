@@ -569,7 +569,10 @@
       {#each darts as dart, i (i)}
         {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
         {@const selected = selectedDart === i}
-        {#if pos}
+        <!-- The dart being aimed (long-press correction) is hidden: the crosshair takes its place -->
+        {#if aim?.dart === i}
+          <!-- hidden -->
+        {:else if pos}
           <!-- The segment label only shows while the dart is hovered, selected or dragged -->
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <g
