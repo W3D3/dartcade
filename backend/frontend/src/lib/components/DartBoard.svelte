@@ -592,10 +592,14 @@
                 stroke-dasharray="0.02 0.015"
               />
             {/if}
+            {#if i === darts.length - 1}
+              <!-- The most recent dart gets one extra outline ring -->
+              <circle data-last-dart cx={pos.x} cy={-pos.y} r="0.045" fill="none" stroke="#ffffff" stroke-width="0.008" />
+            {/if}
             <circle
               cx={pos.x}
               cy={-pos.y}
-              r={selected ? 0.05 : 0.04}
+              r={selected ? 0.04 : 0.03}
               fill={DOT_COLORS[i % DOT_COLORS.length]}
               stroke={DOT_STROKE}
               stroke-width="0.008"

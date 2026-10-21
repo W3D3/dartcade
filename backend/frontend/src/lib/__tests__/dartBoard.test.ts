@@ -60,3 +60,12 @@ describe('DartBoard camera still', () => {
     expect(out).toMatch(new RegExp(`<clipPath id="${group?.[1]}"><circle cx="0" cy="0" r="1.12"`))
   })
 })
+
+describe('DartBoard last dart', () => {
+  const dart = (x: number) => ({ segment: { name: 'S20', number: 20, bed: 'Single', multiplier: 1 }, score: 20, coords: { x, y: 0.6 } })
+
+  it('outlines only the most recent dart', () => {
+    expect(html({ darts: [dart(0), dart(0.1), dart(0.2)] }).match(/data-last-dart/g)).toHaveLength(1)
+    expect(html({ darts: [] })).not.toContain('data-last-dart')
+  })
+})
