@@ -1,11 +1,12 @@
 <script lang="ts">
-  // The ⋯ on a friend's row: Remove friend (asks first). View profile comes later.
+  // The ⋯ on a friend's row: View profile, Remove friend (asks first).
   import { Ellipsis } from '@lucide/svelte'
+  import { push } from 'svelte-spa-router'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import MenuItem from '$lib/components/lobby/MenuItem.svelte'
   import PopoverMenu from '$lib/components/lobby/PopoverMenu.svelte'
 
-  let { name, onremove }: { name: string; onremove: () => void } = $props()
+  let { userId, name, onremove }: { userId: string; name: string; onremove: () => void } = $props()
   let confirming = $state(false)
 </script>
 
@@ -18,6 +19,13 @@
 >
   {#snippet trigger()}<Ellipsis size={20} />{/snippet}
   {#snippet children(close: () => void)}
+    <MenuItem
+      label="View profile"
+      onclick={() => {
+        close()
+        void push(`/profile/${userId}`)
+      }}
+    />
     <MenuItem
       label="Remove friend"
       danger

@@ -20,6 +20,7 @@
   import Invites from './routes/Invites.svelte'
   import Settings from './routes/Settings.svelte'
   import Friends from './routes/Friends.svelte'
+  import Profile from './routes/Profile.svelte'
   import PickName from './routes/PickName.svelte'
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
@@ -86,6 +87,8 @@
     '/settings': Settings,
     '/settings/:section': Settings,
     '/friends': Friends,
+    '/profile': Profile,
+    '/profile/:id': Profile,
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
     '/admin': Admin,

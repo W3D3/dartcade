@@ -67,5 +67,5 @@
       <Check size={16} strokeWidth={3} class="text-accent" />Invited
     </span>
   {/if}
-  <FriendMenu name={friend.name} {onremove} />
+  <FriendMenu userId={friend.id} name={friend.name} {onremove} />
 </li>
