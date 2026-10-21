@@ -164,6 +164,10 @@ export function createBotScheduler(engine: SessionEngine, warn: WarnFn = () => u
     // bulloff_start/bulloff_rethrow aren't seat actions (SEAT_ACTIONS), only the host may send
     // them, so this goes out as the session owner rather than the current seat's controller.
     if (view.phase === 'bulloff' && view.bullOff?.result) {
+      // A human's screen runs the result countdown and starts the game (or skips it); a bot
+      // must never skip it, so only an all-bot game, which has no screen to do so, is nudged.
+      const rethrow = view.bullOff.result.rethrow
+      if (!rethrow && current.seats.some(s => !s.bot)) return
       await engine.onUserAction(sessionId, current.ownerUserId, {
         type: view.bullOff.result.rethrow ? 'bulloff_rethrow' : 'bulloff_start',
       })
