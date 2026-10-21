@@ -22,7 +22,7 @@
       id="xp-breakdown"
       class="absolute inset-x-0 bottom-full mb-2 z-10 rounded-[14px] border border-line-popover bg-surface-2 px-[14px] pt-[6px] pb-3 shadow-popover"
     >
-      {#each gain.lines as line (line.kind)}
+      {#each gain.lines as line, i (i)}
         <div class="flex justify-between gap-3 py-[9px] border-b border-line-2 text-[14px] text-ink-2">
           <span>{lineLabel(line)}</span><b class="font-semibold text-text tabular-nums">+{fmtXp(line.amount)}</b>
         </div>

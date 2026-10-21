@@ -43,6 +43,7 @@ const LABELS: Record<XpLine['kind'], string> = {
 
 /** 'Darts thrown · 42', '180 × 2', 'Win' */
 export function lineLabel(line: XpLine): string {
+  if (line.title) return line.title
   const label = LABELS[line.kind]
   if (line.count === undefined) return label
   if (line.kind === 'dart') return `${label} · ${line.count}`
@@ -70,9 +71,9 @@ export function milestoneLine(m: { days: number; xp: number }): string {
 /** A toast for progress that lands outside the win screen's chip. */
 export type ProgressToast = { icon: 'freeze' | 'milestone' | 'challenge'; title: string; text: string; xp: number | null }
 
-/** The toasts an xp.gained brings: a freeze spent, a milestone reached. */
+/** The toasts an xp.gained brings: challenges done, a freeze spent, a milestone reached. */
 export function toastsFor(m: XpGainedMessage): ProgressToast[] {
-  const out: ProgressToast[] = []
+  const out: ProgressToast[] = (m.challenges ?? []).map(c => ({ icon: 'challenge', title: 'Challenge complete', text: c.title, xp: c.xp }))
   const s = m.streak
   if (s?.frozeDay) {
     const left = `${s.freezes} ${s.freezes === 1 ? 'freeze' : 'freezes'} left`

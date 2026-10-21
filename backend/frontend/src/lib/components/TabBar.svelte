@@ -1,5 +1,6 @@
 <script lang="ts">
   // The phone's main navigation (below md): Play, Ranked with matchmaking on, Live, Tournaments, History.
+  import { progress } from '$lib/progress/store'
   import { location } from 'svelte-spa-router'
   import { navTabs, isActiveRoute } from '$lib/nav'
   import { activeSessionId } from '$lib/activeSession'
@@ -9,7 +10,9 @@
 
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
-  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression))
+  const tabs = $derived(
+    navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression ? ($progress?.dailyOpen ?? 0) : null),
+  )
 </script>
 
 <nav

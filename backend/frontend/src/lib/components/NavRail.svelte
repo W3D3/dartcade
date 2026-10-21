@@ -1,6 +1,7 @@
 <script lang="ts">
   // The tablet's main navigation (md up to xl): an 88 px icon rail with the phone's tabs, the
   // Lobby item, Friends and the avatar that opens the account menu. Desktops get SideNav instead.
+  import { progress } from '$lib/progress/store'
   import { location, push } from 'svelte-spa-router'
   import { Plus, House } from '@lucide/svelte'
   import { navTabs, isActiveRoute, railLobby } from '$lib/nav'
@@ -16,7 +17,9 @@
 
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
-  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression))
+  const tabs = $derived(
+    navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression ? ($progress?.dailyOpen ?? 0) : null),
+  )
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))
   const lobbyLink = $derived(lobby && lobby.kind !== 'create' ? lobby : null)
   let error = $state('')

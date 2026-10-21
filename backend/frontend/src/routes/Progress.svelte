@@ -1,7 +1,9 @@
 <script lang="ts">
-  // Progress (Progress / Mobile-Progress boards): your level and XP, and your day streak. Behind progression.enabled;
-  // without it the page says it isn't on. Rules: shared/progression.ts.
+  // Progress (Progress / Mobile-Progress boards): your level and XP, your day streak, your daily and
+  // weekly challenges. Behind progression.enabled; without it the page says it isn't on.
+  // Rules: shared/progression.ts, backend progression/.
   import { LoaderCircle } from '@lucide/svelte'
+  import ChallengesSection from '$lib/components/progress/ChallengesSection.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
   import StreakCard from '$lib/components/progress/StreakCard.svelte'
@@ -29,6 +31,7 @@
         <LevelCard xp={$progress.xp} />
         <StreakCard streak={$progress.streak} />
       </div>
+      <ChallengesSection />
     {/if}
   </main>
 </Layout>

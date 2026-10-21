@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { get, writable } from 'svelte/store'
 import { chipMotion, levelView, lineLabel, milestoneLine, streakLine, toastsFor } from '../progress/view.js'
-import { createGameGain, createProgress } from '../progress/store.js'
+import { createGameGain, createProgress, type Progress } from '../progress/store.js'
 import type { XpGainedMessage } from '../api/lobby-ws.js'
 
 describe('levelView', () => {
@@ -27,6 +27,7 @@ describe('lineLabel', () => {
     expect(lineLabel({ kind: 'oneEighty', amount: 25, count: 1 })).toBe('180')
     expect(lineLabel({ kind: 'win', amount: 100 })).toBe('Win')
     expect(lineLabel({ kind: 'daily', amount: 160, count: 7 })).toBe('First game of the day · day 7')
+    expect(lineLabel({ kind: 'challenge', amount: 40, title: 'Hit 5 trebles' })).toBe('Hit 5 trebles')
   })
 })
 
@@ -64,6 +65,9 @@ describe('streak copy', () => {
       { icon: 'milestone', title: '7-day streak', text: 'New: flame emblem', xp: 250 },
     ])
     expect(toastsFor(gained())).toEqual([])
+    expect(toastsFor(gained({ challenges: [{ title: 'Throw 100 darts on a board', xp: 40, period: 'daily' }] }))).toEqual([
+      { icon: 'challenge', title: 'Challenge complete', text: 'Throw 100 darts on a board', xp: 40 },
+    ])
   })
 })
 
@@ -75,10 +79,10 @@ describe('createProgress', () => {
     playedToday: false,
     bonus: 100,
     today: '2026-10-21',
-    days: [],
+    days: [] as Progress['streak']['days'],
     nextMilestone: { days: 7, xp: 250 },
   }
-  const at = (xp: number) => ({ xp, level: 1, streak, dailyOpen: 3 })
+  const at = (xp: number): Progress => ({ xp, level: 1, streak, dailyOpen: 3 })
 
   it('reads your progress, shows a push at once and reads again', async () => {
     const xp = writable<XpGainedMessage | null>(null)

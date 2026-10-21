@@ -21,18 +21,22 @@ describe('navTabs', () => {
   })
 
   it('puts the pending invites on the Play tab', () => {
-    expect(navTabs(null, 2)[0]).toEqual({ href: '/', label: 'Play', icon: 'play', badge: 2 })
+    expect(navTabs(null, 2)[0]).toEqual({ href: '/', label: 'Play', icon: 'play', badge: 2, badgeLabel: '2 pending invites' })
     expect(navTabs(null, 0)[0]).toEqual({ href: '/', label: 'Play', icon: 'play' })
   })
 })
 
 describe('Progress in the nav', () => {
   it('takes the Tournaments tab while progression is on', () => {
-    expect(navTabs('s1', 0, true, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Progress', 'History'])
-    expect(navTabs('s1', 0, false, true)[2]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
+    expect(navTabs('s1', 0, true, 0).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Progress', 'History'])
+    expect(navTabs('s1', 0, false, 0)[2]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
+  })
+  it("counts today's open daily challenges", () => {
+    expect(navTabs('s1', 0, false, 2)[2]).toMatchObject({ badge: 2, badgeLabel: '2 daily challenges to go' })
+    expect(sideLinks('s1', false, false, 1).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
   })
   it('sits before Settings in the side nav', () => {
-    expect(sideLinks('s1', false, false, true).map(l => l.label)).toEqual([
+    expect(sideLinks('s1', false, false, 0).map(l => l.label)).toEqual([
       'Play',
       'Live match',
       'Tournaments',
