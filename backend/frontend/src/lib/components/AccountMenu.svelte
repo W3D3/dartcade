@@ -42,10 +42,8 @@
     statusError = (await setInvisible(next)) ?? ''
   }
 
-  // The Friends drawer is a modal dialog drawn over the menu, so opening the menu closes it.
   function toggle() {
     open = !open
-    if (open) friendsDrawerOpen.set(false)
   }
 
   // Closing by any route (Escape, an outside click, choosing an item) returns focus to the trigger.
@@ -63,8 +61,11 @@
     friendsDrawerOpen.set(true)
   }
 
+  // Capture phase, so Escape closes only the menu and not the Friends drawer under it.
   function onKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && open) closeMenu()
+    if (e.key !== 'Escape' || !open) return
+    e.stopPropagation()
+    closeMenu()
   }
 
   // Opening moves focus into the menu, onto its first focusable control.
@@ -73,7 +74,7 @@
   })
 </script>
 
-<svelte:window onkeydown={onKeydown} />
+<svelte:window onkeydowncapture={onKeydown} />
 
 {#snippet avatar(size: number)}
   <span class="relative shrink-0 m-1">
@@ -120,12 +121,13 @@
     </button>
   {/if}
   {#if open}
-    <div class="fixed inset-0 z-40" onclick={closeMenu} aria-hidden="true"></div>
+    <!-- Above the Friends drawer (z-40/50), so the menu opens over it and the drawer stays open. -->
+    <div class="fixed inset-0 z-[60]" onclick={closeMenu} aria-hidden="true"></div>
     <div
       bind:this={menuEl}
       role="menu"
       aria-label="Account"
-      class="{MENU_POSITION[placement]} z-50 box-border p-3 rounded-[14px]
+      class="{MENU_POSITION[placement]} z-[70] box-border p-3 rounded-[14px]
                 bg-surface-2 border border-line-3 shadow-popover flex flex-col gap-2"
     >
       <div class="flex items-center gap-3 min-w-0 px-1">
