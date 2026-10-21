@@ -180,7 +180,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
-  await app.register(usersApiPlugin, { db })
+  await app.register(usersApiPlugin, { db, friends })
   await app.register(meApiPlugin, {
     db,
     onChanged: userId => {

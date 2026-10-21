@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession, insertBoard } from './queries.js'
-import { listFinishedGames, getStatRows, getViewableGame, getBestStat } from './history.js'
+import { listFinishedGames, getStatRows, getViewableGame, getBestStat, headToHead } from './history.js'
 import type { Database } from './schema.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
@@ -176,5 +176,32 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     ])
     const { games } = await listFinishedGames(db, 'u2', { limit: 10, after: null })
     expect(games.find(x => x.id === 'x-bot')?.seats.map(s => s.bot_level)).toEqual([null, 4, null])
+  })
+
+  it("a user's record against another: games both placed in, on different seats", async () => {
+    // u1 beats u2, then u2 beats u1; x-other (u2 solo) and x-1/x-2 (u1 with a guest) don't count
+    await game(
+      'h2h-1',
+      'x01',
+      'u1',
+      [
+        { name: 'One', user_id: 'u1' },
+        { name: 'Two', user_id: 'u2' },
+      ],
+      t(12),
+    )
+    await game(
+      'h2h-2',
+      'x01',
+      'u1',
+      [
+        { name: 'Two', user_id: 'u2' },
+        { name: 'One', user_id: 'u1' },
+      ],
+      t(13),
+    )
+    expect(await headToHead(db, 'u1', 'u2')).toEqual({ wins: 1, losses: 1 })
+    expect(await headToHead(db, 'u2', 'u1')).toEqual({ wins: 1, losses: 1 })
+    expect(await headToHead(db, 'u1', 'ghost')).toEqual({ wins: 0, losses: 0 })
   })
 })

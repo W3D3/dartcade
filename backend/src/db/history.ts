@@ -202,6 +202,24 @@ export async function getViewableGame(db: Kysely<Database>, id: string, userId: 
   return toGame(row, seats, row.my_seat)
 }
 
+/** `a`'s record against `b`: finished, placed games where both held a seat, on different seats. */
+export async function headToHead(db: Kysely<Database>, a: string, b: string): Promise<{ wins: number; losses: number }> {
+  const row = await db
+    .selectFrom('game_sessions as gs')
+    .innerJoin('game_players as pa', join => join.onRef('pa.session_id', '=', 'gs.id').on('pa.user_id', '=', a))
+    .innerJoin('game_players as pb', join => join.onRef('pb.session_id', '=', 'gs.id').on('pb.user_id', '=', b))
+    .where('gs.status', '=', 'finished')
+    .where('pa.placement', 'is not', null)
+    .where('pb.placement', 'is not', null)
+    .whereRef('pa.seat', '!=', 'pb.seat')
+    .select([
+      sql<string>`count(*) FILTER (WHERE pa.placement < pb.placement)`.as('wins'),
+      sql<string>`count(*) FILTER (WHERE pa.placement > pb.placement)`.as('losses'),
+    ])
+    .executeTakeFirst()
+  return { wins: Number(row?.wins ?? 0), losses: Number(row?.losses ?? 0) }
+}
+
 /** Any finished game with a result, whoever played it (admins). `mySeat` is null. */
 export async function getFinishedGame(db: Kysely<Database>, id: string): Promise<HistoryGame | undefined> {
   const row = await finishedGames(db).where('gs.id', '=', id).executeTakeFirst()

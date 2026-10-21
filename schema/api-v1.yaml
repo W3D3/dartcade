@@ -1663,6 +1663,18 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/users/{id}/profile:
+    parameters: [{ $ref: '#/components/parameters/ProfileUserId' }]
+    get:
+      operationId: getUserProfile
+      summary: A user's profile; full stats for yourself or a friend, identity only otherwise
+      tags: [users]
+      responses:
+        '200': { description: The profile, content: { application/json: { schema: { $ref: '#/components/schemas/UserProfile' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/minigolf/courses:
     get:
       operationId: listMinigolfCourses
@@ -1934,6 +1946,11 @@ components:
       in: path
       required: true
       schema: { type: string, minLength: 1 }
+    ProfileUserId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
     MinigolfCourseId:
       name: id
       in: path
@@ -2121,6 +2138,61 @@ components:
           items: { $ref: '#/components/schemas/RankedRating' }
         onlineAverage: { type: number, nullable: true, description: '3-dart average over the last 20 ranked games; null before the first' }
         recent: { type: array, description: 'Last ranked games, newest first', items: { $ref: '#/components/schemas/RankedGame' } }
+
+    ProfileRelation:
+      type: object
+      required: [kind, requestId]
+      additionalProperties: false
+      properties:
+        kind: { type: string, enum: [self, friend, incoming, outgoing, none] }
+        requestId:
+          type: string
+          nullable: true
+          description: 'Set for incoming/outgoing: the friend request to accept, decline or cancel'
+    PlaysMostEntry:
+      type: object
+      required: [mode, pct]
+      additionalProperties: false
+      properties:
+        mode: { type: string }
+        pct: { type: number, minimum: 0, maximum: 100 }
+    HeadToHead:
+      type: object
+      required: [wins, losses]
+      additionalProperties: false
+      properties:
+        wins: { type: integer, minimum: 0 }
+        losses: { type: integer, minimum: 0 }
+    UserProfile:
+      type: object
+      required: [id, name, createdAt, isSelf, relation, online, ranked, stats, recentMatches, playsMost, headToHead]
+      additionalProperties: false
+      properties:
+        id: { type: string }
+        name: { type: string }
+        createdAt: { type: string, format: date-time }
+        isSelf: { type: boolean }
+        relation: { $ref: '#/components/schemas/ProfileRelation' }
+        online: { type: boolean, nullable: true, description: 'Whether they are online now; null unless isSelf or a friend' }
+        ranked:
+          description: 'null unless isSelf or a friend'
+          anyOf: [{ $ref: '#/components/schemas/RankedProfile' }, { type: string, nullable: true, enum: [null] }]
+        stats:
+          description: 'Stat aggregates, last 30 days; null unless isSelf or a friend'
+          anyOf: [{ $ref: '#/components/schemas/GameStats' }, { type: string, nullable: true, enum: [null] }]
+        recentMatches:
+          type: array
+          nullable: true
+          description: 'Last finished games, newest first; null unless isSelf or a friend'
+          items: { $ref: '#/components/schemas/GameSummary' }
+        playsMost:
+          type: array
+          nullable: true
+          description: 'Share of games played per mode, highest first; null unless isSelf or a friend'
+          items: { $ref: '#/components/schemas/PlaysMostEntry' }
+        headToHead:
+          description: "The viewer's record against them; null for your own profile"
+          anyOf: [{ $ref: '#/components/schemas/HeadToHead' }, { type: string, nullable: true, enum: [null] }]
 
     HistoryDart:
       type: object

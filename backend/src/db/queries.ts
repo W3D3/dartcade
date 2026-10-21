@@ -443,3 +443,10 @@ export async function getUsersByIds(db: Kysely<Database>, ids: string[]): Promis
   if (ids.length === 0) return []
   return db.selectFrom('user').select(['id', 'name']).where('id', 'in', ids).execute()
 }
+
+export type ProfileUser = { id: string; name: string; createdAt: Date; invisible: boolean }
+
+/** A user's identity for the profile page; undefined for an unknown id. */
+export async function getProfileUser(db: Kysely<Database>, id: string): Promise<ProfileUser | undefined> {
+  return db.selectFrom('user').select(['id', 'name', 'createdAt', 'invisible']).where('id', '=', id).executeTakeFirst()
+}

@@ -20,6 +20,7 @@ import {
   deleteBoard,
   searchUsers,
   getUsersByIds,
+  getProfileUser,
 } from './queries.js'
 import { PairingCodeClaimedError } from './errors.js'
 import type { Kysely } from 'kysely'
@@ -463,6 +464,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
     it('reads accounts by id', async () => {
       const rows = await getUsersByIds(db, ['u-test-2', 'missing'])
       expect(rows).toEqual([{ id: 'u-test-2', name: 'Test 2' }])
+    })
+
+    it("reads a user's identity for the profile page; undefined for an unknown id", async () => {
+      const user = await getProfileUser(db, 'u-test-2')
+      expect(user).toMatchObject({ id: 'u-test-2', name: 'Test 2', invisible: false })
+      expect(user?.createdAt).toBeInstanceOf(Date)
+      expect(await getProfileUser(db, 'missing')).toBeUndefined()
     })
   })
 })

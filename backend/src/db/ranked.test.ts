@@ -2,7 +2,16 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
-import { type RankedSide, getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult, x01Average } from './ranked.js'
+import {
+  type RankedSide,
+  getRankedProfile,
+  getRatings,
+  onlineAverage,
+  ratingChangeSince,
+  recentRanked,
+  recordRankedResult,
+  x01Average,
+} from './ranked.js'
 import { rankIndexFor } from '../shared/ranked.js'
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
@@ -197,5 +206,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
     const change = await ratingChangeSince(db, 'chris', at(1))
     expect(change['2v2']).toBe(0)
     expect(change['1v1']).toBe(recent[1].change)
+  })
+
+  it('getRankedProfile composes ratings, online average and recent games for the API', async () => {
+    const now = at(30)
+    const [ratings, change, average, recent] = await Promise.all([
+      getRatings(db, 'tom'),
+      ratingChangeSince(db, 'tom', new Date(now.getTime() - 30 * 86_400_000)),
+      onlineAverage(db, 'tom'),
+      recentRanked(db, 'tom'),
+    ])
+    const profile = await getRankedProfile(db, 'tom', now)
+    expect(profile.onlineAverage).toBe(average)
+    expect(profile.recent).toEqual(recent.map(r => ({ ...r, at: r.at.toISOString() })))
+    expect(profile.ratings).toEqual(
+      ['1v1', '2v2'].map(mode => {
+        const r = ratings[mode as '1v1' | '2v2']
+        return { ...r, rating: r.rankIndex === null ? null : r.rating, change30d: change[mode as '1v1' | '2v2'] }
+      }),
+    )
   })
 })

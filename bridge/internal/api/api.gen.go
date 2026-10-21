@@ -85,6 +85,9 @@ type MinigolfHoleId = string
 // PersonId defines model for PersonId.
 type PersonId = string
 
+// ProfileUserId defines model for ProfileUserId.
+type ProfileUserId = string
+
 // SessionId defines model for SessionId.
 type SessionId = string
 

@@ -1389,6 +1389,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/users/{id}/profile": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ProfileUserId"];
+            };
+            cookie?: never;
+        };
+        /** A user's profile; full stats for yourself or a friend, identity only otherwise */
+        get: operations["getUserProfile"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/minigolf/courses": {
         parameters: {
             query?: never;
@@ -1615,6 +1634,40 @@ export interface components {
             onlineAverage: number | null;
             /** @description Last ranked games, newest first */
             recent: components["schemas"]["RankedGame"][];
+        };
+        ProfileRelation: {
+            /** @enum {string} */
+            kind: "self" | "friend" | "incoming" | "outgoing" | "none";
+            /** @description Set for incoming/outgoing: the friend request to accept, decline or cancel */
+            requestId: string | null;
+        };
+        PlaysMostEntry: {
+            mode: string;
+            pct: number;
+        };
+        HeadToHead: {
+            wins: number;
+            losses: number;
+        };
+        UserProfile: {
+            id: string;
+            name: string;
+            /** Format: date-time */
+            createdAt: string;
+            isSelf: boolean;
+            relation: components["schemas"]["ProfileRelation"];
+            /** @description Whether they are online now; null unless isSelf or a friend */
+            online: boolean | null;
+            /** @description null unless isSelf or a friend */
+            ranked: components["schemas"]["RankedProfile"] | (null);
+            /** @description Stat aggregates, last 30 days; null unless isSelf or a friend */
+            stats: components["schemas"]["GameStats"] | (null);
+            /** @description Last finished games, newest first; null unless isSelf or a friend */
+            recentMatches: components["schemas"]["GameSummary"][] | null;
+            /** @description Share of games played per mode, highest first; null unless isSelf or a friend */
+            playsMost: components["schemas"]["PlaysMostEntry"][] | null;
+            /** @description The viewer's record against them; null for your own profile */
+            headToHead: components["schemas"]["HeadToHead"] | (null);
         };
         HistoryDart: {
             /** @description Position in the visit */
@@ -3016,6 +3069,7 @@ export interface components {
         LobbyCode: string;
         FriendRequestId: string;
         FriendUserId: string;
+        ProfileUserId: string;
         MinigolfCourseId: string;
         MinigolfHoleId: string;
         AdminUserId: string;
@@ -5312,6 +5366,31 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getUserProfile: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["ProfileUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserProfile"];
+                };
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];

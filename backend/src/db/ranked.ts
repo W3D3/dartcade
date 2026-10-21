@@ -2,6 +2,7 @@ import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import {
   PLACEMENT_MATCHES,
+  RANKED_MODES,
   START_RATING,
   nextRankIndex,
   performance,
@@ -132,6 +133,33 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
       .filter(o => o.session_id === m.session_id && o.won !== m.won)
       .map(o => ({ userId: o.user_id, name: o.name, rating: o.placement ? null : o.rating_before })),
   }))
+}
+
+export type RankedProfile = {
+  ratings: (Omit<RatingRow, 'rating'> & { rating: number | null; change30d: number })[]
+  onlineAverage: number | null
+  recent: (Omit<RecentRanked, 'at'> & { at: string })[]
+}
+
+const DAY = 24 * 60 * 60 * 1000
+
+/** The player's ranked profile as the API shows it: ratings in both modes, online average, recent games. */
+export async function getRankedProfile(db: Kysely<Database>, userId: string, now: Date): Promise<RankedProfile> {
+  const [ratings, change, average, recent] = await Promise.all([
+    getRatings(db, userId),
+    ratingChangeSince(db, userId, new Date(now.getTime() - 30 * DAY)),
+    onlineAverage(db, userId),
+    recentRanked(db, userId),
+  ])
+  return {
+    // The rating stays hidden until the player is placed
+    ratings: RANKED_MODES.map(mode => {
+      const r = ratings[mode]
+      return { ...r, rating: r.rankIndex === null ? null : r.rating, change30d: change[mode] }
+    }),
+    onlineAverage: average,
+    recent: recent.map(r => ({ ...r, at: r.at.toISOString() })),
+  }
 }
 
 export type RankedSide = { won: boolean; players: { userId: string; average: number | null }[] }
