@@ -1,11 +1,12 @@
 <script lang="ts">
-  // Progress (Progress / Mobile-Progress boards): your level and XP. Behind progression.enabled;
+  // Progress (Progress / Mobile-Progress boards): your level and XP, and your day streak. Behind progression.enabled;
   // without it the page says it isn't on. Rules: shared/progression.ts.
   import { LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
+  import StreakCard from '$lib/components/progress/StreakCard.svelte'
   import { flag } from '$lib/flags'
-  import { progressXp } from '$lib/progress/store'
+  import { progress } from '$lib/progress/store'
 
   const progression = flag('progression.enabled')
 </script>
@@ -21,11 +22,12 @@
 
     {#if !$progression}
       <p class="m-0 text-[15px] text-text-muted">Progress isn't on for your account yet.</p>
-    {:else if $progressXp === null}
+    {:else if $progress === null}
       <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
     {:else}
       <div class="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <LevelCard xp={$progressXp} />
+        <LevelCard xp={$progress.xp} />
+        <StreakCard streak={$progress.streak} />
       </div>
     {/if}
   </main>

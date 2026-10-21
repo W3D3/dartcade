@@ -59,6 +59,10 @@
 
   /* Settings: the drop zone for a voice pack's zip */
   --color-surface-drop: #171a13;
+  /* A day streak freeze (Progress board) */
+  --color-ice: #9ec8ff;
+  --color-ice-line: #7fb4ff;
+  --color-ice-soft: #17202e;
 
   /* The Board Manager's status dot (lib/boardStatus.ts) */
   --color-bm-green: #84cc16;

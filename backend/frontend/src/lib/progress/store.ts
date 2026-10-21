@@ -1,25 +1,40 @@
-// Your XP while a page shows it: read once from GET /api/progress/me, then moved by every
-// xp.gained on /ws/me. What one game paid comes from that push too, or from the API after a reload.
-import { readable, type Readable } from 'svelte/store'
+// Your progress while a page shows it: read from GET /api/progress/me, and read again after every
+// xp.gained on /ws/me (its XP shows at once). What one game paid comes from that push too, or from
+// the API after a reload.
+import { derived, readable, type Readable } from 'svelte/store'
 import { api } from '$lib/api/client'
 import { me } from '$lib/lobby/sockets'
 import { flag } from '$lib/flags'
 import type { XpGainedMessage, XpLine } from '$lib/api/lobby-ws'
+import type { components } from '$lib/api/schema'
 
+export type Progress = components['schemas']['Progress']
 type Source = { xp: Readable<XpGainedMessage | null> }
 
-/** Your total XP; null until known (or while progression is off for you). */
-export function createProgress(source: Source = me, fetchXp = defaultFetchXp): Readable<number | null> {
-  return readable<number | null>(null, set => {
-    let pushed = false
+/** Your progress; null until known. */
+export function createProgress(source: Source = me, fetchProgress = defaultFetchProgress): Readable<Progress | null> {
+  return readable<Progress | null>(null, set => {
+    let current: Progress | null = null
     let stopped = false
-    void fetchXp().then(xp => {
-      if (!stopped && !pushed && xp !== null) set(xp)
-    })
+    let latest = 0
+    const load = () => {
+      const n = ++latest
+      void fetchProgress().then(p => {
+        // An older read never overwrites a newer one
+        if (stopped || n !== latest || !p) return
+        current = p
+        set(p)
+      })
+    }
+    load()
     const unsub = source.xp.subscribe(m => {
       if (!m) return
-      pushed = true
-      set(m.xpAfter)
+      if (current) {
+        current = { ...current, xp: m.xpAfter, level: m.levelAfter }
+        set(current)
+      }
+      // The streak (and the rest) moved too
+      load()
     })
     return () => {
       stopped = true
@@ -28,13 +43,13 @@ export function createProgress(source: Source = me, fetchXp = defaultFetchXp): R
   })
 }
 
-async function defaultFetchXp(): Promise<number | null> {
+async function defaultFetchProgress(): Promise<Progress | null> {
   const { data } = await api.GET('/api/progress/me')
-  return data?.xp ?? null
+  return data ?? null
 }
 
-/** Your total XP while progression is on for you; null otherwise (nothing is fetched then). */
-export const progressXp: Readable<number | null> = readable<number | null>(null, set => {
+/** Your progress while progression is on for you; null otherwise (nothing is fetched then). */
+export const progress: Readable<Progress | null> = readable<Progress | null>(null, set => {
   let inner: (() => void) | null = null
   let was = false
   const unflag = flag('progression.enabled').subscribe(on => {
@@ -51,6 +66,9 @@ export const progressXp: Readable<number | null> = readable<number | null>(null,
     unflag()
   }
 })
+
+/** Your total XP, while progression is on for you. */
+export const progressXp: Readable<number | null> = derived(progress, p => p?.xp ?? null)
 
 /** What a game paid you: lines, total, and your XP before and after. */
 export type GameGain = { lines: XpLine[]; total: number; xpBefore: number; xpAfter: number }

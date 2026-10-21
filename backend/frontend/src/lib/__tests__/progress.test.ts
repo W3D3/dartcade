@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { get, writable } from 'svelte/store'
-import { chipMotion, levelView, lineLabel } from '../progress/view.js'
+import { chipMotion, levelView, lineLabel, milestoneLine, streakLine, toastsFor } from '../progress/view.js'
 import { createGameGain, createProgress } from '../progress/store.js'
 import type { XpGainedMessage } from '../api/lobby-ws.js'
 
@@ -26,6 +26,7 @@ describe('lineLabel', () => {
     expect(lineLabel({ kind: 'oneEighty', amount: 50, count: 2 })).toBe('180 × 2')
     expect(lineLabel({ kind: 'oneEighty', amount: 25, count: 1 })).toBe('180')
     expect(lineLabel({ kind: 'win', amount: 100 })).toBe('Win')
+    expect(lineLabel({ kind: 'daily', amount: 160, count: 7 })).toBe('First game of the day · day 7')
   })
 })
 
@@ -42,25 +43,67 @@ const gained = (over: Partial<XpGainedMessage> = {}): XpGainedMessage => ({
 })
 const tick = () => new Promise(r => setTimeout(r, 0))
 
+describe('streak copy', () => {
+  it('names the next milestone by its reward, or its XP', () => {
+    expect(milestoneLine({ days: 14, xp: 300 })).toBe('Day 14: title Fortnight')
+    expect(milestoneLine({ days: 60, xp: 500 })).toBe('Day 60: +500 XP')
+  })
+  it('shows the streak line when the game paid the daily bonus', () => {
+    expect(streakLine([{ kind: 'daily', amount: 200, count: 12 }])).toEqual({ days: 12, bonus: 200 })
+    expect(streakLine([{ kind: 'game', amount: 50 }])).toBeNull()
+  })
+  it('toasts a freeze spent and a milestone reached', () => {
+    const t = toastsFor(
+      gained({
+        lines: [{ kind: 'milestone', amount: 250 }],
+        streak: { current: 7, freezes: 1, frozeDay: '2026-10-18', milestone: 7 },
+      }),
+    )
+    expect(t).toEqual([
+      { icon: 'freeze', title: 'Streak freeze used', text: 'Sunday was missed. Your streak is safe. 1 freeze left.', xp: null },
+      { icon: 'milestone', title: '7-day streak', text: 'New: flame emblem', xp: 250 },
+    ])
+    expect(toastsFor(gained())).toEqual([])
+  })
+})
+
 describe('createProgress', () => {
-  it('reads the total, then follows the pushes', async () => {
+  const streak = {
+    current: 0,
+    best: 0,
+    freezes: 1,
+    playedToday: false,
+    bonus: 100,
+    today: '2026-10-21',
+    days: [],
+    nextMilestone: { days: 7, xp: 250 },
+  }
+  const at = (xp: number) => ({ xp, level: 1, streak })
+
+  it('reads your progress, shows a push at once and reads again', async () => {
     const xp = writable<XpGainedMessage | null>(null)
-    const store = createProgress({ xp }, () => Promise.resolve(100))
-    const seen: (number | null)[] = []
-    const stop = store.subscribe(v => seen.push(v))
+    let reads = 0
+    const store = createProgress({ xp }, () => Promise.resolve(at(reads++ === 0 ? 100 : 150)))
+    const seen: (number | undefined)[] = []
+    const stop = store.subscribe(v => seen.push(v?.xp))
     await tick()
     xp.set(gained())
-    expect(seen).toEqual([null, 100, 150])
+    await tick()
+    expect(seen).toEqual([undefined, 100, 150, 150])
+    expect(reads).toBe(2)
     stop()
   })
-  it('keeps a push over a slower read', async () => {
-    const xp = writable<XpGainedMessage | null>(gained())
-    let resolve: (n: number) => void = () => undefined
-    const store = createProgress({ xp }, () => new Promise<number>(r => (resolve = r)))
+
+  it('never lets an older read overwrite a newer one', async () => {
+    const xp = writable<XpGainedMessage | null>(null)
+    const resolvers: ((p: ReturnType<typeof at>) => void)[] = []
+    const store = createProgress({ xp }, () => new Promise(r => resolvers.push(r)))
     const stop = store.subscribe(() => undefined)
-    resolve(100)
+    xp.set(gained())
+    resolvers[1](at(150))
+    resolvers[0](at(100))
     await tick()
-    expect(get(store)).toBe(150)
+    expect(get(store)?.xp).toBe(150)
     stop()
   })
 })

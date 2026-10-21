@@ -3,14 +3,15 @@
   // there at the foot of the result. On arrival the bar fills; on a level-up it runs to the end,
   // the level flips, the chip pulses once and one line names the new level. A tap opens the full
   // breakdown. Reduced motion shows the end state.
-  import { ChevronDown } from '@lucide/svelte'
+  import { ChevronDown, Flame } from '@lucide/svelte'
   import type { GameGain } from '$lib/progress/store'
-  import { chipMotion, fmtXp, levelView, lineLabel } from '$lib/progress/view'
+  import { chipMotion, fmtXp, levelView, lineLabel, streakLine } from '$lib/progress/view'
 
   let { gain }: { gain: GameGain } = $props()
 
   const motion = $derived(chipMotion(gain.xpBefore, gain.xpAfter))
   const after = $derived(levelView(gain.xpAfter))
+  const streak = $derived(streakLine(gain.lines))
   let open = $state(false)
 </script>
 
@@ -35,8 +36,15 @@
       </div>
     </div>
   {/if}
-  {#if motion.levelUp}
-    <p class="lunote m-0 text-[13px] text-ink-2"><b class="font-semibold text-accent">Level {motion.levelAfter}</b></p>
+  {#if motion.levelUp || streak}
+    <p class="lunote m-0 flex items-center gap-3 text-[13px] text-ink-2">
+      {#if motion.levelUp}<b class="font-semibold text-accent">Level {motion.levelAfter}</b>{/if}
+      {#if streak}
+        <span class="ml-auto inline-flex items-center gap-[6px]"
+          ><Flame size={14} class="text-accent" aria-hidden="true" />{streak.days}-day streak · +{fmtXp(streak.bonus)} first game today</span
+        >
+      {/if}
+    </p>
   {/if}
   <button
     type="button"
