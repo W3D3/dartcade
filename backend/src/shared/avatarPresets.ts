@@ -9,14 +9,14 @@ export interface AvatarPreset {
 }
 
 export const AVATAR_PRESETS: readonly AvatarPreset[] = [
-  { id: 'rabbit', color: '#73503d' },
-  { id: 'cat', color: '#5e3d73' },
-  { id: 'dog', color: '#4a6b3a' },
-  { id: 'bird', color: '#3d7373' },
-  { id: 'fish', color: '#3d5a73' },
-  { id: 'ghost', color: '#6b6b3a' },
-  { id: 'rocket', color: '#3d4a73' },
-  { id: 'crown', color: '#733d55' },
+  { id: 'crosshair', color: '#73503d' },
+  { id: 'circle-dot', color: '#5e3d73' },
+  { id: 'flame', color: '#4a6b3a' },
+  { id: 'zap', color: '#3d7373' },
+  { id: 'medal', color: '#3d5a73' },
+  { id: 'beer', color: '#6b6b3a' },
+  { id: 'cat', color: '#3d4a73' },
+  { id: 'ghost', color: '#733d55' },
 ] as const
 
 const PRESET_IDS = new Set(AVATAR_PRESETS.map(p => p.id))

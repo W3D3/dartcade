@@ -33,15 +33,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('avatar', () => {
   })
 
   it('sets a preset, bumping the version each time', async () => {
-    await setAvatar(db, 'lena', { kind: 'preset', preset: 'cat' })
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', preset: 'cat' })
-    await setAvatar(db, 'lena', { kind: 'preset', preset: 'ghost' })
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', preset: 'ghost' })
+    await setAvatar(db, 'lena', { kind: 'preset', preset: 'crosshair' })
+    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', preset: 'crosshair' })
+    await setAvatar(db, 'lena', { kind: 'preset', preset: 'medal' })
+    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', preset: 'medal' })
   })
 
   it('refuses an unknown preset id, leaving the avatar as it was', async () => {
     await expect(setAvatar(db, 'lena', { kind: 'preset', preset: 'nope' })).rejects.toThrow(UnknownAvatarPresetError)
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', preset: 'ghost' })
+    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', preset: 'medal' })
   })
 
   it('uploads a photo, serving it back with a bumped version; a preset or none clears the bytes', async () => {
