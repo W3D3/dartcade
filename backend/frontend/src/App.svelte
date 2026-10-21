@@ -33,6 +33,7 @@
   import { currentUser } from '$lib/auth'
   import { loadAccountSettings } from '$lib/accountSettings'
   import { syncTimeZone } from '$lib/progress/timeZone'
+  import ProgressToasts from '$lib/components/progress/ProgressToasts.svelte'
   import { setFlagUser, startFlags } from '$lib/flags'
   import { gameModes } from '$lib/gameModes'
   import { me } from '$lib/lobby/sockets'
@@ -179,6 +180,7 @@
       <PickName />
     {:else}
       <Router {routes} />
+      {#if $currentUser}<ProgressToasts />{/if}
     {/if}
   {/if}
 </Tooltip.Provider>

@@ -3,6 +3,10 @@
   import { LogOut } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import DeleteAccount from './DeleteAccount.svelte'
+  import TimeZoneField from './TimeZoneField.svelte'
+  import { flag } from '$lib/flags'
+
+  const progression = flag('progression.enabled')
 
   const user = $derived($currentUser)
   const joined = $derived(new Date(user?.createdAt ?? NaN))
@@ -32,6 +36,7 @@
         </div>
       {/if}
     </dl>
+    {#if $progression}<TimeZoneField />{/if}
     <button
       type="button"
       onclick={() => void signOut()}
