@@ -73,6 +73,7 @@
   import { cameraStillUrl, type CameraVersions } from '$lib/camera'
   import BoardViewToggle from '../lib/components/BoardViewToggle.svelte'
   import WinScreen from '../lib/components/WinScreen.svelte'
+  import { flag } from '$lib/flags'
   import { sharedBoard, winMeta, winView } from '$lib/winScreen'
   import type { GameDetail } from '$lib/api'
   import { initial } from '$lib/fmt'
@@ -119,6 +120,7 @@
   }
 
   // ── Session ───────────────────────────────────────────────────────────────
+  const progression = flag('progression.enabled')
   let sessionId = $state('')
   let sessionStore: ReturnType<typeof createSessionStore> | null = null
   let snapshot = $state<Snapshot | null>(null)
@@ -784,6 +786,7 @@
         }}
         secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
         onhistory={() => push(`/history/${sessionId}`)}
+        xpSessionId={$progression && snapshot.mySeats.length > 0 ? sessionId : null}
       />
     {:else}
       <GameHeader

@@ -5,7 +5,7 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'play' | 'ranked' | 'live' | 'tournaments' | 'history'
+  icon: 'play' | 'ranked' | 'live' | 'tournaments' | 'progress' | 'history'
   badge?: number
   /** When the label alone doesn't say it ('Ranked' is the Matchmaking page). */
   aria?: string
@@ -22,22 +22,25 @@ function liveItem(liveSessionId: string | null, label: string): NavTab {
 
 /**
  * The phone tab bar and the tablet rail: Play, Ranked while matchmaking is on (MM-Phone), Live,
- * Tournaments (soon), History; pending invites as a badge on Play.
+ * Tournaments (soon) or Progress while progression is on (Mobile-Progress), History; pending
+ * invites as a badge on Play.
  */
-export function navTabs(liveSessionId: string | null, invites = 0, ranked = false): NavTab[] {
+export function navTabs(liveSessionId: string | null, invites = 0, ranked = false, progress = false): NavTab[] {
   return [
     { href: '/', label: 'Play', icon: 'play', ...(invites > 0 ? { badge: invites } : {}) },
     ...(ranked ? [{ href: '/matchmaking', label: 'Ranked', icon: 'ranked' as const, aria: 'Matchmaking' }] : []),
     liveItem(liveSessionId, 'Live'),
-    { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', aria: 'Tournaments: coming soon', disabled: true },
+    progress
+      ? { href: '/progress', label: 'Progress', icon: 'progress' }
+      : { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', aria: 'Tournaments: coming soon', disabled: true },
     { href: '/history', label: 'History', icon: 'history' },
   ]
 }
 
 export type SideLink = Omit<NavTab, 'icon' | 'badge' | 'aria'> & { icon: NavTab['icon'] | 'settings' | 'admin'; soon?: boolean }
 
-/** The desktop side nav: the same pages under their long names, then Settings, then Admin (admins and moderators). */
-export function sideLinks(liveSessionId: string | null, ranked = false, admin = false): SideLink[] {
+/** The desktop side nav: the same pages under their long names, then Progress, Settings and Admin (admins and moderators). */
+export function sideLinks(liveSessionId: string | null, ranked = false, admin = false, progress = false): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
     { href: '/', label: 'Play', icon: 'play' },
@@ -45,6 +48,7 @@ export function sideLinks(liveSessionId: string | null, ranked = false, admin = 
     { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
     { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },
     { href: '/history', label: 'History', icon: 'history' },
+    ...(progress ? [{ href: '/progress', label: 'Progress', icon: 'progress' as const }] : []),
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]

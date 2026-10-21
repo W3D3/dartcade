@@ -6,7 +6,16 @@ import { writable, type Readable } from 'svelte/store'
 import { WsCloseCode } from '../api/game-ws'
 import { reconnectingSocket, type OpenSocket, type ReconnectingSocket } from '../reconnectingSocket'
 import { LobbyServerMessageSchema, MeServerMessageSchema } from '../api/zod'
-import type { ActiveGame, FriendsMessage, Lobby, LobbyServerMessage, LobbySummary, MeServerMessage, PendingInvite } from '../api/lobby-ws'
+import type {
+  ActiveGame,
+  FriendsMessage,
+  Lobby,
+  LobbyServerMessage,
+  LobbySummary,
+  MeServerMessage,
+  PendingInvite,
+  XpGainedMessage,
+} from '../api/lobby-ws'
 
 /** Your friends and friend requests (the friends message on /ws/me, GET /api/friends). */
 export type FriendList = Omit<FriendsMessage, 'type'>
@@ -78,11 +87,14 @@ export type MeState = { invites: PendingInvite[]; lobby: LobbySummary | null; ga
 /** The signed-in user's /ws/me; started once signed in, stopped on sign-out. */
 export function createMeStore(open?: OpenSocket) {
   const state = writable<MeState | null>(null)
+  const xp = writable<XpGainedMessage | null>(null)
   let socket: ReconnectingSocket | null = null
   const running = () => socket !== null && !socket.stopped
 
   return {
     subscribe: state.subscribe,
+    /** The XP you last earned (xp.gained), as it arrives. */
+    xp: { subscribe: xp.subscribe } satisfies Readable<XpGainedMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
     running,
     start() {
@@ -97,6 +109,8 @@ export function createMeStore(open?: OpenSocket) {
             } else if (msg?.type === 'friends') {
               const { type: _type, ...list } = msg
               state.update(s => ({ ...(s ?? { invites: [], lobby: null, game: null }), friends: list }))
+            } else if (msg?.type === 'xp.gained') {
+              xp.set(msg)
             }
           },
           onClose: code => (WsCloseCode[code] === 'Unauthorized' ? 'stop' : undefined),
@@ -108,6 +122,7 @@ export function createMeStore(open?: OpenSocket) {
       socket?.stop()
       socket = null
       state.set(null)
+      xp.set(null)
     },
   }
 }

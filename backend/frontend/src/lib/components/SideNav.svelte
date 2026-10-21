@@ -1,6 +1,6 @@
 <script lang="ts">
   import Wordmark from './Wordmark.svelte'
-  import { Clock, Mail, Radio, Settings, ShieldCheck, Swords, Target, Trophy } from '@lucide/svelte'
+  import { Clock, Mail, Radio, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
@@ -15,8 +15,9 @@
   const inviteCount = $derived($me?.invites.length ?? 0)
 
   const matchmaking = flag('matchmaking.enabled')
+  const progression = flag('progression.enabled')
 
-  const links = $derived(sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator))
+  const links = $derived(sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator, $progression))
 </script>
 
 <nav
@@ -39,6 +40,8 @@
           <Radio size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'tournaments'}
           <Trophy size={20} strokeWidth={1.8} />
+        {:else if link.icon === 'progress'}
+          <TrendingUp size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'history'}
           <Clock size={20} strokeWidth={1.8} />
         {:else if link.icon === 'settings'}
