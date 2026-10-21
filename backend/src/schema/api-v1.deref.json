@@ -27061,6 +27061,10 @@
                             "type": "boolean",
                             "description": "Something to publish: its own draft, or a draft of one of its holes"
                           },
+                          "builtIn": {
+                            "type": "boolean",
+                            "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                          },
                           "version": {
                             "type": "integer",
                             "minimum": 0
@@ -27335,6 +27339,10 @@
                     "hasChanges": {
                       "type": "boolean",
                       "description": "Something to publish: its own draft, or a draft of one of its holes"
+                    },
+                    "builtIn": {
+                      "type": "boolean",
+                      "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
                     },
                     "version": {
                       "type": "integer",
@@ -27618,6 +27626,10 @@
                     "hasChanges": {
                       "type": "boolean",
                       "description": "Something to publish: its own draft, or a draft of one of its holes"
+                    },
+                    "builtIn": {
+                      "type": "boolean",
+                      "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
                     },
                     "version": {
                       "type": "integer",
@@ -27945,6 +27957,10 @@
                       "type": "boolean",
                       "description": "Something to publish: its own draft, or a draft of one of its holes"
                     },
+                    "builtIn": {
+                      "type": "boolean",
+                      "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                    },
                     "version": {
                       "type": "integer",
                       "minimum": 0
@@ -28162,7 +28178,7 @@
       },
       "delete": {
         "operationId": "deleteMinigolfCourse",
-        "summary": "Delete a course (admin)",
+        "summary": "Delete a course; a built-in course can't be deleted, only unpublished (admin)",
         "tags": [
           "minigolf"
         ],
@@ -28250,6 +28266,45 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Conflicts with the current state",
             "content": {
               "application/json": {
                 "schema": {
@@ -28473,6 +28528,10 @@
                     "hasChanges": {
                       "type": "boolean",
                       "description": "Something to publish: its own draft, or a draft of one of its holes"
+                    },
+                    "builtIn": {
+                      "type": "boolean",
+                      "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
                     },
                     "version": {
                       "type": "integer",
@@ -28887,6 +28946,336 @@
                     "hasChanges": {
                       "type": "boolean",
                       "description": "Something to publish: its own draft, or a draft of one of its holes"
+                    },
+                    "builtIn": {
+                      "type": "boolean",
+                      "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "updatedAt": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "publishedAt": {
+                      "type": "string",
+                      "format": "date-time",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/minigolf/courses/{id}/unpublish": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "post": {
+        "operationId": "unpublishMinigolfCourse",
+        "summary": "Take the course out of play: its published content becomes its draft (unless it has one), and Publish brings it back (admin)",
+        "tags": [
+          "minigolf"
+        ],
+        "responses": {
+          "200": {
+            "description": "The course, unpublished",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "A course row; `draft` and `hasChanges` are left out for a viewer who may not see them (a player)",
+                  "required": [
+                    "id",
+                    "ownerUserId",
+                    "visibility",
+                    "published",
+                    "version",
+                    "updatedAt",
+                    "publishedAt"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "ownerUserId": {
+                      "type": "string",
+                      "nullable": true,
+                      "description": "null for an official course"
+                    },
+                    "visibility": {
+                      "type": "string",
+                      "enum": [
+                        "official"
+                      ]
+                    },
+                    "published": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "description",
+                            "difficulty",
+                            "holeIds"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "difficulty": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2,
+                                3
+                              ],
+                              "description": "1 Easy, 2 Medium, 3 Hard"
+                            },
+                            "holeIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Playing order"
+                            }
+                          }
+                        },
+                        {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            null
+                          ]
+                        }
+                      ]
+                    },
+                    "draft": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "name",
+                            "description",
+                            "difficulty",
+                            "holeIds"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "name": {
+                              "type": "string"
+                            },
+                            "description": {
+                              "type": "string"
+                            },
+                            "difficulty": {
+                              "type": "integer",
+                              "enum": [
+                                1,
+                                2,
+                                3
+                              ],
+                              "description": "1 Easy, 2 Medium, 3 Hard"
+                            },
+                            "holeIds": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Playing order"
+                            }
+                          }
+                        },
+                        {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            null
+                          ]
+                        }
+                      ]
+                    },
+                    "hasChanges": {
+                      "type": "boolean",
+                      "description": "Something to publish: its own draft, or a draft of one of its holes"
+                    },
+                    "builtIn": {
+                      "type": "boolean",
+                      "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
                     },
                     "version": {
                       "type": "integer",
@@ -47265,6 +47654,10 @@
             "type": "boolean",
             "description": "Something to publish: its own draft, or a draft of one of its holes"
           },
+          "builtIn": {
+            "type": "boolean",
+            "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
+          },
           "version": {
             "type": "integer",
             "minimum": 0
@@ -47410,6 +47803,10 @@
                 "hasChanges": {
                   "type": "boolean",
                   "description": "Something to publish: its own draft, or a draft of one of its holes"
+                },
+                "builtIn": {
+                  "type": "boolean",
+                  "description": "Shipped with the code (seeded): it can be unpublished, not deleted"
                 },
                 "version": {
                   "type": "integer",

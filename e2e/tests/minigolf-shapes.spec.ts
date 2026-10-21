@@ -13,7 +13,7 @@ async function onCanvas(page: Page, x: number, y: number): Promise<{ x: number; 
   )
 }
 
-// A fresh course, not the shared seeded "test" course: this spec publishes a change, and the
+// A fresh course, not a shared seeded one: this spec publishes a change, and the
 // other Minigolf specs must keep working no matter the run order.
 test('an admin draws a keyhole, curves a rail, publishes and plays it', async ({ adminPage: page }) => {
   test.setTimeout(60_000)
@@ -87,12 +87,12 @@ test('an admin draws a keyhole, curves a rail, publishes and plays it', async ({
   await endAnyRunningGame(page)
 })
 
-// The seeded "test" course's hole 1 predates shapes: it must keep opening as plain corners, with
+// The seeded Greenhorn course's hole 1 predates shapes: it must keep opening as plain corners, with
 // no shape overlay and no circles, until someone edits it with the Circle or Curve tool.
 test('the seeded course’s hole 1 still shows plain corners', async ({ adminPage: page }) => {
   await endAnyRunningGame(page)
-  await page.goto('/#/admin/minigolf/holes/test-straight?course=test')
-  await expect(page.getByText('Hole 1 of 4')).toBeVisible()
+  await page.goto('/#/admin/minigolf/holes/greenhorn-first-putt?course=greenhorn')
+  await expect(page.getByText('Hole 1 of 9')).toBeVisible()
   await expect(page.getByTestId('par')).toHaveText('2')
 
   await page.keyboard.press('o')

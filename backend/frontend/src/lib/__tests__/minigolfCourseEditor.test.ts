@@ -114,7 +114,14 @@ describe('CourseHoles', () => {
 })
 
 describe('CourseHeader', () => {
-  const header = (props: { status: DraftStatus; loaded?: boolean; published?: boolean; problems?: string[]; error?: string | null }) =>
+  const header = (props: {
+    status: DraftStatus
+    loaded?: boolean
+    published?: boolean
+    builtIn?: boolean
+    problems?: string[]
+    error?: string | null
+  }) =>
     render(CourseHeader, {
       props: {
         courseId: 'c1',
@@ -125,6 +132,8 @@ describe('CourseHeader', () => {
         problems: [],
         onpublish: () => {},
         ondiscard: () => {},
+        onunpublish: () => {},
+        ondelete: () => {},
         onreload: () => {},
         ...props,
       },
@@ -156,6 +165,13 @@ describe('CourseHeader', () => {
     const out = header({ status: 'saved', published: false })
     expect(disabled(out, 'Discard draft')).toBe(true)
     expect(disabled(out, 'Publish changes')).toBe(false)
+  })
+  it('offers Unpublish only for a published course, and Delete only for one not built in', () => {
+    const out = header({ status: 'saved' })
+    expect(disabled(out, 'Unpublish')).toBe(false)
+    expect(disabled(out, 'Delete')).toBe(false)
+    expect(header({ status: 'saved', published: false })).not.toContain('Unpublish')
+    expect(header({ status: 'saved', builtIn: true })).not.toMatch(/>\s*Delete\s*</)
   })
   it("offers nothing to publish or discard when the course couldn't be loaded", () => {
     const out = header({ status: 'error', loaded: false })

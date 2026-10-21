@@ -4,6 +4,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { minigolfCoursesApiPlugin } from './minigolfCourses.js'
+import { seedOfficialCourses } from '../db/minigolfCourses.js'
 import type { Hole, Shape } from '../shared/minigolf/types.js'
 
 // Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
@@ -137,6 +138,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
         () => app().inject({ method: 'DELETE', url: `/api/minigolf/courses/${id}`, headers: asPlayer }),
         () => app().inject({ method: 'POST', url: `/api/minigolf/courses/${id}/publish`, headers: asPlayer }),
         () => app().inject({ method: 'POST', url: `/api/minigolf/courses/${id}/discard`, headers: asPlayer }),
+        () => app().inject({ method: 'POST', url: `/api/minigolf/courses/${id}/unpublish`, headers: asPlayer }),
         () => app().inject({ method: 'GET', url: '/api/minigolf/holes', headers: asPlayer }),
         () => app().inject({ method: 'POST', url: '/api/minigolf/holes', headers: asPlayer, payload: { hole: validHole('h') } }),
         () => app().inject({ method: 'GET', url: `/api/minigolf/holes/${holeId}`, headers: asPlayer }),
@@ -428,6 +430,29 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses API', { timeou
       const { id } = created.json()
       const res = await app().inject({ method: 'DELETE', url: `/api/minigolf/courses/${id}`, headers: asAdmin })
       expect(res.statusCode).toBe(204)
+    })
+
+    it('409s deleting a built-in course, and says which courses are built in', async () => {
+      await seedOfficialCourses(db)
+      const res = await app().inject({ method: 'DELETE', url: '/api/minigolf/courses/greenhorn', headers: asAdmin })
+      expect(res.statusCode).toBe(409)
+      const { id } = (await createCourseAs(asAdmin, { name: 'Links', description: '', difficulty: 1, holeIds: [] })).json()
+      const list = await app().inject({ method: 'GET', url: '/api/minigolf/courses', headers: asAdmin })
+      const builtIn = Object.fromEntries(list.json().courses.map((c: any) => [c.id, c.builtIn]))
+      expect(builtIn).toEqual({ greenhorn: true, kingfisher: true, [id]: false })
+    })
+
+    it('unpublishes a course: players no longer see it, its content stays as the draft', async () => {
+      const hole = (await createHoleAs(asAdmin, validHole('unpub'))).json()
+      const { id } = (await createCourseAs(asAdmin, { name: 'Links', description: '', difficulty: 1, holeIds: [hole.id] })).json()
+      await app().inject({ method: 'POST', url: `/api/minigolf/courses/${id}/publish`, headers: asAdmin })
+      const res = await app().inject({ method: 'POST', url: `/api/minigolf/courses/${id}/unpublish`, headers: asAdmin })
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toMatchObject({ published: null, publishedAt: null, draft: { name: 'Links', holeIds: [hole.id] } })
+      const list = await app().inject({ method: 'GET', url: '/api/minigolf/courses', headers: asPlayer })
+      expect(list.json().courses).toEqual([])
+      const missing = await app().inject({ method: 'POST', url: '/api/minigolf/courses/nope/unpublish', headers: asAdmin })
+      expect(missing.statusCode).toBe(404)
     })
   })
 

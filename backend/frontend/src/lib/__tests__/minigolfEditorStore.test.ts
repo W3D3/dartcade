@@ -327,4 +327,37 @@ describe('createCourseStore', () => {
     expect(discard).toHaveBeenCalledWith('c1')
     expect(load).toHaveBeenCalledTimes(2)
   })
+
+  it('unpublish() saves a pending edit first, then unpublishes and reloads; a failed save stops it', async () => {
+    const save = vi.fn().mockResolvedValue({ version: 2, updatedAt: 't2' })
+    const unpublish = vi.fn().mockResolvedValue(undefined)
+    const load = fakeLoad(content0, 1)
+    const store = createCourseStore('c1', save, load, 60_000, vi.fn(), vi.fn(), unpublish)
+    await store.load()
+    store.edit({ ...content0, name: 'Renamed' })
+
+    expect(await store.unpublish()).toBe(true)
+    expect(save.mock.invocationCallOrder[0]).toBeLessThan(unpublish.mock.invocationCallOrder[0])
+    expect(unpublish).toHaveBeenCalledWith('c1')
+    expect(load).toHaveBeenCalledTimes(2)
+
+    save.mockRejectedValue(new HttpError(409))
+    unpublish.mockClear()
+    store.edit({ ...content0, name: 'Again' })
+    expect(await store.unpublish()).toBe(false)
+    expect(unpublish).not.toHaveBeenCalled()
+  })
+
+  it('delete() drops a pending edit instead of saving it, then deletes', async () => {
+    const save = vi.fn()
+    const remove = vi.fn().mockResolvedValue(undefined)
+    const store = createCourseStore('c1', save, fakeLoad(content0, 1), 60_000, vi.fn(), vi.fn(), vi.fn(), remove)
+    await store.load()
+    store.edit({ ...content0, name: 'Renamed' })
+
+    await store.delete()
+
+    expect(remove).toHaveBeenCalledWith('c1')
+    expect(save).not.toHaveBeenCalled()
+  })
 })

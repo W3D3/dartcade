@@ -50,7 +50,7 @@
   let problems = $state<string[]>([])
   let error = $state<string | null>(null)
   let busy = $state(false)
-  let confirmDiscard = $state(false)
+  let confirming = $state<'discard' | 'unpublish' | 'delete' | null>(null)
   /** The name of a course that turned out to be deleted, shown on the list we went back to. */
   let gone = $state<string | null>(null)
   $effect(() => {
@@ -158,7 +158,7 @@
     if (res === null) await loadLists()
   }
   async function discard(): Promise<void> {
-    confirmDiscard = false
+    confirming = null
     if (!store) return
     busy = true
     problems = []
@@ -168,6 +168,34 @@
     )
     busy = false
     await loadLists()
+  }
+
+  async function unpublish(): Promise<void> {
+    confirming = null
+    if (!store) return
+    busy = true
+    problems = []
+    error = await store.unpublish().then(
+      ok => (ok ? null : "Couldn't save the draft, so the course is still published."),
+      () => "Couldn't unpublish the course.",
+    )
+    busy = false
+    await loadLists()
+  }
+  async function remove(): Promise<void> {
+    confirming = null
+    if (!store || !courseId) return
+    const id = courseId
+    busy = true
+    problems = []
+    error = await store.delete().then(
+      () => null,
+      () => "Couldn't delete the course.",
+    )
+    busy = false
+    if (error) return
+    courses = courses.filter(c => c.id !== id)
+    void push('/admin/minigolf/courses')
   }
 
   const selected = $derived(courses.find(c => c.id === courseId) ?? null)
@@ -214,12 +242,15 @@
         savedAt={store?.savedAt ?? null}
         {hasDraft}
         published={!!selected?.published}
+        builtIn={!!selected?.builtIn}
         loaded={content !== null}
         {problems}
         {error}
         {busy}
         onpublish={() => void publish()}
-        ondiscard={() => (confirmDiscard = true)}
+        ondiscard={() => (confirming = 'discard')}
+        onunpublish={() => (confirming = 'unpublish')}
+        ondelete={() => (confirming = 'delete')}
         onreload={() => void store?.load()}
       />
       <div
@@ -329,7 +360,7 @@
         {/if}
       </div>
     </main>
-    {#if confirmDiscard}
+    {#if confirming === 'discard'}
       <ConfirmModal
         title="Discard draft?"
         body="This drops every change since the last publish, including its holes' edits – except on holes another course uses too."
@@ -337,7 +368,26 @@
         cancelLabel="Keep editing"
         danger
         onconfirm={() => void discard()}
-        oncancel={() => (confirmDiscard = false)}
+        oncancel={() => (confirming = null)}
+      />
+    {:else if confirming === 'unpublish'}
+      <ConfirmModal
+        title="Unpublish course?"
+        body="Players can't pick it for new games any more. Its content stays here as a draft, and Publish brings it back."
+        confirmLabel="Unpublish"
+        cancelLabel="Keep it published"
+        onconfirm={() => void unpublish()}
+        oncancel={() => (confirming = null)}
+      />
+    {:else if confirming === 'delete'}
+      <ConfirmModal
+        title="Delete course?"
+        body="This deletes the course for good. Its holes stay in the hole library."
+        confirmLabel="Delete"
+        cancelLabel="Keep it"
+        danger
+        onconfirm={() => void remove()}
+        oncancel={() => (confirming = null)}
       />
     {/if}
   {/if}

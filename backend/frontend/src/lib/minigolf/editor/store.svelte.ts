@@ -77,6 +77,16 @@ export async function apiDiscardCourse(id: string): Promise<void> {
   if (res.error) throw new HttpError(res.response.status)
 }
 
+export async function apiUnpublishCourse(id: string): Promise<void> {
+  const res = await api.POST('/api/minigolf/courses/{id}/unpublish', { params: { path: { id } } })
+  if (res.error) throw new HttpError(res.response.status)
+}
+
+export async function apiDeleteCourse(id: string): Promise<void> {
+  const res = await api.DELETE('/api/minigolf/courses/{id}', { params: { path: { id } } })
+  if (res.error) throw new HttpError(res.response.status)
+}
+
 const BACKOFF_MS = [1000, 2000, 5000, 10000]
 
 /** A save failure that retrying can't fix (a 4xx other than a timeout or rate limit). */
@@ -234,6 +244,8 @@ export function createCourseStore(
   delayMs = 800,
   publish = apiPublishCourse,
   discard = apiDiscardCourse,
+  unpublish = apiUnpublishCourse,
+  remove = apiDeleteCourse,
 ) {
   const store = createDraftStore<CourseContent>(id, load, save, delayMs)
   return {
@@ -271,6 +283,20 @@ export function createCourseStore(
       await store.stopAutosave()
       await store.hold(() => discard(id))
       await store.load()
+    },
+    /** Saves what's pending, then takes the course out of play (its content stays as the draft).
+     *  False, without unpublishing, when the save didn't end up `saved`. */
+    async unpublish(): Promise<boolean> {
+      await store.flush()
+      if (store.status !== 'saved') return false
+      await store.hold(() => unpublish(id))
+      await store.load()
+      return true
+    },
+    /** Drops pending edits (they'd only 404) and deletes the course. */
+    async delete(): Promise<void> {
+      await store.stopAutosave()
+      await store.hold(() => remove(id))
     },
   }
 }

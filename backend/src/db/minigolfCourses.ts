@@ -8,8 +8,7 @@ import { holeChecks, type Check } from '../shared/minigolf/checks.js'
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
 import { greenhornCourse } from '../shared/minigolf/courses/greenhorn.js'
 import { kingfisherCourse } from '../shared/minigolf/courses/kingfisher.js'
-import { testCourse } from '../shared/minigolf/courses/test.js'
-import type { Hole } from '../shared/minigolf/types.js'
+import type { Course, Hole } from '../shared/minigolf/types.js'
 
 export type CourseContent = { name: string; description: string; difficulty: 1 | 2 | 3; holeIds: string[] }
 export type CourseRow = {
@@ -298,6 +297,24 @@ export async function discardCourseDraft(db: Kysely<Database>, id: string): Prom
   })
 }
 
+/** Takes the course out of play: its published content becomes its draft (unless it has one), so
+ *  nothing is lost and Publish brings it back. Its holes stay as they are. */
+export async function unpublishCourse(db: Kysely<Database>, id: string): Promise<CourseRow | 'missing'> {
+  const row = await db
+    .updateTable('minigolf_courses')
+    .set({
+      draft: sql`COALESCE(draft, published)`,
+      published: null,
+      published_at: null,
+      version: sql<number>`version + 1`,
+      updated_at: sql<Date>`now()`,
+    })
+    .where('id', '=', id)
+    .returningAll()
+    .executeTakeFirst()
+  return row ? toCourseRow(row) : 'missing'
+}
+
 /** Deletes the hole unless a course (draft or published) still uses it. */
 export async function deleteHole(db: Kysely<Database>, id: string): Promise<'deleted' | 'in-use' | 'missing'> {
   return db.transaction().execute(async trx => {
@@ -361,18 +378,23 @@ export async function publishedOfficialHoles(db: Kysely<Database>): Promise<Hole
   })
 }
 
+type Seed = { course: Course; description: string; difficulty: CourseContent['difficulty'] }
+
 /** The code courses seeded as official courses, published. */
-const OFFICIAL_SEEDS = [
-  { course: testCourse, description: 'A short course to try the physics.', difficulty: 1 },
+const OFFICIAL_SEEDS: readonly Seed[] = [
   { course: greenhornCourse, description: 'Nine friendly holes, each with one new trick to learn.', difficulty: 1 },
   { course: kingfisherCourse, description: 'Nine classic holes that reward a true line and the right weight.', difficulty: 2 },
-] as const
+]
 
-/** Seeds each official code course once: a course whose id is already in the table is left alone. */
-export async function seedOfficialCourses(db: Kysely<Database>): Promise<void> {
+/** A course shipped with the code: it can be unpublished, not deleted (seeding would bring it back). */
+export const isBuiltInCourse = (id: string): boolean => OFFICIAL_SEEDS.some(s => s.course.id === id)
+
+/** Seeds each official code course once: a course whose id is already in the table is left alone.
+ *  Tests pass their own `seeds`. */
+export async function seedOfficialCourses(db: Kysely<Database>, seeds: readonly Seed[] = OFFICIAL_SEEDS): Promise<void> {
   const existing = new Set((await db.selectFrom('minigolf_courses').select('id').execute()).map(r => r.id))
   await db.transaction().execute(async trx => {
-    for (const { course, description, difficulty } of OFFICIAL_SEEDS) {
+    for (const { course, description, difficulty } of seeds) {
       if (existing.has(course.id)) continue
       for (const hole of course.holes) {
         await trx

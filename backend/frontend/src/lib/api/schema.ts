@@ -1658,7 +1658,7 @@ export interface paths {
         get: operations["getMinigolfCourse"];
         put?: never;
         post?: never;
-        /** Delete a course (admin) */
+        /** Delete a course; a built-in course can't be deleted, only unpublished (admin) */
         delete: operations["deleteMinigolfCourse"];
         options?: never;
         head?: never;
@@ -1698,6 +1698,25 @@ export interface paths {
         put?: never;
         /** Clear the course's draft, and the drafts of its holes that no other course uses (in its draft or published) (admin) */
         post: operations["discardMinigolfCourse"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/minigolf/courses/{id}/unpublish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take the course out of play: its published content becomes its draft (unless it has one), and Publish brings it back (admin) */
+        post: operations["unpublishMinigolfCourse"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3212,6 +3231,8 @@ export interface components {
             draft?: components["schemas"]["MinigolfCourseContent"] | (null);
             /** @description Something to publish: its own draft, or a draft of one of its holes */
             hasChanges?: boolean;
+            /** @description Shipped with the code (seeded): it can be unpublished, not deleted */
+            builtIn?: boolean;
             version: number;
             /** Format: date-time */
             updatedAt: string;
@@ -6318,6 +6339,7 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };
@@ -6391,6 +6413,32 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description The course, draft discarded */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MinigolfCourse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    unpublishMinigolfCourse: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["MinigolfCourseId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The course, unpublished */
             200: {
                 headers: {
                     [name: string]: unknown;

@@ -1993,13 +1993,14 @@ paths:
         '429': { $ref: '#/components/responses/TooManyRequests' }
     delete:
       operationId: deleteMinigolfCourse
-      summary: Delete a course (admin)
+      summary: Delete a course; a built-in course can't be deleted, only unpublished (admin)
       tags: [minigolf]
       responses:
         '204': { description: Deleted }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
   /api/minigolf/courses/{id}/publish:
@@ -2035,6 +2036,26 @@ paths:
       responses:
         '200':
           description: The course, draft discarded
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MinigolfCourse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/minigolf/courses/{id}/unpublish:
+    parameters:
+      - $ref: '#/components/parameters/MinigolfCourseId'
+    post:
+      operationId: unpublishMinigolfCourse
+      summary: >-
+        Take the course out of play: its published content becomes its draft (unless it has
+        one), and Publish brings it back (admin)
+      tags: [minigolf]
+      responses:
+        '200':
+          description: The course, unpublished
           content:
             application/json:
               schema: { $ref: '#/components/schemas/MinigolfCourse' }
@@ -4239,6 +4260,7 @@ components:
         published: { anyOf: [{ $ref: '#/components/schemas/MinigolfCourseContent' }, { type: string, nullable: true, enum: [null] }] }
         draft: { anyOf: [{ $ref: '#/components/schemas/MinigolfCourseContent' }, { type: string, nullable: true, enum: [null] }] }
         hasChanges: { type: boolean, description: 'Something to publish: its own draft, or a draft of one of its holes' }
+        builtIn: { type: boolean, description: 'Shipped with the code (seeded): it can be unpublished, not deleted' }
         version: { type: integer, minimum: 0 }
         updatedAt: { type: string, format: date-time }
         publishedAt: { type: string, format: date-time, nullable: true }
