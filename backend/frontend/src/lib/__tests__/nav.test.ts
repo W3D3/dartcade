@@ -26,6 +26,23 @@ describe('navTabs', () => {
   })
 })
 
+describe('Progress in the nav', () => {
+  it('takes the Tournaments tab while progression is on', () => {
+    expect(navTabs('s1', 0, true, true).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Progress', 'History'])
+    expect(navTabs('s1', 0, false, true)[2]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
+  })
+  it('sits before Settings in the side nav', () => {
+    expect(sideLinks('s1', false, false, true).map(l => l.label)).toEqual([
+      'Play',
+      'Live match',
+      'Tournaments',
+      'History',
+      'Progress',
+      'Settings',
+    ])
+  })
+})
+
 describe('sideLinks', () => {
   it('lists the design order, with Matchmaking only while it is on', () => {
     expect(sideLinks('s1').map(l => l.label)).toEqual(['Play', 'Live match', 'Tournaments', 'History', 'Settings'])

@@ -23,6 +23,7 @@
   import PickName from './routes/PickName.svelte'
   import Matchmaking from './routes/Matchmaking.svelte'
   import Ranks from './routes/Ranks.svelte'
+  import Progress from './routes/Progress.svelte'
   import Admin from './routes/Admin.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
@@ -31,6 +32,7 @@
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { loadAccountSettings } from '$lib/accountSettings'
+  import { syncTimeZone } from '$lib/progress/timeZone'
   import { setFlagUser, startFlags } from '$lib/flags'
   import { gameModes } from '$lib/gameModes'
   import { me } from '$lib/lobby/sockets'
@@ -88,6 +90,7 @@
     '/friends': Friends,
     '/matchmaking': Matchmaking,
     '/matchmaking/ranks': Ranks,
+    '/progress': Progress,
     '/admin': Admin,
     '/admin/users': AdminUsers,
     '/admin/games': AdminGames,
@@ -153,6 +156,7 @@
     if (id === settingsUser) return
     settingsUser = id
     void loadAccountSettings(id, typeof localStorage === 'undefined' ? null : localStorage)
+    if (id) void syncTimeZone()
   })
 
   // The per-user socket (invites, the lobby indicator) runs while someone is signed in, and

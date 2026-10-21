@@ -15,7 +15,8 @@
   import NavTabItem from './NavTabItem.svelte'
 
   const matchmaking = flag('matchmaking.enabled')
-  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking))
+  const progression = flag('progression.enabled')
+  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression))
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))
   const lobbyLink = $derived(lobby && lobby.kind !== 'create' ? lobby : null)
   let error = $state('')

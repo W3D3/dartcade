@@ -4,6 +4,7 @@
   import { Check, House, RotateCcw, RotateCcwClock, Trophy } from '@lucide/svelte'
   import { ordinal } from '$lib/fmt'
   import Avatar from './Avatar.svelte'
+  import GameXpChip from './progress/GameXpChip.svelte'
   import type { Competitor, WinView } from '$lib/winScreen'
 
   let {
@@ -16,6 +17,7 @@
     primary,
     secondary = null,
     onhistory,
+    xpSessionId = null,
   }: {
     view: WinView
     title: string
@@ -30,6 +32,8 @@
     /** Beside it: Back to lobby next to Rematch. */
     secondary?: { label: string; onclick: () => void } | null
     onhistory: () => void
+    /** Shows what this game paid you (progression); null: no XP chip. */
+    xpSessionId?: string | null
   } = $props()
 
   const winner = $derived(view.competitors[0])
@@ -335,6 +339,9 @@
           {/if}
         </aside>
       </div>
+    {/if}
+    {#if xpSessionId}
+      <div class="rise r5 mt-auto w-full max-w-[460px] self-center"><GameXpChip sessionId={xpSessionId} /></div>
     {/if}
   </main>
 

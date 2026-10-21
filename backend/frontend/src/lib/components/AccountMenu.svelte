@@ -3,11 +3,13 @@
   // Invisible), Friends, Admin (admins only), Settings, Sign out. Phones: the avatar
   // in the header (menu below it). Tablets: the avatar at the foot of the rail (menu beside
   // it). Desktops: a row with your name and status at the foot of the side nav (menu above it).
-  import { ChevronUp, LogOut, Settings, ShieldCheck, UsersRound } from '@lucide/svelte'
+  import { ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UsersRound } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import { me } from '$lib/lobby/sockets'
   import { friendsEntry } from '$lib/nav'
   import { friendsDrawerOpen } from '$lib/friends/drawer'
+  import { progressXp } from '$lib/progress/store'
+  import { levelOf } from '$shared/progression.js'
   import { STATUS_COPY, setInvisible } from '$lib/presence'
   import Avatar from './Avatar.svelte'
   import DevUserSwitch from './DevUserSwitch.svelte'
@@ -24,6 +26,7 @@
   const friends = $derived(friendsEntry($me?.friends ?? null))
   const requestsText = $derived(friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '')
   const triggerLabel = $derived(`Account${name ? `: ${name}` : ''}, ${invisible ? 'Invisible' : 'Online'}${requestsText}`)
+  const level = $derived($progressXp === null ? null : levelOf($progressXp).level)
   let open = $state(false)
   let statusError = $state('')
   let triggerEl: HTMLButtonElement | undefined = $state()
@@ -90,8 +93,9 @@
       {@render avatar(36)}
       <span class="flex flex-col gap-[2px] min-w-0 flex-grow">
         <span class="text-[14px] font-semibold truncate">{name}</span>
-        <span class="flex items-center gap-[5px] text-[12px] text-text-muted"
-          >{invisible ? 'Invisible' : 'Online'}<ChevronUp size={12} strokeWidth={2.4} class="text-text-dim" /></span
+        <span class="flex items-center gap-[5px] whitespace-nowrap text-[12px] text-text-muted"
+          >{#if level !== null}<span class="font-medium text-accent">LV {level}</span><span aria-hidden="true">·</span>
+          {/if}{invisible ? 'Invisible' : 'Online'}<ChevronUp size={12} strokeWidth={2.4} class="text-text-dim" /></span
         >
       </span>
     </button>
@@ -151,6 +155,13 @@
             label="{friends.requests} friend {friends.requests === 1 ? 'request' : 'requests'}"
           />{/if}
       </a>
+      {#if level !== null}
+        <a href="#/progress" role="menuitem" onclick={closeMenu} class={ITEM}>
+          <TrendingUp size={18} strokeWidth={1.8} />
+          Progress
+          <span class="ml-auto rounded-full bg-surface-chip px-[9px] py-[3px] text-[12px] font-semibold text-accent">LV {level}</span>
+        </a>
+      {/if}
       {#if $currentUser?.isModerator}
         <a href="#/admin" role="menuitem" onclick={closeMenu} class={ITEM}>
           <ShieldCheck size={18} strokeWidth={1.8} />

@@ -8,7 +8,8 @@
   import NavTabItem from './NavTabItem.svelte'
 
   const matchmaking = flag('matchmaking.enabled')
-  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking))
+  const progression = flag('progression.enabled')
+  const tabs = $derived(navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression))
 </script>
 
 <nav
