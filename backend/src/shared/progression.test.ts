@@ -1,5 +1,85 @@
 import { describe, expect, it } from 'vitest'
-import { dailyGameFactor, levelCost, levelOf, localDate, xpForLevel } from './progression.js'
+import {
+  type StreakState,
+  addDays,
+  dailyBonus,
+  dailyGameFactor,
+  levelCost,
+  levelOf,
+  localDate,
+  nextMilestone,
+  stepStreak,
+  streakNow,
+  xpForLevel,
+} from './progression.js'
+
+describe('dailyBonus', () => {
+  it('pays 100, 10 more each streak day, 200 from day 11', () => {
+    expect([1, 2, 10, 11, 12, 400].map(dailyBonus)).toEqual([100, 110, 190, 200, 200, 200])
+  })
+})
+
+describe('stepStreak', () => {
+  const fresh: StreakState = { current: 0, best: 0, lastDate: null, freezes: 1 }
+  const at = (s: StreakState, ...days: string[]) => days.reduce((st, d) => stepStreak(st, d).next, s)
+
+  it('starts at 1 and grows a day at a time', () => {
+    const s = at(fresh, '2026-10-01', '2026-10-02', '2026-10-03')
+    expect(s).toEqual({ current: 3, best: 3, lastDate: '2026-10-03', freezes: 1 })
+  })
+
+  it('counts the first game of a day only', () => {
+    const s = at(fresh, '2026-10-01')
+    expect(stepStreak(s, '2026-10-01')).toMatchObject({ counted: false, next: s })
+  })
+
+  it('treats an earlier date (the time zone moved west) as the same day', () => {
+    const s = at(fresh, '2026-10-01', '2026-10-02')
+    expect(stepStreak(s, '2026-10-01')).toMatchObject({ counted: false, next: s })
+  })
+
+  it('spends a freeze on one missed day', () => {
+    const s = at(fresh, '2026-10-01', '2026-10-02')
+    expect(stepStreak(s, '2026-10-04')).toEqual({
+      next: { current: 3, best: 3, lastDate: '2026-10-04', freezes: 0 },
+      counted: true,
+      frozeDay: '2026-10-03',
+      milestone: null,
+    })
+  })
+
+  it('resets after one missed day without a freeze, or two missed days', () => {
+    const noFreeze = at({ ...fresh, freezes: 0 }, '2026-10-01', '2026-10-02')
+    expect(stepStreak(noFreeze, '2026-10-04').next).toMatchObject({ current: 1, best: 2 })
+    const s = at(fresh, '2026-10-01', '2026-10-02')
+    expect(stepStreak(s, '2026-10-05').next).toMatchObject({ current: 1, best: 2, freezes: 1 })
+  })
+
+  it('earns a freeze every 7 days, two at most, and pays milestones', () => {
+    const days = Array.from({ length: 14 }, (_, i) => addDays('2026-10-01', i))
+    const six = at(fresh, ...days.slice(0, 6))
+    const seventh = stepStreak(six, days[6])
+    expect(seventh.next.freezes).toBe(2)
+    expect(seventh.milestone).toEqual({ days: 7, xp: 250 })
+    expect(at(fresh, ...days).freezes).toBe(2)
+    expect(nextMilestone(7)).toEqual({ days: 14, xp: 300 })
+  })
+
+  it('crosses months and years', () => {
+    expect(at(fresh, '2026-12-31', '2027-01-01').current).toBe(2)
+  })
+})
+
+describe('streakNow', () => {
+  const s: StreakState = { current: 5, best: 5, lastDate: '2026-10-10', freezes: 1 }
+  it('stays alive through yesterday, or the day before with a freeze', () => {
+    expect(streakNow(s, '2026-10-10')).toBe(5)
+    expect(streakNow(s, '2026-10-11')).toBe(5)
+    expect(streakNow(s, '2026-10-12')).toBe(5)
+    expect(streakNow({ ...s, freezes: 0 }, '2026-10-12')).toBe(0)
+    expect(streakNow(s, '2026-10-13')).toBe(0)
+  })
+})
 
 describe('level curve', () => {
   it('costs 200 + 40 per level, capped at 2,400 from level 55', () => {

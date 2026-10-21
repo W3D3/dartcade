@@ -6,8 +6,8 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import * as q from '../db/progression.js'
 import type { XpGame, LedgerLine } from '../db/progression.js'
-import { gameAwards, PERSONAL_BESTS, type PlayerGame } from './rules.js'
-import { levelOf, localDate } from '../shared/progression.js'
+import { gameAwards, PERSONAL_BESTS, streakAwards, type PlayerGame } from './rules.js'
+import { levelOf, localDate, stepStreak } from '../shared/progression.js'
 import type { XpGainedMessage, XpLine } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
 
@@ -30,6 +30,8 @@ export function xpLine(r: LedgerLine): XpLine {
       return { kind: 'checkout', amount: r.amount }
     case 'game:best':
       return { kind: 'personalBest', amount: r.amount }
+    case 'day':
+      if (r.kind === 'daily') return { kind: 'daily', amount: r.amount, ...count('streak') }
   }
   if (r.kind === 'dart') return { kind: 'dart', amount: r.amount, ...count('darts') }
   return { kind: LINE_KINDS.find(k => k === r.kind) ?? 'game', amount: r.amount }
@@ -95,6 +97,21 @@ export class ProgressionService {
       const previousBest = pb && !backfill ? await q.previousBest(trx, userId, game.gameId, pb.key, pb.higher, game.id) : null
       const awards = gameAwards({ ...player, previousBest, backfill }, await q.dayTally(trx, userId, day, game.id))
       const written = await q.insertAwards(trx, userId, game.id, day, awards, game.finishedAt)
+      // A newly paid qualifying game is the day's streak game if it's the first one
+      let streak: XpGainedMessage['streak']
+      if (!backfill && written.some(r => r.kind === 'game')) {
+        const step = stepStreak(await q.getStreak(trx, userId), day)
+        if (step.counted) {
+          await q.saveStreak(trx, userId, step.next)
+          written.push(...(await q.insertAwards(trx, userId, game.id, day, streakAwards(step, day, game.id), game.finishedAt)))
+          streak = {
+            current: step.next.current,
+            freezes: step.next.freezes,
+            frozeDay: step.frozeDay,
+            milestone: step.milestone?.days ?? null,
+          }
+        }
+      }
       if (written.length === 0) return null
       const total = written.reduce((a, r) => a + r.amount, 0)
       const { before, after } = await q.addXp(trx, userId, total)
@@ -107,6 +124,7 @@ export class ProgressionService {
         xpAfter: after,
         levelBefore: levelOf(before).level,
         levelAfter: levelOf(after).level,
+        ...(streak && { streak }),
       } satisfies XpGainedMessage
     })
   }

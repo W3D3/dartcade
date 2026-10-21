@@ -9,10 +9,16 @@ vi.mock('../auth/middleware.js', () => ({
   }),
 }))
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn() }))
-vi.mock('../db/progression.js', () => ({ getProgress: vi.fn(), gameLines: vi.fn() }))
+vi.mock('../db/progression.js', () => ({
+  getProgress: vi.fn(),
+  gameLines: vi.fn(),
+  getStreak: vi.fn(),
+  streakDays: vi.fn(),
+  userTimeZone: vi.fn(),
+}))
 
 import { flagEnabled } from '../flags/index.js'
-import { gameLines, getProgress } from '../db/progression.js'
+import { gameLines, getProgress, getStreak, streakDays, userTimeZone } from '../db/progression.js'
 
 const app = () => {
   const a = createFastify()
@@ -24,13 +30,16 @@ beforeEach(() => {
   vi.mocked(flagEnabled).mockReset().mockResolvedValue(true)
   vi.mocked(getProgress).mockReset().mockResolvedValue({ xp: 6780 })
   vi.mocked(gameLines).mockReset().mockResolvedValue([])
+  vi.mocked(userTimeZone).mockReset().mockResolvedValue('Europe/Vienna')
+  vi.mocked(getStreak).mockReset().mockResolvedValue({ current: 0, best: 0, lastDate: null, freezes: 1 })
+  vi.mocked(streakDays).mockReset().mockResolvedValue({ played: [], frozen: [] })
 })
 
 describe('/api/progress', () => {
-  it('shows your XP and level', async () => {
+  it('shows your XP, level and day streak', async () => {
     const res = await app().inject({ method: 'GET', url: '/api/progress/me' })
     expect(res.statusCode).toBe(200)
-    expect(JSON.parse(res.body)).toEqual({ xp: 6780, level: 14 })
+    expect(JSON.parse(res.body)).toMatchObject({ xp: 6780, level: 14, streak: { current: 0, freezes: 1, bonus: 100, playedToday: false } })
   })
 
   it('is not there while progression is off for you', async () => {

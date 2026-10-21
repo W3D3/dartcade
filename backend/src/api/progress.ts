@@ -3,9 +3,10 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
-import { gameLines, getProgress } from '../db/progression.js'
+import { gameLines, getProgress, getStreak, streakDays, userTimeZone } from '../db/progression.js'
 import { xpLine } from '../progression/service.js'
-import { levelOf } from '../shared/progression.js'
+import { addDays, levelOf, localDate } from '../shared/progression.js'
+import { dayStreak } from '../progression/view.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -22,8 +23,13 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
 
   app.get<Route<'getMyProgress'>>('/api/progress/me', { preValidation: requireAuth, schema: fromSpec('getMyProgress') }, async req => {
     await requireProgression(req.userId)
-    const { xp } = await getProgress(db, req.userId)
-    return { xp, level: levelOf(xp).level }
+    const today = localDate(new Date(), await userTimeZone(db, req.userId))
+    const [{ xp }, streak, days] = await Promise.all([
+      getProgress(db, req.userId),
+      getStreak(db, req.userId),
+      streakDays(db, req.userId, addDays(today, -6), today),
+    ])
+    return { xp, level: levelOf(xp).level, streak: dayStreak(streak, today, days.played, days.frozen) }
   })
 
   app.get<Route<'getGameXp'>>('/api/progress/games/:id', { preValidation: requireAuth, schema: fromSpec('getGameXp') }, async req => {

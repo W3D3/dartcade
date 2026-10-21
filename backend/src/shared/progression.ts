@@ -87,3 +87,86 @@ export function validTimeZone(timeZone: string | null | undefined): string {
     return 'UTC'
   }
 }
+
+// ---- Daily bonus and day streak -------------------------------------------------------------
+// The first qualifying game of a local day pays the daily bonus and extends the day streak.
+
+/** The bonus for the first game of streak day `day` (1 = the first): 100, +10 a day, at most 200 (day 11). */
+export function dailyBonus(day: number): number {
+  return Math.min(100 + 10 * Math.max(0, day - 1), 200)
+}
+
+/** Freezes banked at most; a new account starts with one and earns one every 7 streak days. */
+export const MAX_FREEZES = 2
+export const FREEZE_EVERY = 7
+
+export type Milestone = { days: number; xp: number }
+/** Streak lengths that pay a one-off gift (some unlock a cosmetic too: PERKS). */
+export const MILESTONES: readonly Milestone[] = [
+  { days: 7, xp: 250 },
+  { days: 14, xp: 300 },
+  { days: 30, xp: 400 },
+  { days: 60, xp: 500 },
+  { days: 100, xp: 750 },
+  { days: 365, xp: 1000 },
+]
+
+export const nextMilestone = (streak: number): Milestone | null => MILESTONES.find(m => m.days > streak) ?? null
+
+const DAY_MS = 86_400_000
+/** Days from `from` to `to` (YYYY-MM-DD each): 1 for the next day. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / DAY_MS)
+}
+/** `date` moved by `days` (YYYY-MM-DD). */
+export function addDays(date: string, days: number): string {
+  return new Date(Date.parse(`${date}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10)
+}
+
+export type StreakState = { current: number; best: number; lastDate: string | null; freezes: number }
+
+/** What a qualifying game on `today` does to the streak. */
+export type StreakStep = {
+  next: StreakState
+  /** The day's first qualifying game: it pays the bonus. False when today already counted. */
+  counted: boolean
+  /** The missed day a freeze covered. */
+  frozeDay: string | null
+  /** A milestone reached today. */
+  milestone: Milestone | null
+}
+
+/**
+ * Plays a qualifying game on `today` into the streak. Missing exactly one day spends a banked
+ * freeze; missing more (or one without a freeze) starts over at 1. A date before the last one (the
+ * time zone moved west) counts as the same day.
+ */
+export function stepStreak(s: StreakState, today: string): StreakStep {
+  const gap = s.lastDate === null ? null : daysBetween(s.lastDate, today)
+  if (gap !== null && gap <= 0) return { next: s, counted: false, frozeDay: null, milestone: null }
+  let current = 1
+  let freezes = s.freezes
+  let frozeDay: string | null = null
+  if (gap === 1) current = s.current + 1
+  else if (gap === 2 && freezes > 0 && s.current > 0) {
+    freezes -= 1
+    frozeDay = addDays(today, -1)
+    current = s.current + 1
+  }
+  if (current % FREEZE_EVERY === 0) freezes = Math.min(MAX_FREEZES, freezes + 1)
+  return {
+    next: { current, best: Math.max(s.best, current), lastDate: today, freezes },
+    counted: true,
+    frozeDay,
+    milestone: MILESTONES.find(m => m.days === current) ?? null,
+  }
+}
+
+/** The streak as it stands on `today`: alive while yesterday counted, or the day before with a freeze to cover it. */
+export function streakNow(s: StreakState, today: string): number {
+  if (s.lastDate === null) return 0
+  const gap = daysBetween(s.lastDate, today)
+  if (gap <= 1) return s.current
+  if (gap === 2 && s.freezes > 0) return s.current
+  return 0
+}

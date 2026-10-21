@@ -82,27 +82,29 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     const id = await duel({ first: [T20, T20, T20] })
     await service.awardGame(id)
     await service.awardGame(id)
-    // ann: 12 darts + game 50 + win 100 + one 180; bob: 12 darts + game 50
-    expect((await getProgress(db, 'ann')).xp).toBe(12 + 50 + 100 + 25)
-    expect((await getProgress(db, 'bob')).xp).toBe(62)
+    // ann: 12 darts + game 50 + win 100 + one 180 + the day's first-game bonus; bob: 12 darts + game 50 + bonus
+    expect((await getProgress(db, 'ann')).xp).toBe(12 + 50 + 100 + 25 + 100)
+    expect((await getProgress(db, 'bob')).xp).toBe(162)
     expect(pushed.map(p => p.userId)).toEqual(['ann', 'bob'])
     expect(pushed[0].msg).toMatchObject({
       sessionId: id,
-      total: 187,
+      total: 287,
       xpBefore: 0,
-      xpAfter: 187,
+      xpAfter: 287,
+      streak: { current: 1, freezes: 1, frozeDay: null, milestone: null },
       levelBefore: 1,
-      levelAfter: 1,
+      levelAfter: 2,
       lines: expect.arrayContaining([
         { kind: 'dart', amount: 12, count: 12 },
         { kind: 'oneEighty', amount: 25, count: 1 },
+        { kind: 'daily', amount: 100, count: 1 },
       ]),
     })
   })
 
   it('pays a manual game half game XP and no dart XP', async () => {
     await service.awardGame(await duel({ source: 'manual' }))
-    expect((await getProgress(db, 'bob')).xp).toBe(25)
+    expect((await getProgress(db, 'bob')).xp).toBe(125)
   })
 
   it('counts the day in the account’s time zone', async () => {
@@ -139,8 +141,31 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     const drop = await duel()
     await service.awardGame(keep)
     await service.awardGame(drop)
-    expect((await getProgress(db, 'bob')).xp).toBe(124)
+    expect((await getProgress(db, 'bob')).xp).toBe(224)
     await db.transaction().execute(trx => revokeGameXp(trx, drop))
-    expect((await getProgress(db, 'bob')).xp).toBe(62)
+    expect((await getProgress(db, 'bob')).xp).toBe(162)
+  })
+
+  it('pays the bonus for the first game of a day and keeps the streak with a freeze', async () => {
+    const day = (d: number) => new Date(`2026-10-0${d}T12:00:00Z`)
+    await service.awardGame(await duel({ at: day(1) }))
+    await service.awardGame(await duel({ at: day(1) }))
+    await service.awardGame(await duel({ at: day(2) }))
+    // Day 3 missed: the freeze covers it
+    await service.awardGame(await duel({ at: day(4) }))
+    const bonuses = await db
+      .selectFrom('xp_ledger')
+      .select(['kind', 'amount', 'source_id'])
+      .where('user_id', '=', 'bob')
+      .where('kind', 'in', ['daily', 'freeze'])
+      .orderBy('id')
+      .execute()
+    expect(bonuses).toEqual([
+      { kind: 'daily', amount: 100, source_id: '2026-10-01' },
+      { kind: 'daily', amount: 110, source_id: '2026-10-02' },
+      { kind: 'daily', amount: 120, source_id: '2026-10-04' },
+      { kind: 'freeze', amount: 0, source_id: '2026-10-03' },
+    ])
+    expect(pushed.at(-1)?.msg.streak).toEqual({ current: 3, freezes: 0, frozeDay: '2026-10-03', milestone: null })
   })
 })

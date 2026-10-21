@@ -2,7 +2,7 @@ import { sql, type Kysely, type NotNull } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import type { Award, DayTally } from '../progression/rules.js'
-import { levelOf } from '../shared/progression.js'
+import { levelOf, type StreakState } from '../shared/progression.js'
 
 const StatsSchema = z.record(z.string(), z.number()).catch({})
 
@@ -164,7 +164,7 @@ export async function insertAwards(
         user_id: userId,
         kind: a.kind,
         source_type: a.sourceType,
-        source_id: sourceId,
+        source_id: a.sourceId ?? sourceId,
         amount: a.amount,
         local_date: localDate,
         meta: JSON.stringify(a.meta),
@@ -200,7 +200,8 @@ export async function gameLines(db: Kysely<Database>, userId: string, sessionId:
     .selectFrom('xp_ledger')
     .select(['kind', 'source_type', 'amount', 'meta'])
     .where('user_id', '=', userId)
-    .where('source_id', '=', sessionId)
+    // The daily bonus and a freeze are keyed by day; they name the game that paid them
+    .where(eb => eb.or([eb('source_id', '=', sessionId), eb(sql<string>`meta->>'sessionId'`, '=', sessionId)]))
     .orderBy('id')
     .execute()
   return rows.map(r => ({ kind: r.kind, sourceType: r.source_type, amount: r.amount, meta: r.meta }))
@@ -233,4 +234,49 @@ export async function backfillDone(db: Kysely<Database>): Promise<boolean> {
 
 export async function markBackfillDone(db: Kysely<Database>): Promise<void> {
   await db.insertInto('progression_backfill').defaultValues().execute()
+}
+
+/** The account's day streak; a new account's has its one starting freeze. */
+export async function getStreak(db: Kysely<Database>, userId: string): Promise<StreakState> {
+  const row = await db
+    .selectFrom('user_progress')
+    .select(['streak_current', 'streak_best', sql<string | null>`streak_last_date::text`.as('last'), 'freezes'])
+    .where('user_id', '=', userId)
+    .executeTakeFirst()
+  return row
+    ? { current: row.streak_current, best: row.streak_best, lastDate: row.last, freezes: row.freezes }
+    : { current: 0, best: 0, lastDate: null, freezes: 1 }
+}
+
+export async function saveStreak(db: Kysely<Database>, userId: string, s: StreakState): Promise<void> {
+  const cols = { streak_current: s.current, streak_best: s.best, streak_last_date: s.lastDate, freezes: s.freezes }
+  await db
+    .insertInto('user_progress')
+    .values({ user_id: userId, ...cols })
+    .onConflict(oc => oc.column('user_id').doUpdateSet({ ...cols, updated_at: new Date() }))
+    .execute()
+}
+
+/** The days in `[from, to]` the account played a qualifying game on, and the ones a freeze covered. */
+export async function streakDays(
+  db: Kysely<Database>,
+  userId: string,
+  from: string,
+  to: string,
+): Promise<{ played: string[]; frozen: string[] }> {
+  const rows = await db
+    .selectFrom('xp_ledger')
+    .select(['kind', sql<string>`local_date::text`.as('day'), 'source_id'])
+    .where('user_id', '=', userId)
+    .where(eb =>
+      eb.or([
+        eb.and([eb('kind', '=', 'game'), eb('local_date', '>=', from), eb('local_date', '<=', to)]),
+        eb.and([eb('kind', '=', 'freeze'), eb('source_id', '>=', from), eb('source_id', '<=', to)]),
+      ]),
+    )
+    .execute()
+  return {
+    played: [...new Set(rows.filter(r => r.kind === 'game').map(r => r.day))],
+    frozen: rows.filter(r => r.kind === 'freeze').map(r => r.source_id),
+  }
 }
