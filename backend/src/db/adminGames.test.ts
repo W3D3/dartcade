@@ -2,7 +2,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession } from './queries.js'
-import { getInvalidation, invalidateGame, listAllGames, type AdminGameFilter } from './adminGames.js'
+import { getInvalidation, invalidateGame, listAllGames, restoreGame, type AdminGameFilter } from './adminGames.js'
 import { getFinishedGame, getStatRows, getViewableGame, listFinishedGames } from './history.js'
 import { getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult } from './ranked.js'
 import type { Database } from './schema.js'
@@ -242,6 +242,88 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
       expect(await db.selectFrom('game_sessions').select('invalidated_at').where('id', '=', 'g4').executeTakeFirst()).toEqual({
         invalidated_at: null,
       })
+    })
+  })
+  describe('restoreGame', () => {
+    const duel = (winner: string, loser: string) =>
+      [
+        { won: true, players: [{ userId: winner, average: 60 }] },
+        { won: false, players: [{ userId: loser, average: 40 }] },
+      ] as [
+        { won: boolean; players: { userId: string; average: number }[] },
+        { won: boolean; players: { userId: string; average: number }[] },
+      ]
+    const page = { limit: 25, after: null }
+    const pair = ['u5', 'u6', 'u7', 'u8']
+
+    beforeAll(async () => {
+      await db
+        .insertInto('user')
+        .values(pair.map(id => ({ id, name: id.toUpperCase(), email: `${id}@example.com`, emailVerified: true, image: null, role: null })))
+        .execute()
+      const seats = (a: string, b: string): [string, string | null][] => [
+        [a.toUpperCase(), a],
+        [b.toUpperCase(), b],
+      ]
+      await game('s1', 'x01', seats('u5', 'u6'), 'finished', 200)
+      await game('s2', 'x01', seats('u5', 'u6'), 'finished', 210)
+      await game('s3', 'x01', seats('u5', 'u6'), 'finished', 220)
+      await recordRankedResult(db, { sessionId: 's1', mode: '1v1', at: t(205), sides: duel('u5', 'u6') })
+      await recordRankedResult(db, { sessionId: 's2', mode: '1v1', at: t(215), sides: duel('u6', 'u5') })
+      await recordRankedResult(db, { sessionId: 's3', mode: '1v1', at: t(225), sides: duel('u5', 'u6') })
+      await game('o1', 'x01', seats('u7', 'u8'), 'finished', 300)
+      await recordRankedResult(db, { sessionId: 'o1', mode: '1v1', at: t(305), sides: duel('u7', 'u8') })
+    })
+
+    it('puts a game from the middle back where it was played: the ratings come out as before', async () => {
+      const before = [await getRatings(db, 'u5'), await getRatings(db, 'u6')]
+      await invalidateGame(db, 's2', 'u1', 'Board was misreading')
+      expect((await getRatings(db, 'u5'))['1v1'].matches).toBe(2)
+      expect((await listFinishedGames(db, 'u5', page)).games.map(g => g.id)).toEqual(['s3', 's1'])
+
+      expect(await restoreGame(db, 's2', 'u2')).toEqual({ recalculated: ['1v1'] })
+
+      expect([await getRatings(db, 'u5'), await getRatings(db, 'u6')]).toEqual(before)
+      expect((await listFinishedGames(db, 'u5', page)).games.map(g => g.id)).toEqual(['s3', 's2', 's1'])
+      expect(await getViewableGame(db, 's2', 'u5')).toMatchObject({ id: 's2' })
+      expect(await getInvalidation(db, 's2')).toBeNull()
+      expect(await recentRanked(db, 'u5')).toHaveLength(3)
+      const audit = await db.selectFrom('admin_audit').selectAll().where('target', '=', 's2').orderBy('id').execute()
+      expect(audit.map(a => [a.action, a.admin_user_id])).toEqual([
+        ['game.invalidate', 'u1'],
+        ['game.restore', 'u2'],
+      ])
+      expect(audit[1]?.detail).toMatchObject({
+        mode: 'x01',
+        recalculated: ['1v1'],
+        wasInvalidatedBy: 'u1',
+        wasInvalidatedFor: 'Board was misreading',
+      })
+    })
+
+    it('gives a player their rating back when the restored game was their only one', async () => {
+      const rows = () => db.selectFrom('ranked_ratings').selectAll().where('user_id', 'in', ['u7', 'u8']).execute()
+      const before = await rows()
+      expect(before).toHaveLength(2)
+
+      await invalidateGame(db, 'o1', 'u1', null)
+      expect(await rows()).toEqual([])
+
+      await restoreGame(db, 'o1', 'u1')
+      const after = await rows()
+      expect(after.map(r => [r.user_id, r.rating, r.matches, r.wins]).sort()).toEqual(
+        before.map(r => [r.user_id, r.rating, r.matches, r.wins]).sort(),
+      )
+    })
+
+    it('refuses a game that is not invalidated, and an unknown one', async () => {
+      expect(await restoreGame(db, 's1', 'u1')).toBe('not-invalidated')
+      expect(await restoreGame(db, 'nope', 'u1')).toBe('not-found')
+    })
+
+    it('can be invalidated again after a restore', async () => {
+      expect(await invalidateGame(db, 's2', 'u1', null)).toEqual({ recalculated: ['1v1'] })
+      expect(await restoreGame(db, 's2', 'u1')).toEqual({ recalculated: ['1v1'] })
     })
   })
 })

@@ -82,6 +82,16 @@ export async function invalidateGame(id: string, reason: string): Promise<{ reca
   return res.data ?? { error: res.error.error }
 }
 
+/** What restoring a game says; the same text on the list and the details page. */
+export const RESTORE_WARNING =
+  "The game counts again in its players' history, stats and best values. If it was ranked, the ratings are recalculated with it."
+
+/** Takes an invalidation back. On a refusal (not invalidated, gone), the message to show. */
+export async function restoreGame(id: string): Promise<{ recalculated: string[] } | { error: string }> {
+  const res = await api.POST('/api/admin/games/{id}/restore', { params: { path: { id } } })
+  return res.data ?? { error: res.error.error }
+}
+
 /** "by Mo on 2 Oct 2026: Board was misreading": who, when and (if given) why; the account may be gone. */
 export function invalidationText(i: NonNullable<Invalidation>): string {
   const when = new Date(i.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })

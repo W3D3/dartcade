@@ -2,8 +2,9 @@
 <script lang="ts">
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import { Ban, ChevronRight, LoaderCircle, Search } from '@lucide/svelte'
+  import { Ban, ChevronRight, LoaderCircle, Search, Undo2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -17,6 +18,8 @@
     DEFAULT_FILTERS,
     invalidateGame,
     invalidationText,
+    restoreGame,
+    RESTORE_WARNING,
     STATUS_OPTIONS,
     loadGames,
     outcome,
@@ -104,6 +107,22 @@
           }
         : g,
     )
+  }
+
+  // The invalidated game asking to be restored
+  let restoring = $state<AdminGameSummary | null>(null)
+
+  async function confirmRestore(): Promise<void> {
+    const game = restoring
+    if (!game) return
+    restoring = null
+    invalidateError = ''
+    const result = await restoreGame(game.id)
+    if ('error' in result) {
+      invalidateError = result.error
+      return
+    }
+    games = games.map(g => (g.id === game.id ? { ...g, invalidated: null } : g))
   }
 
   let playerTimer: ReturnType<typeof setTimeout> | undefined
@@ -227,6 +246,15 @@
                     onclick={() => (confirming = g)}
                     class="absolute right-11 top-1/2 z-10 -translate-y-1/2 hover:text-live"><Ban size={16} /></Button
                   >
+                {:else if g.status === 'finished'}
+                  <Button
+                    variant="quiet"
+                    size="icon-sm"
+                    aria-label="Restore this game"
+                    title="Restore"
+                    onclick={() => (restoring = g)}
+                    class="absolute right-11 top-1/2 z-10 -translate-y-1/2"><Undo2 size={16} /></Button
+                  >
                 {/if}
                 {#if g.status === 'finished'}
                   <a
@@ -256,6 +284,16 @@
     </main>
     {#if confirming}
       <InvalidateGameModal onconfirm={(reason: string) => void confirmInvalidate(reason)} oncancel={() => (confirming = null)} />
+    {/if}
+    {#if restoring}
+      <ConfirmModal
+        title="Restore this game?"
+        body={RESTORE_WARNING}
+        confirmLabel="Restore"
+        cancelLabel="Cancel"
+        onconfirm={() => void confirmRestore()}
+        oncancel={() => (restoring = null)}
+      />
     {/if}
   {/if}
 </Layout>

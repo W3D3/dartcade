@@ -26,7 +26,7 @@ the game, its seats, darts and input log stay, so an investigation can still ope
 - Moderators see it in the all-games list (an "invalidated" badge, who, when and why) and can filter for only those (`status=invalidated`); its details page shows a banner and no longer offers the button.
 - An audit row (`admin_audit`: id, user id, action `game.invalidate`, target, JSON detail with the reason, created_at) is written in the same transaction.
   It is shared with impersonation (PR 3), so the migration lands here.
-- No restore yet. The `ranked_results` rows stay (flagged by their game), so a later restore could replay the ratings with the game again.
+- Restore: `POST /api/admin/games/:id/restore` clears the three columns and replays the ratings with the game again (it slots back in where it was played), with a `game.restore` audit row. Moderators get a Restore button on the list row and in the details banner. The replay writes `ranked_ratings` as an upsert, so a player whose rating row went away while their only ranked game was invalidated gets it back.
 
 ## Moderators
 
@@ -69,4 +69,4 @@ through `getAuthUser()`, so the app, `/ws/me` and lobbies act as the target with
 
 ## Out of scope
 
-Bans, restoring an invalidated game, a richer investigation view (raw input log, bridge events).
+Bans, a richer investigation view (raw input log, bridge events).
