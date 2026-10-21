@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { beforeEach, vi } from 'vitest'
-import { DEFAULT_FILTERS, filterQuery, invalidateGame, invalidationText, outcome, type AdminGameSummary } from './games'
+import { DEFAULT_FILTERS, filterQuery, invalidateGame, invalidationText, outcome, restoreGame, type AdminGameSummary } from './games'
 import { api } from '$lib/api'
 
 vi.mock('$lib/api', () => ({ api: { POST: vi.fn(), GET: vi.fn() } }))
@@ -81,6 +81,21 @@ describe('invalidateGame', () => {
   it("returns the server's reason when it refuses", async () => {
     vi.mocked(api.POST).mockResolvedValue({ error: { error: 'This game is already invalidated' }, response: new Response() })
     expect(await invalidateGame('g1', '')).toEqual({ error: 'This game is already invalidated' })
+  })
+})
+
+describe('restoreGame', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('returns the modes that were recalculated', async () => {
+    vi.mocked(api.POST).mockResolvedValue({ data: { recalculated: ['1v1'] }, response: new Response() })
+    expect(await restoreGame('g1')).toEqual({ recalculated: ['1v1'] })
+    expect(api.POST).toHaveBeenCalledWith('/api/admin/games/{id}/restore', { params: { path: { id: 'g1' } } })
+  })
+
+  it("returns the server's reason when it refuses", async () => {
+    vi.mocked(api.POST).mockResolvedValue({ error: { error: 'This game is not invalidated' }, response: new Response() })
+    expect(await restoreGame('g1')).toEqual({ error: 'This game is not invalidated' })
   })
 })
 

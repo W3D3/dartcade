@@ -860,13 +860,37 @@ paths:
           description: Invalidated
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/AdminGameInvalidated' }
+              schema: { $ref: '#/components/schemas/AdminGameRecalculated' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '401': { $ref: '#/components/responses/Unauthorized' }
         '403': { $ref: '#/components/responses/Forbidden' }
         '404': { $ref: '#/components/responses/NotFound' }
         '409':
           description: The game is not finished, or already invalidated
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/admin/games/{id}/restore:
+    parameters:
+      - $ref: '#/components/parameters/GameId'
+    post:
+      operationId: restoreAdminGame
+      summary: Take an invalidation back, and recalculate the ratings with the game again (admin or moderator)
+      description: The game counts in history, stats and best values again. Ranked ratings of the modes it was rated in are replayed with it, in the order the games were played.
+      tags: [admin]
+      responses:
+        '200':
+          description: Restored
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AdminGameRecalculated' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: The game is not invalidated
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -2722,14 +2746,14 @@ components:
       additionalProperties: false
       properties:
         reason: { type: string, maxLength: 500, description: 'Why the game is invalidated; optional, blank counts as none' }
-    AdminGameInvalidated:
+    AdminGameRecalculated:
       type: object
       required: [recalculated]
       additionalProperties: false
       properties:
         recalculated:
           type: array
-          description: The ranked modes whose ratings were replayed without the game
+          description: The ranked modes whose ratings were replayed (without the game when it was invalidated, with it when restored)
           items: { type: string, enum: ['1v1', '2v2'] }
     AdminGameList:
       type: object

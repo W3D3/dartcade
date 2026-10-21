@@ -210,3 +210,56 @@ export async function invalidateGame(
     return { recalculated: modes }
   })
 }
+
+/**
+ * Takes the invalidation back: the game counts in history, stats and ratings again, and the ranked
+ * ratings of every mode it was rated in are replayed with it (it slots back in where it was played).
+ * One transaction, with an audit row.
+ */
+export async function restoreGame(
+  db: Kysely<Database>,
+  id: string,
+  moderatorUserId: string,
+): Promise<'not-found' | 'not-invalidated' | { recalculated: RankedMode[] }> {
+  return db.transaction().execute(async trx => {
+    const game = await trx
+      .selectFrom('game_sessions')
+      .select(['id', 'game_id', 'owner_user_id', 'invalidated_at', 'invalidated_by', 'invalidation_reason'])
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst()
+    if (!game) return 'not-found'
+    if (game.invalidated_at === null) return 'not-invalidated'
+    const players = await trx
+      .selectFrom('game_players')
+      .select(['seat', 'name', 'user_id'])
+      .where('session_id', '=', id)
+      .orderBy('seat')
+      .execute()
+    const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
+    const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
+    await trx
+      .updateTable('game_sessions')
+      .set({ invalidated_at: null, invalidated_by: null, invalidation_reason: null })
+      .where('id', '=', id)
+      .execute()
+    for (const mode of modes) await recalculateRatings(trx, mode)
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: moderatorUserId,
+        action: 'game.restore',
+        target: id,
+        detail: JSON.stringify({
+          mode: game.game_id,
+          ownerUserId: game.owner_user_id,
+          players,
+          recalculated: modes,
+          wasInvalidatedBy: game.invalidated_by,
+          wasInvalidatedFor: game.invalidation_reason,
+        }),
+      })
+      .execute()
+    return { recalculated: modes }
+  })
+}

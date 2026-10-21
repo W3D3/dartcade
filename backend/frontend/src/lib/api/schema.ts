@@ -684,6 +684,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/games/{id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Take an invalidation back, and recalculate the ratings with the game again (admin or moderator)
+         * @description The game counts in history, stats and best values again. Ranked ratings of the modes it was rated in are replayed with it, in the order the games were played.
+         */
+        post: operations["restoreAdminGame"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/users": {
         parameters: {
             query?: never;
@@ -2031,8 +2053,8 @@ export interface components {
             /** @description Why the game is invalidated; optional, blank counts as none */
             reason?: string;
         };
-        AdminGameInvalidated: {
-            /** @description The ranked modes whose ratings were replayed without the game */
+        AdminGameRecalculated: {
+            /** @description The ranked modes whose ratings were replayed (without the game when it was invalidated, with it when restored) */
             recalculated: ("1v1" | "2v2")[];
         };
         AdminGameList: {
@@ -4147,7 +4169,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["AdminGameInvalidated"];
+                    "application/json": components["schemas"]["AdminGameRecalculated"];
                 };
             };
             400: components["responses"]["BadRequest"];
@@ -4155,6 +4177,41 @@ export interface operations {
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
             /** @description The game is not finished, or already invalidated */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    restoreAdminGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Restored */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGameRecalculated"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The game is not invalidated */
             409: {
                 headers: {
                     [name: string]: unknown;

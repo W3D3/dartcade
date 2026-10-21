@@ -286,11 +286,12 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
   for (const [userId, state] of states) {
     const at = lastGame.get(userId)
     if (at !== undefined) {
+      // An upsert: a player whose rating row went away while their games were invalidated gets it back
+      const columns = { ...ratingColumns(state), updated_at: at }
       await trx
-        .updateTable('ranked_ratings')
-        .set({ ...ratingColumns(state), updated_at: at })
-        .where('user_id', '=', userId)
-        .where('mode', '=', mode)
+        .insertInto('ranked_ratings')
+        .values({ user_id: userId, mode, ...columns })
+        .onConflict(oc => oc.columns(['user_id', 'mode']).doUpdateSet(columns))
         .execute()
     }
   }

@@ -14,7 +14,12 @@ vi.mock('../auth/admin.js', () => ({
   requireModerator: vi.fn((_req: any, _reply: any, done: () => void) => done()),
 }))
 vi.mock('../db/history.js', () => ({ getFinishedGame: vi.fn() }))
-vi.mock('../db/adminGames.js', () => ({ listAllGames: vi.fn(), invalidateGame: vi.fn(), getInvalidation: vi.fn().mockResolvedValue(null) }))
+vi.mock('../db/adminGames.js', () => ({
+  listAllGames: vi.fn(),
+  invalidateGame: vi.fn(),
+  restoreGame: vi.fn(),
+  getInvalidation: vi.fn().mockResolvedValue(null),
+}))
 vi.mock('../db/queries.js', () => ({ getSessionEvents: vi.fn().mockResolvedValue([]) }))
 
 import * as adminGames from '../db/adminGames.js'
@@ -65,6 +70,8 @@ describe('admin games API', () => {
     expect((await makeApp().inject({ method: 'GET', url: '/api/admin/games/g1' })).statusCode).toBe(403)
     expect((await makeApp().inject({ method: 'POST', url: '/api/admin/games/g1/invalidate', payload: {} })).statusCode).toBe(403)
     expect(adminGames.invalidateGame).not.toHaveBeenCalled()
+    expect((await makeApp().inject({ method: 'POST', url: '/api/admin/games/g1/restore' })).statusCode).toBe(403)
+    expect(adminGames.restoreGame).not.toHaveBeenCalled()
     vi.mocked(admin.requireModerator).mockImplementation((_req: any, _reply: any, done: () => void) => done())
   })
 
@@ -170,6 +177,25 @@ describe('admin games API', () => {
       expect((await invalidate({})).statusCode).toBe(409)
       vi.mocked(adminGames.invalidateGame).mockResolvedValueOnce('already-invalidated')
       expect((await invalidate({})).statusCode).toBe(409)
+    })
+  })
+
+  describe('POST /api/admin/games/:id/restore', () => {
+    const restore = () => makeApp().inject({ method: 'POST', url: '/api/admin/games/g1/restore' })
+
+    it('restores as the signed-in user and says which modes were recalculated', async () => {
+      vi.mocked(adminGames.restoreGame).mockResolvedValue({ recalculated: ['1v1'] })
+      const res = await restore()
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ recalculated: ['1v1'] })
+      expect(adminGames.restoreGame).toHaveBeenCalledWith(expect.anything(), 'g1', 'admin-1')
+    })
+
+    it('404s an unknown game and 409s one that is not invalidated', async () => {
+      vi.mocked(adminGames.restoreGame).mockResolvedValueOnce('not-found')
+      expect((await restore()).statusCode).toBe(404)
+      vi.mocked(adminGames.restoreGame).mockResolvedValueOnce('not-invalidated')
+      expect((await restore()).statusCode).toBe(409)
     })
   })
 })

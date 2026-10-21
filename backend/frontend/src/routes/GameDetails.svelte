@@ -2,8 +2,9 @@
   // A finished game's details (X01-Details*, ATC-Details* boards): the result, the match stats
   // for any mode, and the mode's own section. Finished games don't change: loaded once.
   import { onMount } from 'svelte'
+  import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
-  import { invalidateGame, invalidationText, type Invalidation } from '$lib/admin/games'
+  import { invalidateGame, invalidationText, restoreGame, RESTORE_WARNING, type Invalidation } from '$lib/admin/games'
   import Scorecard from '$lib/components/minigolf/Scorecard.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -65,6 +66,16 @@
     if ('error' in result) invalidateError = result.error
     else await load()
   }
+
+  // ... and take it back
+  let confirmingRestore = $state(false)
+  async function confirmRestore(): Promise<void> {
+    confirmingRestore = false
+    invalidateError = ''
+    const result = await restoreGame(params.id)
+    if ('error' in result) invalidateError = result.error
+    else await load()
+  }
 </script>
 
 <Layout title="Match details">
@@ -91,9 +102,15 @@
         {@const sides = detailSides(d)}
         <DetailsHeader detail={d} {back} oninvalidate={admin && !invalidated ? () => (confirmingInvalidate = true) : undefined} />
         {#if invalidated}
-          <p role="status" class="m-0 border-b border-line bg-live-soft px-4 py-3 text-[14px] text-live-text md:px-7">
-            {invalidationText(invalidated)}. It no longer counts in anyone's history, stats or ratings.
-          </p>
+          <div
+            role="status"
+            class="flex flex-wrap items-center gap-x-4 gap-y-2 border-b border-line bg-live-soft px-4 py-3 text-[14px] text-live-text md:px-7"
+          >
+            <span class="min-w-0 flex-1 basis-[260px]"
+              >{invalidationText(invalidated)}. It no longer counts in anyone's history, stats or ratings.</span
+            >
+            <Button variant="outline" size="md" onclick={() => (confirmingRestore = true)}>Restore game</Button>
+          </div>
         {/if}
         {#if invalidateError}<div class="px-4 pt-3 md:px-7"><ErrorText>{invalidateError}</ErrorText></div>{/if}
         {#if d.detail.mode === 'p121'}
@@ -163,6 +180,16 @@
       </svelte:boundary>
     {/if}
   </div>
+  {#if confirmingRestore}
+    <ConfirmModal
+      title="Restore this game?"
+      body={RESTORE_WARNING}
+      confirmLabel="Restore"
+      cancelLabel="Cancel"
+      onconfirm={() => void confirmRestore()}
+      oncancel={() => (confirmingRestore = false)}
+    />
+  {/if}
   {#if confirmingInvalidate}
     <InvalidateGameModal onconfirm={(reason: string) => void confirmInvalidate(reason)} oncancel={() => (confirmingInvalidate = false)} />
   {/if}
