@@ -11,6 +11,7 @@
   import { Button } from '$lib/components/ui/button/index.js'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Select } from '$lib/components/ui/select/index.js'
+  import { DatePicker } from '$lib/components/ui/date-picker/index.js'
   import { api, type GameInfo } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { gamesTrail } from '$lib/admin/breadcrumbs'
@@ -151,8 +152,6 @@
     void api.GET('/api/gamemodes').then(r => (modes = r.data?.modes ?? []))
     void reload()
   })
-
-  const field = 'h-11 rounded-[10px] border border-line-3 bg-transparent px-3 text-[14px] text-text'
 </script>
 
 <Layout title="Games">
@@ -200,14 +199,28 @@
             }}
           />
         </div>
-        <label class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
+        <div class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
           From
-          <input type="date" class={field} bind:value={filters.from} onchange={() => void reload()} />
-        </label>
-        <label class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
+          <DatePicker
+            label="From"
+            value={filters.from}
+            onchange={(v: string) => {
+              filters.from = v
+              void reload()
+            }}
+          />
+        </div>
+        <div class="flex flex-col gap-1 text-[12px] label-caps text-text-dim">
           To
-          <input type="date" class={field} bind:value={filters.to} onchange={() => void reload()} />
-        </label>
+          <DatePicker
+            label="To"
+            value={filters.to}
+            onchange={(v: string) => {
+              filters.to = v
+              void reload()
+            }}
+          />
+        </div>
         <label class="flex h-11 items-center gap-2 text-[14px] text-text">
           <input type="checkbox" bind:checked={filters.ranked} onchange={() => void reload()} />
           Ranked only
