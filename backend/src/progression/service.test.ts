@@ -4,6 +4,8 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { ProgressionService } from './service.js'
 import { getProgress, revokeGameXp } from '../db/progression.js'
+import { insertSet, getSet } from '../db/challenges.js'
+import { reroll } from './challengeSets.js'
 import type { XpGainedMessage } from '../schema/lobby-ws.js'
 
 const T20 = { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }
@@ -29,8 +31,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
   beforeEach(async () => {
     pushed = []
     service = new ProgressionService({ db, push: (userId, msg) => void pushed.push({ userId, msg }), warn: () => undefined })
-    await sql`TRUNCATE xp_ledger, user_progress, progression_backfill, game_sessions CASCADE`.execute(db)
+    await sql`TRUNCATE xp_ledger, user_progress, progression_backfill, game_sessions, user_challenges CASCADE`.execute(db)
   })
+
+  /** XP paid other than for challenges (which depend on the generated sets); the totals match the ledger. */
+  async function earned(userId: string): Promise<number> {
+    const rows = await db.selectFrom('xp_ledger').select(['kind', 'amount']).where('user_id', '=', userId).execute()
+    const total = rows.reduce((a, r) => a + r.amount, 0)
+    expect((await getProgress(db, userId)).xp).toBe(total)
+    return rows.filter(r => r.kind !== 'challenge').reduce((a, r) => a + r.amount, 0)
+  }
 
   /** A finished 1v1: ann wins against bob, each throws `visits` visits on the board (`first` as ann's first visit). */
   async function duel(opts: { visits?: number; source?: string; first?: object[]; at?: Date } = {}): Promise<string> {
@@ -83,14 +93,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     await service.awardGame(id)
     await service.awardGame(id)
     // ann: 12 darts + game 50 + win 100 + one 180 + the day's first-game bonus; bob: 12 darts + game 50 + bonus
-    expect((await getProgress(db, 'ann')).xp).toBe(12 + 50 + 100 + 25 + 100)
-    expect((await getProgress(db, 'bob')).xp).toBe(162)
+    expect(await earned('ann')).toBe(12 + 50 + 100 + 25 + 100)
+    expect(await earned('bob')).toBe(162)
     expect(pushed.map(p => p.userId)).toEqual(['ann', 'bob'])
     expect(pushed[0].msg).toMatchObject({
       sessionId: id,
-      total: 287,
       xpBefore: 0,
-      xpAfter: 287,
       streak: { current: 1, freezes: 1, frozeDay: null, milestone: null },
       levelBefore: 1,
       levelAfter: 2,
@@ -104,7 +112,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
 
   it('pays a manual game half game XP and no dart XP', async () => {
     await service.awardGame(await duel({ source: 'manual' }))
-    expect((await getProgress(db, 'bob')).xp).toBe(125)
+    expect(await earned('bob')).toBe(125)
   })
 
   it('counts the day in the account’s time zone', async () => {
@@ -132,7 +140,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     expect(await service.backfill()).toBe(1)
     expect(await service.backfill()).toBe(0)
     // No highlight in a backfill
-    expect((await getProgress(db, 'ann')).xp).toBe(162)
+    expect(await earned('ann')).toBe(162)
     expect(pushed).toEqual([])
   })
 
@@ -141,9 +149,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     const drop = await duel()
     await service.awardGame(keep)
     await service.awardGame(drop)
-    expect((await getProgress(db, 'bob')).xp).toBe(224)
+    expect(await earned('bob')).toBe(224)
     await db.transaction().execute(trx => revokeGameXp(trx, drop))
-    expect((await getProgress(db, 'bob')).xp).toBe(162)
+    expect(await earned('bob')).toBe(162)
   })
 
   it('pays the bonus for the first game of a day and keeps the streak with a freeze', async () => {
@@ -167,5 +175,50 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
       { kind: 'freeze', amount: 0, source_id: '2026-10-03' },
     ])
     expect(pushed.at(-1)?.msg.streak).toEqual({ current: 3, freezes: 0, frozeDay: '2026-10-03', milestone: null })
+  })
+
+  it('writes the day and week sets, moves them on and pays a finished challenge once', async () => {
+    const d = (slot: number, templateId: string, target: number) => ({
+      slot,
+      templateId,
+      difficulty: 'easy' as const,
+      target,
+      xp: 40,
+      state: {},
+    })
+    await insertSet(db, 'bob', 'daily', '2026-10-21', [d(1, 'd.games', 1), d(2, 'd.darts', 100), d(3, 'd.win', 1)])
+    const id = await duel()
+    await service.awardGame(id)
+    await service.awardGame(id)
+    const daily = await getSet(db, 'bob', 'daily', '2026-10-21')
+    expect(daily.map(c => [c.templateId, c.progress, c.completedAt !== null])).toEqual([
+      ['d.games', 1, true],
+      ['d.darts', 12, false],
+      ['d.win', 0, false],
+    ])
+    // The week's set was written on the way
+    expect(await getSet(db, 'bob', 'weekly', '2026-10-19')).toHaveLength(3)
+    const paid = await db
+      .selectFrom('xp_ledger')
+      .select(['amount', 'meta'])
+      .where('user_id', '=', 'bob')
+      .where('kind', '=', 'challenge')
+      .execute()
+    expect(paid).toHaveLength(1)
+    expect(paid[0].amount).toBe(40)
+    expect(pushed.find(p => p.userId === 'bob')?.msg.challenges).toEqual([{ title: 'Finish 1 game', xp: 40, period: 'daily' }])
+  })
+
+  it('rerolls an unfinished daily of today once a day', async () => {
+    const d = (slot: number, templateId: string) => ({ slot, templateId, difficulty: 'easy' as const, target: 5, xp: 40, state: {} })
+    await insertSet(db, 'bob', 'daily', '2026-10-21', [d(1, 'd.games'), d(2, 'd.trebles'), d(3, 'd.d16')])
+    const [first, second] = await getSet(db, 'bob', 'daily', '2026-10-21')
+    expect(await reroll(db, 'bob', first.id, '2026-10-22')).toBe('not-allowed')
+    expect(await reroll(db, 'bob', first.id, '2026-10-21')).toBe('ok')
+    const after = await getSet(db, 'bob', 'daily', '2026-10-21')
+    expect(after[0].reroll).toBe(1)
+    expect(after[0].templateId).not.toBe('d.games')
+    expect(['d.trebles', 'd.d16']).not.toContain(after[0].templateId)
+    expect(await reroll(db, 'bob', second.id, '2026-10-21')).toBe('not-allowed')
   })
 })

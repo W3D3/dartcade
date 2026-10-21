@@ -8,6 +8,7 @@ import {
   levelOf,
   localDate,
   nextMilestone,
+  startOfLocalDay,
   stepStreak,
   streakNow,
   xpForLevel,
@@ -114,6 +115,15 @@ describe('level curve', () => {
 describe('daily factor', () => {
   it('pays games 1-8 in full, 9-16 half, then a tenth', () => {
     expect([1, 8, 9, 16, 17, 40].map(dailyGameFactor)).toEqual([1, 1, 0.5, 0.5, 0.1, 0.1])
+  })
+})
+
+describe('startOfLocalDay', () => {
+  it('finds local midnight, across summer and winter time', () => {
+    expect(startOfLocalDay('2026-10-22', 'Europe/Vienna').toISOString()).toBe('2026-10-21T22:00:00.000Z')
+    expect(startOfLocalDay('2026-10-26', 'Europe/Vienna').toISOString()).toBe('2026-10-25T23:00:00.000Z')
+    expect(startOfLocalDay('2026-10-22', 'America/New_York').toISOString()).toBe('2026-10-22T04:00:00.000Z')
+    expect(startOfLocalDay('2026-10-22', null).toISOString()).toBe('2026-10-22T00:00:00.000Z')
   })
 })
 

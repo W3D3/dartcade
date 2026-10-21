@@ -1409,6 +1409,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/challenges": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Today's and this week's challenges (written the first time a period is read) */
+        get: operations["getChallenges"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/challenges/{id}/reroll": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Swap an unfinished daily challenge of today for another of the same difficulty (once a day) */
+        post: operations["rerollChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/friends": {
         parameters: {
             query?: never;
@@ -2644,6 +2680,33 @@ export interface components {
             xp: number;
             level: number;
             streak: components["schemas"]["DayStreak"];
+            /** @description Today's daily challenges not done yet (the nav's count) */
+            dailyOpen: number;
+        };
+        ChallengeSet: {
+            /**
+             * Format: date-time
+             * @description When a new set comes: local midnight (daily), Monday 00:00 local (weekly)
+             */
+            resetsAt: string;
+            items: {
+                id: string;
+                slot: number;
+                title: string;
+                /** @enum {string} */
+                difficulty: "easy" | "medium" | "hard";
+                target: number;
+                /** @description At most the target */
+                progress: number;
+                xp: number;
+                /** @description Done and paid */
+                completed: boolean;
+                canReroll: boolean;
+            }[];
+        };
+        Challenges: {
+            daily: components["schemas"]["ChallengeSet"];
+            weekly: components["schemas"]["ChallengeSet"];
         };
         /** @description The day streak, counted in your time zone (preferences.timeZone) */
         DayStreak: {
@@ -2674,8 +2737,10 @@ export interface components {
             /** @enum {string} */
             kind: "dart" | "game" | "win" | "ranked" | "oneEighty" | "checkout" | "personalBest" | "daily" | "challenge" | "milestone";
             amount: number;
-            /** @description Darts thrown, 180s hit */
+            /** @description Darts thrown, 180s hit, the streak day of a daily bonus */
             count?: number;
+            /** @description A challenge's title */
+            title?: string;
         };
         GameXp: {
             lines: components["schemas"]["XpLine"][];
@@ -5638,6 +5703,63 @@ export interface operations {
             };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getChallenges: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The challenges */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Challenges"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    rerollChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The challenges after it */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Challenges"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Not this one: done, not today's, or the reroll is used */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };

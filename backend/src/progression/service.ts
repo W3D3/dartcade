@@ -10,12 +10,18 @@ import { gameAwards, PERSONAL_BESTS, streakAwards, type PlayerGame } from './rul
 import { levelOf, localDate, stepStreak } from '../shared/progression.js'
 import type { XpGainedMessage, XpLine } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
+import type { X01Detail } from '../session/types.js'
+import { getFinishedGame } from '../db/history.js'
+import { getSessionEvents } from '../db/queries.js'
+import { buildDetail } from '../history/detail.js'
+import { progressChallenges } from './challengeSets.js'
+import { challengeGame } from './facts.js'
 
 export type ProgressionDeps = {
   db: Kysely<Database>
   /** Sends the account's /ws/me sockets the message, if progression is on for it. */
   push: (userId: string, msg: XpGainedMessage) => void | Promise<void>
-  warn: (message: string, details: Record<string, unknown>) => void
+  warn: (message: string, details: unknown) => void
 }
 
 const LINE_KINDS = ['game', 'win', 'ranked', 'daily', 'challenge', 'milestone'] as const
@@ -34,6 +40,7 @@ export function xpLine(r: LedgerLine): XpLine {
       if (r.kind === 'daily') return { kind: 'daily', amount: r.amount, ...count('streak') }
   }
   if (r.kind === 'dart') return { kind: 'dart', amount: r.amount, ...count('darts') }
+  if (r.kind === 'challenge' && typeof r.meta.title === 'string') return { kind: 'challenge', amount: r.amount, title: r.meta.title }
   return { kind: LINE_KINDS.find(k => k === r.kind) ?? 'game', amount: r.amount }
 }
 
@@ -75,8 +82,9 @@ export class ProgressionService {
     if (!game) return
     // One account earns once per game, however many seats it holds
     const userIds = [...new Set(game.seats.flatMap(s => (s.userId !== null && !s.bot ? [s.userId] : [])))]
+    const x01 = !opts.backfill && game.gameId === 'x01' ? await this.x01Detail(game.id) : null
     for (const userId of userIds) {
-      const gained = await this.awardPlayer(game, userId, opts.backfill ?? false)
+      const gained = await this.awardPlayer(game, userId, opts.backfill ?? false, x01)
       if (gained && !opts.backfill) {
         try {
           await this.deps.push(userId, gained)
@@ -87,7 +95,15 @@ export class ProgressionService {
     }
   }
 
-  private async awardPlayer(game: XpGame, userId: string, backfill: boolean): Promise<XpGainedMessage | null> {
+  // The X01 replay: each visit's score and bust, who won each leg (the history's detail)
+  private async x01Detail(sessionId: string): Promise<X01Detail | null> {
+    const game = await getFinishedGame(this.deps.db, sessionId)
+    if (!game) return null
+    const built = await buildDetail(game, await getSessionEvents(this.deps.db, sessionId), this.deps.warn)
+    return built?.detail.mode === 'x01' ? built.detail : null
+  }
+
+  private async awardPlayer(game: XpGame, userId: string, backfill: boolean, x01: X01Detail | null): Promise<XpGainedMessage | null> {
     const player = playerGame(game, userId)
     if (!player) return null
     return this.deps.db.transaction().execute(async trx => {
@@ -112,6 +128,12 @@ export class ProgressionService {
           }
         }
       }
+      let challenges: XpGainedMessage['challenges']
+      if (!backfill) {
+        const done = await progressChallenges(trx, userId, day, challengeGame(game, userId, player, x01), game.finishedAt)
+        written.push(...(await q.insertAwards(trx, userId, game.id, day, done.awards, game.finishedAt)))
+        if (done.completed.length > 0) challenges = done.completed
+      }
       if (written.length === 0) return null
       const total = written.reduce((a, r) => a + r.amount, 0)
       const { before, after } = await q.addXp(trx, userId, total)
@@ -125,6 +147,7 @@ export class ProgressionService {
         levelBefore: levelOf(before).level,
         levelAfter: levelOf(after).level,
         ...(streak && { streak }),
+        ...(challenges && { challenges }),
       } satisfies XpGainedMessage
     })
   }

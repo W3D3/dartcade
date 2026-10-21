@@ -481,6 +481,10 @@ export interface XpLine {
    * Darts thrown, 180s hit, the streak day of a daily bonus.
    */
   count?: number
+  /**
+   * A challenge's title.
+   */
+  title?: string
 }
 /**
  * Pushed on /ws/me when you earn XP (progression.enabled), so the win screen and toasts need no polling.
@@ -500,6 +504,14 @@ export interface XpGainedMessage {
   xpAfter: number
   levelBefore: number
   levelAfter: number
+  /**
+   * Challenges the game completed (and paid).
+   */
+  challenges?: {
+    title: string
+    xp: number
+    period: 'daily' | 'weekly'
+  }[]
   /**
    * The game was the day's first: the day streak it extended.
    */

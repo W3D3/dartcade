@@ -22630,7 +22630,8 @@
                   "required": [
                     "xp",
                     "level",
-                    "streak"
+                    "streak",
+                    "dailyOpen"
                   ],
                   "additionalProperties": false,
                   "properties": {
@@ -22732,6 +22733,11 @@
                           }
                         }
                       }
+                    },
+                    "dailyOpen": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Today's daily challenges not done yet (the nav's count)"
                     }
                   }
                 }
@@ -22923,7 +22929,11 @@
                           "count": {
                             "type": "integer",
                             "minimum": 0,
-                            "description": "Darts thrown, 180s hit"
+                            "description": "Darts thrown, 180s hit, the streak day of a daily bonus"
+                          },
+                          "title": {
+                            "type": "string",
+                            "description": "A challenge's title"
                           }
                         }
                       }
@@ -22983,6 +22993,643 @@
           },
           "404": {
             "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/challenges": {
+      "get": {
+        "operationId": "getChallenges",
+        "summary": "Today's and this week's challenges (written the first time a period is read)",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "The challenges",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "daily",
+                    "weekly"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "daily": {
+                      "type": "object",
+                      "required": [
+                        "resetsAt",
+                        "items"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "resetsAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "slot",
+                              "title",
+                              "difficulty",
+                              "target",
+                              "progress",
+                              "xp",
+                              "completed",
+                              "canReroll"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "slot": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 3
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "difficulty": {
+                                "type": "string",
+                                "enum": [
+                                  "easy",
+                                  "medium",
+                                  "hard"
+                                ]
+                              },
+                              "target": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "progress": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "At most the target"
+                              },
+                              "xp": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "completed": {
+                                "type": "boolean",
+                                "description": "Done and paid"
+                              },
+                              "canReroll": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "weekly": {
+                      "type": "object",
+                      "required": [
+                        "resetsAt",
+                        "items"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "resetsAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "slot",
+                              "title",
+                              "difficulty",
+                              "target",
+                              "progress",
+                              "xp",
+                              "completed",
+                              "canReroll"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "slot": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 3
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "difficulty": {
+                                "type": "string",
+                                "enum": [
+                                  "easy",
+                                  "medium",
+                                  "hard"
+                                ]
+                              },
+                              "target": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "progress": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "At most the target"
+                              },
+                              "xp": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "completed": {
+                                "type": "boolean",
+                                "description": "Done and paid"
+                              },
+                              "canReroll": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/challenges/{id}/reroll": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      ],
+      "post": {
+        "operationId": "rerollChallenge",
+        "summary": "Swap an unfinished daily challenge of today for another of the same difficulty (once a day)",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "The challenges after it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "daily",
+                    "weekly"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "daily": {
+                      "type": "object",
+                      "required": [
+                        "resetsAt",
+                        "items"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "resetsAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "slot",
+                              "title",
+                              "difficulty",
+                              "target",
+                              "progress",
+                              "xp",
+                              "completed",
+                              "canReroll"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "slot": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 3
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "difficulty": {
+                                "type": "string",
+                                "enum": [
+                                  "easy",
+                                  "medium",
+                                  "hard"
+                                ]
+                              },
+                              "target": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "progress": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "At most the target"
+                              },
+                              "xp": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "completed": {
+                                "type": "boolean",
+                                "description": "Done and paid"
+                              },
+                              "canReroll": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "weekly": {
+                      "type": "object",
+                      "required": [
+                        "resetsAt",
+                        "items"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "resetsAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                        },
+                        "items": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "id",
+                              "slot",
+                              "title",
+                              "difficulty",
+                              "target",
+                              "progress",
+                              "xp",
+                              "completed",
+                              "canReroll"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "slot": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 3
+                              },
+                              "title": {
+                                "type": "string"
+                              },
+                              "difficulty": {
+                                "type": "string",
+                                "enum": [
+                                  "easy",
+                                  "medium",
+                                  "hard"
+                                ]
+                              },
+                              "target": {
+                                "type": "integer",
+                                "minimum": 1
+                              },
+                              "progress": {
+                                "type": "integer",
+                                "minimum": 0,
+                                "description": "At most the target"
+                              },
+                              "xp": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "completed": {
+                                "type": "boolean",
+                                "description": "Done and paid"
+                              },
+                              "canReroll": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not this one: done, not today's, or the reroll is used",
             "content": {
               "application/json": {
                 "schema": {
@@ -40959,7 +41606,8 @@
         "required": [
           "xp",
           "level",
-          "streak"
+          "streak",
+          "dailyOpen"
         ],
         "additionalProperties": false,
         "properties": {
@@ -41057,6 +41705,243 @@
                   "xp": {
                     "type": "integer",
                     "minimum": 0
+                  }
+                }
+              }
+            }
+          },
+          "dailyOpen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Today's daily challenges not done yet (the nav's count)"
+          }
+        }
+      },
+      "ChallengeSet": {
+        "type": "object",
+        "required": [
+          "resetsAt",
+          "items"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "resetsAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "slot",
+                "title",
+                "difficulty",
+                "target",
+                "progress",
+                "xp",
+                "completed",
+                "canReroll"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "slot": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 3
+                },
+                "title": {
+                  "type": "string"
+                },
+                "difficulty": {
+                  "type": "string",
+                  "enum": [
+                    "easy",
+                    "medium",
+                    "hard"
+                  ]
+                },
+                "target": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "progress": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "At most the target"
+                },
+                "xp": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "completed": {
+                  "type": "boolean",
+                  "description": "Done and paid"
+                },
+                "canReroll": {
+                  "type": "boolean"
+                }
+              }
+            }
+          }
+        }
+      },
+      "Challenges": {
+        "type": "object",
+        "required": [
+          "daily",
+          "weekly"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "daily": {
+            "type": "object",
+            "required": [
+              "resetsAt",
+              "items"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "resetsAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "slot",
+                    "title",
+                    "difficulty",
+                    "target",
+                    "progress",
+                    "xp",
+                    "completed",
+                    "canReroll"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "slot": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "difficulty": {
+                      "type": "string",
+                      "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                      ]
+                    },
+                    "target": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "At most the target"
+                    },
+                    "xp": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "completed": {
+                      "type": "boolean",
+                      "description": "Done and paid"
+                    },
+                    "canReroll": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "weekly": {
+            "type": "object",
+            "required": [
+              "resetsAt",
+              "items"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "resetsAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "slot",
+                    "title",
+                    "difficulty",
+                    "target",
+                    "progress",
+                    "xp",
+                    "completed",
+                    "canReroll"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "slot": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "maximum": 3
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "difficulty": {
+                      "type": "string",
+                      "enum": [
+                        "easy",
+                        "medium",
+                        "hard"
+                      ]
+                    },
+                    "target": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "progress": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "At most the target"
+                    },
+                    "xp": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "completed": {
+                      "type": "boolean",
+                      "description": "Done and paid"
+                    },
+                    "canReroll": {
+                      "type": "boolean"
+                    }
                   }
                 }
               }
@@ -41184,7 +42069,11 @@
           "count": {
             "type": "integer",
             "minimum": 0,
-            "description": "Darts thrown, 180s hit"
+            "description": "Darts thrown, 180s hit, the streak day of a daily bonus"
+          },
+          "title": {
+            "type": "string",
+            "description": "A challenge's title"
           }
         }
       },
@@ -41229,7 +42118,11 @@
                 "count": {
                   "type": "integer",
                   "minimum": 0,
-                  "description": "Darts thrown, 180s hit"
+                  "description": "Darts thrown, 180s hit, the streak day of a daily bonus"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "A challenge's title"
                 }
               }
             }

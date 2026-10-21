@@ -77,6 +77,32 @@ export function localDate(at: Date, timeZone: string | null | undefined): string
   )
 }
 
+/** The instant local day `date` (YYYY-MM-DD) starts in `timeZone`. */
+export function startOfLocalDay(date: string, timeZone: string | null | undefined): Date {
+  const zone = validTimeZone(timeZone)
+  const utc = Date.parse(`${date}T00:00:00Z`)
+  // The zone's offset at a moment: its wall clock read as UTC, minus the moment
+  const offset = (t: number) => {
+    const p = Object.fromEntries(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: zone,
+        hourCycle: 'h23',
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+      })
+        .formatToParts(new Date(t))
+        .map(x => [x.type, Number(x.value)]),
+    )
+    return Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(t / 1000) * 1000
+  }
+  // Twice: the offset at midnight can differ from the one a few hours off (a DST change)
+  return new Date(utc - offset(utc - offset(utc)))
+}
+
 /** `timeZone` when the runtime knows it, else UTC. */
 export function validTimeZone(timeZone: string | null | undefined): string {
   if (!timeZone) return 'UTC'
