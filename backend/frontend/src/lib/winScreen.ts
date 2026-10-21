@@ -76,7 +76,7 @@ export function winMeta(snapshot: Snapshot): string {
   }
   if (snapshot.gameId === 'p121') {
     const g = snapshot.game
-    return `121 Checkout · ${g.cfg.tries} tries · ${g.cfg.dartsPerTry} darts` + vs
+    return `121 · ${g.cfg.tries} tries · ${g.cfg.dartsPerTry} darts` + vs
   }
   if (snapshot.gameId === 'hilo') return hiloRules(snapshot.game.cfg) + vs
   return atcRules(snapshot.game.cfg, n) + vs
