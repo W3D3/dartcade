@@ -1,16 +1,28 @@
-<!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate. Finished games by default; aborted and active ones on request. -->
+<!-- Every game on the platform (`#/admin/games`), for admins and moderators to investigate and invalidate. Finished games by default; aborted and active ones on request. -->
 <script lang="ts">
   import { onMount } from 'svelte'
   import { push } from 'svelte-spa-router'
-  import { ChevronRight, LoaderCircle, Search } from '@lucide/svelte'
+  import { Ban, ChevronRight, LoaderCircle, Search } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
+  import { Button } from '$lib/components/ui/button/index.js'
   import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Select } from '$lib/components/ui/select/index.js'
   import { api, type GameInfo } from '$lib/api'
   import { currentUser } from '$lib/auth'
   import { gamesTrail } from '$lib/admin/breadcrumbs'
-  import { DEFAULT_FILTERS, STATUS_OPTIONS, loadGames, outcome, type AdminGameSummary, type GameFilters } from '$lib/admin/games'
+  import {
+    DEFAULT_FILTERS,
+    invalidateGame,
+    invalidationText,
+    STATUS_OPTIONS,
+    loadGames,
+    outcome,
+    type AdminGameSummary,
+    type GameFilters,
+  } from '$lib/admin/games'
   import { getGameView } from '$lib/gameViews'
   import { formatWhen } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
@@ -64,6 +76,34 @@
     } finally {
       if (requests.isCurrent(token)) loadingMore = false
     }
+  }
+
+  // The game asking to be invalidated, and the one mid-request
+  let confirming = $state<AdminGameSummary | null>(null)
+  let invalidating = $state(false)
+  let invalidateError = $state('')
+
+  async function confirmInvalidate(reason: string): Promise<void> {
+    const game = confirming
+    if (!game || invalidating) return
+    invalidating = true
+    invalidateError = ''
+    const result = await invalidateGame(game.id, reason)
+    invalidating = false
+    confirming = null
+    if ('error' in result) {
+      invalidateError = result.error
+      return
+    }
+    const me = $currentUser
+    games = games.map(g =>
+      g.id === game.id
+        ? {
+            ...g,
+            invalidated: { at: new Date().toISOString(), by: me ? { id: me.id, name: me.name } : null, reason: reason.trim() || null },
+          }
+        : g,
+    )
   }
 
   let playerTimer: ReturnType<typeof setTimeout> | undefined
@@ -140,6 +180,8 @@
         </label>
       </div>
 
+      {#if invalidateError}<ErrorText>{invalidateError}</ErrorText>{/if}
+
       <section aria-label="Games" class="flex min-h-0 flex-col overflow-hidden card">
         {#if loading}
           <p class="m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
@@ -153,7 +195,7 @@
           <ul class="m-0 list-none p-0">
             {#each games as g (g.id)}
               {@const when = formatWhen(g.createdAt, now)}
-              <li class="border-b border-line">
+              <li class="relative border-b border-line">
                 {#snippet row()}
                   <span class="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-1">
                     <span class="flex w-[110px] shrink-0 flex-col">
@@ -170,21 +212,33 @@
                       {outcome(g)}
                       {#if g.status !== 'finished'}<Badge variant="guest">{g.status}</Badge>{/if}
                       {#if g.ranked}<Badge variant="ready">ranked</Badge>{/if}
+                      {#if g.invalidated}<Badge variant="guest">invalidated</Badge>{/if}
                     </span>
                     <span class="hidden shrink-0 text-[13px] text-text-dim xl:inline xl:w-[140px]">{g.board?.name ?? '–'}</span>
+                    {#if g.invalidated}<span class="basis-full text-[13px] text-live-text">{invalidationText(g.invalidated)}</span>{/if}
                   </span>
                 {/snippet}
+                {#if g.status === 'finished' && !g.invalidated}
+                  <Button
+                    variant="quiet"
+                    size="icon-sm"
+                    aria-label="Invalidate this game"
+                    title="Invalidate"
+                    onclick={() => (confirming = g)}
+                    class="absolute right-11 top-1/2 z-10 -translate-y-1/2 hover:text-live"><Ban size={16} /></Button
+                  >
+                {/if}
                 {#if g.status === 'finished'}
                   <a
                     href="#/admin/games/{g.id}"
-                    class="relative block px-[22px] pr-12 py-3 text-text no-underline hover:bg-surface-active"
+                    class="relative block px-[22px] pr-20 py-3 text-text no-underline hover:bg-surface-active"
                     aria-label="{getGameView(g.mode).title}, {when.day} {when.time}: details"
                   >
                     {@render row()}
                     <ChevronRight size={18} class="absolute right-4 top-1/2 -translate-y-1/2 text-text-dim" />
                   </a>
                 {:else}
-                  <div class="px-[22px] pr-12 py-3 text-text">{@render row()}</div>
+                  <div class="px-[22px] pr-20 py-3 text-text">{@render row()}</div>
                 {/if}
               </li>
             {/each}
@@ -192,18 +246,16 @@
           {#if error}<p role="alert" class="m-0 px-[22px] py-3 text-[13px] text-text-muted">{error}</p>{/if}
           {#if nextCursor !== null}
             <div class="flex justify-center p-4">
-              <button
-                type="button"
-                onclick={() => void more()}
-                disabled={loadingMore}
-                class="h-10 rounded-lg border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60"
-              >
+              <Button variant="outline" onclick={() => void more()} disabled={loadingMore}>
                 {loadingMore ? 'Loading…' : 'Load more'}
-              </button>
+              </Button>
             </div>
           {/if}
         {/if}
       </section>
     </main>
+    {#if confirming}
+      <InvalidateGameModal onconfirm={(reason: string) => void confirmInvalidate(reason)} oncancel={() => (confirming = null)} />
+    {/if}
   {/if}
 </Layout>

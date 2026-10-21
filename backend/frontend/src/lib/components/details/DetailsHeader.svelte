@@ -1,12 +1,17 @@
 <script lang="ts">
   // The details page's header bar: back to History, the mode, the meta line and your result.
-  import { ArrowLeft } from '@lucide/svelte'
+  import { ArrowLeft, Ban } from '@lucide/svelte'
+  import { Button } from '$lib/components/ui/button/index.js'
   import type { GameDetail } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
   import { resultLabel } from '$lib/history'
   import { metaLine } from '$lib/details/page'
 
-  let { detail, back = { href: '#/history', label: 'History' } }: { detail: GameDetail; back?: { href: string; label: string } } = $props()
+  let {
+    detail,
+    back = { href: '#/history', label: 'History' },
+    oninvalidate,
+  }: { detail: GameDetail; back?: { href: string; label: string }; oninvalidate?: () => void } = $props()
   const result = $derived(resultLabel(detail.game))
 </script>
 
@@ -26,6 +31,11 @@
     <span
       class="ml-auto h-[30px] px-3 inline-flex items-center rounded-full text-[13px] font-bold tracking-[0.08em] uppercase
              {result.won ? 'bg-accent text-accent-fg' : 'border border-line-chip text-ink-2'}">{result.text}</span
+    >
+  {/if}
+  {#if oninvalidate}
+    <Button variant="destructive" size="md" class={result.text ? '' : 'ml-auto'} onclick={oninvalidate}
+      ><Ban size={16} />Invalidate game</Button
     >
   {/if}
 </header>

@@ -64,6 +64,12 @@ export interface GameSessionsTable {
   lobby_id: ColumnType<string | null, string | null | undefined, string | null>
   /** Who aborted the game (the host); null otherwise. */
   aborted_by_user_id: ColumnType<string | null, string | null | undefined, string | null>
+  /** A moderator marked the game as not counting: it drops out of history, stats and ratings (migration 030). */
+  invalidated_at: ColumnType<Date | null, never, Date | null>
+  /** Who invalidated it; null once their account is gone. */
+  invalidated_by: ColumnType<string | null, never, string | null>
+  /** Why, in the moderator's words; optional. */
+  invalidation_reason: ColumnType<string | null, never, string | null>
 }
 
 export interface GamePlayersTable {
@@ -248,6 +254,17 @@ export interface RankedResultsTable {
   created_at: ColumnType<Date, Date | undefined, never>
 }
 
+/** What an admin or moderator did to someone else's data (migration 029). */
+export interface AdminAuditTable {
+  /** BIGSERIAL; node-postgres returns it as a string */
+  id: Generated<string>
+  admin_user_id: string | null
+  action: string
+  target: string
+  detail: ColumnType<unknown, string | undefined, never>
+  created_at: ColumnType<Date, never, never>
+}
+
 /** A hole an editor can draft and publish; shared across courses (migration 021). */
 export interface MinigolfHolesTable {
   id: string
@@ -329,4 +346,5 @@ export interface Database {
   minigolf_courses: MinigolfCoursesTable
   feature_flag_overrides: FeatureFlagOverridesTable
   wled_devices: WledDevicesTable
+  admin_audit: AdminAuditTable
 }

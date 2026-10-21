@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest'
-import { DEFAULT_FILTERS, filterQuery, outcome, type AdminGameSummary } from './games'
+import { beforeEach, vi } from 'vitest'
+import { DEFAULT_FILTERS, filterQuery, invalidateGame, invalidationText, outcome, type AdminGameSummary } from './games'
+import { api } from '$lib/api'
+
+vi.mock('$lib/api', () => ({ api: { POST: vi.fn(), GET: vi.fn() } }))
 
 const game = (o: Partial<AdminGameSummary> = {}): AdminGameSummary => ({
   id: 'g1',
@@ -10,6 +14,7 @@ const game = (o: Partial<AdminGameSummary> = {}): AdminGameSummary => ({
   finishedAt: '2026-10-01T09:30:00Z',
   board: null,
   ranked: false,
+  invalidated: null,
   players: [
     { seat: 0, name: 'Ann', userId: 'u1', bot: null, placement: 1, forfeited: false },
     { seat: 1, name: 'Bob', userId: 'u2', bot: null, placement: 2, forfeited: false },
@@ -18,6 +23,10 @@ const game = (o: Partial<AdminGameSummary> = {}): AdminGameSummary => ({
 })
 
 describe('filterQuery', () => {
+  it('asks for the invalidated games on request', () => {
+    expect(filterQuery({ ...DEFAULT_FILTERS, status: 'invalidated' }, null)).toEqual({ status: 'invalidated' })
+  })
+
   it('asks for finished games with nothing else by default', () => {
     expect(filterQuery(DEFAULT_FILTERS, null)).toEqual({ status: 'finished' })
   })
@@ -54,5 +63,36 @@ describe('outcome', () => {
   })
   it('does not call a solo game won', () => {
     expect(outcome(game({ players: game().players.slice(0, 1) }))).toBe('Finished')
+  })
+})
+
+describe('invalidateGame', () => {
+  beforeEach(() => vi.clearAllMocks())
+
+  it('sends the trimmed reason and returns the modes that were recalculated', async () => {
+    vi.mocked(api.POST).mockResolvedValue({ data: { recalculated: ['1v1'] }, response: new Response() })
+    expect(await invalidateGame('g1', '  Board was misreading ')).toEqual({ recalculated: ['1v1'] })
+    expect(api.POST).toHaveBeenCalledWith('/api/admin/games/{id}/invalidate', {
+      params: { path: { id: 'g1' } },
+      body: { reason: 'Board was misreading' },
+    })
+  })
+
+  it("returns the server's reason when it refuses", async () => {
+    vi.mocked(api.POST).mockResolvedValue({ error: { error: 'This game is already invalidated' }, response: new Response() })
+    expect(await invalidateGame('g1', '')).toEqual({ error: 'This game is already invalidated' })
+  })
+})
+
+describe('invalidationText', () => {
+  const at = '2026-10-02T10:00:00.000Z'
+  it('says who, when and why', () => {
+    expect(invalidationText({ at, by: { id: 'm1', name: 'Mo' }, reason: 'Board was misreading' })).toBe(
+      'Invalidated by Mo on 2 Oct 2026: Board was misreading',
+    )
+  })
+
+  it('leaves out the reason when there is none, and the moderator once their account is gone', () => {
+    expect(invalidationText({ at, by: null, reason: null })).toBe('Invalidated on 2 Oct 2026')
   })
 })

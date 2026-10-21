@@ -35,6 +35,10 @@ export async function getRatings(db: Kysely<Database>, userId: string): Promise<
   return out
 }
 
+/** The `ranked_results` rows (as `alias`) of games that still count: a moderator hasn't invalidated them. */
+const counts = (alias = 'ranked_results') =>
+  sql<boolean>`NOT EXISTS (SELECT 1 FROM game_sessions gi WHERE gi.id = ${sql.ref(`${alias}.session_id`)} AND gi.invalidated_at IS NOT NULL)`
+
 /** How far each mode's rating moved since `since`, placement matches left out (0 without games since then). */
 export async function ratingChangeSince(db: Kysely<Database>, userId: string, since: Date): Promise<Record<RankedMode, number>> {
   const rows = await db
@@ -43,6 +47,7 @@ export async function ratingChangeSince(db: Kysely<Database>, userId: string, si
     .where('user_id', '=', userId)
     .where('created_at', '>=', since)
     .where('placement', '=', false)
+    .where(counts())
     .groupBy('mode')
     .execute()
   const out = { '1v1': 0, '2v2': 0 }
@@ -62,6 +67,7 @@ export async function x01Average(db: Kysely<Database>, userId: string, n = 20): 
         .where('p.bot_level', 'is', null)
         .where('g.game_id', '=', 'x01')
         .where('g.status', '=', 'finished')
+        .where('g.invalidated_at', 'is', null)
         .where(sql<boolean>`(p.stats->>'dartsThrown')::int > 0`)
         .orderBy('g.finished_at', 'desc')
         .limit(n)
@@ -81,6 +87,7 @@ export async function onlineAverage(db: Kysely<Database>, userId: string, n = 20
         .select('average')
         .where('user_id', '=', userId)
         .where('average', 'is not', null)
+        .where(counts())
         .orderBy('created_at', 'desc')
         .limit(n)
         .as('last'),
@@ -107,6 +114,7 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
     .selectFrom('ranked_results')
     .select(['session_id', 'mode', 'won', 'placement', 'rating_before', 'rating_after', 'created_at'])
     .where('user_id', '=', userId)
+    .where(counts())
     .orderBy('created_at', 'desc')
     .limit(limit)
     .execute()
@@ -121,6 +129,7 @@ export async function recentRanked(db: Kysely<Database>, userId: string, limit =
       mine.map(m => m.session_id),
     )
     .where('r.user_id', '!=', userId)
+    .where(counts('r'))
     .orderBy('u.name')
     .execute()
   return mine.map(m => ({
@@ -217,7 +226,8 @@ function ratingColumns(s: RatingState) {
 /**
  * Replays a mode's ranked games from the start, in the order they were played, and rewrites every
  * rating (ranked_ratings, and rating_before/after and placement of each ranked_results row) as if
- * the `exclude`d games had never counted. Deleting a game calls this, as ratings depend on game order.
+ * the `exclude`d games, and the ones a moderator invalidated, had never counted. Invalidating a game
+ * calls this, as ratings depend on game order.
  * A player starts from the seed their first game in the mode recorded (the excluded games included),
  * so their X01 average is never looked at again; a player left with no games loses their rating row
  * and is seeded afresh by their next game. Runs inside `db`'s transaction when it is one.
@@ -230,11 +240,12 @@ export async function recalculateRatings(db: Kysely<Database>, mode: RankedMode,
 async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: ReadonlySet<string>): Promise<void> {
   await lockMode(trx, mode)
   const rows = await trx
-    .selectFrom('ranked_results')
-    .select(['session_id', 'user_id', 'won', 'average', 'rating_before', 'rating_after', 'created_at'])
-    .where('mode', '=', mode)
-    .orderBy('created_at')
-    .orderBy('session_id')
+    .selectFrom('ranked_results as r')
+    .innerJoin('game_sessions as gs', 'gs.id', 'r.session_id')
+    .select(['r.session_id', 'r.user_id', 'r.won', 'r.average', 'r.rating_before', 'r.rating_after', 'r.created_at', 'gs.invalidated_at'])
+    .where('r.mode', '=', mode)
+    .orderBy('r.created_at')
+    .orderBy('r.session_id')
     .execute()
   const states = new Map<string, RatingState>()
   const lastGame = new Map<string, Date>()
@@ -242,7 +253,7 @@ async function replay(trx: Kysely<Database>, mode: RankedMode, exclude: Readonly
     if (!states.has(r.user_id)) states.set(r.user_id, { rating: r.rating_before, rankIndex: null, matches: 0, wins: 0, streak: 0 })
   }
   const games = groupBy(
-    rows.filter(r => !exclude.has(r.session_id)),
+    rows.filter(r => !exclude.has(r.session_id) && r.invalidated_at === null),
     r => r.session_id,
   )
   for (const [sessionId, players] of games) {

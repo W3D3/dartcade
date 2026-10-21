@@ -165,8 +165,8 @@ export function applyResult(before: RatingState, won: boolean, change: number): 
 }
 
 /**
- * What one finished ranked game does to each player: the live path and the replay that follows a
- * deleted game both rate games with this. `states` holds every player's rating before the game.
+ * What one finished ranked game does to each player: the live path and the replay that follows an
+ * invalidated game both rate games with this. `states` holds every player's rating before the game.
  * Each side is rated on its players' average rating; a ranked player gains or loses the side's
  * stakes, one still placing moves by their placement score (`ratingChange`).
  */

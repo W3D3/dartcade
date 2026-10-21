@@ -64,7 +64,8 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
   return by
 }
 
-function finishedGames(db: Kysely<Database>) {
+/** Finished games with a result; the ones a moderator invalidated are left out unless asked for. */
+function finishedGames(db: Kysely<Database>, includeInvalidated = false) {
   return db
     .selectFrom('game_sessions as gs')
     .leftJoin('boards as b', 'b.id', 'gs.board_db_id')
@@ -81,6 +82,7 @@ function finishedGames(db: Kysely<Database>) {
     ])
     .where('gs.status', '=', 'finished')
     .where('gs.finished_at', 'is not', null)
+    .$if(!includeInvalidated, q => q.where('gs.invalidated_at', 'is', null))
     .$narrowType<{ finished_at: NotNull }>()
 }
 
@@ -202,9 +204,9 @@ export async function getViewableGame(db: Kysely<Database>, id: string, userId: 
   return toGame(row, seats, row.my_seat)
 }
 
-/** Any finished game with a result, whoever played it (admins). `mySeat` is null. */
+/** Any finished game with a result, whoever played it and invalidated or not (admins and moderators). `mySeat` is null. */
 export async function getFinishedGame(db: Kysely<Database>, id: string): Promise<HistoryGame | undefined> {
-  const row = await finishedGames(db).where('gs.id', '=', id).executeTakeFirst()
+  const row = await finishedGames(db, true).where('gs.id', '=', id).executeTakeFirst()
   if (!row) return undefined
   const seats = (await placedSeats(db, [id])).get(id) ?? []
   if (seats.length === 0) return undefined

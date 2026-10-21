@@ -2,7 +2,9 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import { sql, type Kysely } from 'kysely'
 import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession } from './queries.js'
-import { listAllGames, type AdminGameFilter } from './adminGames.js'
+import { getInvalidation, invalidateGame, listAllGames, type AdminGameFilter } from './adminGames.js'
+import { getFinishedGame, getStatRows, getViewableGame, listFinishedGames } from './history.js'
+import { getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult } from './ranked.js'
 import type { Database } from './schema.js'
 
 const url = process.env.TEST_DATABASE_URL ?? ''
@@ -135,5 +137,111 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
     const second = await listAllGames(db, { status: 'all' }, { limit: 3, after: first.next })
     expect(ids(second)).toEqual(['g1'])
     expect(second.next).toBeNull()
+  })
+
+  describe('invalidateGame', () => {
+    const duel = (winner: string, loser: string) =>
+      [
+        { won: true, players: [{ userId: winner, average: 60 }] },
+        { won: false, players: [{ userId: loser, average: 40 }] },
+      ] as [
+        { won: boolean; players: { userId: string; average: number }[] },
+        { won: boolean; players: { userId: string; average: number }[] },
+      ]
+    const page = { limit: 25, after: null }
+
+    beforeAll(async () => {
+      await db
+        .insertInto('user')
+        .values([
+          { id: 'u3', name: 'Cy', email: 'cy@example.com', emailVerified: true, image: null, role: null },
+          { id: 'u4', name: 'Di', email: 'di@example.com', emailVerified: true, image: null, role: null },
+        ])
+        .execute()
+      for (const [id, min] of [
+        ['r1', 100],
+        ['r2', 110],
+      ] as const) {
+        await game(
+          id,
+          'x01',
+          [
+            ['Cy', 'u3'],
+            ['Di', 'u4'],
+          ],
+          'finished',
+          min,
+        )
+      }
+      await recordRankedResult(db, { sessionId: 'r1', mode: '1v1', at: t(105), sides: duel('u4', 'u3') })
+      await recordRankedResult(db, { sessionId: 'r2', mode: '1v1', at: t(115), sides: duel('u3', 'u4') })
+    })
+
+    it('counts the game for its players until it is invalidated', async () => {
+      expect((await listFinishedGames(db, 'u3', page)).games.map(g => g.id)).toEqual(['r2', 'r1'])
+      expect(await getStatRows(db, 'u3', t(0))).toHaveLength(2)
+      expect((await getRatings(db, 'u3'))['1v1'].matches).toBe(2)
+      expect(await recentRanked(db, 'u3')).toHaveLength(2)
+    })
+
+    it('keeps the game, takes it out of history, stats and ratings, and writes an audit row with the reason', async () => {
+      const before = (await getRatings(db, 'u3'))['1v1']
+      expect(await invalidateGame(db, 'r1', 'u4', 'Board was misreading')).toEqual({ recalculated: ['1v1'] })
+
+      expect(await db.selectFrom('game_sessions').select('id').where('id', '=', 'r1').execute()).toHaveLength(1)
+      expect(await db.selectFrom('game_players').select('seat').where('session_id', '=', 'r1').execute()).toHaveLength(2)
+
+      // Gone for the players
+      expect((await listFinishedGames(db, 'u3', page)).games.map(g => g.id)).toEqual(['r2'])
+      expect(await getStatRows(db, 'u3', t(0))).toHaveLength(1)
+      expect(await getViewableGame(db, 'r1', 'u3')).toBeUndefined()
+      expect(await recentRanked(db, 'u3')).toHaveLength(1)
+      expect(await onlineAverage(db, 'u3')).toBe(60)
+      expect(await ratingChangeSince(db, 'u3', t(0))).toEqual({ '1v1': 0, '2v2': 0 })
+
+      // Still there for moderators
+      expect(await getFinishedGame(db, 'r1')).toMatchObject({ id: 'r1' })
+
+      // Ratings replayed as if it never happened
+      const after = (await getRatings(db, 'u3'))['1v1']
+      expect(after).toMatchObject({ matches: 1, wins: 1, streak: 1 })
+      expect(after.rating).toBeGreaterThan(before.rating)
+
+      const [audit] = await db.selectFrom('admin_audit').selectAll().where('target', '=', 'r1').execute()
+      expect(audit).toMatchObject({ admin_user_id: 'u4', action: 'game.invalidate' })
+      expect(audit.detail).toMatchObject({ mode: 'x01', reason: 'Board was misreading', recalculated: ['1v1'] })
+    })
+
+    it('says who invalidated it, when and why, in the list and for the game itself', async () => {
+      const listed = await listAllGames(db, { status: 'finished' }, { limit: 25, after: null })
+      const r1 = listed.games.find(g => g.id === 'r1')
+      expect(r1?.invalidated).toMatchObject({ by: { id: 'u4', name: 'Di' }, reason: 'Board was misreading' })
+      expect(r1?.invalidated?.at).toBeInstanceOf(Date)
+      expect(r1?.ranked).toBe(true)
+      expect(listed.games.find(g => g.id === 'r2')?.invalidated).toBeNull()
+      expect(await getInvalidation(db, 'r1')).toMatchObject({ reason: 'Board was misreading' })
+      expect(await getInvalidation(db, 'r2')).toBeNull()
+    })
+
+    it('lists only the invalidated games with the invalidated status', async () => {
+      expect(ids(await listAllGames(db, { status: 'invalidated' }, { limit: 25, after: null }))).toEqual(['r1'])
+    })
+
+    it('takes no reason', async () => {
+      expect(await invalidateGame(db, 'r2', 'u3', null)).toEqual({ recalculated: ['1v1'] })
+      expect(await getInvalidation(db, 'r2')).toMatchObject({ by: { id: 'u3', name: 'Cy' }, reason: null })
+      // Nobody has a rated game left: they are seeded afresh by the next one
+      expect((await getRatings(db, 'u3'))['1v1'].matches).toBe(0)
+    })
+
+    it('refuses what is not finished, or already invalidated, and an unknown game', async () => {
+      expect(await invalidateGame(db, 'g3', 'u1', null)).toBe('not-finished')
+      expect(await invalidateGame(db, 'g4', 'u1', null)).toBe('not-finished')
+      expect(await invalidateGame(db, 'r1', 'u1', null)).toBe('already-invalidated')
+      expect(await invalidateGame(db, 'nope', 'u1', null)).toBe('not-found')
+      expect(await db.selectFrom('game_sessions').select('invalidated_at').where('id', '=', 'g4').executeTakeFirst()).toEqual({
+        invalidated_at: null,
+      })
+    })
   })
 })

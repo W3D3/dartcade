@@ -2,6 +2,8 @@
   // A finished game's details (X01-Details*, ATC-Details* boards): the result, the match stats
   // for any mode, and the mode's own section. Finished games don't change: loaded once.
   import { onMount } from 'svelte'
+  import InvalidateGameModal from '$lib/components/admin/InvalidateGameModal.svelte'
+  import { invalidateGame, invalidationText, type Invalidation } from '$lib/admin/games'
   import Scorecard from '$lib/components/minigolf/Scorecard.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -23,16 +25,28 @@
   let { params, admin = false }: { params: { id: string }; admin?: boolean } = $props()
   const back = $derived(admin ? { href: '#/admin/games', label: 'Games' } : { href: '#/history', label: 'History' })
   let detail = $state<GameDetail | null>(null)
+  // Admin view only: how a moderator invalidated the game, if one did
+  let invalidated = $state<Invalidation>(null)
   let phase = $state<'loading' | 'ready' | 'missing' | 'failed'>('loading')
   let atcHighlight = $state<number | null>(null)
+
+  async function fetchGame(): Promise<{ data: unknown; invalidated: Invalidation; response: Response }> {
+    const path = { params: { path: { id: params.id } } }
+    if (admin) {
+      const res = await api.GET('/api/admin/games/{id}', path)
+      return { data: res.data, invalidated: res.data?.invalidated ?? null, response: res.response }
+    }
+    const res = await api.GET('/api/games/{id}', path)
+    return { data: res.data, invalidated: null, response: res.response }
+  }
 
   async function load() {
     phase = 'loading'
     try {
-      const path = { params: { path: { id: params.id } } }
-      const res = await (admin ? api.GET('/api/admin/games/{id}', path) : api.GET('/api/games/{id}', path))
-      if (res.data && isGameDetail(res.data)) {
+      const res = await fetchGame()
+      if (isGameDetail(res.data)) {
         detail = res.data
+        invalidated = res.invalidated
         phase = 'ready'
       } else phase = loadPhase(res.response.status)
     } catch {
@@ -40,6 +54,17 @@
     }
   }
   onMount(() => void load())
+
+  // Admin or moderator: invalidate this game; the page then shows it as invalidated
+  let confirmingInvalidate = $state(false)
+  let invalidateError = $state('')
+  async function confirmInvalidate(reason: string): Promise<void> {
+    confirmingInvalidate = false
+    invalidateError = ''
+    const result = await invalidateGame(params.id, reason)
+    if ('error' in result) invalidateError = result.error
+    else await load()
+  }
 </script>
 
 <Layout title="Match details">
@@ -64,7 +89,13 @@
       <svelte:boundary onerror={(error: unknown) => console.error('details page render failed', error)}>
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
-        <DetailsHeader detail={d} {back} />
+        <DetailsHeader detail={d} {back} oninvalidate={admin && !invalidated ? () => (confirmingInvalidate = true) : undefined} />
+        {#if invalidated}
+          <p role="status" class="m-0 border-b border-line bg-live-soft px-4 py-3 text-[14px] text-live-text md:px-7">
+            {invalidationText(invalidated)}. It no longer counts in anyone's history, stats or ratings.
+          </p>
+        {/if}
+        {#if invalidateError}<div class="px-4 pt-3 md:px-7"><ErrorText>{invalidateError}</ErrorText></div>{/if}
         {#if d.detail.mode === 'p121'}
           <!-- 121's summary has its own standings and stats, so it takes the whole page -->
           {@const players = [...d.game.players].sort((a, b) => a.seat - b.seat)}
@@ -132,4 +163,7 @@
       </svelte:boundary>
     {/if}
   </div>
+  {#if confirmingInvalidate}
+    <InvalidateGameModal onconfirm={(reason: string) => void confirmInvalidate(reason)} oncancel={() => (confirmingInvalidate = false)} />
+  {/if}
 </Layout>
