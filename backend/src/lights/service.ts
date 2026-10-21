@@ -28,6 +28,8 @@ export type LightsDeps = {
   getSnapshot: (sessionId: string) => Snapshot | undefined
   /** The active session id on the board, if any. */
   sessionOnBoard: (boardId: string) => string | null
+  /** Whether someone sits at the board in an open lobby: idle glows only then, otherwise it's off. */
+  inLobby: (boardId: string) => Promise<boolean>
   warn: (msg: string, details?: unknown) => void
 }
 
@@ -134,7 +136,7 @@ export class LightsService {
     )
   }
 
-  /** Boards go idle (after the win flash). */
+  /** Boards go idle (after the win flash), or off when no lobby uses them. */
   async onGameEnded(sessionId: string): Promise<void> {
     const session = this.deps.getSession(sessionId)
     if (!session) return
@@ -142,9 +144,17 @@ export class LightsService {
       boardsOf(session).map(board =>
         this.enqueue(board, async () => {
           this.scene.delete(board)
-          await this.fire(board, { kind: 'idle', local: true }, null, { seatCount: 1 })
+          await this.idle(board)
         }),
       ),
+    )
+  }
+
+  /** Boards were picked in or dropped from a lobby (or its lobby closed): with no game on them,
+   *  they go idle or off to match. */
+  async onLobbyBoards(boardIds: string[]): Promise<void> {
+    await Promise.all(
+      boardIds.filter(b => this.deps.sessionOnBoard(b) === null && !this.calibrating.has(b)).map(b => this.enqueue(b, () => this.idle(b))),
     )
   }
 
@@ -243,7 +253,7 @@ export class LightsService {
   private async resendOrIdle(boardId: string): Promise<void> {
     const remembered = this.scene.get(boardId)
     if (remembered) await this.fire(boardId, remembered.t, remembered.game, remembered.layout)
-    else await this.fire(boardId, { kind: 'idle', local: true }, null, { seatCount: 1 })
+    else await this.idle(boardId)
   }
 
   private async sendDevicesAndScene(boardId: string): Promise<void> {
@@ -271,7 +281,27 @@ export class LightsService {
       await this.fire(boardId, { ...turn, local: isLocal(session, turn.seat, boardId) }, snapshot.gameId, layout)
       return
     }
-    await this.fire(boardId, { kind: 'idle', local: true }, null, { seatCount: 1 })
+    await this.idle(boardId)
+  }
+
+  /** No game on the board: the idle scene while a lobby uses it, otherwise off. Never remembered,
+   *  so a reconnect or takeout asks the lobby again. */
+  private async idle(boardId: string): Promise<void> {
+    try {
+      if (await this.deps.inLobby(boardId)) await this.fire(boardId, { kind: 'idle', local: true }, null, { seatCount: 1 })
+      else await this.turnOff(boardId)
+    } catch (err) {
+      this.deps.warn('lights idle failed', err)
+    }
+    this.scene.delete(boardId)
+  }
+
+  /** Every device off, keeping the bridge's allowlist (unlike darken). */
+  private async turnOff(boardId: string): Promise<void> {
+    if (!(await this.deps.enabled(boardId))) return
+    if (!supportsLights(this.deps.bridgeVersion(boardId))) return
+    for (const d of await this.deps.devices(boardId))
+      this.deps.send(boardId, { kind: 'wled.apply', data: { device_id: d.id, state: { on: false } } })
   }
 
   /** Lights off: darken every device, then clear the bridge's allowlist. Nothing for an

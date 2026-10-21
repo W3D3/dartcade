@@ -30,6 +30,7 @@ function setup(over: Partial<LightsDeps> = {}) {
     getSession: id => sessions.get(id),
     getSnapshot: id => snaps.get(id),
     sessionOnBoard: () => null,
+    inLobby: () => Promise.resolve(true),
     warn: () => undefined,
     ...over,
   }
@@ -250,6 +251,35 @@ describe('LightsService', () => {
     sent.length = 0
     await svc.onGameEnded('s')
     expect((applies(sent, 'b1')[0].state as { bri: number }).bri).toBe(60)
+  })
+
+  it('a board no lobby uses goes off instead of idle (#291)', async () => {
+    const { svc, sent, snaps, sessions } = setup({ inLobby: () => Promise.resolve(false) })
+    await svc.onBridgeHello('b1')
+    expect(applies(sent, 'b1')).toEqual([{ device_id: 'dev-b1', state: { on: false } }])
+    sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }] })
+    snaps.set('s', x01({}))
+    await svc.onPush('s')
+    sent.length = 0
+    await svc.onGameEnded('s')
+    await svc.onBoardEvent('b1', 'takeout.finished')
+    expect(applies(sent, 'b1').map(a => a.state)).toEqual([{ on: false }, { on: false }])
+  })
+
+  it('a board leaving its lobby turns off, joining one glows idle, a board in a game is left alone', async () => {
+    let inLobby = true
+    let session: string | null = null
+    const { svc, sent } = setup({ inLobby: () => Promise.resolve(inLobby), sessionOnBoard: () => session })
+    await svc.onLobbyBoards(['b1'])
+    expect((applies(sent, 'b1')[0].state as { bri: number }).bri).toBe(60)
+    sent.length = 0
+    inLobby = false
+    await svc.onLobbyBoards(['b1'])
+    expect(applies(sent, 'b1')).toEqual([{ device_id: 'dev-b1', state: { on: false } }])
+    sent.length = 0
+    session = 's'
+    await svc.onLobbyBoards(['b1'])
+    expect(sent).toEqual([])
   })
 
   it('a send that throws is logged, not raised', async () => {

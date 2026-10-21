@@ -52,11 +52,15 @@ export type LobbyDeps = {
    * don't see (ready, boards, teams, the next game): each call rebuilds every friend's list.
    */
   onStatusChange?: (userIds: string[]) => void
+  /** Boards picked in or dropped from a lobby, or whose lobby closed (the lights follow). */
+  onBoardsChanged?: (boardIds: string[]) => void
   /** Whether the user may pick and start this game mode (its feature flag); every mode when left out. */
   gameAvailable?: (userId: string, gameId: string) => Promise<boolean>
 }
 
 const refOf = (l: LobbyState): LobbyRef => ({ id: l.id, name: l.name, code: l.code })
+const boardIds = (l: LobbyState | undefined): Set<string> =>
+  new Set(l?.closedAt === null ? l.people.flatMap(p => (p.boardId === null ? [] : [p.boardId])) : [])
 const memberIds = (l: LobbyState): string[] => l.people.flatMap(p => (p.userId === null ? [] : [p.userId]))
 
 /** Who else gets /ws/me, and whether friends see the change (see LobbyDeps.onStatusChange). */
@@ -167,10 +171,21 @@ export class LobbyService {
   }
 
   private async reload(lobbyId: string): Promise<LobbyState | undefined> {
+    const before = this.cache.get(lobbyId)
     const lobby = await q.loadLobby(this.db, lobbyId)
     if (lobby && lobby.closedAt === null) this.cache.set(lobbyId, lobby)
     else this.cache.delete(lobbyId)
+    this.boardsChanged(before, lobby)
     return lobby
+  }
+
+  // shortcut: a lobby not cached before the change reports only its boards after it; every
+  // change reloads first (openFor), so the cache holds the lobby by then
+  private boardsChanged(before: LobbyState | undefined, after: LobbyState | undefined): void {
+    const was = boardIds(before)
+    const now = boardIds(after)
+    const changed = [...[...was].filter(b => !now.has(b)), ...[...now].filter(b => !was.has(b))]
+    if (changed.length > 0) this.deps.onBoardsChanged?.(changed)
   }
 
   private async state(lobbyId: string): Promise<LobbyState | undefined> {
@@ -526,6 +541,7 @@ export class LobbyService {
     const invitees = await q.closeLobbyRows(this.db, lobby.id, new Date())
     if (invitees === null) return
     this.cache.delete(lobby.id)
+    this.boardsChanged(lobby, undefined)
     this.deps.hub.sendLobby(lobby.id, { type: 'lobby_closed', lobbyId: lobby.id })
     this.deps.hub.closeLobby(lobby.id, WsCloseCode.NotFound, 'lobby closed')
     await this.notifyUsers([...memberIds(lobby), ...invitees])

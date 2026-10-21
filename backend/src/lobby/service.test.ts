@@ -3,6 +3,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { insertBoard } from '../db/queries.js'
+import { boardInOpenLobby } from '../db/lobbies.js'
 import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { setAccountCleanup, runAccountCleanup, cleanUpAccount } from '../auth/cleanup.js'
 import { LobbyHub } from './hub.js'
@@ -1278,6 +1279,23 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       hub.addLobbySocket(id, ws, 'max')
       await lobbies.releaseBoard('garage')
       expect(lastMsg(ws).lobby.people[1]).toMatchObject({ name: 'Max', boardId: null, boardMovedBy: null })
+    })
+
+    it('reports boards picked, dropped and freed by a closing lobby, for the lights (#291)', async () => {
+      const boardsChanged = vi.fn()
+      lobbies = new LobbyService({ db, engine, hub, isBoardOnline: b => online.has(b), onBoardsChanged: boardsChanged })
+      const { id, code } = await lobbies.create('chris')
+      expect(boardsChanged).toHaveBeenLastCalledWith(['living'])
+      expect(await boardInOpenLobby(db, 'living')).toBe(true)
+      await lobbies.join('max', id, code)
+      const max = (await lobbies.view(id))?.people.find(p => p.name === 'Max')
+      await lobbies.updatePerson('chris', id, max?.id ?? '', { boardId: 'garage' })
+      expect(boardsChanged).toHaveBeenLastCalledWith(['garage'])
+      await lobbies.updatePerson('chris', id, max?.id ?? '', { boardId: null })
+      expect(boardsChanged).toHaveBeenLastCalledWith(['garage'])
+      await lobbies.close('chris', id)
+      expect(boardsChanged).toHaveBeenLastCalledWith(['living'])
+      expect(await boardInOpenLobby(db, 'living')).toBe(false)
     })
 
     it('pushes a lobby when one of its boards goes on- or offline', async () => {

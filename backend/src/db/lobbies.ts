@@ -337,6 +337,18 @@ export async function clearBoardsOf(db: Kysely<Database>, lobbyId: string, owner
     .execute()
 }
 
+/** Whether someone sits at the board in an open lobby. */
+export async function boardInOpenLobby(db: Kysely<Database>, boardId: string): Promise<boolean> {
+  const row = await db
+    .selectFrom('lobby_people as p')
+    .innerJoin('lobbies as l', 'l.id', 'p.lobby_id')
+    .select('p.id')
+    .where('p.board_id', '=', boardId)
+    .where('l.closed_at', 'is', null)
+    .executeTakeFirst()
+  return row !== undefined
+}
+
 /** A board is going away: everyone on it in any lobby goes to Manual. Returns the lobbies changed. */
 export async function releaseBoard(db: Kysely<Database>, boardId: string): Promise<string[]> {
   const rows = await db
