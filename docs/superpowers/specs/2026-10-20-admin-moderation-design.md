@@ -1,12 +1,12 @@
-# Admin tools: all games, delete a game, impersonate a user
+# Admin tools: all games, invalidate a game, moderators, impersonate a user
 
-Three independent PRs, in this order. All sit behind `requireAdmin` and the existing admin hub (`#/admin`).
+Independent PRs, in this order. They sit behind the existing admin hub (`#/admin`): the game tools for admins and moderators (`requireModerator`), everything else for admins only (`requireAdmin`).
 
 ## 1. All games (`#/admin/games`)
 
 Read-only list of every game on the platform, for investigating.
 
-- API `GET /api/admin/games` (`backend/src/api/adminGames.ts`, `requireAuth` + `requireAdmin`), cursor-paged like `GET /api/games`.
+- API `GET /api/admin/games` (`backend/src/api/adminGames.ts`, `requireAuth` + `requireModerator`), cursor-paged like `GET /api/games`.
   Reuses the `listFinishedGames` query in `db/history.ts`, with the "my games" scope and the finished-only filter made optional.
 - Filters: mode, player (name or user id), board, date range, ranked, status.
   Status defaults to **finished**; **aborted** and **active** are opt-in.
@@ -15,36 +15,44 @@ Read-only list of every game on the platform, for investigating.
   `getViewableGame` does. Account ids are always included for admins.
 - Page `routes/AdminGames.svelte`, helpers in `lib/admin/games.ts`, card on the admin hub (`lib/admin/tools.ts`).
 
-## 2. Delete a game, with Elo recalculation
+## 2. Invalidate a game, with Elo recalculation
 
-`DELETE /api/admin/games/:id`. Hard delete; `game_players`, `game_darts`, `game_session_events` and `ranked_results`
-cascade from `game_sessions`, so history, stats and `/api/games/best` follow on their own.
+`POST /api/admin/games/:id/invalidate` with an optional `reason` (at most 500 characters; blank counts as none). A soft delete:
+the game, its seats, darts and input log stay, so an investigation can still open it, but it stops counting.
 
-- Only finished or aborted games. An active game is refused (409).
-- Delete button on the admin list and in the details page (admin only), with a confirm dialog.
-- An audit row (`admin_audit`: id, admin user id, action, target, JSON detail, created_at) is written in the same transaction.
+- Migration `030_game_invalidation.sql`: `game_sessions.invalidated_at`, `invalidated_by` (the moderator, `ON DELETE SET NULL`), `invalidation_reason`.
+- Only a finished game that is not invalidated yet. An aborted or active one, or one already invalidated, is refused (409).
+- Out of history, stats and best values for the players: `finishedGames` in `db/history.ts` leaves invalidated games out (only `getFinishedGame`, the moderators' view, includes them), as do the ranked reads in `db/ranked.ts` (`counts()`) and `x01Average`.
+- Moderators see it in the all-games list (an "invalidated" badge, who, when and why) and can filter for only those (`status=invalidated`); its details page shows a banner and no longer offers the button.
+- An audit row (`admin_audit`: id, user id, action `game.invalidate`, target, JSON detail with the reason, created_at) is written in the same transaction.
   It is shared with impersonation (PR 3), so the migration lands here.
+- No restore yet. The `ranked_results` rows stay (flagged by their game), so a later restore could replay the ratings with the game again.
+
+## Moderators
+
+`user.role = 'moderator'` (better-auth's admin role column; `admin` keeps meaning admin). `isModerator` is true for both; `GET /api/me` says so.
+A moderator gets the all-games page, a game's details and invalidate, and the hub card for them; the users, flags, system and minigolf tools
+stay admin-only. Admins set the role on `#/admin/users` (`PUT /api/admin/users/:id/role` with `admin`, `moderator` or `null`);
+the last admin cannot be turned into anything else.
 
 ### Recalculating ratings
 
-Elo and RP depend on game order, so deleting a ranked game replays the rest.
+Elo and RP depend on game order, so invalidating a ranked game replays the rest.
 
-`recalculateRatings(db, mode, { exclude })` in `db/ranked.ts`:
+`recalculateRatings(db, mode, exclude)` in `db/ranked.ts`:
 
-1. In one transaction under an advisory lock for the mode, read every `ranked_results` row of the mode ordered by `created_at`, minus excluded sessions.
+1. In one transaction under an advisory lock for the mode, read every `ranked_results` row of the mode ordered by `created_at`, minus excluded sessions and invalidated games.
 2. Each game's two sides come from `won`; a player's `average` is stored on the row.
 3. A player's starting rating is the `rating_before` of their **first** ranked result in the mode (the seed from their X01 average at the time). This keeps the seed even when the removed game was their first, so `x01Average` is never re-evaluated.
 4. Replay with the same pure rules `recordRankedResult` uses (`shared/ranked.ts`), rewriting `ranked_results.rating_before/after/placement` and `ranked_ratings` (rating, rank, matches, wins, streak).
 5. Players left with no ranked games lose their `ranked_ratings` row, so they re-seed on their next game.
+6. A game whose other side has no accounts left (deleted users cascade their `ranked_results`) cannot be re-rated; the survivor keeps the change it recorded (`applyResult` with `rating_after - rating_before`).
 
-To keep one source of truth, the per-game step is extracted from `recordRankedResult` into a pure function that both use; the replay test checks that replaying a log reproduces live ratings exactly.
+Recording a game and recalculating hold the same per-mode advisory lock.
+
+To keep one source of truth, the per-game step is a pure function in `shared/ranked.ts` (`rateGame`) that both use; the replay test checks that replaying a log reproduces live ratings exactly.
 
 Whole-mode replay is simple and correct; the platform is small. If it gets slow, restrict to the connected set of players from the first affected game onwards.
-
-### Voiding without deleting (later, not in this PR)
-
-For a cheater you may want to keep the game as evidence. `recalculateRatings`'s `exclude` input exists for that: a later
-`game_sessions.voided_at` column would feed it, and moderators (a role below admin) could set it. Out of scope here.
 
 ## 3. Impersonate a user
 
@@ -61,4 +69,4 @@ through `getAuthUser()`, so the app, `/ws/me` and lobbies act as the target with
 
 ## Out of scope
 
-Moderator role, bans, voiding, a richer investigation view (raw input log, bridge events).
+Bans, restoring an invalidated game, a richer investigation view (raw input log, bridge events).

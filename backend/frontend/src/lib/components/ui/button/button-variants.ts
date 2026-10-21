@@ -15,6 +15,8 @@ export const buttonVariants = tv({
       // Filled, small: on the lobby code chip
       key: 'h-9 px-3 rounded-[8px] border-0 bg-surface-key text-text text-[14px] font-semibold',
       destructive: 'h-10 px-4 rounded-[10px] border border-live-text text-live-text text-sm',
+      // Borderless and dim, for an icon in a row of text; colour the hover with a class
+      quiet: 'h-10 rounded-md border-0 bg-transparent text-text-dim hover:text-text text-sm',
     },
     // Heights only (each variant has its own default); icon: a square for one icon
     size: {
@@ -23,6 +25,7 @@ export const buttonVariants = tv({
       lg: 'h-12',
       xl: 'h-14',
       icon: 'size-11 px-0',
+      'icon-sm': 'size-8 px-0',
     },
     // A toggle that's on (an open panel, say)
     pressed: {

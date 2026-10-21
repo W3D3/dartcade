@@ -14,7 +14,7 @@ vi.mock('../auth/admin.js', () => ({
   requireModerator: vi.fn((_req: any, _reply: any, done: () => void) => done()),
 }))
 vi.mock('../db/history.js', () => ({ getFinishedGame: vi.fn() }))
-vi.mock('../db/adminGames.js', () => ({ listAllGames: vi.fn() }))
+vi.mock('../db/adminGames.js', () => ({ listAllGames: vi.fn(), invalidateGame: vi.fn(), getInvalidation: vi.fn().mockResolvedValue(null) }))
 vi.mock('../db/queries.js', () => ({ getSessionEvents: vi.fn().mockResolvedValue([]) }))
 
 import * as adminGames from '../db/adminGames.js'
@@ -30,6 +30,7 @@ const row = (o: Partial<AdminGame> = {}): AdminGame => ({
   finished_at: null,
   board: null,
   ranked: false,
+  invalidated: null,
   seats: [{ seat: 0, name: 'Ann', user_id: 'u1', bot_level: null, placement: null, forfeited: false }],
   ...o,
 })
@@ -62,6 +63,8 @@ describe('admin games API', () => {
     vi.mocked(admin.requireModerator).mockImplementation((_req: any, reply: any) => reply.code(403).send({ error: 'forbidden' }))
     expect((await makeApp().inject({ method: 'GET', url: '/api/admin/games' })).statusCode).toBe(403)
     expect((await makeApp().inject({ method: 'GET', url: '/api/admin/games/g1' })).statusCode).toBe(403)
+    expect((await makeApp().inject({ method: 'POST', url: '/api/admin/games/g1/invalidate', payload: {} })).statusCode).toBe(403)
+    expect(adminGames.invalidateGame).not.toHaveBeenCalled()
     vi.mocked(admin.requireModerator).mockImplementation((_req: any, _reply: any, done: () => void) => done())
   })
 
@@ -93,6 +96,26 @@ describe('admin games API', () => {
     expect(res.statusCode).toBe(400)
   })
 
+  it('lists who invalidated a game, when and why', async () => {
+    vi.mocked(adminGames.listAllGames).mockResolvedValue({
+      games: [
+        row({
+          status: 'finished',
+          invalidated: { at: new Date('2026-10-02T10:00:00Z'), by: { id: 'm1', name: 'Mo' }, reason: 'Board was misreading' },
+        }),
+      ],
+      next: null,
+    })
+    const res = await makeApp().inject({ method: 'GET', url: '/api/admin/games?status=invalidated' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json().games[0].invalidated).toEqual({
+      at: '2026-10-02T10:00:00.000Z',
+      by: { id: 'm1', name: 'Mo' },
+      reason: 'Board was misreading',
+    })
+    expect(vi.mocked(adminGames.listAllGames).mock.calls[0]?.[1]).toMatchObject({ status: 'invalidated' })
+  })
+
   it('returns a finished game with every seat account id, to someone who did not play', async () => {
     vi.mocked(history.getFinishedGame).mockResolvedValue(finished())
     const res = await makeApp().inject({ method: 'GET', url: '/api/admin/games/g1' })
@@ -101,10 +124,52 @@ describe('admin games API', () => {
     expect(body.game.mySeat).toBeNull()
     expect(body.game.players.map((p: any) => p.userId)).toEqual(['u1', 'u2'])
     expect(body.detail.mode).toBe('x01')
+    expect(body.invalidated).toBeNull()
+  })
+
+  it('says how an invalidated game was invalidated on its details', async () => {
+    vi.mocked(history.getFinishedGame).mockResolvedValue(finished())
+    vi.mocked(adminGames.getInvalidation).mockResolvedValue({ at: new Date('2026-10-02T10:00:00Z'), by: null, reason: null })
+    const res = await makeApp().inject({ method: 'GET', url: '/api/admin/games/g1' })
+    expect(res.json().invalidated).toEqual({ at: '2026-10-02T10:00:00.000Z', by: null, reason: null })
   })
 
   it('404s a game with no result (unknown, aborted or active)', async () => {
     vi.mocked(history.getFinishedGame).mockResolvedValue(undefined)
     expect((await makeApp().inject({ method: 'GET', url: '/api/admin/games/g1' })).statusCode).toBe(404)
+  })
+
+  describe('POST /api/admin/games/:id/invalidate', () => {
+    const invalidate = (payload: unknown) =>
+      makeApp().inject({ method: 'POST', url: '/api/admin/games/g1/invalidate', payload: payload as object })
+
+    it('invalidates as the signed-in user and says which modes were recalculated', async () => {
+      vi.mocked(adminGames.invalidateGame).mockResolvedValue({ recalculated: ['1v1'] })
+      const res = await invalidate({ reason: '  Wrong board  ' })
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ recalculated: ['1v1'] })
+      expect(adminGames.invalidateGame).toHaveBeenCalledWith(expect.anything(), 'g1', 'admin-1', 'Wrong board')
+    })
+
+    it('takes no reason, or a blank one, as none', async () => {
+      vi.mocked(adminGames.invalidateGame).mockResolvedValue({ recalculated: [] })
+      await invalidate({})
+      await invalidate({ reason: '   ' })
+      expect(vi.mocked(adminGames.invalidateGame).mock.calls.map(c => c[3])).toEqual([null, null])
+    })
+
+    it('400s a reason past 500 characters', async () => {
+      expect((await invalidate({ reason: 'x'.repeat(501) })).statusCode).toBe(400)
+      expect(adminGames.invalidateGame).not.toHaveBeenCalled()
+    })
+
+    it('404s an unknown game and 409s one that is not finished or already invalidated', async () => {
+      vi.mocked(adminGames.invalidateGame).mockResolvedValueOnce('not-found')
+      expect((await invalidate({})).statusCode).toBe(404)
+      vi.mocked(adminGames.invalidateGame).mockResolvedValueOnce('not-finished')
+      expect((await invalidate({})).statusCode).toBe(409)
+      vi.mocked(adminGames.invalidateGame).mockResolvedValueOnce('already-invalidated')
+      expect((await invalidate({})).statusCode).toBe(409)
+    })
   })
 })

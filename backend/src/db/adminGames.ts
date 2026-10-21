@@ -1,6 +1,8 @@
 import { sql, type Kysely } from 'kysely'
 import { z } from 'zod'
+import { recalculateRatings } from './ranked.js'
 import type { Database } from './schema.js'
+import { RANKED_MODES, type RankedMode } from '../shared/ranked.js'
 import type { Cursor } from '../history/cursor.js'
 import { groupBy } from '../util/groupBy.js'
 
@@ -14,6 +16,9 @@ export type AdminGameSeat = {
   placement: number | null
   forfeited: boolean
 }
+/** A moderator took the game out of history, stats and ratings. */
+export type Invalidation = { at: Date; by: { id: string; name: string } | null; reason: string | null }
+
 export type AdminGame = {
   id: string
   game_id: string
@@ -23,11 +28,13 @@ export type AdminGame = {
   finished_at: Date | null
   board: { id: string; name: string } | null
   ranked: boolean
+  invalidated: Invalidation | null
   seats: AdminGameSeat[]
 }
 
 export type AdminGameFilter = {
-  status: AdminGameStatus | 'all'
+  /** 'invalidated': finished games a moderator invalidated. */
+  status: AdminGameStatus | 'invalidated' | 'all'
   mode?: string
   /** A seat's name contains this, or its account id is this. */
   player?: string
@@ -39,6 +46,20 @@ export type AdminGameFilter = {
 
 // JSONB written by this backend; read defensively
 const ConfigSchema = z.record(z.string(), z.unknown()).catch({})
+
+function toInvalidation(r: {
+  invalidated_at: Date | null
+  invalidated_by: string | null
+  invalidator: string | null
+  invalidation_reason: string | null
+}): Invalidation | null {
+  if (r.invalidated_at === null) return null
+  return {
+    at: r.invalidated_at,
+    by: r.invalidated_by !== null && r.invalidator !== null ? { id: r.invalidated_by, name: r.invalidator } : null,
+    reason: r.invalidation_reason,
+  }
+}
 
 function asStatus(s: string): AdminGameStatus {
   return s === 'finished' || s === 'aborted' ? s : 'active'
@@ -58,6 +79,7 @@ export async function listAllGames(
   let q = db
     .selectFrom('game_sessions as gs')
     .leftJoin('boards as b', 'b.id', 'gs.board_db_id')
+    .leftJoin('user as iu', 'iu.id', 'gs.invalidated_by')
     .select([
       'gs.id',
       'gs.game_id',
@@ -65,6 +87,10 @@ export async function listAllGames(
       'gs.config',
       'gs.created_at',
       'gs.finished_at',
+      'gs.invalidated_at',
+      'gs.invalidated_by',
+      'gs.invalidation_reason',
+      'iu.name as invalidator',
       'b.id as board_id',
       'b.name as board_name',
       sql<boolean>`EXISTS (SELECT 1 FROM ranked_results rr WHERE rr.session_id = gs.id)`.as('ranked'),
@@ -72,7 +98,8 @@ export async function listAllGames(
     .orderBy('gs.created_at', 'desc')
     .orderBy('gs.id', 'desc')
     .limit(opts.limit + 1)
-  if (filter.status !== 'all') q = q.where('gs.status', '=', filter.status)
+  if (filter.status === 'invalidated') q = q.where('gs.invalidated_at', 'is not', null)
+  else if (filter.status !== 'all') q = q.where('gs.status', '=', filter.status)
   if (filter.mode) q = q.where('gs.game_id', '=', filter.mode)
   if (filter.board) q = q.where('gs.board_db_id', '=', filter.board)
   if (filter.from) q = q.where('gs.created_at', '>=', filter.from)
@@ -118,8 +145,68 @@ export async function listAllGames(
       finished_at: r.finished_at,
       board: r.board_id !== null && r.board_name !== null ? { id: r.board_id, name: r.board_name } : null,
       ranked: r.ranked,
+      invalidated: toInvalidation(r),
       seats: (seats.get(r.id) ?? []).map(({ session_id: _s, ...seat }) => seat),
     })),
     next: rows.length > opts.limit && last ? { finishedAt: last.created_at, id: last.id } : null,
   }
+}
+
+/** How a game was invalidated, or null when it was not (or does not exist). */
+export async function getInvalidation(db: Kysely<Database>, id: string): Promise<Invalidation | null> {
+  const row = await db
+    .selectFrom('game_sessions as gs')
+    .leftJoin('user as iu', 'iu.id', 'gs.invalidated_by')
+    .select(['gs.invalidated_at', 'gs.invalidated_by', 'gs.invalidation_reason', 'iu.name as invalidator'])
+    .where('gs.id', '=', id)
+    .executeTakeFirst()
+  return row ? toInvalidation(row) : null
+}
+
+/**
+ * Invalidates a finished game: it stays, but no longer counts in history, stats or best values, and
+ * the ranked ratings of every mode it was rated in are replayed without it (recalculateRatings).
+ * The reason is optional. One transaction, with an audit row.
+ */
+export async function invalidateGame(
+  db: Kysely<Database>,
+  id: string,
+  moderatorUserId: string,
+  reason: string | null,
+): Promise<'not-found' | 'not-finished' | 'already-invalidated' | { recalculated: RankedMode[] }> {
+  return db.transaction().execute(async trx => {
+    const game = await trx
+      .selectFrom('game_sessions')
+      .select(['id', 'game_id', 'status', 'owner_user_id', 'invalidated_at'])
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst()
+    if (!game) return 'not-found'
+    if (game.status !== 'finished') return 'not-finished'
+    if (game.invalidated_at !== null) return 'already-invalidated'
+    const players = await trx
+      .selectFrom('game_players')
+      .select(['seat', 'name', 'user_id'])
+      .where('session_id', '=', id)
+      .orderBy('seat')
+      .execute()
+    const rated = await trx.selectFrom('ranked_results').select('mode').distinct().where('session_id', '=', id).execute()
+    const modes = RANKED_MODES.filter(m => rated.some(r => r.mode === m))
+    await trx
+      .updateTable('game_sessions')
+      .set({ invalidated_at: new Date(), invalidated_by: moderatorUserId, invalidation_reason: reason })
+      .where('id', '=', id)
+      .execute()
+    for (const mode of modes) await recalculateRatings(trx, mode)
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: moderatorUserId,
+        action: 'game.invalidate',
+        target: id,
+        detail: JSON.stringify({ mode: game.game_id, ownerUserId: game.owner_user_id, players, reason, recalculated: modes }),
+      })
+      .execute()
+    return { recalculated: modes }
+  })
 }

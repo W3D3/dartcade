@@ -1,9 +1,12 @@
-// Admin game list: every game on the platform, for investigating (schema/api-v1.yaml, tag admin).
+// Admin game list: every game on the platform, for admins and moderators to investigate and invalidate (schema/api-v1.yaml, tag admin).
 import { api, type AdminGameSummary } from '$lib/api'
 
 export type { AdminGameSummary }
 
-export type GameStatus = 'finished' | 'aborted' | 'active' | 'all'
+/** How a moderator invalidated a game; null while it counts. */
+export type Invalidation = AdminGameSummary['invalidated']
+
+export type GameStatus = 'finished' | 'aborted' | 'active' | 'invalidated' | 'all'
 export type GameFilters = {
   status: GameStatus
   mode: string | null
@@ -21,6 +24,7 @@ export const STATUS_OPTIONS: { id: GameStatus; label: string }[] = [
   { id: 'all', label: 'All' },
   { id: 'aborted', label: 'Aborted' },
   { id: 'active', label: 'Active' },
+  { id: 'invalidated', label: 'Invalidated' },
 ]
 
 const DAY_MS = 86_400_000
@@ -63,4 +67,24 @@ export function outcome(g: AdminGameSummary): string {
   const winners = g.players.filter(p => p.placement === 1)
   if (winners.length === 0) return 'Finished'
   return g.players.length === 1 ? 'Finished' : `${winners.map(w => w.name).join(' & ')} won`
+}
+
+/** What invalidating a game warns about; the same text on the list and the details page. */
+export const INVALIDATE_WARNING =
+  "The game stays for moderators, but no longer counts in anyone's history, stats or best values. If it was ranked, the ratings it counted in are recalculated without it."
+
+/** Longest reason the server takes. */
+export const REASON_MAX = 500
+
+/** Invalidates a game, with an optional reason. On a refusal (not finished, already invalidated, gone), the message to show. */
+export async function invalidateGame(id: string, reason: string): Promise<{ recalculated: string[] } | { error: string }> {
+  const res = await api.POST('/api/admin/games/{id}/invalidate', { params: { path: { id } }, body: { reason: reason.trim() } })
+  return res.data ?? { error: res.error.error }
+}
+
+/** "by Mo on 2 Oct 2026: Board was misreading": who, when and (if given) why; the account may be gone. */
+export function invalidationText(i: NonNullable<Invalidation>): string {
+  const when = new Date(i.at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+  const who = i.by ? ` by ${i.by.name}` : ''
+  return `Invalidated${who} on ${when}${i.reason ? `: ${i.reason}` : ''}`
 }

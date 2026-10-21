@@ -1692,7 +1692,7 @@
       "get": {
         "operationId": "listAdminGames",
         "summary": "Every game on the platform, newest started first (admin or moderator)",
-        "description": "Finished games by default; `status` also lists aborted and active ones.",
+        "description": "Finished games by default (invalidated ones included, marked); `status` also lists aborted and active ones, or only the invalidated ones.",
         "tags": [
           "admin"
         ],
@@ -1707,6 +1707,7 @@
                 "finished",
                 "aborted",
                 "active",
+                "invalidated",
                 "all"
               ],
               "default": "finished"
@@ -1829,7 +1830,7 @@
       "get": {
         "operationId": "getAdminGame",
         "summary": "A finished game with its per-mode detail, whoever played it (admin or moderator)",
-        "description": "Account ids of every seat are included.",
+        "description": "Account ids of every seat are included, and how the game was invalidated, if it was.",
         "tags": [
           "admin"
         ],
@@ -1839,7 +1840,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/GameDetail"
+                  "$ref": "#/components/schemas/AdminGameDetail"
                 }
               }
             }
@@ -1852,6 +1853,68 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/admin/games/{id}/invalidate": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/GameId"
+        }
+      ],
+      "post": {
+        "operationId": "invalidateAdminGame",
+        "summary": "Invalidate a finished game and recalculate the ratings it counted in (admin or moderator)",
+        "description": "The game stays, marked invalidated with who did it and an optional reason, but no longer counts in anyone's history, stats or best values. Ranked ratings of the modes it was rated in are replayed without it. Only a finished game that is not invalidated yet can be.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InvalidateGameRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invalidated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminGameInvalidated"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "The game is not finished, or already invalidated",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -6062,6 +6125,46 @@
           }
         }
       },
+      "AdminGameInvalidation": {
+        "type": "object",
+        "nullable": true,
+        "description": "Set once a moderator invalidated the game",
+        "required": [
+          "at",
+          "by",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "by": {
+            "type": "object",
+            "nullable": true,
+            "description": "The moderator; null once their account is gone",
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            }
+          },
+          "reason": {
+            "type": "string",
+            "nullable": true,
+            "description": "Why, in the moderator's words; null when none was given"
+          }
+        }
+      },
       "AdminGameSummary": {
         "type": "object",
         "required": [
@@ -6073,6 +6176,7 @@
           "finishedAt",
           "board",
           "ranked",
+          "invalidated",
           "players"
         ],
         "additionalProperties": false,
@@ -6125,10 +6229,44 @@
             "type": "boolean",
             "description": "The game moved ranked ratings"
           },
+          "invalidated": {
+            "$ref": "#/components/schemas/AdminGameInvalidation"
+          },
           "players": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/AdminGameSeat"
+            }
+          }
+        }
+      },
+      "InvalidateGameRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Why the game is invalidated; optional, blank counts as none"
+          }
+        }
+      },
+      "AdminGameInvalidated": {
+        "type": "object",
+        "required": [
+          "recalculated"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "recalculated": {
+            "type": "array",
+            "description": "The ranked modes whose ratings were replayed without the game",
+            "items": {
+              "type": "string",
+              "enum": [
+                "1v1",
+                "2v2"
+              ]
             }
           }
         }
@@ -6322,6 +6460,30 @@
           },
           "stats": {
             "$ref": "#/components/schemas/MatchStats"
+          }
+        }
+      },
+      "AdminGameDetail": {
+        "type": "object",
+        "required": [
+          "game",
+          "detail",
+          "stats",
+          "invalidated"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "game": {
+            "$ref": "#/components/schemas/GameSummary"
+          },
+          "detail": {
+            "$ref": "#/components/schemas/GameDetail/properties/detail"
+          },
+          "stats": {
+            "$ref": "#/components/schemas/MatchStats"
+          },
+          "invalidated": {
+            "$ref": "#/components/schemas/AdminGameInvalidation"
           }
         }
       },

@@ -629,7 +629,7 @@ export interface paths {
         };
         /**
          * Every game on the platform, newest started first (admin or moderator)
-         * @description Finished games by default; `status` also lists aborted and active ones.
+         * @description Finished games by default (invalidated ones included, marked); `status` also lists aborted and active ones, or only the invalidated ones.
          */
         get: operations["listAdminGames"];
         put?: never;
@@ -651,11 +651,33 @@ export interface paths {
         };
         /**
          * A finished game with its per-mode detail, whoever played it (admin or moderator)
-         * @description Account ids of every seat are included.
+         * @description Account ids of every seat are included, and how the game was invalidated, if it was.
          */
         get: operations["getAdminGame"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/games/{id}/invalidate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Invalidate a finished game and recalculate the ratings it counted in (admin or moderator)
+         * @description The game stays, marked invalidated with who did it and an optional reason, but no longer counts in anyone's history, stats or best values. Ranked ratings of the modes it was rated in are replayed without it. Only a finished game that is not invalidated yet can be.
+         */
+        post: operations["invalidateAdminGame"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1972,6 +1994,18 @@ export interface components {
             placement: number | null;
             forfeited: boolean;
         };
+        /** @description Set once a moderator invalidated the game */
+        AdminGameInvalidation: {
+            /** Format: date-time */
+            at: string;
+            /** @description The moderator; null once their account is gone */
+            by: {
+                id: string;
+                name: string;
+            } | null;
+            /** @description Why, in the moderator's words; null when none was given */
+            reason: string | null;
+        } | null;
         AdminGameSummary: {
             id: string;
             mode: string;
@@ -1990,7 +2024,16 @@ export interface components {
             } | null;
             /** @description The game moved ranked ratings */
             ranked: boolean;
+            invalidated: components["schemas"]["AdminGameInvalidation"];
             players: components["schemas"]["AdminGameSeat"][];
+        };
+        InvalidateGameRequest: {
+            /** @description Why the game is invalidated; optional, blank counts as none */
+            reason?: string;
+        };
+        AdminGameInvalidated: {
+            /** @description The ranked modes whose ratings were replayed without the game */
+            recalculated: ("1v1" | "2v2")[];
         };
         AdminGameList: {
             games: components["schemas"]["AdminGameSummary"][];
@@ -2036,6 +2079,12 @@ export interface components {
             game: components["schemas"]["GameSummary"];
             detail: components["schemas"]["X01Detail"] | components["schemas"]["AtcDetail"] | components["schemas"]["MinigolfDetail"] | components["schemas"]["P121Detail"] | components["schemas"]["HiloDetail"];
             stats: components["schemas"]["MatchStats"];
+        };
+        AdminGameDetail: {
+            game: components["schemas"]["GameSummary"];
+            detail: components["schemas"]["GameDetail"]["detail"];
+            stats: components["schemas"]["MatchStats"];
+            invalidated: components["schemas"]["AdminGameInvalidation"];
         };
         /** @description The game's match stats, the same shape for every game mode. Rows say how to show each value, so a mode adds stats without a frontend change. */
         MatchStats: {
@@ -4013,7 +4062,7 @@ export interface operations {
     listAdminGames: {
         parameters: {
             query?: {
-                status?: "finished" | "aborted" | "active" | "all";
+                status?: "finished" | "aborted" | "active" | "invalidated" | "all";
                 /** @description Only this game mode */
                 mode?: string;
                 /** @description A seat's name contains this (case-insensitive), or its account id is this */
@@ -4068,12 +4117,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["GameDetail"];
+                    "application/json": components["schemas"]["AdminGameDetail"];
                 };
             };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    invalidateAdminGame: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["GameId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InvalidateGameRequest"];
+            };
+        };
+        responses: {
+            /** @description Invalidated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminGameInvalidated"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            /** @description The game is not finished, or already invalidated */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
             429: components["responses"]["TooManyRequests"];
         };
     };

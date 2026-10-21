@@ -4,7 +4,7 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireModerator } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
-import { listAllGames, type AdminGame } from '../db/adminGames.js'
+import { getInvalidation, invalidateGame, listAllGames, type AdminGame, type Invalidation } from '../db/adminGames.js'
 import { getFinishedGame } from '../db/history.js'
 import { getSessionEvents } from '../db/queries.js'
 import { decodeCursor, encodeCursor } from '../history/cursor.js'
@@ -16,6 +16,10 @@ import type { Route } from './route.js'
 
 type Opts = FastifyPluginOptions & { db: Kysely<Database> }
 
+function serializeInvalidation(i: Invalidation | null) {
+  return i && { at: i.at.toISOString(), by: i.by, reason: i.reason }
+}
+
 function serialize(g: AdminGame) {
   return {
     id: g.id,
@@ -26,6 +30,7 @@ function serialize(g: AdminGame) {
     finishedAt: g.finished_at?.toISOString() ?? null,
     board: g.board,
     ranked: g.ranked,
+    invalidated: serializeInvalidation(g.invalidated),
     players: g.seats.map(s => ({
       seat: s.seat,
       name: s.name,
@@ -69,8 +74,27 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
       req.log.warn({ details }, message)
     })
     if (!built) throw new ApiError(404, { error: 'not found' })
-    return { game: toSummary(game, true), detail: built.detail, stats: built.stats }
+    return {
+      game: toSummary(game, true),
+      detail: built.detail,
+      stats: built.stats,
+      invalidated: serializeInvalidation(await getInvalidation(db, game.id)),
+    }
   })
+
+  app.post<Route<'invalidateAdminGame'>>(
+    '/api/admin/games/:id/invalidate',
+    { preValidation: moderatorOnly, schema: fromSpec('invalidateAdminGame') },
+    async req => {
+      const reason = req.body.reason?.trim() || null
+      const result = await invalidateGame(db, req.params.id, req.userId, reason)
+      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-finished') throw new ApiError(409, { error: 'Only a finished game can be invalidated' })
+      if (result === 'already-invalidated') throw new ApiError(409, { error: 'This game is already invalidated' })
+      req.log.info({ gameId: req.params.id, moderatorId: req.userId, recalculated: result.recalculated }, 'moderator invalidated game')
+      return result
+    },
+  )
 
   done()
 }
