@@ -5,6 +5,9 @@
   import { ordinal } from '$lib/fmt'
   import Avatar from './Avatar.svelte'
   import GameXpChip from './progress/GameXpChip.svelte'
+  import Celebration from './progress/Celebration.svelte'
+  import { profileOf } from '$lib/progress/profiles'
+  import { cardColors } from '$lib/progress/look'
   import type { Competitor, WinView } from '$lib/winScreen'
 
   let {
@@ -18,6 +21,7 @@
     secondary = null,
     onhistory,
     xpSessionId = null,
+    winnerId = null,
   }: {
     view: WinView
     title: string
@@ -34,7 +38,12 @@
     onhistory: () => void
     /** Shows what this game paid you (progression); null: no XP chip. */
     xpSessionId?: string | null
+    /** The winner's account (the winning team's first player): their celebration plays (progression); null: none. */
+    winnerId?: string | null
   } = $props()
+
+  const winnerProfile = $derived(winnerId ? profileOf(winnerId) : null)
+  const winnerLook = $derived($winnerProfile?.look ?? null)
 
   const winner = $derived(view.competitors[0])
   const second = $derived(view.competitors.at(1))
@@ -106,6 +115,9 @@
 {/snippet}
 
 <div class="win relative flex-1 min-h-0 flex flex-col overflow-hidden">
+  {#if winnerLook}
+    <Celebration id={winnerLook.celebration} colors={cardColors(winnerLook.colors)} class="fixed inset-0 size-full" />
+  {/if}
   <div aria-hidden="true" class="absolute inset-0 overflow-hidden pointer-events-none">
     {#each confetti as p, i (i)}
       <span
