@@ -167,10 +167,11 @@ describe('/api/me', () => {
     expect(JSON.parse(res.body).invisible).toBe(true)
   })
 
-  it('sets the avatar to a preset and tells friends', async () => {
+  it('sets the avatar to a preset and tells friends and the lobby', async () => {
     const onChanged = vi.fn()
+    const onAvatarChanged = vi.fn().mockResolvedValue(undefined)
     const a = createFastify()
-    a.register(meApiPlugin, { db: {} as any, onChanged })
+    a.register(meApiPlugin, { db: {} as any, onChanged, onAvatarChanged })
     vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
     const res = await a.inject({
       method: 'PATCH',
@@ -180,6 +181,7 @@ describe('/api/me', () => {
     expect(res.statusCode).toBe(200)
     expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'crosshair', color: '#4a6b3a' })
     expect(onChanged).toHaveBeenCalledWith('old')
+    expect(onAvatarChanged).toHaveBeenCalledWith('old')
   })
 
   it('refuses a picture that is not unlocked yet', async () => {
