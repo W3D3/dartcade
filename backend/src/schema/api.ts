@@ -2720,6 +2720,10 @@ export interface components {
                 title?: string;
                 banner?: string;
                 colors?: string;
+                frame?: string;
+                name?: string;
+                sound?: string;
+                celebration?: string;
             };
         };
         Progress: {
@@ -2736,6 +2740,14 @@ export interface components {
             title: string;
             banner: string;
             colors: string;
+            /** @description The frame round the picture */
+            frame: string;
+            /** @description The name's style */
+            name: string;
+            /** @description The sound pack your darts play on the match screen */
+            sound: string;
+            /** @description What plays on the win screen when you win */
+            celebration: string;
         };
         Perks: {
             /** @description Perk ids unlocked, the level 1 ones included */
@@ -2746,6 +2758,10 @@ export interface components {
             title?: string;
             banner?: string;
             colors?: string;
+            frame?: string;
+            name?: string;
+            sound?: string;
+            celebration?: string;
         };
         PlayerProfile: {
             id: string;

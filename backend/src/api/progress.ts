@@ -8,7 +8,7 @@ import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.
 import { getRatings, x01Average } from '../db/ranked.js'
 import { areFriends } from '../db/friends.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
-import { PERKS, equippedOf, levelPerks, perk, streakNow, type Equipped, type PerkKind } from '../shared/progression.js'
+import { EQUIP_KINDS, PERKS, equippedOf, perk, streakNow, type Equipped } from '../shared/progression.js'
 import { RANKED_MODES } from '../shared/ranked.js'
 import { xpLine } from '../progression/service.js'
 import { addDays, levelOf, localDate } from '../shared/progression.js'
@@ -59,20 +59,16 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
     }
   })
 
-  // The level 1 perks are everyone's; the rest are the rows unlocking wrote
   async function perksOf(userId: string): Promise<{ unlocked: string[]; equipped: Equipped }> {
-    const [rows, prefs] = await Promise.all([unlockedPerks(db, userId), getPreferences(db, userId)])
-    return {
-      unlocked: [...levelPerks(1).map(p => p.id), ...rows.filter(id => perk(id) !== undefined)],
-      equipped: equippedOf(prefs?.equipped),
-    }
+    const [unlocked, prefs] = await Promise.all([unlockedPerks(db, userId), getPreferences(db, userId)])
+    return { unlocked, equipped: equippedOf(prefs?.equipped) }
   }
 
   app.put<Route<'equipPerks'>>('/api/progress/equip', { preValidation: requireAuth, schema: fromSpec('equipPerks') }, async req => {
     await requireProgression(req.userId)
     const { unlocked, equipped } = await perksOf(req.userId)
     const next: Equipped = { ...equipped }
-    for (const kind of ['title', 'banner', 'colors'] as const satisfies readonly PerkKind[]) {
+    for (const kind of EQUIP_KINDS) {
       const id = req.body[kind]
       if (id === undefined) continue
       if (perk(id)?.kind !== kind || !unlocked.includes(id)) throw new ApiError(409, { error: `${kind} is not unlocked` })
@@ -124,7 +120,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         playsMost: modes.slice(0, 3),
         recent: recent.map(g => ({ ...g, finishedAt: g.finishedAt.toISOString() })),
         xp: self ? xp : null,
-        collection: self ? { unlocked: levelPerks(1).length + unlocked.filter(p => perk(p)).length, total: PERKS.length } : null,
+        collection: self ? { unlocked: unlocked.length, total: PERKS.length } : null,
       }
     },
   )

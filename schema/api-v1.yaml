@@ -3560,6 +3560,10 @@ components:
             title: { type: string }
             banner: { type: string }
             colors: { type: string }
+            frame: { type: string }
+            name: { type: string }
+            sound: { type: string }
+            celebration: { type: string }
     Progress:
       type: object
       required: [xp, level, streak, dailyOpen, perks]
@@ -3573,12 +3577,16 @@ components:
     Equipped:
       type: object
       description: "The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar"
-      required: [title, banner, colors]
+      required: [title, banner, colors, frame, name, sound, celebration]
       additionalProperties: false
       properties:
         title: { type: string }
         banner: { type: string }
         colors: { type: string }
+        frame: { type: string, description: 'The frame round the picture' }
+        name: { type: string, description: "The name's style" }
+        sound: { type: string, description: 'The sound pack your darts play on the match screen' }
+        celebration: { type: string, description: 'What plays on the win screen when you win' }
     Perks:
       type: object
       required: [unlocked, equipped]
@@ -3593,6 +3601,10 @@ components:
         title: { type: string, maxLength: 64 }
         banner: { type: string, maxLength: 64 }
         colors: { type: string, maxLength: 64 }
+        frame: { type: string, maxLength: 64 }
+        name: { type: string, maxLength: 64 }
+        sound: { type: string, maxLength: 64 }
+        celebration: { type: string, maxLength: 64 }
     PlayerProfile:
       type: object
       required:

@@ -72,8 +72,15 @@ describe('gameAwards', () => {
 describe('reachedPerks', () => {
   const none = { wins: 0, bestRank: null }
   it('reaches level and streak perks, never the level 1 ones (they need no row)', () => {
-    const ids = reachedPerks({ level: 15, streak: 7, ranked: none }).map(p => p.id)
-    expect(ids.sort()).toEqual(['banner.chalk', 'colors.chalk', 'colors.night', 'picture.dart', 'picture.flame', 'title.oche-regular'])
+    const ids = reachedPerks({ level: 5, streak: 7, ranked: none }).map(p => p.id)
+    expect(ids.sort()).toEqual([
+      'banner.chalk-scribbles',
+      'colors.pub-green',
+      'picture.dart',
+      'picture.flame',
+      'picture.flight',
+      'title.oche-regular',
+    ])
   })
   it('reaches ranked deeds: 10 wins and Gold', () => {
     expect(reachedPerks({ level: 1, streak: 0, ranked: none })).toEqual([])

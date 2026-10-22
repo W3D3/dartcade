@@ -13,7 +13,9 @@ import {
   streakNow,
   xpForLevel,
   CARD_COLORS,
+  DEFAULT_EQUIPPED,
   PERKS,
+  isBig,
   equippedOf,
   levelPerks,
   nextLevelPerk,
@@ -50,20 +52,51 @@ describe('perks', () => {
   })
 
   it('unlocks by level and streak', () => {
-    expect(levelPerks(1).map(p => p.id)).toEqual(['title.rookie', 'banner.plain', 'colors.dartcade', 'picture.logo'])
-    expect(levelPerks(15).map(p => p.id)).toContain('title.oche-regular')
+    expect(levelPerks(1).map(p => p.id)).toEqual([
+      'title.rookie',
+      'banner.plain',
+      'colors.dartcade',
+      'picture.logo',
+      'frame.none',
+      'name.plain',
+      'sound.none',
+      'celebration.standard',
+    ])
+    expect(levelPerks(2).map(p => p.id)).toContain('title.oche-regular')
     expect(streakPerks(7).map(p => p.id)).toEqual(['picture.flame'])
-    expect(nextLevelPerk(14)?.id).toBe('title.oche-regular')
+    expect(nextLevelPerk(1)?.id).toBe('title.oche-regular')
     expect(nextLevelPerk(50)).toBeNull()
   })
 
-  it('reads a stored look, dropping what is unknown or the wrong kind', () => {
-    expect(equippedOf(null)).toEqual({ title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade' })
-    expect(equippedOf({ title: 'banner.gold', banner: 'banner.gold', colors: 'colors.nope' })).toMatchObject({
+  it('wears the level 1 perks by default, one of each kind', () => {
+    expect(
+      levelPerks(1)
+        .filter(p => p.kind !== 'picture')
+        .map(p => p.id),
+    ).toEqual(Object.values(DEFAULT_EQUIPPED))
+  })
+
+  it('gives every level up to 50 a reward, and every fifth a big one', () => {
+    for (let level = 1; level <= 50; level++) {
+      const at = PERKS.filter(p => 'level' in p.unlock && p.unlock.level === level)
+      expect(at.length, `level ${level}`).toBeGreaterThan(0)
+      if (level % 5 === 0) expect(at.some(isBig), `level ${level}`).toBe(true)
+    }
+  })
+
+  it('reads a stored look, dropping what is unknown, retired or the wrong kind', () => {
+    expect(equippedOf(null)).toEqual({
       title: 'title.rookie',
-      banner: 'banner.gold',
+      banner: 'banner.plain',
       colors: 'colors.dartcade',
+      frame: 'frame.none',
+      name: 'name.plain',
+      sound: 'sound.none',
+      celebration: 'celebration.standard',
     })
+    expect(
+      equippedOf({ title: 'banner.gold', banner: 'banner.gold', colors: 'colors.night', frame: 'frame.gold', sound: 'sound.nope' }),
+    ).toEqual({ ...DEFAULT_EQUIPPED, banner: 'banner.gold', frame: 'frame.gold' })
   })
 })
 

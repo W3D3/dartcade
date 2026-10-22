@@ -2,7 +2,7 @@ import { sql, type Kysely, type NotNull } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
 import type { Award, DayTally } from '../progression/rules.js'
-import { PERKS, levelOf, levelPerks, type StreakState } from '../shared/progression.js'
+import { PERKS, levelOf, levelPerks, perk, streakPerks, type StreakState } from '../shared/progression.js'
 
 const StatsSchema = z.record(z.string(), z.number()).catch({})
 
@@ -324,9 +324,22 @@ export async function unlock(db: Kysely<Database>, userId: string, perks: { id: 
   return rows.map(r => r.perk_id)
 }
 
+/**
+ * Every perk the account holds, in catalogue order: the rows unlocking wrote (a retired perk's row
+ * is ignored), plus whatever its level and best streak reach now. Those are read from the totals
+ * rather than only the rows, so a perk added to the catalogue later is held at once without a backfill.
+ */
 export async function unlockedPerks(db: Kysely<Database>, userId: string): Promise<string[]> {
-  const rows = await db.selectFrom('user_unlocks').select('perk_id').where('user_id', '=', userId).execute()
-  return rows.map(r => r.perk_id)
+  const [rows, progress] = await Promise.all([
+    db.selectFrom('user_unlocks').select('perk_id').where('user_id', '=', userId).execute(),
+    db.selectFrom('user_progress').select(['xp_total', 'streak_best']).where('user_id', '=', userId).executeTakeFirst(),
+  ])
+  const held = new Set([
+    ...rows.map(r => r.perk_id),
+    ...levelPerks(levelOf(progress?.xp_total ?? 0).level).map(p => p.id),
+    ...streakPerks(progress?.streak_best ?? 0).map(p => p.id),
+  ])
+  return PERKS.filter(p => held.has(p.id)).map(p => p.id)
 }
 
 /** Ranked deeds that unlock perks: 10 ranked wins, a Gold rank (index 15, Gold I) in any mode. */
@@ -347,20 +360,12 @@ export async function rankedDeeds(db: Kysely<Database>, userId: string): Promise
   return { wins: wins.n, bestRank: rank?.best ?? null }
 }
 
-/** Whether the account holds perk `perkId` (the level 1 ones everyone does). */
+/** Whether the account holds perk `perkId`. */
 export async function hasPerk(db: Kysely<Database>, userId: string, perkId: string): Promise<boolean> {
-  if (levelPerks(1).some(p => p.id === perkId)) return true
-  const row = await db
-    .selectFrom('user_unlocks')
-    .select('perk_id')
-    .where('user_id', '=', userId)
-    .where('perk_id', '=', perkId)
-    .executeTakeFirst()
-  return row !== undefined
+  return (await unlockedPerks(db, userId)).includes(perkId)
 }
 
 /** The pictures the account may wear: avatar preset ids. */
 export async function unlockedPictures(db: Kysely<Database>, userId: string): Promise<string[]> {
-  const held = new Set([...levelPerks(1).map(p => p.id), ...(await unlockedPerks(db, userId))])
-  return PERKS.filter(p => p.kind === 'picture' && held.has(p.id)).map(p => p.id.slice('picture.'.length))
+  return (await unlockedPerks(db, userId)).filter(id => perk(id)?.kind === 'picture').map(id => id.slice('picture.'.length))
 }

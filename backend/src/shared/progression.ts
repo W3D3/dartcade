@@ -198,67 +198,148 @@ export function streakNow(s: StreakState, today: string): number {
 }
 
 // ---- Cosmetics -------------------------------------------------------------------------------
-// Everything a level, a streak milestone or a deed unlocks is cosmetic: a title, a banner and card
-// colours on the profile card, and profile pictures (the avatar presets of shared/avatarPresets.ts).
-// Nothing changes a game, a rating or a queue, and the avatar ring is never
-// one (it means online status).
+// Everything a level, a streak milestone or a deed unlocks is cosmetic: on the profile card a title,
+// a banner, card colours, a frame round the picture and the name's style; profile pictures (the
+// avatar presets of shared/avatarPresets.ts); the sound pack your darts make on the match screen;
+// and the celebration your wins get. Nothing changes a game, a rating or a queue, and the avatar
+// ring is never one (it means online status).
 
-export type PerkKind = 'title' | 'banner' | 'colors' | 'picture'
+export const PERK_KINDS = ['title', 'banner', 'colors', 'picture', 'frame', 'name', 'sound', 'celebration'] as const
+export type PerkKind = (typeof PERK_KINDS)[number]
+/** A kind worn through PUT /api/progress/equip; the picture is the avatar, worn through PATCH /api/me. */
+export type EquipKind = Exclude<PerkKind, 'picture'>
+export const EQUIP_KINDS: readonly EquipKind[] = PERK_KINDS.filter((k): k is EquipKind => k !== 'picture')
 /** What unlocks a perk: a level, a day-streak milestone, or something done once. */
 export type Unlock = { level: number } | { streak: number } | { event: 'rankedWins' | 'rankedGold' }
-export type Perk = { id: string; kind: PerkKind; name: string; unlock: Unlock }
+/** `animated`: it moves (a sweep, a shimmer, a flicker), which makes it one of the bigger rewards. */
+export type Perk = { id: string; kind: PerkKind; name: string; unlock: Unlock; animated?: true }
 
-/** Card colours: a fixed background and foreground pair, picked together (no free colour picker). */
-export const CARD_COLORS: Record<string, { bg: string; fg: string }> = {
+/**
+ * Card colours: a fixed background and foreground pair, picked together (no free colour picker).
+ * `effect: 'holo'` lays an animated holographic sheen over the card.
+ */
+export const CARD_COLORS: Record<string, { bg: string; fg: string; effect?: 'holo' }> = {
   dartcade: { bg: '#181a16', fg: '#c6f24e' },
-  chalk: { bg: '#26301d', fg: '#e9f5c8' },
-  treble: { bg: '#1e3a2b', fg: '#f2dca0' },
+  'pub-green': { bg: '#1c3324', fg: '#b9e7a5' },
+  ice: { bg: '#15262e', fg: '#bfeaf5' },
+  ember: { bg: '#33170d', fg: '#ffb27a' },
+  midnight: { bg: '#11142a', fg: '#a9b4ff' },
+  tungsten: { bg: '#2a2a2c', fg: '#ffd27f' },
+  'chalk-dust': { bg: '#e8e6dc', fg: '#2a2e25' },
+  sunset: { bg: '#3a1626', fg: '#ffb38a' },
+  royal: { bg: '#1f1440', fg: '#d6c2ff' },
+  carbon: { bg: '#121212', fg: '#d8d8d8' },
+  aurora: { bg: '#0f2a2a', fg: '#7cf2c8' },
+  obsidian: { bg: '#0b0b10', fg: '#c9a8ff' },
+  holo: { bg: '#1a1d2e', fg: '#e6f0ff', effect: 'holo' },
   'oche-red': { bg: '#3a1a17', fg: '#ffb4ac' },
-  night: { bg: '#14202e', fg: '#9ec8ff' },
   'gold-leaf': { bg: '#2b230c', fg: '#f2b94e' },
-  paper: { bg: '#e9dfc4', fg: '#1a1a17' },
-  bullseye: { bg: '#4a1f1c', fg: '#ffd9d5' },
 }
 
 export const PERKS: readonly Perk[] = [
   { id: 'title.rookie', kind: 'title', name: 'Rookie', unlock: { level: 1 } },
-  { id: 'title.oche-regular', kind: 'title', name: 'Oche Regular', unlock: { level: 15 } },
-  { id: 'title.finisher', kind: 'title', name: 'Finisher', unlock: { level: 35 } },
-  { id: 'title.maximum', kind: 'title', name: 'Maximum', unlock: { level: 40 } },
+  { id: 'title.oche-regular', kind: 'title', name: 'Oche Regular', unlock: { level: 2 } },
+  { id: 'title.chalker', kind: 'title', name: 'Chalker', unlock: { level: 6 } },
+  { id: 'title.pub-player', kind: 'title', name: 'Pub Player', unlock: { level: 9 } },
+  { id: 'title.arrows', kind: 'title', name: 'Arrows', unlock: { level: 11 } },
+  { id: 'title.league-night', kind: 'title', name: 'League Night', unlock: { level: 14 } },
+  { id: 'title.contender', kind: 'title', name: 'Contender', unlock: { level: 16 } },
+  { id: 'title.local-hero', kind: 'title', name: 'Local Hero', unlock: { level: 19 } },
+  { id: 'title.steel-tip', kind: 'title', name: 'Steel Tip', unlock: { level: 21 } },
+  { id: 'title.challenger', kind: 'title', name: 'Challenger', unlock: { level: 24 } },
+  { id: 'title.sharpshooter', kind: 'title', name: 'Sharpshooter', unlock: { level: 26 } },
+  { id: 'title.veteran', kind: 'title', name: 'Veteran', unlock: { level: 29 } },
+  { id: 'title.crowd-pleaser', kind: 'title', name: 'Crowd Pleaser', unlock: { level: 31 } },
+  { id: 'title.headliner', kind: 'title', name: 'Headliner', unlock: { level: 34 } },
+  { id: 'title.main-stage', kind: 'title', name: 'Main Stage', unlock: { level: 36 } },
+  { id: 'title.oche-royalty', kind: 'title', name: 'Oche Royalty', unlock: { level: 39 } },
+  { id: 'title.marquee-name', kind: 'title', name: 'Marquee Name', unlock: { level: 41 } },
+  { id: 'title.icon', kind: 'title', name: 'Icon', unlock: { level: 44 } },
+  { id: 'title.grand-master', kind: 'title', name: 'Grand Master', unlock: { level: 46 } },
+  { id: 'title.almost-legendary', kind: 'title', name: 'Almost Legendary', unlock: { level: 49 } },
+  { id: 'title.dartcade-legend', kind: 'title', name: 'Dartcade Legend', unlock: { level: 50 } },
   { id: 'title.fortnight', kind: 'title', name: 'Fortnight', unlock: { streak: 14 } },
   { id: 'title.never-misses', kind: 'title', name: 'Never Misses', unlock: { streak: 100 } },
   { id: 'banner.plain', kind: 'banner', name: 'Plain', unlock: { level: 1 } },
-  { id: 'banner.chalk', kind: 'banner', name: 'Chalkboard', unlock: { level: 10 } },
-  { id: 'banner.treble', kind: 'banner', name: 'Treble ring', unlock: { level: 25 } },
-  { id: 'banner.bullseye', kind: 'banner', name: 'Bullseye', unlock: { level: 50 } },
+  { id: 'banner.chalk-scribbles', kind: 'banner', name: 'Chalk scribbles', unlock: { level: 4 } },
+  { id: 'banner.oche-tape', kind: 'banner', name: 'Oche tape', unlock: { level: 7 } },
+  { id: 'banner.cork', kind: 'banner', name: 'Cork board', unlock: { level: 12 } },
+  { id: 'banner.neon', kind: 'banner', name: 'Neon sign', unlock: { level: 17 } },
+  { id: 'banner.floodlights', kind: 'banner', name: 'Floodlights', unlock: { level: 20 }, animated: true },
+  { id: 'banner.scoreboard', kind: 'banner', name: 'Scoreboard', unlock: { level: 22 } },
+  { id: 'banner.stage', kind: 'banner', name: 'Stage walk-on', unlock: { level: 27 } },
+  { id: 'banner.smoke', kind: 'banner', name: 'Smoke', unlock: { level: 32 } },
+  { id: 'banner.arena', kind: 'banner', name: 'Arena lights', unlock: { level: 37 } },
+  { id: 'banner.fireworks', kind: 'banner', name: 'Fireworks', unlock: { level: 42 } },
+  { id: 'banner.golden-hour', kind: 'banner', name: 'Golden hour', unlock: { level: 47 } },
+  { id: 'banner.legend', kind: 'banner', name: 'Legend', unlock: { level: 50 }, animated: true },
   { id: 'banner.gold', kind: 'banner', name: 'Gold', unlock: { streak: 30 } },
   { id: 'colors.dartcade', kind: 'colors', name: 'Dartcade', unlock: { level: 1 } },
-  { id: 'colors.night', kind: 'colors', name: 'Night', unlock: { level: 5 } },
-  { id: 'colors.chalk', kind: 'colors', name: 'Chalk', unlock: { level: 10 } },
-  { id: 'colors.treble', kind: 'colors', name: 'Treble', unlock: { level: 25 } },
-  { id: 'colors.paper', kind: 'colors', name: 'Paper', unlock: { level: 35 } },
-  { id: 'colors.bullseye', kind: 'colors', name: 'Bullseye', unlock: { level: 50 } },
+  { id: 'colors.pub-green', kind: 'colors', name: 'Pub green', unlock: { level: 5 } },
+  { id: 'colors.ice', kind: 'colors', name: 'Ice', unlock: { level: 8 } },
+  { id: 'colors.ember', kind: 'colors', name: 'Ember', unlock: { level: 13 } },
+  { id: 'colors.midnight', kind: 'colors', name: 'Midnight', unlock: { level: 18 } },
+  { id: 'colors.tungsten', kind: 'colors', name: 'Tungsten', unlock: { level: 23 } },
+  { id: 'colors.chalk-dust', kind: 'colors', name: 'Chalk dust', unlock: { level: 25 } },
+  { id: 'colors.sunset', kind: 'colors', name: 'Sunset', unlock: { level: 28 } },
+  { id: 'colors.royal', kind: 'colors', name: 'Royal', unlock: { level: 33 } },
+  { id: 'colors.carbon', kind: 'colors', name: 'Carbon', unlock: { level: 38 } },
+  { id: 'colors.aurora', kind: 'colors', name: 'Aurora', unlock: { level: 43 } },
+  { id: 'colors.obsidian', kind: 'colors', name: 'Obsidian', unlock: { level: 48 } },
+  { id: 'colors.holo', kind: 'colors', name: 'Holographic', unlock: { level: 50 }, animated: true },
   { id: 'colors.oche-red', kind: 'colors', name: 'Oche red', unlock: { event: 'rankedGold' } },
   { id: 'colors.gold-leaf', kind: 'colors', name: 'Gold leaf', unlock: { streak: 30 } },
   // Pictures: `picture.<preset>` is the avatar preset of that id
   { id: 'picture.logo', kind: 'picture', name: 'Dartcade mark', unlock: { level: 1 } },
   { id: 'picture.dart', kind: 'picture', name: 'Dart', unlock: { level: 3 } },
-  { id: 'picture.target', kind: 'picture', name: 'Target', unlock: { level: 20 } },
-  { id: 'picture.star', kind: 'picture', name: 'Star', unlock: { level: 30 } },
-  { id: 'picture.crown', kind: 'picture', name: 'Crown', unlock: { level: 40 } },
+  { id: 'picture.flight', kind: 'picture', name: 'Flight', unlock: { level: 5 } },
+  { id: 'picture.board', kind: 'picture', name: 'Board', unlock: { level: 10 } },
+  { id: 'picture.trophy', kind: 'picture', name: 'Trophy', unlock: { level: 25 } },
+  { id: 'picture.crossed-darts', kind: 'picture', name: 'Crossed darts', unlock: { level: 35 } },
+  { id: 'picture.burning-dart', kind: 'picture', name: 'Burning dart', unlock: { level: 45 }, animated: true },
+  { id: 'picture.golden-dart', kind: 'picture', name: 'Golden dart', unlock: { level: 50 } },
   { id: 'picture.flame', kind: 'picture', name: 'Flame', unlock: { streak: 7 } },
   { id: 'picture.shield', kind: 'picture', name: 'Shield', unlock: { event: 'rankedWins' } },
+  { id: 'frame.none', kind: 'frame', name: 'No frame', unlock: { level: 1 } },
+  { id: 'frame.bronze', kind: 'frame', name: 'Bronze', unlock: { level: 10 } },
+  { id: 'frame.silver', kind: 'frame', name: 'Silver', unlock: { level: 20 } },
+  { id: 'frame.gold', kind: 'frame', name: 'Gold', unlock: { level: 30 } },
+  { id: 'frame.platinum', kind: 'frame', name: 'Platinum', unlock: { level: 40 } },
+  { id: 'frame.legend', kind: 'frame', name: 'Legend', unlock: { level: 50 }, animated: true },
+  { id: 'name.plain', kind: 'name', name: 'Plain', unlock: { level: 1 } },
+  { id: 'name.gold', kind: 'name', name: 'Gold name', unlock: { level: 50 }, animated: true },
+  { id: 'sound.none', kind: 'sound', name: 'No sounds', unlock: { level: 1 } },
+  { id: 'sound.pub', kind: 'sound', name: 'Pub', unlock: { level: 15 } },
+  { id: 'sound.arcade', kind: 'sound', name: 'Arcade', unlock: { level: 35 } },
+  { id: 'sound.stadium', kind: 'sound', name: 'Stadium', unlock: { level: 45 } },
+  { id: 'sound.legend', kind: 'sound', name: 'Legend', unlock: { level: 50 } },
+  { id: 'celebration.standard', kind: 'celebration', name: 'Standard', unlock: { level: 1 } },
+  { id: 'celebration.confetti', kind: 'celebration', name: 'Confetti', unlock: { level: 30 } },
+  { id: 'celebration.fireworks', kind: 'celebration', name: 'Fireworks', unlock: { level: 40 } },
+  { id: 'celebration.legend', kind: 'celebration', name: 'Legend', unlock: { level: 50 } },
 ]
+
+/** Kinds that make a level a big one, as an animated perk does: every fifth level brings one. */
+export const BIG_KINDS: ReadonlySet<PerkKind> = new Set(['picture', 'frame', 'name', 'sound', 'celebration'])
+export const isBig = (p: Perk): boolean => BIG_KINDS.has(p.kind) || p.animated === true
 
 /** The perk that unlocks avatar preset `preset`. */
 export const pictureFor = (preset: string): string => `picture.${preset}`
 
 export const perk = (id: string): Perk | undefined => PERKS.find(p => p.id === id)
 
-/** What a player's card wears: one perk id per kind (the picture is their avatar, set apart). */
-export type Equipped = { title: string; banner: string; colors: string }
+/** What a player wears: one perk id per kind (the picture is their avatar, set apart). */
+export type Equipped = Record<EquipKind, string>
 /** Everyone's look until they pick: the level 1 perks. */
-export const DEFAULT_EQUIPPED: Equipped = { title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade' }
+export const DEFAULT_EQUIPPED: Equipped = {
+  title: 'title.rookie',
+  banner: 'banner.plain',
+  colors: 'colors.dartcade',
+  frame: 'frame.none',
+  name: 'name.plain',
+  sound: 'sound.none',
+  celebration: 'celebration.standard',
+}
 
 /** The perks level `level` has reached. */
 export const levelPerks = (level: number): Perk[] => PERKS.filter(p => 'level' in p.unlock && p.unlock.level <= level)
@@ -276,15 +357,19 @@ export function unlockText(u: Unlock): string {
   return { rankedWins: 'Win 10 ranked games', rankedGold: 'Reach ranked Gold' }[u.event]
 }
 
-/** A stored look, with every missing, unknown or wrong-kind pick back at its default. */
+/** A stored look, with every missing, unknown, retired or wrong-kind pick back at its default. */
 export function equippedOf(stored: Partial<Record<string, unknown>> | null | undefined): Equipped {
-  const pick = (kind: PerkKind): string | null => {
+  const pick = (kind: EquipKind): string => {
     const id = stored?.[kind]
-    return typeof id === 'string' && perk(id)?.kind === kind ? id : null
+    return typeof id === 'string' && perk(id)?.kind === kind ? id : DEFAULT_EQUIPPED[kind]
   }
   return {
-    title: pick('title') ?? DEFAULT_EQUIPPED.title,
-    banner: pick('banner') ?? DEFAULT_EQUIPPED.banner,
-    colors: pick('colors') ?? DEFAULT_EQUIPPED.colors,
+    title: pick('title'),
+    banner: pick('banner'),
+    colors: pick('colors'),
+    frame: pick('frame'),
+    name: pick('name'),
+    sound: pick('sound'),
+    celebration: pick('celebration'),
   }
 }

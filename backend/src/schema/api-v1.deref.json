@@ -15592,6 +15592,18 @@
                         },
                         "colors": {
                           "type": "string"
+                        },
+                        "frame": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "sound": {
+                          "type": "string"
+                        },
+                        "celebration": {
+                          "type": "string"
                         }
                       }
                     }
@@ -15794,6 +15806,18 @@
                       },
                       "colors": {
                         "type": "string"
+                      },
+                      "frame": {
+                        "type": "string"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "sound": {
+                        "type": "string"
+                      },
+                      "celebration": {
+                        "type": "string"
                       }
                     }
                   }
@@ -15910,6 +15934,18 @@
                           "type": "string"
                         },
                         "colors": {
+                          "type": "string"
+                        },
+                        "frame": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "sound": {
+                          "type": "string"
+                        },
+                        "celebration": {
                           "type": "string"
                         }
                       }
@@ -22833,7 +22869,11 @@
                           "required": [
                             "title",
                             "banner",
-                            "colors"
+                            "colors",
+                            "frame",
+                            "name",
+                            "sound",
+                            "celebration"
                           ],
                           "additionalProperties": false,
                           "properties": {
@@ -22845,6 +22885,22 @@
                             },
                             "colors": {
                               "type": "string"
+                            },
+                            "frame": {
+                              "type": "string",
+                              "description": "The frame round the picture"
+                            },
+                            "name": {
+                              "type": "string",
+                              "description": "The name's style"
+                            },
+                            "sound": {
+                              "type": "string",
+                              "description": "The sound pack your darts play on the match screen"
+                            },
+                            "celebration": {
+                              "type": "string",
+                              "description": "What plays on the win screen when you win"
                             }
                           }
                         }
@@ -23209,6 +23265,22 @@
                   "colors": {
                     "type": "string",
                     "maxLength": 64
+                  },
+                  "frame": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "name": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "sound": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "celebration": {
+                    "type": "string",
+                    "maxLength": 64
                   }
                 }
               }
@@ -23241,7 +23313,11 @@
                       "required": [
                         "title",
                         "banner",
-                        "colors"
+                        "colors",
+                        "frame",
+                        "name",
+                        "sound",
+                        "celebration"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -23253,6 +23329,22 @@
                         },
                         "colors": {
                           "type": "string"
+                        },
+                        "frame": {
+                          "type": "string",
+                          "description": "The frame round the picture"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "The name's style"
+                        },
+                        "sound": {
+                          "type": "string",
+                          "description": "The sound pack your darts play on the match screen"
+                        },
+                        "celebration": {
+                          "type": "string",
+                          "description": "What plays on the win screen when you win"
                         }
                       }
                     }
@@ -23601,7 +23693,11 @@
                       "required": [
                         "title",
                         "banner",
-                        "colors"
+                        "colors",
+                        "frame",
+                        "name",
+                        "sound",
+                        "celebration"
                       ],
                       "additionalProperties": false,
                       "properties": {
@@ -23613,6 +23709,22 @@
                         },
                         "colors": {
                           "type": "string"
+                        },
+                        "frame": {
+                          "type": "string",
+                          "description": "The frame round the picture"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "The name's style"
+                        },
+                        "sound": {
+                          "type": "string",
+                          "description": "The sound pack your darts play on the match screen"
+                        },
+                        "celebration": {
+                          "type": "string",
+                          "description": "What plays on the win screen when you win"
                         }
                       }
                     },
@@ -42461,6 +42573,18 @@
               },
               "colors": {
                 "type": "string"
+              },
+              "frame": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "sound": {
+                "type": "string"
+              },
+              "celebration": {
+                "type": "string"
               }
             }
           }
@@ -42602,7 +42726,11 @@
                 "required": [
                   "title",
                   "banner",
-                  "colors"
+                  "colors",
+                  "frame",
+                  "name",
+                  "sound",
+                  "celebration"
                 ],
                 "additionalProperties": false,
                 "properties": {
@@ -42614,6 +42742,22 @@
                   },
                   "colors": {
                     "type": "string"
+                  },
+                  "frame": {
+                    "type": "string",
+                    "description": "The frame round the picture"
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "The name's style"
+                  },
+                  "sound": {
+                    "type": "string",
+                    "description": "The sound pack your darts play on the match screen"
+                  },
+                  "celebration": {
+                    "type": "string",
+                    "description": "What plays on the win screen when you win"
                   }
                 }
               }
@@ -42627,7 +42771,11 @@
         "required": [
           "title",
           "banner",
-          "colors"
+          "colors",
+          "frame",
+          "name",
+          "sound",
+          "celebration"
         ],
         "additionalProperties": false,
         "properties": {
@@ -42639,6 +42787,22 @@
           },
           "colors": {
             "type": "string"
+          },
+          "frame": {
+            "type": "string",
+            "description": "The frame round the picture"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name's style"
+          },
+          "sound": {
+            "type": "string",
+            "description": "The sound pack your darts play on the match screen"
+          },
+          "celebration": {
+            "type": "string",
+            "description": "What plays on the win screen when you win"
           }
         }
       },
@@ -42663,7 +42827,11 @@
             "required": [
               "title",
               "banner",
-              "colors"
+              "colors",
+              "frame",
+              "name",
+              "sound",
+              "celebration"
             ],
             "additionalProperties": false,
             "properties": {
@@ -42675,6 +42843,22 @@
               },
               "colors": {
                 "type": "string"
+              },
+              "frame": {
+                "type": "string",
+                "description": "The frame round the picture"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name's style"
+              },
+              "sound": {
+                "type": "string",
+                "description": "The sound pack your darts play on the match screen"
+              },
+              "celebration": {
+                "type": "string",
+                "description": "What plays on the win screen when you win"
               }
             }
           }
@@ -42693,6 +42877,22 @@
             "maxLength": 64
           },
           "colors": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "frame": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "name": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "sound": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "celebration": {
             "type": "string",
             "maxLength": 64
           }
@@ -42815,7 +43015,11 @@
             "required": [
               "title",
               "banner",
-              "colors"
+              "colors",
+              "frame",
+              "name",
+              "sound",
+              "celebration"
             ],
             "additionalProperties": false,
             "properties": {
@@ -42827,6 +43031,22 @@
               },
               "colors": {
                 "type": "string"
+              },
+              "frame": {
+                "type": "string",
+                "description": "The frame round the picture"
+              },
+              "name": {
+                "type": "string",
+                "description": "The name's style"
+              },
+              "sound": {
+                "type": "string",
+                "description": "The sound pack your darts play on the match screen"
+              },
+              "celebration": {
+                "type": "string",
+                "description": "What plays on the win screen when you win"
               }
             }
           },

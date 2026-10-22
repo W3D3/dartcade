@@ -190,10 +190,10 @@ describe('/api/me', () => {
     const res = await app().inject({
       method: 'PATCH',
       url: '/api/me',
-      payload: { avatar: { kind: 'preset', preset: 'crown', color: '#000000', fgColor: '#ffffff' } },
+      payload: { avatar: { kind: 'preset', preset: 'trophy', color: '#000000', fgColor: '#ffffff' } },
     })
     expect(res.statusCode).toBe(409)
-    expect(hasPerk).toHaveBeenCalledWith({}, 'old', 'picture.crown')
+    expect(hasPerk).toHaveBeenCalledWith({}, 'old', 'picture.trophy')
     expect(setAvatar).not.toHaveBeenCalled()
   })
 

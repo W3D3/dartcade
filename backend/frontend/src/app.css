@@ -214,3 +214,103 @@
     right: 12px;
   }
 }
+
+/* Cosmetic motion (lib/progress/look.ts, lib/avatarPresetIcons.ts): banners, card effects, pictures. Still under reduced motion. */
+@layer components {
+  .cos-sweep,
+  .cos-shimmer,
+  .cos-holo {
+    position: relative;
+    overflow: hidden;
+  }
+  .cos-sweep::after,
+  .cos-shimmer::after,
+  .cos-holo::after {
+    content: '';
+    position: absolute;
+    pointer-events: none;
+  }
+  /* Floodlight beams swinging across */
+  .cos-sweep::after {
+    inset: 0 -60%;
+    background: repeating-linear-gradient(
+      105deg,
+      transparent 0 50px,
+      color-mix(in srgb, var(--cos-accent) 22%, transparent) 50px 80px,
+      transparent 80px 170px
+    );
+    animation: cos-sweep 7s ease-in-out infinite alternate;
+  }
+  /* A band of light running over gold */
+  .cos-shimmer::after {
+    inset: 0;
+    background: linear-gradient(110deg, transparent 35%, rgb(255 240 190 / 0.45) 50%, transparent 65%) 0 0 / 250% 100%;
+    animation: cos-shimmer 3.2s linear infinite;
+  }
+  /* A holographic sheen drifting over the whole card */
+  .cos-holo::after {
+    inset: 0;
+    z-index: 1;
+    background: linear-gradient(
+        125deg,
+        rgb(255 120 200 / 0.14),
+        rgb(120 220 255 / 0.14) 30%,
+        rgb(180 255 140 / 0.12) 55%,
+        rgb(255 230 120 / 0.14) 80%,
+        rgb(255 120 200 / 0.14)
+      )
+      0 0 / 300% 300%;
+    mix-blend-mode: screen;
+    animation: cos-holo 8s ease-in-out infinite alternate;
+  }
+  .cos-flicker {
+    animation: cos-flicker 1.6s ease-in-out infinite;
+  }
+  @keyframes cos-sweep {
+    from {
+      transform: translateX(-12%);
+    }
+    to {
+      transform: translateX(12%);
+    }
+  }
+  @keyframes cos-shimmer {
+    from {
+      background-position: 150% 0;
+    }
+    to {
+      background-position: -50% 0;
+    }
+  }
+  @keyframes cos-holo {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 100% 100%;
+    }
+  }
+  @keyframes cos-flicker {
+    0%,
+    100% {
+      transform: scale(1);
+      filter: drop-shadow(0 0 2px #ff6a00);
+    }
+    40% {
+      transform: scale(1.06) rotate(-2deg);
+      filter: drop-shadow(0 0 5px #ffb000);
+    }
+    70% {
+      transform: scale(0.97) rotate(1deg);
+      filter: drop-shadow(0 0 3px #ff3d00);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cos-sweep::after,
+    .cos-shimmer::after,
+    .cos-holo::after,
+    .cos-flicker {
+      animation: none;
+    }
+  }
+}

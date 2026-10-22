@@ -10,7 +10,7 @@
   import Avatar from '../Avatar.svelte'
   import type { DotKind } from '$lib/friends/view'
   import type { PlayerProfile } from '$lib/progress/profiles'
-  import { CARD_SURFACE, accentOf, bannerStyle, cardColors, titleName } from '$lib/progress/look'
+  import { CARD_SURFACE, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, titleName } from '$lib/progress/look'
   import { rank } from '$shared/ranked.js'
   import type { Equipped } from '$shared/progression.js'
   import { getGameView } from '$lib/gameViews'
@@ -43,9 +43,11 @@
   role="dialog"
   aria-label="{profile.name}, profile"
   style="background: {CARD_SURFACE}"
-  class="w-[320px] max-w-full box-border overflow-hidden rounded-[16px] border border-line-popover text-text shadow-popover"
+  class="w-[320px] max-w-full box-border overflow-hidden rounded-[16px] border border-line-popover text-text shadow-popover {colorsClass(
+    look.colors,
+  )}"
 >
-  <div class="h-[88px]" style={bannerStyle(look.banner, colors)}></div>
+  <div class="h-[88px] {bannerClass(look.banner)}" style={bannerStyle(look.banner, colors)}></div>
   <div class="-mt-[34px] flex flex-col px-[22px] pb-[22px]">
     <span class="relative flex size-[68px] rounded-full" style="box-shadow: 0 0 0 4px {CARD_SURFACE}">
       <Avatar name={profile.name} {avatar} userId={profile.id} size={68} />

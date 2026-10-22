@@ -17,7 +17,7 @@
   // lobby open.
   import { Bot as BotIcon } from '@lucide/svelte'
   import { avatarColor } from '$lib/avatarColor'
-  import { AVATAR_PRESET_ICONS } from '$lib/avatarPresetIcons'
+  import { AVATAR_PRESET_ART } from '$lib/avatarPresetIcons'
   import type { components } from '$lib/api/schema'
   import { botAvatarColor } from '$lib/botAvatarColor'
   import { initial } from '$lib/fmt'
@@ -78,7 +78,8 @@
   // A preset's background and foreground colours, chosen independently of each other, are hex
   // values (not Tailwind classes), so they're set as inline styles instead.
   const presetBg = $derived(!bot && !guest && avatar?.kind === 'preset' ? avatar.color : undefined)
-  const presetFg = $derived(!bot && !guest && avatar?.kind === 'preset' ? avatar.fgColor : undefined)
+  const art = $derived(!bot && !guest && avatar?.kind === 'preset' ? AVATAR_PRESET_ART[avatar.preset] : undefined)
+  const presetFg = $derived(!bot && !guest && avatar?.kind === 'preset' ? (art?.color ?? avatar.fgColor) : undefined)
   const px = $derived(size ?? (className ? null : 36))
   const sizeStyle = $derived(px == null ? '' : `width: ${px}px; height: ${px}px; font-size: ${Math.round(px * 0.42)}px;`)
 </script>
@@ -94,9 +95,8 @@
     <BotIcon size="62%" />
   {:else if avatar?.kind === 'upload' && userId}
     <img src="/api/users/{userId}/avatar?v={avatar.version}" alt="" class="w-full h-full object-cover" />
-  {:else if avatar?.kind === 'preset' && AVATAR_PRESET_ICONS[avatar.preset]}
-    {@const Icon = AVATAR_PRESET_ICONS[avatar.preset]}
-    <Icon size="62%" />
+  {:else if art}
+    <span class="flex size-full items-center justify-center {art.motion ? `cos-${art.motion}` : ''}"><art.icon size="62%" /></span>
   {:else}
     {initial(name)}
   {/if}
