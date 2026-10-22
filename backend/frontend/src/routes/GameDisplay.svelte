@@ -806,6 +806,7 @@
         secondary={winSecondary ? { label: WIN_LABELS[winSecondary], onclick: () => void finishWin(winSecondary) } : null}
         onhistory={() => push(`/history/${sessionId}`)}
         xpSessionId={$progression && snapshot.mySeats.length > 0 ? sessionId : null}
+        winnerId={$progression ? (snapshot.seats[win.competitors[0]?.seats[0] ?? -1]?.userId ?? null) : null}
       />
     {:else}
       <GameHeader

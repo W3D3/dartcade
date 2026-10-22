@@ -5,7 +5,7 @@
   // the card first. Locked ones are dashed and grey, in colour on hover, with what unlocks them.
   // The picture is your avatar (shared/avatarPresets.ts), worn in the colours you picked in
   // Settings; the photo reward is uploaded there too.
-  import { Check, Lock, Undo2, Volume2, VolumeX } from '@lucide/svelte'
+  import { Check, Lock, PartyPopper, Play, Trophy, Undo2, Volume2, VolumeX } from '@lucide/svelte'
   import ProfileCard from './ProfileCard.svelte'
   import Avatar from '../Avatar.svelte'
   import { currentUser } from '$lib/auth'
@@ -18,6 +18,7 @@
   import { equip } from '$lib/progress/equip'
   import { KIND_LABEL, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass } from '$lib/progress/look'
   import CardFrame from './CardFrame.svelte'
+  import Celebration from './Celebration.svelte'
   import { createSoundPacks } from '$lib/soundPacks'
   import { loadSettings } from '$lib/gameSettings'
   import { PERKS, unlockText, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
@@ -34,7 +35,7 @@
   // The perk tried on the card, not worn
   let trying = $state<Perk | null>(null)
 
-  const KINDS = (['title', 'banner', 'colors', 'picture', 'frame', 'name', 'sound'] as const).map(k => ({
+  const KINDS = (['title', 'banner', 'colors', 'picture', 'frame', 'name', 'sound', 'celebration'] as const).map(k => ({
     value: k,
     label: KIND_LABEL[k].one,
   }))
@@ -62,14 +63,21 @@
   // What unlocks it: 'Level 15', '14-day streak'
   const lockLine = (p: Perk): string => unlockText(p.unlock)
 
-  // A pack's sample plays on every pick (tried on or worn), at this device's effects volume
+  // A sound pack's sample and a celebration play on every pick (tried on or worn); the sample at
+  // this device's effects volume, the celebration over the card (`run` replays it)
   const packs = createSoundPacks(() => loadSettings(typeof localStorage === 'undefined' ? null : localStorage).effectsVolume)
-
-  // A sound pack tried on: its sample again
-  const replay = $derived(trying?.kind === 'sound' && trying.id !== 'sound.none' ? trying.id : null)
+  let party = $state<{ id: string; run: number } | null>(null)
+  function sample(p: Perk) {
+    if (p.kind === 'sound') packs.preview(p.id)
+    if (p.kind === 'celebration') party = { id: p.id, run: (party?.run ?? 0) + 1 }
+  }
+  // The level 1 pack and celebration play nothing
+  const levelOne = (p: Perk) => 'level' in p.unlock && p.unlock.level === 1
+  // A pack or a celebration tried on can be played again
+  const replay = $derived(trying && ['sound', 'celebration'].includes(trying.kind) && !levelOne(trying) ? trying : null)
 
   async function pick(p: Perk) {
-    if (p.kind === 'sound' && trying?.id !== p.id) packs.preview(p.id)
+    if (trying?.id !== p.id) sample(p)
     // Previewing only, or not yours yet: try it on the card (again: back to yours)
     if (mode === 'preview' || !unlocked.includes(p.id)) {
       trying = trying?.id === p.id ? null : p
@@ -98,17 +106,28 @@
     <div class="flex flex-col gap-[14px]">
       <span class="text-[12px] label-caps text-text-dim">{mode === 'equip' ? 'Your card' : 'Rewards'}</span>
       {#if $profile}
-        <ProfileCard profile={$profile} {look} avatar={avatar ?? $profile.avatar} status={$status}>
-          {#snippet actions()}
-            {#if mode === 'preview'}
-              <a
-                href="#/profile"
-                class="flex-1 rounded-[10px] border border-line-strong py-[11px] text-center font-display font-bold text-[17px] uppercase tracking-[0.08em] text-text no-underline"
-                >Customise on your profile</a
-              >
-            {/if}
-          {/snippet}
-        </ProfileCard>
+        <div class="relative w-fit max-w-full">
+          <ProfileCard profile={$profile} {look} avatar={avatar ?? $profile.avatar} status={$status}>
+            {#snippet actions()}
+              {#if mode === 'preview'}
+                <a
+                  href="#/profile"
+                  class="flex-1 rounded-[10px] border border-line-strong py-[11px] text-center font-display font-bold text-[17px] uppercase tracking-[0.08em] text-text no-underline"
+                  >Customise on your profile</a
+                >
+              {/if}
+            {/snippet}
+          </ProfileCard>
+          {#if party}
+            {#key party.run}
+              <Celebration
+                id={party.id}
+                colors={cardColors(look.colors)}
+                class="absolute -inset-8 w-[calc(100%+4rem)] h-[calc(100%+4rem)]"
+              />
+            {/key}
+          {/if}
+        </div>
       {/if}
       {#if trying}
         <div class="flex items-center gap-2 text-[13px] text-text-muted" aria-live="polite">
@@ -118,12 +137,12 @@
               >{/if}</span
           >
           {#if replay}
-            {@const id = replay}
+            {@const p = replay}
             <button
               type="button"
-              onclick={() => packs.preview(id)}
+              onclick={() => sample(p)}
               class="ml-auto shrink-0 inline-flex items-center gap-1 bg-transparent border-0 p-1 text-[13px] font-semibold text-accent cursor-pointer font-[inherit]"
-              ><Volume2 size={14} />Play</button
+              ><Play size={14} />Play</button
             >
           {/if}
           <button
@@ -194,7 +213,12 @@
                     ><Avatar name={$profile?.name ?? ''} avatar={myAvatar} {userId} size={26} /><CardFrame frame={p.id} /></span
                   >
                 {:else if p.kind === 'sound'}
-                  {@const Icon = p.id === 'sound.none' ? VolumeX : Volume2}
+                  {@const Icon = levelOne(p) ? VolumeX : Volume2}
+                  <span class="size-10 rounded-full border border-line-2 bg-surface-inset flex items-center justify-center text-accent"
+                    ><Icon size={20} aria-hidden="true" /></span
+                  >
+                {:else if p.kind === 'celebration'}
+                  {@const Icon = levelOne(p) ? Trophy : PartyPopper}
                   <span class="size-10 rounded-full border border-line-2 bg-surface-inset flex items-center justify-center text-accent"
                     ><Icon size={20} aria-hidden="true" /></span
                   >
