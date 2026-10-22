@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { BANNERS, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, titleName } from '../progress/look.js'
+import { BANNERS, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, frameOf, nameClass, titleName } from '../progress/look.js'
 import { PERKS } from '$shared/progression.js'
 
 describe('look', () => {
@@ -23,6 +23,17 @@ describe('look', () => {
   it('lays the holographic sheen over its card only', () => {
     expect(colorsClass('colors.holo')).toBe('cos-holo')
     expect(colorsClass('colors.ice')).toBe('')
+  })
+  it('rings the picture in every frame but none, turning the animated one', () => {
+    for (const p of PERKS.filter(x => x.kind === 'frame')) {
+      const f = frameOf(p.id)
+      if (p.id === 'frame.none') expect(f).toBeNull()
+      else expect(f?.spin === true, p.id).toBe(p.animated === true)
+    }
+  })
+  it('styles only the gold name', () => {
+    expect(nameClass('name.gold')).toBe('cos-gold-name')
+    expect(nameClass('name.plain')).toBe('')
   })
   it("takes the pair's light tone as the accent on the dark card", () => {
     expect(accentOf(cardColors('colors.ice'))).toBe('#bfeaf5')

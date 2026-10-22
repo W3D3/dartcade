@@ -16,7 +16,8 @@
   import ErrorText from '../ErrorText.svelte'
   import { profileOf, statusOf } from '$lib/progress/profiles'
   import { equip } from '$lib/progress/equip'
-  import { KIND_LABEL, bannerClass, bannerStyle, cardColors, colorsClass } from '$lib/progress/look'
+  import { KIND_LABEL, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass } from '$lib/progress/look'
+  import CardFrame from './CardFrame.svelte'
   import { PERKS, unlockText, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
 
   let { userId, unlocked, equipped, mode }: { userId: string; unlocked: string[]; equipped: Equipped; mode: 'equip' | 'preview' } = $props()
@@ -31,7 +32,7 @@
   // The perk tried on the card, not worn
   let trying = $state<Perk | null>(null)
 
-  const KINDS = (['title', 'banner', 'colors', 'picture'] as const).map(k => ({ value: k, label: KIND_LABEL[k].one }))
+  const KINDS = (['title', 'banner', 'colors', 'picture', 'frame', 'name'] as const).map(k => ({ value: k, label: KIND_LABEL[k].one }))
   const perks = $derived(PERKS.filter(p => p.kind === kind))
   const myAvatar = $derived($currentUser?.avatar ?? null)
   const presetOf = (p: Perk) => p.id.slice('picture.'.length)
@@ -163,8 +164,17 @@
                     )}"
                     style="background: {c.bg}; color: {c.fg}">Aa</span
                   >
-                {:else}
+                {:else if p.kind === 'picture'}
                   <Avatar name="" avatar={presetIn(myAvatar, presetOf(p))} size={40} />
+                {:else if p.kind === 'frame'}
+                  <span class="relative m-[9px] flex rounded-full"
+                    ><Avatar name={$profile?.name ?? ''} avatar={myAvatar} {userId} size={26} /><CardFrame frame={p.id} /></span
+                  >
+                {:else if p.kind === 'name'}
+                  <span
+                    class="max-w-full truncate text-[18px] font-semibold {nameClass(p.id)}"
+                    style="color: {accentOf(cardColors(look.colors))}">{$profile?.name ?? 'Aa'}</span
+                  >
                 {/if}
               </span>
               <span class="text-[14px] font-semibold leading-tight">{p.name}</span>
