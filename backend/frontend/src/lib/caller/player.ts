@@ -134,5 +134,11 @@ export function createCaller(volume: () => number) {
     silence()
   }
 
-  return { say, stop }
+  /** Whether a call is playing now (sound effects play quieter meanwhile). */
+  function speaking(): boolean {
+    const ctx = audioContext()
+    return ctx !== null && ctx.currentTime < endsAt
+  }
+
+  return { say, stop, speaking }
 }

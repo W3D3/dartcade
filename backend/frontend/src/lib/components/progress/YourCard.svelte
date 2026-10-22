@@ -5,7 +5,7 @@
   // the card first. Locked ones are dashed and grey, in colour on hover, with what unlocks them.
   // The picture is your avatar (shared/avatarPresets.ts), worn in the colours you picked in
   // Settings; the photo reward is uploaded there too.
-  import { Check, Lock, Undo2 } from '@lucide/svelte'
+  import { Check, Lock, Undo2, Volume2, VolumeX } from '@lucide/svelte'
   import ProfileCard from './ProfileCard.svelte'
   import Avatar from '../Avatar.svelte'
   import { currentUser } from '$lib/auth'
@@ -18,6 +18,8 @@
   import { equip } from '$lib/progress/equip'
   import { KIND_LABEL, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass } from '$lib/progress/look'
   import CardFrame from './CardFrame.svelte'
+  import { createSoundPacks } from '$lib/soundPacks'
+  import { loadSettings } from '$lib/gameSettings'
   import { PERKS, unlockText, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
 
   let { userId, unlocked, equipped, mode }: { userId: string; unlocked: string[]; equipped: Equipped; mode: 'equip' | 'preview' } = $props()
@@ -32,7 +34,10 @@
   // The perk tried on the card, not worn
   let trying = $state<Perk | null>(null)
 
-  const KINDS = (['title', 'banner', 'colors', 'picture', 'frame', 'name'] as const).map(k => ({ value: k, label: KIND_LABEL[k].one }))
+  const KINDS = (['title', 'banner', 'colors', 'picture', 'frame', 'name', 'sound'] as const).map(k => ({
+    value: k,
+    label: KIND_LABEL[k].one,
+  }))
   const perks = $derived(PERKS.filter(p => p.kind === kind))
   const myAvatar = $derived($currentUser?.avatar ?? null)
   const presetOf = (p: Perk) => p.id.slice('picture.'.length)
@@ -57,7 +62,14 @@
   // What unlocks it: 'Level 15', '14-day streak'
   const lockLine = (p: Perk): string => unlockText(p.unlock)
 
+  // A pack's sample plays on every pick (tried on or worn), at this device's effects volume
+  const packs = createSoundPacks(() => loadSettings(typeof localStorage === 'undefined' ? null : localStorage).effectsVolume)
+
+  // A sound pack tried on: its sample again
+  const replay = $derived(trying?.kind === 'sound' && trying.id !== 'sound.none' ? trying.id : null)
+
   async function pick(p: Perk) {
+    if (p.kind === 'sound' && trying?.id !== p.id) packs.preview(p.id)
     // Previewing only, or not yours yet: try it on the card (again: back to yours)
     if (mode === 'preview' || !unlocked.includes(p.id)) {
       trying = trying?.id === p.id ? null : p
@@ -105,10 +117,21 @@
                 >{` · ${lockLine(trying)}`}</span
               >{/if}</span
           >
+          {#if replay}
+            {@const id = replay}
+            <button
+              type="button"
+              onclick={() => packs.preview(id)}
+              class="ml-auto shrink-0 inline-flex items-center gap-1 bg-transparent border-0 p-1 text-[13px] font-semibold text-accent cursor-pointer font-[inherit]"
+              ><Volume2 size={14} />Play</button
+            >
+          {/if}
           <button
             type="button"
             onclick={() => (trying = null)}
-            class="ml-auto shrink-0 inline-flex items-center gap-1 bg-transparent border-0 p-1 text-[13px] font-semibold text-accent cursor-pointer font-[inherit]"
+            class="{replay
+              ? ''
+              : 'ml-auto'} shrink-0 inline-flex items-center gap-1 bg-transparent border-0 p-1 text-[13px] font-semibold text-accent cursor-pointer font-[inherit]"
             ><Undo2 size={14} />Yours</button
           >
         </div>
@@ -169,6 +192,11 @@
                 {:else if p.kind === 'frame'}
                   <span class="relative m-[9px] flex rounded-full"
                     ><Avatar name={$profile?.name ?? ''} avatar={myAvatar} {userId} size={26} /><CardFrame frame={p.id} /></span
+                  >
+                {:else if p.kind === 'sound'}
+                  {@const Icon = p.id === 'sound.none' ? VolumeX : Volume2}
+                  <span class="size-10 rounded-full border border-line-2 bg-surface-inset flex items-center justify-center text-accent"
+                    ><Icon size={20} aria-hidden="true" /></span
                   >
                 {:else if p.kind === 'name'}
                   <span

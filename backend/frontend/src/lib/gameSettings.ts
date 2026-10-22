@@ -25,6 +25,10 @@ export interface GameSettings {
   soundBall: boolean
   /** A fanfare when the game is won. */
   soundWin: boolean
+  /** The thrower's sound pack (a progression reward) when a dart lands or a visit busts. */
+  soundEffects: boolean
+  /** 0–1, the sound packs' own volume. */
+  effectsVolume: number
   /** Minigolf: the direction wheel around the ball while aiming. */
   aimDial: boolean
   /** Minigolf: rolls slow down near the cup. */
@@ -83,6 +87,8 @@ export const defaultSettings: GameSettings = {
   soundBust: false,
   soundBall: false,
   soundWin: false,
+  soundEffects: true,
+  effectsVolume: 0.5,
   aimDial: true,
   slowMotion: true,
   inputView: null,
@@ -105,6 +111,13 @@ export type BooleanSettingKey = { [K in keyof GameSettings]: GameSettings[K] ext
 
 const d = defaultSettings
 const flag = (def: boolean) => z.boolean().catch(def).default(def)
+const unit = (def: number) =>
+  z
+    .number()
+    .refine(Number.isFinite)
+    .transform(v => Math.min(1, Math.max(0, v)))
+    .catch(def)
+    .default(def)
 // Each setting falls back to its default on its own; unknown keys are dropped
 const SettingsSchema = z
   .object({
@@ -120,18 +133,15 @@ const SettingsSchema = z
     visitSum: flag(d.visitSum),
     chalkboard: flag(d.chalkboard),
     scoreUpdates: z.enum(['dart', 'visit']).catch(d.scoreUpdates).default(d.scoreUpdates),
-    volume: z
-      .number()
-      .refine(Number.isFinite)
-      .transform(v => Math.min(1, Math.max(0, v)))
-      .catch(d.volume)
-      .default(d.volume),
+    volume: unit(d.volume),
     soundHit: flag(d.soundHit),
     soundMiss: flag(d.soundMiss),
     soundSwitch: flag(d.soundSwitch),
     soundBust: flag(d.soundBust),
     soundBall: flag(d.soundBall),
     soundWin: flag(d.soundWin),
+    soundEffects: flag(d.soundEffects),
+    effectsVolume: unit(d.effectsVolume),
     aimDial: flag(d.aimDial),
     slowMotion: flag(d.slowMotion),
     inputView: z.enum(['board', 'entry']).nullable().catch(null).default(null),

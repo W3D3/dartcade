@@ -26,9 +26,12 @@
   import AtcRow from '../lib/components/AtcRow.svelte'
   import type { PillKind } from '../lib/components/pills.js'
   import { loadSettings, saveSettings, type GameSettings } from '../lib/gameSettings.js'
-  import { get } from 'svelte/store'
+  import { derived, get, readable } from 'svelte/store'
   import { accountSettings, writeThrough } from '$lib/accountSettings'
   import { audioContext, createSounds } from '../lib/sounds.js'
+  import { createSoundPacks } from '$lib/soundPacks'
+  import { dartEvent } from '$lib/dartEvents'
+  import { profileOf } from '$lib/progress/profiles'
   import { callsFor, checkoutFor, createCheckoutMemory, legsOf, requirePart } from '$lib/caller/calls'
   import { createCaller } from '$lib/caller/player'
   import { voiceClips, type Clips } from '$lib/caller/voices'
@@ -97,6 +100,11 @@
   // first snapshot, so "Game on" isn't missed) and again when the voice changes. Calls wait for
   // them; the player drops a call overtaken by a newer one.
   const caller = createCaller(() => settings.volume)
+  // Each thrower's sound pack (their profile's look; none for guests and bots), quieter under a call
+  const packs = createSoundPacks(
+    () => settings.effectsVolume,
+    () => caller.speaking(),
+  )
   let callerClips: Promise<Clips | null> = Promise.resolve(null)
   let checkoutMemory = createCheckoutMemory()
   $effect(() => {
@@ -138,6 +146,17 @@
   let unsubStale: (() => void) | null = null
   // A snapshot didn't parse (this tab predates a deploy): ask for a reload
   let stale = $state(false)
+  // The sound pack of each seat's player, from their profile; read again only when the seats change
+  let seatSounds = $state.raw<(string | null)[]>([])
+  const seatUsers = $derived(snapshot?.seats.map(seat => seat.userId ?? '').join(',') ?? '')
+  $effect(() => {
+    const ids = seatUsers.split(',')
+    if (!$progression || !seatUsers) return
+    return derived(
+      ids.map(id => (id ? profileOf(id) : readable(null))),
+      profiles => profiles.map(p => p?.look.sound ?? null),
+    ).subscribe(v => (seatSounds = v))
+  })
   // The game socket is open: entry is off while it reconnects (what's sent meanwhile is dropped)
   let connected = $state(false)
   // The newest camera still of each board and camera in this game
@@ -244,20 +263,20 @@
   })
 
   function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
-    const oldCount = before.currentVisitDarts.length
-    const now = after.currentVisitDarts
-    const bustNow = 'bustThisVisit' in after && after.bustThisVisit
-    const bustBefore = 'bustThisVisit' in before && before.bustThisVisit
-    if (bustNow && !bustBefore) {
-      if (settings.soundBust) sounds.bust()
-    } else if (now.length > oldCount) {
-      const i = now.length - 1
-      const hit = 'currentVisitHits' in after ? after.currentVisitHits.at(i) === true : (now.at(i)?.score ?? 0) > 0
-      if (hit && settings.soundHit) sounds.hit()
-      if (!hit && settings.soundMiss) sounds.miss()
-    } else if (after.currentPlayer !== before.currentPlayer && settings.soundSwitch) {
-      sounds.switchPlayer()
+    const e = dartEvent(before, after)
+    if (!e) return
+    if (e.kind === 'switch') {
+      if (settings.soundSwitch) sounds.switchPlayer()
+      return
     }
+    // A thrower's sound pack replaces the plain beep for their darts
+    const pack = settings.soundEffects ? (seatSounds[e.seat] ?? 'sound.none') : 'sound.none'
+    if (pack !== 'sound.none') packs.play(pack, e.kind)
+    else if (e.kind === 'bust') {
+      if (settings.soundBust) sounds.bust()
+    } else if (e.kind === 'miss') {
+      if (settings.soundMiss) sounds.miss()
+    } else if (settings.soundHit) sounds.hit()
   }
 
   // ── Game state ────────────────────────────────────────────────────────────

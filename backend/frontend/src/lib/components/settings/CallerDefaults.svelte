@@ -55,5 +55,7 @@
     />
   </div>
   <VolumeSlider bind:value={settings.volume} label="Caller volume" />
-  <p class="m-0 -mt-3 text-[12px] text-text-dim">Set on each device, the same volume as the sound effects.</p>
+  <p class="m-0 -mt-3 text-[12px] text-text-dim">
+    Set on each device. The game's beeps play at this volume too; sound packs have their own below.
+  </p>
 </section>

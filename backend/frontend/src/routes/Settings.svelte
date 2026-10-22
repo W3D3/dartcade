@@ -10,6 +10,7 @@
   import AvatarCard from '$lib/components/settings/AvatarCard.svelte'
   import CallerDefaults from '$lib/components/settings/CallerDefaults.svelte'
   import CallerVoices from '$lib/components/settings/CallerVoices.svelte'
+  import SoundEffects from '$lib/components/settings/SoundEffects.svelte'
   import GamePrefs from '$lib/components/settings/GamePrefs.svelte'
   import NameCard from '$lib/components/settings/NameCard.svelte'
   import BoardsSection from '$lib/components/boards/BoardsSection.svelte'
@@ -47,7 +48,7 @@
     game: 'Checkout suggestions, new game defaults, sounds',
     boards: 'Pair and manage your Autodarts boards',
     lights: 'Board lights that react to your game',
-    caller: 'Voices, and the caller in X01',
+    caller: 'Voices, the caller in X01, sound effects',
   })
 
   // The game settings: the account's (once loaded) over this device's; changes go to both
@@ -136,7 +137,10 @@
       {:else if shown === 'caller'}
         <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_360px] gap-4 md:gap-5 items-start">
           <CallerVoices current={settings.callerVoice} volume={settings.volume} />
-          <CallerDefaults bind:settings />
+          <div class="flex flex-col gap-4 md:gap-5">
+            <CallerDefaults bind:settings />
+            <SoundEffects bind:settings />
+          </div>
         </div>
       {/if}
     </div>
