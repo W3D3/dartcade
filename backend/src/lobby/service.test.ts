@@ -227,6 +227,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(engine.getSession(sessionId)?.seats.map(s => s.name)).toEqual(['Chris', 'Lena'])
     })
 
+    it("shows a member's new avatar in the lobby and on everyone's lobby indicator", async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      const ws = sock()
+      hub.addLobbySocket(id, ws, 'chris')
+      const me = sock()
+      hub.addMeSocket('lena', me, await lobbies.meMessage('lena'), friendsMsg)
+      await db
+        .updateTable('user')
+        .set({ avatar_kind: 'preset', avatar_preset: 'logo', avatar_color: '#3a8f4a', avatar_fg_color: '#ffffff' })
+        .where('id', '=', 'chris')
+        .execute()
+      await lobbies.profileChanged('chris')
+      const green = { kind: 'preset', preset: 'logo', color: '#3a8f4a', fgColor: '#ffffff' }
+      expect(lastMsg(ws).lobby.people[0]).toMatchObject({ name: 'Christoph', avatar: green })
+      expect(lastMsg(me).lobby.faces[0]).toMatchObject({ name: 'Christoph', avatar: green })
+      // Back to the default, for the tests after this one
+      await db
+        .updateTable('user')
+        .set({ avatar_kind: 'preset', avatar_preset: 'logo', avatar_color: '#808080', avatar_fg_color: '#000000' })
+        .where('id', '=', 'chris')
+        .execute()
+    })
+
     it('closes when the last member leaves', async () => {
       const { id } = await lobbies.create('chris')
       await lobbies.leave('chris', id)

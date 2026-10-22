@@ -479,6 +479,18 @@ export class LobbyService {
     })
   }
 
+  /**
+   * A member changed how they look (their avatar): their open lobby, and everyone's lobby indicator
+   * and invites showing its faces, read it again.
+   */
+  async profileChanged(userId: string): Promise<void> {
+    const lobbyId = await q.getOpenLobbyIdOfUser(this.db, userId)
+    if (lobbyId === undefined) return
+    await this.enqueue(lobbyId, async () => {
+      await this.refreshAndPublish(lobbyId)
+    })
+  }
+
   async leave(userId: string, lobbyId: string): Promise<void> {
     await this.enqueue(lobbyId, async () => {
       const lobby = await this.openFor(lobbyId, userId)

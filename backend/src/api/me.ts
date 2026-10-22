@@ -26,6 +26,8 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
   /** Name, Invisible or avatar changed: friends see it. */
   onChanged?: (userId: string) => void
+  /** The avatar changed: their open lobby shows it. */
+  onAvatarChanged?: (userId: string) => Promise<void>
   /** Name changed: their row in their open lobby follows it. */
   onRenamed?: (userId: string, name: string) => Promise<void>
 }
@@ -78,6 +80,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
         if (err instanceof UnknownAvatarColorError) throw new ApiError(400, { error: `unknown avatar color: ${err.message}` })
         throw err
       }
+      await opts.onAvatarChanged?.(req.userId)
     }
     opts.onChanged?.(req.userId)
     return me(req.userId)
@@ -104,6 +107,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
         const image = orEmpty(req.body)
         if (!looksLikeJpeg(image)) throw new ApiError(400, { error: 'not a JPEG' })
         await setAvatarUpload(db, req.userId, image, 'image/jpeg')
+        await opts.onAvatarChanged?.(req.userId)
         opts.onChanged?.(req.userId)
         return me(req.userId)
       },

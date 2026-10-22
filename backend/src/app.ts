@@ -188,6 +188,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
       friends.touch([userId])
     },
     onRenamed: (userId, name) => lobbies.renamed(userId, name),
+    onAvatarChanged: userId => lobbies.profileChanged(userId),
   })
   await app.register(lobbiesApiPlugin, { lobbies })
   await app.register(gamesApiPlugin, { db })
