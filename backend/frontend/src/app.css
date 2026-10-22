@@ -266,6 +266,22 @@
   .cos-flicker {
     animation: cos-flicker 1.6s ease-in-out infinite;
   }
+  /* A frame whose shine runs round */
+  .cos-spin {
+    animation: cos-spin 6s linear infinite;
+  }
+  /* A gold name with a light running along it (over the accent colour set inline) */
+  .cos-gold-name {
+    background: linear-gradient(100deg, #b8862a 0%, #f7d774 30%, #fff6d0 45%, #f7d774 60%, #b8862a 100%) 0 0 / 250% 100%;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: cos-shimmer 4s linear infinite;
+  }
+  @keyframes cos-spin {
+    to {
+      transform: rotate(1turn);
+    }
+  }
   @keyframes cos-sweep {
     from {
       transform: translateX(-12%);
@@ -309,7 +325,9 @@
     .cos-sweep::after,
     .cos-shimmer::after,
     .cos-holo::after,
-    .cos-flicker {
+    .cos-flicker,
+    .cos-spin,
+    .cos-gold-name {
       animation: none;
     }
   }

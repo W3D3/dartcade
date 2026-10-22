@@ -10,7 +10,8 @@
   import Avatar from '../Avatar.svelte'
   import type { DotKind } from '$lib/friends/view'
   import type { PlayerProfile } from '$lib/progress/profiles'
-  import { CARD_SURFACE, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, titleName } from '$lib/progress/look'
+  import { CARD_SURFACE, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass, titleName } from '$lib/progress/look'
+  import CardFrame from './CardFrame.svelte'
   import { rank } from '$shared/ranked.js'
   import type { Equipped } from '$shared/progression.js'
   import { getGameView } from '$lib/gameViews'
@@ -51,9 +52,12 @@
   <div class="-mt-[34px] flex flex-col px-[22px] pb-[22px]">
     <span class="relative flex size-[68px] rounded-full" style="box-shadow: 0 0 0 4px {CARD_SURFACE}">
       <Avatar name={profile.name} {avatar} userId={profile.id} size={68} />
+      <CardFrame frame={look.frame} />
       {#if status}<StatusRing kind={status} />{/if}
     </span>
-    <div class="mt-4 min-w-0 truncate text-[24px] font-semibold leading-[1.1]" style="color: {accentOf(colors)}">{profile.name}</div>
+    <div class="mt-4 min-w-0 truncate text-[24px] font-semibold leading-[1.1] {nameClass(look.name)}" style="color: {accentOf(colors)}">
+      {profile.name}
+    </div>
     <div class="mt-[10px] mb-[14px] font-display font-bold text-[19px] uppercase tracking-[0.14em] text-ink-2">{titleName(look)}</div>
     <div class="flex flex-wrap gap-2 text-[13px] font-medium text-ink-2">
       <span class="rounded-full bg-surface-paused px-3 py-[6px]">Level {profile.level}</span>

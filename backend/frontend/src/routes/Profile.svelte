@@ -14,7 +14,18 @@
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
-  import { CARD_SURFACE, KIND_LABEL, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, titleName } from '$lib/progress/look'
+  import {
+    CARD_SURFACE,
+    KIND_LABEL,
+    accentOf,
+    bannerClass,
+    bannerStyle,
+    cardColors,
+    colorsClass,
+    nameClass,
+    titleName,
+  } from '$lib/progress/look'
+  import CardFrame from '$lib/components/progress/CardFrame.svelte'
   import { progress } from '$lib/progress/store'
   import { getGameView } from '$lib/gameViews'
   import { ordinal } from '$lib/fmt'
@@ -80,12 +91,18 @@
           <!-- Only the avatar overlaps the banner -->
           <span class="relative -mt-12 flex size-24 shrink-0 rounded-full" style="box-shadow: 0 0 0 5px {CARD_SURFACE}">
             <Avatar name={p.name} avatar={p.avatar} userId={p.id} size={96} />
+            <CardFrame frame={p.look.frame} />
             {#if dot}<StatusRing kind={dot} />{/if}
           </span>
           <div class="flex flex-col gap-4 md:flex-row md:items-end">
             <div class="flex flex-col gap-2 min-w-0 flex-1">
               <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <h1 class="m-0 text-[30px] md:text-[36px] font-semibold leading-tight" style="color: {accentOf(colors)}">{p.name}</h1>
+                <h1
+                  class="m-0 text-[30px] md:text-[36px] font-semibold leading-tight {nameClass(p.look.name)}"
+                  style="color: {accentOf(colors)}"
+                >
+                  {p.name}
+                </h1>
                 <span class="text-[14px] text-text-muted">@{p.name}</span>
               </div>
               <div class="font-display font-bold text-[20px] uppercase tracking-[0.14em] text-ink-2">{titleName(p.look)}</div>

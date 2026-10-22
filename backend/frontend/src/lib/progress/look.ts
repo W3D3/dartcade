@@ -85,6 +85,23 @@ export const colorsClass = (id: string): string => {
   return effect ? `cos-${effect}` : ''
 }
 
+/**
+ * Every frame round the picture, by perk id: a metallic ring (a conic gradient) outside the
+ * online-status ring, never in its place. `spin` turns it, so the shine runs round. No frame: absent.
+ */
+export const FRAMES: Record<string, { ring: string; spin?: true }> = {
+  'frame.bronze': { ring: 'conic-gradient(from 30deg, #6b3f1d, #d9925a, #7a4520, #eab07a, #6b3f1d)' },
+  'frame.silver': { ring: 'conic-gradient(from 30deg, #747a82, #eef2f6, #868c94, #fafcfe, #747a82)' },
+  'frame.gold': { ring: 'conic-gradient(from 30deg, #8a6a1c, #f7d774, #9a7420, #ffeaa6, #8a6a1c)' },
+  'frame.platinum': { ring: 'conic-gradient(from 30deg, #8fa5bd, #f4fbff, #aebfd2, #ffffff, #8fa5bd)' },
+  'frame.legend': { ring: 'conic-gradient(#f2c14e, #fff3c4, #c6f24e, #f2c14e, #ff9f43, #fff3c4, #f2c14e)', spin: true },
+}
+export const frameOf = (id: string): (typeof FRAMES)[string] | null => (id in FRAMES ? FRAMES[id] : null)
+
+/** The name's style by perk id: a class over the accent colour (cosmetic classes in app.css). Plain: absent. */
+const NAMES: Record<string, string> = { 'name.gold': 'cos-gold-name' }
+export const nameClass = (id: string): string => (id in NAMES ? NAMES[id] : '')
+
 /** What a kind is called: one of it (a tab, a chip) and the lot (the collection). */
 export const KIND_LABEL: Record<PerkKind, { one: string; many: string }> = {
   title: { one: 'Title', many: 'Titles' },
