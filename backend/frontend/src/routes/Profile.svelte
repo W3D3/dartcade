@@ -14,11 +14,11 @@
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
-  import { CARD_SURFACE, accentOf, bannerStyle, cardColors, titleName } from '$lib/progress/look'
+  import { CARD_SURFACE, KIND_LABEL, accentOf, bannerClass, bannerStyle, cardColors, colorsClass, titleName } from '$lib/progress/look'
   import { progress } from '$lib/progress/store'
   import { getGameView } from '$lib/gameViews'
   import { ordinal } from '$lib/fmt'
-  import { PERKS, type PerkKind } from '$shared/progression.js'
+  import { PERKS, PERK_KINDS } from '$shared/progression.js'
   import { rank } from '$shared/ranked.js'
 
   let { params = {} }: { params?: { id?: string } } = $props()
@@ -35,7 +35,6 @@
   })
 
   const STATUS_TEXT = { online: 'Online', lobby: 'In a lobby', playing: 'Playing', offline: 'Offline' } as const
-  const KIND_LABEL: Record<PerkKind, string> = { title: 'Titles', banner: 'Banners', colors: 'Card colours', picture: 'Pictures' }
   const since = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
   const day = (iso: string) => {
     const d = new Date(iso)
@@ -73,10 +72,10 @@
 
       <section
         aria-label="{p.name}'s card"
-        class="shrink-0 overflow-hidden rounded-[16px] border border-line-popover"
+        class="shrink-0 overflow-hidden rounded-[16px] border border-line-popover {colorsClass(p.look.colors)}"
         style="background: {CARD_SURFACE}"
       >
-        <div class="h-[110px] md:h-[140px]" style={bannerStyle(p.look.banner, colors)}></div>
+        <div class="h-[110px] md:h-[140px] {bannerClass(p.look.banner)}" style={bannerStyle(p.look.banner, colors)}></div>
         <div class="flex flex-col gap-4 px-5 pb-5 md:px-7 md:pb-6">
           <!-- Only the avatar overlaps the banner -->
           <span class="relative -mt-12 flex size-24 shrink-0 rounded-full" style="box-shadow: 0 0 0 5px {CARD_SURFACE}">
@@ -248,11 +247,11 @@
                 <span class="text-[12px] label-caps text-text-dim">Collection</span>
                 <span class="text-[13px] text-text-muted">Only you see this</span>
               </div>
-              {#each ['title', 'banner', 'colors', 'picture'] as const as kind (kind)}
+              {#each PERK_KINDS as kind (kind)}
                 {@const all = PERKS.filter(x => x.kind === kind)}
                 {@const have = all.filter(x => $progress.perks.unlocked.includes(x.id)).length}
                 <div class="grid grid-cols-[120px_minmax(0,1fr)_56px] items-center gap-3 text-[14px]">
-                  <span>{KIND_LABEL[kind]}</span>
+                  <span>{KIND_LABEL[kind].many}</span>
                   <span class="h-2 rounded-full bg-surface-inset overflow-hidden"
                     ><span class="block h-full bg-accent" style="width: {(have / all.length) * 100}%"></span></span
                   >

@@ -3,6 +3,7 @@ import { get, writable } from 'svelte/store'
 import { chipMotion, levelView, lineLabel, milestoneLine, streakLine, toastsFor } from '../progress/view.js'
 import { createGameGain, createProgress, type Progress } from '../progress/store.js'
 import type { XpGainedMessage } from '../api/lobby-ws.js'
+import { DEFAULT_EQUIPPED } from '$shared/progression.js'
 
 describe('levelView', () => {
   it('shows the level, how far into it and the XP to go', () => {
@@ -82,7 +83,7 @@ describe('createProgress', () => {
     days: [] as Progress['streak']['days'],
     nextMilestone: { days: 7, xp: 250 },
   }
-  const perks = { unlocked: [], equipped: { title: 'title.rookie', banner: 'banner.plain', colors: 'colors.dartcade' } }
+  const perks = { unlocked: [], equipped: DEFAULT_EQUIPPED }
   const at = (xp: number): Progress => ({ xp, level: 1, streak, dailyOpen: 3, perks })
 
   it('reads your progress, shows a push at once and reads again', async () => {

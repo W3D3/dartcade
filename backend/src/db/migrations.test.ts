@@ -119,6 +119,39 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('028_email_verification migratio
   })
 })
 
+describe.skipIf(!process.env.TEST_DATABASE_URL)('035_retired_avatar_presets migration', () => {
+  const SCHEMA_035 = 'mig_035_test'
+  let admin: Kysely<Database>
+  let db: Kysely<Database>
+
+  beforeAll(async () => {
+    admin = createDb(url)
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_035} CASCADE`).execute(admin)
+    await sql.raw(`CREATE SCHEMA ${SCHEMA_035}`).execute(admin)
+    db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_035}`)
+    await runMigrations(db, { until: '034_user_unlocks.sql' })
+    await sql`INSERT INTO "user" (id, name, email, avatar_preset, avatar_color, avatar_fg_color) VALUES
+      ('u1', 'Star', 'u1@x', 'star', '#2d6cdf', '#ffffff'), ('u2', 'Crown', 'u2@x', 'crown', '#c0392b', '#000000'),
+      ('u3', 'Dart', 'u3@x', 'dart', '#3a8f4a', '#ffffff')`.execute(db)
+    await runMigrations(db)
+  })
+
+  afterAll(async () => {
+    await db.destroy()
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_035} CASCADE`).execute(admin)
+    await admin.destroy()
+  })
+
+  it('puts wearers of a retired picture back on the mark, keeping their colours', async () => {
+    const rows = await db.selectFrom('user').select(['id', 'avatar_preset', 'avatar_color', 'avatar_fg_color']).orderBy('id').execute()
+    expect(rows.map(r => [r.id, r.avatar_preset, r.avatar_color, r.avatar_fg_color])).toEqual([
+      ['u1', 'logo', '#2d6cdf', '#ffffff'],
+      ['u2', 'logo', '#c0392b', '#000000'],
+      ['u3', 'dart', '#3a8f4a', '#ffffff'],
+    ])
+  })
+})
+
 describe.skipIf(!process.env.TEST_DATABASE_URL)('two backends on one database', () => {
   const SCHEMA_LOCK = 'mig_lock_test'
   const schemaUrl = `${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_LOCK}`

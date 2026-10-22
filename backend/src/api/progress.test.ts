@@ -27,6 +27,7 @@ vi.mock('../db/profile.js', () => ({ profileUser: vi.fn(), modeCounts: vi.fn(), 
 import { flagEnabled } from '../flags/index.js'
 import { ensureSets } from '../progression/challengeSets.js'
 import { gameLines, getProgress, getStreak, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
+import { DEFAULT_EQUIPPED, PERKS, levelPerks } from '../shared/progression.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
 import { areFriends } from '../db/friends.js'
 import { getRatings, x01Average } from '../db/ranked.js'
@@ -45,7 +46,9 @@ beforeEach(() => {
   vi.mocked(userTimeZone).mockReset().mockResolvedValue('Europe/Vienna')
   vi.mocked(getStreak).mockReset().mockResolvedValue({ current: 0, best: 0, lastDate: null, freezes: 1 })
   vi.mocked(streakDays).mockReset().mockResolvedValue({ played: [], frozen: [] })
-  vi.mocked(unlockedPerks).mockReset().mockResolvedValue(['title.oche-regular'])
+  vi.mocked(unlockedPerks)
+    .mockReset()
+    .mockResolvedValue([...levelPerks(1).map(p => p.id), 'title.oche-regular', 'frame.bronze'])
   vi.mocked(getPreferences)
     .mockReset()
     .mockResolvedValue({ equipped: { title: 'title.oche-regular' } })
@@ -65,8 +68,8 @@ beforeEach(() => {
       id: 'anna',
       name: 'Anna',
       createdAt: new Date('2026-08-01T00:00:00Z'),
-      avatar: { kind: 'preset', preset: 'star', color: '#2d6cdf', fgColor: '#ffffff' },
-      equipped: { colors: 'colors.night' },
+      avatar: { kind: 'preset', preset: 'trophy', color: '#2d6cdf', fgColor: '#ffffff' },
+      equipped: { colors: 'colors.ice' },
     })
   vi.mocked(modeCounts)
     .mockReset()
@@ -138,11 +141,11 @@ describe('/api/progress', () => {
     expect((await app().inject({ method: 'GET', url: '/api/progress/games/g1' })).statusCode).toBe(404)
   })
 
-  it('shows your perks with the level 1 ones', async () => {
+  it('shows your perks and your look, every kind at its default unless picked', async () => {
     const res = await app().inject({ method: 'GET', url: '/api/progress/me' })
     expect(JSON.parse(res.body).perks).toEqual({
-      unlocked: ['title.rookie', 'banner.plain', 'colors.dartcade', 'picture.logo', 'title.oche-regular'],
-      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade' },
+      unlocked: [...levelPerks(1).map(p => p.id), 'title.oche-regular', 'frame.bronze'],
+      equipped: { ...DEFAULT_EQUIPPED, title: 'title.oche-regular' },
     })
   })
 
@@ -151,10 +154,20 @@ describe('/api/progress', () => {
     const ok = await put({ banner: 'banner.plain', colors: 'colors.dartcade' })
     expect(ok.statusCode).toBe(200)
     expect(vi.mocked(updatePreferences)).toHaveBeenCalledWith(expect.anything(), 'chris', {
-      equipped: { title: 'title.oche-regular', banner: 'banner.plain', colors: 'colors.dartcade' },
+      equipped: { ...DEFAULT_EQUIPPED, title: 'title.oche-regular' },
     })
-    expect((await put({ title: 'title.maximum' })).statusCode).toBe(409)
+    expect((await put({ title: 'title.dartcade-legend' })).statusCode).toBe(409)
     expect((await put({ title: 'banner.plain' })).statusCode).toBe(409)
+  })
+
+  it('equips the new kinds the same way: a frame you hold, not a sound pack you do not', async () => {
+    const put = (body: object) => app().inject({ method: 'PUT', url: '/api/progress/equip', payload: body })
+    expect((await put({ frame: 'frame.bronze' })).statusCode).toBe(200)
+    expect(vi.mocked(updatePreferences)).toHaveBeenLastCalledWith(expect.anything(), 'chris', {
+      equipped: { ...DEFAULT_EQUIPPED, title: 'title.oche-regular', frame: 'frame.bronze' },
+    })
+    expect((await put({ sound: 'sound.legend' })).statusCode).toBe(409)
+    expect((await put({ celebration: 'frame.bronze' })).statusCode).toBe(409)
   })
 
   it("shows a stranger's profile without their streak, XP or collection", async () => {
@@ -163,8 +176,8 @@ describe('/api/progress', () => {
     expect(JSON.parse(res.body)).toMatchObject({
       name: 'Anna',
       relation: 'stranger',
-      look: { colors: 'colors.night', title: 'title.rookie' },
-      avatar: { kind: 'preset', preset: 'star' },
+      look: { ...DEFAULT_EQUIPPED, colors: 'colors.ice' },
+      avatar: { kind: 'preset', preset: 'trophy' },
       level: 14,
       streak: null,
       xp: null,
@@ -195,6 +208,11 @@ describe('/api/progress', () => {
       equipped: null,
     })
     const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })
-    expect(JSON.parse(res.body)).toMatchObject({ relation: 'self', xp: 6780, headToHead: null, collection: { unlocked: 5, total: 26 } })
+    expect(JSON.parse(res.body)).toMatchObject({
+      relation: 'self',
+      xp: 6780,
+      headToHead: null,
+      collection: { unlocked: levelPerks(1).length + 2, total: PERKS.length },
+    })
   })
 })

@@ -9,9 +9,12 @@ export interface AvatarPreset {
 export const AVATAR_PRESETS: readonly AvatarPreset[] = [
   { id: 'logo' },
   { id: 'dart' },
-  { id: 'target' },
-  { id: 'star' },
-  { id: 'crown' },
+  { id: 'flight' },
+  { id: 'board' },
+  { id: 'trophy' },
+  { id: 'crossed-darts' },
+  { id: 'burning-dart' },
+  { id: 'golden-dart' },
   { id: 'flame' },
   { id: 'shield' },
 ] as const

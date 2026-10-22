@@ -3,9 +3,8 @@
   // and everything the next level unlocks (each opens in the rewards below).
   import { fmtXp, levelView } from '$lib/progress/view'
   import { rewardFocus } from '$lib/progress/rewardFocus'
-  import { PERKS, nextLevelPerk, perk, type PerkKind } from '$shared/progression.js'
-
-  const KIND: Record<PerkKind, string> = { title: 'Title', banner: 'Banner', colors: 'Colours', picture: 'Picture' }
+  import { KIND_LABEL } from '$lib/progress/look'
+  import { PERKS, nextLevelPerk, perk } from '$shared/progression.js'
 
   let { xp, title, gain = null }: { xp: number; title: string | null; gain?: number | null } = $props()
   const v = $derived(levelView(xp))
@@ -67,9 +66,9 @@
           <button
             type="button"
             onclick={() => rewardFocus.set(p)}
-            aria-label="{KIND[p.kind]}: {p.name}. Show it in the rewards"
+            aria-label="{KIND_LABEL[p.kind].one}: {p.name}. Show it in the rewards"
             class="whitespace-nowrap rounded-full border border-line-chip bg-transparent px-3 py-[7px] text-text font-[inherit] cursor-pointer hover:border-line-strong"
-            ><span class="mr-[6px] text-[11px] text-text-muted">{KIND[p.kind]}</span><span
+            ><span class="mr-[6px] text-[11px] text-text-muted">{KIND_LABEL[p.kind].one}</span><span
               class="font-display font-bold text-[13px] uppercase tracking-[0.1em]">{p.name}</span
             ></button
           >

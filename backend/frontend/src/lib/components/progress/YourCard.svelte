@@ -16,7 +16,7 @@
   import ErrorText from '../ErrorText.svelte'
   import { profileOf, statusOf } from '$lib/progress/profiles'
   import { equip } from '$lib/progress/equip'
-  import { bannerStyle, cardColors } from '$lib/progress/look'
+  import { KIND_LABEL, bannerClass, bannerStyle, cardColors, colorsClass } from '$lib/progress/look'
   import { PERKS, unlockText, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
 
   let { userId, unlocked, equipped, mode }: { userId: string; unlocked: string[]; equipped: Equipped; mode: 'equip' | 'preview' } = $props()
@@ -31,12 +31,7 @@
   // The perk tried on the card, not worn
   let trying = $state<Perk | null>(null)
 
-  const KINDS = [
-    { value: 'title', label: 'Title' },
-    { value: 'banner', label: 'Banner' },
-    { value: 'colors', label: 'Colours' },
-    { value: 'picture', label: 'Picture' },
-  ]
+  const KINDS = (['title', 'banner', 'colors', 'picture'] as const).map(k => ({ value: k, label: KIND_LABEL[k].one }))
   const perks = $derived(PERKS.filter(p => p.kind === kind))
   const myAvatar = $derived($currentUser?.avatar ?? null)
   const presetOf = (p: Perk) => p.id.slice('picture.'.length)
@@ -156,11 +151,16 @@
                     >{p.name}</span
                   >
                 {:else if p.kind === 'banner'}
-                  <span class="block w-16 h-9 rounded-[8px] border border-line-2" style={bannerStyle(p.id, cardColors(look.colors))}></span>
+                  <span
+                    class="block w-16 h-9 rounded-[8px] border border-line-2 {bannerClass(p.id)}"
+                    style={bannerStyle(p.id, cardColors(look.colors))}
+                  ></span>
                 {:else if p.kind === 'colors'}
                   {@const c = cardColors(p.id)}
                   <span
-                    class="size-9 rounded-[8px] border border-line-2 flex items-center justify-center font-display font-bold text-[18px]"
+                    class="size-9 rounded-[8px] border border-line-2 flex items-center justify-center font-display font-bold text-[18px] {colorsClass(
+                      p.id,
+                    )}"
                     style="background: {c.bg}; color: {c.fg}">Aa</span
                   >
                 {:else}
