@@ -3,6 +3,7 @@ import { createFastify } from './fastify.js'
 import { meApiPlugin } from './me.js'
 import { ApiError } from './errors.js'
 import { setupFlags } from '../flags/index.js'
+import { AVATAR_PRESETS } from '../shared/avatarPresets.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -64,6 +65,13 @@ beforeEach(() => {
 })
 
 describe('/api/me', () => {
+  beforeEach(async () => {
+    await setupFlags(new Set(['progression.enabled']))
+  })
+  afterEach(async () => {
+    await setupFlags(new Set())
+  })
+
   it('shows the account, with a suggestion while the name must change', async () => {
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(res.statusCode).toBe(200)
@@ -200,6 +208,21 @@ describe('/api/me', () => {
   it('lists the pictures you may wear', async () => {
     const res = await app().inject({ method: 'GET', url: '/api/me' })
     expect(JSON.parse(res.body).pictures).toEqual(['logo', 'dart'])
+  })
+
+  it('lets every picture be worn while progression is off', async () => {
+    await setupFlags(new Set())
+    vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
+    vi.mocked(hasPerk).mockResolvedValue(false)
+    const res = await app().inject({
+      method: 'PATCH',
+      url: '/api/me',
+      payload: { avatar: { kind: 'preset', preset: 'trophy', color: '#000000', fgColor: '#ffffff' } },
+    })
+    expect(res.statusCode).toBe(200)
+    expect(setAvatar).toHaveBeenCalled()
+    expect(JSON.parse(res.body).pictures).toEqual(AVATAR_PRESETS.map(p => p.id))
+    expect(unlockedPictures).not.toHaveBeenCalled()
   })
 
   it('answers 400 for an unknown preset id', async () => {

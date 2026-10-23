@@ -19,7 +19,9 @@ import { challengeGame } from './facts.js'
 
 export type ProgressionDeps = {
   db: Kysely<Database>
-  /** Sends the account's /ws/me sockets the message, if progression is on for it. */
+  /** Whether progression.enabled is on for the account: a game pays only those it is on for. */
+  enabled: (userId: string) => Promise<boolean>
+  /** Sends the account's /ws/me sockets the message. */
   push: (userId: string, msg: XpGainedMessage) => void | Promise<void>
   warn: (message: string, details: unknown) => void
 }
@@ -84,6 +86,8 @@ export class ProgressionService {
     const userIds = [...new Set(game.seats.flatMap(s => (s.userId !== null && !s.bot ? [s.userId] : [])))]
     const x01 = !opts.backfill && game.gameId === 'x01' ? await this.x01Detail(game.id) : null
     for (const userId of userIds) {
+      // The backfill pays history for everyone, so turning the flag on later loses nothing
+      if (!opts.backfill && !(await this.deps.enabled(userId))) continue
       const gained = await this.awardPlayer(game, userId, opts.backfill ?? false, x01)
       if (gained && !opts.backfill) {
         try {

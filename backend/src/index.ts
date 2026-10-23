@@ -54,8 +54,9 @@ await bootstrapAdmin(db)
 const hub = new LobbyHub()
 const progression = new ProgressionService({
   db,
-  push: async (userId, msg) => {
-    if (await flagEnabled('progression.enabled', await loadFlagUser(db, userId))) hub.sendXp(userId, msg)
+  enabled: async userId => flagEnabled('progression.enabled', await loadFlagUser(db, userId)),
+  push: (userId, msg) => {
+    hub.sendXp(userId, msg)
   },
   warn: (message, details) => {
     warn(message, details)

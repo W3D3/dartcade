@@ -151,7 +151,10 @@
   const seatUsers = $derived(snapshot?.seats.map(seat => seat.userId ?? '').join(',') ?? '')
   $effect(() => {
     const ids = seatUsers.split(',')
-    if (!$progression || !seatUsers) return
+    if (!$progression || !seatUsers) {
+      seatSounds = []
+      return
+    }
     return derived(
       ids.map(id => (id ? profileOf(id) : readable(null))),
       profiles => profiles.map(p => p?.look.sound ?? null),
