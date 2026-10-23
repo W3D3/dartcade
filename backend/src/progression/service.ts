@@ -21,6 +21,8 @@ export type ProgressionDeps = {
   db: Kysely<Database>
   /** Whether progression.enabled is on for the account: a game pays only those it is on for. */
   enabled: (userId: string) => Promise<boolean>
+  /** Whether progression.manualDarts is on for the account: its typed-in darts count for challenges. */
+  manualDarts?: (userId: string) => Promise<boolean>
   /** Sends the account's /ws/me sockets the message. */
   push: (userId: string, msg: XpGainedMessage) => void | Promise<void>
   warn: (message: string, details: unknown) => void
@@ -135,7 +137,8 @@ export class ProgressionService {
       // Finished challenges pay when claimed on Progress, not here
       let challenges: XpGainedMessage['challenges']
       if (!backfill) {
-        const done = await progressChallenges(trx, userId, day, challengeGame(game, userId, player, x01), game.finishedAt)
+        const manualDarts = (await this.deps.manualDarts?.(userId)) ?? false
+        const done = await progressChallenges(trx, userId, day, challengeGame(game, userId, player, x01, manualDarts), game.finishedAt)
         if (done.length > 0) challenges = done
       }
       if (written.length === 0 && !challenges) return null

@@ -55,6 +55,7 @@ const hub = new LobbyHub()
 const progression = new ProgressionService({
   db,
   enabled: async userId => flagEnabled('progression.enabled', await loadFlagUser(db, userId)),
+  manualDarts: async userId => flagEnabled('progression.manualDarts', await loadFlagUser(db, userId)),
   push: (userId, msg) => {
     hub.sendXp(userId, msg)
   },

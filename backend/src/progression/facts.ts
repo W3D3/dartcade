@@ -7,15 +7,17 @@ import { isManual, qualifies, type PlayerGame } from './rules.js'
 
 /**
  * A manual-entry game still counts as a game (and a win), but its typed-in darts don't count
- * towards dart challenges (trebles, checkouts, …), like they pay no dart XP.
+ * towards dart challenges (trebles, checkouts, …), like they pay no dart XP, unless
+ * `manualDarts` (the progression.manualDarts flag, for testing without a board) lets them.
  */
 export function challengeGame(
   game: XpGame,
   userId: string,
   player: Omit<PlayerGame, 'previousBest'>,
   x01: X01Detail | null,
+  manualDarts = false,
 ): ChallengeGame {
-  const typed = isManual({ ...player, previousBest: null })
+  const typed = !manualDarts && isManual({ ...player, previousBest: null })
   const detail = typed ? null : x01
   const me = game.seats.find(s => s.userId === userId)
   const seat = me?.seat ?? -1
