@@ -20,7 +20,7 @@
     /** Finished while the page is open: it celebrates. */
     fresh?: (id: string) => boolean
     onreroll: (id: string) => void
-    onclaim: (id: string) => Promise<void>
+    onclaim: (id: string, from: DOMRect) => Promise<void>
   } = $props()
 </script>
 
@@ -41,7 +41,7 @@
   {/if}
   <ul class="m-0 p-0 list-none flex flex-col gap-[10px]">
     {#each set.items as item (item.id)}
-      <ChallengeRow {item} fresh={fresh(item.id)} onreroll={() => onreroll(item.id)} onclaim={() => onclaim(item.id)} />
+      <ChallengeRow {item} fresh={fresh(item.id)} onreroll={() => onreroll(item.id)} onclaim={(from: DOMRect) => onclaim(item.id, from)} />
     {/each}
   </ul>
   {#if bare}<span class="self-end text-[13px] text-text-muted">{resetsText(set, period, now)}</span>{/if}
