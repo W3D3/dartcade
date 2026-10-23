@@ -24,6 +24,21 @@ This installs `dartcade-bridge` to `/usr/local/bin`. Windows: download the `.exe
 [Releases](https://github.com/W3D3/dartcade/releases) instead. A Docker image is also published
 as `ghcr.io/w3d3/dartcade-bridge`.
 
+### Keep it running (Linux)
+
+To start the bridge at boot and bring it back after a crash or a restart, install it as a systemd
+service. Pass the Board Manager's address (it defaults to `http://localhost:3180`, for a board on
+the same machine):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/W3D3/dartcade/main/scripts/install-bridge.sh | sh -s -- --service --board-url http://<board-ip>:3180
+```
+
+The script installs and starts the service and prints the pairing code (step 3 below, no need to run
+the bridge by hand). Run it again to upgrade or to change a setting; `--token`, `--backend-url` and
+`--board-url` are kept between runs. Logs: `journalctl -u dartcade-bridge -f`. Remove it with
+`... | sh -s -- --uninstall` (add `--purge` to forget the pairing too).
+
 ## 3. Run the bridge and pair a board
 
 ```bash
