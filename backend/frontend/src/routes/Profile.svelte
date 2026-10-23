@@ -6,6 +6,8 @@
   // pickers, your XP and your collection open up. Friends see the streak and status; strangers see public games only (the API decides).
   import { ArrowLeft, Flame, LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import { querystring } from 'svelte-spa-router'
+  import { get } from 'svelte/store'
   import Avatar from '$lib/components/Avatar.svelte'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
@@ -36,7 +38,8 @@
 
   const progression = flag('progression.enabled')
   // Your own profile shows what others see until you customise it
-  let customising = $state(false)
+  // `#/profile?customise` (the rewards track's link) opens with Customise on
+  let customising = $state(new URLSearchParams(get(querystring)).has('customise'))
   const userId = $derived(params.id ?? $currentUser?.id ?? null)
   // One store per player shown; read again when the page opens
   let profile = $derived(userId ? profileOf(userId) : null)
