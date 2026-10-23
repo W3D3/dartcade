@@ -57,17 +57,26 @@ describe('streak copy', () => {
   it('toasts a freeze spent and a milestone reached', () => {
     const t = toastsFor(
       gained({
-        lines: [{ kind: 'milestone', amount: 250 }],
+        lines: [
+          { kind: 'daily', amount: 160, count: 7 },
+          { kind: 'milestone', amount: 250 },
+        ],
         streak: { current: 7, freezes: 1, frozeDay: '2026-10-18', milestone: 7 },
       }),
     )
     expect(t).toEqual([
-      { icon: 'freeze', title: 'Streak freeze used', text: 'Sunday was missed. Your streak is safe. 1 freeze left.', xp: null },
-      { icon: 'milestone', title: '7-day streak', text: 'New: flame picture', xp: 250 },
+      { kind: 'freeze', left: 1 },
+      { kind: 'milestone', days: 7, xp: 250, perks: [expect.objectContaining({ id: 'picture.flame' })] },
+    ])
+  })
+  it('toasts the streak extended with its bonus, and challenges done', () => {
+    const streak = { current: 13, freezes: 0, frozeDay: null, milestone: null }
+    expect(toastsFor(gained({ lines: [{ kind: 'daily', amount: 200, count: 13 }], streak }))).toEqual([
+      { kind: 'streak', days: 13, bonus: 200 },
     ])
     expect(toastsFor(gained())).toEqual([])
     expect(toastsFor(gained({ challenges: [{ title: 'Throw 100 darts on a board', xp: 40, period: 'daily' }] }))).toEqual([
-      { icon: 'challenge', title: 'Challenge complete', text: 'Throw 100 darts on a board. Claim +40 XP on Progress.', xp: null },
+      { kind: 'challenge', title: 'Throw 100 darts on a board', xp: 40 },
     ])
   })
 })
