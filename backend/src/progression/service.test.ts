@@ -16,6 +16,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
   let close: () => Promise<void>
   let pushed: { userId: string; msg: XpGainedMessage }[]
   let service: ProgressionService
+  let off: Set<string>
   let n = 0
 
   beforeAll(async () => {
@@ -30,7 +31,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
   })
   beforeEach(async () => {
     pushed = []
-    service = new ProgressionService({ db, push: (userId, msg) => void pushed.push({ userId, msg }), warn: () => undefined })
+    off = new Set()
+    service = new ProgressionService({
+      db,
+      enabled: userId => Promise.resolve(!off.has(userId)),
+      push: (userId, msg) => void pushed.push({ userId, msg }),
+      warn: () => undefined,
+    })
     await sql`TRUNCATE xp_ledger, user_progress, progression_backfill, game_sessions, user_challenges CASCADE`.execute(db)
   })
 
@@ -108,6 +115,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
         { kind: 'daily', amount: 100, count: 1 },
       ]),
     })
+  })
+
+  it('pays nothing to an account progression is off for', async () => {
+    off.add('bob')
+    await service.awardGame(await duel())
+    expect(await db.selectFrom('xp_ledger').select('id').where('user_id', '=', 'bob').execute()).toEqual([])
+    expect((await getProgress(db, 'bob')).xp).toBe(0)
+    expect(await db.selectFrom('user_challenges').select('id').where('user_id', '=', 'bob').execute()).toEqual([])
+    expect(pushed.map(p => p.userId)).toEqual(['ann'])
   })
 
   it('pays a manual game half game XP and no dart XP', async () => {

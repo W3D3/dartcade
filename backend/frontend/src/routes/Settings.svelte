@@ -27,6 +27,8 @@
   let { params = {} }: { params?: { section?: string } } = $props()
 
   const lightsOn = flag('lights.enabled')
+  // Sound packs are progression rewards
+  const progression = flag('progression.enabled')
   const visible = $derived(SETTINGS_SECTIONS.filter(s => sectionVisible(s, { 'lights.enabled': $lightsOn })))
 
   const rawSection = $derived(sectionOf(params.section))
@@ -139,7 +141,7 @@
           <CallerVoices current={settings.callerVoice} volume={settings.volume} />
           <div class="flex flex-col gap-4 md:gap-5">
             <CallerDefaults bind:settings />
-            <SoundEffects bind:settings />
+            {#if $progression}<SoundEffects bind:settings />{/if}
           </div>
         </div>
       {/if}

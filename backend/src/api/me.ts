@@ -16,7 +16,7 @@ import {
 } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
 import { hasPerk, unlockedPictures } from '../db/progression.js'
-import { isAvatarPreset } from '../shared/avatarPresets.js'
+import { AVATAR_PRESETS, isAvatarPreset } from '../shared/avatarPresets.js'
 import { pictureFor } from '../shared/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
@@ -47,6 +47,8 @@ const orEmpty = (body: Buffer | undefined): Buffer => body ?? Buffer.alloc(0)
 export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
+  const progressionOn = async (userId: string) => flagEnabled('progression.enabled', await loadFlagUser(db, userId))
+
   async function me(userId: string) {
     const account = await getAccount(db, userId)
     if (!account) throw new ApiError(404, { error: 'account not found' })
@@ -56,7 +58,8 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       isAdmin: isAdmin({ role }),
       isModerator: isModerator({ role }),
       suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
-      pictures: await unlockedPictures(db, userId),
+      // Pictures are rewards only while progression is on
+      pictures: (await progressionOn(userId)) ? await unlockedPictures(db, userId) : AVATAR_PRESETS.map(p => p.id),
     }
   }
 
@@ -71,7 +74,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     if (req.body.avatar !== undefined) {
       // A picture is a reward: locked ones can't be worn
       const preset = req.body.avatar.kind === 'preset' ? req.body.avatar.preset : undefined
-      if (preset && isAvatarPreset(preset) && !(await hasPerk(db, req.userId, pictureFor(preset))))
+      if (preset && isAvatarPreset(preset) && (await progressionOn(req.userId)) && !(await hasPerk(db, req.userId, pictureFor(preset))))
         throw new ApiError(409, { error: `avatar preset not unlocked yet: ${preset}` })
       try {
         await setAvatar(db, req.userId, req.body.avatar)
