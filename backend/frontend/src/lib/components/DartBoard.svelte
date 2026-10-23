@@ -587,7 +587,7 @@
               <circle
                 cx={pos.x}
                 cy={-pos.y}
-                r="0.075"
+                r="0.055"
                 fill="var(--color-accent)"
                 fill-opacity="0.18"
                 stroke="var(--color-accent)"
@@ -596,17 +596,17 @@
               />
             {/if}
             {#if i === darts.length - 1}
-              <!-- The most recent dart is a bit bigger, with a green ring and a black one outside -->
-              <circle data-last-dart cx={pos.x} cy={-pos.y} r="0.0505" fill="none" stroke="#000000" stroke-width="0.008" />
-              <circle cx={pos.x} cy={-pos.y} r="0.043" fill="none" stroke="var(--color-accent)" stroke-width="0.008" />
+              <!-- The most recent dart is a bit bigger, with a lime ring and a black one outside -->
+              <circle data-last-dart cx={pos.x} cy={-pos.y} r="0.0385" fill="none" stroke="#000000" stroke-width="0.006" />
+              <circle cx={pos.x} cy={-pos.y} r="0.032" fill="none" stroke="var(--color-accent)" stroke-width="0.006" />
             {/if}
             <circle
               cx={pos.x}
               cy={-pos.y}
-              r={selected ? 0.04 : i === darts.length - 1 ? 0.036 : 0.03}
+              r={selected ? 0.03 : i === darts.length - 1 ? 0.027 : 0.022}
               fill={DOT_COLORS[i % DOT_COLORS.length]}
               stroke={DOT_STROKE}
-              stroke-width="0.008"
+              stroke-width="0.006"
             />
             <text
               x={pos.x + 0.06}
