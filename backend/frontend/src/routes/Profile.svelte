@@ -141,7 +141,7 @@
 
       {#if self && $progress && customising}
         <div id="customise" class="scroll-mt-4">
-          <YourCard mode="equip" userId={p.id} unlocked={$progress.perks.unlocked} equipped={$progress.perks.equipped} />
+          <YourCard userId={p.id} unlocked={$progress.perks.unlocked} equipped={$progress.perks.equipped} />
         </div>
       {/if}
 

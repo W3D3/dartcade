@@ -1,8 +1,8 @@
 <script lang="ts">
-  // Your profile card, live, beside the pickers for its title, banner, card colours and picture.
-  // On your profile (`mode="equip"`) an unlocked one is a tap to wear; on the Progress page
-  // (`mode="preview"`) the rewards are only shown. Any of them, locked ones too, can be tried on
-  // the card first. Locked ones are dashed and grey, in colour on hover, with what unlocks them.
+  // Your profile card, live, beside the pickers for its title, banner, card colours and picture
+  // (your profile's Customise). An unlocked one is a tap to wear; any of them, locked ones too, can
+  // be tried on the card first. Locked ones are dashed and grey, in colour on hover, with what
+  // unlocks them.
   // The picture is your avatar (shared/avatarPresets.ts), worn in the colours you picked in
   // Settings; the photo reward is uploaded there too.
   import { Check, Lock, PartyPopper, Play, Trophy, Undo2, Volume2, VolumeX } from '@lucide/svelte'
@@ -10,8 +10,6 @@
   import Avatar from '../Avatar.svelte'
   import { currentUser } from '$lib/auth'
   import { presetIn, wearPicture } from '$lib/progress/pictures'
-  import { rewardFocus } from '$lib/progress/rewardFocus'
-  import { onDestroy } from 'svelte'
   import SegmentedControl from '../SegmentedControl.svelte'
   import ErrorText from '../ErrorText.svelte'
   import { profileOf, statusOf } from '$lib/progress/profiles'
@@ -23,7 +21,7 @@
   import { loadSettings } from '$lib/gameSettings'
   import { PERKS, unlockText, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
 
-  let { userId, unlocked, equipped, mode }: { userId: string; unlocked: string[]; equipped: Equipped; mode: 'equip' | 'preview' } = $props()
+  let { userId, unlocked, equipped }: { userId: string; unlocked: string[]; equipped: Equipped } = $props()
 
   // svelte-ignore state_referenced_locally (your own card)
   const profile = profileOf(userId)
@@ -42,17 +40,6 @@
   const perks = $derived(PERKS.filter(p => p.kind === kind))
   const myAvatar = $derived($currentUser?.avatar ?? null)
   const presetOf = (p: Perk) => p.id.slice('picture.'.length)
-  let section: HTMLElement | undefined = $state()
-  // A reward picked on the level card: open its tab, try it on, bring the grid into view
-  onDestroy(
-    rewardFocus.subscribe(p => {
-      if (!p) return
-      kind = p.kind
-      trying = p
-      section?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      rewardFocus.set(null)
-    }),
-  )
   const look = $derived<Equipped>(trying && trying.kind !== 'picture' ? { ...equipped, [trying.kind]: trying.id } : equipped)
   const avatar = $derived(trying?.kind === 'picture' ? presetIn(myAvatar, presetOf(trying)) : undefined)
   function isOn(p: Perk): boolean {
@@ -78,8 +65,8 @@
 
   async function pick(p: Perk) {
     if (trying?.id !== p.id) sample(p)
-    // Previewing only, or not yours yet: try it on the card (again: back to yours)
-    if (mode === 'preview' || !unlocked.includes(p.id)) {
+    // Not yours yet: try it on the card (again: back to yours)
+    if (!unlocked.includes(p.id)) {
       trying = trying?.id === p.id ? null : p
       return
     }
@@ -92,32 +79,21 @@
 
   function statusText(p: Perk, open: boolean, on: boolean): string {
     if (on) return p.kind === 'picture' ? 'Worn' : 'Equipped'
-    if (open) return mode === 'equip' ? 'Equip' : 'Unlocked'
+    if (open) return 'Equip'
     return lockLine(p)
   }
 </script>
 
 <section
-  bind:this={section}
-  aria-label={mode === 'equip' ? 'Customise your card' : 'Rewards'}
+  aria-label="Customise your card"
   class="flex flex-col gap-[14px] box-border rounded-[14px] border border-line-2 bg-surface-2 p-[18px] md:p-[22px]"
 >
   <div class="grid gap-5 lg:grid-cols-[auto_minmax(0,1fr)] items-start">
     <div class="flex flex-col gap-[14px]">
-      <span class="text-[12px] label-caps text-text-dim">{mode === 'equip' ? 'Your card' : 'Rewards'}</span>
+      <span class="text-[12px] label-caps text-text-dim">Your card</span>
       {#if $profile}
         <div class="relative w-fit max-w-full">
-          <ProfileCard profile={$profile} {look} avatar={avatar ?? $profile.avatar} status={$status}>
-            {#snippet actions()}
-              {#if mode === 'preview'}
-                <a
-                  href="#/profile"
-                  class="flex-1 rounded-[10px] border border-line-strong py-[11px] text-center font-display font-bold text-[17px] uppercase tracking-[0.08em] text-text no-underline"
-                  >Customise on your profile</a
-                >
-              {/if}
-            {/snippet}
-          </ProfileCard>
+          <ProfileCard profile={$profile} {look} avatar={avatar ?? $profile.avatar} status={$status} />
           {#if party}
             {#key party.run}
               <Celebration
@@ -157,7 +133,7 @@
       {/if}
     </div>
     <div class="flex flex-col gap-3 min-w-0">
-      <span class="text-[12px] label-caps text-text-dim">{mode === 'equip' ? 'Customise' : 'Tap one to try it on'}</span>
+      <span class="text-[12px] label-caps text-text-dim">Customise</span>
       <SegmentedControl class="bg-surface-inset" options={KINDS} bind:value={kind} />
       {#if error}<ErrorText>{error}</ErrorText>{/if}
       <ul class="m-0 p-0 list-none grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-[10px]">
