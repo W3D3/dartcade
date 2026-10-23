@@ -30,7 +30,7 @@ import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
 import { getOpenLobbyIds } from './db/lobbies.js'
-import { rehostWledDevices } from './db/lights.js'
+import { boardsWithWledDevices, rehostWledDevices } from './db/lights.js'
 import type { LightsService } from './lights/service.js'
 import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
@@ -215,7 +215,16 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(minigolfCoursesApiPlugin, { db })
   await app.register(adminUsersApiPlugin, { db })
   await app.register(adminGamesApiPlugin, { db })
-  await app.register(adminFlagsApiPlugin, { db })
+  // The lights flag changed: boards with strips are darkened (off) or get their devices back (on)
+  const onFlagChanged = lights
+    ? (key: string) => {
+        if (key !== 'lights.enabled') return
+        void boardsWithWledDevices(db)
+          .then(ids => Promise.all(ids.map(id => lights.devicesChanged(id))))
+          .catch((err: unknown) => app.log.warn({ err }, 'lights flag change failed'))
+      }
+    : undefined
+  await app.register(adminFlagsApiPlugin, { db, onFlagChanged })
   await app.register(systemApiPlugin, {
     db,
     live: async () => {
