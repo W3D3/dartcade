@@ -16,7 +16,9 @@ export type Trigger =
   | { kind: 'checkout'; seat: number }
   | { kind: 'atc.hit'; seat: number; target: number }
   | { kind: 'hilo.lifeLost'; seat: number }
-  | { kind: 'golf.sunk'; seat: number; strokes: number }
+  // delayMs: how long the match screen's putt animation takes to show the ball dropping, so the
+  // service can hold the flash back and fire it in sync (#307) instead of on the snapshot itself.
+  | { kind: 'golf.sunk'; seat: number; strokes: number; delayMs?: number }
   | { kind: 'bulloff.won'; seat: number }
 
 export type TriggerKind = Trigger['kind']

@@ -164,7 +164,40 @@ describe('other games', () => {
           { status: 'waiting', strokes: 0 },
         ],
       })
-    expect(triggersFor(g('playing', 2), g('holed', 3))).toEqual([{ kind: 'golf.sunk', seat: 0, strokes: 3 }])
+    expect(triggersFor(g('playing', 2), g('holed', 3))).toEqual([{ kind: 'golf.sunk', seat: 0, strokes: 3, delayMs: 0 }])
+  })
+  it('minigolf: the flash is delayed by the match screen’s putt animation (#307), not fired on the spot', () => {
+    const path = Array.from({ length: 36 }, (): [number, number] => [0, 0]) // 36 samples: a 1 s roll at the match screen's 0.6x, 36 fps-equivalent
+    const g = (status: string, strokes: number, lastStroke: unknown = null) =>
+      snap('minigolf', {
+        currentPlayer: 0,
+        winner: null,
+        holeIdx: 2,
+        balls: [
+          { status, strokes },
+          { status: 'waiting', strokes: 0 },
+        ],
+        lastStroke,
+      })
+    const lastStroke = { hole: 2, seat: 0, stroke: 3, path, others: [], hits: [], holed: true }
+    // ROLL_DELAY_MS (3000) + the roll itself (36 samples at 60 fps / 0.6 playback = 1000 ms)
+    expect(triggersFor(g('playing', 2), g('holed', 3, lastStroke))).toEqual([{ kind: 'golf.sunk', seat: 0, strokes: 3, delayMs: 4000 }])
+  })
+  it("minigolf: a knocked-in ball's flash waits for the whole roll, not just its own (shorter) path", () => {
+    const own = Array.from({ length: 36 }, (): [number, number] => [0, 0])
+    const knocked = Array.from({ length: 72 }, (): [number, number] => [0, 0]) // rolls on longer than the shooter's own ball
+    const g = (statuses: string[], lastStroke: unknown = null) =>
+      snap('minigolf', {
+        currentPlayer: 0,
+        winner: null,
+        holeIdx: 2,
+        balls: statuses.map(status => ({ status, strokes: 3 })),
+        lastStroke,
+      })
+    const lastStroke = { hole: 2, seat: 0, stroke: 3, path: own, others: [{ seat: 1, path: knocked, holed: true }], hits: [], holed: false }
+    expect(triggersFor(g(['playing', 'playing']), g(['playing', 'holed'], lastStroke))).toEqual([
+      { kind: 'golf.sunk', seat: 1, strokes: 3, delayMs: 3000 + 2000 },
+    ])
   })
   it('minigolf: the last player sinking the hole-ending putt still flashes (balls reset for the next hole in the same snapshot)', () => {
     const before = snap('minigolf', {
@@ -187,7 +220,7 @@ describe('other games', () => {
       config: { maxStrokes: 6 },
       lastHole: { index: 0, scores: [3, 3] },
     })
-    expect(triggersFor(before, after).filter(t => t.kind === 'golf.sunk')).toEqual([{ kind: 'golf.sunk', seat: 1, strokes: 3 }])
+    expect(triggersFor(before, after).filter(t => t.kind === 'golf.sunk')).toEqual([{ kind: 'golf.sunk', seat: 1, strokes: 3, delayMs: 0 }])
   })
   it('minigolf: a seat that runs out of strokes without holing out is not a sink', () => {
     const before = snap('minigolf', {
