@@ -3,7 +3,6 @@ package wled
 import (
 	"context"
 	"encoding/json"
-	"time"
 
 	"dartcade/bridge/internal/schema"
 	"github.com/charmbracelet/log"
@@ -57,19 +56,5 @@ func (m *Manager) Handle(ctx context.Context, b Browser, kind string, data json.
 		go m.Blink(ctx, d.Host)
 	default:
 		log.Debug("wled: unknown message kind", "kind", kind)
-	}
-}
-
-// Every scans now and then every d until ctx ends.
-func (m *Manager) Every(ctx context.Context, b Browser, d time.Duration) {
-	t := time.NewTicker(d)
-	defer t.Stop()
-	for {
-		m.Scan(ctx, b)
-		select {
-		case <-ctx.Done():
-			return
-		case <-t.C:
-		}
 	}
 }

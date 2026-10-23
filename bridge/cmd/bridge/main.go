@@ -170,15 +170,10 @@ func main() {
 	browser := wled.ZeroconfBrowser()
 	lights.SetBrowser(browser) // lets a device that changed IP (a MAC mismatch or a dial error) trigger its own rescan
 	tr.OnMessage(func(kind string, data json.RawMessage) { lights.Handle(ctx, browser, kind, data) })
-	go lights.Every(ctx, browser, 5*time.Minute)
 
-	// And on every (re)connect, so viewers see the board after a restart without waiting for a dart;
-	// also rescan for wled devices, since the first scan (in Every, above) ran before the backend
-	// was connected and its wled.found was dropped
-	tr.OnConnect(func() {
-		stills.Trigger(ctx)
-		go lights.Scan(ctx, browser)
-	})
+	// And on every (re)connect, so viewers see the board after a restart without waiting for a dart.
+	// WLEDs are only scanned when a user asks (wled.scan), never on a timer or a connect.
+	tr.OnConnect(func() { stills.Trigger(ctx) })
 
 	go func() {
 		if err := tr.Start(ctx); err != nil && ctx.Err() == nil {

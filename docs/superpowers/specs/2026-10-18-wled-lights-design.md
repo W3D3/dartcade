@@ -50,8 +50,8 @@ Backend → bridge (new; today the bridge only receives `ack`):
 
 Bridge → backend (telemetry like `camera.still`: not sequenced, not stored):
 
-- `wled.found {devices: [{mac, host, name, leds, version, segments}]}`: after a scan or probe, and every
-  5 minutes.
+- `wled.found {devices: [{mac, host, name, leds, version, segments}]}`: after a scan or probe. The bridge
+  never scans on its own (no timer, not on connect): only on `wled.scan`/`wled.probe` from the backend.
 - `wled.status {device_id, reachable, version, error?}`: when a paired device's reachability changes.
 
 `segments` is the device's current WLED segment count. Unknown kinds are ignored on both sides.
