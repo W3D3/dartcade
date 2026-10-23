@@ -8418,6 +8418,10 @@
           "soundHit": {
             "type": "boolean"
           },
+          "soundTreble": {
+            "type": "boolean",
+            "description": "Trebles get their own sound; off: they play the hit sound"
+          },
           "soundMiss": {
             "type": "boolean"
           },
@@ -8429,6 +8433,13 @@
           },
           "soundWin": {
             "type": "boolean"
+          },
+          "soundPack": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "nullable": true,
+            "description": "A sound pack perk id that plays for every dart on your screen; null: each thrower's own"
           },
           "callerOn": {
             "type": "boolean",

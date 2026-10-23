@@ -39,7 +39,7 @@ describe('Game preferences', () => {
 
   it('keeps every sound effect under Sounds, the sound packs only with progression on', () => {
     const html = render(SoundEffects, { props: { settings: { ...defaultSettings } } }).body
-    for (const label of ['Effects volume', 'Hit', 'Miss', 'Player switch', 'Bust', 'Win']) expect(html).toContain(label)
+    for (const label of ['Effects volume', 'Hit', 'Treble', 'Miss', 'Player switch', 'Bust', 'Win']) expect(html).toContain(label)
     expect(html).not.toContain('Sound packs')
     expect(render(SoundEffects, { props: { settings: { ...defaultSettings }, packs: true } }).body).toContain('Sound packs')
   })

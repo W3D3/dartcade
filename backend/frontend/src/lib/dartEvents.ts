@@ -9,6 +9,18 @@ export type DartEvent = { kind: DartSound | 'switch'; seat: number }
 export type EventGame = Pick<X01Game, 'currentPlayer' | 'currentVisitDarts'> &
   Partial<Pick<X01Game, 'bustThisVisit'> & Pick<AtcGame, 'currentVisitHits'>>
 
+/** Which sound a dart plays under the switches: a treble falls back to the hit when trebles have
+ *  none of their own; null when its switch is off. */
+export function dartSound(
+  kind: DartSound,
+  on: { soundHit: boolean; soundTreble: boolean; soundMiss: boolean; soundBust: boolean },
+): DartSound | null {
+  if (kind === 'bust') return on.soundBust ? 'bust' : null
+  if (kind === 'miss') return on.soundMiss ? 'miss' : null
+  if (kind === 'treble' && on.soundTreble) return 'treble'
+  return on.soundHit ? (kind === 'treble' ? 'hit' : kind) : null
+}
+
 /** The event between `before` and `after`; null when nothing a sound marks happened (a correction, a takeout). */
 export function dartEvent(before: EventGame, after: EventGame): DartEvent | null {
   const seat = after.currentPlayer

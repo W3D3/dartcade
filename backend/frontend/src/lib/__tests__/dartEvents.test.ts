@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dartEvent, type EventGame } from '../dartEvents.js'
+import { dartEvent, type EventGame, dartSound } from '../dartEvents.js'
 import { SOUND_PACKS } from '../soundPacks.js'
 import { PERKS } from '$shared/progression.js'
 
@@ -41,5 +41,22 @@ describe('sound packs', () => {
   it('has a recipe for every pack but none', () => {
     const packs = PERKS.filter(p => p.kind === 'sound' && p.id !== 'sound.none').map(p => p.id)
     expect(Object.keys(SOUND_PACKS).sort()).toEqual(packs.sort())
+  })
+})
+
+describe('dartSound', () => {
+  const all = { soundHit: true, soundTreble: true, soundMiss: true, soundBust: true }
+  it('gives a treble its own sound while trebles have one', () => {
+    expect(dartSound('treble', all)).toBe('treble')
+  })
+  it('falls back to the hit for a treble with the treble sound off, and to nothing with the hit off too', () => {
+    expect(dartSound('treble', { ...all, soundTreble: false })).toBe('hit')
+    expect(dartSound('treble', { ...all, soundTreble: false, soundHit: false })).toBeNull()
+  })
+  it('follows each switch', () => {
+    expect(dartSound('double', all)).toBe('double')
+    expect(dartSound('hit', { ...all, soundHit: false })).toBeNull()
+    expect(dartSound('miss', { ...all, soundMiss: false })).toBeNull()
+    expect(dartSound('bust', { ...all, soundBust: false })).toBeNull()
   })
 })

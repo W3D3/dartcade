@@ -30,7 +30,7 @@
   import { accountSettings, writeThrough } from '$lib/accountSettings'
   import { audioContext, createSounds } from '../lib/sounds.js'
   import { createSoundPacks } from '$lib/soundPacks'
-  import { dartEvent } from '$lib/dartEvents'
+  import { dartEvent, dartSound } from '$lib/dartEvents'
   import { profileOf } from '$lib/progress/profiles'
   import { callsFor, checkoutFor, createCheckoutMemory, legsOf, requirePart } from '$lib/caller/calls'
   import { createCaller } from '$lib/caller/player'
@@ -272,13 +272,15 @@
       if (settings.soundSwitch) sounds.switchPlayer()
       return
     }
-    // The switches decide whether a dart sounds at all; a thrower's sound pack only replaces the beep
-    const on = e.kind === 'bust' ? settings.soundBust : e.kind === 'miss' ? settings.soundMiss : settings.soundHit
-    if (!on) return
-    const pack = settings.soundEffects ? (seatSounds[e.seat] ?? 'sound.none') : 'sound.none'
-    if (pack !== 'sound.none') packs.play(pack, e.kind)
-    else if (e.kind === 'bust') sounds.bust()
-    else if (e.kind === 'miss') sounds.miss()
+    // The switches decide whether a dart sounds and which; a sound pack (yours for everyone, or
+    // the thrower's own) only replaces the beep
+    const sound = dartSound(e.kind, settings)
+    if (!sound) return
+    const pack = settings.soundEffects ? (settings.soundPack ?? seatSounds[e.seat] ?? 'sound.none') : 'sound.none'
+    if (pack !== 'sound.none') packs.play(pack, sound)
+    else if (sound === 'bust') sounds.bust()
+    else if (sound === 'miss') sounds.miss()
+    else if (sound === 'treble') sounds.treble()
     else sounds.hit()
   }
 
