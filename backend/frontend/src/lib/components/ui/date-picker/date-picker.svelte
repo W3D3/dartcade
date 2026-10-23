@@ -51,7 +51,8 @@
   >
     <DatePicker.Input aria-label={label} class="flex items-center">
       {#snippet children({ segments }: { segments: { part: SegmentPart; value: string }[] })}
-        {#each segments as { part, value } (part + value)}
+        <!-- By position: a date has two identical separators ("/" or "."), so part + value isn't unique -->
+        {#each segments as { part, value }, i (i)}
           {#if part === 'literal'}
             <span class="text-text-dim">{value}</span>
           {:else}
