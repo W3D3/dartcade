@@ -6,7 +6,8 @@
   import { KIND_LABEL } from '$lib/progress/look'
   import { PERKS, nextLevelPerk, perk } from '$shared/progression.js'
 
-  let { xp, title, gain = null }: { xp: number; title: string | null; gain?: number | null } = $props()
+  // A new `gain` object plays the "+N XP" rise once, even for the same amount again
+  let { xp, title, gain = null }: { xp: number; title: string | null; gain?: { total: number } | null } = $props()
   const v = $derived(levelView(xp))
   const next = $derived(nextLevelPerk(v.level))
   const nextLevel = $derived(next && 'level' in next.unlock ? next.unlock.level : null)
@@ -36,7 +37,7 @@
         <span
           aria-hidden="true"
           class="rise absolute -top-[30px] -translate-x-1/2 font-display font-bold text-[20px] text-accent whitespace-nowrap"
-          style="left: {Math.min(92, Math.max(8, v.pct))}%">+{fmtXp(gain)} XP</span
+          style="left: {Math.min(92, Math.max(8, v.pct))}%">+{fmtXp(gain.total)} XP</span
         >
       {/key}
     {/if}
@@ -48,7 +49,10 @@
       aria-valuemax={100}
       aria-valuenow={Math.round(v.pct)}
     >
-      <div class="h-full rounded-full bg-accent" style="width: {v.pct}%"></div>
+      <div
+        class="h-full rounded-full bg-accent transition-[width] duration-700 motion-reduce:transition-none"
+        style="width: {v.pct}%"
+      ></div>
     </div>
     <div class="flex justify-between text-[13px] text-text-muted">
       <span>Level {v.level}</span><span class="font-semibold text-text">{v.toGo}</span><span>Level {v.level + 1}</span>

@@ -11,6 +11,7 @@
     bare = false,
     fresh = () => false,
     onreroll,
+    onclaim,
   }: {
     set: ChallengeSet
     period: 'daily' | 'weekly'
@@ -19,6 +20,7 @@
     /** Finished while the page is open: it celebrates. */
     fresh?: (id: string) => boolean
     onreroll: (id: string) => void
+    onclaim: (id: string) => Promise<void>
   } = $props()
 </script>
 
@@ -30,8 +32,8 @@
     <div class="flex items-baseline justify-between gap-3">
       <span class="text-[12px] label-caps text-text-dim">{period === 'daily' ? 'Daily challenges' : 'Weekly challenges'}</span>
       <span class="flex items-center gap-[10px] text-[13px] text-text-muted">
-        <span class="flex gap-1" aria-label="{set.items.filter(c => c.completed).length} of {set.items.length} done">
-          {#each set.items as c (c.id)}<span class="size-2 rounded-full {c.completed ? 'bg-accent' : 'bg-line-3'}"></span>{/each}
+        <span class="flex gap-[5px]" aria-label="{set.items.filter(c => c.claimed).length} of {set.items.length} claimed">
+          {#each set.items as c (c.id)}<span class="w-[22px] h-2 rounded-full {c.claimed ? 'bg-accent' : 'bg-line'}"></span>{/each}
         </span>
         {resetsText(set, period, now)}
       </span>
@@ -39,7 +41,7 @@
   {/if}
   <ul class="m-0 p-0 list-none flex flex-col gap-[10px]">
     {#each set.items as item (item.id)}
-      <ChallengeRow {item} fresh={fresh(item.id)} onreroll={() => onreroll(item.id)} />
+      <ChallengeRow {item} fresh={fresh(item.id)} onreroll={() => onreroll(item.id)} onclaim={() => onclaim(item.id)} />
     {/each}
   </ul>
   {#if bare}<span class="self-end text-[13px] text-text-muted">{resetsText(set, period, now)}</span>{/if}

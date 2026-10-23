@@ -1484,6 +1484,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/challenges/{id}/claim": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Take a finished challenge's XP (claiming it again pays nothing more) */
+        post: operations["claimChallenge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/friends": {
         parameters: {
             query?: never;
@@ -2731,8 +2750,8 @@ export interface components {
             xp: number;
             level: number;
             streak: components["schemas"]["DayStreak"];
-            /** @description Today's daily challenges not done yet (the nav's count) */
-            dailyOpen: number;
+            /** @description Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count) */
+            challengesOpen: number;
             perks: components["schemas"]["Perks"];
         };
         /** @description The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar */
@@ -2832,10 +2851,18 @@ export interface components {
                 /** @description At most the target */
                 progress: number;
                 xp: number;
-                /** @description Done and paid */
+                /** @description Done */
                 completed: boolean;
+                /** @description Paid: claimed, or settled after its period ended */
+                claimed: boolean;
                 canReroll: boolean;
             }[];
+        };
+        ChallengeClaim: {
+            challenges: components["schemas"]["Challenges"];
+            /** @description Total XP after the claim */
+            xp: number;
+            level: number;
         };
         Challenges: {
             daily: components["schemas"]["ChallengeSet"];
@@ -5947,6 +5974,40 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             /** @description Not this one: done, not today's, or the reroll is used */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    claimChallenge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The challenges and your XP after it */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChallengeClaim"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            /** @description Not finished yet */
             409: {
                 headers: {
                     [name: string]: unknown;

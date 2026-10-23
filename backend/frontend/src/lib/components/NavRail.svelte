@@ -18,7 +18,7 @@
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
   const tabs = $derived(
-    navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression ? ($progress?.dailyOpen ?? 0) : null),
+    navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression ? ($progress?.challengesOpen ?? 0) : null),
   )
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))
   const lobbyLink = $derived(lobby && lobby.kind !== 'create' ? lobby : null)

@@ -79,7 +79,15 @@ export const progress: Readable<Progress | null> = readable<Progress | null>(nul
 export const progressXp: Readable<number | null> = derived(progress, p => p?.xp ?? null)
 
 /** What a game paid you: lines, total, and your XP before and after. */
-export type GameGain = { lines: XpLine[]; total: number; xpBefore: number; xpAfter: number; unlocks?: string[] }
+export type GameGain = {
+  lines: XpLine[]
+  total: number
+  xpBefore: number
+  xpAfter: number
+  unlocks?: string[]
+  /** Challenges the game finished: claimed on Progress (only known from the push) */
+  challenges?: { title: string; xp: number }[]
+}
 
 /** What game `sessionId` paid you; null until it is settled (or it paid nothing). */
 export function createGameGain(sessionId: string, source: Source = me, fetchGain = defaultFetchGain): Readable<GameGain | null> {
@@ -89,7 +97,14 @@ export function createGameGain(sessionId: string, source: Source = me, fetchGain
     const unsub = source.xp.subscribe(m => {
       if (m?.sessionId !== sessionId) return
       pushed = true
-      set({ lines: m.lines, total: m.total, xpBefore: m.xpBefore, xpAfter: m.xpAfter, unlocks: m.unlocks ?? [] })
+      set({
+        lines: m.lines,
+        total: m.total,
+        xpBefore: m.xpBefore,
+        xpAfter: m.xpAfter,
+        unlocks: m.unlocks ?? [],
+        challenges: m.challenges ?? [],
+      })
     })
     // After a reload the push is gone: the API has it (the bar then starts where it ends up)
     void fetchGain(sessionId).then(g => {

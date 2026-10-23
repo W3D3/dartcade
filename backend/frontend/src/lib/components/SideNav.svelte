@@ -19,7 +19,7 @@
   const progression = flag('progression.enabled')
 
   const links = $derived(
-    sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator, $progression ? ($progress?.dailyOpen ?? 0) : null),
+    sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator, $progression ? ($progress?.challengesOpen ?? 0) : null),
   )
 </script>
 

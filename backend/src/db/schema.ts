@@ -374,6 +374,8 @@ export interface UserChallengesTable {
   progress: ColumnType<number, number | undefined, number>
   xp: number
   completed_at: ColumnType<Date | null, Date | null | undefined, Date | null>
+  /** Paid (migration 036): claimed, or settled after its period ended */
+  claimed_at: ColumnType<Date | null, Date | null | undefined, Date | null>
   reroll: ColumnType<number, number | undefined, number>
   state: ColumnType<Record<string, unknown>, string | undefined, string>
   created_at: ColumnType<Date, never, never>

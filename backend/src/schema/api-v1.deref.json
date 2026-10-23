@@ -22739,7 +22739,7 @@
                     "xp",
                     "level",
                     "streak",
-                    "dailyOpen",
+                    "challengesOpen",
                     "perks"
                   ],
                   "additionalProperties": false,
@@ -22843,10 +22843,10 @@
                         }
                       }
                     },
-                    "dailyOpen": {
+                    "challengesOpen": {
                       "type": "integer",
                       "minimum": 0,
-                      "description": "Today's daily challenges not done yet (the nav's count)"
+                      "description": "Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count)"
                     },
                     "perks": {
                       "type": "object",
@@ -24071,6 +24071,7 @@
                               "progress",
                               "xp",
                               "completed",
+                              "claimed",
                               "canReroll"
                             ],
                             "additionalProperties": false,
@@ -24109,7 +24110,11 @@
                               },
                               "completed": {
                                 "type": "boolean",
-                                "description": "Done and paid"
+                                "description": "Done"
+                              },
+                              "claimed": {
+                                "type": "boolean",
+                                "description": "Paid: claimed, or settled after its period ended"
                               },
                               "canReroll": {
                                 "type": "boolean"
@@ -24145,6 +24150,7 @@
                               "progress",
                               "xp",
                               "completed",
+                              "claimed",
                               "canReroll"
                             ],
                             "additionalProperties": false,
@@ -24183,7 +24189,11 @@
                               },
                               "completed": {
                                 "type": "boolean",
-                                "description": "Done and paid"
+                                "description": "Done"
+                              },
+                              "claimed": {
+                                "type": "boolean",
+                                "description": "Paid: claimed, or settled after its period ended"
                               },
                               "canReroll": {
                                 "type": "boolean"
@@ -24376,6 +24386,7 @@
                               "progress",
                               "xp",
                               "completed",
+                              "claimed",
                               "canReroll"
                             ],
                             "additionalProperties": false,
@@ -24414,7 +24425,11 @@
                               },
                               "completed": {
                                 "type": "boolean",
-                                "description": "Done and paid"
+                                "description": "Done"
+                              },
+                              "claimed": {
+                                "type": "boolean",
+                                "description": "Paid: claimed, or settled after its period ended"
                               },
                               "canReroll": {
                                 "type": "boolean"
@@ -24450,6 +24465,7 @@
                               "progress",
                               "xp",
                               "completed",
+                              "claimed",
                               "canReroll"
                             ],
                             "additionalProperties": false,
@@ -24488,7 +24504,11 @@
                               },
                               "completed": {
                                 "type": "boolean",
-                                "description": "Done and paid"
+                                "description": "Done"
+                              },
+                              "claimed": {
+                                "type": "boolean",
+                                "description": "Paid: claimed, or settled after its period ended"
                               },
                               "canReroll": {
                                 "type": "boolean"
@@ -24583,6 +24603,380 @@
           },
           "409": {
             "description": "Not this one: done, not today's, or the reroll is used",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/challenges/{id}/claim": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      ],
+      "post": {
+        "operationId": "claimChallenge",
+        "summary": "Take a finished challenge's XP (claiming it again pays nothing more)",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "The challenges and your XP after it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "challenges",
+                    "xp",
+                    "level"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "challenges": {
+                      "type": "object",
+                      "required": [
+                        "daily",
+                        "weekly"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "daily": {
+                          "type": "object",
+                          "required": [
+                            "resetsAt",
+                            "items"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "resetsAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "id",
+                                  "slot",
+                                  "title",
+                                  "difficulty",
+                                  "target",
+                                  "progress",
+                                  "xp",
+                                  "completed",
+                                  "claimed",
+                                  "canReroll"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "slot": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 3
+                                  },
+                                  "title": {
+                                    "type": "string"
+                                  },
+                                  "difficulty": {
+                                    "type": "string",
+                                    "enum": [
+                                      "easy",
+                                      "medium",
+                                      "hard"
+                                    ]
+                                  },
+                                  "target": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "progress": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "At most the target"
+                                  },
+                                  "xp": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "completed": {
+                                    "type": "boolean",
+                                    "description": "Done"
+                                  },
+                                  "claimed": {
+                                    "type": "boolean",
+                                    "description": "Paid: claimed, or settled after its period ended"
+                                  },
+                                  "canReroll": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "weekly": {
+                          "type": "object",
+                          "required": [
+                            "resetsAt",
+                            "items"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "resetsAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                            },
+                            "items": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "required": [
+                                  "id",
+                                  "slot",
+                                  "title",
+                                  "difficulty",
+                                  "target",
+                                  "progress",
+                                  "xp",
+                                  "completed",
+                                  "claimed",
+                                  "canReroll"
+                                ],
+                                "additionalProperties": false,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "slot": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "maximum": 3
+                                  },
+                                  "title": {
+                                    "type": "string"
+                                  },
+                                  "difficulty": {
+                                    "type": "string",
+                                    "enum": [
+                                      "easy",
+                                      "medium",
+                                      "hard"
+                                    ]
+                                  },
+                                  "target": {
+                                    "type": "integer",
+                                    "minimum": 1
+                                  },
+                                  "progress": {
+                                    "type": "integer",
+                                    "minimum": 0,
+                                    "description": "At most the target"
+                                  },
+                                  "xp": {
+                                    "type": "integer",
+                                    "minimum": 0
+                                  },
+                                  "completed": {
+                                    "type": "boolean",
+                                    "description": "Done"
+                                  },
+                                  "claimed": {
+                                    "type": "boolean",
+                                    "description": "Paid: claimed, or settled after its period ended"
+                                  },
+                                  "canReroll": {
+                                    "type": "boolean"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "xp": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "description": "Total XP after the claim"
+                    },
+                    "level": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Not finished yet",
             "content": {
               "application/json": {
                 "schema": {
@@ -42596,7 +42990,7 @@
           "xp",
           "level",
           "streak",
-          "dailyOpen",
+          "challengesOpen",
           "perks"
         ],
         "additionalProperties": false,
@@ -42700,10 +43094,10 @@
               }
             }
           },
-          "dailyOpen": {
+          "challengesOpen": {
             "type": "integer",
             "minimum": 0,
-            "description": "Today's daily challenges not done yet (the nav's count)"
+            "description": "Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count)"
           },
           "perks": {
             "type": "object",
@@ -43250,6 +43644,7 @@
                 "progress",
                 "xp",
                 "completed",
+                "claimed",
                 "canReroll"
               ],
               "additionalProperties": false,
@@ -43288,13 +43683,205 @@
                 },
                 "completed": {
                   "type": "boolean",
-                  "description": "Done and paid"
+                  "description": "Done"
+                },
+                "claimed": {
+                  "type": "boolean",
+                  "description": "Paid: claimed, or settled after its period ended"
                 },
                 "canReroll": {
                   "type": "boolean"
                 }
               }
             }
+          }
+        }
+      },
+      "ChallengeClaim": {
+        "type": "object",
+        "required": [
+          "challenges",
+          "xp",
+          "level"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "challenges": {
+            "type": "object",
+            "required": [
+              "daily",
+              "weekly"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "daily": {
+                "type": "object",
+                "required": [
+                  "resetsAt",
+                  "items"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "resetsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "slot",
+                        "title",
+                        "difficulty",
+                        "target",
+                        "progress",
+                        "xp",
+                        "completed",
+                        "claimed",
+                        "canReroll"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slot": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 3
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "difficulty": {
+                          "type": "string",
+                          "enum": [
+                            "easy",
+                            "medium",
+                            "hard"
+                          ]
+                        },
+                        "target": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "At most the target"
+                        },
+                        "xp": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "completed": {
+                          "type": "boolean",
+                          "description": "Done"
+                        },
+                        "claimed": {
+                          "type": "boolean",
+                          "description": "Paid: claimed, or settled after its period ended"
+                        },
+                        "canReroll": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "weekly": {
+                "type": "object",
+                "required": [
+                  "resetsAt",
+                  "items"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "resetsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When a new set comes: local midnight (daily), Monday 00:00 local (weekly)"
+                  },
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "slot",
+                        "title",
+                        "difficulty",
+                        "target",
+                        "progress",
+                        "xp",
+                        "completed",
+                        "claimed",
+                        "canReroll"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "slot": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 3
+                        },
+                        "title": {
+                          "type": "string"
+                        },
+                        "difficulty": {
+                          "type": "string",
+                          "enum": [
+                            "easy",
+                            "medium",
+                            "hard"
+                          ]
+                        },
+                        "target": {
+                          "type": "integer",
+                          "minimum": 1
+                        },
+                        "progress": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "description": "At most the target"
+                        },
+                        "xp": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "completed": {
+                          "type": "boolean",
+                          "description": "Done"
+                        },
+                        "claimed": {
+                          "type": "boolean",
+                          "description": "Paid: claimed, or settled after its period ended"
+                        },
+                        "canReroll": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total XP after the claim"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
           }
         }
       },
@@ -43332,6 +43919,7 @@
                     "progress",
                     "xp",
                     "completed",
+                    "claimed",
                     "canReroll"
                   ],
                   "additionalProperties": false,
@@ -43370,7 +43958,11 @@
                     },
                     "completed": {
                       "type": "boolean",
-                      "description": "Done and paid"
+                      "description": "Done"
+                    },
+                    "claimed": {
+                      "type": "boolean",
+                      "description": "Paid: claimed, or settled after its period ended"
                     },
                     "canReroll": {
                       "type": "boolean"
@@ -43406,6 +43998,7 @@
                     "progress",
                     "xp",
                     "completed",
+                    "claimed",
                     "canReroll"
                   ],
                   "additionalProperties": false,
@@ -43444,7 +44037,11 @@
                     },
                     "completed": {
                       "type": "boolean",
-                      "description": "Done and paid"
+                      "description": "Done"
+                    },
+                    "claimed": {
+                      "type": "boolean",
+                      "description": "Paid: claimed, or settled after its period ended"
                     },
                     "canReroll": {
                       "type": "boolean"

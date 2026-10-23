@@ -2,8 +2,9 @@
   // The win screen's XP chip (concept: quiet win screen): level, a thin XP bar and "+N XP", always
   // there at the foot of the result. On arrival the bar fills; on a level-up it runs to the end,
   // the level flips, the chip pulses once and one line names the new level. A tap opens the full
-  // breakdown. Reduced motion shows the end state.
-  import { ChevronDown, Flame } from '@lucide/svelte'
+  // breakdown. A challenge the game finished gets a line pointing to Progress, where its XP is
+  // claimed. Reduced motion shows the end state.
+  import { ChevronDown, Flame, Target } from '@lucide/svelte'
   import type { GameGain } from '$lib/progress/store'
   import { equip } from '$lib/progress/equip'
   import { perk } from '$shared/progression.js'
@@ -49,6 +50,14 @@
       <Flame size={14} class="shrink-0 text-accent" aria-hidden="true" />{streak.days}-day streak · +{fmtXp(streak.bonus)} first game today
     </p>
   {/if}
+  {#each gain.challenges ?? [] as c (c.title)}
+    <p class="m-0 flex items-center gap-[6px] text-[13px] text-ink-2">
+      <Target size={14} class="shrink-0 text-accent" aria-hidden="true" /><span class="min-w-0 truncate">Challenge done: {c.title}</span><a
+        href="#/progress"
+        class="ml-auto shrink-0 whitespace-nowrap font-semibold">Claim +{fmtXp(c.xp)} XP</a
+      >
+    </p>
+  {/each}
   {#if motion.levelUp}
     <p class="lunote m-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-[13px] text-ink-2">
       <span>

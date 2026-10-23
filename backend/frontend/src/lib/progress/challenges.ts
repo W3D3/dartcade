@@ -1,7 +1,8 @@
 // Your challenges while the Progress page shows them: read from GET /api/challenges, and again after
-// every xp.gained (a game may have moved them on). Rerolling answers with the new sets.
-import { readable, writable, type Readable } from 'svelte/store'
+// every xp.gained (a game may have moved them on). Rerolling and claiming answer with the new sets.
+import { get, readable, writable, type Readable } from 'svelte/store'
 import { api } from '$lib/api/client'
+import { reloadProgress } from '$lib/progress/store'
 import { me } from '$lib/lobby/sockets'
 import type { components } from '$lib/api/schema'
 import type { XpGainedMessage } from '$lib/api/lobby-ws'
@@ -47,6 +48,17 @@ export function createChallenges(source: Source = me, fetchChallenges: Fetcher =
       value.set(data)
       return null
     },
+    /** Takes a finished challenge's XP; resolves with what it paid, or an error message. */
+    async claim(id: string): Promise<{ gained: number; error: string | null }> {
+      latest++
+      const before = get(value)
+      const { data } = await api.POST('/api/challenges/{id}/claim', { params: { path: { id } } })
+      if (!data) return { gained: 0, error: "Couldn't claim it." }
+      value.set(data.challenges)
+      reloadProgress()
+      const was = before && [...before.daily.items, ...before.weekly.items].find(c => c.id === id)
+      return { gained: was && !was.claimed ? was.xp : 0, error: null }
+    },
   }
 }
 
@@ -62,5 +74,5 @@ export function resetsText(set: ChallengeSet, period: 'daily' | 'weekly', now: D
   return mins >= 60 ? `Resets in ${Math.floor(mins / 60)} h` : `Resets in ${mins} m`
 }
 
-/** 'Daily 1 of 3' */
-export const doneOf = (set: ChallengeSet): string => `${set.items.filter(c => c.completed).length} of ${set.items.length}`
+/** 'Daily 1 of 3': claimed of the set */
+export const doneOf = (set: ChallengeSet): string => `${set.items.filter(c => c.claimed).length} of ${set.items.length}`

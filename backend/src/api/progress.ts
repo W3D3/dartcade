@@ -13,7 +13,7 @@ import { RANKED_MODES } from '../shared/ranked.js'
 import { xpLine } from '../progression/service.js'
 import { addDays, levelOf, localDate } from '../shared/progression.js'
 import { dayStreak } from '../progression/view.js'
-import { challengesView, ensureSets, reroll } from '../progression/challengeSets.js'
+import { challengesView, claim, ensureSets, reroll } from '../progression/challengeSets.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -31,18 +31,22 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
   app.get<Route<'getMyProgress'>>('/api/progress/me', { preValidation: requireAuth, schema: fromSpec('getMyProgress') }, async req => {
     await requireProgression(req.userId)
     const today = localDate(new Date(), await userTimeZone(db, req.userId))
-    const [{ xp }, streak, days, sets, perks] = await Promise.all([
+    // First: it may pay an ended period's unclaimed challenges, which the XP below must include
+    const sets = await ensureSets(db, req.userId, today)
+    const [{ xp }, streak, days, perks] = await Promise.all([
       getProgress(db, req.userId),
       getStreak(db, req.userId),
       streakDays(db, req.userId, addDays(today, -6), today),
-      ensureSets(db, req.userId, today),
       perksOf(req.userId),
     ])
     return {
       xp,
       level: levelOf(xp).level,
       streak: dayStreak(streak, today, days.played, days.frozen),
-      dailyOpen: sets.daily.filter(c => c.completedAt === null).length,
+      // What's left to do on Progress: today's dailies to finish or claim, and any weekly to claim
+      challengesOpen:
+        sets.daily.filter(c => c.claimedAt === null).length +
+        sets.weekly.filter(c => c.completedAt !== null && c.claimedAt === null).length,
       perks,
     }
   })
@@ -146,6 +150,21 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
       if (result === 'not-allowed') throw new ApiError(409, { error: 'this challenge cannot be rerolled' })
       return challengesView(db, req.userId, today, zone)
+    },
+  )
+
+  app.post<Route<'claimChallenge'>>(
+    '/api/challenges/:id/claim',
+    { preValidation: requireAuth, schema: fromSpec('claimChallenge') },
+    async req => {
+      await requireProgression(req.userId)
+      const zone = await userTimeZone(db, req.userId)
+      const today = localDate(new Date(), zone)
+      const result = await claim(db, req.userId, req.params.id, today)
+      if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+      if (result === 'not-done') throw new ApiError(409, { error: 'this challenge is not finished yet' })
+      const [challenges, { xp }] = await Promise.all([challengesView(db, req.userId, today, zone), getProgress(db, req.userId)])
+      return { challenges, xp, level: levelOf(xp).level }
     },
   )
 

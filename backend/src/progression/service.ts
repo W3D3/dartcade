@@ -132,13 +132,13 @@ export class ProgressionService {
           }
         }
       }
+      // Finished challenges pay when claimed on Progress, not here
       let challenges: XpGainedMessage['challenges']
       if (!backfill) {
         const done = await progressChallenges(trx, userId, day, challengeGame(game, userId, player, x01), game.finishedAt)
-        written.push(...(await q.insertAwards(trx, userId, game.id, day, done.awards, game.finishedAt)))
-        if (done.completed.length > 0) challenges = done.completed
+        if (done.length > 0) challenges = done
       }
-      if (written.length === 0) return null
+      if (written.length === 0 && !challenges) return null
       const total = written.reduce((a, r) => a + r.amount, 0)
       const { before, after } = await q.addXp(trx, userId, total)
       // Perks reached: kept for good, whatever the curve does later
