@@ -7,12 +7,8 @@ test('an admin edits a hole, publishes a course, and a new game plays it', async
   test.setTimeout(60_000)
 
   await endAnyRunningGame(page)
-  // Admins reach the editor through the admin page
-  await page
-    .getByRole('navigation', { name: 'Main' })
-    .getByRole('button', { name: /^Account/ })
-    .click()
-  await page.getByRole('menuitem', { name: 'Admin' }).click()
+  // Admins reach the editor through the admin page, in the side nav
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Admin', exact: true }).click()
   await page.getByRole('link', { name: /Minigolf courses/ }).click()
   await page.waitForURL('**/#/admin/minigolf/courses')
   await page.getByRole('button', { name: 'New course' }).click()

@@ -5,7 +5,7 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'play' | 'ranked' | 'live' | 'tournaments' | 'progress' | 'history'
+  icon: 'play' | 'ranked' | 'live' | 'tournaments' | 'progress' | 'history' | 'settings' | 'admin'
   badge?: number
   /** What the badge counts, read out ('2 pending invites'). */
   badgeLabel?: string
@@ -44,7 +44,22 @@ export function navTabs(liveSessionId: string | null, invites = 0, ranked = fals
   ]
 }
 
-export type SideLink = Omit<NavTab, 'icon' | 'aria'> & { icon: NavTab['icon'] | 'settings' | 'admin'; soon?: boolean }
+/** The tablet rail: the phone's tabs, then Settings and Admin (admins and moderators), which phones reach from the account menu. */
+export function railTabs(
+  liveSessionId: string | null,
+  invites = 0,
+  ranked = false,
+  progress: number | null = null,
+  admin = false,
+): NavTab[] {
+  return [
+    ...navTabs(liveSessionId, invites, ranked, progress),
+    { href: '/settings', label: 'Settings', icon: 'settings' },
+    ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
+  ]
+}
+
+export type SideLink = Omit<NavTab, 'aria'> & { soon?: boolean }
 
 /** Progress counts the challenges left to finish or claim (today's dailies, and weeklies to claim). */
 function dailyBadge(open: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
