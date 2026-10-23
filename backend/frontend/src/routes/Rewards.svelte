@@ -50,6 +50,11 @@
         <a href="#/progress" class="text-[12px] label-caps text-text-dim no-underline hover:text-text">Progress</a>
         <h1 class="m-0 mt-1 font-display font-bold text-[40px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Rewards</h1>
       </div>
+      <a
+        href="#/profile?customise"
+        class="order-last md:order-none rounded-[10px] border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-accent-fg no-underline hover:bg-accent-hover"
+        >Customise your card</a
+      >
       <div class="flex flex-wrap items-center gap-x-[18px] gap-y-1 text-[13px] text-text-muted">
         <span class="flex items-center gap-[6px]"><Check size={14} strokeWidth={3} class="text-accent" aria-hidden="true" />Unlocked</span>
         <span class="flex items-center gap-[6px]"><Lock size={14} aria-hidden="true" />Locked · hover to see it</span>
