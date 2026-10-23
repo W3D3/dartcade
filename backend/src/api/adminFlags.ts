@@ -13,7 +13,7 @@ import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
-type Opts = FastifyPluginOptions & { db: Kysely<Database> }
+type Opts = FastifyPluginOptions & { db: Kysely<Database>; onFlagChanged?: (key: string) => void }
 type StoredOverride = FlagOverride & { updatedBy: string | null; updatedAt: Date }
 type UserRef = { id: string; name: string | null }
 
@@ -133,6 +133,7 @@ export function adminFlagsApiPlugin(app: FastifyInstance, opts: Opts, done: (err
         await upsertOverride(db, key, override, req.userId)
         const loaded = await loadOverrides(db)
         await setOverrides(loaded)
+        opts.onFlagChanged?.(key)
         req.log.info({ key, before, after: override, userId: req.userId }, 'flag override')
         return loaded
       })
@@ -154,6 +155,7 @@ export function adminFlagsApiPlugin(app: FastifyInstance, opts: Opts, done: (err
         const before = currentOverrides().get(key) ?? null
         await deleteOverride(db, key)
         await setOverrides(await loadOverrides(db))
+        opts.onFlagChanged?.(key)
         req.log.info({ key, before, after: null, userId: req.userId }, 'flag override')
       })
       return reply.code(204).send()

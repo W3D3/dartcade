@@ -122,6 +122,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin flags API', { timeout: 20
     expect(findFlag(ofrep.json(), 'gamemode.p121.enabled')).toMatchObject({ value: true })
   })
 
+  it('tells the caller which flag changed, on set and on clear', async () => {
+    const changed: string[] = []
+    const a = createFastify()
+    a.register(adminFlagsApiPlugin, { db, onFlagChanged: (key: string) => changed.push(key) })
+    await a.inject({ method: 'PUT', url: '/api/admin/flags/lights.enabled', headers: asAdmin, payload: { mode: 'off' } })
+    await a.inject({ method: 'DELETE', url: '/api/admin/flags/lights.enabled', headers: asAdmin })
+    expect(changed).toEqual(['lights.enabled', 'lights.enabled'])
+  })
+
   it('users mode: the listed player sees it on, another player does not', async () => {
     const put = await app().inject({
       method: 'PUT',

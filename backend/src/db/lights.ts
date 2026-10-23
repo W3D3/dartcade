@@ -76,3 +76,15 @@ export async function getLightsEnabled(db: Kysely<Database>, boardId: string): P
 export async function setLightsEnabled(db: Kysely<Database>, boardId: string, enabled: boolean): Promise<void> {
   await db.updateTable('boards').set({ lights_enabled: enabled }).where('id', '=', boardId).execute()
 }
+
+/** The owner of a board; null when the board is gone. */
+export async function boardOwner(db: Kysely<Database>, boardId: string): Promise<string | null> {
+  const row = await db.selectFrom('boards').select('owner_user_id').where('id', '=', boardId).executeTakeFirst()
+  return row?.owner_user_id ?? null
+}
+
+/** Every board that has at least one paired WLED. */
+export async function boardsWithWledDevices(db: Kysely<Database>): Promise<string[]> {
+  const rows = await db.selectFrom('wled_devices').select('board_id').distinct().execute()
+  return rows.map(r => r.board_id)
+}

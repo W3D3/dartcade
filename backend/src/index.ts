@@ -1,5 +1,5 @@
 import { join, dirname } from 'path'
-import { loadFlagUser, modeAvailable, setOverrides } from './flags/index.js'
+import { flagEnabled, loadFlagUser, modeAvailable, setOverrides } from './flags/index.js'
 import { loadOverrides } from './db/flagOverrides.js'
 import { fileURLToPath } from 'url'
 import { db, takeInstanceLock, url as dbUrl } from './db/index.js'
@@ -16,7 +16,7 @@ import { buildApp } from './app.js'
 import { LobbyHub } from './lobby/hub.js'
 import { LobbyService } from './lobby/service.js'
 import { bridgeConnections } from './bridge-gw/connections.js'
-import { getLightsEnabled, listWledDevices } from './db/lights.js'
+import { boardOwner, getLightsEnabled, listWledDevices } from './db/lights.js'
 import { boardInOpenLobby } from './db/lobbies.js'
 import { LightsService } from './lights/service.js'
 import { FriendsService } from './friends/service.js'
@@ -61,7 +61,13 @@ const lights: LightsService = new LightsService({
   send: (b, m) => bridgeConnections.send(b, m),
   bridgeVersion: b => bridgeConnections.get(b)?.bridgeVersion,
   devices: b => listWledDevices(db, b),
-  enabled: b => getLightsEnabled(db, b),
+  // The lights.enabled flag is checked for the board's owner (like the API), so turning the flag
+  // off stops sends and darkens the strips, not only hides the UI
+  enabled: async b => {
+    const owner = await boardOwner(db, b)
+    if (!owner || !(await flagEnabled('lights.enabled', await loadFlagUser(db, owner)))) return false
+    return getLightsEnabled(db, b)
+  },
   getSession: id => engine.getSession(id),
   getSnapshot: id => engine.getSnapshot(id),
   sessionOnBoard: b => engine.getSessionByBoard(b)?.id ?? null,
