@@ -509,7 +509,7 @@ export interface XpGainedMessage {
    */
   unlocks?: string[]
   /**
-   * Challenges the game completed (and paid).
+   * Challenges the game completed: their XP is claimed on Progress.
    */
   challenges?: {
     title: string

@@ -8,7 +8,7 @@ vi.mock('../auth/middleware.js', () => ({
     done()
   }),
 }))
-vi.mock('../progression/challengeSets.js', () => ({ ensureSets: vi.fn(), challengesView: vi.fn(), reroll: vi.fn() }))
+vi.mock('../progression/challengeSets.js', () => ({ ensureSets: vi.fn(), challengesView: vi.fn(), reroll: vi.fn(), claim: vi.fn() }))
 vi.mock('../flags/index.js', () => ({ flagEnabled: vi.fn(), loadFlagUser: vi.fn() }))
 vi.mock('../db/progression.js', () => ({
   getProgress: vi.fn(),
@@ -25,7 +25,7 @@ vi.mock('../db/ranked.js', () => ({ getRatings: vi.fn(), x01Average: vi.fn() }))
 vi.mock('../db/profile.js', () => ({ profileUser: vi.fn(), modeCounts: vi.fn(), headToHead: vi.fn(), recentGames: vi.fn() }))
 
 import { flagEnabled } from '../flags/index.js'
-import { ensureSets } from '../progression/challengeSets.js'
+import { challengesView, claim, ensureSets } from '../progression/challengeSets.js'
 import { gameLines, getProgress, getStreak, streakDays, unlockedPerks, userTimeZone } from '../db/progression.js'
 import { DEFAULT_EQUIPPED, PERKS, levelPerks } from '../shared/progression.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
@@ -93,11 +93,14 @@ beforeEach(() => {
     .mockReset()
     .mockResolvedValue({
       daily: [
-        { ...row, id: 'c1', slot: 1, completedAt: new Date() },
-        { ...row, id: 'c2', slot: 2, completedAt: null },
-        { ...row, id: 'c3', slot: 3, completedAt: null },
+        { ...row, id: 'c1', slot: 1, completedAt: new Date(), claimedAt: new Date() },
+        { ...row, id: 'c2', slot: 2, completedAt: new Date(), claimedAt: null },
+        { ...row, id: 'c3', slot: 3, completedAt: null, claimedAt: null },
       ],
-      weekly: [],
+      weekly: [
+        { ...row, period: 'weekly', id: 'w1', slot: 1, completedAt: new Date(), claimedAt: null },
+        { ...row, period: 'weekly', id: 'w2', slot: 2, completedAt: null, claimedAt: null },
+      ],
     })
 })
 
@@ -109,8 +112,27 @@ describe('/api/progress', () => {
       xp: 6780,
       level: 14,
       streak: { current: 0, freezes: 1, bonus: 100, playedToday: false },
-      dailyOpen: 2,
+      // c2 and c3 of today, and w1 to claim
+      challengesOpen: 3,
     })
+  })
+
+  it('claims a finished challenge, answering with the challenges and your XP', async () => {
+    const set = { resetsAt: '2026-10-22T00:00:00.000Z', items: [] }
+    vi.mocked(challengesView).mockResolvedValue({ daily: set, weekly: set })
+    vi.mocked(claim).mockResolvedValue('ok')
+    const res = await app().inject({ method: 'POST', url: '/api/challenges/c2/claim' })
+    expect(res.statusCode).toBe(200)
+    expect(JSON.parse(res.body)).toEqual({ challenges: { daily: set, weekly: set }, xp: 6780, level: 14 })
+    expect(claim).toHaveBeenCalledWith(expect.anything(), 'chris', 'c2', expect.any(String))
+    vi.mocked(claim).mockResolvedValue('not-done')
+    expect((await app().inject({ method: 'POST', url: '/api/challenges/c3/claim' })).statusCode).toBe(409)
+    vi.mocked(claim).mockResolvedValue('not-found')
+    expect((await app().inject({ method: 'POST', url: '/api/challenges/x/claim' })).statusCode).toBe(404)
+    vi.mocked(flagEnabled).mockResolvedValue(false)
+    vi.mocked(claim).mockClear()
+    expect((await app().inject({ method: 'POST', url: '/api/challenges/c2/claim' })).statusCode).toBe(404)
+    expect(claim).not.toHaveBeenCalled()
   })
 
   it('is not there while progression is off for you', async () => {

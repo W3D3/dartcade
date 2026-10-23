@@ -5,7 +5,7 @@ import { openTestSchema } from '../db/testSchema.js'
 import { ProgressionService } from './service.js'
 import { getProgress, revokeGameXp } from '../db/progression.js'
 import { insertSet, getSet } from '../db/challenges.js'
-import { reroll } from './challengeSets.js'
+import { claim, ensureSets, reroll } from './challengeSets.js'
 import type { XpGainedMessage } from '../schema/lobby-ws.js'
 
 const T20 = { name: 'T20', number: 20, bed: 'Triple', multiplier: 3 }
@@ -47,6 +47,12 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     const total = rows.reduce((a, r) => a + r.amount, 0)
     expect((await getProgress(db, userId)).xp).toBe(total)
     return rows.filter(r => r.kind !== 'challenge').reduce((a, r) => a + r.amount, 0)
+  }
+
+  /** The challenge XP the account was paid, row by row. */
+  async function challengeXp(userId: string): Promise<number[]> {
+    const rows = await db.selectFrom('xp_ledger').select('amount').where('user_id', '=', userId).where('kind', '=', 'challenge').execute()
+    return rows.map(r => r.amount)
   }
 
   /** A finished 1v1: ann wins against bob, each throws `visits` visits on the board (`first` as ann's first visit). */
@@ -193,7 +199,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     expect(pushed.at(-1)?.msg.streak).toEqual({ current: 3, freezes: 0, frozeDay: '2026-10-03', milestone: null })
   })
 
-  it('writes the day and week sets, moves them on and pays a finished challenge once', async () => {
+  it('writes the day and week sets and moves them on, paying a finished challenge only when claimed', async () => {
     const d = (slot: number, templateId: string, target: number) => ({
       slot,
       templateId,
@@ -214,15 +220,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('ProgressionService', () => {
     ])
     // The week's set was written on the way
     expect(await getSet(db, 'bob', 'weekly', '2026-10-19')).toHaveLength(3)
-    const paid = await db
-      .selectFrom('xp_ledger')
-      .select(['amount', 'meta'])
-      .where('user_id', '=', 'bob')
-      .where('kind', '=', 'challenge')
-      .execute()
-    expect(paid).toHaveLength(1)
-    expect(paid[0].amount).toBe(40)
+    expect(await challengeXp('bob')).toEqual([])
     expect(pushed.find(p => p.userId === 'bob')?.msg.challenges).toEqual([{ title: 'Finish 1 game', xp: 40, period: 'daily' }])
+    const xp = (await getProgress(db, 'bob')).xp
+    expect(await claim(db, 'bob', daily[1].id, '2026-10-21')).toBe('not-done')
+    expect(await claim(db, 'ann', daily[0].id, '2026-10-21')).toBe('not-found')
+    expect(await claim(db, 'bob', daily[0].id, '2026-10-21')).toBe('ok')
+    expect(await claim(db, 'bob', daily[0].id, '2026-10-21')).toBe('ok')
+    expect(await challengeXp('bob')).toEqual([40])
+    expect((await getProgress(db, 'bob')).xp).toBe(xp + 40)
+    expect((await getSet(db, 'bob', 'daily', '2026-10-21'))[0].claimedAt).not.toBeNull()
+  })
+
+  it('pays an unclaimed challenge by itself once its period has ended', async () => {
+    const d = (slot: number) => ({ slot, templateId: 'd.games', difficulty: 'easy' as const, target: 1, xp: 40, state: {} })
+    await insertSet(db, 'bob', 'daily', '2026-10-21', [d(1), d(2), d(3)])
+    await service.awardGame(await duel())
+    expect(await challengeXp('bob')).toEqual([])
+    // Still today: nothing yet
+    await ensureSets(db, 'bob', '2026-10-21')
+    expect(await challengeXp('bob')).toEqual([])
+    const xp = (await getProgress(db, 'bob')).xp
+    await Promise.all([ensureSets(db, 'bob', '2026-10-22'), ensureSets(db, 'bob', '2026-10-22')])
+    expect(await challengeXp('bob')).toEqual([40, 40, 40])
+    expect((await getProgress(db, 'bob')).xp).toBe(xp + 120)
   })
 
   it('rerolls an unfinished daily of today once a day', async () => {

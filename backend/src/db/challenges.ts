@@ -15,6 +15,7 @@ export type ChallengeRow = {
   progress: number
   xp: number
   completedAt: Date | null
+  claimedAt: Date | null
   reroll: number
   state: ChallengeState
 }
@@ -32,6 +33,7 @@ function columns(db: Kysely<Database>) {
       'progress',
       'xp',
       'completed_at',
+      'claimed_at',
       'reroll',
       'state',
     ])
@@ -47,6 +49,7 @@ const toRow = (r: {
   progress: number
   xp: number
   completed_at: Date | null
+  claimed_at: Date | null
   reroll: number
   state: Record<string, unknown>
 }): ChallengeRow => ({
@@ -59,6 +62,7 @@ const toRow = (r: {
   progress: r.progress,
   xp: r.xp,
   completedAt: r.completed_at,
+  claimedAt: r.claimed_at,
   reroll: r.reroll,
   state: StateSchema.parse(r.state),
 })
@@ -120,6 +124,37 @@ export async function saveProgress(
     .set({ progress: next.progress, state: JSON.stringify(next.state), completed_at: next.completedAt })
     .where('id', '=', id)
     .execute()
+}
+
+/** Finished challenges not paid yet of the periods before `dailyKey` and `weeklyKey`: they have ended. */
+export async function endedUnclaimed(db: Kysely<Database>, userId: string, dailyKey: string, weeklyKey: string): Promise<ChallengeRow[]> {
+  const rows = await columns(db)
+    .where('user_id', '=', userId)
+    .where('completed_at', 'is not', null)
+    .where('claimed_at', 'is', null)
+    .where(eb =>
+      eb.or([
+        eb.and([eb('period', '=', 'daily'), eb('period_key', '<', dailyKey)]),
+        eb.and([eb('period', '=', 'weekly'), eb('period_key', '<', weeklyKey)]),
+      ]),
+    )
+    .execute()
+  return rows.map(toRow)
+}
+
+/** Marks finished challenges paid; returns the ids that weren't yet (the ones to pay). */
+export async function markClaimed(db: Kysely<Database>, userId: string, ids: string[], at: Date): Promise<string[]> {
+  if (ids.length === 0) return []
+  const rows = await db
+    .updateTable('user_challenges')
+    .set({ claimed_at: at })
+    .where('user_id', '=', userId)
+    .where('id', 'in', ids)
+    .where('completed_at', 'is not', null)
+    .where('claimed_at', 'is', null)
+    .returning('id')
+    .execute()
+  return rows.map(r => r.id)
 }
 
 /** A rerolled slot: a new challenge in it, from zero. */

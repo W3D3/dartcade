@@ -18,7 +18,12 @@
   // What you earn while the page is open (not the last game from before you came)
   const gained = me.xp
   const before = get(me.xp)
-  const freshGain = $derived($gained && $gained !== before ? $gained.total : null)
+  const freshGain = $derived($gained && $gained !== before ? $gained : null)
+  // The newest gain rises on the level card: a game's, or a claim's
+  let gain = $state<{ total: number } | null>(null)
+  $effect(() => {
+    if (freshGain) gain = freshGain
+  })
 </script>
 
 <Layout title="Progress">
@@ -36,10 +41,10 @@
       <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
     {:else}
       <div class="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
-        <LevelCard xp={$progress.xp} title={$progress.perks.equipped.title} gain={freshGain} />
+        <LevelCard xp={$progress.xp} title={$progress.perks.equipped.title} {gain} />
         <StreakCard streak={$progress.streak} />
       </div>
-      <ChallengesSection />
+      <ChallengesSection onclaimed={(xp: number) => (gain = { total: xp })} />
       {#if $currentUser}
         <YourCard mode="preview" userId={$currentUser.id} unlocked={$progress.perks.unlocked} equipped={$progress.perks.equipped} />
       {/if}

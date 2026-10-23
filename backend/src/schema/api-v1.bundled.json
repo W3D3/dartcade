@@ -3947,6 +3947,58 @@
         }
       }
     },
+    "/api/challenges/{id}/claim": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      ],
+      "post": {
+        "operationId": "claimChallenge",
+        "summary": "Take a finished challenge's XP (claiming it again pays nothing more)",
+        "tags": [
+          "progress"
+        ],
+        "responses": {
+          "200": {
+            "description": "The challenges and your XP after it",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChallengeClaim"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "description": "Not finished yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/friends": {
       "get": {
         "operationId": "listFriends",
@@ -8472,7 +8524,7 @@
           "xp",
           "level",
           "streak",
-          "dailyOpen",
+          "challengesOpen",
           "perks"
         ],
         "additionalProperties": false,
@@ -8489,10 +8541,10 @@
           "streak": {
             "$ref": "#/components/schemas/DayStreak"
           },
-          "dailyOpen": {
+          "challengesOpen": {
             "type": "integer",
             "minimum": 0,
-            "description": "Today's daily challenges not done yet (the nav's count)"
+            "description": "Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count)"
           },
           "perks": {
             "$ref": "#/components/schemas/Perks"
@@ -8841,6 +8893,7 @@
                 "progress",
                 "xp",
                 "completed",
+                "claimed",
                 "canReroll"
               ],
               "additionalProperties": false,
@@ -8879,13 +8932,40 @@
                 },
                 "completed": {
                   "type": "boolean",
-                  "description": "Done and paid"
+                  "description": "Done"
+                },
+                "claimed": {
+                  "type": "boolean",
+                  "description": "Paid: claimed, or settled after its period ended"
                 },
                 "canReroll": {
                   "type": "boolean"
                 }
               }
             }
+          }
+        }
+      },
+      "ChallengeClaim": {
+        "type": "object",
+        "required": [
+          "challenges",
+          "xp",
+          "level"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "challenges": {
+            "$ref": "#/components/schemas/Challenges"
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total XP after the claim"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
           }
         }
       },

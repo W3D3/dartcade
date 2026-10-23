@@ -12,6 +12,7 @@ const item = (id: string, completed: boolean) => ({
   progress: completed ? 100 : 20,
   xp: 40,
   completed,
+  claimed: completed,
   canReroll: !completed,
 })
 const set = (resetsAt: string, done: boolean[]) => ({ resetsAt, items: done.map((d, i) => item(`c${i}`, d)) })

@@ -71,9 +71,14 @@ export function milestoneLine(m: { days: number; xp: number }): string {
 /** A toast for progress that lands outside the win screen's chip. */
 export type ProgressToast = { icon: 'freeze' | 'milestone' | 'challenge'; title: string; text: string; xp: number | null }
 
-/** The toasts an xp.gained brings: challenges done, a freeze spent, a milestone reached. */
+/** The toasts an xp.gained brings: challenges done (their XP waits on Progress), a freeze spent, a milestone reached. */
 export function toastsFor(m: XpGainedMessage): ProgressToast[] {
-  const out: ProgressToast[] = (m.challenges ?? []).map(c => ({ icon: 'challenge', title: 'Challenge complete', text: c.title, xp: c.xp }))
+  const out: ProgressToast[] = (m.challenges ?? []).map(c => ({
+    icon: 'challenge',
+    title: 'Challenge complete',
+    text: `${c.title}. Claim +${fmtXp(c.xp)} XP on Progress.`,
+    xp: null,
+  }))
   const s = m.streak
   if (s?.frozeDay) {
     const left = `${s.freezes} ${s.freezes === 1 ? 'freeze' : 'freezes'} left`

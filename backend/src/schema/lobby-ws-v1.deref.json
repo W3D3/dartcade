@@ -3547,7 +3547,7 @@
         },
         "challenges": {
           "type": "array",
-          "description": "Challenges the game completed (and paid).",
+          "description": "Challenges the game completed: their XP is claimed on Progress.",
           "items": {
             "type": "object",
             "required": [
@@ -4616,7 +4616,7 @@
             },
             "challenges": {
               "type": "array",
-              "description": "Challenges the game completed (and paid).",
+              "description": "Challenges the game completed: their XP is claimed on Progress.",
               "items": {
                 "type": "object",
                 "required": [

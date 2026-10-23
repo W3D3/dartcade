@@ -8,6 +8,7 @@
   import { isPhone } from '$lib/viewport'
   import { createChallenges, doneOf } from '$lib/progress/challenges'
 
+  let { onclaimed }: { /** A claim paid `xp`. */ onclaimed?: (xp: number) => void } = $props()
   const challenges = createChallenges()
   let period = $state<'daily' | 'weekly'>('daily')
   let error = $state('')
@@ -29,6 +30,11 @@
   async function reroll(id: string) {
     error = (await challenges.reroll(id)) ?? ''
   }
+  async function onclaim(id: string) {
+    const r = await challenges.claim(id)
+    error = r.error ?? ''
+    if (r.gained > 0) onclaimed?.(r.gained)
+  }
 </script>
 
 {#if $challenges}
@@ -42,11 +48,11 @@
       ]}
       bind:value={period}
     />
-    <ChallengeCard set={$challenges[period]} {period} {now} bare {fresh} {onreroll} />
+    <ChallengeCard set={$challenges[period]} {period} {now} bare {fresh} {onreroll} {onclaim} />
   {:else}
     <div class="grid gap-4 md:gap-6 lg:grid-cols-2">
-      <ChallengeCard set={$challenges.daily} period="daily" {now} {fresh} {onreroll} />
-      <ChallengeCard set={$challenges.weekly} period="weekly" {now} {fresh} {onreroll} />
+      <ChallengeCard set={$challenges.daily} period="daily" {now} {fresh} {onreroll} {onclaim} />
+      <ChallengeCard set={$challenges.weekly} period="weekly" {now} {fresh} {onreroll} {onclaim} />
     </div>
   {/if}
 {/if}

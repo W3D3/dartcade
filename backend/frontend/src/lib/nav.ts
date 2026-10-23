@@ -46,9 +46,9 @@ export function navTabs(liveSessionId: string | null, invites = 0, ranked = fals
 
 export type SideLink = Omit<NavTab, 'icon' | 'aria'> & { icon: NavTab['icon'] | 'settings' | 'admin'; soon?: boolean }
 
-/** Progress counts today's daily challenges not done yet. */
+/** Progress counts the challenges left to finish or claim (today's dailies, and weeklies to claim). */
 function dailyBadge(open: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
-  return open > 0 ? { badge: open, badgeLabel: `${open} daily ${open === 1 ? 'challenge' : 'challenges'} to go` } : {}
+  return open > 0 ? { badge: open, badgeLabel: `${open} ${open === 1 ? 'challenge' : 'challenges'} to finish or claim` } : {}
 }
 
 /** The desktop side nav: the same pages under their long names, then Progress, Settings and Admin (admins and moderators). */
