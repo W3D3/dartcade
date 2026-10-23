@@ -61,6 +61,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
       'Lets typed-in darts count towards dart challenges (doubles, trebles, checkouts) for testing without a board. Dart XP still ignores them.',
     defaultRule: 'nobody',
   },
+  'sounds.anyPack': {
+    kind: 'boolean',
+    description: 'Lets a player pick any sound pack in Settings → Sounds to play for every dart, not only the ones they unlocked.',
+    defaultRule: 'admins',
+  },
   'lights.enabled': {
     kind: 'boolean',
     description: 'Shows Settings → Lights, so players can pair WLED devices and drive them from games.',
@@ -150,6 +155,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('progression.manualDarts', () => false),
+    },
+    'sounds.anyPack': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('sounds.anyPack', isAdmin),
     },
     'lights.enabled': {
       variants: { on: true, off: false },

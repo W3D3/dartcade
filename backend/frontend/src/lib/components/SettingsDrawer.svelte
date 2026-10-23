@@ -33,14 +33,17 @@
   const boardViews: { value: BoardView; label: string }[] = BOARD_VIEWS.map(v => ({ value: v, label: BOARD_VIEW_LABELS[v] }))
   const allSounds = [
     { key: 'soundHit', label: 'Hit' },
+    { key: 'soundTreble', label: 'Treble' },
     { key: 'soundMiss', label: 'Miss' },
     { key: 'soundSwitch', label: 'Player switch' },
     { key: 'soundBust', label: 'Bust' },
     { key: 'soundBall', label: 'Ball' },
     { key: 'soundWin', label: 'Win' },
   ] as const
-  // No bust in Minigolf; the ball's sound only there
-  const sounds = $derived(allSounds.filter(r => (gameId === 'minigolf' ? r.key !== 'soundBust' : r.key !== 'soundBall')))
+  // No bust or treble in Minigolf; the ball's sound only there
+  const sounds = $derived(
+    allSounds.filter(r => (gameId === 'minigolf' ? r.key !== 'soundBust' && r.key !== 'soundTreble' : r.key !== 'soundBall')),
+  )
 
   // The caller (X01 only) picks from the user's voices, loaded fresh when the drawer opens
   onMount(() => {

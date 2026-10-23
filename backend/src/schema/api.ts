@@ -2703,10 +2703,14 @@ export interface components {
             /** @description Around the Clock: other players' targets on the board */
             showMarkers?: boolean;
             soundHit?: boolean;
+            /** @description Trebles get their own sound; off: they play the hit sound */
+            soundTreble?: boolean;
             soundMiss?: boolean;
             soundSwitch?: boolean;
             soundBust?: boolean;
             soundWin?: boolean;
+            /** @description A sound pack perk id that plays for every dart on your screen; null: each thrower's own */
+            soundPack?: string | null;
             /** @description The caller is on in new games */
             callerOn?: boolean;
             /** @description A voice pack id or builtin:<id>; null: the default voice */

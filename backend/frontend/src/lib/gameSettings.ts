@@ -18,6 +18,8 @@ export interface GameSettings {
   /** 0–1 */
   volume: number
   soundHit: boolean
+  /** Trebles get their own sound; off: they play the hit sound (when that's on). */
+  soundTreble: boolean
   soundMiss: boolean
   soundSwitch: boolean
   soundBust: boolean
@@ -27,6 +29,8 @@ export interface GameSettings {
   soundWin: boolean
   /** The thrower's sound pack (a progression reward) when a dart lands or a visit busts. */
   soundEffects: boolean
+  /** A sound pack (perk id) for every dart on this screen; null: each thrower's own. */
+  soundPack: string | null
   /** 0–1, the sound packs' own volume. */
   effectsVolume: number
   /** Minigolf: the direction wheel around the ball while aiming. */
@@ -82,12 +86,14 @@ export const defaultSettings: GameSettings = {
   scoreUpdates: 'dart',
   volume: 0.7,
   soundHit: false,
+  soundTreble: false,
   soundMiss: false,
   soundSwitch: false,
   soundBust: false,
   soundBall: false,
   soundWin: false,
   soundEffects: true,
+  soundPack: null,
   effectsVolume: 0.5,
   aimDial: true,
   slowMotion: true,
@@ -135,12 +141,14 @@ const SettingsSchema = z
     scoreUpdates: z.enum(['dart', 'visit']).catch(d.scoreUpdates).default(d.scoreUpdates),
     volume: unit(d.volume),
     soundHit: flag(d.soundHit),
+    soundTreble: flag(d.soundTreble),
     soundMiss: flag(d.soundMiss),
     soundSwitch: flag(d.soundSwitch),
     soundBust: flag(d.soundBust),
     soundBall: flag(d.soundBall),
     soundWin: flag(d.soundWin),
     soundEffects: flag(d.soundEffects),
+    soundPack: z.string().min(1).nullable().catch(null).default(null),
     effectsVolume: unit(d.effectsVolume),
     aimDial: flag(d.aimDial),
     slowMotion: flag(d.slowMotion),

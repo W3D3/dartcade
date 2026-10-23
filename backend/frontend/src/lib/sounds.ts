@@ -37,6 +37,8 @@ export function createSounds(volume: () => number) {
 
   return {
     hit: () => tone(880, 0.12, 'sine', 0.3),
+    /** A treble: the hit's ping, then a higher one. */
+    treble: () => [880, 1320].forEach((f, i) => tone(f, 0.1, 'sine', 0.28, i * 0.07)),
     miss: () => tone(200, 0.18, 'sawtooth', 0.18),
     switchPlayer: () => tone(440, 0.08, 'sine', 0.2),
     bust: () => tone(150, 0.35, 'square', 0.16),
