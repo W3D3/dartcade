@@ -160,9 +160,13 @@ func (t *Transport) Start(ctx context.Context) error {
 	}
 	// A token in the configured URL ends up in dial errors: keep it out of logs
 	token := u.Query().Get("token")
-	opts := &websocket.DialOptions{}
+	opts := &websocket.DialOptions{HTTPHeader: http.Header{}}
 	if t.cfg.Token != "" {
-		opts.HTTPHeader = http.Header{"Authorization": {"Bearer " + t.cfg.Token}}
+		opts.HTTPHeader.Set("Authorization", "Bearer "+t.cfg.Token)
+	}
+	// Tells the install apart when the token is a user's key shared by several bridges
+	if t.cfg.BridgeID != "" {
+		opts.HTTPHeader.Set("X-Bridge-Id", t.cfg.BridgeID)
 	}
 	if t.cfg.OutboxPath != "" {
 		go t.runPersist(ctx)

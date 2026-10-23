@@ -4,7 +4,7 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import { insertPairingCode, getPairingCode, claimPairingCode, consumePairingToken, insertBoard } from '../db/queries.js'
+import { insertPairingCode, getPairingCode, claimPairingCode, consumePairingToken, insertBoard, insertBridgeKey } from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import { normalizeCode } from '../lobby/code.js'
@@ -95,6 +95,16 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
       }
 
       return reply.code(201).send({ boardId, name })
+    },
+  )
+
+  app.post<Route<'createBridgeKey'>>(
+    '/api/bridge-keys',
+    { config: { rateLimit: { max: 20, timeWindow: '1 minute' } }, preValidation: requireAuth, schema: fromSpec('createBridgeKey') },
+    async (req, reply) => {
+      const { token, tokenHash } = newBoardToken()
+      await insertBridgeKey(db, { id: ulid(), user_id: req.userId, token_hash: tokenHash })
+      return reply.code(201).send({ key: token })
     },
   )
 

@@ -12,11 +12,13 @@ import { LightsStore } from '../lights/store.js'
 
 vi.mock('../db/queries.js', () => ({
   getBoardByTokenHash: vi.fn(),
+  getBoardForBridgeKey: vi.fn(),
   insertBridgeEvent: vi.fn().mockResolvedValue({ inserted: true }),
   updateBoardHardwareId: vi.fn().mockResolvedValue(undefined),
 }))
 import * as queries from '../db/queries.js'
-import { handleBridgeConnection, bridgeConnections, parseEnvelope, parseHello, bridgeToken } from './handler.js'
+import { handleBridgeConnection, bridgeConnections, parseEnvelope, parseHello, bridgeToken, bridgeId } from './handler.js'
+import { hashBoardToken } from '../boards/token.js'
 
 describe('bridge-gw token auth', () => {
   it('SHA-256 of token produces consistent hash', () => {
@@ -215,6 +217,48 @@ class FakeSocket extends EventEmitter {
 }
 
 const flush = () => new Promise(r => setImmediate(r))
+
+describe('a bridge signing in with a user key', () => {
+  it("is let in as the key's board for its bridge id", async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue(undefined)
+    vi.mocked(queries.getBoardForBridgeKey).mockResolvedValue({ id: 'board-key', hardware_id: null } as any)
+    const socket = new FakeSocket()
+    handleBridgeConnection(
+      socket as any,
+      { token: 'key', bridgeId: 'bridge-a' },
+      { db: {} as any, engine: { onBoardPresence: vi.fn() } as any },
+    )
+    await flush()
+    expect(queries.getBoardForBridgeKey).toHaveBeenCalledWith({}, hashBoardToken('key'), 'bridge-a')
+    expect(bridgeConnections.isOnline('board-key')).toBe(true)
+    expect(socket.close).not.toHaveBeenCalled()
+  })
+
+  it('is turned away without a bridge id, or with a key nobody has', async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue(undefined)
+    vi.mocked(queries.getBoardForBridgeKey).mockClear().mockResolvedValue(undefined)
+    const noId = new FakeSocket()
+    handleBridgeConnection(noId as any, { token: 'key' }, { db: {} as any, engine: { onBoardPresence: vi.fn() } as any })
+    const unknown = new FakeSocket()
+    handleBridgeConnection(
+      unknown as any,
+      { token: 'nope', bridgeId: 'bridge-a' },
+      { db: {} as any, engine: { onBoardPresence: vi.fn() } as any },
+    )
+    await flush()
+    expect(noId.close).toHaveBeenCalledWith(4401, 'unauthorized')
+    expect(unknown.close).toHaveBeenCalledWith(4401, 'unauthorized')
+    expect(queries.getBoardForBridgeKey).toHaveBeenCalledTimes(1)
+  })
+
+  it('reads the bridge id from the X-Bridge-Id header only when it is a sane string', () => {
+    expect(bridgeId('abc')).toBe('abc')
+    expect(bridgeId(undefined)).toBeUndefined()
+    expect(bridgeId('')).toBeUndefined()
+    expect(bridgeId(['a', 'b'])).toBeUndefined()
+    expect(bridgeId('x'.repeat(101))).toBeUndefined()
+  })
+})
 
 describe('handleBridgeConnection', () => {
   it('a bridge that closes while its token is checked never shows the board online', async () => {

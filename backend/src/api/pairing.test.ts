@@ -16,10 +16,12 @@ vi.mock('../db/queries.js', () => ({
   claimPairingCode: vi.fn().mockResolvedValue(undefined),
   consumePairingToken: vi.fn().mockResolvedValue(undefined),
   insertBoard: vi.fn().mockResolvedValue(undefined),
+  insertBridgeKey: vi.fn().mockResolvedValue(undefined),
 }))
 
 import * as queries from '../db/queries.js'
 import { PairingCodeClaimedError } from '../db/errors.js'
+import { hashBoardToken } from '../boards/token.js'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -304,5 +306,20 @@ describe('pairing: bridge compatibility', () => {
   it('accepts no body (the generated Go client)', async () => {
     const res = await makeApp().inject({ method: 'POST', url: '/api/pairing/request' })
     expect(res.statusCode).toBe(201)
+  })
+})
+
+describe('POST /api/bridge-keys', () => {
+  it('makes a key for the signed-in user and stores only its hash', async () => {
+    const app = makeApp()
+    const res = await app.inject({ method: 'POST', url: '/api/bridge-keys' })
+    expect(res.statusCode).toBe(201)
+    const { key } = JSON.parse(res.body)
+    expect(key).toMatch(/^[0-9a-f]{64}$/)
+    expect(queries.insertBridgeKey).toHaveBeenCalledWith(expect.anything(), {
+      id: expect.any(String),
+      user_id: 'user-1',
+      token_hash: hashBoardToken(key),
+    })
   })
 })

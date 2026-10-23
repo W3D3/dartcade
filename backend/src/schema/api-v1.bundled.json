@@ -1579,6 +1579,33 @@
         }
       }
     },
+    "/api/bridge-keys": {
+      "post": {
+        "operationId": "createBridgeKey",
+        "summary": "Make a key for the signed-in user's bridges (shown once). A bridge that signs in with it gets a board in the account.",
+        "tags": [
+          "pairing"
+        ],
+        "responses": {
+          "201": {
+            "description": "The new key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BridgeKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/users": {
       "get": {
         "operationId": "searchUsers",
@@ -7801,6 +7828,18 @@
             "type": "string"
           },
           "name": {
+            "type": "string"
+          }
+        }
+      },
+      "BridgeKey": {
+        "type": "object",
+        "required": [
+          "key"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "key": {
             "type": "string"
           }
         }

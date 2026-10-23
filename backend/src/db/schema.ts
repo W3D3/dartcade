@@ -44,9 +44,18 @@ export interface BoardsTable {
   name: string
   token_hash: string
   hardware_id: string | null
+  /** The bridge install that created this board with a bridge key (migration 037). */
+  bridge_id: ColumnType<string | null, string | null | undefined, string | null>
   created_at: ColumnType<Date, never, never>
   /** Lights master switch for this board (migration 027). */
   lights_enabled: ColumnType<boolean, boolean | undefined, boolean>
+}
+
+export interface BridgeKeysTable {
+  id: string
+  user_id: string
+  token_hash: string
+  created_at: ColumnType<Date, never, never>
 }
 
 export interface PairingCodesTable {
@@ -396,6 +405,7 @@ export interface ProgressionBackfillTable {
 export interface Database {
   user: UserTable
   boards: BoardsTable
+  bridge_keys: BridgeKeysTable
   pairing_codes: PairingCodesTable
   game_sessions: GameSessionsTable
   game_players: GamePlayersTable
