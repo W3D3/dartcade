@@ -1,8 +1,8 @@
 <script lang="ts">
   // The Progress page's level card (Progress board): the level, the XP bar and what's left to go,
-  // and everything the next level unlocks (each opens in the rewards below).
+  // and everything the next level unlocks, which opens the rewards track at that level.
+  import { ChevronRight } from '@lucide/svelte'
   import { fmtXp, levelView } from '$lib/progress/view'
-  import { rewardFocus } from '$lib/progress/rewardFocus'
   import { KIND_LABEL } from '$lib/progress/look'
   import { PERKS, nextLevelPerk, perk } from '$shared/progression.js'
 
@@ -59,7 +59,13 @@
     </div>
   </div>
   {#if nextLevel !== null}
-    <div class="flex flex-wrap items-center gap-x-[14px] gap-y-2 rounded-[10px] bg-surface-inset px-[14px] py-3">
+    <a
+      href="#/progress/rewards/{nextLevel}"
+      aria-label="Next unlock at level {nextLevel}: {nextPerks
+        .map(p => `${KIND_LABEL[p.kind].one} ${p.name}`)
+        .join(', ')}. Show it on the rewards track"
+      class="flex flex-wrap items-center gap-x-[14px] gap-y-2 rounded-[10px] bg-surface-inset px-[14px] py-3 text-text no-underline hover:bg-surface-hover"
+    >
       <span
         class="size-9 shrink-0 rounded-full border-2 border-dashed border-line-pip flex items-center justify-center font-display font-bold text-[16px] text-text-muted"
         >{nextLevel}</span
@@ -67,19 +73,17 @@
       <span class="text-[14px] text-ink-2">{nextPerks.length > 1 ? 'Next unlocks' : 'Next unlock'}</span>
       <span class="ml-auto flex flex-wrap justify-end gap-2 min-w-0">
         {#each nextPerks as p (p.id)}
-          <button
-            type="button"
-            onclick={() => rewardFocus.set(p)}
-            aria-label="{KIND_LABEL[p.kind].one}: {p.name}. Show it in the rewards"
-            class="whitespace-nowrap rounded-full border border-line-chip bg-transparent px-3 py-[7px] text-text font-[inherit] cursor-pointer hover:border-line-strong"
+          <span class="whitespace-nowrap rounded-full border border-line-chip px-3 py-[7px]"
             ><span class="mr-[6px] text-[11px] text-text-muted">{KIND_LABEL[p.kind].one}</span><span
               class="font-display font-bold text-[13px] uppercase tracking-[0.1em]">{p.name}</span
-            ></button
+            ></span
           >
         {/each}
       </span>
-    </div>
+      <ChevronRight size={18} strokeWidth={2.2} class="shrink-0 text-accent" aria-hidden="true" />
+    </a>
   {/if}
+  <a href="#/progress/rewards" class="-mt-[6px] self-start text-[14px] font-semibold no-underline">All rewards</a>
 </section>
 
 <style>
