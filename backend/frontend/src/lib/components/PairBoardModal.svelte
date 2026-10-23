@@ -8,7 +8,7 @@
   import CodeInput from '$lib/components/CodeInput.svelte'
   import { CODE_LENGTH, normalizePairingCode } from '$lib/pairing'
   import { api } from '$lib/api'
-  import { OSES, OS_LABELS, OS_NOTES, detectOs, installCommand, type Os } from '$lib/bridgeInstall'
+  import { OSES, OS_LABELS, OS_NOTES, KEY_MASK, detectOs, installCommand, type Os } from '$lib/bridgeInstall'
 
   let {
     initialCode = '',
@@ -42,6 +42,7 @@
   let started = false
   let poll: ReturnType<typeof setInterval> | undefined
   const command = $derived(key ? installCommand(os, key, location.origin) : '')
+  const shownCommand = $derived(key ? installCommand(os, KEY_MASK, location.origin) : '')
 
   async function checkForBoard(known: Set<string>) {
     const boards = (await api.GET('/api/boards').catch(() => null))?.data?.boards ?? []
@@ -159,10 +160,12 @@
             </button>
           </div>
           <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text break-all whitespace-pre-wrap">{key
-              ? command
+              ? shownCommand
               : 'Making your key…'}</pre>
         </div>
-        <p class="m-0 text-[13px] text-text-dim">{OS_NOTES[os]} Keep the key to yourself: anyone with it can add boards to your account.</p>
+        <p class="m-0 text-[13px] text-text-dim">
+          {OS_NOTES[os]} The key is hidden here but Copy includes it. Keep it to yourself: anyone with it can add boards to your account.
+        </p>
         {#if found}
           <p class="m-0 flex items-center gap-2 text-[14px] text-text">
             <CircleCheck size={16} class="text-accent" /> Bridge connected. Name your board.

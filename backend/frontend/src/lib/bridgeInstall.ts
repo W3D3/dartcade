@@ -21,11 +21,14 @@ export function bridgeUrl(origin: string): string {
   return `${origin.replace(/^http/, 'ws')}/bridge`
 }
 
+/** Shown in place of the key on screen; Copy still copies the real one. */
+export const KEY_MASK = '••••••••••••'
+
 export function installCommand(os: Os, key: string, origin: string): string {
   const backend = bridgeUrl(origin)
   switch (os) {
     case 'linux':
-      return `curl -fsSL ${INSTALL_SH} | sh -s -- --service --token ${key} --backend-url ${backend}`
+      return `curl -fsSL ${INSTALL_SH} | DARTCADE_TOKEN=${key} sh -s -- --service --backend-url ${backend}`
     case 'macos':
       return `curl -fsSL ${INSTALL_SH} | sh\nDARTCADE_TOKEN=${key} DARTCADE_BACKEND_URL=${backend} DARTCADE_BOARD_URL=${BOARD_URL} dartcade-bridge`
     case 'windows':

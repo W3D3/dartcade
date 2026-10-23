@@ -17,6 +17,8 @@ describe('bridge install commands', () => {
 
   it('installs a service on Linux, and says which board to use elsewhere', () => {
     expect(installCommand('linux', 'K', 'https://x')).toContain('--service')
+    expect(installCommand('linux', 'K', 'https://x')).toContain('DARTCADE_TOKEN=K sh')
+    expect(installCommand('linux', 'K', 'https://x')).not.toContain('--token')
     expect(installCommand('macos', 'K', 'https://x')).toContain('DARTCADE_BOARD_URL=')
     expect(installCommand('windows', 'K', 'https://x')).toContain('$env:DARTCADE_BOARD_URL=')
   })
