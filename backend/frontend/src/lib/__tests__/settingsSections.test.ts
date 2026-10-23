@@ -4,11 +4,12 @@ import { boardsRedirect, sectionOf, SETTINGS_SECTIONS } from '../settings/sectio
 import { defaultSettings } from '../gameSettings.js'
 import { gameModes } from '../gameModes.js'
 import GamePrefs from '../components/settings/GamePrefs.svelte'
+import SoundEffects from '../components/settings/SoundEffects.svelte'
 import BoardsEmpty from '../components/boards/BoardsEmpty.svelte'
 
 describe('Settings sections', () => {
   it("lists the sections in the design's order, Lights behind its flag", () => {
-    expect(SETTINGS_SECTIONS.map(s => s.id)).toEqual(['profile', 'game', 'boards', 'lights', 'caller'])
+    expect(SETTINGS_SECTIONS.map(s => s.id)).toEqual(['profile', 'game', 'boards', 'lights', 'caller', 'sounds'])
     expect(SETTINGS_SECTIONS.find(s => s.id === 'lights')).toMatchObject({ flag: 'lights.enabled' })
   })
 
@@ -30,10 +31,17 @@ describe('Settings sections', () => {
 describe('Game preferences', () => {
   it('shows only switches that have a setting behind them', () => {
     const html = render(GamePrefs, { props: { settings: { ...defaultSettings } } }).body
-    for (const label of ['Checkout suggestions', 'Visit sum', 'Chalkboard', "Other players' targets", 'Hit', 'Bust'])
-      expect(html).toContain(label)
+    for (const label of ['Checkout suggestions', 'Visit sum', 'Chalkboard', "Other players' targets"]) expect(html).toContain(label)
+    expect(html).not.toContain('Sound effects')
     for (const label of ['Stats panel', 'Score count animation', 'Highlight target segment']) expect(html).not.toContain(label)
     expect(html).not.toContain('Saved on this device')
+  })
+
+  it('keeps every sound effect under Sounds, the sound packs only with progression on', () => {
+    const html = render(SoundEffects, { props: { settings: { ...defaultSettings } } }).body
+    for (const label of ['Effects volume', 'Hit', 'Miss', 'Player switch', 'Bust', 'Win']) expect(html).toContain(label)
+    expect(html).not.toContain('Sound packs')
+    expect(render(SoundEffects, { props: { settings: { ...defaultSettings }, packs: true } }).body).toContain('Sound packs')
   })
 
   it("offers X01's own options as New game defaults once the modes are known", () => {

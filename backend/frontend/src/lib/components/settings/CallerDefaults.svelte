@@ -1,7 +1,7 @@
 <script lang="ts">
   // Settings' Caller: whether the caller is on, its voice and volume (Settings-Caller board). On and
   // the voice follow the account; a match's game settings drawer still changes them on that device.
-  // The volume is the device's (the same as the sound effects).
+  // The volume is the device's (sound effects have their own, under Sounds).
   import type { GameSettings } from '$lib/gameSettings.js'
   import { voiceLibrary } from '$lib/caller/voices.js'
   import { audioContext } from '$lib/sounds.js'
@@ -55,7 +55,5 @@
     />
   </div>
   <VolumeSlider bind:value={settings.volume} label="Caller volume" />
-  <p class="m-0 -mt-3 text-[12px] text-text-dim">
-    Set on each device. The game's beeps play at this volume too; sound packs have their own below.
-  </p>
+  <p class="m-0 -mt-3 text-[12px] text-text-dim">Set on each device. Sound effects have their own volume under Sounds.</p>
 </section>

@@ -94,7 +94,7 @@
     saveSettings(localStorage, settings)
     writeThrough($state.snapshot(settings))
   })
-  const sounds = createSounds(() => settings.volume)
+  const sounds = createSounds(() => settings.effectsVolume)
 
   // The caller (X01): the voice's clips start loading as soon as the caller is on (before the
   // first snapshot, so "Game on" isn't missed) and again when the voice changes. Calls wait for
@@ -272,14 +272,14 @@
       if (settings.soundSwitch) sounds.switchPlayer()
       return
     }
-    // A thrower's sound pack replaces the plain beep for their darts
+    // The switches decide whether a dart sounds at all; a thrower's sound pack only replaces the beep
+    const on = e.kind === 'bust' ? settings.soundBust : e.kind === 'miss' ? settings.soundMiss : settings.soundHit
+    if (!on) return
     const pack = settings.soundEffects ? (seatSounds[e.seat] ?? 'sound.none') : 'sound.none'
     if (pack !== 'sound.none') packs.play(pack, e.kind)
-    else if (e.kind === 'bust') {
-      if (settings.soundBust) sounds.bust()
-    } else if (e.kind === 'miss') {
-      if (settings.soundMiss) sounds.miss()
-    } else if (settings.soundHit) sounds.hit()
+    else if (e.kind === 'bust') sounds.bust()
+    else if (e.kind === 'miss') sounds.miss()
+    else sounds.hit()
   }
 
   // ── Game state ────────────────────────────────────────────────────────────

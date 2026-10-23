@@ -141,11 +141,11 @@
           min="0"
           max="100"
           step="5"
-          value={Math.round(settings.volume * 100)}
-          oninput={e => (settings.volume = Number(e.currentTarget.value) / 100)}
+          value={Math.round(settings.effectsVolume * 100)}
+          oninput={e => (settings.effectsVolume = Number(e.currentTarget.value) / 100)}
           class="flex-1 accent-accent"
         />
-        <span class="font-mono text-[13px] text-text-muted w-11 text-right">{Math.round(settings.volume * 100)}%</span>
+        <span class="font-mono text-[13px] text-text-muted w-11 text-right">{Math.round(settings.effectsVolume * 100)}%</span>
       </label>
       <div class="grid grid-cols-2 gap-x-4">
         {#each sounds as row (row.key)}

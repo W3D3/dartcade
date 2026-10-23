@@ -5,6 +5,7 @@ export const SETTINGS_SECTIONS = [
   { id: 'boards', label: 'Boards' },
   { id: 'lights', label: 'Lights', flag: 'lights.enabled' },
   { id: 'caller', label: 'Caller' },
+  { id: 'sounds', label: 'Sounds' },
 ] as const
 
 export type SettingsSection = (typeof SETTINGS_SECTIONS)[number]['id']
