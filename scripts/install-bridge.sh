@@ -86,7 +86,8 @@ if [ "$uninstall" = 1 ]; then
   $sudo_cmd rm -f "$unit_file"
   $sudo_cmd systemctl daemon-reload
   if [ "$purge" = 1 ]; then
-    $sudo_cmd rm -rf "$env_dir" "$state_dir"
+    # DynamicUser keeps the real state under /var/lib/private; $state_dir is only a symlink to it
+    $sudo_cmd rm -rf "$env_dir" "$state_dir" "/var/lib/private/${bin_name}"
     echo "Removed the service, its config and its pairing."
   else
     echo "Removed the service. Its config (${env_dir}) and pairing (${state_dir}) are kept; add --purge to delete them."
