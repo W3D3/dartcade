@@ -7,17 +7,17 @@ describe('bridge install commands', () => {
     expect(bridgeUrl('http://localhost:3000')).toBe('ws://localhost:3000/bridge')
   })
 
-  it('puts the key and server into every OS command', () => {
+  it('puts the install token and server into every OS command', () => {
     for (const os of ['linux', 'macos', 'windows'] as const) {
-      const cmd = installCommand(os, 'KEY123', 'https://play.example.com')
-      expect(cmd).toContain('KEY123')
+      const cmd = installCommand(os, 'TOK123', 'https://play.example.com')
+      expect(cmd).toContain('TOK123')
       expect(cmd).toContain('wss://play.example.com/bridge')
     }
   })
 
   it('installs a service on Linux, and says which board to use elsewhere', () => {
     expect(installCommand('linux', 'K', 'https://x')).toContain('--service')
-    expect(installCommand('linux', 'K', 'https://x')).toContain('DARTCADE_TOKEN=K sh')
+    expect(installCommand('linux', 'K', 'https://x')).toContain('DARTCADE_INSTALL_TOKEN=K sh')
     expect(installCommand('linux', 'K', 'https://x')).not.toContain('--token')
     expect(installCommand('macos', 'K', 'https://x')).toContain('DARTCADE_BOARD_URL=')
     expect(installCommand('windows', 'K', 'https://x')).toContain('$env:DARTCADE_BOARD_URL=')

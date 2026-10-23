@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"os"
 	"os/signal"
@@ -83,6 +84,7 @@ func main() {
 	logLevel := fs.String("log-level", "", "Log level: debug, info, warn, error")
 	verbose := fs.Bool("verbose", false, "Verbose (debug-level) logging")
 	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
+	installToken := fs.String("install-token", "", "One-time token from the dashboard's install command (also DARTCADE_INSTALL_TOKEN); the bridge pairs itself with it")
 	configDir := fs.String("config-dir", "", "Directory holding bridge.toml (also DARTCADE_CONFIG_DIR; default: OS user config dir)")
 	fs.Parse(os.Args[1:])
 
@@ -92,11 +94,12 @@ func main() {
 	cfgPath, _ := configFilePath(*configDir)
 
 	cfg, err := loadConfig(map[string]string{
-		"board_url":   *boardURL,
-		"backend_url": *backendURL,
-		"bridge_id":   *bridgeID,
-		"log_level":   *logLevel,
-		"token":       *token,
+		"board_url":     *boardURL,
+		"backend_url":   *backendURL,
+		"bridge_id":     *bridgeID,
+		"log_level":     *logLevel,
+		"token":         *token,
+		"install_token": *installToken,
 	}, cfgPath)
 	if err != nil {
 		log.Fatal("config error", "err", err)
@@ -129,6 +132,25 @@ func main() {
 	}
 	initCancel()
 	con.boardFound(hostOf(cfg.BoardURL), client.CameraCount())
+
+	// A saved token wins: the install token is single-use, so once spent it is just left in the config
+	if cfg.Token == "" && cfg.InstallToken != "" {
+		tok, err := exchangeInstallToken(ctx, cfg)
+		switch {
+		case errors.Is(err, errInstallTokenRefused):
+			log.Warn("the install token was already used or has expired, falling back to a pairing code; get a new command from the dashboard to skip it")
+		case err != nil:
+			log.Fatal("install token exchange failed", "err", err)
+		default:
+			cfg.Token = tok
+			if cfgPath != "" {
+				if err := persistToken(cfgPath, cfg.Token); err != nil {
+					log.Warn("could not persist token — the bridge will need a new install token on restart", "path", cfgPath, "err", err)
+				}
+			}
+			con.pairedOK()
+		}
+	}
 
 	if cfg.Token == "" {
 		pairedToken, err := runPairing(ctx, cfg, con)

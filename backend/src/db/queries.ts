@@ -374,31 +374,27 @@ export async function getBoardByTokenHash(db: Kysely<Database>, tokenHash: strin
   return db.selectFrom('boards').selectAll().where('token_hash', '=', tokenHash).executeTakeFirst()
 }
 
-export async function insertBridgeKey(db: Kysely<Database>, k: { id: string; user_id: string; token_hash: string }): Promise<void> {
-  await db.insertInto('bridge_keys').values(k).execute()
+export async function insertBridgeInstallToken(
+  db: Kysely<Database>,
+  t: { token_hash: string; user_id: string; expires_at: Date },
+): Promise<void> {
+  await db.insertInto('bridge_install_tokens').values(t).execute()
 }
 
-/** The board of the bridge install `bridgeId` signing in with a user's key (made on its first connect), or undefined for an unknown key. */
-export async function getBoardForBridgeKey(db: Kysely<Database>, tokenHash: string, bridgeId: string) {
-  const key = await db.selectFrom('bridge_keys').select('user_id').where('token_hash', '=', tokenHash).executeTakeFirst()
-  if (!key) return undefined
-  const find = () =>
-    db.selectFrom('boards').selectAll().where('owner_user_id', '=', key.user_id).where('bridge_id', '=', bridgeId).executeTakeFirst()
-  const board = await find()
-  if (board) return board
-  await db
-    .insertInto('boards')
-    .values({
-      id: ulid(),
-      owner_user_id: key.user_id,
-      name: 'New board',
-      // Nothing signs in with a board token here: the key does. The column is unique and required.
-      token_hash: newBoardToken().tokenHash,
-      bridge_id: bridgeId,
-    })
-    .onConflict(oc => oc.doNothing())
-    .execute()
-  return find()
+/** Spends an install token: makes the owner's board and returns its board token, or undefined if the token is unknown, used or expired. */
+export async function exchangeBridgeInstallToken(db: Kysely<Database>, tokenHash: string): Promise<string | undefined> {
+  return db.transaction().execute(async trx => {
+    const spent = await trx
+      .deleteFrom('bridge_install_tokens')
+      .where('token_hash', '=', tokenHash)
+      .where('expires_at', '>', new Date())
+      .returning('user_id')
+      .executeTakeFirst()
+    if (!spent) return undefined
+    const { token, tokenHash: boardHash } = newBoardToken()
+    await insertBoard(trx, { id: ulid(), owner_user_id: spent.user_id, name: 'New board', token_hash: boardHash })
+    return token
+  })
 }
 
 export async function updateBoardHardwareId(db: Kysely<Database>, boardDbId: string, hardwareId: string): Promise<void> {

@@ -393,3 +393,32 @@ func TestRunPairing_StopsOnCtxCancelDuringRetry(t *testing.T) {
 		t.Errorf("expected DeadlineExceeded, got: %v", err)
 	}
 }
+
+func TestExchangeInstallToken(t *testing.T) {
+	var gotBody map[string]string
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		json.NewDecoder(r.Body).Decode(&gotBody)
+		if r.Method != "POST" || r.URL.Path != "/api/bridge-install-tokens/exchange" || gotBody["token"] != "good" {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "not found"})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]string{"token": "board-token"})
+	}))
+	defer srv.Close()
+
+	tok, err := exchangeInstallToken(context.Background(), Config{BackendURL: srv.URL + "/bridge", InstallToken: "good"})
+	if err != nil || tok != "board-token" {
+		t.Fatalf("got %q, %v", tok, err)
+	}
+	if _, err := exchangeInstallToken(context.Background(), Config{BackendURL: srv.URL + "/bridge", InstallToken: "used"}); !errors.Is(err, errInstallTokenRefused) {
+		t.Errorf("a refused token should give errInstallTokenRefused, got %v", err)
+	}
+}
+
+func TestLoadConfig_ReadsInstallTokenFromEnv(t *testing.T) {
+	t.Setenv("DARTCADE_INSTALL_TOKEN", "once")
+	cfg, err := loadConfig(map[string]string{"board_url": "http://board:3180"}, "")
+	if err != nil || cfg.InstallToken != "once" {
+		t.Fatalf("got %+v, %v", cfg, err)
+	}
+}

@@ -1,4 +1,4 @@
-// The commands that install the bridge and sign it in with the user's bridge key, per OS.
+// The commands that install the bridge and sign it in with a one-time install token, per OS.
 export type Os = 'linux' | 'macos' | 'windows'
 
 export const OSES: Os[] = ['linux', 'macos', 'windows']
@@ -21,18 +21,15 @@ export function bridgeUrl(origin: string): string {
   return `${origin.replace(/^http/, 'ws')}/bridge`
 }
 
-/** Shown in place of the key on screen; Copy still copies the real one. */
-export const KEY_MASK = '••••••••••••'
-
-export function installCommand(os: Os, key: string, origin: string): string {
+export function installCommand(os: Os, token: string, origin: string): string {
   const backend = bridgeUrl(origin)
   switch (os) {
     case 'linux':
-      return `curl -fsSL ${INSTALL_SH} | DARTCADE_TOKEN=${key} sh -s -- --service --backend-url ${backend}`
+      return `curl -fsSL ${INSTALL_SH} | DARTCADE_INSTALL_TOKEN=${token} sh -s -- --service --backend-url ${backend}`
     case 'macos':
-      return `curl -fsSL ${INSTALL_SH} | sh\nDARTCADE_TOKEN=${key} DARTCADE_BACKEND_URL=${backend} DARTCADE_BOARD_URL=${BOARD_URL} dartcade-bridge`
+      return `curl -fsSL ${INSTALL_SH} | sh\nDARTCADE_INSTALL_TOKEN=${token} DARTCADE_BACKEND_URL=${backend} DARTCADE_BOARD_URL=${BOARD_URL} dartcade-bridge`
     case 'windows':
-      return `Invoke-WebRequest ${REPO}/releases/latest/download/dartcade-bridge_windows_amd64.exe -OutFile dartcade-bridge.exe\n$env:DARTCADE_TOKEN="${key}"; $env:DARTCADE_BACKEND_URL="${backend}"; $env:DARTCADE_BOARD_URL="${BOARD_URL}"; .\\dartcade-bridge.exe`
+      return `Invoke-WebRequest ${REPO}/releases/latest/download/dartcade-bridge_windows_amd64.exe -OutFile dartcade-bridge.exe\n$env:DARTCADE_INSTALL_TOKEN="${token}"; $env:DARTCADE_BACKEND_URL="${backend}"; $env:DARTCADE_BOARD_URL="${BOARD_URL}"; .\\dartcade-bridge.exe`
   }
 }
 

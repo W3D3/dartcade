@@ -39,12 +39,13 @@ the bridge by hand). Run it again to upgrade or to change a setting; `--token`, 
 `--board-url` are kept between runs. Logs: `journalctl -u dartcade-bridge -f`. Remove it with
 `... | sh -s -- --uninstall` (add `--purge` to forget the pairing too).
 
-## Quick path: install with a key
+## Quick path: install with one command
 
 In dartcade, open **Settings → Boards → Set up a board**. Pick your system and run the command it
-shows: it carries a key for your account, so the bridge signs in by itself. When it connects, the
-dialog asks for a name for the board, and you are done. The key is private; anyone with it can add
-boards to your account. The steps below are the manual way, with a pairing code.
+shows. It carries a one-time install token (valid for 15 minutes, good for one bridge), so the
+bridge pairs itself: the board appears in the dialog, you name it, and you are done. A copied
+command is useless once it has been used or has expired. The steps below are the manual way, with
+a pairing code.
 
 ## 3. Run the bridge and pair a board
 

@@ -3,7 +3,7 @@ import type { SocketStream } from '@fastify/websocket'
 import type { WebSocket } from 'ws'
 import { bridgeConnections, type BridgeConn } from './connections.js'
 import type { SessionEngine } from '../session/engine.js'
-import { insertBridgeEvent, getBoardByTokenHash, getBoardForBridgeKey, updateBoardHardwareId } from '../db/queries.js'
+import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '../db/queries.js'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { z } from 'zod'
@@ -118,11 +118,6 @@ function callHook(name: string, boardId: string, run: () => unknown): void {
   }
 }
 
-/** The id a bridge install sends in `X-Bridge-Id` (boards made with a bridge key are told apart by it). */
-export function bridgeId(header: string | string[] | undefined): string | undefined {
-  return typeof header === 'string' && header.length > 0 && header.length <= 100 ? header : undefined
-}
-
 const TokenQuerySchema = z.object({ token: z.string() })
 
 /** The bridge's token: `Authorization: Bearer …`, or the `?token=` query older bridges send. */
@@ -140,7 +135,7 @@ export function bridgeToken(authorization: string | undefined, query: unknown): 
 // queued behind auth rather than dropped during the async lookup window.
 export function handleBridgeConnection(
   socket: WebSocket,
-  query: { token?: string; bridgeId?: string },
+  query: { token?: string },
   opts: {
     db: Kysely<Database>
     engine: SessionEngine
@@ -178,9 +173,7 @@ export function handleBridgeConnection(
   }
 
   // Authenticate once. The result gates message processing below.
-  // A user's bridge key signs in too, for the board of the bridge that sent it (made on first connect)
   const authed = getBoardByTokenHash(db, tokenHash)
-    .then(board => board ?? (query.bridgeId ? getBoardForBridgeKey(db, tokenHash, query.bridgeId) : undefined))
     .then(board => {
       // Closed while its token was being checked: registering it now would leave the board online
       // for good (the close handler already ran, before the connection had a board)
@@ -342,7 +335,7 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   app.get('/bridge', { websocket: true }, (connection: SocketStream, req) => {
     handleBridgeConnection(
       connection.socket,
-      { token: bridgeToken(req.headers.authorization, req.query), bridgeId: bridgeId(req.headers['x-bridge-id']) },
+      { token: bridgeToken(req.headers.authorization, req.query) },
       {
         db,
         engine,

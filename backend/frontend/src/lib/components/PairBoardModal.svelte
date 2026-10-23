@@ -8,7 +8,7 @@
   import CodeInput from '$lib/components/CodeInput.svelte'
   import { CODE_LENGTH, normalizePairingCode } from '$lib/pairing'
   import { api } from '$lib/api'
-  import { OSES, OS_LABELS, OS_NOTES, KEY_MASK, detectOs, installCommand, type Os } from '$lib/bridgeInstall'
+  import { OSES, OS_LABELS, OS_NOTES, detectOs, installCommand, type Os } from '$lib/bridgeInstall'
 
   let {
     initialCode = '',
@@ -32,17 +32,16 @@
   let copied = $state(false)
   let errorKind = $state<null | 'expired' | 'notfound' | 'used' | 'network'>(null)
 
-  // Install mode: the user runs a command with their bridge key; the board it creates shows up here to be named.
+  // Install mode: the user runs a command with a one-time install token; the board it creates shows up here to be named.
   // svelte-ignore state_referenced_locally
   let mode = $state<'install' | 'code'>(initialCode === '' ? 'install' : 'code')
   let os = $state<Os>(detectOs(navigator.userAgent))
-  let key = $state<string | null>(null)
-  let keyFailed = $state(false)
+  let token = $state<string | null>(null)
+  let tokenFailed = $state(false)
   let found = $state<{ id: string } | null>(null)
   let started = false
   let poll: ReturnType<typeof setInterval> | undefined
-  const command = $derived(key ? installCommand(os, key, location.origin) : '')
-  const shownCommand = $derived(key ? installCommand(os, KEY_MASK, location.origin) : '')
+  const command = $derived(token ? installCommand(os, token, location.origin) : '')
 
   async function checkForBoard(known: Set<string>) {
     const boards = (await api.GET('/api/boards').catch(() => null))?.data?.boards ?? []
@@ -58,12 +57,12 @@
     started = true
     try {
       const known = new Set(((await api.GET('/api/boards')).data?.boards ?? []).map(b => b.id))
-      const { data } = await api.POST('/api/bridge-keys')
-      if (!data) throw new Error('no key')
-      key = data.key
+      const { data } = await api.POST('/api/bridge-install-tokens')
+      if (!data) throw new Error('no token')
+      token = data.token
       poll = setInterval(() => void checkForBoard(known), 2500)
     } catch {
-      keyFailed = true
+      tokenFailed = true
     }
   }
 
@@ -142,35 +141,38 @@
   {#if mode === 'install'}
     <div class="flex flex-col gap-3">
       <p class="m-0 text-[14px] text-text-muted">
-        Run this on the computer next to your board (the one running Autodarts). The command carries your key, so there is no code to type.
+        Run this on the computer next to your board (the one running Autodarts). The command signs the bridge in to your account, so there
+        is no code to type.
       </p>
       <div class="flex flex-wrap gap-2" role="group" aria-label="Operating system">
         {#each OSES as id (id)}
           <Chip selected={os === id} onclick={() => (os = id)}>{OS_LABELS[id]}</Chip>
         {/each}
       </div>
-      {#if keyFailed}
-        <p class="m-0 text-[13px] text-live-text">Couldn't make a key. Check your connection, or use a pairing code instead.</p>
+      {#if tokenFailed}
+        <p class="m-0 text-[13px] text-live-text">
+          Couldn't make an install command. Check your connection, or use a pairing code instead.
+        </p>
       {:else}
         <div class="rounded-[10px] bg-surface-2 border border-line-2 overflow-hidden">
           <div class="flex items-center justify-between px-3 py-2 border-b border-line-2">
             <span class="text-[12px] text-text-dim">{OS_LABELS[os]}</span>
-            <button type="button" onclick={copyCommand} disabled={!key} class="text-[12px] text-accent hover:underline">
+            <button type="button" onclick={copyCommand} disabled={!token} class="text-[12px] text-accent hover:underline">
               {copied ? 'Copied' : 'Copy command'}
             </button>
           </div>
-          <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text break-all whitespace-pre-wrap">{key
-              ? shownCommand
-              : 'Making your key…'}</pre>
+          <pre class="m-0 px-3 py-2 font-mono text-[12px] leading-relaxed text-text break-all whitespace-pre-wrap">{token
+              ? command
+              : 'Making your command…'}</pre>
         </div>
         <p class="m-0 text-[13px] text-text-dim">
-          {OS_NOTES[os]} The key is hidden here but Copy includes it. Keep it to yourself: anyone with it can add boards to your account.
+          {OS_NOTES[os]} The command works once and expires in 15 minutes.
         </p>
         {#if found}
           <p class="m-0 flex items-center gap-2 text-[14px] text-text">
             <CircleCheck size={16} class="text-accent" /> Bridge connected. Name your board.
           </p>
-        {:else if key}
+        {:else if token}
           <p class="m-0 flex items-center gap-2 text-[14px] text-text-muted">
             <LoaderCircle size={16} class="animate-spin" /> Waiting for the bridge to connect…
           </p>
@@ -258,7 +260,7 @@
     </div>
 
     <button type="button" onclick={() => switchMode('install')} class="text-[13px] text-text-muted hover:text-text self-start underline">
-      Install the bridge with a key instead
+      Install the bridge with a command instead
     </button>
   {/if}
 

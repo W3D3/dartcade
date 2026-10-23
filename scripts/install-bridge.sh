@@ -11,13 +11,14 @@
 #   --board-url URL       Board Manager address (default: http://localhost:3180)
 #   --backend-url URL     dartcade server (default: the hosted one)
 #   --token TOKEN         bridge token (skips the pairing code)
+#   --install-token TOKEN one-time token from the dashboard's install command (also pairs the bridge)
 #   --uninstall           stop and remove the service (keeps its config and pairing)
 #   --purge               with --uninstall: also delete the config and the pairing
 #
 # Env vars:
 #   DARTCADE_INSTALL_DIR     where to install the binary (default: /usr/local/bin)
 #   DARTCADE_BRIDGE_VERSION  a release tag, e.g. v0.4.2 (default: latest)
-#   DARTCADE_BOARD_URL, DARTCADE_BACKEND_URL, DARTCADE_TOKEN  same as the options above
+#   DARTCADE_BOARD_URL, DARTCADE_BACKEND_URL, DARTCADE_TOKEN, DARTCADE_INSTALL_TOKEN  same as the options above
 set -e
 
 repo="W3D3/dartcade"
@@ -27,6 +28,7 @@ version="${DARTCADE_BRIDGE_VERSION:-latest}"
 board_url="${DARTCADE_BOARD_URL:-}"
 backend_url="${DARTCADE_BACKEND_URL:-}"
 token="${DARTCADE_TOKEN:-}"
+install_token="${DARTCADE_INSTALL_TOKEN:-}"
 service=0
 uninstall=0
 purge=0
@@ -58,6 +60,7 @@ while [ $# -gt 0 ]; do
     --board-url) need_value "$@"; board_url="$2"; shift ;;
     --backend-url) need_value "$@"; backend_url="$2"; shift ;;
     --token) need_value "$@"; token="$2"; shift ;;
+    --install-token) need_value "$@"; install_token="$2"; shift ;;
     *) die "unknown option '$1' (options are listed at the top of the script)" ;;
   esac
   shift
@@ -150,7 +153,7 @@ new_env="$(mktemp)"
 trap 'rm -f "$new_env"' EXIT
 # Values given now replace the stored ones; anything not given stays as it was.
 { $sudo_cmd cat "$env_file" 2>/dev/null || true; } >"$new_env"
-for pair in "DARTCADE_BOARD_URL=$board_url" "DARTCADE_BACKEND_URL=$backend_url" "DARTCADE_TOKEN=$token"; do
+for pair in "DARTCADE_BOARD_URL=$board_url" "DARTCADE_BACKEND_URL=$backend_url" "DARTCADE_TOKEN=$token" "DARTCADE_INSTALL_TOKEN=$install_token"; do
   [ -n "${pair#*=}" ] || continue
   grep -v "^${pair%%=*}=" "$new_env" >"$new_env.next" || true
   echo "$pair" >>"$new_env.next"
@@ -206,6 +209,8 @@ if $sudo_cmd grep -q '^DARTCADE_TOKEN=' "$env_file"; then
   echo "A token is configured, so there is no pairing code."
 elif $sudo_cmd test -s "${state_dir}/bridge.toml" && $sudo_cmd grep -q '^token' "${state_dir}/bridge.toml"; then
   echo "This bridge is already paired."
+elif $sudo_cmd grep -q '^DARTCADE_INSTALL_TOKEN=' "$env_file"; then
+  echo "The install token pairs the bridge by itself; your board appears in the dashboard."
 else
   # The bridge prints the code to its log; show it once it's there so the user needn't dig.
   echo "Waiting for the pairing code..."
