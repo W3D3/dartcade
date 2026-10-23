@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { friendsEntry, navTabs, isActiveRoute, railLobby, sideLinks } from '../nav.js'
+import { friendsEntry, navTabs, isActiveRoute, railLobby, railTabs, sideLinks } from '../nav.js'
 
 describe('navTabs', () => {
   it('follows the design: Play, Live, Tournaments, History (no Boards)', () => {
@@ -117,5 +117,15 @@ describe('friendsEntry', () => {
     expect(friendsEntry(null)).toEqual({ requests: 0, online: 0, aria: 'Friends: 0 online, 0 friend requests' })
     const list = { friends: [{ status: { kind: 'online' } }, { status: { kind: 'offline' } }], incoming: [{}], outgoing: [] }
     expect(friendsEntry(list as any)).toEqual({ requests: 1, online: 1, aria: 'Friends: 1 online, 1 friend request' })
+  })
+})
+
+describe('railTabs', () => {
+  it("adds Settings, and Admin for admins, after the phone's tabs", () => {
+    expect(railTabs('s1').map(t => t.label)).toEqual(['Play', 'Live', 'Tournaments', 'History', 'Settings'])
+    expect(railTabs('s1', 0, false, null, true).slice(-2)).toEqual([
+      { href: '/settings', label: 'Settings', icon: 'settings' },
+      { href: '/admin', label: 'Admin', icon: 'admin' },
+    ])
   })
 })

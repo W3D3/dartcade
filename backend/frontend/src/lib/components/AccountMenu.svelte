@@ -1,6 +1,7 @@
 <script lang="ts">
   // The account badge and its menu (User-Badge board): who you are, your status (Online /
-  // Invisible), Friends, Admin (admins only), Settings, Sign out. Phones: the avatar
+  // Invisible), Friends, your profile, Progress, Admin (admins only), Settings, Sign out; Progress,
+  // Admin and Settings only on phones, where no rail or side nav lists them. Phones: the avatar
   // in the header (menu below it). Tablets: the avatar at the foot of the rail (menu beside
   // it). Desktops: a row with your name and status at the foot of the side nav (menu above it).
   import { ChevronUp, LogOut, Settings, ShieldCheck, TrendingUp, UserRound, UsersRound } from '@lucide/svelte'
@@ -27,6 +28,8 @@
   const requestsText = $derived(friends.requests ? `, ${friends.requests} friend ${friends.requests === 1 ? 'request' : 'requests'}` : '')
   const triggerLabel = $derived(`Account${name ? `: ${name}` : ''}, ${invisible ? 'Invisible' : 'Online'}${requestsText}`)
   const level = $derived($progressXp === null ? null : levelOf($progressXp).level)
+  // The rail and the side nav list Progress, Admin and Settings themselves
+  const inNav = $derived(placement !== 'header')
   let open = $state(false)
   let statusError = $state('')
   let triggerEl: HTMLButtonElement | undefined = $state()
@@ -160,22 +163,26 @@
           <UserRound size={18} strokeWidth={1.8} />
           Your profile
         </a>
-        <a href="#/progress" role="menuitem" onclick={closeMenu} class={ITEM}>
-          <TrendingUp size={18} strokeWidth={1.8} />
-          Progress
-          <span class="ml-auto rounded-full bg-surface-chip px-[9px] py-[3px] text-[12px] font-semibold text-accent">LV {level}</span>
-        </a>
+        {#if !inNav}
+          <a href="#/progress" role="menuitem" onclick={closeMenu} class={ITEM}>
+            <TrendingUp size={18} strokeWidth={1.8} />
+            Progress
+            <span class="ml-auto rounded-full bg-surface-chip px-[9px] py-[3px] text-[12px] font-semibold text-accent">LV {level}</span>
+          </a>
+        {/if}
       {/if}
-      {#if $currentUser?.isModerator}
+      {#if $currentUser?.isModerator && !inNav}
         <a href="#/admin" role="menuitem" onclick={closeMenu} class={ITEM}>
           <ShieldCheck size={18} strokeWidth={1.8} />
           Admin
         </a>
       {/if}
-      <a href="#/settings" role="menuitem" onclick={closeMenu} class={ITEM}>
-        <Settings size={18} strokeWidth={1.8} />
-        Settings
-      </a>
+      {#if !inNav}
+        <a href="#/settings" role="menuitem" onclick={closeMenu} class={ITEM}>
+          <Settings size={18} strokeWidth={1.8} />
+          Settings
+        </a>
+      {/if}
       <hr class="m-0 border-0 border-t border-line-3" />
       <button
         type="button"
