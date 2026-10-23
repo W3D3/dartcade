@@ -7,7 +7,6 @@
   import SettingSwitch from '$lib/components/SettingSwitch.svelte'
   import SegmentedControl from '$lib/components/SegmentedControl.svelte'
   import Stepper from '$lib/components/Stepper.svelte'
-  import VolumeSlider from './VolumeSlider.svelte'
 
   let { settings = $bindable() }: { settings: GameSettings } = $props()
 
@@ -16,13 +15,6 @@
     { key: 'visitSum', label: 'Visit sum', sub: 'Big total of the current visit' },
     { key: 'chalkboard', label: 'Chalkboard', sub: 'Scored and left for every visit this leg' },
     { key: 'showMarkers', label: "Other players' targets", sub: 'Around the Clock: their next number on the board' },
-  ] as const
-  const sounds = [
-    { key: 'soundHit', label: 'Hit' },
-    { key: 'soundMiss', label: 'Miss' },
-    { key: 'soundSwitch', label: 'Player switch' },
-    { key: 'soundBust', label: 'Bust' },
-    { key: 'soundWin', label: 'Win' },
   ] as const
 
   // X01's own options (from the backend); the card waits for them
@@ -75,16 +67,5 @@
         </fieldset>
       </section>
     {/if}
-
-    <section aria-labelledby="sound-effects" class="box-border p-4 md:p-[22px] card flex flex-col gap-4">
-      <h2 id="sound-effects" class="m-0 text-[17px] font-semibold">Sound effects</h2>
-      <VolumeSlider bind:value={settings.volume} />
-      <p class="m-0 -mt-2 text-[12px] text-text-dim">Volume is set on each device; the switches follow your account.</p>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
-        {#each sounds as row (row.key)}
-          <SettingSwitch id="pref-{row.key}" label={row.label} bind:checked={settings[row.key]} />
-        {/each}
-      </div>
-    </section>
   </div>
 </div>

@@ -98,7 +98,7 @@
   // Only a new roll restarts the animation: other snapshot changes must not cancel one in play
   const rollKey = $derived(roll?.key ?? null)
   const zoom = new Tween(0, { duration: 450, easing: cubicOut })
-  const sounds = createSounds(() => settings.volume)
+  const sounds = createSounds(() => settings.effectsVolume)
   /** The last samples of a dropped ball's path: it sinking into the cup. */
   const SINKING = 8
   let playing = $state(false)

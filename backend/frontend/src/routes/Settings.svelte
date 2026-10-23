@@ -4,7 +4,7 @@
   // route (`#/settings/<section>`). Lights only shows behind its flag. Tablets and desktops open
   // on Profile; phones get a list of the sections first.
   import { onMount, untrack, type Component } from 'svelte'
-  import { ChevronLeft, ChevronRight, Lightbulb, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
+  import { ChevronLeft, ChevronRight, Lightbulb, Mic, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import AccountCard from '$lib/components/settings/AccountCard.svelte'
   import AvatarCard from '$lib/components/settings/AvatarCard.svelte'
@@ -42,15 +42,17 @@
     game: SlidersHorizontal,
     boards: Monitor,
     lights: Lightbulb,
-    caller: Volume2,
+    caller: Mic,
+    sounds: Volume2,
   }
   // The phone list's line under each section
   const SUBS = $derived({
     profile: $currentUser ? `@${$currentUser.name} · how friends see you` : 'How friends see you',
-    game: 'Checkout suggestions, new game defaults, sounds',
+    game: 'Checkout suggestions, new game defaults',
     boards: 'Pair and manage your Autodarts boards',
     lights: 'Board lights that react to your game',
-    caller: 'Voices, the caller in X01, sound effects',
+    caller: 'Voices and the caller in X01',
+    sounds: 'Hits, misses, busts and sound packs',
   })
 
   // The game settings: the account's (once loaded) over this device's; changes go to both
@@ -141,9 +143,10 @@
           <CallerVoices current={settings.callerVoice} volume={settings.volume} />
           <div class="flex flex-col gap-4 md:gap-5">
             <CallerDefaults bind:settings />
-            {#if $progression}<SoundEffects bind:settings />{/if}
           </div>
         </div>
+      {:else if shown === 'sounds'}
+        <SoundEffects bind:settings packs={$progression} />
       {/if}
     </div>
 
