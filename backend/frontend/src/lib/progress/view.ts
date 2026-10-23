@@ -19,6 +19,9 @@ export function levelView(xp: number): LevelView {
   return { level: p.level, pct: (p.into / p.cost) * 100, toGo: `${fmtXp(p.toGo)} XP to go`, xp }
 }
 
+/** XP that just came in on the level card: a game's, or a claim's (`from`: the Claim button it flies in from). */
+export type LevelGain = { total: number; xpBefore?: number; xpAfter?: number; from?: DOMRect }
+
 /** The win screen chip's bar: where it starts and ends, and whether it runs past a level. */
 export type ChipMotion = { from: number; to: number; levelBefore: number; levelAfter: number; levelUp: boolean }
 

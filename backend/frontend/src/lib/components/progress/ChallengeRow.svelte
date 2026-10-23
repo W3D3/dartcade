@@ -14,12 +14,19 @@
     fresh = false,
     onreroll,
     onclaim,
-  }: { item: ChallengeItem; fresh?: boolean; onreroll?: () => void; onclaim?: () => Promise<void> } = $props()
+  }: {
+    item: ChallengeItem
+    fresh?: boolean
+    onreroll?: () => void
+    /** `from`: where the Claim button is, for the XP to fly from */
+    onclaim?: (from: DOMRect) => Promise<void>
+  } = $props()
   let claiming = $state(false)
+  let claimButton: HTMLButtonElement | undefined = $state()
   async function claim() {
-    if (!onclaim || claiming) return
+    if (!onclaim || claiming || !claimButton) return
     claiming = true
-    await onclaim()
+    await onclaim(claimButton.getBoundingClientRect())
     claiming = false
   }
   const pct = $derived((item.progress / item.target) * 100)
@@ -72,6 +79,7 @@
       <div class="mt-[2px] text-[13px] text-accent">Complete</div>
     </div>
     <button
+      bind:this={claimButton}
       type="button"
       onclick={claim}
       disabled={claiming}
@@ -120,7 +128,7 @@
       aria-valuemax={item.target}
       aria-valuenow={item.progress}
     >
-      <div class="fill h-full rounded-full {close ? 'gold' : ''}" style="width: {pct}%"></div>
+      <div class="fill h-full rounded-full bar-stripes {close ? 'bg-gold' : 'bg-accent'}" style="width: {pct}%"></div>
     </div>
   </li>
 {/if}
@@ -134,27 +142,10 @@
       0 6px 24px -10px rgba(198, 242, 78, 0.5);
   }
   .fill {
-    background:
-      repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.16) 0 7px, transparent 7px 14px) 0 0 / 28px 100%,
-      var(--color-accent);
     transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .fill.gold {
-    background-color: var(--color-gold);
-  }
   .claim {
-    animation:
-      glow 1.8s ease-in-out infinite,
-      bob 2.4s ease-in-out infinite;
-  }
-  @keyframes bob {
-    0%,
-    100% {
-      transform: none;
-    }
-    50% {
-      transform: translateY(-4px);
-    }
+    animation: glow 1.8s ease-in-out infinite;
   }
   .sheen {
     background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.55), transparent);

@@ -7,6 +7,7 @@
   import ChallengesSection from '$lib/components/progress/ChallengesSection.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
+  import type { LevelGain } from '$lib/progress/view'
   import StreakCard from '$lib/components/progress/StreakCard.svelte'
   import { me } from '$lib/lobby/sockets'
   import { get } from 'svelte/store'
@@ -18,11 +19,13 @@
   const gained = me.xp
   const before = get(me.xp)
   const freshGain = $derived($gained && $gained !== before ? $gained : null)
-  // The newest gain rises on the level card: a game's, or a claim's
-  let gain = $state<{ total: number } | null>(null)
+  // The newest gain plays on the level card: a game's, or a claim's (flying in from its button)
+  let gain = $state<LevelGain | null>(null)
   $effect(() => {
-    if (freshGain) gain = freshGain
+    if (freshGain) gain = { total: freshGain.total, xpBefore: freshGain.xpBefore, xpAfter: freshGain.xpAfter }
   })
+  const onclaimed = (c: { total: number; xpAfter: number; from: DOMRect }) =>
+    (gain = { total: c.total, xpBefore: c.xpAfter - c.total, xpAfter: c.xpAfter, from: c.from })
 </script>
 
 <Layout title="Progress">
@@ -43,7 +46,7 @@
         <LevelCard xp={$progress.xp} title={$progress.perks.equipped.title} {gain} />
         <StreakCard streak={$progress.streak} />
       </div>
-      <ChallengesSection onclaimed={(xp: number) => (gain = { total: xp })} />
+      <ChallengesSection {onclaimed} />
     {/if}
   </main>
 </Layout>

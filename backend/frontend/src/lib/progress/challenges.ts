@@ -48,16 +48,16 @@ export function createChallenges(source: Source = me, fetchChallenges: Fetcher =
       value.set(data)
       return null
     },
-    /** Takes a finished challenge's XP; resolves with what it paid, or an error message. */
-    async claim(id: string): Promise<{ gained: number; error: string | null }> {
+    /** Takes a finished challenge's XP; resolves with what it paid and your XP after, or an error message. */
+    async claim(id: string): Promise<{ gained: number; xpAfter: number; error: string | null }> {
       latest++
       const before = get(value)
       const { data } = await api.POST('/api/challenges/{id}/claim', { params: { path: { id } } })
-      if (!data) return { gained: 0, error: "Couldn't claim it." }
+      if (!data) return { gained: 0, xpAfter: 0, error: "Couldn't claim it." }
       value.set(data.challenges)
       reloadProgress()
       const was = before && [...before.daily.items, ...before.weekly.items].find(c => c.id === id)
-      return { gained: was && !was.claimed ? was.xp : 0, error: null }
+      return { gained: was && !was.claimed ? was.xp : 0, xpAfter: data.xp, error: null }
     },
   }
 }

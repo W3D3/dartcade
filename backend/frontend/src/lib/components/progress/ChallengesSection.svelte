@@ -8,7 +8,12 @@
   import { isPhone } from '$lib/viewport'
   import { createChallenges, doneOf } from '$lib/progress/challenges'
 
-  let { onclaimed }: { /** A claim paid `xp`. */ onclaimed?: (xp: number) => void } = $props()
+  let {
+    onclaimed,
+  }: {
+    /** A claim paid `total`, taking you to `xpAfter`; `from` is the Claim button. */
+    onclaimed?: (gain: { total: number; xpAfter: number; from: DOMRect }) => void
+  } = $props()
   const challenges = createChallenges()
   let period = $state<'daily' | 'weekly'>('daily')
   let error = $state('')
@@ -30,10 +35,10 @@
   async function reroll(id: string) {
     error = (await challenges.reroll(id)) ?? ''
   }
-  async function onclaim(id: string) {
+  async function onclaim(id: string, from: DOMRect) {
     const r = await challenges.claim(id)
     error = r.error ?? ''
-    if (r.gained > 0) onclaimed?.(r.gained)
+    if (r.gained > 0) onclaimed?.({ total: r.gained, xpAfter: r.xpAfter, from })
   }
 </script>
 
