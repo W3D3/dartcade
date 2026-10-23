@@ -1,5 +1,5 @@
 // What the progression screens show: levels, bars and the XP breakdown, from the shared rules.
-import { levelOf } from '$shared/progression.js'
+import { PERKS, levelOf, type Perk } from '$shared/progression.js'
 import type { XpGainedMessage, XpLine } from '$lib/api/lobby-ws'
 
 const nf = new Intl.NumberFormat('en-US')
@@ -68,32 +68,26 @@ export function milestoneLine(m: { days: number; xp: number }): string {
   return `Day ${m.days}: ${MILESTONE_REWARDS[m.days] ?? `+${fmtXp(m.xp)} XP`}`
 }
 
-/** A toast for progress that lands outside the win screen's chip. */
-export type ProgressToast = { icon: 'freeze' | 'milestone' | 'challenge'; title: string; text: string; xp: number | null }
+/** A toast for progress that lands outside the win screen's chip (Streak-Notifications board). */
+export type ProgressToast =
+  | { kind: 'freeze'; left: number }
+  | { kind: 'streak'; days: number; bonus: number }
+  | { kind: 'milestone'; days: number; xp: number; perks: Perk[] }
+  | { kind: 'challenge'; title: string; xp: number }
 
-/** The toasts an xp.gained brings: challenges done (their XP waits on Progress), a freeze spent, a milestone reached. */
+/** The toasts an xp.gained brings: a freeze spent, the streak extended (or a milestone reached), challenges done (their XP waits on Progress). */
 export function toastsFor(m: XpGainedMessage): ProgressToast[] {
-  const out: ProgressToast[] = (m.challenges ?? []).map(c => ({
-    icon: 'challenge',
-    title: 'Challenge complete',
-    text: `${c.title}. Claim +${fmtXp(c.xp)} XP on Progress.`,
-    xp: null,
-  }))
+  const out: ProgressToast[] = []
   const s = m.streak
-  if (s?.frozeDay) {
-    const left = `${s.freezes} ${s.freezes === 1 ? 'freeze' : 'freezes'} left`
-    out.push({
-      icon: 'freeze',
-      title: 'Streak freeze used',
-      text: `${weekday(s.frozeDay, 'long')} was missed. Your streak is safe. ${left}.`,
-      xp: null,
-    })
-  }
+  if (s?.frozeDay) out.push({ kind: 'freeze', left: s.freezes })
   if (s?.milestone) {
-    const xp = m.lines.find(l => l.kind === 'milestone')?.amount ?? null
-    const reward = MILESTONE_REWARDS[s.milestone]
-    out.push({ icon: 'milestone', title: `${s.milestone}-day streak`, text: reward ? `New: ${reward}` : 'Milestone reached', xp })
+    const days = s.milestone
+    const xp = m.lines.find(l => l.kind === 'milestone')?.amount ?? 0
+    out.push({ kind: 'milestone', days, xp, perks: PERKS.filter(p => 'streak' in p.unlock && p.unlock.streak === days) })
+  } else if (s) {
+    out.push({ kind: 'streak', days: s.current, bonus: m.lines.find(l => l.kind === 'daily')?.amount ?? 0 })
   }
+  for (const c of m.challenges ?? []) out.push({ kind: 'challenge', title: c.title, xp: c.xp })
   return out
 }
 

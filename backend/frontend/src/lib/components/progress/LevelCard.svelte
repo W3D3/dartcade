@@ -42,17 +42,14 @@
       {/key}
     {/if}
     <div
-      class="h-3 rounded-full bg-surface-inset overflow-hidden"
+      class="h-4 rounded-full bg-surface-inset overflow-hidden"
       role="progressbar"
       aria-label="XP to level {v.level + 1}"
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(v.pct)}
     >
-      <div
-        class="h-full rounded-full bg-accent transition-[width] duration-700 motion-reduce:transition-none"
-        style="width: {v.pct}%"
-      ></div>
+      <div class="bar h-full rounded-full transition-[width] duration-700 motion-reduce:transition-none" style="width: {v.pct}%"></div>
     </div>
     <div class="flex justify-between text-[13px] text-text-muted">
       <span>Level {v.level}</span><span class="font-semibold text-text">{v.toGo}</span><span>Level {v.level + 1}</span>
@@ -104,9 +101,27 @@
       opacity: 0;
     }
   }
+  /* A light running along the bar */
+  .bar {
+    background:
+      linear-gradient(100deg, transparent 0 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65% 100%) 0 0 / 60px 100% repeat-x,
+      var(--color-accent);
+    animation: shim 2.2s linear infinite;
+  }
+  @keyframes shim {
+    from {
+      background-position: -60px 0;
+    }
+    to {
+      background-position: 60px 0;
+    }
+  }
   @media (prefers-reduced-motion: reduce) {
     .rise {
       display: none;
+    }
+    .bar {
+      animation: none;
     }
   }
 </style>
