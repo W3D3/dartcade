@@ -98,18 +98,14 @@
       {:else}
         <div
           class="{slotBox}
-                    {slot.kind === 'bust'
-            ? 'bg-[#1a0e0c] border border-danger-line'
-            : slot.kind === 'suggested-next' || slot.kind === 'empty-next'
-              ? 'border-2 border-dashed border-accent'
-              : slot.kind === 'suggested-later'
-                ? 'border-[1.5px] border-dashed border-line-next'
-                : 'border-[1.5px] border-dashed border-line-dashed'}"
+                    {slot.kind === 'suggested-next' || slot.kind === 'empty-next'
+            ? 'border-2 border-dashed border-accent'
+            : slot.kind === 'suggested-later'
+              ? 'border-[1.5px] border-dashed border-line-next'
+              : 'border-[1.5px] border-dashed border-line-dashed'}"
         >
           <span class="sr-only">{slot.aria}</span>
-          {#if slot.kind === 'bust'}
-            <span aria-hidden="true" class="text-[13px] font-bold uppercase tracking-[0.12em] text-danger-text">{slot.label}</span>
-          {:else if slot.kind === 'empty-next'}
+          {#if slot.kind === 'empty-next'}
             <span aria-hidden="true" class="w-3 h-3 rounded-full bg-accent"></span>
           {:else if slot.label}
             <span aria-hidden="true" class="{slotLabel} text-text-dim">{slot.label}</span>
