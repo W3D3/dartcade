@@ -839,8 +839,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(await person('Max')).toMatchObject({ boardId: null })
     })
 
-    it('the host has no extra board rights', async () => {
-      await expect(lobbies.updatePerson('chris', id, (await person('Lena')).id, { boardId: 'living' })).rejects.toMatchObject({
+    it('the host puts anyone on one of their own boards, even someone who picked their own', async () => {
+      await lobbies.updatePerson('chris', id, (await person('Lena')).id, { boardId: 'living' })
+      expect(await person('Lena')).toMatchObject({ boardId: 'living', boardMovedBy: 'chris' })
+      // Not someone else's board, though
+      await expect(lobbies.updatePerson('chris', id, (await person('Max')).id, { boardId: 'lenas' })).rejects.toMatchObject({
+        statusCode: 403,
+      })
+    })
+
+    it('you pick a board the lobby shares for yourself, not one nobody sits at', async () => {
+      await lobbies.updatePerson('max', id, (await person('Max')).id, { boardId: 'living' })
+      expect(await person('Max')).toMatchObject({ boardId: 'living', boardMovedBy: null })
+      await lobbies.updatePerson('lena', id, (await person('Lena')).id, { boardId: 'living' })
+      expect(await person('Lena')).toMatchObject({ boardId: 'living' })
+      // Chris's garage is his, but nobody plays there
+      await expect(lobbies.updatePerson('max', id, (await person('Max')).id, { boardId: 'garage' })).rejects.toMatchObject({
         statusCode: 403,
       })
     })

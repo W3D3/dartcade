@@ -126,15 +126,32 @@ describe('lobby rules for the screens', () => {
   })
 
   it('board menu: your own boards for someone on Manual', () => {
-    const c = boardChoices(max, 'chris', own)
-    expect(c.map(b => [b.boardId, b.label, b.current])).toEqual([
-      ['living', 'Living room', false],
-      ['garage', 'Garage', false],
+    const c = boardChoices(lobby, max, 'lena', [{ id: 'lenas', name: "Lena's place", online: true }])
+    expect(c.map(b => [b.boardId, b.label, b.current])).toEqual([['lenas', "Lena's place", false]])
+  })
+
+  it('board menu: your own rows also get the boards the lobby shares, with their owner', () => {
+    // Max, on Manual: the host's Living room and Lena's place, where someone sits
+    expect(boardChoices(lobby, max, 'max', []).map(b => [b.boardId, b.detail])).toEqual([
+      [null, 'Enter darts on the keypad'],
+      ['living', "Christoph's board · offline"],
+      ['lenas', "Lena's board · offline"],
+    ])
+    // Lena's own board is listed once, as hers
+    expect(boardChoices(lobby, lena, 'lena', [{ id: 'lenas', name: "Lena's place", online: true }]).map(b => b.boardId)).toEqual([
+      null,
+      'lenas',
+      'living',
     ])
   })
 
+  it("board menu: a board whose owner isn't in the lobby isn't shared", () => {
+    const left = { ...lobby, people: [chris, max, pia] }
+    expect(boardChoices(left, max, 'max', []).map(b => b.boardId)).toEqual([null, 'living'])
+  })
+
   it('board menu: says which of your boards are offline', () => {
-    expect(boardChoices(max, 'chris', own).map(b => [b.boardId, b.online, b.detail])).toEqual([
+    expect(boardChoices(lobby, max, 'chris', own).map(b => [b.boardId, b.online, b.detail])).toEqual([
       ['living', true, 'Your board · online'],
       ['garage', false, 'Your board · offline'],
     ])
@@ -150,23 +167,28 @@ describe('lobby rules for the screens', () => {
     expect(withLiveStatus(own, l).find(b => b.id === 'garage')?.online).toBe(true)
   })
 
-  it('board menu: once someone has a board, only they change it, and its owner takes it back', () => {
-    // Lena on her own board: Chris can't move her
-    expect(boardChoices(lena, 'chris', own)).toEqual([])
-    // Lena herself: Manual and her own boards
-    expect(boardChoices(lena, 'lena', [{ id: 'lenas', name: "Lena's place", online: true }]).map(b => [b.boardId, b.current])).toEqual([
+  it('board menu: once someone has a board, only they and the host change it, and its owner takes it back', () => {
+    // Lena on her own board: the host Chris puts her on one of his
+    expect(boardChoices(lobby, lena, 'chris', own).map(b => b.boardId)).toEqual(['living', 'garage'])
+    // Lena herself: Manual, her own boards and the host's shared one
+    expect(
+      boardChoices(lobby, lena, 'lena', [{ id: 'lenas', name: "Lena's place", online: true }]).map(b => [b.boardId, b.current]),
+    ).toEqual([
       [null, false],
       ['lenas', true],
+      ['living', false],
     ])
-    // Chris put Max on his board: as the owner he can take it back, not swap it
+    // Lena isn't the host: nothing for Chris's row
+    expect(boardChoices(lobby, chris, 'lena', [{ id: 'lenas', name: "Lena's place", online: true }])).toEqual([])
+    // Chris put Max on his board: as the owner he can take it back, and as the host swap it
     const onChris = { ...max, boardId: 'living', boardName: 'Living room', boardOwnerUserId: 'chris' }
-    expect(boardChoices(onChris, 'chris', own).map(b => b.boardId)).toEqual([null])
-    expect(boardChoices(onChris, 'chris', own)[0]).toMatchObject({ label: 'Manual entry', detail: 'Take Living room back' })
+    expect(boardChoices(lobby, onChris, 'chris', own).map(b => b.boardId)).toEqual([null, 'living', 'garage'])
+    expect(boardChoices(lobby, onChris, 'chris', own)[0]).toMatchObject({ label: 'Manual entry', detail: 'Take Living room back' })
   })
 
   it('board menu: nothing to offer for a bot — it never has a board', () => {
     const bot = person({ id: 'b', userId: null, addedByUserId: 'chris', name: 'Bot Lvl 5', bot: { level: 5 } })
-    expect(boardChoices(bot, 'chris', own)).toEqual([])
+    expect(boardChoices(lobby, bot, 'chris', own)).toEqual([])
   })
 
   it('counts people, who plays and who is ready; names the boards in use', () => {

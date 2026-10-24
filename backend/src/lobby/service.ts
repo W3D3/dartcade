@@ -753,9 +753,16 @@ export class LobbyService {
   ): Promise<BoardChange | undefined> {
     const target = boardId === null ? null : await getBoardById(this.db, boardId)
     if (target === undefined) throw LobbyError.badRequest('board not found')
-    const allowed = rules.canSetBoard(userId, person, target === null ? null : { boardId: target.id, ownerUserId: target.owner_user_id })
+    const allowed = rules.canSetBoard(
+      lobby,
+      userId,
+      person,
+      target === null ? null : { boardId: target.id, ownerUserId: target.owner_user_id },
+    )
     if (!allowed)
-      throw LobbyError.forbidden('you can give out your own boards to people on Manual, change your own rows, or take your board back')
+      throw LobbyError.forbidden(
+        "you can pick your own boards or the lobby's for your own rows, give your boards to people on Manual (the host: to anyone), or take your board back",
+      )
     if ((target?.id ?? null) === person.boardId) return undefined
     if (target !== null) this.assertBoardFree(lobby.id, target.id)
     // "Moved by you": someone put them on a board they (or their adder) didn't pick
