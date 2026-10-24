@@ -1,5 +1,6 @@
-// Admin user management: list accounts, and set their role (admin, moderator, none) (schema/api-v1.yaml, tag admin).
+// Admin user management: list accounts, set their role (admin, moderator, none), ban them (schema/api-v1.yaml, tag admin).
 import { api, type AdminUser } from '$lib/api'
+import type { BanCategory } from '$shared/bans.js'
 import { createRequestGuard } from '$lib/requestGuard'
 
 export type { AdminUser }
@@ -87,6 +88,21 @@ export function roleChange(
 /** Mark an account's email verified or unverified. On a refusal (a 404 if they were just removed), the message to show inline. */
 export async function setVerified(id: string, verified: boolean): Promise<{ user: AdminUser } | { error: string }> {
   const res = await api.PUT('/api/admin/users/{id}/verified', { params: { path: { id } }, body: { verified } })
+  return res.data ? { user: res.data } : { error: res.error.error }
+}
+
+/** Ban an account (until: ISO end, null for good). On a refusal (yourself, an admin, a past end), the message to show inline. */
+export async function banUser(
+  id: string,
+  body: { category: BanCategory; note: string | null; until: string | null },
+): Promise<{ user: AdminUser } | { error: string }> {
+  const res = await api.PUT('/api/admin/users/{id}/ban', { params: { path: { id } }, body })
+  return res.data ? { user: res.data } : { error: res.error.error }
+}
+
+/** Lift an account's ban. */
+export async function unbanUser(id: string): Promise<{ user: AdminUser } | { error: string }> {
+  const res = await api.DELETE('/api/admin/users/{id}/ban', { params: { path: { id } } })
   return res.data ? { user: res.data } : { error: res.error.error }
 }
 
