@@ -1,6 +1,6 @@
 import type { WebSocket } from 'ws'
 import { BrowserConnections } from '../browser-gw/connections.js'
-import type { FriendsMessage, LobbyServerMessage, MeMessage, XpGainedMessage } from '../schema/lobby-ws.js'
+import type { BoardStatusMessage, FriendsMessage, LobbyServerMessage, MeMessage, XpGainedMessage } from '../schema/lobby-ws.js'
 
 /** Open lobby sockets (per lobby) and per-user sockets (/ws/me, per user). */
 export class LobbyHub {
@@ -89,5 +89,11 @@ export class LobbyHub {
   /** Sends the user's /ws/me sockets the XP they just earned (never deduplicated: each is news). */
   sendXp(userId: string, msg: XpGainedMessage): void {
     this.users.pushEach(userId, () => msg)
+  }
+
+  /** Tells a board's owner its bridge connected or dropped (Settings → Boards). */
+  sendBoardStatus(ownerUserId: string, boardId: string, online: boolean): void {
+    const msg: BoardStatusMessage = { type: 'board.status', boardId, online }
+    this.users.pushEach(ownerUserId, () => msg)
   }
 }

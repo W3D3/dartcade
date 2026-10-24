@@ -8,6 +8,7 @@ import { reconnectingSocket, type OpenSocket, type ReconnectingSocket } from '..
 import { LobbyServerMessageSchema, MeServerMessageSchema } from '../api/zod'
 import type {
   ActiveGame,
+  BoardStatusMessage,
   FriendsMessage,
   Lobby,
   LobbyServerMessage,
@@ -88,6 +89,7 @@ export type MeState = { invites: PendingInvite[]; lobby: LobbySummary | null; ga
 export function createMeStore(open?: OpenSocket) {
   const state = writable<MeState | null>(null)
   const xp = writable<XpGainedMessage | null>(null)
+  const boardStatus = writable<BoardStatusMessage | null>(null)
   let socket: ReconnectingSocket | null = null
   const running = () => socket !== null && !socket.stopped
 
@@ -95,6 +97,8 @@ export function createMeStore(open?: OpenSocket) {
     subscribe: state.subscribe,
     /** The XP you last earned (xp.gained), as it arrives. */
     xp: { subscribe: xp.subscribe } satisfies Readable<XpGainedMessage | null>,
+    /** One of your boards' bridges last connected or dropped (board.status), as it arrives. */
+    boardStatus: { subscribe: boardStatus.subscribe } satisfies Readable<BoardStatusMessage | null>,
     /** False before start(), after stop(), and once the server signed you out (4401). */
     running,
     start() {
@@ -111,6 +115,8 @@ export function createMeStore(open?: OpenSocket) {
               state.update(s => ({ ...(s ?? { invites: [], lobby: null, game: null }), friends: list }))
             } else if (msg?.type === 'xp.gained') {
               xp.set(msg)
+            } else if (msg?.type === 'board.status') {
+              boardStatus.set(msg)
             }
           },
           onClose: code => (WsCloseCode[code] === 'Unauthorized' ? 'stop' : undefined),
@@ -123,6 +129,7 @@ export function createMeStore(open?: OpenSocket) {
       socket = null
       state.set(null)
       xp.set(null)
+      boardStatus.set(null)
     },
   }
 }

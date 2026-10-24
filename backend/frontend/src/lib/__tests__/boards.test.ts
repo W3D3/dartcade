@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { bmHost, fmtDate, fmtVersion, selectedLine } from '../boards.js'
+import { applyBoardStatus, bmHost, fmtDate, fmtVersion, selectedLine } from '../boards.js'
 import type { Board } from '../api'
 
 const board = (over: Partial<Board> = {}): Board => ({
@@ -30,5 +30,17 @@ describe('board text', () => {
   it('the Selected bar: bridge, connection and when it was paired', () => {
     expect(selectedLine(board())).toBe('Bridge v0.4.2 · connected · paired 12 Aug 2026')
     expect(selectedLine(board({ online: false, bridgeVersion: null }))).toBe('Bridge offline · paired 12 Aug 2026')
+  })
+})
+
+describe('a board.status push', () => {
+  it('marks a board that dropped offline, and leaves the others', () => {
+    const list = [board(), board({ id: 'b2' })]
+    expect(applyBoardStatus(list, { boardId: 'b1', online: false })).toEqual([board({ online: false }), board({ id: 'b2' })])
+  })
+
+  it('refetches for a board that came online (new versions) or one the list does not have yet', () => {
+    expect(applyBoardStatus([board({ online: false })], { boardId: 'b1', online: true })).toBe('refetch')
+    expect(applyBoardStatus([board()], { boardId: 'new', online: false })).toBe('refetch')
   })
 })

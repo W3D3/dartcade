@@ -20,6 +20,8 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
   /** A board's bridge connected or dropped (the lobbies that use it). */
   onBoardPresence?: (boardId: string) => void
+  /** A board's bridge said hello (connected, with its versions) or dropped: its owner's Boards page shows it. */
+  onBoardStatus?: (ownerUserId: string, boardId: string, online: boolean) => void
   /** A board has a new camera still (its games' pages fetch it). */
   onCameraStill?: OnCameraStill
   /** Where wled devices found on a board's network are kept (tests pass their own). */
@@ -140,6 +142,7 @@ export function handleBridgeConnection(
     db: Kysely<Database>
     engine: SessionEngine
     onBoardPresence?: (boardId: string) => void
+    onBoardStatus?: (ownerUserId: string, boardId: string, online: boolean) => void
     onCameraStill?: OnCameraStill
     /** Where camera stills are kept (tests pass their own). */
     stills?: CameraStills
@@ -160,6 +163,7 @@ export function handleBridgeConnection(
     opts.onBoardPresence?.(boardId)
   }
   const tokenHash = hashBoardToken(query.token ?? '')
+  let ownerUserId: string | null = null
 
   const conn: BridgeConn = {
     ws: socket,
@@ -183,6 +187,7 @@ export function handleBridgeConnection(
         return false
       }
       conn.hardwareBoardId = board.hardware_id ?? null
+      ownerUserId = board.owner_user_id
       bridgeConnections.add(conn)
       bridgeConnections.register(conn, board.id)
       presence(board.id)
@@ -226,6 +231,7 @@ export function handleBridgeConnection(
           conn.bmVersion = hello.bmVersion
           conn.bridgeVersion = hello.bridgeVersion
           conn.bmUrl = hello.bmUrl
+          if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
           callHook('onBridgeHello', boardDbId, () => opts.onBridgeHello?.(boardDbId))
           return
         }
@@ -326,6 +332,8 @@ export function handleBridgeConnection(
       lights.clear(boardDbId)
     }
     presence(boardDbId)
+    // Not at auth: the board's versions and Board Manager URL only arrive with the hello
+    if (conn.helloReceived && ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, bridgeConnections.isOnline(boardDbId))
   })
 }
 
@@ -340,6 +348,7 @@ export function bridgeGwPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
         db,
         engine,
         onBoardPresence: opts.onBoardPresence,
+        onBoardStatus: opts.onBoardStatus,
         onCameraStill: opts.onCameraStill,
         lights: opts.lights,
         onBridgeHello: opts.onBridgeHello,

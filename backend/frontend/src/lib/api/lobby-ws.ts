@@ -82,7 +82,7 @@ export type FriendStatus = FriendPlaying | FriendInLobby | FriendOnline | Friend
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "MeServerMessage".
  */
-export type MeServerMessage = MeMessage | FriendsMessage | XpGainedMessage
+export type MeServerMessage = MeMessage | FriendsMessage | XpGainedMessage | BoardStatusMessage
 
 /**
  * Messages the backend pushes on the lobby WebSocket (/ws/lobby?lobbyId=…) and on the per-user WebSocket (/ws/me: a me message, and a friends message with your friends and requests). Both only push: changes go through the REST API (schema/api-v1.yaml). The server closes them with a WsCloseCode from game-ws-v1.json: 4403 after you left or were removed, 4404 after the lobby closed.
@@ -531,4 +531,15 @@ export interface XpGainedMessage {
      */
     milestone: number | null
   }
+}
+/**
+ * Pushed on /ws/me to a board's owner when its bridge connects (after its hello) or drops, so Settings → Boards follows it without polling.
+ *
+ * This interface was referenced by `LobbyWs`'s JSON-Schema
+ * via the `definition` "BoardStatusMessage".
+ */
+export interface BoardStatusMessage {
+  type: 'board.status'
+  boardId: string
+  online: boolean
 }

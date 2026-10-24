@@ -164,6 +164,9 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
     onBoardPresence: boardId => {
       lobbies.onBoardPresence(boardId)
     },
+    onBoardStatus: (ownerUserId, boardId, online) => {
+      hub.sendBoardStatus(ownerUserId, boardId, online)
+    },
     onCameraStill: (boardId, cam, version) => {
       pushCamera(engine, boardId, cam, version)
     },

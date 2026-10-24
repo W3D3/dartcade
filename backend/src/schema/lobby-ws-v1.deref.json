@@ -3612,6 +3612,28 @@
         }
       }
     },
+    "BoardStatusMessage": {
+      "title": "BoardStatusMessage",
+      "description": "Pushed on /ws/me to a board's owner when its bridge connects (after its hello) or drops, so Settings → Boards follows it without polling.",
+      "type": "object",
+      "required": [
+        "type",
+        "boardId",
+        "online"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "const": "board.status"
+        },
+        "boardId": {
+          "type": "string"
+        },
+        "online": {
+          "type": "boolean"
+        }
+      }
+    },
     "MeServerMessage": {
       "title": "MeServerMessage",
       "description": "Everything /ws/me pushes.",
@@ -4678,6 +4700,28 @@
                   "description": "The streak milestone reached (7, 14, …)."
                 }
               }
+            }
+          }
+        },
+        {
+          "title": "BoardStatusMessage",
+          "description": "Pushed on /ws/me to a board's owner when its bridge connects (after its hello) or drops, so Settings → Boards follows it without polling.",
+          "type": "object",
+          "required": [
+            "type",
+            "boardId",
+            "online"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "type": {
+              "const": "board.status"
+            },
+            "boardId": {
+              "type": "string"
+            },
+            "online": {
+              "type": "boolean"
             }
           }
         }
