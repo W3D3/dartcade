@@ -229,7 +229,7 @@
 
       {#if invalidateError}<ErrorText>{invalidateError}</ErrorText>{/if}
 
-      <section aria-label="Games" class="flex min-h-0 flex-col overflow-hidden card">
+      <section aria-label="Games" class="flex shrink-0 flex-col overflow-hidden card">
         {#if loading}
           <p class="m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
             <LoaderCircle size={18} class="animate-spin" /> Loading games…
