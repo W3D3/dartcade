@@ -177,11 +177,15 @@ describe('createMeStore', () => {
     expect(get(m)?.game).toBeNull()
   })
 
-  it('gives up when signed out (4401), and starts again after signing back in', () => {
+  it('gives up when signed out (4401), sends you to sign in, and starts again after signing back in', () => {
     const m = createMeStore(open)
     m.start()
     expect(m.running()).toBe(true)
+    const location = { hash: '#/' }
+    vi.stubGlobal('window', { location })
     FakeSocket.opened[0].drop(4401)
+    expect(location.hash).toBe('#/login')
+    vi.unstubAllGlobals()
     vi.advanceTimersByTime(60_000)
     expect(FakeSocket.opened).toHaveLength(1)
     expect(m.running()).toBe(false)

@@ -79,6 +79,10 @@ export class FriendsService {
   disconnected(userId: string): void {
     this.presence.disconnect(userId)
   }
+  /** Offline for friends at once, without the grace (a banned account). */
+  dropPresence(userId: string): void {
+    this.presence.drop(userId)
+  }
   isOnline(userId: string): boolean {
     return this.presence.isOnline(userId)
   }
