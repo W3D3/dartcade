@@ -1,9 +1,20 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator } from '@playwright/test'
 import { VIEW, open, shot, hostLobby, leaveLobby, addGuest, startLobbyGame, endGame, dart, entryMode, openHash } from './helpers.js'
 import { makeZip } from '../../backend/src/caller/zipFixture.js'
 import { makeMp3 } from '../../backend/src/caller/mp3Fixture.js'
 
 // The features that shipped after the first screenshots: Minigolf, 121, match details, matchmaking, the caller
+
+/** A player's profile card, opened from the keyboard on their first visible name in `within`. */
+async function openProfile(within: Locator, name: string): Promise<void> {
+  const trigger = within
+    .getByRole('button', { name: `${name}: profile` })
+    .filter({ visible: true })
+    .first()
+  await trigger.focus()
+  await trigger.press('Enter')
+  await expect(within.page().getByRole('dialog').getByRole('link', { name: 'Profile' })).toBeVisible()
+}
 
 test('minigolf: a hole in 3D, and the course editor', async ({ browser }) => {
   test.setTimeout(300_000)
@@ -84,14 +95,19 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
   ] as const) {
     const { ctx, page } = await open(browser, 'michael', view)
     await page.goto('/#/history')
+    // The row's corner: its middle may be a player's profile button
     await page
-      .getByRole('link', { name: /X01.*details/ })
+      .getByRole('listitem')
       .filter({ hasText: 'Gerwyn' })
       .first()
-      .click()
+      .getByRole('link', { name: /X01.*details/ })
+      .click({ position: { x: 8, y: 8 } })
     await page.waitForURL(url => url.hash.startsWith('#/history/'))
     await expect(page.getByRole('tab', { name: 'Heatmap' })).toBeVisible()
     await shot(page, `details/x01-stats-${suffix}.png`, { settle: 1500 })
+    await openProfile(page.getByRole('region', { name: 'Result', exact: true }), 'Gerwyn')
+    await shot(page, `details/x01-profile-${suffix}.png`)
+    await page.keyboard.press('Escape')
     await page.getByRole('tab', { name: 'Heatmap' }).click()
     await expect(page.getByText('Where every dart landed')).toBeVisible()
     // On a phone the heatmap sits below the stats: bring it to the top
@@ -110,6 +126,9 @@ test('history: compact stats on a phone, the page scrolled', async ({ browser })
     await page.goto('/#/history')
     await expect(page.getByRole('link', { name: /details/ }).first()).toBeVisible()
     await shot(page, `history/history-${suffix}.png`)
+    await openProfile(page.locator('main'), 'Luke')
+    await shot(page, `history/history-profile-${suffix}.png`)
+    await page.keyboard.press('Escape')
     if (suffix === 'phone') {
       await page
         .getByRole('link', { name: /details/ })
