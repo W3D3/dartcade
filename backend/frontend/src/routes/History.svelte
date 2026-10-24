@@ -113,7 +113,7 @@
 {/snippet}
 
 <Layout title="History">
-  <main class="flex min-h-0 flex-grow flex-col gap-6 overflow-auto px-4 py-6 md:px-8 xl:px-11 md:py-10">
+  <main class="flex min-h-0 flex-grow flex-col gap-4 md:gap-6 overflow-auto px-4 py-4 md:px-8 xl:px-11 md:py-10">
     <header class="flex flex-wrap items-end justify-between gap-6">
       <div class="hidden md:flex flex-col gap-1.5">
         <h1 class="m-0 font-display text-[48px] font-bold uppercase leading-none tracking-[0.02em]">History</h1>
@@ -140,17 +140,21 @@
     </header>
 
     {#if tiles.length}
-      <!-- 1px gaps over the line colour draw the dividers, in the 2x2 and the single row alike -->
+      <!-- 1px gaps over the line colour draw the dividers: a compact row that scrolls sideways on phones, 2x2 on tablets, 4 across on desktops -->
+      <!-- Focusable so a keyboard can scroll the phone row -->
+      <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
       <dl
         aria-label={tilesLabel}
-        class="m-0 grid flex-shrink-0 grid-cols-2 gap-px overflow-hidden rounded-[14px] border border-line-2 bg-line-2 lg:grid-cols-4"
+        tabindex="0"
+        class="m-0 grid flex-shrink-0 snap-x snap-mandatory auto-cols-[minmax(max-content,1fr)] grid-flow-col gap-px overflow-x-auto rounded-[12px] border border-line-2 bg-line-2 [scrollbar-width:none] md:snap-none md:grid-flow-row md:grid-cols-2 md:overflow-hidden md:rounded-[14px] lg:grid-cols-4 [&::-webkit-scrollbar]:hidden"
       >
         {#each tiles as t (t.label)}
-          <div class="flex flex-col gap-1.5 bg-surface-panel px-[22px] py-[18px]">
-            <dt class="text-[12px] label-caps text-text-dim">{t.label}</dt>
-            <dd class="m-0 flex items-baseline gap-2.5">
-              <span class="font-display text-[40px] font-bold leading-none">{t.value}</span>
-              {#if t.note}<span class="whitespace-nowrap text-[15px] {t.trend === 'up' ? 'text-accent' : 'text-text-muted'}">{t.note}</span
+          <div class="flex min-w-[116px] snap-start flex-col gap-0.5 bg-surface-panel px-3 py-2.5 md:gap-1.5 md:px-[22px] md:py-[18px]">
+            <dt class="text-[10px] label-caps text-text-dim max-md:whitespace-nowrap md:text-[12px]">{t.label}</dt>
+            <dd class="m-0 flex items-baseline gap-1.5 md:gap-2.5">
+              <span class="font-display text-[26px] max-md:whitespace-nowrap font-bold leading-none md:text-[40px]">{t.value}</span>
+              {#if t.note}<span class="whitespace-nowrap text-[12px] md:text-[15px] {t.trend === 'up' ? 'text-accent' : 'text-text-muted'}"
+                  >{t.note}</span
                 >{/if}
             </dd>
           </div>

@@ -101,6 +101,26 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
   }
 })
 
+test('history: compact stats on a phone, the page scrolled', async ({ browser }) => {
+  for (const [view, suffix] of [
+    [VIEW.wide, 'desktop'],
+    [VIEW.phone, 'phone'],
+  ] as const) {
+    const { ctx, page } = await open(browser, 'admin', view)
+    await page.goto('/#/history')
+    await expect(page.getByRole('link', { name: /details/ }).first()).toBeVisible()
+    await shot(page, `history/history-${suffix}.png`)
+    if (suffix === 'phone') {
+      await page
+        .getByRole('link', { name: /details/ })
+        .last()
+        .scrollIntoViewIfNeeded()
+      await shot(page, 'history/history-phone-scrolled.png')
+    }
+    await ctx.close()
+  }
+})
+
 test('matchmaking and ranks', async ({ browser }) => {
   for (const [view, route, file] of [
     [VIEW.wide, '/matchmaking', 'matchmaking/matchmaking-desktop.png'],
