@@ -13,6 +13,8 @@ export type BridgeConn = {
   bmVersion: string | null
   bridgeVersion?: string | null // from bridge.hello
   bmUrl: string | null
+  /** From bridge.hello: it can update itself (bridge.update). */
+  bridgeUpdatable: boolean
   helloReceived: boolean
 }
 

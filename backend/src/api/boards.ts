@@ -13,6 +13,8 @@ import { canWatchSession, noLobbies, type IsLobbyMember } from '../session/acces
 import type { Session } from '../session/types.js'
 import type { Route } from './route.js'
 import { z } from 'zod'
+import { bridgeUpdateFor, type BridgeReleases } from '../boards/bridgeRelease.js'
+import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../boards/bridgeUpdate.js'
 
 /** How long the bridge may take to answer a Board Manager call (its own HTTP timeout is 10 s). */
 const BM_TIMEOUT_MS = 12_000
@@ -36,6 +38,10 @@ type Opts = FastifyPluginOptions & {
   stills?: CameraStills
   /** How long the live camera route waits for the bridge's frame (5 s; the bridge gives the camera 3 s). */
   liveCameraTimeoutMs?: number
+  /** The bridge release this server offers (none without it). */
+  bridgeReleases?: Pick<BridgeReleases, 'offered'>
+  /** The boards' Update bridge progress (tests pass their own). */
+  bridgeUpdates?: BridgeUpdates
 }
 
 // A still asked for by its current version never changes
@@ -57,6 +63,8 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     isLobbyMember = noLobbies,
     stills = cameraStills,
     liveCameraTimeoutMs = 5000,
+    bridgeReleases = { offered: () => null },
+    bridgeUpdates = defaultBridgeUpdates,
   } = opts
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
@@ -95,6 +103,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
 
   app.get<Route<'listBoards'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('listBoards') }, async req => {
     const rows = await getBoardsByOwner(db, req.userId)
+    const offered = bridgeReleases.offered()
     return {
       boards: rows.map(b => {
         const conn = bridgeConnections.get(b.id)
@@ -118,6 +127,11 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           ip: bm?.hostname ?? null,
           // Full Board Manager origin (incl. port) for linking
           bmUrl: bm?.origin ?? null,
+          bridgeUpdate: {
+            available: bridgeUpdateFor(conn?.bridgeVersion, offered),
+            updatable: conn?.bridgeUpdatable ?? false,
+            status: bridgeUpdates.get(b.id) ?? undefined,
+          },
         }
       }),
     }
@@ -221,6 +235,25 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       },
     )
   }
+
+  // Update bridge: the bridge downloads and verifies the release itself; it only ever gets the
+  // version this server offers, never one from the request
+  app.post<Route<'updateBridge'>>(
+    '/api/boards/:id/bridge-update',
+    { preValidation: requireAuth, schema: fromSpec('updateBridge') },
+    async (req, reply) => {
+      const { id } = req.params
+      if (!(await ownBoard(id, req.userId, reply))) return reply
+      const conn = bridgeConnections.get(id)
+      if (!conn?.helloReceived) return reply.code(503).send({ error: 'board offline' })
+      const version = bridgeUpdateFor(conn.bridgeVersion, bridgeReleases.offered())
+      if (!version) return reply.code(409).send({ error: 'the bridge is up to date' })
+      if (!conn.bridgeUpdatable) return reply.code(409).send({ error: 'this bridge cannot update itself: run its install command again' })
+      if (bridgeUpdates.inFlight(id)) return reply.code(409).send({ error: 'an update is already running' })
+      if (!bridgeConnections.send(id, { kind: 'bridge.update', data: { version } })) return reply.code(503).send({ error: 'board offline' })
+      return reply.code(202).send(bridgeUpdates.request(id, version))
+    },
+  )
 
   app.delete<Route<'deleteBoard'>>(
     '/api/boards/:id',

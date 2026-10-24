@@ -10,6 +10,7 @@ import { z } from 'zod'
 import {
   BaseEnvelopeSchema,
   BmResponseMessageSchema,
+  BridgeUpdateStatusMessageSchema,
   CameraStillMessageSchema,
   WledFoundMessageSchema,
   WledStatusMessageSchema,
@@ -18,6 +19,7 @@ import { cameraStills, type CameraStills } from '../camera/store.js'
 import { lightsStore, type LightsStore, type FoundDevice } from '../lights/store.js'
 import { onceGone } from '../util/socket.js'
 import { hashBoardToken } from '../boards/token.js'
+import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../boards/bridgeUpdate.js'
 
 export { bridgeConnections }
 
@@ -82,12 +84,18 @@ const HelloSchema = z
     bridge_version: nonEmpty.default(null),
     bm_version: nonEmpty.default(null),
     bm_url: BmOrigin.nullable().catch(null).default(null),
+    updatable: z.boolean().catch(false).default(false),
   })
-  .catch({ bridge_version: null, bm_version: null, bm_url: null })
+  .catch({ bridge_version: null, bm_version: null, bm_url: null, updatable: false })
 
-export function parseHello(data: unknown): { bridgeVersion: string | null; bmVersion: string | null; bmUrl: string | null } {
+export function parseHello(data: unknown): {
+  bridgeVersion: string | null
+  bmVersion: string | null
+  bmUrl: string | null
+  updatable: boolean
+} {
   const h = HelloSchema.parse(data)
-  return { bridgeVersion: h.bridge_version, bmVersion: h.bm_version, bmUrl: h.bm_url }
+  return { bridgeVersion: h.bridge_version, bmVersion: h.bm_version, bmUrl: h.bm_url, updatable: h.updatable }
 }
 
 // The bridge's keepalive (bridge/internal/transport): not an event, never acked. Any
@@ -154,6 +162,8 @@ export function handleBridgeConnection(
     stills?: CameraStills
     /** Where wled devices found on the board's network are kept (tests pass their own). */
     lights?: LightsStore
+    /** The boards' Update bridge progress (tests pass their own). */
+    bridgeUpdates?: BridgeUpdates
     /** The bridge said hello: its board id (the lights service probes this board once it can). */
     onBridgeHello?: (boardId: string) => void | Promise<void>
     /** A bridge event was applied to the game. */
@@ -162,7 +172,7 @@ export function handleBridgeConnection(
     onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
   },
 ): void {
-  const { db, engine, stills = cameraStills, lights = lightsStore } = opts
+  const { db, engine, stills = cameraStills, lights = lightsStore, bridgeUpdates = defaultBridgeUpdates } = opts
   // A board came online or dropped: its game and the lobbies using it show it
   const presence = (boardId: string) => {
     engine.onBoardPresence(boardId)
@@ -179,6 +189,7 @@ export function handleBridgeConnection(
     bootId: null,
     bmVersion: null,
     bmUrl: null,
+    bridgeUpdatable: false,
     helloReceived: false,
   }
 
@@ -237,6 +248,8 @@ export function handleBridgeConnection(
           conn.bmVersion = hello.bmVersion
           conn.bridgeVersion = hello.bridgeVersion
           conn.bmUrl = hello.bmUrl
+          conn.bridgeUpdatable = hello.updatable
+          bridgeUpdates.hello(boardDbId, hello.bridgeVersion)
           if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
           callHook('onBridgeHello', boardDbId, () => opts.onBridgeHello?.(boardDbId))
           return
@@ -266,6 +279,14 @@ export function handleBridgeConnection(
             else lights.setFound(boardDbId, devices, new Date(scannedAt), scanError)
             callHook('onLightsFound', boardDbId, () => opts.onLightsFound?.(boardDbId, devices))
           }
+          return
+        }
+        if (earlyKind === 'bridge.update.status') {
+          const m = BridgeUpdateStatusMessageSchema.safeParse(parsed)
+          if (!m.success) return
+          bridgeUpdates.report(boardDbId, m.data.data)
+          // The owner's Boards page refetches the board on this push, so it shows the progress
+          if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
           return
         }
         if (earlyKind === 'wled.status') {

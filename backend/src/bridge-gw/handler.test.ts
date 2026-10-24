@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { createHash } from 'crypto'
 import { EventEmitter } from 'events'
 import type { AddressInfo } from 'net'
@@ -17,6 +17,7 @@ vi.mock('../db/queries.js', () => ({
   updateBoardHardwareId: vi.fn().mockResolvedValue(undefined),
 }))
 import * as queries from '../db/queries.js'
+import { BridgeUpdates } from '../boards/bridgeUpdate.js'
 import { handleBridgeConnection, bridgeConnections, parseEnvelope, parseHello, bridgeToken } from './handler.js'
 
 describe('bridge-gw token auth', () => {
@@ -56,6 +57,7 @@ describe('BridgeConnections', () => {
       bootId: null,
       bmVersion: null,
       bmUrl: null,
+      bridgeUpdatable: false,
       helloReceived: false,
     }
     const conn2 = {
@@ -66,6 +68,7 @@ describe('BridgeConnections', () => {
       bootId: null,
       bmVersion: null,
       bmUrl: null,
+      bridgeUpdatable: false,
       helloReceived: false,
     }
     bc.add(conn1)
@@ -87,6 +90,7 @@ describe('BridgeConnections', () => {
       bootId: null,
       bmVersion: null,
       bmUrl: null,
+      bridgeUpdatable: false,
       helloReceived: true,
     }
     bc.add(conn)
@@ -105,6 +109,7 @@ describe('BridgeConnections', () => {
       bootId: null,
       bmVersion: null,
       bmUrl: null,
+      bridgeUpdatable: false,
       helloReceived: true,
     })
     const old = mk(),
@@ -130,6 +135,7 @@ describe('BridgeConnections', () => {
       bootId: null,
       bmVersion: null,
       bmUrl: null,
+      bridgeUpdatable: false,
       helloReceived: false,
     }
     bc.add(conn)
@@ -149,6 +155,7 @@ describe('BridgeConnections', () => {
       bootId: null,
       bmVersion: '1.0.7',
       bmUrl: 'http://192.168.0.109:3180',
+      bridgeUpdatable: false,
       helloReceived: true,
     }
     bc.add(conn)
@@ -804,6 +811,7 @@ describe('BridgeConnections.send', () => {
       bootId: null,
       bmVersion: null,
       bmUrl: null,
+      bridgeUpdatable: false,
       helloReceived: false,
     }
     bc.add(conn)
@@ -868,8 +876,11 @@ describe('bridge message parsing', () => {
       bridgeVersion: '1.2',
       bmVersion: null,
       bmUrl: 'http://bm',
+      updatable: false,
     })
-    expect(parseHello(null)).toEqual({ bridgeVersion: null, bmVersion: null, bmUrl: null })
+    expect(parseHello(null)).toEqual({ bridgeVersion: null, bmVersion: null, bmUrl: null, updatable: false })
+    expect(parseHello({ updatable: true }).updatable).toBe(true)
+    expect(parseHello({ updatable: 'yes' }).updatable).toBe(false)
   })
 
   it('hello keeps only the origin of the Board Manager URL', () => {
@@ -886,7 +897,56 @@ describe('bridge message parsing', () => {
 
   it('hello refuses a Board Manager URL that is not http(s)', () => {
     for (const url of ['file:///etc/passwd', 'javascript:alert(1)', 'gopher://x', 'not a url', '']) {
-      expect(parseHello({ bridge_version: '1.2', bm_url: url })).toEqual({ bridgeVersion: '1.2', bmVersion: null, bmUrl: null })
+      expect(parseHello({ bridge_version: '1.2', bm_url: url })).toEqual({
+        bridgeVersion: '1.2',
+        bmVersion: null,
+        bmUrl: null,
+        updatable: false,
+      })
     }
+  })
+})
+
+describe('bridge updates from the bridge', () => {
+  async function connect(boardId: string, version: string) {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: boardId, hardware_id: null, owner_user_id: 'owner' } as any)
+    const engine = { onBridgeEvent: vi.fn(), onBoardPresence: vi.fn() } as any
+    const onBoardStatus = vi.fn()
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, bridgeUpdates: updates, onBoardStatus })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: { bridge_version: version, updatable: true } })))
+    await flush()
+    return { socket, onBoardStatus }
+  }
+  let updates: BridgeUpdates
+  beforeEach(() => {
+    updates = new BridgeUpdates()
+  })
+
+  it('keeps the progress the bridge reports and pushes it to the owner, without acking it', async () => {
+    updates.request('board-u1', 'v0.9.2')
+    const { socket, onBoardStatus } = await connect('board-u1', 'v0.9.0')
+    onBoardStatus.mockClear()
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.update.status', data: { version: 'v0.9.2', phase: 'verifying' } })))
+    await flush()
+    await flush()
+    expect(updates.get('board-u1')).toEqual({ version: 'v0.9.2', phase: 'verifying', error: null })
+    expect(onBoardStatus).toHaveBeenCalledWith('owner', 'board-u1', true)
+    expect(socket.send).not.toHaveBeenCalled()
+  })
+
+  it('finishes the update when the bridge comes back with the new version', async () => {
+    updates.request('board-u2', 'v0.9.2')
+    updates.report('board-u2', { version: 'v0.9.2', phase: 'restarting' })
+    await connect('board-u2', 'v0.9.2')
+    expect(updates.get('board-u2')?.phase).toBe('done')
+  })
+
+  it('drops a status that does not match the schema', async () => {
+    const { socket } = await connect('board-u3', 'v0.9.0')
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.update.status', data: { version: 'v0.9.2', phase: 'exploded' } })))
+    await flush()
+    await flush()
+    expect(updates.get('board-u3')).toBeNull()
   })
 })
