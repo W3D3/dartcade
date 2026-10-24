@@ -1833,6 +1833,59 @@ paths:
         '409': { description: Not finished yet, content: { application/json: { schema: { $ref: '#/components/schemas/ErrorResponse' } } } }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/matchmaking/search:
+    post:
+      operationId: startRankedSearch
+      summary: 'Search for a ranked match: alone (1v1), or as the host of a lobby of two (2v2)'
+      tags: [ranked]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RankedSearchRequest' }
+      responses:
+        '204': { description: Searching; the search shows on /ws/me }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/RankedConflict' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+    delete:
+      operationId: cancelRankedSearch
+      summary: "Stop searching (a duo's search: only its host)"
+      tags: [ranked]
+      responses:
+        '204': { description: Not searching any more }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/matchmaking/matches/{matchId}/accept:
+    parameters:
+      - $ref: '#/components/parameters/MatchId'
+    post:
+      operationId: acceptRankedMatch
+      summary: Accept a found match; the game starts once everyone did
+      tags: [ranked]
+      responses:
+        '204': { description: Accepted }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/matchmaking/matches/{matchId}/decline:
+    parameters:
+      - $ref: '#/components/parameters/MatchId'
+    post:
+      operationId: declineRankedMatch
+      summary: "Decline a found match: it's dropped, and your search pauses for 2 minutes"
+      tags: [ranked]
+      responses:
+        '204': { description: Declined }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/friends:
     get:
       operationId: listFriends
@@ -2153,6 +2206,11 @@ components:
       in: path
       required: true
       schema: { type: string, minLength: 1 }
+    MatchId:
+      name: matchId
+      in: path
+      required: true
+      schema: { type: string, minLength: 1 }
     PersonId:
       name: personId
       in: path
@@ -2251,6 +2309,11 @@ components:
       content:
         application/json:
           schema: { $ref: '#/components/schemas/BoardActionResult' }
+    RankedConflict:
+      description: Can't search right now (see code)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/RankedConflict' }
     LobbyConflict:
       description: Conflicts with the lobby's state (see code)
       content:
@@ -2322,6 +2385,23 @@ components:
         code: { type: string, enum: [already_friends, already_requested] }
 
     RankedMode: { type: string, enum: ['1v1', '2v2'] }
+    RankedSearchRequest:
+      type: object
+      required: [mode, firstTo]
+      additionalProperties: false
+      properties:
+        mode: { $ref: '#/components/schemas/RankedMode' }
+        firstTo: { type: integer, enum: [2, 3], description: 'First to 3 is played only when the other side picked it too' }
+    RankedConflict:
+      type: object
+      required: [error]
+      additionalProperties: false
+      properties:
+        error: { type: string }
+        code:
+          type: string
+          enum: [searching, paused, active_session, not_duo]
+          description: 'searching: already searching or in a found match. paused: you declined or missed a match a moment ago. active_session: a game of yours is running. not_duo: 2v2 needs you as host of a lobby of exactly two members.'
     RankedRating:
       type: object
       required: [mode, rating, rankIndex, matches, wins, streak, change30d]

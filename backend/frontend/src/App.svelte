@@ -31,6 +31,7 @@
   import AdminGames from './routes/AdminGames.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
+  import MatchFound from '$lib/components/ranked/MatchFound.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { loadAccountSettings } from '$lib/accountSettings'
@@ -187,6 +188,7 @@
     {:else}
       <Router {routes} />
       {#if $currentUser}<ProgressToasts />{/if}
+      {#if $currentUser}<MatchFound />{/if}
     {/if}
   {/if}
 </Tooltip.Provider>

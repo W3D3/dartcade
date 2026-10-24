@@ -43,6 +43,8 @@ import { auth, mailConfig } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
+import type { MatchmakingService } from './matchmaking/service.js'
+import { matchmakingApiPlugin } from './api/matchmaking.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
 import { readFileSync } from 'node:fs'
@@ -59,6 +61,8 @@ export type AppDeps = {
   friends: FriendsService
   /** Sends wled scenes/flashes as games change (see lights/service.ts); omitted in tests that don't exercise it. */
   lights?: LightsService
+  /** The ranked queue (see matchmaking/service.ts). */
+  matchmaking: MatchmakingService
   /** Built frontend to serve; omitted in tests. */
   frontendDist?: string
   /** Observe route registration (the spec coverage test uses this). */
@@ -99,7 +103,17 @@ function readIndex(frontendDist: string): string | undefined {
 }
 
 /** All HTTP/WebSocket routes of the backend, without listening or touching the database. */
-export async function buildApp({ engine, db, lobbies, hub, friends, lights, frontendDist, onRoute }: AppDeps): Promise<FastifyInstance> {
+export async function buildApp({
+  engine,
+  db,
+  lobbies,
+  hub,
+  friends,
+  lights,
+  matchmaking,
+  frontendDist,
+  onRoute,
+}: AppDeps): Promise<FastifyInstance> {
   const app = createFastify()
   const indexHtml = frontendDist ? readIndex(frontendDist) : undefined
   if (onRoute) app.addHook('onRoute', onRoute)
@@ -179,7 +193,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
       : undefined,
   })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
-  await app.register(lobbyGwPlugin, { lobbies, hub, friends })
+  await app.register(lobbyGwPlugin, { lobbies, hub, friends, matchmaking })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
   await app.register(meApiPlugin, {
@@ -229,6 +243,7 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
       }
     },
   })
+  await app.register(matchmakingApiPlugin, { db, matchmaking })
 
   // Any unmatched method+path under our reserved prefixes gets our ErrorResponse 404
   // (not Fastify's default `{ message, error: 'Not Found', statusCode }`); an unmatched
