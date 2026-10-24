@@ -4,15 +4,24 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import { insertPairingCode, getPairingCode, claimPairingCode, consumePairingToken, insertBoard } from '../db/queries.js'
+import {
+  insertPairingCode,
+  getPairingCode,
+  claimPairingCode,
+  consumePairingToken,
+  insertBoard,
+  insertBridgeInstallToken,
+  exchangeBridgeInstallToken,
+} from '../db/queries.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 import { normalizeCode } from '../lobby/code.js'
 import { PairingCodeClaimedError } from '../db/errors.js'
-import { newBoardToken } from '../boards/token.js'
+import { newBoardToken, hashBoardToken } from '../boards/token.js'
 
 const CODE_CHARSET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 const CODE_TTL_MS = 10 * 60 * 1000
+const INSTALL_TOKEN_TTL_MS = 15 * 60 * 1000
 
 function generateCode(): string {
   const bytes = randomBytes(8)
@@ -95,6 +104,31 @@ export function pairingApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
       }
 
       return reply.code(201).send({ boardId, name })
+    },
+  )
+
+  app.post<Route<'createBridgeInstallToken'>>(
+    '/api/bridge-install-tokens',
+    {
+      config: { rateLimit: { max: 20, timeWindow: '1 minute' } },
+      preValidation: requireAuth,
+      schema: fromSpec('createBridgeInstallToken'),
+    },
+    async (req, reply) => {
+      const { token, tokenHash } = newBoardToken()
+      const expiresAt = new Date(Date.now() + INSTALL_TOKEN_TTL_MS)
+      await insertBridgeInstallToken(db, { token_hash: tokenHash, user_id: req.userId, expires_at: expiresAt })
+      return reply.code(201).send({ token, expiresAt: expiresAt.toISOString() })
+    },
+  )
+
+  app.post<Route<'exchangeBridgeInstallToken'>>(
+    '/api/bridge-install-tokens/exchange',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } }, schema: fromSpec('exchangeBridgeInstallToken') },
+    async (req, reply) => {
+      const token = await exchangeBridgeInstallToken(db, hashBoardToken(req.body.token))
+      if (!token) return reply.code(404).send({ error: 'not found' })
+      return reply.code(201).send({ token })
     },
   )
 

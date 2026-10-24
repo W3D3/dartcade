@@ -129,14 +129,7 @@ export class LightsService {
         this.enqueue(board, async () => {
           for (const trigger of triggers) {
             const local = 'seat' in trigger ? isLocal(session, trigger.seat, board) : true
-            const t = { ...trigger, local }
-            // golf.sunk (#307): the match screen plays the putt out before showing the ball drop,
-            // so the flash is held back to land with it instead of firing on this snapshot. Timed
-            // outside this board's queue (it would otherwise block every trigger behind it for as
-            // long as the delay), then re-enqueued so it still lands in order among whatever's
-            // happened on the board by the time it fires.
-            if (t.kind === 'golf.sunk' && t.delayMs) this.fireDelayed(board, t.delayMs, t, after.gameId, layout)
-            else await this.fire(board, t, after.gameId, layout)
+            await this.fire(board, { ...trigger, local }, after.gameId, layout)
           }
         }),
       ),
@@ -255,15 +248,6 @@ export class LightsService {
     })
     this.queues.set(board, chain)
     return chain
-  }
-
-  /** Fires `t` on `board` after `delayMs`, queued there like any other trigger once the timer
-   *  fires, so it still lands in order among whatever runs on the board by then. Not awaited by
-   *  the caller: the delay must not hold up the triggers that follow it in the same push. */
-  private fireDelayed(board: string, delayMs: number, t: BoardTrigger, game: GameId | null, layout: SeatLayout): void {
-    setTimeout(() => {
-      void this.enqueue(board, () => this.fire(board, t, game, layout))
-    }, delayMs)
   }
 
   private async resendOrIdle(boardId: string): Promise<void> {

@@ -732,6 +732,53 @@ paths:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/bridge-install-tokens:
+    post:
+      operationId: createBridgeInstallToken
+      summary: Make a one-time token for a bridge install command (valid for 15 minutes, shown once)
+      tags: [pairing]
+      responses:
+        '201':
+          description: The new token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/BridgeInstallToken' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/bridge-install-tokens/exchange:
+    post:
+      operationId: exchangeBridgeInstallToken
+      summary: A bridge swaps its install token for its own board token. The board appears in the account that made the install token. Used once.
+      tags: [pairing, bridge]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token]
+              additionalProperties: false
+              properties:
+                token: { type: string }
+      responses:
+        '201':
+          description: The bridge's own token, for the board that was just made
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [token]
+                additionalProperties: false
+                properties:
+                  token: { type: string }
+        '404':
+          description: Unknown, used or expired install token
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/users:
     get:
       operationId: searchUsers
@@ -3306,6 +3353,14 @@ components:
       properties:
         boardId: { type: string }
         name: { type: string }
+
+    BridgeInstallToken:
+      type: object
+      required: [token, expiresAt]
+      additionalProperties: false
+      properties:
+        token: { type: string }
+        expiresAt: { type: string, format: date-time }
 
     SessionSummary:
       type: object

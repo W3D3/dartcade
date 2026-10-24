@@ -49,6 +49,12 @@ export interface BoardsTable {
   lights_enabled: ColumnType<boolean, boolean | undefined, boolean>
 }
 
+export interface BridgeInstallTokensTable {
+  token_hash: string
+  user_id: string
+  expires_at: Date
+}
+
 export interface PairingCodesTable {
   code: string
   created_at: ColumnType<Date, never, never>
@@ -396,6 +402,7 @@ export interface ProgressionBackfillTable {
 export interface Database {
   user: UserTable
   boards: BoardsTable
+  bridge_install_tokens: BridgeInstallTokensTable
   pairing_codes: PairingCodesTable
   game_sessions: GameSessionsTable
   game_players: GamePlayersTable
