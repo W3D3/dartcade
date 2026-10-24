@@ -155,8 +155,9 @@ export interface GameModule<
   prepareConfig?(cfg: Cfg, rng: Rng): Promise<Cfg>
   /** Options for a config field read at request time (Minigolf's courses), in place of configMeta's; null keeps those. */
   liveOptions?(field: string): Promise<{ value: string; label: string }[] | null>
-  /** `rng` drives any random setup; the engine passes one seeded per game. */
-  init(cfg: Cfg, players: Player[], rng?: Rng): S
+  /** `rng` drives any random setup; the engine passes one seeded per game. `version` is the
+   *  `version` the game was created with (an older one when a stored game is replayed). */
+  init(cfg: Cfg, players: Player[], rng?: Rng, version?: number): S
   getCurrentPlayer(s: S): number
   onBoardEvent(s: S, e: BoardEvent): { state: S; effects?: Effect[] }
   onUserAction(s: S, a: UserAction): { state: S; effects?: Effect[] }

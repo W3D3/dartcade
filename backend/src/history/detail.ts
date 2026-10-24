@@ -24,6 +24,7 @@ export async function buildDetail(
     seats: game.seats.map(s => ({ name: s.name, userId: null, controllerUserId: '', boardId: null, boardName: null, bot: null })),
     seed: game.rng_seed,
     createdAt: game.created_at,
+    version: game.game_version,
   })
   const { visits } = await replayPooled(session, events, warn)
   const final = session.committedState

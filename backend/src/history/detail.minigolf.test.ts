@@ -24,6 +24,7 @@ const game: HistoryGame = {
   game_id: 'minigolf',
   config,
   rng_seed: 1,
+  game_version: 1,
   created_at: at,
   finished_at: at,
   board: null,

@@ -59,6 +59,7 @@ describe('buildDetail', () => {
     game_id: 'atc',
     config: { throwAgainOnAllHit: false, finishOn: 'twenty', multiplierAdvances: false, order: 'asc' },
     rng_seed: 0,
+    game_version: 1,
     created_at: new Date(0),
     finished_at: new Date(1),
     board: null,

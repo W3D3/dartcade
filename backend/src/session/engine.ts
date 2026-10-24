@@ -537,6 +537,7 @@ export class SessionEngine {
       createdAt: row.created_at,
       lobbyId: row.lobby_id,
       lobbyName: row.lobby_name,
+      version: row.game_version,
     })
     const events = await this.store.getSessionEvents(row.id)
     const { visits, won } = replay(session, events, this.warn)
