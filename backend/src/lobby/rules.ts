@@ -35,19 +35,26 @@ export const friendsMayJoin = (lobby: Pick<LobbyState, 'access' | 'hostUserId'>,
   lobby.access === 'friends' && lobby.hostUserId !== null && hostIsFriend
 
 /**
- * The board rule (spec, Decisions → Boards). Menus only list your own boards. Anyone
- * gives a person on Manual one of their own boards. Once they have one, only the person
- * (a guest's adder) changes it, and the board's owner can take it back (to Manual).
- * `target` null means Manual.
+ * A board the lobby shares: someone in it sits there and its owner is a member. Anyone picks
+ * one for themselves (or a guest of theirs), so a joiner can sit at the host's board.
  */
-export function canSetBoard(actorUserId: string, person: LobbyPerson, target: BoardTarget | null): boolean {
+export const isSharedBoard = (lobby: LobbyState, target: BoardTarget): boolean =>
+  isMember(lobby, target.ownerUserId) && lobby.people.some(p => p.boardId === target.boardId)
+
+/**
+ * The board rule (spec, Decisions → Boards, relaxed by #345). You put yourself (a guest's
+ * adder: the guest) on one of your own boards or one the lobby shares. Anyone gives a person
+ * on Manual one of their own boards, and the host gives anyone theirs. Once someone has a
+ * board, the board's owner can take it back (to Manual). `target` null means Manual.
+ */
+export function canSetBoard(lobby: LobbyState, actorUserId: string, person: LobbyPerson, target: BoardTarget | null): boolean {
   // A bot never has a board (the scheduler drives it, with no board to throw on): not even a
   // later "move board" action may give it one, same as addGuest refuses one when it's added.
   if (person.bot !== null) return false
   const controls = controllerOf(person) === actorUserId
   if (target === null) return controls || (person.boardId !== null && person.boardOwnerUserId === actorUserId)
-  if (target.ownerUserId !== actorUserId) return false
-  return controls || person.boardId === null
+  if (target.ownerUserId !== actorUserId) return controls && isSharedBoard(lobby, target)
+  return controls || person.boardId === null || isHost(lobby, actorUserId)
 }
 
 /**

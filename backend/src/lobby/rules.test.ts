@@ -89,40 +89,57 @@ const lenas = { boardId: 'lenas', ownerUserId: 'lena' }
 const lobby = lobbyOf([chris, lena, max, guest])
 
 describe('canSetBoard', () => {
+  // Chris hosts at his Living room, Lena at her place with her guest, Max on Manual
+  const set = (actor: string, p: LobbyPerson, target: typeof living | null) => canSetBoard(lobby, actor, p, target)
+
   it('anyone gives a person on Manual one of their own boards', () => {
-    expect(canSetBoard('chris', max, living)).toBe(true)
-    expect(canSetBoard('lena', max, lenas)).toBe(true)
+    expect(set('chris', max, living)).toBe(true)
+    expect(set('lena', max, lenas)).toBe(true)
   })
 
-  it("nobody gives out a board they don't own", () => {
-    expect(canSetBoard('chris', max, lenas)).toBe(false)
-    expect(canSetBoard('max', max, living)).toBe(false)
+  it("nobody gives someone else a board they don't own", () => {
+    expect(set('chris', max, lenas)).toBe(false)
+    expect(set('lena', max, living)).toBe(false)
   })
 
-  it("once someone has a board, only they (or a guest's adder) change it; the host has no extra rights", () => {
-    expect(canSetBoard('chris', lena, living)).toBe(false)
-    expect(canSetBoard('lena', lena, null)).toBe(true)
-    expect(canSetBoard('lena', guest, lenas)).toBe(true)
-    expect(canSetBoard('chris', guest, living)).toBe(false)
+  it('you put yourself on a board the lobby shares, someone else sits at and its owner is in', () => {
+    expect(set('max', max, living)).toBe(true)
+    expect(set('lena', lena, living)).toBe(true)
+    expect(set('lena', guest, living)).toBe(true)
+    // Chris's garage: nobody sits there
+    expect(set('max', max, garage)).toBe(false)
+    // Lena left: her board isn't the lobby's any more
+    const without = lobbyOf([chris, max, { ...guest, addedByUserId: 'chris' }])
+    expect(canSetBoard(without, 'max', max, lenas)).toBe(false)
   })
 
-  it("the board's owner takes it back to Manual, from anyone, but can't swap it for another", () => {
+  it('the host gives anyone one of their own boards, even someone at their own board', () => {
+    expect(set('chris', lena, living)).toBe(true)
+    expect(set('chris', lena, garage)).toBe(true)
+    expect(set('chris', guest, living)).toBe(true)
+  })
+
+  it('a member who is not the host only gives their boards to people on Manual', () => {
+    const maxAtHome = person({ id: 'm', userId: 'max', addedByUserId: 'max', boardId: 'maxs', boardOwnerUserId: 'max' })
+    expect(canSetBoard(lobbyOf([chris, lena, maxAtHome]), 'lena', maxAtHome, lenas)).toBe(false)
+  })
+
+  it("the board's owner takes it back to Manual, from anyone", () => {
     const maxOnLiving = person({ id: 'x', userId: 'max', addedByUserId: 'max', boardId: 'living', boardOwnerUserId: 'chris' })
-    expect(canSetBoard('chris', maxOnLiving, null)).toBe(true)
-    expect(canSetBoard('lena', maxOnLiving, null)).toBe(false)
-    expect(canSetBoard('chris', maxOnLiving, garage)).toBe(false)
+    expect(set('chris', maxOnLiving, null)).toBe(true)
+    expect(set('lena', maxOnLiving, null)).toBe(false)
   })
 
   it('only the person moves themselves from Manual to Manual', () => {
-    expect(canSetBoard('max', max, null)).toBe(true)
-    expect(canSetBoard('chris', max, null)).toBe(false)
+    expect(set('max', max, null)).toBe(true)
+    expect(set('chris', max, null)).toBe(false)
   })
 
   it('a bot never gets a board, not from its own adder, the board owner, or anyone else', () => {
     const bot = person({ id: 'b', userId: null, addedByUserId: 'chris', name: 'Bot Lvl 5', bot: { level: 5 } })
-    expect(canSetBoard('chris', bot, living)).toBe(false) // its own adder, giving one of their own boards
-    expect(canSetBoard('lena', bot, lenas)).toBe(false) // another board owner
-    expect(canSetBoard('chris', bot, null)).toBe(false) // even "to Manual" (a no-op, but still refused as a patch)
+    expect(set('chris', bot, living)).toBe(false) // its own adder, the host, giving one of their own boards
+    expect(set('lena', bot, lenas)).toBe(false) // another board owner
+    expect(set('chris', bot, null)).toBe(false) // even "to Manual" (a no-op, but still refused as a patch)
   })
 })
 
