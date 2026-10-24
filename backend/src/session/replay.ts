@@ -43,10 +43,12 @@ export function newSession(a: {
   createdAt: Date
   lobbyId?: string | null
   lobbyName?: string | null
+  /** The module version a stored game was created with; a new game has the current one. */
+  version?: number
 }): Session {
   const players = a.seats.map(s => ({ name: s.name }))
   const rng = seededRng(a.seed)
-  const initial = a.module.init(a.config, players, rng)
+  const initial = a.module.init(a.config, players, rng, a.version ?? a.module.version)
   return {
     id: a.id,
     ownerUserId: a.ownerUserId,

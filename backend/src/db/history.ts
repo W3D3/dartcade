@@ -24,6 +24,7 @@ export type HistoryGame = {
   game_id: string
   config: Record<string, unknown>
   rng_seed: number
+  game_version: number
   created_at: Date
   finished_at: Date
   board: { id: string; name: string } | null
@@ -106,6 +107,7 @@ function finishedGames(db: Kysely<Database>, includeInvalidated = false) {
       'gs.game_id',
       'gs.config',
       'gs.rng_seed',
+      'gs.game_version',
       'gs.created_at',
       'gs.finished_at',
       'gs.visibility',
@@ -124,6 +126,7 @@ type GameRow = {
   game_id: string
   config: unknown
   rng_seed: number
+  game_version: number
   created_at: Date
   finished_at: Date
   invalidated_at: Date | null
@@ -137,6 +140,7 @@ function toGame(r: GameRow, seats: HistorySeat[], mySeat: number | null): Histor
     game_id: r.game_id,
     config: ConfigSchema.parse(r.config),
     rng_seed: r.rng_seed,
+    game_version: r.game_version,
     created_at: r.created_at,
     finished_at: r.finished_at,
     board: r.board_id !== null && r.board_name !== null ? { id: r.board_id, name: r.board_name } : null,

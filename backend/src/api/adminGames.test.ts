@@ -47,6 +47,7 @@ const finished = (): HistoryGame => ({
   game_id: 'x01',
   config: { startScore: 501, inMode: 'straight', outMode: 'double', firstTo: 3, bullOff: 'off', bullValue: '25_50', maxRounds: 50 },
   rng_seed: 0,
+  game_version: 1,
   created_at: new Date('2026-10-01T09:00:00Z'),
   finished_at: new Date('2026-10-01T09:30:00Z'),
   board: null,
