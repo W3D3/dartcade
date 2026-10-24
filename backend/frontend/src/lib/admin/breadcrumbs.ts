@@ -6,7 +6,9 @@ const ADMIN: BreadcrumbItem = { label: 'Admin', href: '#/admin' }
 
 export const usersTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Users' }]
 
-export const gamesTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Games' }]
+/** `gameTitle` set: a game's details are open, so "Games" becomes a link back to the list. */
+export const gamesTrail = (gameTitle?: string | null): BreadcrumbItem[] =>
+  gameTitle ? [ADMIN, { label: 'Games', href: '#/admin/games' }, { label: gameTitle }] : [ADMIN, { label: 'Games' }]
 
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 

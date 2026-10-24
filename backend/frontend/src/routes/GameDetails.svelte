@@ -32,6 +32,8 @@
   import HighlightPicker from '$lib/components/details/HighlightPicker.svelte'
   import P121Summary from '$lib/components/p121/P121Summary.svelte'
   import { api, type GameDetail } from '$lib/api'
+  import { gamesTrail } from '$lib/admin/breadcrumbs'
+  import { getGameView } from '$lib/gameViews'
   import { detailSides, highlightDefault, isGameDetail, layoutOf, loadPhase } from '$lib/details/page'
 
   // `admin`: opened from the admin game list, so any finished game, with every seat's account
@@ -122,9 +124,10 @@
       <svelte:boundary onerror={(error: unknown) => console.error('details page render failed', error)}>
         {@const layout = layoutOf(d)}
         {@const sides = detailSides(d)}
+        {@const title = getGameView(d.game.mode).title}
         <DetailsHeader
           detail={d}
-          {back}
+          trail={admin ? gamesTrail(title) : [{ label: 'History', href: '#/history' }, { label: title }]}
           oninvalidate={admin && !invalidated ? () => (confirmingInvalidate = true) : undefined}
           ondelete={admin && $currentUser?.isAdmin ? () => (confirmingDelete = true) : undefined}
         />

@@ -1,6 +1,7 @@
 <script lang="ts">
-  // The details page's header bar: back to History, the mode, the meta line and your result.
-  import { ArrowLeft, Ban, Trash } from '@lucide/svelte'
+  // The details page's header bar: the breadcrumb back to the list, the mode, the meta line and your result.
+  import { Ban, Trash } from '@lucide/svelte'
+  import { Breadcrumb, type BreadcrumbItem } from '$lib/components/ui/breadcrumb/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import type { GameDetail } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
@@ -9,24 +10,24 @@
 
   let {
     detail,
-    back = { href: '#/history', label: 'History' },
+    trail,
     oninvalidate,
     ondelete,
-  }: { detail: GameDetail; back?: { href: string; label: string }; oninvalidate?: () => void; ondelete?: () => void } = $props()
+  }: { detail: GameDetail; trail: BreadcrumbItem[]; oninvalidate?: () => void; ondelete?: () => void } = $props()
   const result = $derived(resultLabel(detail.game))
 </script>
 
 <header
   class="shrink-0 flex flex-wrap items-center gap-x-6 gap-y-2 min-h-14 md:min-h-16 box-border px-4 md:px-7 py-2 border-b border-line bg-surface-1"
 >
-  <a
-    href={back.href}
-    class="h-11 flex items-center gap-2 pl-[10px] pr-[14px] rounded-[10px] border border-line-strong text-ink-2 no-underline text-[14px] font-medium hover:text-text"
-    ><ArrowLeft size={16} />{back.label}</a
-  >
-  <div class="flex items-baseline gap-3 min-w-0 flex-wrap">
-    <h1 class="m-0 font-display font-bold text-[24px] md:text-[26px] uppercase tracking-[0.04em]">{getGameView(detail.game.mode).title}</h1>
-    <span class="text-[13px] md:text-[14px] text-text-muted">{metaLine(detail)}</span>
+  <div class="flex min-w-0 flex-col gap-1.5">
+    <Breadcrumb items={trail} />
+    <div class="flex items-baseline gap-3 min-w-0 flex-wrap">
+      <h1 class="m-0 font-display font-bold text-[24px] md:text-[26px] uppercase tracking-[0.04em]">
+        {getGameView(detail.game.mode).title}
+      </h1>
+      <span class="text-[13px] md:text-[14px] text-text-muted">{metaLine(detail)}</span>
+    </div>
   </div>
   {#if result.text}
     <span

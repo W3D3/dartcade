@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { flagsTrail, minigolfCoursesTrail, minigolfHoleTrail, minigolfBenchTrail, systemTrail, usersTrail } from './breadcrumbs'
+import { flagsTrail, gamesTrail, minigolfCoursesTrail, minigolfHoleTrail, minigolfBenchTrail, systemTrail, usersTrail } from './breadcrumbs'
 
 describe('usersTrail / systemTrail / minigolfBenchTrail', () => {
   it('is Admin, then the page, with no link on the current page', () => {
@@ -22,6 +22,16 @@ describe('flagsTrail', () => {
       { label: 'Feature flags', href: '#/admin/flags' },
       { label: 'gamemode.minigolf.enabled' },
     ])
+  })
+})
+
+describe('gamesTrail', () => {
+  it('ends at Games, unlinked, on the list', () => {
+    expect(gamesTrail()).toEqual([{ label: 'Admin', href: '#/admin' }, { label: 'Games' }])
+  })
+
+  it('links Games back to the list once a game is open, and ends on the game', () => {
+    expect(gamesTrail('X01')).toEqual([{ label: 'Admin', href: '#/admin' }, { label: 'Games', href: '#/admin/games' }, { label: 'X01' }])
   })
 })
 
