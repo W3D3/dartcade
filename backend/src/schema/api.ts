@@ -2350,6 +2350,18 @@ export interface components {
             seats: components["schemas"]["StatValues"][];
             /** @description Only in a team game; one per team. Seats keep their own values. */
             teams?: components["schemas"]["StatValues"][];
+            /** @description The same stats per leg, in leg order; only for modes with legs (X01) */
+            legs?: components["schemas"]["LegStats"][];
+        };
+        /** @description One leg's stats, shaped like the match's */
+        LegStats: {
+            leg: number;
+            /** @description In display order */
+            rows: components["schemas"]["StatRow"][];
+            /** @description One per seat, in seat order */
+            seats: components["schemas"]["StatValues"][];
+            /** @description Only in a team game; one per team */
+            teams?: components["schemas"]["StatValues"][];
         };
         /** @description seat or team (the index), and its values by key; a missing key means the stat does not apply */
         StatValues: {

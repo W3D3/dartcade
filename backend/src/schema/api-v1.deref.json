@@ -2484,6 +2484,133 @@
                               }
                             }
                           }
+                        },
+                        "legs": {
+                          "type": "array",
+                          "description": "The same stats per leg, in leg order; only for modes with legs (X01)",
+                          "items": {
+                            "type": "object",
+                            "description": "One leg's stats, shaped like the match's",
+                            "required": [
+                              "leg",
+                              "rows",
+                              "seats"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "rows": {
+                                "type": "array",
+                                "description": "In display order",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "key",
+                                    "label",
+                                    "format",
+                                    "better",
+                                    "compact"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "key": {
+                                      "type": "string",
+                                      "description": "Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "format": {
+                                      "type": "string",
+                                      "enum": [
+                                        "decimal",
+                                        "integer",
+                                        "darts",
+                                        "target",
+                                        "ratio"
+                                      ],
+                                      "description": "decimal 83.9, integer 6, darts \"15 darts\", target 1–20 / 21 = 25 / 22 = Bull, ratio \"50% · 3/6\""
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "description": "The key holding the row's value (for a ratio, the numerator); default `key`"
+                                    },
+                                    "of": {
+                                      "type": "string",
+                                      "description": "ratio only: the key of the denominator"
+                                    },
+                                    "better": {
+                                      "type": "string",
+                                      "enum": [
+                                        "higher",
+                                        "lower",
+                                        null
+                                      ],
+                                      "nullable": true,
+                                      "description": "null when no side is better (e.g. darts thrown)"
+                                    },
+                                    "compact": {
+                                      "type": "boolean",
+                                      "description": "Also shown where space is short (party standings, phone)"
+                                    }
+                                  }
+                                }
+                              },
+                              "seats": {
+                                "type": "array",
+                                "description": "One per seat, in seat order",
+                                "items": {
+                                  "type": "object",
+                                  "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                                  "required": [
+                                    "index",
+                                    "values"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "values": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "teams": {
+                                "type": "array",
+                                "description": "Only in a team game; one per team",
+                                "items": {
+                                  "type": "object",
+                                  "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                                  "required": [
+                                    "index",
+                                    "values"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "values": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
                         }
                       }
                     }
@@ -11531,6 +11658,133 @@
                                 "type": "object",
                                 "additionalProperties": {
                                   "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "legs": {
+                          "type": "array",
+                          "description": "The same stats per leg, in leg order; only for modes with legs (X01)",
+                          "items": {
+                            "type": "object",
+                            "description": "One leg's stats, shaped like the match's",
+                            "required": [
+                              "leg",
+                              "rows",
+                              "seats"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "leg": {
+                                "type": "integer",
+                                "minimum": 0
+                              },
+                              "rows": {
+                                "type": "array",
+                                "description": "In display order",
+                                "items": {
+                                  "type": "object",
+                                  "required": [
+                                    "key",
+                                    "label",
+                                    "format",
+                                    "better",
+                                    "compact"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "key": {
+                                      "type": "string",
+                                      "description": "Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "format": {
+                                      "type": "string",
+                                      "enum": [
+                                        "decimal",
+                                        "integer",
+                                        "darts",
+                                        "target",
+                                        "ratio"
+                                      ],
+                                      "description": "decimal 83.9, integer 6, darts \"15 darts\", target 1–20 / 21 = 25 / 22 = Bull, ratio \"50% · 3/6\""
+                                    },
+                                    "value": {
+                                      "type": "string",
+                                      "description": "The key holding the row's value (for a ratio, the numerator); default `key`"
+                                    },
+                                    "of": {
+                                      "type": "string",
+                                      "description": "ratio only: the key of the denominator"
+                                    },
+                                    "better": {
+                                      "type": "string",
+                                      "enum": [
+                                        "higher",
+                                        "lower",
+                                        null
+                                      ],
+                                      "nullable": true,
+                                      "description": "null when no side is better (e.g. darts thrown)"
+                                    },
+                                    "compact": {
+                                      "type": "boolean",
+                                      "description": "Also shown where space is short (party standings, phone)"
+                                    }
+                                  }
+                                }
+                              },
+                              "seats": {
+                                "type": "array",
+                                "description": "One per seat, in seat order",
+                                "items": {
+                                  "type": "object",
+                                  "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                                  "required": [
+                                    "index",
+                                    "values"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "values": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "teams": {
+                                "type": "array",
+                                "description": "Only in a team game; one per team",
+                                "items": {
+                                  "type": "object",
+                                  "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                                  "required": [
+                                    "index",
+                                    "values"
+                                  ],
+                                  "additionalProperties": false,
+                                  "properties": {
+                                    "index": {
+                                      "type": "integer",
+                                      "minimum": 0
+                                    },
+                                    "values": {
+                                      "type": "object",
+                                      "additionalProperties": {
+                                        "type": "number"
+                                      }
+                                    }
+                                  }
                                 }
                               }
                             }
@@ -39289,6 +39543,133 @@
                     }
                   }
                 }
+              },
+              "legs": {
+                "type": "array",
+                "description": "The same stats per leg, in leg order; only for modes with legs (X01)",
+                "items": {
+                  "type": "object",
+                  "description": "One leg's stats, shaped like the match's",
+                  "required": [
+                    "leg",
+                    "rows",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "leg": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "In display order",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "label",
+                          "format",
+                          "better",
+                          "compact"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "description": "Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "format": {
+                            "type": "string",
+                            "enum": [
+                              "decimal",
+                              "integer",
+                              "darts",
+                              "target",
+                              "ratio"
+                            ],
+                            "description": "decimal 83.9, integer 6, darts \"15 darts\", target 1–20 / 21 = 25 / 22 = Bull, ratio \"50% · 3/6\""
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "The key holding the row's value (for a ratio, the numerator); default `key`"
+                          },
+                          "of": {
+                            "type": "string",
+                            "description": "ratio only: the key of the denominator"
+                          },
+                          "better": {
+                            "type": "string",
+                            "enum": [
+                              "higher",
+                              "lower",
+                              null
+                            ],
+                            "nullable": true,
+                            "description": "null when no side is better (e.g. darts thrown)"
+                          },
+                          "compact": {
+                            "type": "boolean",
+                            "description": "Also shown where space is short (party standings, phone)"
+                          }
+                        }
+                      }
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "One per seat, in seat order",
+                      "items": {
+                        "type": "object",
+                        "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                        "required": [
+                          "index",
+                          "values"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "index": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "values": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "teams": {
+                      "type": "array",
+                      "description": "Only in a team game; one per team",
+                      "items": {
+                        "type": "object",
+                        "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                        "required": [
+                          "index",
+                          "values"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "index": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "values": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           }
@@ -40322,6 +40703,133 @@
                     }
                   }
                 }
+              },
+              "legs": {
+                "type": "array",
+                "description": "The same stats per leg, in leg order; only for modes with legs (X01)",
+                "items": {
+                  "type": "object",
+                  "description": "One leg's stats, shaped like the match's",
+                  "required": [
+                    "leg",
+                    "rows",
+                    "seats"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "leg": {
+                      "type": "integer",
+                      "minimum": 0
+                    },
+                    "rows": {
+                      "type": "array",
+                      "description": "In display order",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "key",
+                          "label",
+                          "format",
+                          "better",
+                          "compact"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "key": {
+                            "type": "string",
+                            "description": "Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise"
+                          },
+                          "label": {
+                            "type": "string"
+                          },
+                          "format": {
+                            "type": "string",
+                            "enum": [
+                              "decimal",
+                              "integer",
+                              "darts",
+                              "target",
+                              "ratio"
+                            ],
+                            "description": "decimal 83.9, integer 6, darts \"15 darts\", target 1–20 / 21 = 25 / 22 = Bull, ratio \"50% · 3/6\""
+                          },
+                          "value": {
+                            "type": "string",
+                            "description": "The key holding the row's value (for a ratio, the numerator); default `key`"
+                          },
+                          "of": {
+                            "type": "string",
+                            "description": "ratio only: the key of the denominator"
+                          },
+                          "better": {
+                            "type": "string",
+                            "enum": [
+                              "higher",
+                              "lower",
+                              null
+                            ],
+                            "nullable": true,
+                            "description": "null when no side is better (e.g. darts thrown)"
+                          },
+                          "compact": {
+                            "type": "boolean",
+                            "description": "Also shown where space is short (party standings, phone)"
+                          }
+                        }
+                      }
+                    },
+                    "seats": {
+                      "type": "array",
+                      "description": "One per seat, in seat order",
+                      "items": {
+                        "type": "object",
+                        "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                        "required": [
+                          "index",
+                          "values"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "index": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "values": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "teams": {
+                      "type": "array",
+                      "description": "Only in a team game; one per team",
+                      "items": {
+                        "type": "object",
+                        "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                        "required": [
+                          "index",
+                          "values"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "index": {
+                            "type": "integer",
+                            "minimum": 0
+                          },
+                          "values": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
               }
             }
           },
@@ -40461,6 +40969,256 @@
           "teams": {
             "type": "array",
             "description": "Only in a team game; one per team. Seats keep their own values.",
+            "items": {
+              "type": "object",
+              "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+              "required": [
+                "index",
+                "values"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "legs": {
+            "type": "array",
+            "description": "The same stats per leg, in leg order; only for modes with legs (X01)",
+            "items": {
+              "type": "object",
+              "description": "One leg's stats, shaped like the match's",
+              "required": [
+                "leg",
+                "rows",
+                "seats"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "leg": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "rows": {
+                  "type": "array",
+                  "description": "In display order",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "key",
+                      "label",
+                      "format",
+                      "better",
+                      "compact"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "key": {
+                        "type": "string",
+                        "description": "Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise"
+                      },
+                      "label": {
+                        "type": "string"
+                      },
+                      "format": {
+                        "type": "string",
+                        "enum": [
+                          "decimal",
+                          "integer",
+                          "darts",
+                          "target",
+                          "ratio"
+                        ],
+                        "description": "decimal 83.9, integer 6, darts \"15 darts\", target 1–20 / 21 = 25 / 22 = Bull, ratio \"50% · 3/6\""
+                      },
+                      "value": {
+                        "type": "string",
+                        "description": "The key holding the row's value (for a ratio, the numerator); default `key`"
+                      },
+                      "of": {
+                        "type": "string",
+                        "description": "ratio only: the key of the denominator"
+                      },
+                      "better": {
+                        "type": "string",
+                        "enum": [
+                          "higher",
+                          "lower",
+                          null
+                        ],
+                        "nullable": true,
+                        "description": "null when no side is better (e.g. darts thrown)"
+                      },
+                      "compact": {
+                        "type": "boolean",
+                        "description": "Also shown where space is short (party standings, phone)"
+                      }
+                    }
+                  }
+                },
+                "seats": {
+                  "type": "array",
+                  "description": "One per seat, in seat order",
+                  "items": {
+                    "type": "object",
+                    "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                    "required": [
+                      "index",
+                      "values"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "values": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                },
+                "teams": {
+                  "type": "array",
+                  "description": "Only in a team game; one per team",
+                  "items": {
+                    "type": "object",
+                    "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+                    "required": [
+                      "index",
+                      "values"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "index": {
+                        "type": "integer",
+                        "minimum": 0
+                      },
+                      "values": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "LegStats": {
+        "type": "object",
+        "description": "One leg's stats, shaped like the match's",
+        "required": [
+          "leg",
+          "rows",
+          "seats"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "leg": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rows": {
+            "type": "array",
+            "description": "In display order",
+            "items": {
+              "type": "object",
+              "required": [
+                "key",
+                "label",
+                "format",
+                "better",
+                "compact"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "description": "Names the row (e.g. first9Average); also the key of its value unless `value` says otherwise"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "format": {
+                  "type": "string",
+                  "enum": [
+                    "decimal",
+                    "integer",
+                    "darts",
+                    "target",
+                    "ratio"
+                  ],
+                  "description": "decimal 83.9, integer 6, darts \"15 darts\", target 1–20 / 21 = 25 / 22 = Bull, ratio \"50% · 3/6\""
+                },
+                "value": {
+                  "type": "string",
+                  "description": "The key holding the row's value (for a ratio, the numerator); default `key`"
+                },
+                "of": {
+                  "type": "string",
+                  "description": "ratio only: the key of the denominator"
+                },
+                "better": {
+                  "type": "string",
+                  "enum": [
+                    "higher",
+                    "lower",
+                    null
+                  ],
+                  "nullable": true,
+                  "description": "null when no side is better (e.g. darts thrown)"
+                },
+                "compact": {
+                  "type": "boolean",
+                  "description": "Also shown where space is short (party standings, phone)"
+                }
+              }
+            }
+          },
+          "seats": {
+            "type": "array",
+            "description": "One per seat, in seat order",
+            "items": {
+              "type": "object",
+              "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",
+              "required": [
+                "index",
+                "values"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "values": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "teams": {
+            "type": "array",
+            "description": "Only in a team game; one per team",
             "items": {
               "type": "object",
               "description": "seat or team (the index), and its values by key; a missing key means the stat does not apply",

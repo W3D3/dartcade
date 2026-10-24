@@ -3067,6 +3067,30 @@ components:
           type: array
           description: Only in a team game; one per team. Seats keep their own values.
           items: { $ref: '#/components/schemas/StatValues' }
+        legs:
+          type: array
+          description: The same stats per leg, in leg order; only for modes with legs (X01)
+          items: { $ref: '#/components/schemas/LegStats' }
+
+    LegStats:
+      type: object
+      description: One leg's stats, shaped like the match's
+      required: [leg, rows, seats]
+      additionalProperties: false
+      properties:
+        leg: { type: integer, minimum: 0 }
+        rows:
+          type: array
+          description: In display order
+          items: { $ref: '#/components/schemas/StatRow' }
+        seats:
+          type: array
+          description: One per seat, in seat order
+          items: { $ref: '#/components/schemas/StatValues' }
+        teams:
+          type: array
+          description: Only in a team game; one per team
+          items: { $ref: '#/components/schemas/StatValues' }
 
     StatValues:
       type: object
