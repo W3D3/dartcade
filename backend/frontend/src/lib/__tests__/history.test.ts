@@ -79,7 +79,7 @@ describe('rulesLine', () => {
 
 describe('players and result', () => {
   it('two players: both names with mine marked, won/lost with legs for X01', () => {
-    expect(playerBadges(game())).toEqual([
+    expect(playerBadges(game()).map(({ n, name, me }) => ({ n, name, me }))).toEqual([
       { n: 1, name: 'Christoph', me: true },
       { n: 2, name: 'Guest 1', me: false },
     ])
@@ -111,7 +111,7 @@ describe('players and result', () => {
   })
   it('solo', () => {
     const solo = game({ players: [game().players[0]] })
-    expect(playerBadges(solo)).toEqual([{ n: 1, name: 'Christoph', me: true }])
+    expect(playerBadges(solo).map(({ n, name, me }) => ({ n, name, me }))).toEqual([{ n: 1, name: 'Christoph', me: true }])
     expect(resultLabel(solo)).toEqual({ text: 'Finished', won: false })
   })
 })
@@ -182,9 +182,23 @@ describe('playerBadges', () => {
         },
       ],
     })
-    expect(playerBadges(g)).toEqual([
+    expect(playerBadges(g).map(({ n, name, me }) => ({ n, name, me }))).toEqual([
       { n: 1, name: 'Guest 1', me: false },
       { n: 2, name: 'Christoph', me: true },
+    ])
+  })
+  it('opens a profile for members only: never for a guest or a bot', () => {
+    const g = game({
+      players: [
+        { ...game().players[0], avatar: { kind: 'upload', version: 4 } },
+        game().players[1],
+        { ...game().players[1], seat: 2, name: 'Bot Lvl 3', userId: 'u9', bot: { level: 3 }, throwPosition: 2 },
+      ],
+    })
+    expect(playerBadges(g).map(({ name, userId, avatar, guest, bot }) => ({ name, userId, avatar, guest, bot }))).toEqual([
+      { name: 'Christoph', userId: 'u1', avatar: { kind: 'upload', version: 4 }, guest: false, bot: null },
+      { name: 'Guest 1', userId: null, avatar: { kind: 'none' }, guest: true, bot: null },
+      { name: 'Bot Lvl 3', userId: null, avatar: { kind: 'none' }, guest: false, bot: { level: 3 } },
     ])
   })
   it('falls back to seat order without a throw position', () => {

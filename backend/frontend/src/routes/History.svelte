@@ -2,9 +2,11 @@
   import { onMount } from 'svelte'
   import { ChevronRight, LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import Avatar from '$lib/components/Avatar.svelte'
+  import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
   import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
-  import { formatWhen, historyStat, playerBadges, resultLabel, rulesLine, statTiles } from '$lib/history'
+  import { formatWhen, historyStat, playerBadges, resultLabel, rulesLine, statTiles, type PlayerBadge } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
 
   // Guards against a stale response winning a race: a quick filter switch leaves the
@@ -83,15 +85,26 @@
   })
 </script>
 
-<!-- A player in throw order; your own badge is outlined in the accent colour -->
-{#snippet badge(p: { n: number; name: string; me: boolean })}
-  <span
-    class="inline-flex h-[26px] items-center gap-[5px] whitespace-nowrap rounded-md border py-0 pl-[7px] pr-[9px] text-[13px] {p.me
-      ? 'border-accent bg-accent-tint font-bold text-text'
-      : 'border-line-2 bg-surface-inset font-medium text-ink-2'}"
-  >
-    <span class="font-mono text-[11px] {p.me ? 'font-medium text-accent' : 'text-text-dim'}">{p.n}</span>{p.name}
-  </span>
+<!-- A player in throw order, opening their profile; your own badge is outlined in the accent colour -->
+{#snippet badge(p: PlayerBadge)}
+  <ProfilePopover userId={p.userId} name={p.name}>
+    <span
+      class="inline-flex h-[28px] items-center gap-[5px] whitespace-nowrap rounded-full border py-0 pl-[5px] pr-[8px] text-[13px] lg:h-[30px] lg:gap-[6px] lg:pl-[7px] lg:pr-[10px] {p.me
+        ? 'border-accent bg-accent-tint font-bold text-text'
+        : 'border-line-2 bg-surface-inset font-medium text-ink-2'}"
+    >
+      <span class="font-mono text-[11px] {p.me ? 'font-medium text-accent' : 'text-text-dim'}">{p.n}</span>
+      <Avatar
+        name={p.name}
+        avatar={p.avatar}
+        userId={p.userId}
+        guest={p.guest}
+        bot={p.bot}
+        class="size-[18px] text-[8px] lg:size-[22px] lg:text-[9px]"
+      />
+      {p.name}
+    </span>
+  </ProfilePopover>
 {/snippet}
 
 <!-- Won (lime) or the placement -->
@@ -186,11 +199,15 @@
             {@const key = historyStat(g)}
             {@const badges = playerBadges(g)}
             {@const rules = rulesLine(g)}
-            <li class="border-b border-line">
+            <!-- The link covers the row from underneath, so the badges' profile buttons sit beside it, not inside it -->
+            <li class="relative border-b border-line hover:bg-surface-active">
               <a
                 href="#/history/{g.id}"
                 aria-label="{getGameView(g.mode).title}, {when.day} {when.time}{result.text ? `, ${result.text}` : ''}: details"
-                class="relative block px-[22px] pr-12 py-3 lg:min-h-[68px] lg:py-0 text-text no-underline hover:bg-surface-active"
+                class="absolute inset-0 outline-offset-[-2px]"
+              ></a>
+              <div
+                class="pointer-events-none relative px-[22px] pr-12 py-3 lg:min-h-[68px] lg:py-0 text-text [&_button]:pointer-events-auto"
               >
                 <!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
                 <div class="flex flex-col gap-1 lg:hidden">
@@ -245,7 +262,7 @@
                   <span class="hidden xl:inline text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
                 </div>
                 <ChevronRight size={18} class="absolute right-4 top-1/2 -translate-y-1/2 text-text-dim" />
-              </a>
+              </div>
             </li>
           {/each}
         </ul>

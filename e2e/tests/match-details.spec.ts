@@ -1,8 +1,9 @@
+import type { Page } from '@playwright/test'
 import { test, expect } from '../fixtures/auth.js'
 import { startGame } from '../fixtures/lobby.js'
 
-test('a finished game opens its details from History', async ({ authedPage: page }) => {
-  // A solo X01 from 301, first to 1 leg, manual entry (as rematch.spec.ts)
+/** A solo X01 from 301, first to 1 leg, manual entry (as rematch.spec.ts), played to the end. */
+async function finishSoloX01(page: Page): Promise<void> {
   await startGame(page, {
     mode: 'X01',
     setup: async page => {
@@ -28,13 +29,21 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await throwDart(double, 'Double 8')
   await page.getByRole('button', { name: 'Finish game' }).click()
   await expect(page.getByRole('button', { name: /Rematch/ })).toBeVisible()
+}
 
+/** The newest game in History; clicked at the row's corner, clear of the player badges' profile buttons. */
+async function openNewestGame(page: Page): Promise<void> {
   await page.goto('/#/history')
   await page
     .getByRole('link', { name: /X01.*details/ })
     .first()
-    .click()
+    .click({ position: { x: 8, y: 8 } })
   await page.waitForURL(url => url.hash.startsWith('#/history/'))
+}
+
+test('a finished game opens its details from History', async ({ authedPage: page }) => {
+  await finishSoloX01(page)
+  await openNewestGame(page)
   await expect(page.getByRole('heading', { name: 'X01' })).toBeVisible()
   await expect(page.getByText('3-dart average')).toBeVisible()
   await expect(page.getByText('Breakdown')).toBeVisible()
@@ -49,6 +58,27 @@ test('a finished game opens its details from History', async ({ authedPage: page
 
   await page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'History' }).click()
   await page.waitForURL(url => url.hash === '#/history')
+})
+
+test("a player's badge in History opens their profile card", async ({ adminPage: page }, testInfo) => {
+  // Profile cards come with progression, on for admins
+  const name = `e2eadmin${testInfo.parallelIndex}`
+  await finishSoloX01(page)
+
+  await page.goto('/#/history')
+  const badge = page
+    .getByRole('button', { name: `${name}: profile` })
+    .filter({ visible: true })
+    .first()
+  // From the keyboard: Enter opens the card, Esc closes it and gives focus back
+  await badge.focus()
+  await page.keyboard.press('Enter')
+  const card = page.getByRole('dialog')
+  await expect(card.getByRole('link', { name: 'Profile' })).toBeVisible()
+  await expect(page).toHaveURL(/#\/history$/)
+  await page.keyboard.press('Escape')
+  await expect(card).toBeHidden()
+  await expect(badge).toBeFocused()
 })
 
 test('an unknown game id shows a not-available page', async ({ authedPage: page }) => {

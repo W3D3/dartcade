@@ -83,11 +83,32 @@ const mine = (game: GameSummary): GameSeat | undefined => game.players.find(p =>
 const others = (game: GameSummary): GameSeat[] => game.players.filter(p => p.seat !== game.mySeat)
 const stat = (p: GameSeat, key: string): number | undefined => (Object.hasOwn(p.stats, key) ? p.stats[key] : undefined)
 
+/** Whose profile a seat opens: its account; null for a guest, a bot, or an account the API hid. */
+export const profileId = (p: Pick<GameSeat, 'userId' | 'bot'>): string | null => (p.bot ? null : p.userId)
+
+export type PlayerBadge = {
+  n: number
+  name: string
+  me: boolean
+  userId: string | null
+  avatar: GameSeat['avatar']
+  guest: boolean
+  bot: GameSeat['bot']
+}
+
 /** Everyone who played, in the order they threw (seat order for older games), numbered from 1. */
-export function playerBadges(game: GameSummary): { n: number; name: string; me: boolean }[] {
+export function playerBadges(game: GameSummary): PlayerBadge[] {
   return [...game.players]
     .sort((a, b) => (a.throwPosition ?? a.seat) - (b.throwPosition ?? b.seat))
-    .map((p, i) => ({ n: i + 1, name: p.name, me: p.seat === game.mySeat }))
+    .map((p, i) => ({
+      n: i + 1,
+      name: p.name,
+      me: p.seat === game.mySeat,
+      userId: profileId(p),
+      avatar: p.avatar,
+      guest: p.userId === null && p.bot === null,
+      bot: p.bot,
+    }))
 }
 
 /** "Won 3–1" / "Lost" for two players, "2nd of 4" for more, "Finished" solo. */
