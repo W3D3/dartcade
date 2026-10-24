@@ -272,6 +272,19 @@ describe('multiplierAdvances', () => {
   })
 })
 
+describe('finishOn twenty in any order', () => {
+  for (const order of ['desc', 'random'] as const) {
+    it(`${order}: hitting the last number wins`, () => {
+      const cfg: ATCConfig = { ...defaultCfg, order, finishOn: 'twenty' }
+      const sequence = buildSequence(cfg, seededRng(3))
+      const last = sequence[sequence.length - 1]
+      const { state } = atcModule.onBoardEvent(makeState({ cfg, sequence, targets: [last, 1] }), dartEvent(last, 'Single', 1))
+      expect(state.winner).toBe(0)
+      expect(sequence).not.toContain(state.targets[0])
+    })
+  }
+})
+
 describe('finishOn single_bull', () => {
   it('target 21 hit by single bull (25) advances to win', () => {
     const cfg: ATCConfig = { ...defaultCfg, finishOn: 'single_bull' }

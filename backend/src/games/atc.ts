@@ -6,7 +6,8 @@ import { rankSeats } from './ranking.js'
 import { atcMatchStats, atcProgress } from './atcProgress.js'
 import { nextTargetIndex } from '../shared/atc.js'
 
-// 2: a multiplier walks on to the bull instead of stopping before it (#343)
+// 2: a multiplier walks on to the bull instead of stopping before it (#343), and a reversed or
+// shuffled game ending on 20 can be won
 const VERSION = 2
 
 export type ATCConfig = {
@@ -56,7 +57,8 @@ export function advanceTarget(s: Pick<ATCState, 'sequence' | 'version'>, current
   if (s.version === 1) return advanceV1(current, steps, s.sequence)
   const idx = s.sequence.indexOf(current)
   if (idx === -1) return current
-  return s.sequence[nextTargetIndex(s.sequence, idx, steps)] ?? s.sequence[s.sequence.length - 1] + 1
+  // Won: a number past every target, so never one of them in a reversed or shuffled order
+  return s.sequence[nextTargetIndex(s.sequence, idx, steps)] ?? Math.max(...s.sequence) + 1
 }
 
 // Version 1 games, replayed as they were played: a multiplier stopped on the number before the bull
