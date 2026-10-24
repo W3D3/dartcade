@@ -7,6 +7,7 @@
   import type { Lobby, LobbyPerson } from '$lib/api/lobby-ws'
   import { Badge } from '$lib/components/ui/badge/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
+  import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import { personLine } from '$lib/lobby/format'
   import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
 
@@ -40,14 +41,11 @@
 >
   {#if handle}{@render handle()}{/if}
   <span class="font-mono text-[12px] text-text-dim text-center">{index + 1}</span>
-  <Avatar
-    name={person.name}
-    bot={person.bot}
-    guest={person.userId === null}
-    presence={person.presence}
-    avatar={person.avatar}
-    userId={person.userId}
-  />
+  <span class="relative flex">
+    <Avatar name={person.name} bot={person.bot} guest={person.userId === null} avatar={person.avatar} userId={person.userId} />
+    <!-- Members only: lime while they have the lobby open, grey while away -->
+    {#if person.presence}<StatusRing kind={person.presence === 'online' ? 'online' : 'offline'} />{/if}
+  </span>
   <span class="flex flex-col gap-1 min-w-0">
     <!-- The tags wrap under the name on a narrow row, so the name stays readable -->
     <span class="flex flex-wrap items-center gap-x-[6px] gap-y-1 min-w-0">
