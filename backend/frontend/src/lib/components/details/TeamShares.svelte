@@ -1,6 +1,8 @@
 <script lang="ts">
   // Teams: each player's share (X01-Details-Teams): their average and the legs they closed.
   import type { GameDetail } from '$lib/api'
+  import { profileId } from '$lib/history'
+  import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
 
   let { detail }: { detail: GameDetail } = $props()
   const teams = $derived(detail.detail.mode === 'x01' ? (detail.detail.teams ?? []) : [])
@@ -9,7 +11,7 @@
       t.seats.map(seat => ({
         seat,
         team: t.name,
-        name: detail.game.players.find(p => p.seat === seat)?.name ?? '',
+        player: detail.game.players.find(p => p.seat === seat),
         values: detail.stats.seats.find(v => v.index === seat)?.values ?? {},
       })),
     ),
@@ -28,7 +30,9 @@
       <tbody>
         {#each rows as r (r.seat)}
           <tr class="border-t border-line">
-            <td class="px-4 py-3 font-semibold">{r.name}</td><td class="px-2 py-3 text-text-muted">{r.team}</td>
+            <td class="px-4 py-3 font-semibold"
+              >{#if r.player}<ProfilePopover userId={profileId(r.player)} name={r.player.name}>{r.player.name}</ProfilePopover>{/if}</td
+            ><td class="px-2 py-3 text-text-muted">{r.team}</td>
             <td class="px-3 py-3 text-right">{Object.hasOwn(r.values, 'average') ? r.values.average.toFixed(1) : '—'}</td>
             <td class="px-4 py-3 text-right">{Object.hasOwn(r.values, 'legsClosed') ? r.values.legsClosed : 0}</td>
           </tr>

@@ -1,20 +1,26 @@
 // The details page's frame for any game mode: which layout, the sides (seats or teams), the
 // result headline and the meta line under the title.
-import type { GameDetail } from '../api'
-import { rulesLine } from '../history.js'
+import type { GameDetail, GameSeat } from '../api'
+import { profileId, rulesLine } from '../history.js'
 import { MONTHS, pad2 } from '../fmt.js'
 import { atcResult } from './atc.js'
+
+/** A player on a side, and whose profile their name opens (null: none to open). */
+export type DetailMember = { name: string; userId: string | null }
 
 export type DetailSide = {
   index: number
   name: string
+  /** Whose profile the side's name opens; null for a guest, a bot or a team */
+  userId: string | null
+  avatar: GameSeat['avatar']
   placement: number
   values: Record<string, number>
   me: boolean
   guest: boolean
   /** A bot seat: its difficulty; null for a member, a guest or a team */
   bot: { level: number } | null
-  members: string[]
+  members: DetailMember[]
   /** Gave up the game (a team: any of its players did) */
   forfeited: boolean
 }
@@ -47,12 +53,14 @@ export function detailSides(d: GameDetail): DetailSide[] {
       return {
         index: i,
         name: t.name,
+        userId: null,
+        avatar: { kind: 'none' },
         placement: members[0]?.placement ?? i + 1,
         values: valuesOf(d.stats.teams, i),
         me: t.seats.includes(d.game.mySeat ?? -1),
         guest: false,
         bot: null,
-        members: members.map(p => p.name),
+        members: members.map(p => ({ name: p.name, userId: profileId(p) })),
         forfeited: members.some(p => p.forfeited),
       }
     })
@@ -60,12 +68,14 @@ export function detailSides(d: GameDetail): DetailSide[] {
   return players.map(p => ({
     index: p.seat,
     name: p.name,
+    userId: profileId(p),
+    avatar: p.avatar,
     placement: p.placement,
     values: valuesOf(d.stats.seats, p.seat),
     me: p.seat === d.game.mySeat,
     guest: p.userId === null && p.seat !== d.game.mySeat,
     bot: p.bot,
-    members: [p.name],
+    members: [{ name: p.name, userId: profileId(p) }],
     forfeited: p.forfeited,
   }))
 }

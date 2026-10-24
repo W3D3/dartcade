@@ -42,7 +42,7 @@
       aria-label="{name}: profile"
       onmouseenter={() => hover(true)}
       onmouseleave={() => hover(false)}
-      class="min-w-0 max-w-full inline-flex items-center gap-[6px] bg-transparent border-0 p-0 text-inherit text-left cursor-pointer font-[inherit] {className}"
+      class="min-w-0 max-w-full inline-flex items-center gap-[6px] bg-transparent border-0 p-0 text-inherit [text-transform:inherit] text-left cursor-pointer font-[inherit] {className}"
     >
       {@render children()}
     </Popover.Trigger>

@@ -60,7 +60,7 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await page.waitForURL(url => url.hash === '#/history')
 })
 
-test("a player's badge in History opens their profile card", async ({ adminPage: page }, testInfo) => {
+test("a player's badge opens their profile card, in History and on the details page", async ({ adminPage: page }, testInfo) => {
   // Profile cards come with progression, on for admins
   const name = `e2eadmin${testInfo.parallelIndex}`
   await finishSoloX01(page)
@@ -79,6 +79,13 @@ test("a player's badge in History opens their profile card", async ({ adminPage:
   await page.keyboard.press('Escape')
   await expect(card).toBeHidden()
   await expect(badge).toBeFocused()
+
+  await openNewestGame(page)
+  await page
+    .getByRole('region', { name: 'Result', exact: true })
+    .getByRole('button', { name: `${name}: profile` })
+    .click()
+  await expect(page.getByRole('dialog').getByRole('link', { name: 'Profile' })).toBeVisible()
 })
 
 test('an unknown game id shows a not-available page', async ({ authedPage: page }) => {
