@@ -3,7 +3,7 @@
   import Chalkboard from './Chalkboard.svelte'
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Roll } from '$lib/playerStats'
+  import { x01Averages, x01Roll } from '$lib/playerStats'
   import PhoneCardShell from './PhoneCardShell.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats'
@@ -24,8 +24,7 @@
   } = $props()
 
   const stats = $derived([
-    { label: 'Leg avg', value: p.legAvg, dim: false },
-    { label: 'Match avg', value: p.avg, dim: true },
+    ...x01Averages(p),
     { label: 'Checkout', value: p.checkout, dim: true },
     { label: 'Darts', value: String(p.darts), dim: false },
   ])
