@@ -433,7 +433,7 @@
     },
     "BoardStatusMessage": {
       "title": "BoardStatusMessage",
-      "description": "Pushed on /ws/me to a board's owner when its bridge connects (after its hello) or drops, so Settings → Boards follows it without polling.",
+      "description": "Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.",
       "type": "object",
       "required": ["type", "boardId", "online"],
       "additionalProperties": false,

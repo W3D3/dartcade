@@ -55,7 +55,11 @@
   <dl class="m-0 mt-auto grid {lights === undefined ? 'grid-cols-2' : 'grid-cols-3'} gap-3 pt-4 md:max-xl:pt-[14px] border-t border-line-2">
     <div>
       <dt class="text-[12px] text-text-dim">Bridge</dt>
-      <dd class="mt-1 m-0 text-[15px] font-semibold">{fmtVersion(board.bridgeVersion) ?? '—'}</dd>
+      <dd class="mt-1 m-0 text-[15px] font-semibold">
+        {fmtVersion(board.bridgeVersion) ?? '—'}{#if board.bridgeUpdate.available}<span class="block text-[12px] font-medium text-accent"
+            >Update</span
+          >{/if}
+      </dd>
     </div>
     <div>
       <dt class="text-[12px] text-text-dim">Games</dt>

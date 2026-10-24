@@ -224,6 +224,41 @@ itself) and connects out to your dartcade backend.
 The bridge saves its token and pairs automatically from then on. Run `dartcade-bridge --help` for
 all options.
 
+## Updating a bridge from the Boards page
+
+A bridge installed as a service (`install-bridge.sh --service`, `install-bridge.ps1`, or
+`dartcade-bridge install`) can update itself: the Boards page shows **Update bridge** when the
+server offers a newer release. The server offers the newest GitHub release whose major is not above
+its own `APP_VERSION` (on 0.x, whose minor is not above its own either); a `dev` server offers
+nothing. It sends the bridge only the version (`bridge.update`); the bridge builds the download URL
+itself, refuses anything that isn't newer than its own version, checks the release's `SHA256SUMS`
+against its `SHA256SUMS.sig` and the public key built into it (`bridge/internal/update/release.pub`),
+checks the binary against the sums, and runs it once to see that it reports that version. Then:
+
+- **Linux (systemd).** The hardened unit can't write its own binary. The bridge stages the update
+  in its state dir and exits; the unit's `ExecStopPost=+… apply-update`, which runs as root,
+  verifies the staged binary again, moves it over `/usr/local/bin/dartcade-bridge`, and systemd
+  starts the new one.
+- **macOS (launchd).** The daemon runs as root and replaces its binary itself.
+- **Windows.** The service runs a copy of the bridge kept in `%ProgramData%\dartcade-bridge`, which
+  its account may write; it replaces that copy itself. The copy in Program Files is only run by
+  the install script.
+
+Bridges installed before this run the old service definition: running the install command once
+more moves them to the new one. A bridge started by hand, the Docker image and dev builds don't
+update themselves; the Boards page tells their owner to re-run the install command.
+
+**Release signing.** The Release workflow signs `SHA256SUMS` with the `BRIDGE_SIGNING_KEY` repo
+secret, an ed25519 private key in PEM; without it the signing job fails and bridges can't update to
+that release. To make a new key pair (and replace `release.pub` in the same PR, a release before the
+first one signed with the new key):
+
+```bash
+openssl genpkey -algorithm ed25519 -out bridge-signing-key.pem
+openssl pkey -in bridge-signing-key.pem -pubout -out bridge/internal/update/release.pub
+gh secret set BRIDGE_SIGNING_KEY < bridge-signing-key.pem
+```
+
 ## Production build
 
 ```bash

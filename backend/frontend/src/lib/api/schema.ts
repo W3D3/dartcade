@@ -376,6 +376,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/boards/{id}/bridge-update": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Update the board's bridge to the release this server offers
+         * @description Sends the bridge a bridge.update over its socket. The bridge downloads the release itself, verifies its signed checksums, swaps its binary and restarts; its progress shows in the board's bridgeUpdate.status (GET /api/boards). Owner only.
+         */
+        post: operations["updateBridge"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards/{id}/lights": {
         parameters: {
             query?: never;
@@ -2429,6 +2451,24 @@ export interface components {
             ip: string | null;
             /** @description Board Manager origin incl. port, e.g. http://192.168.0.109:3180 */
             bmUrl: string | null;
+            bridgeUpdate: components["schemas"]["BridgeUpdate"];
+        };
+        BridgeUpdate: {
+            /** @description The release this server offers when it is newer than the bridge, e.g. v0.9.2 (never a major above the server's own; a 0.x server also keeps the minor) */
+            available: string | null;
+            /** @description The bridge can update itself: it runs as an installed service */
+            updatable: boolean;
+            status?: components["schemas"]["BridgeUpdateStatus"];
+        };
+        /** @description The last update asked for since the server started (absent when none) */
+        BridgeUpdateStatus: {
+            version: string;
+            /**
+             * @description done: the bridge came back with the new version. failed: the old bridge keeps running (error says why)
+             * @enum {string}
+             */
+            phase: "requested" | "downloading" | "verifying" | "installing" | "restarting" | "done" | "failed";
+            error: string | null;
         };
         BoardList: {
             boards: components["schemas"]["Board"][];
@@ -4100,6 +4140,34 @@ export interface operations {
             404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
             502: components["responses"]["BoardError"];
+            503: components["responses"]["BoardUnavailable"];
+        };
+    };
+    updateBridge: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The bridge was asked to update */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BridgeUpdateStatus"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
             503: components["responses"]["BoardUnavailable"];
         };
     };

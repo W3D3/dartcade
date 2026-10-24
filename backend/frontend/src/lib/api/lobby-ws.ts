@@ -533,7 +533,7 @@ export interface XpGainedMessage {
   }
 }
 /**
- * Pushed on /ws/me to a board's owner when its bridge connects (after its hello) or drops, so Settings → Boards follows it without polling.
+ * Pushed on /ws/me to a board's owner when its bridge connects (after its hello), drops, or reports how its update goes (bridge.update.status), so Settings → Boards follows it without polling.
  *
  * This interface was referenced by `LobbyWs`'s JSON-Schema
  * via the `definition` "BoardStatusMessage".

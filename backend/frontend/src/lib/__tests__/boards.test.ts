@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyBoardStatus, bmHost, fmtDate, fmtVersion, selectedLine } from '../boards.js'
+import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion, selectedLine } from '../boards.js'
 import type { Board } from '../api'
 
 const board = (over: Partial<Board> = {}): Board => ({
@@ -12,6 +12,7 @@ const board = (over: Partial<Board> = {}): Board => ({
   createdAt: '2026-08-12T10:00:00.000Z',
   ip: '192.168.1.42',
   bmUrl: 'http://192.168.1.42:3180',
+  bridgeUpdate: { available: null, updatable: true },
   ...over,
 })
 
@@ -42,5 +43,36 @@ describe('a board.status push', () => {
   it('refetches for a board that came online (new versions) or one the list does not have yet', () => {
     expect(applyBoardStatus([board({ online: false })], { boardId: 'b1', online: true })).toBe('refetch')
     expect(applyBoardStatus([board()], { boardId: 'new', online: false })).toBe('refetch')
+  })
+})
+
+describe('bridgeUpdateView', () => {
+  const update = (u: Partial<Board['bridgeUpdate']>, over: Partial<Board> = {}) =>
+    bridgeUpdateView(board({ bridgeUpdate: { available: null, updatable: true, ...u }, ...over }))
+
+  it('offers the button only for an online bridge that can update itself', () => {
+    expect(update({})).toEqual({ kind: 'none' })
+    expect(update({ available: 'v0.9.2' })).toEqual({ kind: 'available', version: 'v0.9.2', canUpdate: true, error: null })
+    expect(update({ available: 'v0.9.2', updatable: false })).toMatchObject({ canUpdate: false })
+    expect(update({ available: 'v0.9.2' }, { online: false })).toMatchObject({ canUpdate: false })
+  })
+
+  it('shows the progress, the result and a failure', () => {
+    expect(update({ available: 'v0.9.2', status: { version: 'v0.9.2', phase: 'verifying', error: null } })).toEqual({
+      kind: 'busy',
+      text: 'Verifying v0.9.2…',
+    })
+    expect(update({ status: { version: 'v0.9.2', phase: 'done', error: null } })).toEqual({ kind: 'done', text: 'Updated to v0.9.2' })
+    expect(update({ available: 'v0.9.2', status: { version: 'v0.9.2', phase: 'failed', error: 'checksum mismatch' } })).toEqual({
+      kind: 'available',
+      version: 'v0.9.2',
+      canUpdate: true,
+      error: 'Update to v0.9.2 failed: checksum mismatch',
+    })
+    // Still shown once the bridge is offline and nothing is on offer
+    expect(update({ status: { version: 'v0.9.2', phase: 'failed', error: 'checksum mismatch' } })).toEqual({
+      kind: 'failed',
+      text: 'Update to v0.9.2 failed: checksum mismatch',
+    })
   })
 })

@@ -3,6 +3,7 @@ import { createFastify } from './fastify.js'
 import { boardsApiPlugin } from './boards.js'
 import { CameraStills } from '../camera/store.js'
 import type { Session } from '../session/types.js'
+import { BridgeUpdates } from '../boards/bridgeUpdate.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -11,12 +12,14 @@ vi.mock('../auth/middleware.js', () => ({
   }),
 }))
 const request = vi.hoisted(() => vi.fn())
+const { send } = vi.hoisted(() => ({ send: vi.fn().mockReturnValue(true) }))
 vi.mock('../bridge-gw/connections.js', () => ({
   bridgeConnections: {
     isOnline: vi.fn().mockReturnValue(false),
     get: vi.fn().mockReturnValue(undefined),
     recentEvents: vi.fn().mockReturnValue([]),
     request,
+    send,
   },
 }))
 vi.mock('../db/queries.js', () => ({
@@ -41,6 +44,8 @@ function makeApp(
     getSessionByBoard?: (boardId: string) => Session | undefined
     isLobbyMember?: (lobbyId: string, userId: string) => Promise<boolean>
     liveCameraTimeoutMs?: number
+    bridgeReleases?: { offered: () => string | null }
+    bridgeUpdates?: BridgeUpdates
   } = {},
 ) {
   const app = createFastify()
@@ -516,5 +521,76 @@ describe('boards: spec enforcement', () => {
     const res = await makeApp().inject({ method: 'GET', url: '/api/boards' })
     expect(res.statusCode).toBe(200)
     expect(JSON.parse(res.body).boards[0].createdAt).toBe('2026-08-12T10:00:00.000Z')
+  })
+})
+
+describe('POST /api/boards/:id/bridge-update', () => {
+  const ownBoard = () =>
+    vi.mocked(queries.getBoardById).mockResolvedValue({
+      id: 'board-1',
+      name: 'Board',
+      hardware_id: null,
+      created_at: new Date(),
+      owner_user_id: 'user-1',
+      token_hash: 'hash',
+      lights_enabled: true,
+    })
+  const bridge = (conn: object) =>
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue({ helloReceived: true, bridgeUpdatable: true, ...conn } as any)
+  const post = (app: ReturnType<typeof makeApp>) => app.inject({ method: 'POST', url: '/api/boards/board-1/bridge-update' })
+  const offering = (v: string | null) => ({ offered: () => v })
+
+  it('sends the bridge the offered version and reports the update in the list', async () => {
+    ownBoard()
+    bridge({ bridgeVersion: 'v0.9.0' })
+    vi.mocked(queries.getBoardsByOwner).mockResolvedValue([(await queries.getBoardById({} as any, 'board-1'))!])
+    const updates = new BridgeUpdates()
+    const app = makeApp({ bridgeReleases: offering('v0.9.2'), bridgeUpdates: updates })
+
+    const list = JSON.parse((await app.inject({ method: 'GET', url: '/api/boards' })).body)
+    expect(list.boards[0].bridgeUpdate).toEqual({ available: 'v0.9.2', updatable: true })
+
+    const res = await post(app)
+    expect(res.statusCode).toBe(202)
+    expect(JSON.parse(res.body)).toEqual({ version: 'v0.9.2', phase: 'requested', error: null })
+    expect(send).toHaveBeenCalledWith('board-1', { kind: 'bridge.update', data: { version: 'v0.9.2' } })
+
+    const again = await post(app)
+    expect(again.statusCode).toBe(409)
+    const after = JSON.parse((await app.inject({ method: 'GET', url: '/api/boards' })).body)
+    expect(after.boards[0].bridgeUpdate.status.phase).toBe('requested')
+  })
+
+  it('refuses when there is nothing to update to', async () => {
+    ownBoard()
+    for (const [bridgeVersion, offered] of [
+      ['v0.9.2', 'v0.9.2'],
+      ['v0.10.0', 'v0.9.2'],
+      ['dev+abc', 'v0.9.2'],
+      ['v0.9.0', null],
+    ] as const) {
+      bridge({ bridgeVersion })
+      const res = await post(makeApp({ bridgeReleases: offering(offered), bridgeUpdates: new BridgeUpdates() }))
+      expect(res.statusCode).toBe(409)
+    }
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('refuses a bridge that cannot update itself, and an offline one', async () => {
+    ownBoard()
+    bridge({ bridgeVersion: 'v0.9.0', bridgeUpdatable: false })
+    const app = makeApp({ bridgeReleases: offering('v0.9.2'), bridgeUpdates: new BridgeUpdates() })
+    expect((await post(app)).statusCode).toBe(409)
+    vi.mocked(connections.bridgeConnections).get.mockReturnValue(undefined)
+    expect((await post(app)).statusCode).toBe(503)
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('is for the owner only', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'board-1', owner_user_id: 'someone-else' } as any)
+    bridge({ bridgeVersion: 'v0.9.0' })
+    const res = await post(makeApp({ bridgeReleases: offering('v0.9.2'), bridgeUpdates: new BridgeUpdates() }))
+    expect(res.statusCode).toBe(403)
+    expect(send).not.toHaveBeenCalled()
   })
 })

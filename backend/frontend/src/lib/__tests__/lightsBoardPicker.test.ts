@@ -13,6 +13,7 @@ const board = (id: string, online = true): Board => ({
   createdAt: '2026-01-01T00:00:00Z',
   ip: null,
   bmUrl: null,
+  bridgeUpdate: { available: null, updatable: false },
 })
 
 describe('LightsBoardPicker device counts', () => {

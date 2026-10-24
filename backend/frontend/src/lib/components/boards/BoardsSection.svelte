@@ -2,7 +2,7 @@
   // Settings' Boards section (Boards, Tablet-Boards, Mobile-Boards boards): your boards, the
   // selected one's cameras, controls and live events, and pairing. With none yet, the
   // Settings-Boards-Empty onboarding.
-  import { ExternalLink, LoaderCircle, Pencil, Play, Plus, RotateCcw, Square, Sun } from '@lucide/svelte'
+  import { Download, ExternalLink, LoaderCircle, Pencil, Play, Plus, RotateCcw, Square, Sun } from '@lucide/svelte'
   import { onMount, onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import { hasBoards } from '$lib/hasBoards'
@@ -15,7 +15,7 @@
   import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
   import SelectedBoardBar from '$lib/components/boards/SelectedBoardBar.svelte'
-  import { applyBoardStatus, bmHost, fmtDate, fmtVersion } from '$lib/boards'
+  import { applyBoardStatus, bmHost, bridgeUpdateView, fmtDate, fmtVersion } from '$lib/boards'
   import { me } from '$lib/lobby/sockets'
   import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
   import { isTablet } from '$lib/viewport'
@@ -107,6 +107,45 @@
     }
   }
 
+  // Update bridge: the bridge reports its progress, which /ws/me pushes (board.status); the poll
+  // only covers a missed push
+  const updateView = $derived(selected ? bridgeUpdateView(selected) : ({ kind: 'none' } as const))
+  let updateRequestError = $state<string | null>(null)
+
+  async function refetchBoards() {
+    try {
+      const { data } = await api.GET('/api/boards')
+      if (data) boards = data.boards
+    } catch {
+      /* keep the list */
+    }
+  }
+
+  async function updateBridge() {
+    if (!selected) return
+    const id = selected.id
+    busy = 'bridge-update'
+    updateRequestError = null
+    const res = await api.POST('/api/boards/{id}/bridge-update', { params: { path: { id } } }).catch(() => null)
+    busy = null
+    if (!res) {
+      updateRequestError = 'Could not reach the server'
+      return
+    }
+    if (res.error) {
+      updateRequestError = res.error.error
+      return
+    }
+    const status = res.data
+    boards = boards.map(b => (b.id === id ? { ...b, bridgeUpdate: { ...b.bridgeUpdate, status } } : b))
+  }
+
+  $effect(() => {
+    if (updateView.kind !== 'busy') return
+    const poll = setInterval(() => void refetchBoards(), 5000)
+    return () => clearInterval(poll)
+  })
+
   // Live event feed (recent bridge events, polled)
   let events = $state<BoardEvent[]>([])
   let eventsInterval: ReturnType<typeof setInterval> | null = null
@@ -182,6 +221,7 @@
     camOk = {}
     editing = false
     unpairError = null
+    updateRequestError = null
   })
   async function unpair() {
     confirmUnpair = false
@@ -257,13 +297,7 @@
       if (!msg || !loaded) return
       const next = applyBoardStatus(boards, msg)
       if (next !== 'refetch') boards = next
-      else
-        void api
-          .GET('/api/boards')
-          .then(({ data }) => {
-            if (data) boards = data.boards
-          })
-          .catch(() => {})
+      else void refetchBoards()
     }),
   )
 
@@ -420,6 +454,43 @@
           {selected.bridgeVersion ? `${fmtVersion(selected.bridgeVersion)} · ` : ''}{selected.online ? 'connected' : 'offline'}
         </dd>
       </div>
+      {#if updateView.kind !== 'none'}
+        <div class="flex flex-col gap-2 py-3 border-b border-line-2">
+          {#if updateView.kind === 'busy'}
+            <span class="flex items-center gap-2 text-text-muted" role="status">
+              <LoaderCircle size={14} class="animate-spin" />
+              {updateView.text}
+            </span>
+          {:else if updateView.kind === 'done'}
+            <span class="text-accent" role="status">{updateView.text}</span>
+          {:else if updateView.kind === 'failed'}
+            <span class="text-[13px] text-live-text" role="alert">{updateView.text}</span>
+          {:else}
+            <div class="flex justify-between items-center gap-3">
+              <span class="text-text-muted">Bridge {updateView.version} is available</span>
+              {#if updateView.canUpdate}
+                <button
+                  type="button"
+                  onclick={updateBridge}
+                  disabled={busy !== null}
+                  class="shrink-0 flex items-center gap-[6px] h-9 px-3 rounded-[8px] text-[12px] font-medium border border-line-3
+                         bg-transparent text-text cursor-pointer font-[inherit] transition-colors hover:bg-surface-active
+                         disabled:opacity-35 disabled:cursor-not-allowed"
+                >
+                  {#if busy === 'bridge-update'}<LoaderCircle size={12} class="animate-spin" />{:else}<Download size={12} />{/if}
+                  Update bridge
+                </button>
+              {/if}
+            </div>
+            {#if !selected.bridgeUpdate.updatable}
+              <span class="text-[13px] text-text-dim">Run the bridge's install command again on the board's computer to update it.</span>
+            {/if}
+            {#if updateView.error ?? updateRequestError}
+              <span class="text-[13px] text-live-text" role="alert">{updateView.error ?? updateRequestError}</span>
+            {/if}
+          {/if}
+        </div>
+      {/if}
       <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
         <dt class="text-text-muted">Latency</dt>
         <dd class="m-0">

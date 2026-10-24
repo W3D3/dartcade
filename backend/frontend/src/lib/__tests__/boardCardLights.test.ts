@@ -12,6 +12,7 @@ const board = {
   createdAt: new Date().toISOString(),
   ip: null,
   bmUrl: null,
+  bridgeUpdate: { available: null, updatable: false },
 }
 
 const card = (lights?: number) => render(BoardCard, { props: { board, active: false, justPaired: false, onselect: () => {}, lights } }).body

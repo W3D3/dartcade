@@ -14,6 +14,8 @@ import { lobbyGwPlugin } from './browser-gw/lobby.js'
 import { sessionsApiPlugin } from './api/sessions.js'
 import { gamesApiPlugin } from './api/games.js'
 import { boardsApiPlugin } from './api/boards.js'
+import { bridgeReleases } from './boards/bridgeRelease.js'
+import { buildInfo } from './system/info.js'
 import { lightsApiPlugin } from './api/lights.js'
 import { pairingApiPlugin } from './api/pairing.js'
 import { usersApiPlugin } from './api/users.js'
@@ -203,11 +205,15 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
     contactEmail: legalValues(process.env).contactEmail?.trim() || null,
   })
   await app.register(legalApiPlugin, { docs: legalDocs })
+  // Asked once now, so the Boards page knows of an update on its first load
+  const releases = bridgeReleases(buildInfo(process.env).version)
+  void releases.refresh()
   await app.register(boardsApiPlugin, {
     db,
     releaseBoard: boardId => lobbies.releaseBoard(boardId),
     getSessionByBoard: boardId => engine.getSessionByBoard(boardId),
     isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
+    bridgeReleases: releases,
   })
   await app.register(lightsApiPlugin, { db, lights })
   await app.register(pairingApiPlugin, { db })

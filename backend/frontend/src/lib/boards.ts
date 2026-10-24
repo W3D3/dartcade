@@ -42,3 +42,30 @@ export function applyBoardStatus(boards: Board[], msg: Pick<BoardStatusMessage, 
   if (!board || msg.online) return 'refetch'
   return boards.map(b => (b.id === msg.boardId ? { ...b, online: false } : b))
 }
+
+const PHASE_TEXT = {
+  requested: 'Asking the bridge',
+  downloading: 'Downloading',
+  verifying: 'Verifying',
+  installing: 'Installing',
+  restarting: 'Restarting',
+} as const
+
+/** What the Bridge row says about updating it, and whether it offers the Update bridge button. */
+export type BridgeUpdateView =
+  | { kind: 'none' }
+  | { kind: 'busy'; text: string }
+  | { kind: 'done'; text: string }
+  /** Failed, with nothing (left) to update to, e.g. while the bridge is offline */
+  | { kind: 'failed'; text: string }
+  | { kind: 'available'; version: string; canUpdate: boolean; error: string | null }
+
+export function bridgeUpdateView(b: Board): BridgeUpdateView {
+  const { available, updatable, status } = b.bridgeUpdate
+  if (status && status.phase !== 'done' && status.phase !== 'failed')
+    return { kind: 'busy', text: `${PHASE_TEXT[status.phase]} ${status.version}…` }
+  if (status?.phase === 'done' && !available) return { kind: 'done', text: `Updated to ${status.version}` }
+  const error = status?.phase === 'failed' ? `Update to ${status.version} failed: ${status.error ?? 'unknown error'}` : null
+  if (!available) return error ? { kind: 'failed', text: error } : { kind: 'none' }
+  return { kind: 'available', version: available, canUpdate: b.online && updatable, error }
+}
