@@ -14,15 +14,51 @@ say `play.dartca.de`.
 
 ## 2. Install the bridge
 
-On the machine next to your board (often the board PC itself), Linux or macOS, amd64 or arm64:
+On the machine next to your board (often the board PC itself), Linux or macOS, amd64 or arm64 (Windows below):
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/W3D3/dartcade/main/scripts/install-bridge.sh | sh
 ```
 
-This installs `dartcade-bridge` to `/usr/local/bin`. Windows: download the `.exe` from
-[Releases](https://github.com/W3D3/dartcade/releases) instead. A Docker image is also published
-as `ghcr.io/w3d3/dartcade-bridge`.
+This installs `dartcade-bridge` to `/usr/local/bin`. A Docker image is also published as
+`ghcr.io/w3d3/dartcade-bridge`.
+
+### Keep it running (Linux and macOS)
+
+To start the bridge at boot and bring it back after a crash or a restart, install it as a service
+(systemd on Linux, launchd on macOS). Pass the Board Manager's address (it defaults to `http://localhost:3180`, for a board on
+the same machine):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/W3D3/dartcade/main/scripts/install-bridge.sh | sh -s -- --service --board-url http://<board-ip>:3180
+```
+
+The script installs and starts the service and prints the pairing code (step 3 below, no need to run
+the bridge by hand). Run it again to upgrade or to change a setting (give all the options again: the service is
+replaced; the pairing is kept). Logs: `journalctl -u dartcade-bridge -f`. Remove it with
+`... | sh -s -- --uninstall` (add `--purge` to forget the pairing too). On macOS the logs are in
+`/var/log/dartcade-bridge.out.log`.
+
+### Keep it running (Windows)
+
+In an **Administrator** PowerShell:
+
+```powershell
+& ([scriptblock]::Create((irm https://raw.githubusercontent.com/W3D3/dartcade/main/scripts/install-bridge.ps1))) -BoardUrl http://<board-ip>:3180
+```
+
+This installs a Windows service (`dartcade-bridge`) that starts at boot and restarts after a crash.
+Its config, pairing and log (`bridge.log`) are in `C:\ProgramData\dartcade-bridge`. Remove it with
+the same command plus `-Uninstall` (and `-Purge` to forget the pairing). The binary also does this
+itself: `dartcade-bridge install` / `dartcade-bridge uninstall [--purge]`.
+
+## Quick path: install with one command
+
+In dartcade, open **Settings → Boards → Set up a board**. Pick your system and run the command it
+shows. It carries a one-time install token (valid for 15 minutes, good for one bridge), so the
+bridge pairs itself: the board appears in the dialog, you name it, and you are done. A copied
+command is useless once it has been used or has expired. The steps below are the manual way, with
+a pairing code.
 
 ## 3. Run the bridge and pair a board
 
