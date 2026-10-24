@@ -208,3 +208,71 @@ describe('X01 matchStats', () => {
     expect(s.seats.find(v => v.index === 0)!.values.legsClosed).toBe(0)
   })
 })
+
+describe('X01 matchStats per leg', () => {
+  const D20 = seg('D20', 20, 2)
+  const twoLegs = () =>
+    play(
+      cfg({ startScore: 101, firstTo: 2 }),
+      ['A', 'B'],
+      [
+        [T20, S1, MISS], // leg 1, A 61 → 40: the miss is a dart at the finish
+        [T20, T20, MISS], // B busts on the second dart: 101 stays
+        [MISS, MISS, D20], // A: three more darts at it, the last checks out
+        [T20, T20, T20], // leg 2: busts on the second dart
+        [S20, S20, S1], // 41 → 60
+        [S20, S20, D10], // 60 → 41: nobody has checked out leg 2 yet
+      ],
+    )
+  const legValues = (r: ReturnType<typeof play>, leg: number, seat: number) =>
+    statsOf(r)
+      .legs!.find(l => l.leg === leg)!
+      .seats.find(v => v.index === seat)!.values
+
+  it('gives every leg the match rows without best leg', () => {
+    const s = statsOf(twoLegs())
+    expect(s.legs!.map(l => l.leg)).toEqual([0, 1])
+    expect(s.legs![0].rows.map(x => x.key)).toEqual(s.rows.map(x => x.key).filter(k => k !== 'bestLegDarts'))
+  })
+
+  it('counts each leg from its own visits, checkout darts included', () => {
+    const r = twoLegs()
+    expect(legValues(r, 0, 0)).toMatchObject({ dartsThrown: 6, checkoutAttempts: 4, checkoutHits: 1, highestFinish: 40 })
+    expect(legValues(r, 0, 0).average).toBeCloseTo(((61 + 40) / 6) * 3)
+    // The bust scored nothing, and B never had a dart at a finish
+    expect(legValues(r, 0, 1)).toMatchObject({ dartsThrown: 3, average: 0, checkoutAttempts: 0, checkoutHits: 0 })
+    // The match adds the legs up, and agrees with the live counting
+    const match = seatValues(r, 0)
+    expect(match.checkoutAttempts).toBe(r.final.checkoutAttempts[0])
+    expect(match.dartsThrown).toBe(legValues(r, 0, 0).dartsThrown + legValues(r, 1, 0).dartsThrown)
+  })
+
+  it('leaves the finish out of a leg nobody checked out, busts scoring nothing', () => {
+    const r = twoLegs()
+    const opener = r.visits[3].seat
+    const leg = legValues(r, 1, opener)
+    expect(leg.dartsThrown).toBe(6)
+    expect(leg.average).toBeCloseTo((60 / 6) * 3)
+    expect(leg.highestFinish).toBeUndefined()
+    expect(leg.checkoutAttempts).toBe(0)
+    expect(legValues(r, 1, 1 - opener)).toMatchObject({ dartsThrown: 3, highestScore: 41 })
+  })
+
+  it('gives team totals per leg', () => {
+    const r = play(
+      cfg({ format: 'teams', teams: [0, 1, 0, 1] }),
+      ['A', 'B', 'C', 'D'],
+      [
+        [T20, T20, T20],
+        [S1, S1, S1],
+        [T20, T19, D2],
+      ],
+    )
+    const s = statsOf(r)
+    const t = r.final.teamOf[0]
+    const leg = s.legs![0].teams!.find(v => v.index === t)!.values
+    const { legsWon: _won, ...match } = s.teams!.find(v => v.index === t)!.values
+    expect(leg).toEqual(match)
+    expect(s.legs![0].teams).toHaveLength(2)
+  })
+})

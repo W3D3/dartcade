@@ -6,6 +6,7 @@ import ResultCard from '../components/details/ResultCard.svelte'
 import TeamShares from '../components/details/TeamShares.svelte'
 import X01Legs from '../components/details/X01Legs.svelte'
 import X01Section from '../components/details/X01Section.svelte'
+import X01LegStats from '../components/details/X01LegStats.svelte'
 import AtcTargets from '../components/details/AtcTargets.svelte'
 import RaceChart from '../components/details/RaceChart.svelte'
 import HeatBoard from '../components/details/HeatBoard.svelte'
@@ -219,7 +220,7 @@ describe('X01 Breakdown, one leg', () => {
 })
 
 describe('X01Section', () => {
-  it('title-tabs read Breakdown and Heatmap; the leg selector shows Match first, then Leg 1', () => {
+  it('title-tabs read Breakdown, Heatmap and Leg stats; the leg selector shows Match first, then Leg 1', () => {
     const seg = (name: string, number: number, multiplier: 1 | 2 | 3) => ({ name, number, multiplier, bed: 'Single' as const })
     const dart = (s: ReturnType<typeof seg>, index: number) => ({
       index,
@@ -244,7 +245,8 @@ describe('X01Section', () => {
     const out = render(X01Section, { props: { detail: d, party: false } }).body
     expect(out).toContain('role="tablist"')
     expect(out).toContain('aria-label="Match view"')
-    expect(out.match(/role="tab"/g)).toHaveLength(2)
+    expect(out.match(/role="tab"/g)).toHaveLength(3)
+    expect(out).toMatch(/aria-selected="false"[^>]*>Leg stats/)
     expect(out).toMatch(/aria-selected="true"[^>]*>Breakdown/)
     expect(out).toMatch(/aria-selected="false"[^>]*>Heatmap/)
     // The unselected tab hovers to the artboard's full-brightness text, not a middling one.
@@ -304,6 +306,65 @@ describe('X01Section', () => {
     expect(leg2HeadingIdx).toBeGreaterThan(leg1HeadingIdx)
     // Heatmap's note doesn't show while Breakdown is selected.
     expect(out).not.toContain('Where every dart landed')
+  })
+})
+
+describe('X01LegStats', () => {
+  const legRows: StatRow[] = [{ key: 'average', label: '3-dart average', format: 'decimal', better: 'higher', compact: true }]
+  const withLeg = (d: GameDetail, teams?: number[]): GameDetail => ({
+    ...d,
+    stats: {
+      ...d.stats,
+      legs: [
+        {
+          leg: 1,
+          rows: legRows,
+          seats: d.game.players.map(p => ({ index: p.seat, values: { average: 40 + p.seat } })),
+          ...(teams && { teams: teams.map((average, index) => ({ index, values: { average } })) }),
+        },
+      ],
+    },
+  })
+
+  it("duel: that leg's values, not the match's", () => {
+    const out = render(X01LegStats, { props: { detail: withLeg(game(2)), leg: 1 } }).body
+    expect(out).toContain('Leg stats')
+    expect(out).toContain('41.0')
+    expect(out).not.toContain('83.9')
+  })
+
+  it('party: every player in seat order, without the match places', () => {
+    const d = withLeg(game(3))
+    d.game.players[0].placement = 3
+    const out = render(X01LegStats, { props: { detail: d, leg: 1 } }).body
+    expect(out).not.toContain('Place')
+    expect(out).not.toContain('3rd')
+    expect(out.indexOf('P0')).toBeLessThan(out.indexOf('P2'))
+    expect(out).toContain('42.0')
+  })
+
+  it('teams: one value per team', () => {
+    const d = game(4)
+    d.detail = {
+      mode: 'x01',
+      teams: [
+        { id: 'A', name: 'Team A', seats: [0, 2] },
+        { id: 'B', name: 'Team B', seats: [1, 3] },
+      ],
+      legs: [],
+    }
+    d.stats.teams = [
+      { index: 0, values: { average: 78.2 } },
+      { index: 1, values: { average: 65.4 } },
+    ]
+    const out = render(X01LegStats, { props: { detail: withLeg(d, [91.5, 12.5]), leg: 1 } }).body
+    expect(out).toContain('Team A')
+    expect(out).toContain('91.5')
+    expect(out).not.toContain('78.2')
+  })
+
+  it('nothing for a leg without stats (a game saved before per-leg stats)', () => {
+    expect(render(X01LegStats, { props: { detail: game(2), leg: 0 } }).body).not.toContain('Leg stats')
   })
 })
 

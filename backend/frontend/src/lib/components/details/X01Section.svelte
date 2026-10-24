@@ -1,8 +1,8 @@
 <script lang="ts">
-  // X01 match details section (X01-Details*, X01-Details-Heatmap*): two title-tabs, "Breakdown"
-  // and "Heatmap", sharing one card and header row. Breakdown is the default; the view isn't in
+  // X01 match details section (X01-Details*, X01-Details-Heatmap*): three title-tabs, "Breakdown",
+  // "Heatmap" and "Leg stats" (the match stats per leg), sharing one card and header row. Breakdown is the default; the view isn't in
   // the URL. Below the title-tabs, one leg selector ("Match | Leg 1 | Leg 2 | …") is shared by
-  // both views and filters them to a leg, or to the whole match; it lives here (not in X01Legs
+  // every view and filters it to a leg, or to the whole match; it lives here (not in X01Legs
   // or HeatmapView) for the same reason as the highlight and heatmap-player picks: those views
   // are both remounted on every tab switch, so a pick they held themselves would reset. The
   // highlight picker (party games) and Heatmap's "Where every dart landed" note sit alongside
@@ -10,6 +10,7 @@
   import type { GameDetail } from '$lib/api'
   import X01Legs from './X01Legs.svelte'
   import HeatmapView from './HeatmapView.svelte'
+  import X01LegStats from './X01LegStats.svelte'
   import HighlightPicker from './HighlightPicker.svelte'
   import { x01Sides } from '$lib/details/x01'
   import { highlightDefault } from '$lib/details/page'
@@ -27,23 +28,27 @@
   )
   let heatPick = $state<number | null>(null)
 
-  type View = 'breakdown' | 'heatmap'
+  type View = 'breakdown' | 'heatmap' | 'legs'
   let view = $state<View>('breakdown')
   const tabs: { key: View; label: string }[] = [
     { key: 'breakdown', label: 'Breakdown' },
     { key: 'heatmap', label: 'Heatmap' },
+    { key: 'legs', label: 'Leg stats' },
   ]
 
   const id = $props.id()
   function onkey(e: KeyboardEvent) {
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight' && e.key !== 'Home' && e.key !== 'End') return
     e.preventDefault()
-    view = e.key === 'Home' ? 'breakdown' : e.key === 'End' ? 'heatmap' : view === 'breakdown' ? 'heatmap' : 'breakdown'
+    const i = tabs.findIndex(t => t.key === view)
+    const n = tabs.length
+    const next = e.key === 'Home' ? 0 : e.key === 'End' ? n - 1 : (i + (e.key === 'ArrowRight' ? 1 : n - 1)) % n
+    view = tabs[next].key
     document.getElementById(`${id}-${view}`)?.focus()
   }
 </script>
 
-<section aria-label="Breakdown or heatmap" class="flex flex-col gap-4 min-w-0 box-border p-4 md:p-6 card">
+<section aria-label="Breakdown, heatmap or leg stats" class="flex flex-col gap-4 min-w-0 box-border p-4 md:p-6 card">
   <div class="flex flex-col gap-3">
     <!-- Heading navigation (the H key) otherwise has nothing to land on: the title-tabs below are
          buttons, not text, so this gives the section a heading without changing how it looks. -->
@@ -69,7 +74,7 @@
       <div class="flex flex-wrap items-center gap-3">
         {#if view === 'heatmap'}
           <span class="text-[13px] text-text-dim whitespace-nowrap">Where every dart landed</span>
-        {:else if party}
+        {:else if party && view === 'breakdown'}
           <HighlightPicker
             options={sides.map(s => ({ key: s.key, name: s.name }))}
             value={highlight ?? 0}
@@ -113,6 +118,15 @@
       {:else}
         <X01Legs {detail} {party} leg={legSel} {highlight} />
       {/if}
+    {:else if view === 'legs'}
+      {#each legSel === null ? legs : [legSel] as l (l)}
+        <div class="flex flex-col gap-4 min-w-0">
+          {#if legSel === null}<h3 class="m-0 font-display font-bold text-[14px] tracking-[0.06em] uppercase text-text-dim">
+              Leg {l + 1}
+            </h3>{/if}
+          <X01LegStats {detail} leg={l} />
+        </div>
+      {/each}
     {:else}
       <HeatmapView {detail} picked={heatPick} onpick={(s: number) => (heatPick = s)} leg={legSel} />
     {/if}

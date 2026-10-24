@@ -1,14 +1,15 @@
 <script lang="ts">
-  // Party: place, player and one column per compact stat row, the better value in lime.
+  // Party: place, player and one column per compact stat row, the better value in lime. A leg's
+  // table (`ranked` off) keeps seat order and leaves out the match's places.
   import Avatar from '$lib/components/Avatar.svelte'
   import type { StatRow } from '$lib/api'
   import { ordinal } from '$lib/fmt'
   import { betterIndexes, formatStat } from '$lib/details/stats'
   import type { DetailSide } from '$lib/details/page'
 
-  let { rows, sides }: { rows: StatRow[]; sides: DetailSide[] } = $props()
+  let { rows, sides, ranked = true }: { rows: StatRow[]; sides: DetailSide[]; ranked?: boolean } = $props()
   const compact = $derived(rows.filter(r => r.compact))
-  const ranked = $derived([...sides].sort((a, b) => a.placement - b.placement))
+  const order = $derived(ranked ? [...sides].sort((a, b) => a.placement - b.placement) : sides)
   const all = $derived(sides.map(s => ({ index: s.index, values: s.values })))
 </script>
 
@@ -16,16 +17,16 @@
   <table class="w-full border-collapse text-[15px]">
     <thead>
       <tr class="text-[12px] label-caps text-text-dim">
-        <th class="text-left font-normal px-4 py-3">Place</th>
-        <th class="text-left font-normal px-2 py-3">Player</th>
+        {#if ranked}<th class="text-left font-normal px-4 py-3">Place</th>{/if}
+        <th class="text-left font-normal {ranked ? 'px-2' : 'px-4'} py-3">Player</th>
         {#each compact as row (row.key)}<th class="text-right font-normal px-3 py-3 whitespace-nowrap">{row.label}</th>{/each}
       </tr>
     </thead>
     <tbody>
-      {#each ranked as s (s.index)}
+      {#each order as s (s.index)}
         <tr class="border-t border-line {s.me ? 'bg-surface-active' : ''}">
-          <td class="px-4 py-3 font-display font-bold text-[20px]">{ordinal(s.placement)}</td>
-          <td class="px-2 py-3"
+          {#if ranked}<td class="px-4 py-3 font-display font-bold text-[20px]">{ordinal(s.placement)}</td>{/if}
+          <td class="{ranked ? 'px-2' : 'px-4'} py-3"
             ><span class="flex items-center gap-2"
               ><Avatar name={s.name} size={28} guest={s.guest} bot={s.bot} /><span class="font-semibold">{s.name}</span
               >{#if s.forfeited}<span class="text-[12px] text-danger-text">gave up</span>{/if}</span
