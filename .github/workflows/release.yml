@@ -78,6 +78,32 @@ jobs:
         with:
           files: bridge/${{ matrix.name }}
 
+  # SHA256SUMS of the binaries, signed: a bridge updating itself verifies both before it runs the
+  # new binary (bridge/internal/update, which embeds the public key, release.pub)
+  sign-bridge-binaries:
+    if: github.event_name == 'push'
+    needs: release-bridge-binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Write and sign the checksums
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # An ed25519 private key (PEM), the pair of bridge/internal/update/release.pub
+          SIGNING_KEY: ${{ secrets.BRIDGE_SIGNING_KEY }}
+        run: |
+          if [ -z "$SIGNING_KEY" ]; then
+            echo "::error::The BRIDGE_SIGNING_KEY secret is not set, so bridges can't update themselves to $TAG (see DEVELOPMENT.md)"
+            exit 1
+          fi
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern 'dartcade-bridge_*'
+          sha256sum dartcade-bridge_* > SHA256SUMS
+          printf '%s\n' "$SIGNING_KEY" > key.pem
+          openssl pkeyutl -sign -rawin -inkey key.pem -in SHA256SUMS -out SHA256SUMS.sig
+          rm key.pem
+          gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber SHA256SUMS SHA256SUMS.sig
+
   # Each image is built natively per architecture (arm64 on an ARM runner: QEMU crashed Node
   # with "Illegal instruction" and hung the job), pushed by digest, then joined into one tag
   build-image:
