@@ -327,332 +327,341 @@
   <animate attributeName="stroke" values="#c6f24e;#dcff7a;#c6f24e" dur="1.2s" repeatCount="indefinite" />
 {/snippet}
 
-<!-- Pointer-only: tapping where the dart landed; the keypad is the keyboard way to enter darts -->
-<svg
-  bind:this={svgEl}
-  role={precise || onDartMove ? 'application' : 'img'}
-  aria-label="Dartboard"
-  viewBox={zoomBox ? `${zoomBox.x} ${zoomBox.y} ${zoomBox.w} ${zoomBox.w}` : '-1.15 -1.15 2.3 2.3'}
-  class="w-full select-none {hoverable ? 'cursor-crosshair' : ''}"
-  xmlns="http://www.w3.org/2000/svg"
-  onclick={precise ? boardClick : undefined}
-  style={precise || onDartMove ? 'touch-action:none;-webkit-touch-callout:none' : undefined}
-  onpointerdown={precise || onDartMove ? pressStart : undefined}
-  onpointermove={pressMove}
-  onpointerup={pressEnd}
-  onpointercancel={pressCancel}
-  onpointerleave={onBoardHover ? () => onBoardHover(null) : undefined}
-  oncontextmenu={e => {
-    if (precise) e.preventDefault()
-  }}
->
-  <!-- Round normally; zoomed in, the whole square shows the board -->
-  <defs>
-    <clipPath id={clipId}
-      >{#if zoomBox}<rect x="-5" y="-5" width="10" height="10" />{:else}<circle cx="0" cy="0" r="1.12" />{/if}</clipPath
-    >
-    <clipPath id={photoClipId}><circle cx="0" cy="0" r="1.12" /></clipPath>
-  </defs>
-  {#if zoomBox}<rect x="-5" y="-5" width="10" height="10" fill="var(--color-bg-deep)" />{:else}<circle
-      cx="0"
-      cy="0"
-      r="1.12"
-      fill="var(--color-bg-deep)"
-    />{/if}
+<div class="relative w-full">
+  <!-- Pointer-only: tapping where the dart landed; the keypad is the keyboard way to enter darts -->
+  <svg
+    bind:this={svgEl}
+    role={precise || onDartMove ? 'application' : 'img'}
+    aria-label="Dartboard"
+    viewBox={zoomBox ? `${zoomBox.x} ${zoomBox.y} ${zoomBox.w} ${zoomBox.w}` : '-1.15 -1.15 2.3 2.3'}
+    class="w-full select-none {hoverable ? 'cursor-crosshair' : ''}"
+    xmlns="http://www.w3.org/2000/svg"
+    onclick={precise ? boardClick : undefined}
+    style={precise || onDartMove ? 'touch-action:none;-webkit-touch-callout:none' : undefined}
+    onpointerdown={precise || onDartMove ? pressStart : undefined}
+    onpointermove={pressMove}
+    onpointerup={pressEnd}
+    onpointercancel={pressCancel}
+    onpointerleave={onBoardHover ? () => onBoardHover(null) : undefined}
+    oncontextmenu={e => {
+      if (precise) e.preventDefault()
+    }}
+  >
+    <!-- Round normally; zoomed in, the whole square shows the board -->
+    <defs>
+      <clipPath id={clipId}
+        >{#if zoomBox}<rect x="-5" y="-5" width="10" height="10" />{:else}<circle cx="0" cy="0" r="1.12" />{/if}</clipPath
+      >
+      <clipPath id={photoClipId}><circle cx="0" cy="0" r="1.12" /></clipPath>
+    </defs>
+    {#if zoomBox}<rect x="-5" y="-5" width="10" height="10" fill="var(--color-bg-deep)" />{:else}<circle
+        cx="0"
+        cy="0"
+        r="1.12"
+        fill="var(--color-bg-deep)"
+      />{/if}
 
-  <g clip-path="url(#{clipId})">
-    <g style="transform: {zoom === 1 ? 'none' : `scale(${zoom})`}; transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
-      <!-- Camera still: the image's edge is at r = 1.5 -->
-      {#if stills.length}
-        <g clip-path="url(#{photoClipId})">
-          {#each stills as src (src)}
-            <image
-              href={src}
-              x="-1.5"
-              y="-1.5"
-              width="3"
-              height="3"
-              preserveAspectRatio="none"
-              aria-hidden="true"
-              style="pointer-events:none"
-              onerror={() => {
-                if (src === cameraSrc) failedSrc = src
-              }}
+    <g clip-path="url(#{clipId})">
+      <g style="transform: {zoom === 1 ? 'none' : `scale(${zoom})`}; transition: transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1)">
+        <!-- Camera still: the image's edge is at r = 1.5 -->
+        {#if stills.length}
+          <g clip-path="url(#{photoClipId})">
+            {#each stills as src (src)}
+              <image
+                href={src}
+                x="-1.5"
+                y="-1.5"
+                width="3"
+                height="3"
+                preserveAspectRatio="none"
+                aria-hidden="true"
+                style="pointer-events:none"
+                onerror={() => {
+                  if (src === cameraSrc) failedSrc = src
+                }}
+              />
+            {/each}
+          </g>
+        {/if}
+
+        <!-- Sector fills and wire dividers (on a camera still: wires only) -->
+        {#each sectors as { num, i, paths, wa } (num)}
+          {#each paths as { ring, d } (ring)}
+            <path
+              {d}
+              fill={photo ? 'transparent' : ringColor(i, ring)}
+              stroke="#8d8e84"
+              stroke-width="1"
+              stroke-opacity={wireOpacity}
+              vector-effect="non-scaling-stroke"
+              class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
             />
           {/each}
-        </g>
-      {/if}
-
-      <!-- Sector fills and wire dividers (on a camera still: wires only) -->
-      {#each sectors as { num, i, paths, wa } (num)}
-        {#each paths as { ring, d } (ring)}
-          <path
-            {d}
-            fill={photo ? 'transparent' : ringColor(i, ring)}
+          <line
+            x1={R.bull25 * Math.cos(wa)}
+            y1={-R.bull25 * Math.sin(wa)}
+            x2={R.db * Math.cos(wa)}
+            y2={-R.db * Math.sin(wa)}
             stroke="#8d8e84"
-            stroke-width="1"
+            stroke-width="1.2"
             stroke-opacity={wireOpacity}
             vector-effect="non-scaling-stroke"
-            class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
           />
         {/each}
-        <line
-          x1={R.bull25 * Math.cos(wa)}
-          y1={-R.bull25 * Math.sin(wa)}
-          x2={R.db * Math.cos(wa)}
-          y2={-R.db * Math.sin(wa)}
-          stroke="#8d8e84"
-          stroke-width="1.2"
-          stroke-opacity={wireOpacity}
-          vector-effect="non-scaling-stroke"
-        />
-      {/each}
 
-      <!-- Ring wire circles -->
-      {#each [R.bull25, R.si, R.tr, R.so, R.db] as r (r)}
+        <!-- Ring wire circles -->
+        {#each [R.bull25, R.si, R.tr, R.so, R.db] as r (r)}
+          <circle
+            cx="0"
+            cy="0"
+            {r}
+            fill="none"
+            stroke="#8d8e84"
+            stroke-width="1.2"
+            stroke-opacity={wireOpacity}
+            vector-effect="non-scaling-stroke"
+          />
+        {/each}
+
+        <!-- Bull fills -->
         <circle
           cx="0"
           cy="0"
-          {r}
-          fill="none"
+          r={R.bull25}
+          fill={photo ? 'transparent' : '#1e7a4f'}
           stroke="#8d8e84"
           stroke-width="1.2"
           stroke-opacity={wireOpacity}
           vector-effect="non-scaling-stroke"
+          class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
         />
-      {/each}
+        <circle
+          cx="0"
+          cy="0"
+          r={R.bull50}
+          fill={photo ? 'transparent' : '#d23b36'}
+          stroke="#8d8e84"
+          stroke-width="1.2"
+          stroke-opacity={wireOpacity}
+          vector-effect="non-scaling-stroke"
+          class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
+        />
 
-      <!-- Bull fills -->
-      <circle
-        cx="0"
-        cy="0"
-        r={R.bull25}
-        fill={photo ? 'transparent' : '#1e7a4f'}
-        stroke="#8d8e84"
-        stroke-width="1.2"
-        stroke-opacity={wireOpacity}
-        vector-effect="non-scaling-stroke"
-        class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
-      />
-      <circle
-        cx="0"
-        cy="0"
-        r={R.bull50}
-        fill={photo ? 'transparent' : '#d23b36'}
-        stroke="#8d8e84"
-        stroke-width="1.2"
-        stroke-opacity={wireOpacity}
-        vector-effect="non-scaling-stroke"
-        class={hoverable && !photo ? '[@media(hover:hover)]:hover:brightness-125' : ''}
-      />
-
-      {#if dim}
-        <circle cx="0" cy="0" r="1.12" fill="var(--color-bg-deep)" fill-opacity="0.45" style="pointer-events:none" />
-      {/if}
-
-      <!-- ATC targets: thrower's in lime, next player's dashed white -->
-      {#each [{ seg: target, next: false }, { seg: nextTarget, next: true }] as t (t.next)}
-        {#if t.seg}
-          {@const sector = sectors.find(s => s.num === t.seg)}
-          {@const style = t.next
-            ? { fill: 'none', 'fill-opacity': '0', stroke: 'var(--color-text)', 'stroke-width': '0.012', 'stroke-dasharray': '0.035 0.024' }
-            : {
-                fill: 'var(--color-accent)',
-                'fill-opacity': '0.38',
-                stroke: 'var(--color-accent)',
-                'stroke-width': '0.018',
-                'stroke-dasharray': 'none',
-              }}
-          {#if sector}
-            <path d={sectorPath(R.bull25, R.db, sector.a1, sector.a2)} {...style} stroke-linejoin="round" style="pointer-events:none" />
-          {:else if t.seg === 25 || t.seg === 50}
-            <circle cx="0" cy="0" r={t.seg === 25 ? R.bull25 : R.bull50} {...style} style="pointer-events:none" />
-          {/if}
+        {#if dim}
+          <circle cx="0" cy="0" r="1.12" fill="var(--color-bg-deep)" fill-opacity="0.45" style="pointer-events:none" />
         {/if}
-      {/each}
 
-      <!-- Number labels — pointer-events:none so clicks go through to paths -->
-      {#each sectors as { num, tx, ty } (num)}
-        <text
-          x={tx}
-          y={ty}
-          text-anchor="middle"
-          dy="0.35em"
-          fill={num === target ? 'var(--color-accent)' : dim ? 'var(--color-text-dim)' : 'var(--color-text)'}
-          font-size={num === target ? '0.123' : '0.09'}
-          font-family="Barlow Condensed, sans-serif"
-          font-weight={num === target ? '700' : '600'}
-          style="pointer-events:none"
-        >
-          {num}
-        </text>
-      {/each}
+        <!-- ATC targets: thrower's in lime, next player's dashed white -->
+        {#each [{ seg: target, next: false }, { seg: nextTarget, next: true }] as t (t.next)}
+          {#if t.seg}
+            {@const sector = sectors.find(s => s.num === t.seg)}
+            {@const style = t.next
+              ? {
+                  fill: 'none',
+                  'fill-opacity': '0',
+                  stroke: 'var(--color-text)',
+                  'stroke-width': '0.012',
+                  'stroke-dasharray': '0.035 0.024',
+                }
+              : {
+                  fill: 'var(--color-accent)',
+                  'fill-opacity': '0.38',
+                  stroke: 'var(--color-accent)',
+                  'stroke-width': '0.018',
+                  'stroke-dasharray': 'none',
+                }}
+            {#if sector}
+              <path d={sectorPath(R.bull25, R.db, sector.a1, sector.a2)} {...style} stroke-linejoin="round" style="pointer-events:none" />
+            {:else if t.seg === 25 || t.seg === 50}
+              <circle cx="0" cy="0" r={t.seg === 25 ? R.bull25 : R.bull50} {...style} style="pointer-events:none" />
+            {/if}
+          {/if}
+        {/each}
 
-      <!-- Other-player markers: white circle with initial -->
-      {#each playerMarkers.filter(m => !m.isActive) as marker, k (k)}
-        {@const pos = otherMarkerPos[k]}
-        {#if pos}
-          <circle
-            cx={pos.x}
-            cy={pos.y}
-            r="0.085"
-            fill="white"
-            stroke="var(--color-bg-deep)"
-            stroke-width="0.01"
-            style="pointer-events:none"
-          />
+        <!-- Number labels — pointer-events:none so clicks go through to paths -->
+        {#each sectors as { num, tx, ty } (num)}
           <text
-            x={pos.x}
-            y={pos.y}
+            x={tx}
+            y={ty}
             text-anchor="middle"
             dy="0.35em"
-            fill="var(--color-bg-deep)"
-            font-size="0.072"
+            fill={num === target ? 'var(--color-accent)' : dim ? 'var(--color-text-dim)' : 'var(--color-text)'}
+            font-size={num === target ? '0.123' : '0.09'}
             font-family="Barlow Condensed, sans-serif"
-            font-weight="bold"
+            font-weight={num === target ? '700' : '600'}
             style="pointer-events:none"
           >
-            {marker.initial}
+            {num}
           </text>
-        {/if}
-      {/each}
+        {/each}
 
-      <!-- Next suggested checkout target: the exact ring wedge, glowing (x01). Only the very
+        <!-- Other-player markers: white circle with initial -->
+        {#each playerMarkers.filter(m => !m.isActive) as marker, k (k)}
+          {@const pos = otherMarkerPos[k]}
+          {#if pos}
+            <circle
+              cx={pos.x}
+              cy={pos.y}
+              r="0.085"
+              fill="white"
+              stroke="var(--color-bg-deep)"
+              stroke-width="0.01"
+              style="pointer-events:none"
+            />
+            <text
+              x={pos.x}
+              y={pos.y}
+              text-anchor="middle"
+              dy="0.35em"
+              fill="var(--color-bg-deep)"
+              font-size="0.072"
+              font-family="Barlow Condensed, sans-serif"
+              font-weight="bold"
+              style="pointer-events:none"
+            >
+              {marker.initial}
+            </text>
+          {/if}
+        {/each}
+
+        <!-- Next suggested checkout target: the exact ring wedge, glowing (x01). Only the very
            next dart — later darts in the chain show in the dart slots below, not on the board.
            Drawn under the thrown darts so a dart marker always stays on top. -->
-      {#if checkoutTargets[0]}
-        {@const hl = checkoutHighlight(checkoutTargets[0])}
-        {#if hl}
-          {#if 'wedge' in hl}
-            <path
-              d={hl.wedge}
-              fill="none"
-              stroke="var(--color-accent)"
-              stroke-opacity={noMotion ? '0.4' : '0.12'}
-              stroke-width={noMotion ? '0.02' : '0.012'}
-              stroke-linejoin="round"
-              style="pointer-events:none"
-            >
-              {#if !noMotion}{@render checkoutGlowAnim()}{/if}
-            </path>
-            <path
-              d={hl.wedge}
-              fill="none"
-              stroke="var(--color-accent)"
-              stroke-width="0.02"
-              stroke-linejoin="round"
-              style="pointer-events:none"
-            >
-              {#if !noMotion}{@render checkoutLineAnim()}{/if}
-            </path>
-          {:else}
-            <circle
-              cx="0"
-              cy="0"
-              r={hl.bull}
-              fill="none"
-              stroke="var(--color-accent)"
-              stroke-opacity={noMotion ? '0.4' : '0.12'}
-              stroke-width={noMotion ? '0.02' : '0.012'}
-              style="pointer-events:none"
-            >
-              {#if !noMotion}{@render checkoutGlowAnim()}{/if}
-            </circle>
-            <circle cx="0" cy="0" r={hl.bull} fill="none" stroke="var(--color-accent)" stroke-width="0.02" style="pointer-events:none">
-              {#if !noMotion}{@render checkoutLineAnim()}{/if}
-            </circle>
+        {#if checkoutTargets[0]}
+          {@const hl = checkoutHighlight(checkoutTargets[0])}
+          {#if hl}
+            {#if 'wedge' in hl}
+              <path
+                d={hl.wedge}
+                fill="none"
+                stroke="var(--color-accent)"
+                stroke-opacity={noMotion ? '0.4' : '0.12'}
+                stroke-width={noMotion ? '0.02' : '0.012'}
+                stroke-linejoin="round"
+                style="pointer-events:none"
+              >
+                {#if !noMotion}{@render checkoutGlowAnim()}{/if}
+              </path>
+              <path
+                d={hl.wedge}
+                fill="none"
+                stroke="var(--color-accent)"
+                stroke-width="0.02"
+                stroke-linejoin="round"
+                style="pointer-events:none"
+              >
+                {#if !noMotion}{@render checkoutLineAnim()}{/if}
+              </path>
+            {:else}
+              <circle
+                cx="0"
+                cy="0"
+                r={hl.bull}
+                fill="none"
+                stroke="var(--color-accent)"
+                stroke-opacity={noMotion ? '0.4' : '0.12'}
+                stroke-width={noMotion ? '0.02' : '0.012'}
+                style="pointer-events:none"
+              >
+                {#if !noMotion}{@render checkoutGlowAnim()}{/if}
+              </circle>
+              <circle cx="0" cy="0" r={hl.bull} fill="none" stroke="var(--color-accent)" stroke-width="0.02" style="pointer-events:none">
+                {#if !noMotion}{@render checkoutLineAnim()}{/if}
+              </circle>
+            {/if}
           {/if}
         {/if}
-      {/if}
 
-      <!-- Darts -->
-      {#each darts as dart, i (i)}
-        {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
-        {@const selected = selectedDart === i}
-        <!-- The dart being aimed (long-press correction) is hidden: the crosshair takes its place -->
-        {#if aim?.dart === i}
-          <!-- hidden -->
-        {:else if pos}
-          <!-- The segment label only shows while the dart is hovered, selected or dragged -->
-          <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <g
-            class="group {canDrag(i) ? (drag ? 'cursor-grabbing' : 'cursor-grab') : ''}"
-            style="touch-action:none"
-            onpointerdown={e => dragStart(e, i)}
-            onpointermove={dragMove}
-            onpointerup={dragEnd}
-            onpointercancel={() => (drag = null)}
-          >
-            {#if selected}
+        <!-- Darts -->
+        {#each darts as dart, i (i)}
+          {@const pos = drag?.index === i ? drag.at : dartPos(dart)}
+          {@const selected = selectedDart === i}
+          <!-- The dart being aimed (long-press correction) is hidden: the crosshair takes its place -->
+          {#if aim?.dart === i}
+            <!-- hidden -->
+          {:else if pos}
+            <!-- The segment label only shows while the dart is hovered, selected or dragged -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <g
+              class="group {canDrag(i) ? (drag ? 'cursor-grabbing' : 'cursor-grab') : ''}"
+              style="touch-action:none"
+              onpointerdown={e => dragStart(e, i)}
+              onpointermove={dragMove}
+              onpointerup={dragEnd}
+              onpointercancel={() => (drag = null)}
+            >
+              {#if selected}
+                <circle
+                  cx={pos.x}
+                  cy={-pos.y}
+                  r="0.055"
+                  fill="var(--color-accent)"
+                  fill-opacity="0.18"
+                  stroke="var(--color-accent)"
+                  stroke-width="0.012"
+                  stroke-dasharray="0.02 0.015"
+                />
+              {/if}
+              {#if i === darts.length - 1}
+                <!-- The most recent dart is a bit bigger, with a lime ring and a black one outside -->
+                <circle data-last-dart cx={pos.x} cy={-pos.y} r="0.0385" fill="none" stroke="#000000" stroke-width="0.006" />
+                <circle cx={pos.x} cy={-pos.y} r="0.032" fill="none" stroke="var(--color-accent)" stroke-width="0.006" />
+              {/if}
               <circle
                 cx={pos.x}
                 cy={-pos.y}
-                r="0.055"
-                fill="var(--color-accent)"
-                fill-opacity="0.18"
-                stroke="var(--color-accent)"
-                stroke-width="0.012"
-                stroke-dasharray="0.02 0.015"
+                r={selected ? 0.03 : i === darts.length - 1 ? 0.027 : 0.022}
+                fill={DOT_COLORS[i % DOT_COLORS.length]}
+                stroke={DOT_STROKE}
+                stroke-width="0.006"
               />
-            {/if}
-            {#if i === darts.length - 1}
-              <!-- The most recent dart is a bit bigger, with a lime ring and a black one outside -->
-              <circle data-last-dart cx={pos.x} cy={-pos.y} r="0.0385" fill="none" stroke="#000000" stroke-width="0.006" />
-              <circle cx={pos.x} cy={-pos.y} r="0.032" fill="none" stroke="var(--color-accent)" stroke-width="0.006" />
-            {/if}
-            <circle
-              cx={pos.x}
-              cy={-pos.y}
-              r={selected ? 0.03 : i === darts.length - 1 ? 0.027 : 0.022}
-              fill={DOT_COLORS[i % DOT_COLORS.length]}
-              stroke={DOT_STROKE}
-              stroke-width="0.006"
-            />
+              <text
+                x={pos.x + 0.06}
+                y={-pos.y}
+                dy="0.35em"
+                fill="#ffffff"
+                stroke="#000000"
+                stroke-width="0.016"
+                stroke-linejoin="round"
+                paint-order="stroke"
+                font-size="0.065"
+                font-family="system-ui,sans-serif"
+                font-weight="bold"
+                class="{selected ? '' : 'opacity-0'} group-hover:opacity-100 transition-opacity"
+                style="pointer-events:none"
+              >
+                {drag?.index === i ? segmentAt(drag.at.x, drag.at.y).name : dart.segment.name}
+              </text>
+            </g>
+          {:else}
             <text
-              x={pos.x + 0.06}
-              y={-pos.y}
+              x={-0.15 + i * 0.14}
+              y="1.05"
+              text-anchor="middle"
               dy="0.35em"
-              fill="#ffffff"
-              stroke="#000000"
-              stroke-width="0.016"
-              stroke-linejoin="round"
-              paint-order="stroke"
-              font-size="0.065"
-              font-family="system-ui,sans-serif"
-              font-weight="bold"
-              class="{selected ? '' : 'opacity-0'} group-hover:opacity-100 transition-opacity"
-              style="pointer-events:none"
+              fill="var(--color-accent)"
+              font-size="0.1"
+              font-family="Barlow Condensed, sans-serif"
+              style="pointer-events:none">✕</text
             >
-              {drag?.index === i ? segmentAt(drag.at.x, drag.at.y).name : dart.segment.name}
-            </text>
-          </g>
-        {:else}
-          <text
-            x={-0.15 + i * 0.14}
-            y="1.05"
-            text-anchor="middle"
-            dy="0.35em"
-            fill="var(--color-accent)"
-            font-size="0.1"
-            font-family="Barlow Condensed, sans-serif"
-            style="pointer-events:none">✕</text
-          >
-        {/if}
-      {/each}
+          {/if}
+        {/each}
 
-      <!-- Overlay marks are informational: clicks go through to the segments -->
-      <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
+        <!-- Overlay marks are informational: clicks go through to the segments -->
+        <g style="pointer-events:none">{@render overlay?.(zoom)}</g>
+      </g>
     </g>
-  </g>
+  </svg>
 
   <!-- Long-press aim: crosshair above the finger and the segment it's on, drawn unzoomed.
        Two-tone (dark outline + light inner stroke) so it reads on every board colour: the
-       black/cream segments and the red/green rings. -->
+       black/cream segments and the red/green rings. Its own SVG over the board, not nested in
+       the zoomed one: iOS Safari left stale dark pieces of a nested one behind as the viewBox moved. -->
   {#if zoomBox && shown && aimed}
     {@const at = shown}
     {@const tone = aimOff ? 'var(--color-live-text)' : 'var(--color-accent)'}
     {@const outline = 'rgba(8,9,7,0.8)'}
-    <svg x={zoomBox.x} y={zoomBox.y} width={zoomBox.w} height={zoomBox.w} viewBox="-1.15 -1.15 2.3 2.3" style="pointer-events:none">
+    <svg viewBox="-1.15 -1.15 2.3 2.3" aria-hidden="true" class="absolute inset-0 size-full pointer-events-none">
       <circle cx={at.x} cy={at.y} r="0.045" fill="none" stroke={outline} stroke-width="0.026" />
       <path
         d="M{at.x - 0.08} {at.y}h0.05M{at.x + 0.03} {at.y}h0.05M{at.x} {at.y - 0.08}v0.05M{at.x} {at.y + 0.03}v0.05"
@@ -692,4 +701,4 @@
       >
     </svg>
   {/if}
-</svg>
+</div>
