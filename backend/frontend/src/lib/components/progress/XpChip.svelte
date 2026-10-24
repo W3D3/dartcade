@@ -4,7 +4,7 @@
   // the level flips, the chip pulses once and one line names the new level. A tap opens the full
   // breakdown. A challenge the game finished gets a line pointing to Progress, where its XP is
   // claimed. Reduced motion shows the end state.
-  import { ChevronDown, Flame, Target } from '@lucide/svelte'
+  import { ChevronDown, ChevronUp, Flame, Target } from '@lucide/svelte'
   import type { GameGain } from '$lib/progress/store'
   import { equip } from '$lib/progress/equip'
   import { perk } from '$shared/progression.js'
@@ -95,7 +95,8 @@
       <i class="bar absolute inset-y-0 left-0 rounded-full bg-accent"></i>
     </span>
     <span class="gain whitespace-nowrap text-[13px] font-semibold text-accent">+{fmtXp(gain.total)} XP</span>
-    <ChevronDown size={16} class="shrink-0 text-text-muted transition-transform {open ? 'rotate-180' : ''}" />
+    <!-- The breakdown opens above the chip: up to open it, down to close it -->
+    {#if open}<ChevronDown size={16} class="shrink-0 text-text-muted" />{:else}<ChevronUp size={16} class="shrink-0 text-text-muted" />{/if}
   </button>
 </div>
 
