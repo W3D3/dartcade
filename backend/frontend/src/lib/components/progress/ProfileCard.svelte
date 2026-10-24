@@ -15,6 +15,7 @@
   import { rank } from '$shared/ranked.js'
   import type { Equipped } from '$shared/progression.js'
   import { getGameView } from '$lib/gameViews'
+  import BanNotice from '../BanNotice.svelte'
 
   let {
     profile,
@@ -70,6 +71,7 @@
         >
       {/if}
     </div>
+    {#if profile.ban}<BanNotice ban={profile.ban} class="mt-4" />{/if}
     <dl class="m-0 mt-4 grid grid-cols-3 gap-2 border-t border-line-2 pt-[14px]">
       <div class="flex flex-col gap-[3px]">
         <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">3-dart avg</dt>
