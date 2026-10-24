@@ -1130,6 +1130,717 @@ exports[`courses > greenhorn/greenhorn-three-ways golden shots 1`] = `
 ]
 `;
 
+exports[`courses > kingfisher/kingfisher-figure-eight 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1255.7,
+    "rest": [
+      787.297,
+      1245.687,
+    ],
+  },
+  {
+    "hits": [
+      60.75,
+      61,
+      61,
+      61,
+      61.25,
+    ],
+    "holed": false,
+    "length": 2610.4,
+    "rest": [
+      773.119,
+      681.413,
+    ],
+  },
+  {
+    "hits": [
+      52.25,
+      52.25,
+      52.25,
+      52.25,
+      52.5,
+    ],
+    "holed": false,
+    "length": 2841,
+    "rest": [
+      728.131,
+      901.797,
+    ],
+  },
+  {
+    "hits": [
+      22.5,
+      22.5,
+      22.5,
+      22.75,
+      22.75,
+    ],
+    "holed": false,
+    "length": 1861.6,
+    "rest": [
+      359.567,
+      2006.789,
+    ],
+  },
+  {
+    "hits": [
+      14.75,
+      14.75,
+      14.75,
+      14.75,
+      15,
+      45.25,
+      45.25,
+      45.25,
+      45.5,
+      46,
+    ],
+    "holed": false,
+    "length": 2577.3,
+    "rest": [
+      1196.494,
+      2380.595,
+    ],
+  },
+  {
+    "hits": [
+      14.75,
+      14.75,
+      14.75,
+      15,
+      15,
+      15.5,
+    ],
+    "holed": false,
+    "length": 1460.4,
+    "rest": [
+      1015.329,
+      1588.638,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-high-water 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1346.4,
+    "rest": [
+      350,
+      1703.632,
+    ],
+  },
+  {
+    "hits": [
+      80.5,
+    ],
+    "holed": false,
+    "length": 3208.1,
+    "rest": [
+      799.996,
+      215.088,
+    ],
+  },
+  {
+    "hits": [
+      67.25,
+    ],
+    "holed": false,
+    "length": 3714.1,
+    "rest": [
+      1293.363,
+      125.871,
+    ],
+  },
+  {
+    "hits": [
+      12.75,
+      65.5,
+    ],
+    "holed": false,
+    "length": 2248.9,
+    "rest": [
+      151.172,
+      1081.029,
+    ],
+  },
+  {
+    "hits": [
+      7.25,
+      31.25,
+      84.25,
+    ],
+    "holed": false,
+    "length": 2669.4,
+    "rest": [
+      107.843,
+      977.882,
+    ],
+  },
+  {
+    "hits": [
+      8.75,
+      44.5,
+    ],
+    "holed": false,
+    "length": 1045.4,
+    "rest": [
+      124.336,
+      3050,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-keyhole 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      33,
+    ],
+    "holed": false,
+    "length": 1069.2,
+    "rest": [
+      600,
+      2187.91,
+    ],
+  },
+  {
+    "hits": [
+      18.25,
+      68.25,
+    ],
+    "holed": false,
+    "length": 1926.7,
+    "rest": [
+      600,
+      2867.286,
+    ],
+  },
+  {
+    "hits": [
+      16.5,
+      56.5,
+    ],
+    "holed": false,
+    "length": 2097.7,
+    "rest": [
+      600,
+      2706.239,
+    ],
+  },
+  {
+    "hits": [
+      19.5,
+      26.75,
+    ],
+    "holed": false,
+    "length": 1801.9,
+    "rest": [
+      483.121,
+      2572.612,
+    ],
+  },
+  {
+    "hits": [
+      6.25,
+      27.25,
+      34.25,
+    ],
+    "holed": false,
+    "length": 2181.1,
+    "rest": [
+      513.079,
+      2650.967,
+    ],
+  },
+  {
+    "hits": [
+      13.25,
+      66.25,
+    ],
+    "holed": false,
+    "length": 1203,
+    "rest": [
+      340.526,
+      2749.823,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-lightning 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      32.25,
+    ],
+    "holed": false,
+    "length": 1138.1,
+    "rest": [
+      661.8,
+      1752.447,
+    ],
+  },
+  {
+    "hits": [
+      18,
+      42.5,
+    ],
+    "holed": false,
+    "length": 2114.1,
+    "rest": [
+      1218.332,
+      1296.701,
+    ],
+  },
+  {
+    "hits": [
+      16.25,
+      37.25,
+      86.5,
+      89.25,
+    ],
+    "holed": false,
+    "length": 2380.3,
+    "rest": [
+      1348.896,
+      1092.823,
+    ],
+  },
+  {
+    "hits": [
+      8.5,
+      8.75,
+      24.75,
+      66,
+      66.5,
+    ],
+    "holed": false,
+    "length": 1231.7,
+    "rest": [
+      566.661,
+      2133.387,
+    ],
+  },
+  {
+    "hits": [
+      5,
+      45.5,
+      72,
+    ],
+    "holed": false,
+    "length": 2760.8,
+    "rest": [
+      1466.017,
+      816.342,
+    ],
+  },
+  {
+    "hits": [
+      6,
+      26.75,
+    ],
+    "holed": false,
+    "length": 850.8,
+    "rest": [
+      346.492,
+      2450,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-pyramids 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      36.5,
+      36.5,
+    ],
+    "holed": false,
+    "length": 1101.7,
+    "rest": [
+      750,
+      2341.031,
+    ],
+  },
+  {
+    "hits": [
+      20,
+      20,
+      84.25,
+    ],
+    "holed": false,
+    "length": 2057.4,
+    "rest": [
+      750,
+      3239.722,
+    ],
+  },
+  {
+    "hits": [
+      18,
+      18,
+      65.25,
+    ],
+    "holed": false,
+    "length": 2212.9,
+    "rest": [
+      750,
+      3079.384,
+    ],
+  },
+  {
+    "hits": [
+      31.75,
+      61,
+      61,
+    ],
+    "holed": false,
+    "length": 2164,
+    "rest": [
+      1410.835,
+      1527.922,
+    ],
+  },
+  {
+    "hits": [
+      17.25,
+      37.5,
+      37.5,
+      66.25,
+    ],
+    "holed": false,
+    "length": 2338,
+    "rest": [
+      168.605,
+      2227.216,
+    ],
+  },
+  {
+    "hits": [
+      21.5,
+    ],
+    "holed": false,
+    "length": 1345.9,
+    "rest": [
+      832.618,
+      3000,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-roundabout 3D golden shots 1`] = `
+[
+  {
+    "hits": [
+      47.25,
+      47.25,
+    ],
+    "holed": false,
+    "length": 1213.9,
+    "rest": [
+      754.992,
+      1448.509,
+    ],
+  },
+  {
+    "hits": [
+      24.25,
+      24.25,
+      65.25,
+      108.75,
+    ],
+    "holed": false,
+    "length": 2335.9,
+    "rest": [
+      589.882,
+      2551.344,
+    ],
+  },
+  {
+    "hits": [
+      21.75,
+      21.75,
+      54,
+      74.75,
+    ],
+    "holed": false,
+    "length": 2559.8,
+    "rest": [
+      651.192,
+      2394.649,
+    ],
+  },
+  {
+    "hits": [
+      10.5,
+      37,
+      37,
+      38,
+      65.75,
+      65.75,
+      65.75,
+      66.25,
+    ],
+    "holed": false,
+    "length": 1941.8,
+    "rest": [
+      253.698,
+      1219.304,
+    ],
+  },
+  {
+    "hits": [
+      6.25,
+      45,
+      45,
+      45,
+      45.5,
+      46,
+    ],
+    "holed": false,
+    "length": 2819.6,
+    "rest": [
+      764.261,
+      357.385,
+    ],
+  },
+  {
+    "hits": [
+      7.25,
+      34.75,
+    ],
+    "holed": false,
+    "length": 945.1,
+    "rest": [
+      686.681,
+      2350,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-slalom 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1346.4,
+    "rest": [
+      350,
+      1303.622,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2398.1,
+    "rest": [
+      356.726,
+      337.213,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2410.7,
+    "rest": [
+      361.022,
+      338.388,
+    ],
+  },
+  {
+    "hits": [
+      12.75,
+      29,
+      51,
+      55.25,
+    ],
+    "holed": false,
+    "length": 2181.3,
+    "rest": [
+      315.228,
+      858.031,
+    ],
+  },
+  {
+    "hits": [
+      7.25,
+      12.75,
+      31.5,
+      42.25,
+    ],
+    "holed": false,
+    "length": 2218.8,
+    "rest": [
+      388.706,
+      2087.087,
+    ],
+  },
+  {
+    "hits": [
+      8.75,
+      44.5,
+    ],
+    "holed": false,
+    "length": 1045.4,
+    "rest": [
+      124.337,
+      2650,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-tabletop 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1072,
+    "rest": [
+      800,
+      1929.186,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2475.9,
+    "rest": [
+      801.397,
+      586.596,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2501.9,
+    "rest": [
+      806.562,
+      587.222,
+    ],
+  },
+  {
+    "hits": [
+      34.25,
+    ],
+    "holed": false,
+    "length": 2252.1,
+    "rest": [
+      1378.222,
+      1075.336,
+    ],
+  },
+  {
+    "hits": [
+      18.5,
+    ],
+    "holed": false,
+    "length": 2364.3,
+    "rest": [
+      840.805,
+      1284.167,
+    ],
+  },
+  {
+    "hits": [
+      23,
+    ],
+    "holed": false,
+    "length": 1361.1,
+    "rest": [
+      957.621,
+      3000,
+    ],
+  },
+]
+`;
+
+exports[`courses > kingfisher/kingfisher-volcano 3D golden shots 1`] = `
+[
+  {
+    "hits": [],
+    "holed": false,
+    "length": 1346.4,
+    "rest": [
+      750,
+      1503.623,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": true,
+    "length": 2007.7,
+    "rest": [
+      759.028,
+      937.836,
+    ],
+  },
+  {
+    "hits": [],
+    "holed": false,
+    "length": 2329,
+    "rest": [
+      824.257,
+      541.035,
+    ],
+  },
+  {
+    "hits": [
+      10.5,
+      50.75,
+      51,
+      51.5,
+    ],
+    "holed": false,
+    "length": 2280.3,
+    "rest": [
+      169.26,
+      867.236,
+    ],
+  },
+  {
+    "hits": [
+      6.25,
+      25.75,
+      109,
+      109,
+      109.5,
+      110.25,
+      114.75,
+    ],
+    "holed": false,
+    "length": 2617.5,
+    "rest": [
+      84.995,
+      906.645,
+    ],
+  },
+  {
+    "hits": [
+      7.25,
+      34.75,
+    ],
+    "holed": false,
+    "length": 945.1,
+    "rest": [
+      636.681,
+      2850,
+    ],
+  },
+]
+`;
+
 exports[`courses > test/test-dogleg 3D golden shots 1`] = `
 [
   {
