@@ -7,7 +7,13 @@ import { insertBridgeEvent, getBoardByTokenHash, updateBoardHardwareId } from '.
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { z } from 'zod'
-import { BaseEnvelopeSchema, CameraStillMessageSchema, WledFoundMessageSchema, WledStatusMessageSchema } from '../schema/zod.js'
+import {
+  BaseEnvelopeSchema,
+  BmResponseMessageSchema,
+  CameraStillMessageSchema,
+  WledFoundMessageSchema,
+  WledStatusMessageSchema,
+} from '../schema/zod.js'
 import { cameraStills, type CameraStills } from '../camera/store.js'
 import { lightsStore, type LightsStore, type FoundDevice } from '../lights/store.js'
 import { onceGone } from '../util/socket.js'
@@ -59,7 +65,7 @@ const EventIdSchema = z.object({ kind: z.unknown(), seq: z.unknown() }).partial(
 
 // bridge.hello is informational: each field is kept or dropped on its own
 const nonEmpty = z.string().min(1).nullable().catch(null)
-// The backend fetches from this URL (board status, commands, live camera): only an http(s)
+// The Boards page links to this URL (the backend never fetches it): only an http(s)
 // origin is kept, never a path, query or another scheme
 const BmOrigin = z.string().transform((s, ctx) => {
   try {
@@ -245,6 +251,11 @@ export function handleBridgeConnection(
         const earlyKind = MessageKindSchema.safeParse(parsed).data?.kind
         if (earlyKind === 'camera.still') {
           takeStill(boardDbId, parsed, stills, opts.onCameraStill)
+          return
+        }
+        if (earlyKind === 'bm.response') {
+          const m = BmResponseMessageSchema.safeParse(parsed)
+          if (m.success) bridgeConnections.respond(conn, m.data.data)
           return
         }
         if (earlyKind === 'wled.found') {

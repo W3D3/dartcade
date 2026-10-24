@@ -32,4 +32,8 @@ export const WledFoundMessageSchema = z.object({ "kind": z.literal("wled.found")
 
 export const WledStatusMessageSchema = z.object({ "kind": z.literal("wled.status"), "data": z.object({ "device_id": z.string(), "reachable": z.boolean(), "version": z.string().optional(), "error": z.string().optional() }) })
 
+export const BmRequestDataSchema = z.object({ "id": z.string().min(1), "op": z.enum(["start","stop","reset","calibrate","state","camera"]), "cam": z.number().int().gte(0).lte(2).optional() })
+
+export const BmResponseMessageSchema = z.object({ "kind": z.literal("bm.response"), "data": z.object({ "id": z.string(), "status": z.number().int().optional(), "error": z.string().optional(), "state": z.record(z.string(), z.unknown()).optional(), "image": z.string().base64().optional() }) })
+
 export const FeedEventDataSchema = z.object({ "dart": z.object({ "segment": z.object({ "name": z.string(), "number": z.number().int().gte(0).lte(50), "bed": z.enum(["SingleInner","SingleOuter","Single","Double","Triple","Outside"]), "multiplier": z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]) }), "score": z.number().int().gte(0), "coords": z.object({ "x": z.number(), "y": z.number() }).optional(), "polar": z.object({ "r": z.number().gte(0), "theta_deg": z.number() }).optional(), "bouncer": z.boolean().optional() }).optional() }).catchall(z.unknown())

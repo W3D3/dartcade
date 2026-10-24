@@ -217,7 +217,13 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console) {
 	defer lights.Close()
 	browser := wled.ZeroconfBrowser()
 	lights.SetBrowser(browser) // lets a device that changed IP (a MAC mismatch or a dial error) trigger its own rescan
-	tr.OnMessage(func(kind string, data json.RawMessage) { lights.Handle(ctx, browser, kind, data) })
+	tr.OnMessage(func(kind string, data json.RawMessage) {
+		if kind == "bm.request" {
+			relayBM(ctx, client, tr, data)
+			return
+		}
+		lights.Handle(ctx, browser, kind, data)
+	})
 
 	// And on every (re)connect, so viewers see the board after a restart without waiting for a dart.
 	// WLEDs are only scanned when a user asks (wled.scan), never on a timer or a connect.
@@ -285,6 +291,23 @@ func runDiffer(ctx context.Context, frames <-chan bm.BMFrame, eventCh chan<- []d
 			}
 		}
 	}
+}
+
+// relayBM answers a backend bm.request: the backend never reaches the board's network, so the
+// bridge makes the Board Manager call. It runs off the reader goroutine.
+func relayBM(ctx context.Context, client *bm.Client, tr *transport.Transport, data json.RawMessage) {
+	var req schema.BmRequestData
+	if err := json.Unmarshal(data, &req); err != nil {
+		log.Debug("bm.request: malformed, dropped", "err", err)
+		return
+	}
+	go func() {
+		res := client.Relay(ctx, req)
+		if res.Error != nil {
+			log.Warn("Board Manager call failed", "op", req.Op, "err", *res.Error)
+		}
+		tr.SendMessage(map[string]any{"kind": "bm.response", "data": res})
+	}()
 }
 
 // triggersStills reports whether a batch of events changes what the cameras see.

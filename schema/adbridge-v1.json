@@ -405,6 +405,40 @@
       "required": ["kind", "data"],
       "additionalProperties": false,
       "properties": { "kind": { "type": "string", "const": "wled.status" }, "data": { "$ref": "#/$defs/WledStatusData" } }
+    },
+    "BmRequestData": {
+      "description": "Backend → bridge (kind bm.request): call the board's Board Manager. The backend never reaches the board's network itself; the bridge makes the call and answers with a bm.response carrying the same id.",
+      "type": "object",
+      "required": ["id", "op"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "op": {
+          "type": "string",
+          "enum": ["start", "stop", "reset", "calibrate", "state", "camera"],
+          "description": "start/stop/reset/calibrate: a Board Manager command. state: GET /api/state. camera: the raw frame of camera `cam`."
+        },
+        "cam": { "type": "integer", "minimum": 0, "maximum": 2, "description": "Camera number for op camera." }
+      }
+    },
+    "BmResponseData": {
+      "type": "object",
+      "required": ["id"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "description": "The bm.request's id." },
+        "status": { "type": "integer", "description": "The Board Manager's HTTP status; unset when it couldn't be reached." },
+        "error": { "type": "string", "description": "Why the call failed, for the backend's log." },
+        "state": { "type": "object", "description": "For op state: the Board Manager's /api/state body." },
+        "image": { "type": "string", "contentEncoding": "base64", "description": "For op camera: the JPEG frame, base64-encoded." }
+      }
+    },
+    "BmResponseMessage": {
+      "description": "Bridge → backend: the answer to a bm.request. Like camera.still it is not an event: no envelope, no seq, never acked or stored.",
+      "type": "object",
+      "required": ["kind", "data"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "const": "bm.response" }, "data": { "$ref": "#/$defs/BmResponseData" } }
     }
   },
 

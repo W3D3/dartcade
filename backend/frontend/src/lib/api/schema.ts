@@ -289,7 +289,7 @@ export interface paths {
         };
         /**
          * Live camera frame
-         * @description The camera's current raw frame, fetched from the Board Manager through the backend (for setting up a board; works only when the backend can reach the board's network). Owner only. Off (404) when the backend runs with BOARD_LIVE_CAMERA=off. Clients may append a cache-busting query (e.g. `?t=<timestamp>`); it is ignored.
+         * @description The camera's current raw frame, fetched from the Board Manager by the board's bridge (for setting up a board). Owner only. Clients may append a cache-busting query (e.g. `?t=<timestamp>`); it is ignored.
          */
         get: operations["getBoardCameraLive"];
         put?: never;
