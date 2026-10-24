@@ -9,6 +9,7 @@ import { WebSocket as WsClient } from 'ws'
 import { BridgeConnections } from './connections.js'
 import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
 import { LightsStore } from '../lights/store.js'
+import { LobbyHub } from '../lobby/hub.js'
 
 vi.mock('../db/queries.js', () => ({
   getBoardByTokenHash: vi.fn(),
@@ -414,6 +415,34 @@ describe('handleBridgeConnection', () => {
     socket.emit('close')
     expect(onBoardPresence).toHaveBeenCalledTimes(2)
     expect(engine.onBoardPresence).toHaveBeenCalledTimes(2)
+  })
+
+  it("tells the owner's /ws/me once the bridge said hello, and when it drops", async () => {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: 'board-11', hardware_id: null, owner_user_id: 'chris' } as any)
+    const hub = new LobbyHub()
+    const me = { readyState: 1, send: vi.fn(), close: vi.fn() } as any
+    hub.addMeSocket(
+      'chris',
+      me,
+      { type: 'me', invites: [], lobby: null, game: null },
+      { type: 'friends', friends: [], incoming: [], outgoing: [] },
+    )
+    me.send.mockClear()
+    const socket = new FakeSocket()
+    handleBridgeConnection(
+      socket as any,
+      { token: 'tok' },
+      { db: {} as any, engine: { onBoardPresence: vi.fn() } as any, onBoardStatus: (u, b, o) => hub.sendBoardStatus(u, b, o) },
+    )
+    await flush()
+    expect(me.send).not.toHaveBeenCalled()
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    await flush()
+    socket.emit('close')
+    expect(me.send.mock.calls.map((c: unknown[]) => JSON.parse(c[0] as string))).toEqual([
+      { type: 'board.status', boardId: 'board-11', online: true },
+      { type: 'board.status', boardId: 'board-11', online: false },
+    ])
   })
 })
 

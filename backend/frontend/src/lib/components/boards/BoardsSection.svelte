@@ -15,7 +15,8 @@
   import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
   import SelectedBoardBar from '$lib/components/boards/SelectedBoardBar.svelte'
-  import { bmHost, fmtDate, fmtVersion } from '$lib/boards'
+  import { applyBoardStatus, bmHost, fmtDate, fmtVersion } from '$lib/boards'
+  import { me } from '$lib/lobby/sockets'
   import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
   import { isTablet } from '$lib/viewport'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
@@ -248,6 +249,23 @@
     if (pairedTimer) clearTimeout(pairedTimer)
     stopStatusPoll()
   })
+
+  // A bridge connected or dropped (/ws/me): the list follows it without a reload. Before the
+  // list has loaded, onMount's fetch is newer than any push.
+  onDestroy(
+    me.boardStatus.subscribe(msg => {
+      if (!msg || !loaded) return
+      const next = applyBoardStatus(boards, msg)
+      if (next !== 'refetch') boards = next
+      else
+        void api
+          .GET('/api/boards')
+          .then(({ data }) => {
+            if (data) boards = data.boards
+          })
+          .catch(() => {})
+    }),
+  )
 
   const onlineCount = $derived(boards.filter(b => b.online).length)
   const isRunning = $derived(bmStatus?.running === true)
