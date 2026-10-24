@@ -158,7 +158,7 @@
       </dl>
     {/if}
 
-    <section aria-label="Matches" class="flex min-h-0 flex-col overflow-hidden card">
+    <section aria-label="Matches" class="flex shrink-0 flex-col overflow-hidden card">
       <!-- Desktops only: the column headings, and the Board column -->
       <div
         class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] pr-12 text-[12px] label-caps text-text-dim xl:grid xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]"

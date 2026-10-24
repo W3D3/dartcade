@@ -170,7 +170,7 @@
           />
         {:else}
           <main
-            class="flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
+            class="relative flex-grow min-h-0 overflow-y-auto scrollbar-themed box-border p-4 md:p-6 xl:px-7 flex flex-col lg:flex-row gap-4 md:gap-6"
           >
             <section
               aria-label="Result and statistics"
