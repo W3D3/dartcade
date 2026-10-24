@@ -4,11 +4,14 @@ import type { Database } from './schema.js'
 import type { Cursor } from '../history/cursor.js'
 import type { StatRow } from '../history/stats.js'
 import { groupBy } from '../util/groupBy.js'
+import { toAvatar, type Avatar } from './users.js'
 
 export type HistorySeat = {
   seat: number
   name: string
   user_id: string | null
+  /** The account's profile picture; none for a guest or bot. */
+  avatar: Avatar
   /** The bot's difficulty; null for a member or guest. */
   bot_level: number | null
   placement: number
@@ -39,13 +42,29 @@ const ConfigSchema = z.record(z.string(), z.unknown()).catch({})
 async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<string, HistorySeat[]>> {
   if (ids.length === 0) return new Map()
   const rows = await db
-    .selectFrom('game_players')
-    .select(['session_id', 'seat', 'name', 'user_id', 'bot_level', 'placement', 'throw_position', 'stats', 'forfeited'])
-    .where('session_id', 'in', ids)
-    .where('placement', 'is not', null)
+    .selectFrom('game_players as gp')
+    .leftJoin('user as u', 'u.id', 'gp.user_id')
+    .select([
+      'gp.session_id',
+      'gp.seat',
+      'gp.name',
+      'gp.user_id',
+      'gp.bot_level',
+      'gp.placement',
+      'gp.throw_position',
+      'gp.stats',
+      'gp.forfeited',
+      'u.avatar_kind',
+      'u.avatar_preset',
+      'u.avatar_color',
+      'u.avatar_fg_color',
+      'u.avatar_version',
+    ])
+    .where('gp.session_id', 'in', ids)
+    .where('gp.placement', 'is not', null)
     .$narrowType<{ placement: NotNull }>()
-    .orderBy('session_id')
-    .orderBy('seat')
+    .orderBy('gp.session_id')
+    .orderBy('gp.seat')
     .execute()
   const by = new Map<string, HistorySeat[]>()
   for (const [sessionId, seats] of groupBy(rows, r => r.session_id)) {
@@ -55,6 +74,17 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
         seat: r.seat,
         name: r.name,
         user_id: r.user_id,
+        // Guests and bots have no account row to join
+        avatar:
+          r.avatar_kind === null
+            ? { kind: 'none' }
+            : toAvatar({
+                avatar_kind: r.avatar_kind,
+                avatar_preset: r.avatar_preset,
+                avatar_color: r.avatar_color,
+                avatar_fg_color: r.avatar_fg_color,
+                avatar_version: r.avatar_version ?? 0,
+              }),
         bot_level: r.bot_level,
         placement: r.placement,
         throw_position: r.throw_position,

@@ -42,6 +42,7 @@ const game = (o: Partial<HistoryGame> = {}): HistoryGame => ({
       seat: 0,
       name: 'Christoph',
       user_id: 'user-1',
+      avatar: { kind: 'upload', version: 2 },
       bot_level: null,
       placement: 1,
       throw_position: 1,
@@ -52,6 +53,7 @@ const game = (o: Partial<HistoryGame> = {}): HistoryGame => ({
       seat: 1,
       name: 'Guest',
       user_id: null,
+      avatar: { kind: 'none' },
       bot_level: null,
       placement: 2,
       throw_position: 0,
@@ -139,6 +141,7 @@ describe('GET /api/games', () => {
       seat: 1,
       name: 'Guest',
       userId: null,
+      avatar: { kind: 'none' },
       bot: null,
       placement: 2,
       throwPosition: 0,
@@ -227,6 +230,13 @@ describe('GET /api/games/:id', () => {
     const body = (await makeApp().inject({ method: 'GET', url: '/api/games/g1' })).json()
     expect(body.game.mySeat).toBeNull()
     expect(body.game.players.map((p: any) => p.userId)).toEqual([null, null])
+    expect(body.game.players[0].avatar).toEqual({ kind: 'none' })
+  })
+
+  it("returns a seated viewer each player's account and picture", async () => {
+    vi.mocked(history.getViewableGame).mockResolvedValue(game())
+    const body = (await makeApp().inject({ method: 'GET', url: '/api/games/g1' })).json()
+    expect(body.game.players[0]).toMatchObject({ userId: 'user-1', avatar: { kind: 'upload', version: 2 } })
   })
 
   it("returns a bot seat's level, null for everyone else", async () => {

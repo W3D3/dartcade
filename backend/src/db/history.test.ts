@@ -108,6 +108,16 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('history queries', () => {
     ])
   })
 
+  it("carries each member's picture; none for a guest", async () => {
+    await db.updateTable('user').set({ avatar_kind: 'upload', avatar_version: 3 }).where('id', '=', 'u1').execute()
+    try {
+      const game = await getViewableGame(db, 'x-1', 'u1')
+      expect(game?.seats.map(s => s.avatar)).toEqual([{ kind: 'upload', version: 3 }, { kind: 'none' }])
+    } finally {
+      await db.updateTable('user').set({ avatar_kind: 'none', avatar_version: 0 }).where('id', '=', 'u1').execute()
+    }
+  })
+
   it('filters by mode and pages with the cursor', async () => {
     const p1 = await listFinishedGames(db, 'u1', { mode: 'x01', limit: 1, after: null })
     expect(p1.games.map(g => g.id)).toEqual(['x-2'])

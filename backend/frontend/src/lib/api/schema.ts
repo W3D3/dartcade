@@ -2203,6 +2203,7 @@ export interface components {
             name: string;
             /** @description The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in */
             userId: string | null;
+            avatar: components["schemas"]["Avatar"];
             /** @description A bot's difficulty 1-10; null for a member or guest. */
             bot: {
                 level: number;

@@ -64,7 +64,19 @@ describe('buildDetail', () => {
     board: null,
     mySeat: 0,
     invalidated: false,
-    seats: [{ seat: 0, name: 'A', user_id: 'u1', bot_level: null, placement: 1, throw_position: 0, stats: {}, forfeited: false }],
+    seats: [
+      {
+        seat: 0,
+        name: 'A',
+        user_id: 'u1',
+        avatar: { kind: 'none' },
+        bot_level: null,
+        placement: 1,
+        throw_position: 0,
+        stats: {},
+        forfeited: false,
+      },
+    ],
   }
   const at = new Date('2026-10-01T10:00:00.000Z')
   it('replays the log into the mode detail', async () => {

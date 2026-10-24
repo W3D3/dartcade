@@ -818,6 +818,7 @@
                                 "seat",
                                 "name",
                                 "userId",
+                                "avatar",
                                 "bot",
                                 "placement",
                                 "throwPosition",
@@ -843,6 +844,76 @@
                                   "type": "string",
                                   "nullable": true,
                                   "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                                },
+                                "avatar": {
+                                  "title": "Avatar",
+                                  "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                                  "oneOf": [
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "kind"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "none"
+                                          ]
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "kind",
+                                        "preset",
+                                        "color",
+                                        "fgColor"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "preset"
+                                          ]
+                                        },
+                                        "preset": {
+                                          "type": "string"
+                                        },
+                                        "color": {
+                                          "type": "string",
+                                          "description": "The preset's background colour (hex)"
+                                        },
+                                        "fgColor": {
+                                          "type": "string",
+                                          "description": "The preset's icon colour (hex)"
+                                        }
+                                      }
+                                    },
+                                    {
+                                      "type": "object",
+                                      "required": [
+                                        "kind",
+                                        "version"
+                                      ],
+                                      "additionalProperties": false,
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "upload"
+                                          ]
+                                        },
+                                        "version": {
+                                          "type": "integer",
+                                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                        }
+                                      }
+                                    }
+                                  ]
                                 },
                                 "bot": {
                                   "type": "object",
@@ -1533,6 +1604,7 @@
                               "seat",
                               "name",
                               "userId",
+                              "avatar",
                               "bot",
                               "placement",
                               "throwPosition",
@@ -1558,6 +1630,76 @@
                                 "type": "string",
                                 "nullable": true,
                                 "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                              },
+                              "avatar": {
+                                "title": "Avatar",
+                                "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "kind"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "none"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "preset",
+                                      "color",
+                                      "fgColor"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "preset"
+                                        ]
+                                      },
+                                      "preset": {
+                                        "type": "string"
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "description": "The preset's background colour (hex)"
+                                      },
+                                      "fgColor": {
+                                        "type": "string",
+                                        "description": "The preset's icon colour (hex)"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "version"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "upload"
+                                        ]
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                      }
+                                    }
+                                  }
+                                ]
                               },
                               "bot": {
                                 "type": "object",
@@ -10711,6 +10853,7 @@
                               "seat",
                               "name",
                               "userId",
+                              "avatar",
                               "bot",
                               "placement",
                               "throwPosition",
@@ -10736,6 +10879,76 @@
                                 "type": "string",
                                 "nullable": true,
                                 "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                              },
+                              "avatar": {
+                                "title": "Avatar",
+                                "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "kind"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "none"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "preset",
+                                      "color",
+                                      "fgColor"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "preset"
+                                        ]
+                                      },
+                                      "preset": {
+                                        "type": "string"
+                                      },
+                                      "color": {
+                                        "type": "string",
+                                        "description": "The preset's background colour (hex)"
+                                      },
+                                      "fgColor": {
+                                        "type": "string",
+                                        "description": "The preset's icon colour (hex)"
+                                      }
+                                    }
+                                  },
+                                  {
+                                    "type": "object",
+                                    "required": [
+                                      "kind",
+                                      "version"
+                                    ],
+                                    "additionalProperties": false,
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "upload"
+                                        ]
+                                      },
+                                      "version": {
+                                        "type": "integer",
+                                        "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                                      }
+                                    }
+                                  }
+                                ]
                               },
                               "bot": {
                                 "type": "object",
@@ -37527,6 +37740,7 @@
           "seat",
           "name",
           "userId",
+          "avatar",
           "bot",
           "placement",
           "throwPosition",
@@ -37552,6 +37766,76 @@
             "type": "string",
             "nullable": true,
             "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+          },
+          "avatar": {
+            "title": "Avatar",
+            "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+            "oneOf": [
+              {
+                "type": "object",
+                "required": [
+                  "kind"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "none"
+                    ]
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "preset",
+                  "color",
+                  "fgColor"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "preset"
+                    ]
+                  },
+                  "preset": {
+                    "type": "string"
+                  },
+                  "color": {
+                    "type": "string",
+                    "description": "The preset's background colour (hex)"
+                  },
+                  "fgColor": {
+                    "type": "string",
+                    "description": "The preset's icon colour (hex)"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "required": [
+                  "kind",
+                  "version"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "upload"
+                    ]
+                  },
+                  "version": {
+                    "type": "integer",
+                    "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                  }
+                }
+              }
+            ]
           },
           "bot": {
             "type": "object",
@@ -37653,6 +37937,7 @@
                 "seat",
                 "name",
                 "userId",
+                "avatar",
                 "bot",
                 "placement",
                 "throwPosition",
@@ -37678,6 +37963,76 @@
                   "type": "string",
                   "nullable": true,
                   "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                },
+                "avatar": {
+                  "title": "Avatar",
+                  "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "none"
+                          ]
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "preset",
+                        "color",
+                        "fgColor"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "preset"
+                          ]
+                        },
+                        "preset": {
+                          "type": "string"
+                        },
+                        "color": {
+                          "type": "string",
+                          "description": "The preset's background colour (hex)"
+                        },
+                        "fgColor": {
+                          "type": "string",
+                          "description": "The preset's icon colour (hex)"
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "required": [
+                        "kind",
+                        "version"
+                      ],
+                      "additionalProperties": false,
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "upload"
+                          ]
+                        },
+                        "version": {
+                          "type": "integer",
+                          "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                        }
+                      }
+                    }
+                  ]
                 },
                 "bot": {
                   "type": "object",
@@ -37792,6 +38147,7 @@
                       "seat",
                       "name",
                       "userId",
+                      "avatar",
                       "bot",
                       "placement",
                       "throwPosition",
@@ -37817,6 +38173,76 @@
                         "type": "string",
                         "nullable": true,
                         "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                      },
+                      "avatar": {
+                        "title": "Avatar",
+                        "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                        "oneOf": [
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "none"
+                                ]
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "preset",
+                              "color",
+                              "fgColor"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "preset"
+                                ]
+                              },
+                              "preset": {
+                                "type": "string"
+                              },
+                              "color": {
+                                "type": "string",
+                                "description": "The preset's background colour (hex)"
+                              },
+                              "fgColor": {
+                                "type": "string",
+                                "description": "The preset's icon colour (hex)"
+                              }
+                            }
+                          },
+                          {
+                            "type": "object",
+                            "required": [
+                              "kind",
+                              "version"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "upload"
+                                ]
+                              },
+                              "version": {
+                                "type": "integer",
+                                "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                              }
+                            }
+                          }
+                        ]
                       },
                       "bot": {
                         "type": "object",
@@ -38592,6 +39018,7 @@
                     "seat",
                     "name",
                     "userId",
+                    "avatar",
                     "bot",
                     "placement",
                     "throwPosition",
@@ -38617,6 +39044,76 @@
                       "type": "string",
                       "nullable": true,
                       "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                    },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "preset",
+                            "color",
+                            "fgColor"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "preset": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string",
+                              "description": "The preset's background colour (hex)"
+                            },
+                            "fgColor": {
+                              "type": "string",
+                              "description": "The preset's icon colour (hex)"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
                     },
                     "bot": {
                       "type": "object",
@@ -39752,6 +40249,7 @@
                     "seat",
                     "name",
                     "userId",
+                    "avatar",
                     "bot",
                     "placement",
                     "throwPosition",
@@ -39777,6 +40275,76 @@
                       "type": "string",
                       "nullable": true,
                       "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+                    },
+                    "avatar": {
+                      "title": "Avatar",
+                      "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                      "oneOf": [
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "none"
+                              ]
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "preset",
+                            "color",
+                            "fgColor"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "preset"
+                              ]
+                            },
+                            "preset": {
+                              "type": "string"
+                            },
+                            "color": {
+                              "type": "string",
+                              "description": "The preset's background colour (hex)"
+                            },
+                            "fgColor": {
+                              "type": "string",
+                              "description": "The preset's icon colour (hex)"
+                            }
+                          }
+                        },
+                        {
+                          "type": "object",
+                          "required": [
+                            "kind",
+                            "version"
+                          ],
+                          "additionalProperties": false,
+                          "properties": {
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "upload"
+                              ]
+                            },
+                            "version": {
+                              "type": "integer",
+                              "description": "Cache-busts GET /api/users/{id}/avatar?v="
+                            }
+                          }
+                        }
+                      ]
                     },
                     "bot": {
                       "type": "object",

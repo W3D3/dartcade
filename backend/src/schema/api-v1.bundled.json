@@ -6574,6 +6574,7 @@
           "seat",
           "name",
           "userId",
+          "avatar",
           "bot",
           "placement",
           "throwPosition",
@@ -6599,6 +6600,9 @@
             "type": "string",
             "nullable": true,
             "description": "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in"
+          },
+          "avatar": {
+            "$ref": "#/components/schemas/Avatar"
           },
           "bot": {
             "type": "object",
