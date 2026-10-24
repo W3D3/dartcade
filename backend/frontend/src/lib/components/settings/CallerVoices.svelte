@@ -1,12 +1,11 @@
 <script lang="ts">
   // The Settings page's Caller voices card (Settings and Settings-Phone boards): storage used,
   // the user's packs (sample, delete), the built-in voices, and importing a pack from a zip
-  // (drop or choose, with upload progress) or from a link. The server keeps the packs and
+  // (drop or choose, with upload progress). The server keeps the packs and
   // decides what an import keeps; this shows what it says.
   import { onDestroy } from 'svelte'
-  import { Link, LoaderCircle, Play, Trash, Upload, Volume2 } from '@lucide/svelte'
+  import { LoaderCircle, Play, Trash, Upload, Volume2 } from '@lucide/svelte'
   import { Button } from '$lib/components/ui/button/index.js'
-  import { Input } from '$lib/components/ui/input/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { createCaller } from '$lib/caller/player.js'
   import { audioContext } from '$lib/sounds.js'
@@ -15,7 +14,6 @@
   import {
     deleteVoicePack,
     formatMB,
-    importVoicePackFromLink,
     keptText,
     saySample,
     storageUse,
@@ -68,11 +66,9 @@
   // ── Imports (one at a time; the server refuses a second one too) ──
   let upload = $state<{ name: string; bytes: number; progress: number } | null>(null)
   let uploadAbort: AbortController | null = null
-  let linkUrl = $state('')
-  let linkBusy = $state(false)
   let result = $state<{ kind: 'done'; name: string; text: string } | { kind: 'error'; text: string } | null>(null)
   let dragging = $state(false)
-  const busy = $derived(upload !== null || linkBusy)
+  const busy = $derived(upload !== null)
 
   function show(outcome: ImportOutcome) {
     if (outcome.kind === 'done') result = { kind: 'done', name: outcome.pack.name, text: keptText(outcome.pack) }
@@ -94,18 +90,6 @@
     )
     upload = null
     uploadAbort = null
-    show(outcome)
-  }
-
-  async function importLink(e: SubmitEvent) {
-    e.preventDefault()
-    const url = linkUrl.trim()
-    if (!url || busy) return
-    result = null
-    linkBusy = true
-    const outcome = await importVoicePackFromLink(url)
-    linkBusy = false
-    if (outcome.kind === 'done') linkUrl = ''
     show(outcome)
   }
 
@@ -211,7 +195,7 @@
     {#if importsOn}
       <div class="h-px bg-line"></div>
 
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-[14px] md:gap-[18px]">
+      <div class="flex flex-col">
         <div class="flex flex-col gap-2">
           <span id="v-zip-label" class="text-[14px] font-semibold">Import zip</span>
           <label
@@ -250,29 +234,6 @@
             />
           </label>
         </div>
-
-        <form class="flex flex-col gap-2" onsubmit={importLink}>
-          <label for="v-link" class="text-[14px] font-semibold">Import from link</label>
-          <div class="flex gap-2">
-            <Input
-              id="v-link"
-              type="url"
-              required
-              placeholder="https://…"
-              aria-describedby="v-sites"
-              bind:value={linkUrl}
-              disabled={busy}
-              class="h-[46px] px-3 rounded-[9px] bg-bg border-line-chip font-mono text-[13px]"
-            />
-            <Button type="submit" variant="key" disabled={busy} class="h-[46px] px-4 rounded-[9px]">
-              {#if linkBusy}<LoaderCircle size={18} class="animate-spin" />Importing…{:else}<Link size={18} strokeWidth={1.8} />Import{/if}
-            </Button>
-          </div>
-          <span id="v-sites" class="text-[12px] leading-[1.45] text-text-dim">
-            Works with darts-caller packs (darts-downloads.peschi.org) and Tools for Autodarts folders (autodarts.x10.mx,
-            adt-socket.tobias-thiele.de).
-          </span>
-        </form>
       </div>
 
       {#if upload}

@@ -18,7 +18,6 @@ const pack = (extra: Record<string, Clip[]> = {}): ParsedPack => ({
   total: 10,
   clips: { '180': [shared.one80], gameshot: [shared.gs1, shared.gs2, shared.one80], ...extra },
 })
-const UPLOAD = { kind: 'upload' } as const
 const BIG = 1024 * 1024
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
@@ -46,8 +45,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
   const clipCount = async () => (await db.selectFrom('voice_clips').select('sha256').execute()).length
 
   it('stores each file once across users', async () => {
-    const pa = await importPack(db, 'a', pack(), UPLOAD, BIG)
-    const pb = await importPack(db, 'b', pack(), { kind: 'url', url: 'https://autodarts.x10.mx/1_male_eng/' }, BIG)
+    const pa = await importPack(db, 'a', pack(), BIG)
+    const pb = await importPack(db, 'b', pack(), BIG)
     expect(pa.id).not.toBe(pb.id)
     expect(await db.selectFrom('voice_packs').select('id').execute()).toHaveLength(2)
     expect(await clipCount()).toBe(3)
@@ -56,7 +55,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
   })
 
   it('lets a user reach a clip only through their own packs', async () => {
-    const pa = await importPack(db, 'a', pack({ busted: [clip('busted')] }), UPLOAD, BIG)
+    const pa = await importPack(db, 'a', pack({ busted: [clip('busted')] }), BIG)
     expect(await packManifest(db, 'a', pa.id)).toEqual({
       id: pa.id,
       name: 'en-GB Arthur (Male)',
@@ -66,15 +65,15 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
     expect(await clipFor(db, 'b', sha('busted'))).toBeNull()
     expect(await clipFor(db, 'b', sha('one-eighty'))).toBeNull()
 
-    await importPack(db, 'b', pack(), UPLOAD, BIG)
+    await importPack(db, 'b', pack(), BIG)
     const got = await clipFor(db, 'b', sha('one-eighty'))
     expect(got && { text: got.bytes.toString(), mime: got.mime }).toEqual({ text: 'one-eighty', mime: 'audio/mpeg' })
     expect(await clipFor(db, 'b', sha('busted'))).toBeNull()
   })
 
   it('delete keeps clips another pack uses', async () => {
-    const pa = await importPack(db, 'a', pack({ busted: [clip('busted')] }), UPLOAD, BIG)
-    const pb = await importPack(db, 'b', pack(), UPLOAD, BIG)
+    const pa = await importPack(db, 'a', pack({ busted: [clip('busted')] }), BIG)
+    const pb = await importPack(db, 'b', pack(), BIG)
     expect(await deletePack(db, 'a', pa.id)).toBe(true)
     expect(await clipCount()).toBe(3)
     const manifest = await packManifest(db, 'b', pb.id)
@@ -85,17 +84,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
 
   it("counts every clip of a user's packs at full size", async () => {
     expect(await usage(db, 'a')).toBe(0)
-    await importPack(db, 'a', pack(), UPLOAD, BIG)
+    await importPack(db, 'a', pack(), BIG)
     const one = 'one-eightygame shot 1game shot 2'.length // the 180 used twice counts once
     expect(await usage(db, 'a')).toBe(one)
-    await importPack(db, 'b', pack(), UPLOAD, BIG)
+    await importPack(db, 'b', pack(), BIG)
     expect(await usage(db, 'b')).toBe(one) // shared with A, still counted in full
-    await importPack(db, 'a', pack(), UPLOAD, BIG)
+    await importPack(db, 'a', pack(), BIG)
     expect(await usage(db, 'a')).toBe(2 * one) // each pack counts
   })
 
   it("does not delete another user's pack", async () => {
-    const pa = await importPack(db, 'a', pack(), UPLOAD, BIG)
+    const pa = await importPack(db, 'a', pack(), BIG)
     expect(await deletePack(db, 'b', pa.id)).toBe(false)
     expect(await deletePack(db, 'b', 'nope')).toBe(false)
     expect(await listPacks(db, 'a')).toHaveLength(1)
@@ -103,8 +102,8 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
   })
 
   it('sweeps the real orphans when an import maps one of the files again meanwhile', async () => {
-    const pa = await importPack(db, 'a', pack({ busted: [clip('busted')] }), UPLOAD, BIG)
-    const pb = await importPack(db, 'b', { name: 'B', lang: null, total: 1, clips: { '0': [clip('zero')] } }, UPLOAD, BIG)
+    const pa = await importPack(db, 'a', pack({ busted: [clip('busted')] }), BIG)
+    const pb = await importPack(db, 'b', { name: 'B', lang: null, total: 1, clips: { '0': [clip('zero')] } }, BIG)
     const hashes = (await db.selectFrom('voice_pack_clips').select('clip_sha256').where('pack_id', '=', pa.id).execute()).map(
       r => r.clip_sha256,
     )
@@ -130,9 +129,9 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
     const small = (s: string): ParsedPack => ({ name: s, lang: null, total: 1, clips: { '180': [clip(s.repeat(100))] } })
 
     it('refuses an import over the limit with the numbers', async () => {
-      await importPack(db, 'a', small('x'), UPLOAD, 1024) // 100 bytes
-      await importPack(db, 'a', small('yyyyyyy'), UPLOAD, 1024) // 800 bytes
-      const err = await importPack(db, 'a', small('zzz'), UPLOAD, 1024).catch((e: unknown) => e)
+      await importPack(db, 'a', small('x'), 1024) // 100 bytes
+      await importPack(db, 'a', small('yyyyyyy'), 1024) // 800 bytes
+      const err = await importPack(db, 'a', small('zzz'), 1024).catch((e: unknown) => e)
       expect(err).toBeInstanceOf(VoiceLimitError)
       expect(err).toMatchObject({
         used: 800,
@@ -144,7 +143,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs', () => {
     })
 
     it('refuses every import when the limit is 0', async () => {
-      const err = await importPack(db, 'a', small('x'), UPLOAD, 0).catch((e: unknown) => e)
+      const err = await importPack(db, 'a', small('x'), 0).catch((e: unknown) => e)
       expect(err).toBeInstanceOf(VoiceLimitError)
       expect(err).toMatchObject({ message: 'Voice imports are turned off' })
       expect(await clipCount()).toBe(0)

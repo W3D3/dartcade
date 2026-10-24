@@ -227,20 +227,6 @@ export function uploadVoicePack(file: File, onProgress: (fraction: number) => vo
   })
 }
 
-/** Imports a pack from a darts-caller or Tools for Autodarts link; the server fetches it. */
-export async function importVoicePackFromLink(url: string): Promise<ImportOutcome> {
-  try {
-    const { data, error, response } = await api.POST('/api/voice-packs/import', { body: { url } })
-    if (data) {
-      void loadVoiceLibrary()
-      return { kind: 'done', pack: data }
-    }
-    return { kind: 'error', error: importErrorText(response.status, error) }
-  } catch {
-    return { kind: 'error', error: importErrorText(0, null) }
-  }
-}
-
 /** Removes one of the user's packs; null when it's gone, or what went wrong. */
 export async function deleteVoicePack(id: string): Promise<string | null> {
   try {

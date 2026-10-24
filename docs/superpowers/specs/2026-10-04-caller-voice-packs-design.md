@@ -1,5 +1,9 @@
 # Caller voice packs: design
 
+> Import from a link (the `fetchPack.ts` / `POST /api/voice-packs/import` parts below) was removed: the
+> server fetched user-supplied URLs (SSRF risk), it was rarely used and its hosts are mostly down.
+> Zip upload is the only way to import.
+
 A caller that announces each visit ("One hundred and eighty!", "Busted", "Game shot!") using voice
 packs in the format of [darts-caller](https://github.com/lbormann/darts-caller) and the folders that
 [Tools for Autodarts](https://github.com/creazy231/tools-for-autodarts) imports. dartcade ships one
