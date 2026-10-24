@@ -9,6 +9,21 @@ afterEach(() => {
 })
 
 describe('Presence', () => {
+  it('drops someone offline at once, with their sockets still closing, and fires once', () => {
+    const changed = vi.fn()
+    const p = new Presence(changed)
+    p.connect('lena')
+    p.connect('lena')
+    p.drop('lena')
+    expect(p.isOnline('lena')).toBe(false)
+    p.disconnect('lena')
+    p.disconnect('lena')
+    vi.advanceTimersByTime(60_000)
+    expect(changed).toHaveBeenCalledTimes(2)
+    p.drop('lena')
+    expect(changed).toHaveBeenCalledTimes(2)
+  })
+
   it('is online from the first socket, offline 30 s after the last one closes', () => {
     const changed = vi.fn()
     const p = new Presence(changed)

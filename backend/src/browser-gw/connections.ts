@@ -89,6 +89,11 @@ export class BrowserConnections {
     }
     if (m.size === 0) this.sessions.delete(key)
   }
+
+  /** Closes and forgets the user's sockets under every key. */
+  closeUser(userId: string, code: number, reason: string): void {
+    for (const key of [...this.sessions.keys()]) this.closeAll(key, code, reason, userId)
+  }
 }
 
 function hasUser(m: Map<WebSocket, string>, userId: string): boolean {

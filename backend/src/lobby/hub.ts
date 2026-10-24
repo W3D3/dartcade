@@ -39,6 +39,12 @@ export class LobbyHub {
     this.lobbies.closeAll(lobbyId, code, reason, userId)
   }
 
+  /** Closes every lobby and /ws/me socket the user has open. */
+  closeUser(userId: string, code: number, reason: string): void {
+    this.lobbies.closeUser(userId, code, reason)
+    this.users.closeAll(userId, code, reason)
+  }
+
   /**
    * A /ws/me socket opened: it gets the user's current state and friends list right away.
    * The friends list is remembered only for the user's first socket: a later one may carry a
