@@ -1,4 +1,4 @@
-<!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none), give them XP. -->
+<!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none), give them XP, ban and unban them. -->
 <script lang="ts">
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
@@ -9,6 +9,7 @@
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
   import { reloadProgress } from '$lib/progress/store'
+  import BanUserModal from '$lib/components/admin/BanUserModal.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -19,6 +20,8 @@
   import { currentUser } from '$lib/auth'
   import { viewAs } from '$lib/admin/impersonate'
   import { cn } from '$lib/utils.js'
+  import { banLine } from '$lib/bans'
+  import type { BanCategory } from '$shared/bans.js'
   import {
     createUserSearch,
     joinedDate,
@@ -30,6 +33,8 @@
     roleChange,
     setUserRole,
     setVerified,
+    banUser,
+    unbanUser,
     type AdminUser,
     type Role,
   } from '$lib/admin/users'
@@ -72,7 +77,9 @@
   })
 
   // The row asking to confirm a promote/demote or verify/unverify, and the one mid-request
-  let confirmAction = $state<{ kind: 'role'; user: AdminUser; role: Role } | { kind: 'verified'; user: AdminUser } | null>(null)
+  let confirmAction = $state<
+    { kind: 'role'; user: AdminUser; role: Role } | { kind: 'verified'; user: AdminUser } | { kind: 'unban'; user: AdminUser } | null
+  >(null)
   let busyId = $state<string | null>(null)
   let xpUser = $state<AdminUser | null>(null)
   let rowError = $state<{ id: string; text: string } | null>(null)
@@ -104,7 +111,12 @@
     confirmAction = null
     const { user } = action
     busyId = user.id
-    const result = action.kind === 'role' ? await setUserRole(user.id, action.role) : await setVerified(user.id, !user.emailVerified)
+    const result =
+      action.kind === 'role'
+        ? await setUserRole(user.id, action.role)
+        : action.kind === 'unban'
+          ? await unbanUser(user.id)
+          : await setVerified(user.id, !user.emailVerified)
     busyId = null
     if ('error' in result) {
       rowError = { id: user.id, text: result.error }
@@ -115,6 +127,30 @@
     if (action.kind === 'role' && user.id === $currentUser?.id) await currentUser.refresh()
   }
 
+  // The account the ban dialog is open for, and the server's refusal to show in it
+  let banning = $state<AdminUser | null>(null)
+  let banError = $state('')
+
+  function askBan(user: AdminUser): void {
+    rowError = null
+    banError = ''
+    banning = user
+  }
+
+  async function confirmBan(ban: { category: BanCategory; note: string | null; until: string | null }): Promise<void> {
+    const user = banning
+    if (!user) return
+    busyId = user.id
+    const result = await banUser(user.id, ban)
+    busyId = null
+    if ('error' in result) {
+      banError = result.error
+      return
+    }
+    banning = null
+    users = users.map(u => (u.id === user.id ? result.user : u))
+  }
+
   // Newest first by default; the columns menu can hide any of these but user and actions
   const COLUMN_TOGGLES = [
     { id: 'joined', label: 'Joined' },
@@ -122,6 +158,7 @@
     { id: 'email', label: 'Email' },
     { id: 'verified', label: 'Verified' },
     { id: 'role', label: 'Role' },
+    { id: 'ban', label: 'Ban' },
   ]
 
   let sorting = $state<SortingState>([{ id: 'joined', desc: true }])
@@ -147,6 +184,11 @@
     helper.accessor('role', {
       header: 'Role',
       cell: info => renderSnippet(roleCell, info.getValue()),
+    }),
+    helper.accessor('ban', {
+      header: 'Ban',
+      enableSorting: false,
+      cell: info => renderSnippet(banCell, info.row.original),
     }),
     helper.accessor('createdAt', {
       id: 'joined',
@@ -186,6 +228,16 @@
 
 {#snippet roleCell(role: Role)}
   {#if role === 'admin'}<Badge variant="paired">Admin</Badge>{:else if role === 'moderator'}<Badge variant="pending">Moderator</Badge>{/if}
+{/snippet}
+
+{#snippet banCell(user: AdminUser)}
+  {#if user.ban}
+    <div class="flex max-w-[280px] flex-col items-start gap-1">
+      <Badge variant="live">Banned</Badge>
+      <span class="text-[13px] text-text">{banLine(user.ban)}</span>
+      {#if user.ban.note}<span class="text-[13px] text-text-muted">{user.ban.note}</span>{/if}
+    </div>
+  {/if}
 {/snippet}
 
 {#snippet actionsCell(user: AdminUser)}
@@ -236,6 +288,24 @@
               View as {user.name}
             </DropdownMenu.Item>
           {/if}
+          {#if user.ban}
+            <DropdownMenu.Item
+              onSelect={() => {
+                rowError = null
+                confirmAction = { kind: 'unban', user }
+              }}
+              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
+            >
+              Unban
+            </DropdownMenu.Item>
+          {:else if user.role !== 'admin' && user.id !== $currentUser?.id}
+            <DropdownMenu.Item
+              onSelect={() => askBan(user)}
+              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-live-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
+            >
+              Ban…
+            </DropdownMenu.Item>
+          {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>
@@ -249,7 +319,7 @@
       <header class="hidden md:flex flex-col gap-[6px]">
         <Breadcrumb items={usersTrail()} />
         <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Users</h1>
-        <p class="m-0 text-[15px] text-text-muted">Search accounts, set their role</p>
+        <p class="m-0 text-[15px] text-text-muted">Search accounts, set their role, ban them</p>
       </header>
 
       <div class="flex flex-wrap items-center gap-3">
@@ -288,6 +358,14 @@
         onconfirm={() => void confirmPick()}
         oncancel={() => (confirmAction = null)}
       />
+    {:else if confirmAction?.kind === 'unban'}
+      <ConfirmModal
+        title="Unban {confirmAction.user.name}?"
+        body="They can sign in and play again straight away."
+        confirmLabel="Unban"
+        onconfirm={() => void confirmPick()}
+        oncancel={() => (confirmAction = null)}
+      />
     {:else if confirmAction?.kind === 'verified'}
       {@const user = confirmAction.user}
       <ConfirmModal
@@ -310,6 +388,9 @@
           }
         }}
       />
+    {/if}
+    {#if banning}
+      <BanUserModal name={banning.name} error={banError} onconfirm={confirmBan} oncancel={() => (banning = null)} />
     {/if}
   {/if}
 </Layout>
