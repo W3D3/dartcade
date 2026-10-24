@@ -44,13 +44,14 @@ describe('x01Slots', () => {
     expect(x01Slots({ ...base, suggest: false, darts: [], remaining: 40 })[0].kind).toBe('empty-next')
   })
 
-  it('fills the rest with bust slots', () => {
+  it('leaves the rest of a bust visit as plain empty slots, with no Bust label', () => {
     const s = x01Slots({ ...base, bust: true, darts: [d('T20', 60)], remaining: 40 })
-    expect(s.map(x => [x.kind, x.label])).toEqual([
-      ['thrown', 'T20'],
-      ['bust', 'Bust'],
-      ['bust', 'Bust'],
+    expect(s.map(x => [x.kind, x.label, x.foot])).toEqual([
+      ['thrown', 'T20', ''],
+      ['empty-later', '', ''],
+      ['empty-later', '', ''],
     ])
+    expect(s[1].aria).toBe('Dart 2: bust')
   })
 
   it('never shows more than three slots', () => {

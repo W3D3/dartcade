@@ -2,7 +2,7 @@
 import { parseLabel } from './dartUtils.js'
 import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
 
-export type SlotKind = 'thrown' | 'miss' | 'bust' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
+export type SlotKind = 'thrown' | 'miss' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
 export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string }
 export type ThrownDart = { segment?: { name?: string; number?: number; multiplier?: number }; score?: number }
 
@@ -64,8 +64,9 @@ export function x01Slots(o: {
     return [
       ...done,
       ...Array.from({ length: 3 - done.length }, (_, k): Slot => ({
-        kind: 'bust',
-        label: 'Bust',
+        // Plain empty slots: the visit summary already says Bust
+        kind: 'empty-later',
+        label: '',
         points: '',
         foot: '',
         aria: `Dart ${done.length + k + 1}: bust`,
