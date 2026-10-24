@@ -7,17 +7,20 @@
   import InviteAvatar from './InviteAvatar.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
   import LobbyGlance from './LobbyGlance.svelte'
-  import { formatCode } from '$lib/lobby/format'
+  import { formatCode, joinPath } from '$lib/lobby/format'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
 
   let {
     code,
+    viaQr,
     preview,
     missing,
     failed,
     onretry,
   }: {
     code: string
+    /** Opened from the host's QR code: signing in comes back to it, still at the host's board. */
+    viaQr: boolean
     preview: components['schemas']['LobbyPreview'] | null
     /** No open lobby has the code (or it isn't one). */
     missing: boolean
@@ -29,7 +32,7 @@
   const host = $derived(preview?.hostName ?? 'The host')
 
   function go(page: '/login' | '/register') {
-    rememberReturn(sessionStore(), `#/join/${code}`)
+    rememberReturn(sessionStore(), joinPath(code, viaQr).slice(1))
     void push(page)
   }
 </script>

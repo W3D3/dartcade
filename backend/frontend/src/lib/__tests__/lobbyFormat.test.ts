@@ -11,6 +11,7 @@ import {
   indicatorView,
   inviteTime,
   joinLink,
+  qrJoinLink,
   nextGameSummary,
   personLine,
   type Part,
@@ -34,6 +35,8 @@ describe('lobby text', () => {
     expect(formatCode('K7Q4MD')).toBe('K7Q4-MD')
     expect(formatCode('ABC')).toBe('ABC')
     expect(joinLink('http://glados:5173', 'K7Q4MD')).toBe('http://glados:5173/#/join/K7Q4MD')
+    // The QR code marks the link as scanned: the joiner stands at the host's board
+    expect(qrJoinLink('http://glados:5173', 'K7Q4MD')).toBe('http://glados:5173/#/join/K7Q4MD?via=qr')
   })
 
   it('names game modes, and passes unknown ones through', () => {

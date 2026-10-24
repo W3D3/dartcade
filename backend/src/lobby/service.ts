@@ -391,14 +391,19 @@ export class LobbyService {
     throw new Error('no free lobby code')
   }
 
-  /** By code (anyone), or without one as a friend of the host while the lobby is open to friends. */
-  async join(userId: string, lobbyId: string, code?: string): Promise<LobbyRef> {
+  /**
+   * By code (anyone), or without one as a friend of the host while the lobby is open to friends.
+   * `atHostBoard`: they scanned the host's QR code, so they stand at the host's board.
+   */
+  async join(userId: string, lobbyId: string, code?: string, atHostBoard = false): Promise<LobbyRef> {
     // Checked here, read-only and unqueued, so a wrong code, a refused friend, a closed lobby or a
     // running game never closes the joiner's own lobby before failing (see closeOwnSoloLobbyFirst)
     await this.mayJoin(await q.loadLobby(this.db, lobbyId), userId, code)
     this.refuseIfPlaying(userId)
     await this.closeOwnSoloLobbyFirst(userId, lobbyId)
-    return this.enqueue(lobbyId, async () => this.addMember(await this.mayJoin(await this.reload(lobbyId), userId, code), userId))
+    return this.enqueue(lobbyId, async () =>
+      this.addMember(await this.mayJoin(await this.reload(lobbyId), userId, code), userId, atHostBoard),
+    )
   }
 
   // The open lobby the user may join this way; 404 when closed or the code is wrong, 403 when a
@@ -432,12 +437,13 @@ export class LobbyService {
   }
 
   // Runs in the lobby's queue
-  private async addMember(lobby: LobbyState, userId: string): Promise<LobbyRef> {
+  private async addMember(lobby: LobbyState, userId: string, atHostBoard: boolean): Promise<LobbyRef> {
     if (rules.isMember(lobby, userId)) return refOf(lobby)
     this.refuseIfPlaying(userId)
     const open = await q.getOpenLobbyIdOfUser(this.db, userId)
     if (open !== undefined) throw inLobby(open)
     const joiner = await this.loadJoiner(userId)
+    const boardId = (atHostBoard ? this.usableHostBoard(lobby) : null) ?? joiner.boardId
     try {
       // The lock (not just this app-level check) is the backstop against inserting into a
       // lobby that a concurrent close just slipped past us — see lobbyIsOpenForShare.
@@ -449,7 +455,7 @@ export class LobbyService {
           userId,
           addedByUserId: userId,
           name: joiner.name,
-          boardId: joiner.boardId,
+          boardId,
           ready: false,
         })
         await q.acceptInvites(trx, lobby.id, userId)
@@ -686,6 +692,14 @@ export class LobbyService {
     })
   }
 
+  // The host's board for a QR join, while it's online and not in another game
+  private usableHostBoard(lobby: LobbyState): string | null {
+    const boardId = rules.hostBoard(lobby)
+    if (boardId === null || !this.deps.isBoardOnline(boardId)) return null
+    const session = this.deps.engine.getSessionByBoard(boardId)
+    return session && session.lobbyId !== lobby.id ? null : boardId
+  }
+
   // A board the user owns that isn't in another game
   private async ownFreeBoard(lobbyId: string, userId: string, boardId: string): Promise<{ id: string; name: string }> {
     const own = await findOwnBoard(this.db, boardId, userId)
@@ -841,7 +855,7 @@ export class LobbyService {
     return this.enqueue(lobbyId, async () => {
       const lobby = await this.reload(lobbyId)
       if (!lobby || lobby.closedAt !== null) throw LobbyError.notFound('invite not found')
-      return this.addMember(lobby, userId)
+      return this.addMember(lobby, userId, false)
     })
   }
 
