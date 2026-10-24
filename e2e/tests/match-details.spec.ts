@@ -46,6 +46,9 @@ test('a finished game opens its details from History', async ({ authedPage: page
   await expect(page.getByText('Most hit')).toBeVisible()
   // Manual-entry darts (as thrown above) have no position, so the board falls back to this.
   await expect(page.getByText('No dart positions')).toBeVisible()
+
+  await page.getByRole('navigation', { name: 'Breadcrumb' }).getByRole('link', { name: 'History' }).click()
+  await page.waitForURL(url => url.hash === '#/history')
 })
 
 test('an unknown game id shows a not-available page', async ({ authedPage: page }) => {
