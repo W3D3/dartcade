@@ -813,6 +813,65 @@ describe('rebuild', () => {
   })
 })
 
+describe('Around the Clock with multipliers on to the bull (#343)', () => {
+  const cfg = { ...atcModule.defaultConfig, multiplierAdvances: true, finishOn: 'single_bull' }
+  const dart = (number: number, multiplier: number) => ({
+    segment: { number, multiplier, bed: ['', 'Single', 'Double', 'Triple'][multiplier], name: `${'SDT'[multiplier - 1]}${number}` },
+    score: number * multiplier,
+  })
+  // T1 T4 T7, T10 T13 S16, S17: on 18; then the visit with the dart under test
+  const toEighteen = [[dart(1, 3), dart(4, 3), dart(7, 3)], [dart(10, 3), dart(13, 3), dart(16, 1)], [dart(17, 1)]]
+  function inputs(visits: ReturnType<typeof dart>[][]) {
+    return visits.flatMap((darts, v) => [
+      { kind: 'visit.opened', data: { visit_id: `v${v}` } },
+      ...darts.map((d, index) => ({ kind: 'dart.detected', data: { visit_id: `v${v}`, index, dart: d, source_seq: v * 10 + index } })),
+      ...(v < visits.length - 1
+        ? [{ kind: 'takeout.finished', data: { visit_id: `v${v}`, trigger: 'numThrows.zero', duration_ms: 1 } }]
+        : []),
+    ])
+  }
+  const targetOf = (s: unknown) => (s as { targets: number[] }).targets[0]
+
+  it('a dart corrected to T18 replays the visit on to the bull', async () => {
+    const engine = makeEngine()
+    const { sessionId } = await engine.create('user-1', 'board-1', 'atc', cfg, [{ name: 'Alice' }])
+    for (const e of inputs([...toEighteen, [dart(18, 1)]])) await engine.onBridgeEvent('board-1', e.kind, e.data)
+    expect(targetOf(engine.getSession(sessionId)!.currentState)).toBe(19)
+    await engine.onBridgeEvent('board-1', 'dart.corrected', {
+      visit_id: 'v3',
+      index: 0,
+      dart: dart(18, 3),
+      previous: dart(18, 1),
+      source_seq: 99,
+    })
+    expect(targetOf(engine.getSession(sessionId)!.currentState)).toBe(21)
+  })
+
+  it('a game stored as version 1 rebuilds as it was played, a current one on to the bull', async () => {
+    const log = inputs([...toEighteen, [dart(18, 3)]]).map((e, seq) => ({ seq, source: 'board', ...e, created_at: new Date() }))
+    const row = (id: string, game_version: number): StoredGameSession => ({
+      id,
+      owner_user_id: id,
+      board_db_id: null,
+      game_id: 'atc',
+      game_version,
+      rng_seed: 1,
+      config: cfg,
+      created_at: new Date(),
+      players: [{ name: 'Alice', user_id: id, controller_user_id: id, board_db_id: null, board_name: null, bot_level: null }],
+      lobby_id: null,
+      lobby_name: null,
+    })
+    const store = makeStore()
+    store.getActiveSessions.mockResolvedValue([row('old', 1), row('new', atcModule.version)])
+    store.getSessionEvents.mockResolvedValue(log)
+    const engine = new SessionEngine(store, push)
+    await engine.rebuild()
+    expect(targetOf(engine.getSession('old')!.currentState)).toBe(20)
+    expect(targetOf(engine.getSession('new')!.currentState)).toBe(21)
+  })
+})
+
 describe('getSnapshot', () => {
   it('returns snapshot with currentVisitDarts from openVisitEvents', async () => {
     const engine = makeEngine()

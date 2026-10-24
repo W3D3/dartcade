@@ -23,6 +23,7 @@ function makeState(overrides: Partial<ATCState> = {}): ATCState {
     cfg,
     playerCount: 2,
     currentVisitHits: [],
+    version: atcModule.version,
     ...overrides,
   }
 }
@@ -192,10 +193,60 @@ describe('multiplierAdvances', () => {
     expect(state.targets[0]).toBe(8)
   })
 
-  it('advance capped at last number when bull is required (finishOn single_bull)', () => {
+  // #343: a triple walks the target list, and after 20 comes the bull
+  it('triple on 18 moves on to the bull (finishOn single_bull)', () => {
     const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, finishOn: 'single_bull' }
     const s = makeState({ cfg, targets: [18, 1] })
     const { state } = atcModule.onBoardEvent(s, dartEvent(18, 'Triple', 3))
+    expect(state.targets[0]).toBe(21)
+    expect(state.winner).toBeNull()
+  })
+
+  it('triple on 18 moves on to the bull (finishOn bull)', () => {
+    const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, finishOn: 'bull' }
+    const s = makeState({ cfg, targets: [18, 1] })
+    const { state } = atcModule.onBoardEvent(s, dartEvent(18, 'Triple', 3))
+    expect(state.targets[0]).toBe(22)
+  })
+
+  it('double on 18 moves two targets, to 20', () => {
+    const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, finishOn: 'single_bull' }
+    const s = makeState({ cfg, targets: [18, 1] })
+    const { state } = atcModule.onBoardEvent(s, dartEvent(18, 'Double', 2))
+    expect(state.targets[0]).toBe(20)
+  })
+
+  it('a multiplier past the bull stops on it: the bull has to be hit on its own', () => {
+    const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, finishOn: 'bull' }
+    for (const [from, mult, bed] of [
+      [19, 3, 'Triple'],
+      [19, 2, 'Double'],
+      [20, 3, 'Triple'],
+    ] as const) {
+      const { state } = atcModule.onBoardEvent(makeState({ cfg, targets: [from, 1] }), dartEvent(from, bed, mult))
+      expect(state.targets[0]).toBe(22)
+      expect(state.winner).toBeNull()
+    }
+  })
+
+  it('a multiplier past 20 wins when 20 is the last target', () => {
+    const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, finishOn: 'twenty' }
+    const { state } = atcModule.onBoardEvent(makeState({ cfg, targets: [19, 1] }), dartEvent(19, 'Triple', 3))
+    expect(state.winner).toBe(0)
+  })
+
+  it('random: a triple walks the shuffled order into the bull', () => {
+    const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, order: 'random', finishOn: 'single_bull' }
+    const sequence = buildSequence(cfg, seededRng(7))
+    const from = sequence[17]
+    const { state } = atcModule.onBoardEvent(makeState({ cfg, sequence, targets: [from, 1] }), dartEvent(from, 'Triple', 3))
+    expect(state.targets[0]).toBe(21)
+  })
+
+  it('a version 1 game replays with the old stop on the number before the bull', () => {
+    const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, finishOn: 'single_bull' }
+    const s = atcModule.init(cfg, players, undefined, 1)
+    const { state } = atcModule.onBoardEvent({ ...s, targets: [18, 1] }, dartEvent(18, 'Triple', 3))
     expect(state.targets[0]).toBe(20)
   })
 
@@ -213,11 +264,11 @@ describe('multiplierAdvances', () => {
     expect(state.targets[0]).toBe(15)
   })
 
-  it('desc: advance capped at 1 (last before bull) with single_bull', () => {
+  it('desc: triple on 3 moves on to the bull after 1 (finishOn single_bull)', () => {
     const cfg: ATCConfig = { ...defaultCfg, multiplierAdvances: true, order: 'desc', finishOn: 'single_bull' }
     const s = makeState({ cfg, targets: [3, 20] })
     const { state } = atcModule.onBoardEvent(s, dartEvent(3, 'Triple', 3))
-    expect(state.targets[0]).toBe(1)
+    expect(state.targets[0]).toBe(21)
   })
 })
 
