@@ -4,6 +4,7 @@
 package api
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -14,6 +15,10 @@ import (
 	"time"
 
 	"github.com/oapi-codegen/runtime"
+)
+
+const (
+	SessionScopes = "session.Scopes"
 )
 
 // Defines values for PairingTokenStatusStatus.
@@ -100,6 +105,14 @@ type NotFound = ErrorResponse
 // TooManyRequests defines model for TooManyRequests.
 type TooManyRequests = ErrorResponse
 
+// ExchangeBridgeInstallTokenJSONBody defines parameters for ExchangeBridgeInstallToken.
+type ExchangeBridgeInstallTokenJSONBody struct {
+	Token string `json:"token"`
+}
+
+// ExchangeBridgeInstallTokenJSONRequestBody defines body for ExchangeBridgeInstallToken for application/json ContentType.
+type ExchangeBridgeInstallTokenJSONRequestBody ExchangeBridgeInstallTokenJSONBody
+
 // RequestEditorFn  is the function signature for the RequestEditor callback function
 type RequestEditorFn func(ctx context.Context, req *http.Request) error
 
@@ -173,11 +186,40 @@ func WithRequestEditorFn(fn RequestEditorFn) ClientOption {
 
 // The interface specification for the client above.
 type ClientInterface interface {
+	// ExchangeBridgeInstallTokenWithBody request with any body
+	ExchangeBridgeInstallTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	ExchangeBridgeInstallToken(ctx context.Context, body ExchangeBridgeInstallTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// RequestPairing request
 	RequestPairing(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetPairingToken request
 	GetPairingToken(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*http.Response, error)
+}
+
+func (c *Client) ExchangeBridgeInstallTokenWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExchangeBridgeInstallTokenRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) ExchangeBridgeInstallToken(ctx context.Context, body ExchangeBridgeInstallTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewExchangeBridgeInstallTokenRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
 }
 
 func (c *Client) RequestPairing(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -202,6 +244,46 @@ func (c *Client) GetPairingToken(ctx context.Context, code string, reqEditors ..
 		return nil, err
 	}
 	return c.Client.Do(req)
+}
+
+// NewExchangeBridgeInstallTokenRequest calls the generic ExchangeBridgeInstallToken builder with application/json body
+func NewExchangeBridgeInstallTokenRequest(server string, body ExchangeBridgeInstallTokenJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewExchangeBridgeInstallTokenRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewExchangeBridgeInstallTokenRequestWithBody generates requests for ExchangeBridgeInstallToken with any type of body
+func NewExchangeBridgeInstallTokenRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/bridge-install-tokens/exchange")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
 }
 
 // NewRequestPairingRequest generates requests for RequestPairing
@@ -308,11 +390,42 @@ func WithBaseURL(baseURL string) ClientOption {
 
 // ClientWithResponsesInterface is the interface specification for the client with responses above.
 type ClientWithResponsesInterface interface {
+	// ExchangeBridgeInstallTokenWithBodyWithResponse request with any body
+	ExchangeBridgeInstallTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeBridgeInstallTokenResponse, error)
+
+	ExchangeBridgeInstallTokenWithResponse(ctx context.Context, body ExchangeBridgeInstallTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ExchangeBridgeInstallTokenResponse, error)
+
 	// RequestPairingWithResponse request
 	RequestPairingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RequestPairingResponse, error)
 
 	// GetPairingTokenWithResponse request
 	GetPairingTokenWithResponse(ctx context.Context, code string, reqEditors ...RequestEditorFn) (*GetPairingTokenResponse, error)
+}
+
+type ExchangeBridgeInstallTokenResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *struct {
+		Token string `json:"token"`
+	}
+	JSON404 *ErrorResponse
+	JSON429 *TooManyRequests
+}
+
+// Status returns HTTPResponse.Status
+func (r ExchangeBridgeInstallTokenResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r ExchangeBridgeInstallTokenResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
 }
 
 type RequestPairingResponse struct {
@@ -364,6 +477,23 @@ func (r GetPairingTokenResponse) StatusCode() int {
 	return 0
 }
 
+// ExchangeBridgeInstallTokenWithBodyWithResponse request with arbitrary body returning *ExchangeBridgeInstallTokenResponse
+func (c *ClientWithResponses) ExchangeBridgeInstallTokenWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*ExchangeBridgeInstallTokenResponse, error) {
+	rsp, err := c.ExchangeBridgeInstallTokenWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExchangeBridgeInstallTokenResponse(rsp)
+}
+
+func (c *ClientWithResponses) ExchangeBridgeInstallTokenWithResponse(ctx context.Context, body ExchangeBridgeInstallTokenJSONRequestBody, reqEditors ...RequestEditorFn) (*ExchangeBridgeInstallTokenResponse, error) {
+	rsp, err := c.ExchangeBridgeInstallToken(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseExchangeBridgeInstallTokenResponse(rsp)
+}
+
 // RequestPairingWithResponse request returning *RequestPairingResponse
 func (c *ClientWithResponses) RequestPairingWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*RequestPairingResponse, error) {
 	rsp, err := c.RequestPairing(ctx, reqEditors...)
@@ -380,6 +510,48 @@ func (c *ClientWithResponses) GetPairingTokenWithResponse(ctx context.Context, c
 		return nil, err
 	}
 	return ParseGetPairingTokenResponse(rsp)
+}
+
+// ParseExchangeBridgeInstallTokenResponse parses an HTTP response from a ExchangeBridgeInstallTokenWithResponse call
+func ParseExchangeBridgeInstallTokenResponse(rsp *http.Response) (*ExchangeBridgeInstallTokenResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &ExchangeBridgeInstallTokenResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			Token string `json:"token"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest ErrorResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 429:
+		var dest TooManyRequests
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON429 = &dest
+
+	}
+
+	return response, nil
 }
 
 // ParseRequestPairingResponse parses an HTTP response from a RequestPairingWithResponse call

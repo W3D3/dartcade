@@ -2,11 +2,13 @@ import { readFileSync, readdirSync } from 'fs'
 import { join, dirname } from 'path'
 import { fileURLToPath } from 'url'
 import { sql } from 'kysely'
+import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { normalizeName } from '../users/names.js'
 import { PairingCodeClaimedError } from './errors.js'
 import { groupBy } from '../util/groupBy.js'
+import { newBoardToken } from '../boards/token.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -370,6 +372,29 @@ export async function renameBoard(db: Kysely<Database>, id: string, name: string
 
 export async function getBoardByTokenHash(db: Kysely<Database>, tokenHash: string) {
   return db.selectFrom('boards').selectAll().where('token_hash', '=', tokenHash).executeTakeFirst()
+}
+
+export async function insertBridgeInstallToken(
+  db: Kysely<Database>,
+  t: { token_hash: string; user_id: string; expires_at: Date },
+): Promise<void> {
+  await db.insertInto('bridge_install_tokens').values(t).execute()
+}
+
+/** Spends an install token: makes the owner's board and returns its board token, or undefined if the token is unknown, used or expired. */
+export async function exchangeBridgeInstallToken(db: Kysely<Database>, tokenHash: string): Promise<string | undefined> {
+  return db.transaction().execute(async trx => {
+    const spent = await trx
+      .deleteFrom('bridge_install_tokens')
+      .where('token_hash', '=', tokenHash)
+      .where('expires_at', '>', new Date())
+      .returning('user_id')
+      .executeTakeFirst()
+    if (!spent) return undefined
+    const { token, tokenHash: boardHash } = newBoardToken()
+    await insertBoard(trx, { id: ulid(), owner_user_id: spent.user_id, name: 'New board', token_hash: boardHash })
+    return token
+  })
 }
 
 export async function updateBoardHardwareId(db: Kysely<Database>, boardDbId: string, hardwareId: string): Promise<void> {

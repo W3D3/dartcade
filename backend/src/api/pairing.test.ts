@@ -16,10 +16,13 @@ vi.mock('../db/queries.js', () => ({
   claimPairingCode: vi.fn().mockResolvedValue(undefined),
   consumePairingToken: vi.fn().mockResolvedValue(undefined),
   insertBoard: vi.fn().mockResolvedValue(undefined),
+  insertBridgeInstallToken: vi.fn().mockResolvedValue(undefined),
+  exchangeBridgeInstallToken: vi.fn().mockResolvedValue(undefined),
 }))
 
 import * as queries from '../db/queries.js'
 import { PairingCodeClaimedError } from '../db/errors.js'
+import { hashBoardToken } from '../boards/token.js'
 
 beforeEach(() => vi.clearAllMocks())
 
@@ -304,5 +307,34 @@ describe('pairing: bridge compatibility', () => {
   it('accepts no body (the generated Go client)', async () => {
     const res = await makeApp().inject({ method: 'POST', url: '/api/pairing/request' })
     expect(res.statusCode).toBe(201)
+  })
+})
+
+describe('bridge install tokens', () => {
+  it('makes a 15 minute token for the signed-in user and stores only its hash', async () => {
+    const app = makeApp()
+    const res = await app.inject({ method: 'POST', url: '/api/bridge-install-tokens' })
+    expect(res.statusCode).toBe(201)
+    const { token, expiresAt } = JSON.parse(res.body)
+    expect(token).toMatch(/^[0-9a-f]{64}$/)
+    expect(new Date(expiresAt).getTime() - Date.now()).toBeGreaterThan(14 * 60_000)
+    expect(queries.insertBridgeInstallToken).toHaveBeenCalledWith(expect.anything(), {
+      token_hash: hashBoardToken(token),
+      user_id: 'user-1',
+      expires_at: new Date(expiresAt),
+    })
+  })
+
+  it('swaps a good token for a board token, with no sign-in', async () => {
+    vi.mocked(queries.exchangeBridgeInstallToken).mockResolvedValueOnce('board-token')
+    const res = await makeApp().inject({ method: 'POST', url: '/api/bridge-install-tokens/exchange', payload: { token: 'abc' } })
+    expect(res.statusCode).toBe(201)
+    expect(JSON.parse(res.body)).toEqual({ token: 'board-token' })
+    expect(queries.exchangeBridgeInstallToken).toHaveBeenCalledWith(expect.anything(), hashBoardToken('abc'))
+  })
+
+  it('answers 404 for a used, expired or unknown token', async () => {
+    const res = await makeApp().inject({ method: 'POST', url: '/api/bridge-install-tokens/exchange', payload: { token: 'abc' } })
+    expect(res.statusCode).toBe(404)
   })
 })

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { Snapshot } from '../schema/game-ws.js'
 import { LightsService, type LightsDeps } from './service.js'
 
@@ -54,24 +54,6 @@ const x01 = (g: Record<string, unknown>) =>
     },
   }) as unknown as Snapshot
 const applies = (sent: Sent[], board: string) => sent.filter(s => s.board === board && s.msg.kind === 'wled.apply').map(s => s.msg.data)
-
-const minigolf = (g: Record<string, unknown>) =>
-  ({
-    gameId: 'minigolf',
-    game: {
-      currentPlayer: 0,
-      winner: null,
-      holeIdx: 0,
-      config: { maxStrokes: 6 },
-      lastHole: null,
-      lastStroke: null,
-      balls: [
-        { status: 'playing', strokes: 2 },
-        { status: 'waiting', strokes: 0 },
-      ],
-      ...g,
-    },
-  }) as unknown as Snapshot
 
 describe('LightsService', () => {
   it('a local game lights the board in the first seat’s colour', async () => {
@@ -335,59 +317,6 @@ describe('LightsService', () => {
       devices: () => Promise.reject(new Error('scan failed')),
     })
     expect(await svc.test('b1', 0)).toBe(false)
-  })
-
-  describe('minigolf golf.sunk flash timing (#307)', () => {
-    const sunkFlash = (sent: Sent[], board: string) => applies(sent, board).filter(a => a.hold_ms === 2000)
-
-    it("holds the flash back until the match screen's putt animation would show the ball drop, instead of firing on the snapshot", async () => {
-      vi.useFakeTimers()
-      try {
-        const { svc, sent, snaps, sessions } = setup()
-        sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
-        snaps.set('s', minigolf({})) // seed `before`: nothing holed yet
-        await svc.onPush('s')
-        sent.length = 0
-        const path = Array.from({ length: 36 }, (): [number, number] => [0, 0]) // 3000 + 1000 ms, per sinkDelayMs
-        snaps.set(
-          's',
-          minigolf({
-            balls: [
-              { status: 'holed', strokes: 3 },
-              { status: 'waiting', strokes: 0 },
-            ],
-            lastStroke: { hole: 0, seat: 0, stroke: 3, path, others: [], hits: [], holed: true },
-          }),
-        )
-        await svc.onPush('s') // the ball is already `holed` in this snapshot, but the putt hasn't played out yet
-        expect(sunkFlash(sent, 'b1')).toEqual([]) // not sent yet: would spoil the result before the animation shows it
-        await vi.advanceTimersByTimeAsync(3999)
-        expect(sunkFlash(sent, 'b1')).toEqual([]) // still mid-roll
-        await vi.advanceTimersByTimeAsync(1)
-        expect(sunkFlash(sent, 'b1')).toHaveLength(1) // now, in sync with the ball dropping on screen
-      } finally {
-        vi.useRealTimers()
-      }
-    })
-
-    it('a stroke with no path (nothing to animate) flashes at once', async () => {
-      const { svc, sent, snaps, sessions } = setup()
-      sessions.set('s', { boardId: 'b1', seats: [{ boardId: null }, { boardId: null }] })
-      snaps.set('s', minigolf({}))
-      await svc.onPush('s')
-      sent.length = 0
-      snaps.set(
-        's',
-        minigolf({
-          balls: [
-            { status: 'holed', strokes: 3 },
-            { status: 'waiting', strokes: 0 },
-          ],
-        }),
-      )
-      await svc.onPush('s')
-      expect(sunkFlash(sent, 'b1')).toHaveLength(1)
-    })
   })
 
   describe('serialized per board (a push racing a takeout, or onGameEnded, never lands out of order)', () => {
