@@ -230,3 +230,25 @@ export function statTiles(s: GameStats, mode: string | null, title: (mode: strin
   }
   return head
 }
+
+const COLUMNS_KEY = 'dartcade_history_columns_v1'
+const ColumnSizingSchema = z.record(z.string(), z.number().positive())
+
+/** The column widths this device resized the matches table to, or {} (none saved, or it doesn't parse). */
+export function loadColumnSizing(storage: Pick<Storage, 'getItem'> | null): Record<string, number> {
+  try {
+    const parsed = ColumnSizingSchema.safeParse(JSON.parse(storage?.getItem(COLUMNS_KEY) ?? 'null'))
+    return parsed.success ? parsed.data : {}
+  } catch {
+    return {}
+  }
+}
+
+export function saveColumnSizing(storage: Pick<Storage, 'setItem' | 'removeItem'> | null, sizing: Record<string, number>): void {
+  try {
+    if (Object.keys(sizing).length === 0) storage?.removeItem(COLUMNS_KEY)
+    else storage?.setItem(COLUMNS_KEY, JSON.stringify(sizing))
+  } catch {
+    // Storage full or blocked: the widths just don't persist
+  }
+}

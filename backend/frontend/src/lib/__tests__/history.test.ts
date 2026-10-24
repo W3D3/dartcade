@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { formatWhen, rulesLine, playerBadges, resultLabel, historyStat, statTiles } from '../history.js'
+import { formatWhen, rulesLine, playerBadges, resultLabel, historyStat, statTiles, loadColumnSizing, saveColumnSizing } from '../history.js'
 import type { GameSummary, GameStats } from '../api'
 
 const game = (o: Partial<GameSummary> = {}): GameSummary => ({
@@ -298,5 +298,51 @@ describe('statTiles', () => {
       title,
     )[2]
     expect([t.note, t.trend]).toEqual(['▼ 5.0 vs last month', 'down'])
+  })
+})
+
+describe('loadColumnSizing / saveColumnSizing', () => {
+  const memory = () => {
+    const m = new Map<string, string>()
+    return {
+      getItem: (k: string) => m.get(k) ?? null,
+      setItem: (k: string, v: string) => void m.set(k, v),
+      removeItem: (k: string) => void m.delete(k),
+      size: () => m.size,
+    }
+  }
+
+  it('round-trips the resized widths, and a reset clears them', () => {
+    const s = memory()
+    saveColumnSizing(s, { players: 420, game: 200 })
+    expect(loadColumnSizing(s)).toEqual({ players: 420, game: 200 })
+    saveColumnSizing(s, {})
+    expect(s.size()).toBe(0)
+    expect(loadColumnSizing(s)).toEqual({})
+  })
+
+  it('is {} without storage, and ignores a value that is not column widths', () => {
+    expect(loadColumnSizing(null)).toEqual({})
+    const s = memory()
+    for (const bad of ['not json', '[420]', '{"players":"wide"}', '{"players":-5}']) {
+      s.setItem('dartcade_history_columns_v1', bad)
+      expect(loadColumnSizing(s)).toEqual({})
+    }
+  })
+
+  it('survives storage that throws', () => {
+    const blocked = {
+      getItem: (): string | null => {
+        throw new Error('blocked')
+      },
+      setItem: () => {
+        throw new Error('blocked')
+      },
+      removeItem: () => {
+        throw new Error('blocked')
+      },
+    }
+    expect(loadColumnSizing(blocked)).toEqual({})
+    expect(() => saveColumnSizing(blocked, { players: 400 })).not.toThrow()
   })
 })
