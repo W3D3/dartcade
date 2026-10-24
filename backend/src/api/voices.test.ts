@@ -78,24 +78,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     await db.deleteFrom('voice_clips').execute()
   })
 
-  // Link imports answer from this instead of the internet: the zip above for any URL
-  const fetchImpl = vi.fn((_url: string | URL | Request, _init?: RequestInit) => Promise.resolve(new Response(zip)))
-  afterEach(() => {
-    fetchImpl.mockClear()
-  })
-
   function makeApp(limitBytes = 1024 * 1024, uploadLimit?: number) {
     const app = createFastify()
-    app.register(voicesApiPlugin, { db, limitBytes, fetchImpl, uploadLimit })
+    app.register(voicesApiPlugin, { db, limitBytes, uploadLimit })
     return app
   }
-  const importLink = (app: ReturnType<typeof makeApp>, url: string, user = 'a') =>
-    app.inject({
-      method: 'POST',
-      url: '/api/voice-packs/import',
-      headers: { 'x-user': user },
-      payload: { url },
-    })
   const upload = (app: ReturnType<typeof makeApp>, body: Buffer = zip, user: string | null = 'a') =>
     app.inject({
       method: 'POST',
@@ -187,9 +174,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     it('refuses a body over the upload limit, and over the usual 1 MiB elsewhere', async () => {
       const res = await upload(makeApp(undefined, 1000), big)
       expect(res.statusCode).toBe(413)
-      const link = await importLink(makeApp(), 'https://darts-downloads.peschi.org/' + 'x'.repeat(1024 * 1024))
-      expect(link.statusCode).toBe(413)
-      expect(fetchImpl).not.toHaveBeenCalled()
     })
   })
 
@@ -212,63 +196,6 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
   })
 
   describe('imports running', () => {
-    const link = 'https://darts-downloads.peschi.org/x.zip'
-    // Link imports whose download waits until released: after the test at the latest, which then
-    // waits for them to finish, so a failing test doesn't leave imports running for the next ones
-    const held: { release: () => void; res: ReturnType<typeof importLink> }[] = []
-    afterEach(async () => {
-      const all = held.splice(0)
-      all.forEach(h => {
-        h.release()
-      })
-      await Promise.all(all.map(h => h.res))
-    })
-    async function holdImport(app: ReturnType<typeof makeApp>, user: string) {
-      let release = () => {}
-      fetchImpl.mockImplementationOnce(
-        () =>
-          new Promise<Response>(resolve => {
-            release = () => resolve(new Response(zip))
-          }),
-      )
-      const calls = fetchImpl.mock.calls.length
-      const res = importLink(app, link, user)
-      held.push({ release: () => release(), res })
-      await vi.waitFor(() => expect(fetchImpl).toHaveBeenCalledTimes(calls + 1))
-      return { release: () => release(), res }
-    }
-
-    it('refuses a second import of the same user before reading its body', async () => {
-      const app = makeApp(undefined, 1000)
-      const first = await holdImport(app, 'a')
-      // Over the upload limit (a 413 once read) and not a zip: refused before either matters
-      const second = await upload(app, Buffer.alloc(5000))
-      expect(second.statusCode).toBe(429)
-      expect(second.json()).toEqual({ error: 'An import is already running' })
-      first.release()
-      expect((await first.res).statusCode).toBe(201)
-    })
-
-    it('runs two imports at once across all users', async () => {
-      await db
-        .insertInto('user')
-        .values({ id: 'c', name: 'Cleo', email: 'c@example.com', emailVerified: false, image: null })
-        .onConflict(oc => oc.doNothing())
-        .execute()
-      const app = makeApp()
-      const running = [await holdImport(app, 'a'), await holdImport(app, 'b')]
-      for (const res of [await upload(app, zip, 'c'), await importLink(app, link, 'c')]) {
-        expect(res.statusCode).toBe(429)
-        expect(res.json()).toEqual({ error: 'The server is busy importing voices, try again in a minute' })
-      }
-      expect(fetchImpl).toHaveBeenCalledTimes(2)
-      running.forEach(r => {
-        r.release()
-      })
-      for (const r of running) expect((await r.res).statusCode).toBe(201)
-      expect((await upload(app, zip, 'c')).statusCode).toBe(201)
-    })
-
     // An upload to a listening app whose body is still coming in: finish() sends the rest of the
     // zip, drop() closes the connection
     function slowUpload(app: ReturnType<typeof makeApp>, user: string) {
@@ -389,51 +316,10 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     expect((await get(app, `/api/voice-clips/${sha(ONE80)}`)).statusCode).toBe(404)
   })
 
-  it('imports a pack from a link on an allowed host', async () => {
-    const app = makeApp()
-    const res = await importLink(app, 'https://darts-downloads.peschi.org/soundfiles/en-GB-Arthur-Male-v4.zip')
-    expect(res.statusCode).toBe(201)
-    expect(res.json()).toMatchObject({ name: 'en-GB Arthur (Male)', lang: 'en-GB', clips: 3, bytes: KEPT, total: 4 })
-    expect(fetchImpl).toHaveBeenCalledTimes(1)
-    expect(fetchImpl.mock.calls[0][0]).toBe('https://darts-downloads.peschi.org/soundfiles/en-GB-Arthur-Male-v4.zip')
-    expect((await get(app, '/api/voice-packs')).json().packs).toHaveLength(1)
-  })
-
-  it('refuses a link off the list without fetching it', async () => {
-    const res = await importLink(makeApp(), 'http://169.254.169.254/latest/meta-data/')
-    expect(res.statusCode).toBe(400)
-    expect(res.json()).toEqual({ error: "Links from this site aren't supported" })
-    expect(fetchImpl).not.toHaveBeenCalled()
-  })
-
-  it('refuses a link that is not a pack, or a body without a url', async () => {
-    fetchImpl.mockResolvedValueOnce(new Response('hello'))
-    const notZip = await importLink(makeApp(), 'https://darts-downloads.peschi.org/x.zip')
-    expect(notZip.statusCode).toBe(400)
-    expect(notZip.json()).toEqual({ error: 'Not a zip file' })
-
-    const noUrl = await makeApp().inject({ method: 'POST', url: '/api/voice-packs/import', headers: { 'x-user': 'a' }, payload: {} })
-    expect(noUrl.statusCode).toBe(400)
-  })
-
-  it('applies the limit and the one-import lock to links too', async () => {
-    const off = await importLink(makeApp(0), 'https://darts-downloads.peschi.org/x.zip')
-    expect(off.statusCode).toBe(413)
-    expect(fetchImpl).not.toHaveBeenCalled()
-
-    const tight = makeApp(4000)
-    expect((await upload(tight)).statusCode).toBe(201)
-    expect((await importLink(tight, 'https://darts-downloads.peschi.org/x.zip')).statusCode).toBe(413)
-
-    const app = makeApp()
-    const [a, b] = await Promise.all([upload(app), importLink(app, 'https://darts-downloads.peschi.org/x.zip')])
-    expect([a.statusCode, b.statusCode].sort()).toEqual([201, 429])
-  })
-
   it('leaves clips out of the rate limit', async () => {
     const app = createFastify()
     await app.register(rateLimit, { max: 2, timeWindow: '1 minute' })
-    app.register(voicesApiPlugin, { db, limitBytes: 1024 * 1024, fetchImpl })
+    app.register(voicesApiPlugin, { db, limitBytes: 1024 * 1024 })
     expect((await upload(app)).statusCode).toBe(201)
     for (let i = 0; i < 5; i++) expect((await get(app, `/api/voice-clips/${sha(ONE80)}`)).statusCode).toBe(200)
     // The upload counts against its own limit; the list against the usual one
@@ -442,15 +328,13 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('voice packs API', () => {
     expect((await get(app, '/api/voice-packs')).statusCode).toBe(429)
   })
 
-  it('takes ten uploads and ten link imports a minute', async () => {
+  it('takes ten uploads a minute', async () => {
     const app = createFastify()
     await app.register(rateLimit, { max: 1000, timeWindow: '1 minute' })
-    app.register(voicesApiPlugin, { db, limitBytes: 1024 * 1024, fetchImpl })
-    // Refused quickly (not a zip, a link off the list) but counted all the same
+    app.register(voicesApiPlugin, { db, limitBytes: 1024 * 1024 })
+    // Refused quickly (not a zip) but counted all the same
     for (let i = 0; i < 10; i++) expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(400)
     expect((await upload(app, Buffer.from('no zip'))).statusCode).toBe(429)
-    for (let i = 0; i < 10; i++) expect((await importLink(app, 'https://example.com/x.zip')).statusCode).toBe(400)
-    expect((await importLink(app, 'https://example.com/x.zip')).statusCode).toBe(429)
     expect((await get(app, '/api/voice-packs')).statusCode).toBe(200)
   })
 })

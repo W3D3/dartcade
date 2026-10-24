@@ -21,7 +21,6 @@ import { voiceConfig } from './config.js'
 
 export type VoicePackSummary = { id: string; name: string; lang: string | null; clips: number; bytes: number; createdAt: string }
 export type VoicePackManifest = { id: string; name: string; clips: Record<string, string[]> }
-export type PackSource = { kind: 'upload' | 'url'; url?: string }
 
 /** An import that would take the user over their storage limit (or imports are off). */
 export class VoiceLimitError extends Error {
@@ -95,7 +94,6 @@ export async function importPack(
   db: Kysely<Database>,
   userId: string,
   parsed: ParsedPack,
-  source: PackSource,
   limitBytes: number = voiceConfig().limitBytes,
 ): Promise<VoicePackSummary> {
   const files = new Map<string, NewVoiceClip>()
@@ -118,8 +116,8 @@ export async function importPack(
     ownerId: userId,
     name: parsed.name,
     lang: parsed.lang,
-    source: source.kind,
-    sourceUrl: source.url ?? null,
+    source: 'upload',
+    sourceUrl: null,
     clips: [...files.values()],
     mappings,
   })

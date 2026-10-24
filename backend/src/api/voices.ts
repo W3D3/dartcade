@@ -3,7 +3,6 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { readPack, type ParsedPack } from '../caller/pack.js'
-import { fetchPack, LinkError } from '../caller/fetchPack.js'
 import { ZipError } from '../caller/zip.js'
 import { voiceConfig } from '../caller/config.js'
 import { flagEnabled, loadFlagUser } from '../flags/index.js'
@@ -18,7 +17,6 @@ import {
   VoiceLimitError,
   VoiceBusyError,
   type ImportSlot,
-  type PackSource,
 } from '../caller/service.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -27,8 +25,6 @@ type Opts = FastifyPluginOptions & {
   db: Kysely<Database>
   /** Per-user storage limit; from VOICE_STORAGE_LIMIT_MB unless given (tests). */
   limitBytes?: number
-  /** Fetches link imports; the global fetch unless given (tests). */
-  fetchImpl?: typeof fetch
   /** The largest zip accepted; UPLOAD_LIMIT unless given (tests). */
   uploadLimit?: number
 }
@@ -40,7 +36,7 @@ const UPLOAD_LIMIT = 128 * 1024 * 1024
 const orEmpty = (body: Uint8Array | undefined): Uint8Array => body ?? new Uint8Array(0)
 
 export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
-  const { db, limitBytes = voiceConfig().limitBytes, fetchImpl = fetch, uploadLimit = UPLOAD_LIMIT } = opts
+  const { db, limitBytes = voiceConfig().limitBytes, uploadLimit = UPLOAD_LIMIT } = opts
 
   // The import slot each import request holds: taken in onRequest, before Fastify reads (up to
   // uploadLimit of) the body, so a body is only received while its import may run
@@ -90,12 +86,12 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   })
 
   /** Reads and stores a pack in the request's slot; the reply says how many files the source had. */
-  async function runImport(req: FastifyRequest, read: () => Promise<ParsedPack>, source: PackSource) {
+  async function runImport(req: FastifyRequest, read: () => Promise<ParsedPack>) {
     if (!slots.has(req)) throw new Error('import without a slot')
     importing.add(req)
     try {
       const parsed = await read()
-      return { ...(await importPack(db, req.userId, parsed, source, limitBytes)), total: parsed.total }
+      return { ...(await importPack(db, req.userId, parsed, limitBytes)), total: parsed.total }
     } finally {
       importing.delete(req)
       free(req)
@@ -103,7 +99,7 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
   }
   /** The import errors as responses; anything else is rethrown. */
   function importError(err: unknown): { status: 400 | 413 | 429; error: string } {
-    if (err instanceof ZipError || err instanceof LinkError) return { status: 400, error: err.message }
+    if (err instanceof ZipError) return { status: 400, error: err.message }
     if (err instanceof VoiceLimitError) return { status: 413, error: err.message }
     if (err instanceof VoiceBusyError) return { status: 429, error: err.message }
     throw err
@@ -135,7 +131,7 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
             readPack(orEmpty(req.body), req.query.name, {
               autodarts: await flagEnabled('caller.autodartsImport', await loadFlagUser(db, req.userId)),
             })
-          const pack = await runImport(req, read, { kind: 'upload' })
+          const pack = await runImport(req, read)
           return await reply.code(201).send(pack)
         } catch (err) {
           const { status, error } = importError(err)
@@ -145,24 +141,6 @@ export function voicesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     )
     registered()
   })
-
-  app.post<Route<'importVoicePack'>>(
-    '/api/voice-packs/import',
-    {
-      ...importHooks(),
-      schema: fromSpec('importVoicePack'),
-    },
-    async (req, reply) => {
-      const { url } = req.body
-      try {
-        const pack = await runImport(req, () => fetchPack(url, fetchImpl), { kind: 'url', url })
-        return await reply.code(201).send(pack)
-      } catch (err) {
-        const { status, error } = importError(err)
-        return reply.code(status).send({ error })
-      }
-    },
-  )
 
   app.get<Route<'getVoicePack'>>(
     '/api/voice-packs/:id',
