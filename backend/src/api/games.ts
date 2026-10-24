@@ -38,16 +38,21 @@ export function toSummary(g: HistoryGame, allIds = false): GameSummary {
     board: g.board,
     mySeat: g.mySeat,
     invalidated: g.invalidated,
-    players: g.seats.map(s => ({
-      seat: s.seat,
-      name: s.name,
-      userId: allIds || g.mySeat !== null ? s.user_id : null,
-      bot: s.bot_level === null ? null : { level: s.bot_level },
-      placement: s.placement,
-      throwPosition: s.throw_position,
-      stats: s.stats,
-      forfeited: s.forfeited,
-    })),
+    players: g.seats.map(s => {
+      const userId = allIds || g.mySeat !== null ? s.user_id : null
+      return {
+        seat: s.seat,
+        name: s.name,
+        userId,
+        // A hidden account hides its picture too: an upload's URL carries the id
+        avatar: userId === null ? { kind: 'none' } : s.avatar,
+        bot: s.bot_level === null ? null : { level: s.bot_level },
+        placement: s.placement,
+        throwPosition: s.throw_position,
+        stats: s.stats,
+        forfeited: s.forfeited,
+      }
+    }),
   }
 }
 

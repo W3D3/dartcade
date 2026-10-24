@@ -2821,7 +2821,7 @@ components:
 
     GameSeat:
       type: object
-      required: [seat, name, userId, bot, placement, throwPosition, stats, forfeited]
+      required: [seat, name, userId, avatar, bot, placement, throwPosition, stats, forfeited]
       additionalProperties: false
       properties:
         seat: { type: integer, minimum: 0 }
@@ -2839,6 +2839,7 @@ components:
             nullable: true,
             description: "The seat's account; null for guests and bots, and for everyone when viewing a public game you didn't play in",
           }
+        avatar: { $ref: '#/components/schemas/Avatar' }
         bot:
           type: object
           nullable: true

@@ -16,6 +16,7 @@ const game = (o: Partial<GameSummary> = {}): GameSummary => ({
       seat: 0,
       name: 'Christoph',
       userId: 'u1',
+      avatar: { kind: 'none' },
       bot: null,
       placement: 1,
       throwPosition: 0,
@@ -26,6 +27,7 @@ const game = (o: Partial<GameSummary> = {}): GameSummary => ({
       seat: 1,
       name: 'Guest 1',
       userId: null,
+      avatar: { kind: 'none' },
       bot: null,
       placement: 2,
       throwPosition: 1,
@@ -90,7 +92,17 @@ describe('players and result', () => {
     const party = game({
       players: [
         ...game().players,
-        { seat: 2, name: 'Lena', userId: null, bot: null, placement: 3, throwPosition: 2, stats: {}, forfeited: false },
+        {
+          seat: 2,
+          name: 'Lena',
+          userId: null,
+          avatar: { kind: 'none' },
+          bot: null,
+          placement: 3,
+          throwPosition: 2,
+          stats: {},
+          forfeited: false,
+        },
       ],
     })
     expect(playerBadges(party).map(p => p.name)).toEqual(['Christoph', 'Guest 1', 'Lena'])
@@ -146,8 +158,28 @@ describe('playerBadges', () => {
   it('numbers players in throw order, not seat order', () => {
     const g = game({
       players: [
-        { seat: 0, name: 'Christoph', userId: 'u1', bot: null, placement: 1, throwPosition: 1, stats: {}, forfeited: false },
-        { seat: 1, name: 'Guest 1', userId: null, bot: null, placement: 2, throwPosition: 0, stats: {}, forfeited: false },
+        {
+          seat: 0,
+          name: 'Christoph',
+          userId: 'u1',
+          avatar: { kind: 'none' },
+          bot: null,
+          placement: 1,
+          throwPosition: 1,
+          stats: {},
+          forfeited: false,
+        },
+        {
+          seat: 1,
+          name: 'Guest 1',
+          userId: null,
+          avatar: { kind: 'none' },
+          bot: null,
+          placement: 2,
+          throwPosition: 0,
+          stats: {},
+          forfeited: false,
+        },
       ],
     })
     expect(playerBadges(g)).toEqual([

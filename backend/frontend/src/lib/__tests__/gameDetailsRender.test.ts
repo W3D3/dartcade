@@ -24,6 +24,7 @@ const seat = (s: number, name: string, placement: number) => ({
   throwPosition: s,
   name,
   userId: null,
+  avatar: { kind: 'none' as const },
   bot: null,
   placement,
   stats: {},
