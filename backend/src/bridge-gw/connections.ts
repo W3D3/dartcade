@@ -1,6 +1,8 @@
 import type { WebSocket } from 'ws'
 import type { components } from '../schema/api.js'
-import { FeedEventDataSchema } from '../schema/zod.js'
+import { randomUUID } from 'node:crypto'
+import type { z } from 'zod'
+import { FeedEventDataSchema, type BmRequestDataSchema, type BmResponseMessageSchema } from '../schema/zod.js'
 
 export type BridgeConn = {
   ws: WebSocket
@@ -17,6 +19,13 @@ export type BridgeConn = {
 /** A bridge event as received. */
 export type BoardEvent = { at: string; kind: string; data: unknown }
 
+/** A Board Manager call the bridge makes for the backend (bm.request without its id). */
+export type BmRequest = Omit<z.infer<typeof BmRequestDataSchema>, 'id'>
+/** The bridge's answer to it. */
+export type BmResponse = z.infer<typeof BmResponseMessageSchema>['data']
+
+type PendingRequest = { conn: BridgeConn; settle: (res: BmResponse | null) => void }
+
 /** An event of the Boards page live feed (BoardEvent in schema/api-v1.yaml). */
 export type FeedEvent = components['schemas']['BoardEvent']
 
@@ -32,6 +41,7 @@ export class BridgeConnections {
   private byBoard: Map<string, BridgeConn> = new Map()
   private all: Set<BridgeConn> = new Set()
   private feeds: Map<string, FeedEvent[]> = new Map()
+  private pending: Map<string, PendingRequest> = new Map()
 
   add(conn: BridgeConn): void {
     this.all.add(conn)
@@ -51,6 +61,7 @@ export class BridgeConnections {
     this.all.delete(conn)
     // A replaced connection closes after its successor registered: keep the successor
     if (conn.boardDbId && this.byBoard.get(conn.boardDbId) === conn) this.byBoard.delete(conn.boardDbId)
+    for (const p of this.pending.values()) if (p.conn === conn) p.settle(null)
   }
 
   get(boardDbId: string): BridgeConn | undefined {
@@ -72,6 +83,30 @@ export class BridgeConnections {
     if (!conn?.helloReceived || conn.ws.readyState !== conn.ws.OPEN) return false
     conn.ws.send(JSON.stringify(msg))
     return true
+  }
+
+  /** Has the board's bridge call its Board Manager (the backend never reaches the board's network
+   *  itself): its answer, or null when the bridge isn't connected, drops or doesn't answer in time
+   *  (bridges before bm.request ignore it). */
+  request(boardDbId: string, req: BmRequest, timeoutMs: number): Promise<BmResponse | null> {
+    const conn = this.byBoard.get(boardDbId)
+    const id = randomUUID()
+    if (!conn || !this.send(boardDbId, { kind: 'bm.request', data: { id, ...req } })) return Promise.resolve(null)
+    return new Promise(resolve => {
+      const settle = (res: BmResponse | null) => {
+        clearTimeout(timer)
+        this.pending.delete(id)
+        resolve(res)
+      }
+      const timer = setTimeout(() => settle(null), timeoutMs)
+      this.pending.set(id, { conn, settle })
+    })
+  }
+
+  /** A bridge's bm.response: settles the request it answers, if that bridge was asked. */
+  respond(conn: BridgeConn, res: BmResponse): void {
+    const p = this.pending.get(res.id)
+    if (p?.conn === conn) p.settle(res)
   }
 
   recordEvent(boardDbId: string, ev: BoardEvent): void {

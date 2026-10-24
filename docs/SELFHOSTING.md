@@ -3,8 +3,8 @@
 Just want to play? The official instance at [play.dartca.de](https://play.dartca.de) needs no setup:
 see [`GETTING_STARTED.md`](../GETTING_STARTED.md). This page is for running your own.
 
-You need a host that can run Docker and reach the internet (or your boards' network, for the
-live camera preview — see `BOARD_LIVE_CAMERA` below).
+You need a host that can run Docker and reach the internet. It never needs to reach your boards'
+network: the bridge connects out to it.
 
 Create a `docker-compose.yaml`:
 
@@ -68,10 +68,6 @@ reach it over `https://`/`wss://`. More env vars worth knowing about (all option
 - `TRUST_PROXY` — set to `1` behind one reverse proxy, so rate limits count each client, not the proxy
 - `PUBLIC_URL` — the address the app is reached at, e.g. `https://darts.example.com`, so shared links show a preview image
 - `VOICE_STORAGE_LIMIT_MB` — caller voice pack storage per user, in MB (default `50`)
-- `BOARD_LIVE_CAMERA` — set to `off` if the backend can't reach your boards' network (e.g. a
-  cloud host) or anyone can sign up: the backend then never calls a Board Manager itself, so the
-  Boards page loses the live camera preview, the board status and the Start/Stop/Reset/Calibrate
-  buttons (games are not affected)
 
 **Mail and legal pages**: without `SMTP_URL` set, there's no verification mail, password reset
 or account-deletion mail, and sign-up skips verification. Pass `SMTP_URL`, `MAIL_FROM` and

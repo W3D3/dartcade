@@ -8,6 +8,7 @@ import "github.com/go-viper/mapstructure/v2"
 import "reflect"
 import "strings"
 import "time"
+import "unicode/utf8"
 
 // Fields present on every adbridge/v1 message.
 type BaseEnvelope struct {
@@ -188,6 +189,161 @@ func (j *BmLinkData) UnmarshalJSON(value []byte) error {
 		return err
 	}
 	*j = BmLinkData(plain)
+	return nil
+}
+
+// Backend → bridge (kind bm.request): call the board's Board Manager. The backend
+// never reaches the board's network itself; the bridge makes the call and answers
+// with a bm.response carrying the same id.
+type BmRequestData struct {
+	// Camera number for op camera.
+	Cam *int `json:"cam,omitempty,omitzero" yaml:"cam,omitempty" mapstructure:"cam,omitempty"`
+
+	// Id corresponds to the JSON schema field "id".
+	Id string `json:"id" yaml:"id" mapstructure:"id"`
+
+	// start/stop/reset/calibrate: a Board Manager command. state: GET /api/state.
+	// camera: the raw frame of camera `cam`.
+	Op BmRequestDataOp `json:"op" yaml:"op" mapstructure:"op"`
+}
+
+type BmRequestDataOp string
+
+const BmRequestDataOpCalibrate BmRequestDataOp = "calibrate"
+const BmRequestDataOpCamera BmRequestDataOp = "camera"
+const BmRequestDataOpReset BmRequestDataOp = "reset"
+const BmRequestDataOpStart BmRequestDataOp = "start"
+const BmRequestDataOpState BmRequestDataOp = "state"
+const BmRequestDataOpStop BmRequestDataOp = "stop"
+
+var enumValues_BmRequestDataOp = []interface{}{
+	"start",
+	"stop",
+	"reset",
+	"calibrate",
+	"state",
+	"camera",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BmRequestDataOp) UnmarshalJSON(value []byte) error {
+	var v string
+	if err := json.Unmarshal(value, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_BmRequestDataOp {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_BmRequestDataOp, v)
+	}
+	*j = BmRequestDataOp(v)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BmRequestData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["id"]; raw != nil && !ok {
+		return fmt.Errorf("field id in BmRequestData: required")
+	}
+	if _, ok := raw["op"]; raw != nil && !ok {
+		return fmt.Errorf("field op in BmRequestData: required")
+	}
+	type Plain BmRequestData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Cam != nil && 2 < *plain.Cam {
+		return fmt.Errorf("field %s: must be <= %v", "cam", 2)
+	}
+	if plain.Cam != nil && 0 > *plain.Cam {
+		return fmt.Errorf("field %s: must be >= %v", "cam", 0)
+	}
+	if utf8.RuneCountInString(string(plain.Id)) < 1 {
+		return fmt.Errorf("field %s length: must be >= %d", "id", 1)
+	}
+	*j = BmRequestData(plain)
+	return nil
+}
+
+type BmResponseData struct {
+	// Why the call failed, for the backend's log.
+	Error *string `json:"error,omitempty,omitzero" yaml:"error,omitempty" mapstructure:"error,omitempty"`
+
+	// The bm.request's id.
+	Id string `json:"id" yaml:"id" mapstructure:"id"`
+
+	// For op camera: the JPEG frame, base64-encoded.
+	Image *string `json:"image,omitempty,omitzero" yaml:"image,omitempty" mapstructure:"image,omitempty"`
+
+	// For op state: the Board Manager's /api/state body.
+	State BmResponseDataState `json:"state,omitempty,omitzero" yaml:"state,omitempty" mapstructure:"state,omitempty"`
+
+	// The Board Manager's HTTP status; unset when it couldn't be reached.
+	Status *int `json:"status,omitempty,omitzero" yaml:"status,omitempty" mapstructure:"status,omitempty"`
+}
+
+// For op state: the Board Manager's /api/state body.
+type BmResponseDataState map[string]interface{}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BmResponseData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["id"]; raw != nil && !ok {
+		return fmt.Errorf("field id in BmResponseData: required")
+	}
+	type Plain BmResponseData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = BmResponseData(plain)
+	return nil
+}
+
+// Bridge → backend: the answer to a bm.request. Like camera.still it is not an
+// event: no envelope, no seq, never acked or stored.
+type BmResponseMessage struct {
+	// Data corresponds to the JSON schema field "data".
+	Data BmResponseData `json:"data" yaml:"data" mapstructure:"data"`
+
+	// Kind corresponds to the JSON schema field "kind".
+	Kind string `json:"kind" yaml:"kind" mapstructure:"kind"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BmResponseMessage) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in BmResponseMessage: required")
+	}
+	if _, ok := raw["kind"]; raw != nil && !ok {
+		return fmt.Errorf("field kind in BmResponseMessage: required")
+	}
+	type Plain BmResponseMessage
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Kind != "bm.response" {
+		return fmt.Errorf("field %s: must be equal to %s", "kind", "bm.response")
+	}
+	*j = BmResponseMessage(plain)
 	return nil
 }
 

@@ -3,7 +3,7 @@ import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
-import { bridgeConnections } from '../bridge-gw/connections.js'
+import { bridgeConnections, type BmRequest, type BmResponse } from '../bridge-gw/connections.js'
 import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard, hasActiveSessionOnBoard } from '../db/queries.js'
 import { findOwnBoard } from '../boards/own.js'
 import { newBoardToken } from '../boards/token.js'
@@ -14,10 +14,10 @@ import type { Session } from '../session/types.js'
 import type { Route } from './route.js'
 import { z } from 'zod'
 
-// Board Manager's /api/state, as far as we pass it on: each field falls back on its own
-/** How long a call to a board's Board Manager may take before the board counts as unreachable. */
-const BM_TIMEOUT_MS = 10_000
+/** How long the bridge may take to answer a Board Manager call (its own HTTP timeout is 10 s). */
+const BM_TIMEOUT_MS = 12_000
 
+// Board Manager's /api/state, as far as we pass it on: each field falls back on its own
 const BmStateSchema = z
   .object({
     status: z.string().nullable().catch(null).default(null),
@@ -34,19 +34,19 @@ type Opts = FastifyPluginOptions & {
   isLobbyMember?: IsLobbyMember
   /** Camera stills of the boards (tests pass their own). */
   stills?: CameraStills
-  /** How long the live camera route waits for the Board Manager (3 s). */
+  /** How long the live camera route waits for the bridge's frame (5 s; the bridge gives the camera 3 s). */
   liveCameraTimeoutMs?: number
 }
 
 // A still asked for by its current version never changes
 const CACHE_FOR_GOOD = 'private, max-age=31536000, immutable'
 
-// Board Manager commands: [operationId, route suffix, BM path, fallback path for older BMs, method]
+// Board Manager commands, made by the bridge (bridge/internal/bm/relay.go): [operationId, route suffix and op]
 const ACTIONS = [
-  ['startBoard', 'start', '/api/start', '/api/detection/start', 'PUT'],
-  ['stopBoard', 'stop', '/api/stop', '/api/detection/stop', 'PUT'],
-  ['resetBoard', 'reset', '/api/reset', undefined, 'POST'],
-  ['calibrateBoard', 'calibrate', '/api/config/calibration/auto?distortion=true', undefined, 'POST'],
+  ['startBoard', 'start'],
+  ['stopBoard', 'stop'],
+  ['resetBoard', 'reset'],
+  ['calibrateBoard', 'calibrate'],
 ] as const
 
 export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
@@ -56,12 +56,8 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     getSessionByBoard = () => undefined,
     isLobbyMember = noLobbies,
     stills = cameraStills,
-    liveCameraTimeoutMs = 3000,
+    liveCameraTimeoutMs = 5000,
   } = opts
-  // BOARD_LIVE_CAMERA=off: a cloud backend can't reach boards' networks, so it never calls a
-  // Board Manager (live camera, status, commands): the URL comes from the bridge, so a fake
-  // bridge could otherwise point the backend at any host it can reach
-  const reachBoards = process.env.BOARD_LIVE_CAMERA !== 'off'
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
   async function ownBoard(id: string, userId: string, reply: { code(n: number): { send(b: { error: string }): unknown } }) {
@@ -70,6 +66,31 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     if (own.problem === 'not_found') reply.code(404).send({ error: 'not found' })
     else reply.code(403).send({ error: 'forbidden' })
     return null
+  }
+
+  /** Has the board's bridge make a Board Manager call; on failure sends 503/502 and returns null. */
+  async function callBoard(
+    id: string,
+    req: BmRequest,
+    timeoutMs: number,
+    reply: { code(n: number): { send(b: { error: string }): unknown } },
+  ) {
+    if (!bridgeConnections.isOnline(id)) {
+      reply.code(503).send({ error: 'board offline' })
+      return null
+    }
+    const res: BmResponse | null = await bridgeConnections.request(id, req, timeoutMs)
+    if (!res) {
+      reply.code(503).send({ error: 'board did not answer (update its bridge)' })
+      return null
+    }
+    if (res.status === undefined) {
+      // Kept to the log: the bridge's error names hosts on the board's network
+      console.warn('Board Manager call failed', { boardId: id, op: req.op, error: res.error })
+      reply.code(502).send({ error: 'Board Manager request failed' })
+      return null
+    }
+    return { ...res, status: res.status }
   }
 
   app.get<Route<'listBoards'>>('/api/boards', { preValidation: requireAuth, schema: fromSpec('listBoards') }, async req => {
@@ -122,28 +143,18 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     },
   )
 
-  // The camera's live raw frame, straight from the Board Manager: for the owner setting up the
-  // board (it works only when the backend can reach the board's network)
+  // The camera's live raw frame, fetched by the bridge from the Board Manager: for the owner setting up the board
   app.get<Route<'getBoardCameraLive'>>(
     '/api/boards/:id/camera/:index/live',
     { preValidation: requireAuth, schema: fromSpec('getBoardCameraLive') },
     async (req, reply) => {
-      if (!reachBoards) return reply.code(404).send({ error: 'not found' })
       const { id, index } = req.params
       if (!(await ownBoard(id, req.userId, reply))) return reply
-      const conn = bridgeConnections.get(id)
-      // An http(s) origin: the bridge gateway keeps nothing else (parseHello)
-      if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
-      const url = new URL(`/api/img/cams/${index}`, conn.bmUrl).href
-      // A frame, or null when the camera didn't answer with an image in time
-      let frame: Buffer | null = null
-      try {
-        const upstream = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(liveCameraTimeoutMs) })
-        if (upstream.ok && upstream.headers.get('content-type')?.startsWith('image/')) frame = Buffer.from(await upstream.arrayBuffer())
-      } catch {
-        /* unreachable, timed out */
-      }
-      if (!frame) return reply.code(502).send({ error: 'camera unavailable' })
+      const res = await callBoard(id, { op: 'camera', cam: index }, liveCameraTimeoutMs, reply)
+      if (!res) return reply
+      // The bridge sends a frame only when the camera answered with an image
+      if (!res.image) return reply.code(502).send({ error: 'camera unavailable' })
+      const frame = Buffer.from(res.image, 'base64')
       reply.header('content-type', 'image/jpeg')
       reply.header('cache-control', 'no-store')
       return reply.send(frame)
@@ -186,46 +197,26 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     '/api/boards/:id/status',
     { preValidation: requireAuth, schema: fromSpec('getBoardStatus') },
     async (req, reply) => {
-      if (!reachBoards) return reply.code(404).send({ error: 'not found' })
       const { id } = req.params
       if (!(await ownBoard(id, req.userId, reply))) return reply
-      const conn = bridgeConnections.get(id)
-      if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
-      let res: Response
-      let body: unknown
-      try {
-        res = await fetch(`${conn.bmUrl}/api/state`, { redirect: 'manual', signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
-        if (res.ok) body = await res.json()
-      } catch {
-        return reply.code(503).send({ error: 'board unreachable' })
-      }
-      if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
-      return reply.send(BmStateSchema.parse(body))
+      const res = await callBoard(id, { op: 'state' }, BM_TIMEOUT_MS, reply)
+      if (!res) return reply
+      if (res.status < 200 || res.status >= 300) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
+      return reply.send(BmStateSchema.parse(res.state))
     },
   )
 
   // Per-board BM actions
-  for (const [operationId, action, path, fallback, method] of ACTIONS) {
+  for (const [operationId, action] of ACTIONS) {
     app.post<Route<typeof operationId>>(
       `/api/boards/:id/${action}`,
       { preValidation: requireAuth, schema: fromSpec(operationId) },
       async (req, reply) => {
-        if (!reachBoards) return reply.code(404).send({ error: 'not found' })
         const { id } = req.params
         if (!(await ownBoard(id, req.userId, reply))) return reply
-        const conn = bridgeConnections.get(id)
-        if (!conn?.bmUrl) return reply.code(503).send({ error: 'board offline' })
-        const bmUrl = conn.bmUrl
-        const tryFetch = (url: string) =>
-          fetch(url, { method, redirect: 'manual', headers: { 'Content-Length': '0' }, signal: AbortSignal.timeout(BM_TIMEOUT_MS) })
-        let res: Response
-        try {
-          res = await tryFetch(bmUrl + path)
-          if ((res.status === 404 || res.status === 405) && fallback) res = await tryFetch(bmUrl + fallback)
-        } catch {
-          return reply.code(502).send({ error: 'Board Manager request failed' })
-        }
-        if (!res.ok) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
+        const res = await callBoard(id, { op: action }, BM_TIMEOUT_MS, reply)
+        if (!res) return reply
+        if (res.status < 200 || res.status >= 300) return reply.code(502).send({ error: `Board Manager answered ${res.status}` })
         return reply.send({ status: res.status })
       },
     )

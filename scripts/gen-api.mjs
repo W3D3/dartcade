@@ -99,6 +99,8 @@ async function genZod() {
     CameraStillMessageSchema: ab.$defs.CameraStillMessage,
     WledFoundMessageSchema: ab.$defs.WledFoundMessage,
     WledStatusMessageSchema: ab.$defs.WledStatusMessage,
+    BmRequestDataSchema: ab.$defs.BmRequestData,
+    BmResponseMessageSchema: ab.$defs.BmResponseMessage,
     FeedEventDataSchema: api.components.schemas.BoardEvent.properties.data,
   }
   const body =

@@ -749,6 +749,49 @@ describe('onBoardEvent after an event is applied to the game', () => {
   })
 })
 
+describe('Board Manager calls through the bridge (bm.request / bm.response)', () => {
+  async function connect(boardId: string) {
+    vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: boardId, hardware_id: null } as any)
+    const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+    const socket = new FakeSocket()
+    handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine })
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+    await flush()
+    return socket
+  }
+  const sentRequest = (socket: FakeSocket) => JSON.parse(socket.send.mock.calls.at(-1)![0])
+  const answer = async (socket: FakeSocket, data: object) => {
+    socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bm.response', data })))
+    await flush()
+    await flush()
+  }
+
+  it("sends the request and resolves with the bridge's answer", async () => {
+    const socket = await connect('board-bm1')
+    const pending = bridgeConnections.request('board-bm1', { op: 'start' }, 1000)
+    const req = sentRequest(socket)
+    expect(req).toMatchObject({ kind: 'bm.request', data: { op: 'start' } })
+    await answer(socket, { id: req.data.id, status: 200 })
+    await expect(pending).resolves.toEqual({ id: req.data.id, status: 200 })
+  })
+
+  it("ignores an answer from another board's bridge, and gives up after the timeout", async () => {
+    const socket = await connect('board-bm2')
+    const other = await connect('board-bm3')
+    const pending = bridgeConnections.request('board-bm2', { op: 'state' }, 50)
+    await answer(other, { id: sentRequest(socket).data.id, status: 200 })
+    await expect(pending).resolves.toBeNull()
+  })
+
+  it('resolves null when the bridge drops before answering, or is not connected', async () => {
+    const socket = await connect('board-bm4')
+    const pending = bridgeConnections.request('board-bm4', { op: 'camera', cam: 0 }, 10_000)
+    socket.emit('close')
+    await expect(pending).resolves.toBeNull()
+    await expect(bridgeConnections.request('board-none', { op: 'start' }, 10_000)).resolves.toBeNull()
+  })
+})
+
 describe('BridgeConnections.send', () => {
   it('sends JSON to a bridge that said hello, false otherwise', () => {
     const bc = new BridgeConnections()
