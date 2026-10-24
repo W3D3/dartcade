@@ -3066,6 +3066,8 @@ export interface components {
         /** @description Without a code: only a friend of the host, while the lobby is open to friends. */
         JoinLobbyRequest: {
             code?: string;
+            /** @description Joined by scanning the host's QR code: sit at the host's board, if it's online and free (else the joiner's usual board). */
+            atHostBoard?: boolean;
         };
         AddGuestRequest: {
             name: string;

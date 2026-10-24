@@ -25,7 +25,17 @@ export function formatCode(code: string): string {
 
 /** Opening it (or scanning its QR code) lands on the Join page with the code filled in. */
 export function joinLink(origin: string, code: string): string {
-  return `${origin}/#/join/${code}`
+  return `${origin}${joinPath(code, false)}`
+}
+
+/** The QR code's link: scanning it means you stand at the host's board, so you join there. */
+export function qrJoinLink(origin: string, code: string): string {
+  return `${origin}${joinPath(code, true)}`
+}
+
+/** The Join page for a code, still marked as scanned from the QR code (`?via=qr`) if it was. */
+export function joinPath(code: string, viaQr: boolean): string {
+  return `/#/join/${code}${viaQr ? '?via=qr' : ''}`
 }
 
 /** Under the host's "Who can join" choice. */

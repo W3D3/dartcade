@@ -58,6 +58,16 @@ export function canSetBoard(lobby: LobbyState, actorUserId: string, person: Lobb
 }
 
 /**
+ * Where someone joining by the host's QR code sits: the board the host sits at, if it's the
+ * host's own. null when the host is on Manual or at someone else's board.
+ */
+export function hostBoard(lobby: LobbyState): string | null {
+  const host = lobby.hostUserId === null ? undefined : memberOf(lobby, lobby.hostUserId)
+  if (!host || host.boardId === null || host.boardOwnerUserId !== host.userId) return null
+  return host.boardId
+}
+
+/**
  * Nobody sets someone else's ready, not even the host. A guest has no ready of their own
  * to set: a guest's ready follows their adder, so the adder sets it on their own row.
  */

@@ -3,7 +3,7 @@
   // which lobby the code opens first; someone in another lobby can leave it first. Signed out, a
   // link shows its invite (InviteLink) with sign-in and sign-up that come back here.
   import { untrack } from 'svelte'
-  import { push } from 'svelte-spa-router'
+  import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
   import RefusalNotice from '$lib/components/lobby/RefusalNotice.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -13,7 +13,7 @@
   import type { components } from '$lib/api/schema'
   import InviteLink from '$lib/components/lobby/InviteLink.svelte'
   import { currentUser, signOut } from '$lib/auth'
-  import { formatCode } from '$lib/lobby/format'
+  import { formatCode, joinPath } from '$lib/lobby/format'
   import { describeConflict, normalizeCode, type Refusal } from '$lib/lobby/input'
   import { me } from '$lib/lobby/sockets'
   import { rememberReturn, sessionStore } from '$lib/returnTo'
@@ -31,6 +31,8 @@
     if (c) text = fromLink(c)
   })
   const code = $derived(normalizeCode(text))
+  // Scanned from the host's QR code (and not retyped since): you stand at the host's board
+  const viaQr = $derived(new URLSearchParams($querystring ?? '').get('via') === 'qr' && code === normalizeCode(params.code ?? ''))
   let preview = $state<components['schemas']['LobbyPreview'] | null>(null)
   // No open lobby has the code (a 404), or the check itself failed
   let missing = $state(false)
@@ -72,7 +74,7 @@
     error = ''
     runningSessionId = null
     try {
-      const res = await api.POST('/api/lobbies/{id}/join', { params: { path: { id: preview.id } }, body: { code } })
+      const res = await api.POST('/api/lobbies/{id}/join', { params: { path: { id: preview.id } }, body: { code, atHostBoard: viaQr } })
       if (res.data) {
         void push('/lobby')
         return
@@ -90,7 +92,7 @@
 
   /** Signs out; signing in as someone else comes back here with the code. */
   function switchAccount() {
-    rememberReturn(sessionStore(), code.length === 6 ? `#/join/${code}` : '#/join')
+    rememberReturn(sessionStore(), code.length === 6 ? joinPath(code, viaQr).slice(1) : '#/join')
     void signOut()
   }
 
@@ -104,7 +106,7 @@
 </script>
 
 {#if !$currentUser}
-  <InviteLink {code} {preview} missing={missing || code.length !== 6} {failed} onretry={() => check(code)} />
+  <InviteLink {code} {viaQr} {preview} missing={missing || code.length !== 6} {failed} onretry={() => check(code)} />
 {:else}
   <Layout title="Join lobby">
     <main
