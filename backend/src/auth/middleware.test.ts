@@ -22,7 +22,7 @@ function run(req: any, reply: any): Promise<void> {
 
 describe('requireAuth', () => {
   it('sets req.userId when session is valid', async () => {
-    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-123' })
+    vi.mocked(getAuthUser).mockResolvedValue({ userId: 'user-123', impersonatedBy: null })
     const req = { headers: {} } as any
     const reply = { code: vi.fn().mockReturnThis(), send: vi.fn() } as any
     await run(req, reply)

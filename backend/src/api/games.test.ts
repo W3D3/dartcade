@@ -85,7 +85,7 @@ describe('GET /api/gamemodes', () => {
 
   it('lists Minigolf only for whom its flag is on (admins)', async () => {
     await setupFlags(new Set())
-    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1' })
+    vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1', impersonatedBy: null })
     vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
     const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
     expect(res.json().modes.map((m: { id: string }) => m.id)).toEqual(['atc', 'x01', 'p121', 'minigolf', 'hilo'])
@@ -103,7 +103,7 @@ describe('GET /api/gamemodes', () => {
     })
     try {
       await setupFlags(new Set())
-      vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1' })
+      vi.mocked(getAuthUser).mockResolvedValueOnce({ userId: 'admin-1', impersonatedBy: null })
       vi.mocked(getRoleAndEmail).mockResolvedValueOnce({ role: 'admin', email: 'boss@x' })
       const res = await makeApp().inject({ method: 'GET', url: '/api/gamemodes' })
       const minigolf = res.json().modes.find((m: { id: string }) => m.id === 'minigolf')

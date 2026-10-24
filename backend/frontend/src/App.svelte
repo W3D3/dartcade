@@ -29,6 +29,7 @@
   import Admin from './routes/Admin.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
+  import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
   import { get } from 'svelte/store'
@@ -189,4 +190,5 @@
       {#if $currentUser}<ProgressToasts />{/if}
     {/if}
   {/if}
+  {#if $currentUser?.impersonating}<ImpersonationBanner name={$currentUser.name} />{/if}
 </Tooltip.Provider>

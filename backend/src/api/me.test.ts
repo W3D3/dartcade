@@ -4,6 +4,7 @@ import { meApiPlugin } from './me.js'
 import { ApiError } from './errors.js'
 import { setupFlags } from '../flags/index.js'
 import { AVATAR_PRESETS } from '../shared/avatarPresets.js'
+import * as middleware from '../auth/middleware.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -83,11 +84,22 @@ describe('/api/me', () => {
       invisible: false,
       isAdmin: false,
       isModerator: false,
+      impersonating: false,
       suggestedName: 'Phil.Taylor',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
       pictures: ['logo', 'dart'],
     })
+  })
+
+  it('says when an admin is viewing the app as this account', async () => {
+    vi.mocked(middleware.requireAuth).mockImplementationOnce((req, _reply, done) => {
+      req.userId = 'old'
+      req.impersonatedBy = 'boss'
+      done()
+    })
+    const res = await app().inject({ method: 'GET', url: '/api/me' })
+    expect(JSON.parse(res.body)).toMatchObject({ impersonating: true, isAdmin: false })
   })
 
   it('tells admins they are', async () => {

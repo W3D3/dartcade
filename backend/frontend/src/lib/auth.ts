@@ -1,11 +1,12 @@
 import { createAuthClient } from 'better-auth/svelte'
+import { adminClient } from 'better-auth/client/plugins'
 import { loadOnce } from './loadOnce.js'
 import { createApi } from './api/client.js'
 import { clearBests } from './p121/best.js'
 import type { components } from './api/schema'
 
 /** better-auth's typed client for /api/auth/* (sign-in, sign-up, session). Same origin as the app. */
-export const authClient = createAuthClient()
+export const authClient = createAuthClient({ plugins: [adminClient()] })
 
 /** Who's signed in (GET /api/me): name, email, whether they must pick a new name first. */
 export type CurrentUser = components['schemas']['Me']

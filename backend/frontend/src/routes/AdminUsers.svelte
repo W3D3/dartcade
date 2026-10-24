@@ -15,6 +15,7 @@
   import { buttonVariants } from '$lib/components/ui/button/button-variants.js'
   import { DataTable, ColumnToggle, type Features } from '$lib/components/ui/data-table/index.js'
   import { currentUser } from '$lib/auth'
+  import { viewAs } from '$lib/admin/impersonate'
   import { cn } from '$lib/utils.js'
   import {
     createUserSearch,
@@ -72,6 +73,17 @@
   let confirmAction = $state<{ kind: 'role'; user: AdminUser; role: Role } | { kind: 'verified'; user: AdminUser } | null>(null)
   let busyId = $state<string | null>(null)
   let rowError = $state<{ id: string; text: string } | null>(null)
+
+  // Another admin can't be viewed as (the server refuses), and nor can yourself
+  const canViewAs = (user: AdminUser): boolean => user.role !== 'admin' && user.id !== $currentUser?.id
+
+  async function pickViewAs(user: AdminUser): Promise<void> {
+    rowError = null
+    busyId = user.id
+    const result = await viewAs(user.id)
+    busyId = null
+    if (result) rowError = { id: user.id, text: result.error }
+  }
 
   function askRole(user: AdminUser, role: Role): void {
     rowError = null
@@ -207,6 +219,14 @@
           >
             {user.emailVerified ? 'Mark email as unverified' : 'Mark email as verified'}
           </DropdownMenu.Item>
+          {#if canViewAs(user)}
+            <DropdownMenu.Item
+              onSelect={() => void pickViewAs(user)}
+              class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
+            >
+              View as {user.name}
+            </DropdownMenu.Item>
+          {/if}
         </DropdownMenu.Content>
       </DropdownMenu.Portal>
     </DropdownMenu.Root>

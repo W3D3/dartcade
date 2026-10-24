@@ -3623,7 +3623,8 @@ components:
             number: { type: number }
     Me:
       type: object
-      required: [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, createdAt, avatar, pictures]
+      required:
+        [id, name, email, nameNeedsChange, suggestedName, invisible, isAdmin, isModerator, impersonating, createdAt, avatar, pictures]
       additionalProperties: false
       properties:
         pictures:
@@ -3642,6 +3643,11 @@ components:
         invisible: { type: boolean, description: 'Friends see you as offline' }
         isAdmin: { type: boolean, description: 'May open admin pages (the minigolf test bench)' }
         isModerator: { type: boolean, description: 'May look at any game and invalidate it (admins and moderators)' }
+        impersonating:
+          {
+            type: boolean,
+            description: 'An admin is viewing the app as this account (admin impersonation); the page shows a banner with a way back',
+          }
         createdAt: { type: string, format: date-time, description: 'When the account was made (Member since)' }
         avatar: { $ref: '#/components/schemas/Avatar' }
     UpdateMeRequest:
