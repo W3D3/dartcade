@@ -43,10 +43,8 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
       xp,
       level: levelOf(xp).level,
       streak: dayStreak(streak, today, days.played, days.frozen),
-      // What's left to do on Progress: today's dailies to finish or claim, and any weekly to claim
-      challengesOpen:
-        sets.daily.filter(c => c.claimedAt === null).length +
-        sets.weekly.filter(c => c.completedAt !== null && c.claimedAt === null).length,
+      // Finished and not claimed yet: what the nav's Progress badge counts
+      challengesToClaim: [...sets.daily, ...sets.weekly].filter(c => c.completedAt !== null && c.claimedAt === null).length,
       perks,
     }
   })

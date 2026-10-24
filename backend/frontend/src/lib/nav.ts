@@ -61,9 +61,9 @@ export function railTabs(
 
 export type SideLink = Omit<NavTab, 'aria'> & { soon?: boolean }
 
-/** Progress counts the challenges left to finish or claim (today's dailies, and weeklies to claim). */
-function dailyBadge(open: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
-  return open > 0 ? { badge: open, badgeLabel: `${open} ${open === 1 ? 'challenge' : 'challenges'} to finish or claim` } : {}
+/** Progress counts the challenges finished and waiting to be claimed. */
+function dailyBadge(toClaim: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
+  return toClaim > 0 ? { badge: toClaim, badgeLabel: `${toClaim} ${toClaim === 1 ? 'challenge' : 'challenges'} to claim` } : {}
 }
 
 /** The desktop side nav: the same pages under their long names, then Progress, Settings and Admin (admins and moderators). */

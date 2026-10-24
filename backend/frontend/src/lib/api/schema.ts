@@ -2786,8 +2786,8 @@ export interface components {
             xp: number;
             level: number;
             streak: components["schemas"]["DayStreak"];
-            /** @description Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count) */
-            challengesOpen: number;
+            /** @description Daily and weekly challenges finished but not claimed yet (the nav's count) */
+            challengesToClaim: number;
             perks: components["schemas"]["Perks"];
         };
         /** @description The card's perk of each kind (shared/progression.ts PERKS ids); the picture is the avatar */

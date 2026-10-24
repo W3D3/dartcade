@@ -112,8 +112,8 @@ describe('/api/progress', () => {
       xp: 6780,
       level: 14,
       streak: { current: 0, freezes: 1, bonus: 100, playedToday: false },
-      // c2 and c3 of today, and w1 to claim
-      challengesOpen: 3,
+      // c2 of today and w1 are finished and not claimed; c3 isn't finished
+      challengesToClaim: 2,
     })
   })
 

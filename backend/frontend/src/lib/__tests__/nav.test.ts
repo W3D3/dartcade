@@ -31,8 +31,8 @@ describe('Progress in the nav', () => {
     expect(navTabs('s1', 0, true, 0).map(t => t.label)).toEqual(['Play', 'Ranked', 'Live', 'Progress', 'History'])
     expect(navTabs('s1', 0, false, 0)[2]).toEqual({ href: '/progress', label: 'Progress', icon: 'progress' })
   })
-  it('counts the challenges left to finish or claim', () => {
-    expect(navTabs('s1', 0, false, 2)[2]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to finish or claim' })
+  it('counts the challenges to claim', () => {
+    expect(navTabs('s1', 0, false, 2)[2]).toMatchObject({ badge: 2, badgeLabel: '2 challenges to claim' })
     expect(sideLinks('s1', false, false, 1).find(l => l.label === 'Progress')).toMatchObject({ badge: 1 })
   })
   it('sits before Settings in the side nav', () => {

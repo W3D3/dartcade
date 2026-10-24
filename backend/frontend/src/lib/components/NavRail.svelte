@@ -24,7 +24,7 @@
       $activeSessionId,
       $me?.invites.length ?? 0,
       $matchmaking,
-      $progression ? ($progress?.challengesOpen ?? 0) : null,
+      $progression ? ($progress?.challengesToClaim ?? 0) : null,
       $currentUser?.isModerator ?? false,
     ),
   )
