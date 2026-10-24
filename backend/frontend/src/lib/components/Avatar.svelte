@@ -13,8 +13,8 @@
   // `bot` wins there, since the glyph and level colour are the more specific identity. A real
   // picture (a preset or an upload) always shows as chosen, whatever the tone — a chip that's
   // "you" or "quiet" still has to be recognizably your own avatar. Size: `size` in px (the glyph
-  // scales with it), or classes in `class` for responsive sizes. A dot while a member has the
-  // lobby open.
+  // scales with it), or classes in `class` for responsive sizes. Presence is not drawn here: callers
+  // put a StatusRing around the avatar.
   import { Bot as BotIcon } from '@lucide/svelte'
   import { avatarColor } from '$lib/avatarColor'
   import { AVATAR_PRESET_ART } from '$lib/avatarPresetIcons'
@@ -30,7 +30,6 @@
     bot = null,
     tone = 'default',
     guest = false,
-    presence = null,
     size,
     class: className = '',
     avatar = null,
@@ -42,7 +41,6 @@
     tone?: Tone
     /** Shorthand for tone="guest". */
     guest?: boolean
-    presence?: 'online' | 'away' | null
     /** Width and height in px; 36 unless `class` sets the size. */
     size?: number
     class?: string
@@ -87,9 +85,7 @@
 <span
   aria-hidden="true"
   style="{sizeStyle}{presetBg ? `background-color: ${presetBg};` : ''}{presetFg ? `color: ${presetFg};` : ''}"
-  class="{presence
-    ? 'relative'
-    : ''} shrink-0 box-border rounded-full overflow-hidden flex items-center justify-center font-bold {look} {className}"
+  class="shrink-0 box-border rounded-full overflow-hidden flex items-center justify-center font-bold {look} {className}"
 >
   {#if bot}
     <BotIcon size="62%" />
@@ -99,11 +95,5 @@
     <span class="flex size-full items-center justify-center {art.motion ? `cos-${art.motion}` : ''}"><art.icon size="62%" /></span>
   {:else}
     {initial(name)}
-  {/if}
-  {#if presence}
-    <span
-      class="absolute -right-px -bottom-px w-[10px] h-[10px] rounded-full border-2 border-surface-panel
-                 {presence === 'online' ? 'bg-accent' : 'bg-text-dim'}"
-    ></span>
   {/if}
 </span>
