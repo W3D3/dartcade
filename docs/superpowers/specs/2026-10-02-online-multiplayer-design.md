@@ -37,6 +37,10 @@ person who owns a seat can act for it.
   - A joiner starts on their most recently used board (Manual if they own none), a guest
     on their adder's board.
   - The host has no extra rights over boards.
+  - **Changed by #345:** your own rows' menu also lists the boards the lobby shares (someone
+    sits there and its owner is in the lobby), and you may pick them. The host may put anyone
+    on one of the host's own boards. Joining by the host's QR code (`#/join/<code>?via=qr`)
+    starts you at the host's board while it's online and not in another game.
 - **Disconnects:** the game waits ("waiting for X"). A dead bridge falls back to manual
   entry for that seat. There is no forfeit timeout in v1; it's tracked in #53.
 - **Ending a game early:**

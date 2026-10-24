@@ -13,7 +13,7 @@
   import Popover from './Popover.svelte'
   import PopoverPanel from './PopoverPanel.svelte'
   import QrCode from './QrCode.svelte'
-  import { formatCode, joinLink } from '$lib/lobby/format'
+  import { formatCode, joinLink, qrJoinLink } from '$lib/lobby/format'
   import { isPhone } from '$lib/viewport'
 
   let {
@@ -30,6 +30,7 @@
   } = $props()
 
   const link = $derived(joinLink(window.location.origin, code))
+  const qrLink = $derived(qrJoinLink(window.location.origin, code))
 
   let copied = $state(false)
   let confirmNewCode = $state(false)
@@ -102,8 +103,8 @@
         {#snippet panel()}
           <PopoverPanel label="QR code to join {name}" role="dialog" align="right">
             <div class="flex flex-col items-center gap-3 p-[10px]">
-              <QrCode text={link} size={240} />
-              <p class="m-0 w-[240px] text-center text-[13px] leading-[1.4] text-text-muted break-all">{link}</p>
+              <QrCode text={qrLink} size={240} />
+              <p class="m-0 w-[240px] text-center text-[13px] leading-[1.4] text-text-muted break-all">{qrLink}</p>
             </div>
           </PopoverPanel>
         {/snippet}
@@ -132,8 +133,8 @@
 {#if qrSheetOpen}
   <Modal title="QR code" subtitle="Join {name}" onclose={closeQrSheet} dismissOnBackdrop={true} widthClass="max-w-[360px]" zClass="z-[200]">
     <div class="flex flex-col items-center gap-3">
-      <QrCode text={link} size={240} class="w-[min(80vw,320px)] h-[min(80vw,320px)] max-w-full" />
-      <p class="m-0 w-full max-w-[min(80vw,320px)] text-center text-[13px] leading-[1.4] text-text-muted break-all">{link}</p>
+      <QrCode text={qrLink} size={240} class="w-[min(80vw,320px)] h-[min(80vw,320px)] max-w-full" />
+      <p class="m-0 w-full max-w-[min(80vw,320px)] text-center text-[13px] leading-[1.4] text-text-muted break-all">{qrLink}</p>
     </div>
     {#snippet footer()}
       <button

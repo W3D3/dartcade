@@ -93,7 +93,7 @@ describe('lobbies API', () => {
   it('joins, leaves and closes', async () => {
     const { app, lobbies } = makeApp()
     expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/join', payload: { code: 'k7q4md' } })).statusCode).toBe(200)
-    expect(lobbies.join).toHaveBeenCalledWith('chris', 'l1', 'k7q4md')
+    expect(lobbies.join).toHaveBeenCalledWith('chris', 'l1', 'k7q4md', undefined)
     expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/leave' })).statusCode).toBe(204)
     lobbies.close.mockRejectedValueOnce(LobbyError.forbidden('only the host can do this'))
     const res = await app.inject({ method: 'POST', url: '/api/lobbies/l1/close' })
@@ -104,7 +104,14 @@ describe('lobbies API', () => {
   it('joins without a code as a friend of the host', async () => {
     const { app, lobbies } = makeApp()
     expect((await app.inject({ method: 'POST', url: '/api/lobbies/l1/join', payload: {} })).statusCode).toBe(200)
-    expect(lobbies.join).toHaveBeenCalledWith('chris', 'l1', undefined)
+    expect(lobbies.join).toHaveBeenCalledWith('chris', 'l1', undefined, undefined)
+  })
+
+  it("joins by the host's QR code, at the host's board", async () => {
+    const { app, lobbies } = makeApp()
+    const res = await app.inject({ method: 'POST', url: '/api/lobbies/l1/join', payload: { code: 'k7q4md', atHostBoard: true } })
+    expect(res.statusCode).toBe(200)
+    expect(lobbies.join).toHaveBeenCalledWith('chris', 'l1', 'k7q4md', true)
   })
 
   it('adds, changes and removes people', async () => {

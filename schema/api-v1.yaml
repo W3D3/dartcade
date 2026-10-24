@@ -4008,6 +4008,9 @@ components:
       description: 'Without a code: only a friend of the host, while the lobby is open to friends.'
       properties:
         code: { type: string, minLength: 1, maxLength: 16 }
+        atHostBoard:
+          type: boolean
+          description: "Joined by scanning the host's QR code: sit at the host's board, if it's online and free (else the joiner's usual board)."
     AddGuestRequest:
       type: object
       required: [name]

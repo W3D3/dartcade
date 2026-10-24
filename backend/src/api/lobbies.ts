@@ -40,7 +40,7 @@ export function lobbiesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: 
   })
 
   app.post<Route<'joinLobby'>>('/api/lobbies/:id/join', { ...auth, schema: fromSpec('joinLobby') }, async (req, reply) =>
-    reply.send(await lobbies.join(req.userId, req.params.id, req.body.code)),
+    reply.send(await lobbies.join(req.userId, req.params.id, req.body.code, req.body.atHostBoard)),
   )
 
   app.post<Route<'leaveLobby'>>('/api/lobbies/:id/leave', { ...auth, schema: fromSpec('leaveLobby') }, async (req, reply) => {

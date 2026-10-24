@@ -10,6 +10,7 @@ import {
   canSetTeam,
   effectiveReady,
   friendsMayJoin,
+  hostBoard,
   isHost,
   isSolo,
   isTeamGame,
@@ -140,6 +141,18 @@ describe('canSetBoard', () => {
     expect(set('chris', bot, living)).toBe(false) // its own adder, the host, giving one of their own boards
     expect(set('lena', bot, lenas)).toBe(false) // another board owner
     expect(set('chris', bot, null)).toBe(false) // even "to Manual" (a no-op, but still refused as a patch)
+  })
+})
+
+describe('hostBoard', () => {
+  it("is the board the host sits at, when it's the host's own", () => {
+    expect(hostBoard(lobby)).toBe('living')
+  })
+
+  it("is null when the host is on Manual, at someone else's board, or gone", () => {
+    expect(hostBoard(lobbyOf([{ ...chris, boardId: null, boardOwnerUserId: null }, lena]))).toBeNull()
+    expect(hostBoard(lobbyOf([{ ...chris, boardId: 'lenas', boardOwnerUserId: 'lena' }, lena]))).toBeNull()
+    expect(hostBoard(lobbyOf([lena], 'chris'))).toBeNull()
   })
 })
 

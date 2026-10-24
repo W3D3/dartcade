@@ -168,6 +168,31 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       expect(lobby?.activity.map(a => a.kind)).toEqual(['joined', 'joined', 'opened'])
     })
 
+    it("a QR join sits at the host's board while it's online and free; a typed code or link doesn't", async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code, true)
+      expect((await lobbies.view(id))?.people.find(p => p.userId === 'lena')).toMatchObject({ boardId: 'living', boardMovedBy: null })
+      await lobbies.join('max', id, code)
+      expect((await lobbies.view(id))?.people.find(p => p.userId === 'max')?.boardId).toBeNull()
+    })
+
+    it("a QR join falls back to the usual board when the host's board is offline, in another game or the host is on Manual", async () => {
+      const qrJoin = async (setUp: (lobbyId: string, hostRow: string) => Promise<void>) => {
+        const { id, code } = await lobbies.create('chris')
+        await setUp(id, (await lobbies.view(id))?.people[0]?.id ?? '')
+        await lobbies.join('lena', id, code, true)
+        const boardId = (await lobbies.view(id))?.people.find(p => p.userId === 'lena')?.boardId
+        await lobbies.close('chris', id)
+        return boardId
+      }
+      online.delete('living')
+      expect(await qrJoin(async () => {})).toBe('lenas')
+      online.add('living')
+      expect(await qrJoin((lobbyId, hostRow) => lobbies.updatePerson('chris', lobbyId, hostRow, { boardId: null }))).toBe('lenas')
+      await engine.create('sam', 'living', 'atc', {}, [{ name: 'Sam' }])
+      expect(await qrJoin(async () => {})).toBe('lenas')
+    })
+
     it('refuses a wrong code, a joiner who is in another (non-solo) lobby, and a closed lobby', async () => {
       const a = await lobbies.create('chris')
       const b = await lobbies.create('lena')
