@@ -1,6 +1,7 @@
 // The three dart slots under the board: thrown darts, then what to aim at next.
 import { parseLabel } from './dartUtils.js'
 import { checkoutHint, type CheckoutPrefs } from '$shared/checkout.js'
+import { nextTargetIndex } from '$shared/atc.js'
 
 export type SlotKind = 'thrown' | 'miss' | 'suggested-next' | 'suggested-later' | 'empty-next' | 'empty-later'
 export type Slot = { kind: SlotKind; label: string; points: string; foot: string; aria: string }
@@ -85,11 +86,22 @@ export function x01Slots(o: {
   return [...done, ...openSlots(done.length, suggestions)]
 }
 
-export function atcSlots(o: { darts: ThrownDart[]; hits: boolean[]; target: string | null; multiplierAdvances?: boolean }): Slot[] {
-  // With multiplierAdvances a double/treble moves 2/3 targets; bulls always move one
+/** `walk` is the sequence and the index the visit started on, when known: each hit then shows how
+ *  far the game moved it. Without it, a double/treble shows 2/3 and a bull 1. */
+export function atcSlots(o: {
+  darts: ThrownDart[]
+  hits: boolean[]
+  target: string | null
+  multiplierAdvances?: boolean
+  walk?: { sequence: number[]; start: number }
+}): Slot[] {
+  let at = o.walk?.start
   const steps = (d: ThrownDart) => {
-    const n = d.segment?.number ?? 0
-    return o.multiplierAdvances && n <= 20 ? Math.max(1, d.segment?.multiplier ?? 1) : 1
+    const n = o.multiplierAdvances ? Math.max(1, d.segment?.multiplier ?? 1) : 1
+    if (!o.walk || at === undefined) return (d.segment?.number ?? 0) <= 20 ? n : 1
+    const from = at
+    at = nextTargetIndex(o.walk.sequence, from, n)
+    return at - from
   }
   const done = o.darts.slice(0, 3).map((d, i) => thrownSlot(d, i, o.hits[i], o.hits[i] ? `+${steps(d)}` : '0'))
   return [...done, ...openSlots(done.length, o.target ? [{ label: o.target, foot: 'your target' }] : [])]

@@ -88,6 +88,19 @@ describe('atcSlots', () => {
     })
     expect(s[0].points).toBe('+3')
   })
+  it('shows how far the game moved each hit: a triple on 19 stops on the bull', () => {
+    const asc = [...Array.from({ length: 20 }, (_, i) => i + 1), 21]
+    const T = (n: number) => ({ segment: { name: `T${n}`, number: n, multiplier: 3 }, score: 3 * n })
+    const s = atcSlots({
+      darts: [T(16), T(19)],
+      hits: [true, true],
+      target: '25',
+      multiplierAdvances: true,
+      walk: { sequence: asc, start: 15 },
+    })
+    expect(s.map(x => x.points)).toEqual(['+3', '+2', ''])
+  })
+
   it('a bull always advances one', () => {
     const s = atcSlots({
       darts: [{ segment: { name: 'Bull', number: 50, multiplier: 1 }, score: 50 }],

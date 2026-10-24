@@ -388,6 +388,9 @@
 
   // ── Center column ─────────────────────────────────────────────────────────
   const outMode = $derived(x01?.config.outMode ?? 'double')
+  const hitCount = $derived(atc?.hitCounts.at(currentPlayer) ?? 0)
+  // X01 sends where the visit started; Around the Clock still tracks it in the browser
+  const visitStart = $derived(x01 ? (x01.visitStartScores.at(currentPlayer) ?? null) : (history.start.at(currentPlayer) ?? null))
   const slots = $derived(
     isX01
       ? x01Slots({
@@ -404,12 +407,10 @@
           hits,
           target: isActive ? (atcPlayers[currentPlayer]?.target ?? null) : null,
           multiplierAdvances: atc?.cfg.multiplierAdvances === true,
+          walk: atc && visitStart !== null ? { sequence: atc.sequence, start: visitStart } : undefined,
         }),
   )
 
-  const hitCount = $derived(atc?.hitCounts.at(currentPlayer) ?? 0)
-  // X01 sends where the visit started; Around the Clock still tracks it in the browser
-  const visitStart = $derived(x01 ? (x01.visitStartScores.at(currentPlayer) ?? null) : (history.start.at(currentPlayer) ?? null))
   const band = $derived(
     isX01
       ? x01Band({
