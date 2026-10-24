@@ -113,7 +113,12 @@ export function createMeStore(open?: OpenSocket) {
               xp.set(msg)
             }
           },
-          onClose: code => (WsCloseCode[code] === 'Unauthorized' ? 'stop' : undefined),
+          // Signed out by the server (a ban, say): every page holds this socket, so it sends you to sign in
+          onClose: code => {
+            if (WsCloseCode[code] !== 'Unauthorized') return
+            window.location.hash = '#/login'
+            return 'stop'
+          },
         },
         open,
       )

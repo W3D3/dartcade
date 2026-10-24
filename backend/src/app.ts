@@ -25,6 +25,7 @@ import { rankedApiPlugin } from './api/ranked.js'
 import { progressApiPlugin } from './api/progress.js'
 import { minigolfCoursesApiPlugin } from './api/minigolfCourses.js'
 import { adminUsersApiPlugin } from './api/adminUsers.js'
+import { applyBan } from './auth/ban.js'
 import { adminGamesApiPlugin } from './api/adminGames.js'
 import { adminFlagsApiPlugin } from './api/adminFlags.js'
 import { systemApiPlugin } from './api/system.js'
@@ -213,7 +214,22 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(rankedApiPlugin, { db })
   await app.register(progressApiPlugin, { db })
   await app.register(minigolfCoursesApiPlugin, { db })
-  await app.register(adminUsersApiPlugin, { db })
+  await app.register(adminUsersApiPlugin, {
+    db,
+    onBanned: userId =>
+      applyBan(
+        {
+          engine,
+          lobbies,
+          closeSockets: (id, code, reason) => {
+            hub.closeUser(id, code, reason)
+            browserConnections.closeUser(id, code, reason)
+          },
+          goOffline: id => friends.dropPresence(id),
+        },
+        userId,
+      ),
+  })
   await app.register(adminGamesApiPlugin, { db })
   // The lights flag changed: boards with strips are darkened (off) or get their devices back (on)
   const onFlagChanged = lights
