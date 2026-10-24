@@ -64,6 +64,21 @@ describe('atcProgress', () => {
     ])
   })
 
+  it('walks a multiplier on 18 on to the bull, the same as the game', () => {
+    const r = play({ ...base, multiplierAdvances: true, finishOn: 'single_bull' }, 1, [
+      [seg(1, 3), seg(4, 3), seg(7, 3)],
+      [seg(10, 3), seg(13, 3), seg(16, 1)],
+      [seg(17, 1), seg(18, 3)],
+    ])
+    expect(r.final.targets[0]).toBe(21)
+    expect(atcProgress(r.visits, r.final)[0].steps.slice(-4)).toEqual([
+      { target: 18, darts: 1, hit: true },
+      { target: 19, darts: 0, hit: true },
+      { target: 20, darts: 0, hit: true },
+      { target: 21, darts: 0, hit: false },
+    ])
+  })
+
   it('lists targets a multiplier skips as hit with no darts', () => {
     const r = play({ ...base, multiplierAdvances: true }, 1, [[seg(1, 3)]]) // T1: 1, 2, 3 done
     expect(atcProgress(r.visits, r.final)[0].steps.slice(0, 4)).toEqual([
@@ -123,6 +138,7 @@ describe('ATC matchStats', () => {
       cfg: base,
       playerCount: 1,
       currentVisitHits: [],
+      version: atcModule.version,
     })
     const start = mkState([1])
     const end = mkState([2], 0)

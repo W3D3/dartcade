@@ -2,7 +2,7 @@
 // using the module's own rules (a multiplier can skip targets), for the details page's target
 // grid, race chart and match stats.
 import type { AtcDetail, CommittedVisit, MatchStats } from '../session/types.js'
-import { advanceInSequence, hitCounts, hitsTarget, type ATCState } from './atc.js'
+import { advanceTarget, hitCounts, hitsTarget, type ATCState } from './atc.js'
 import { row, values } from './matchStats.js'
 
 type Step = AtcDetail['progress'][number]['steps'][number]
@@ -38,7 +38,7 @@ function walk(visits: CommittedVisit<ATCState>[], final: ATCState, seat: number)
       if (!hit) continue
       current.hit = true
       const stepsAhead = final.cfg.multiplierAdvances ? d.segment.multiplier : 1
-      const next = advanceInSequence(target, stepsAhead, final.sequence)
+      const next = advanceTarget(final, target, stepsAhead)
       // Targets jumped over count as done with no darts
       const from = final.sequence.indexOf(target)
       const to = final.sequence.includes(next) ? final.sequence.indexOf(next) : final.sequence.length

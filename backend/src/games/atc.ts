@@ -4,6 +4,10 @@ import type { AtcView } from '../session/views.js'
 import { shuffle, type Rng } from '../session/rng.js'
 import { rankSeats } from './ranking.js'
 import { atcMatchStats, atcProgress } from './atcProgress.js'
+import { nextTargetIndex } from '../shared/atc.js'
+
+// 2: a multiplier walks on to the bull instead of stopping before it (#343)
+const VERSION = 2
 
 export type ATCConfig = {
   throwAgainOnAllHit: boolean
@@ -20,6 +24,7 @@ export type ATCState = {
   cfg: ATCConfig
   playerCount: number
   currentVisitHits: boolean[] // per-dart hit flags for the open visit
+  version: number // the module version the game was created with
 }
 
 export function buildSequence(cfg: ATCConfig, rng: Rng = Math.random): number[] {
@@ -46,10 +51,16 @@ export function hitsTarget(target: number, dart: Dart): boolean {
   return false
 }
 
-// Returns the new target value after advancing `steps` positions through the sequence.
-// Bull checkpoints (21, 22) advance exactly 1 step; multiplier cannot skip them.
-// A win is signalled by returning a value not in the sequence (> last element).
-export function advanceInSequence(current: number, steps: number, sequence: number[]): number {
+/** The target a hit on `current` moves the player to `steps` targets on; a value outside the sequence once they have won. */
+export function advanceTarget(s: Pick<ATCState, 'sequence' | 'version'>, current: number, steps: number): number {
+  if (s.version === 1) return advanceV1(current, steps, s.sequence)
+  const idx = s.sequence.indexOf(current)
+  if (idx === -1) return current
+  return s.sequence[nextTargetIndex(s.sequence, idx, steps)] ?? s.sequence[s.sequence.length - 1] + 1
+}
+
+// Version 1 games, replayed as they were played: a multiplier stopped on the number before the bull
+function advanceV1(current: number, steps: number, sequence: number[]): number {
   const idx = sequence.indexOf(current)
   if (idx === -1) return current
 
@@ -107,7 +118,7 @@ export const configMeta: Record<keyof ATCConfig, ConfigFieldMeta> = {
   },
   multiplierAdvances: {
     label: 'Multiplier advances',
-    tooltip: 'A double or triple on the current target skips 2 or 3 numbers ahead.',
+    tooltip: 'A double or triple on the current target moves 2 or 3 targets on. It never skips the bull: that has to be hit on its own.',
     options: [
       { value: false, label: 'Off' },
       { value: true, label: 'On' },
@@ -133,11 +144,11 @@ export function hitCounts(s: ATCState): number[] {
 
 export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetail> = {
   id: 'atc',
-  version: 1,
+  version: VERSION,
   defaultConfig: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
   configMeta,
 
-  init(cfg: ATCConfig, players: Player[], rng?: Rng): ATCState {
+  init(cfg: ATCConfig, players: Player[], rng?: Rng, version = VERSION): ATCState {
     const sequence = buildSequence(cfg, rng)
     return {
       sequence,
@@ -147,6 +158,7 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
       cfg,
       playerCount: players.length,
       currentVisitHits: [],
+      version,
     }
   },
 
@@ -166,7 +178,7 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
         const hit = hitsTarget(prev, data.dart)
         const currentVisitHits = [...s.currentVisitHits, hit]
         if (!hit) return { state: { ...s, currentVisitHits } }
-        const next = advanceInSequence(prev, steps, s.sequence)
+        const next = advanceTarget(s, prev, steps)
         const targets = s.targets.map((t, i) => (i === s.currentPlayer ? next : t))
         const winner = !s.sequence.includes(next) ? s.currentPlayer : s.winner
         return { state: { ...s, targets, winner, currentVisitHits } }
