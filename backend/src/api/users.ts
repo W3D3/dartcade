@@ -6,6 +6,8 @@ import { getAuthUser } from '../auth/session.js'
 import { searchUsers } from '../db/queries.js'
 import { getAvatarUpload } from '../db/users.js'
 import { checkName } from '../users/account.js'
+import { profileUser } from '../db/profile.js'
+import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
 
@@ -33,6 +35,13 @@ export function usersApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
       return reply.send(avatar.image)
     },
   )
+
+  // The ban on a profile when progression (and with it the full profile) is off
+  app.get<Route<'getUserBan'>>('/api/users/:id/ban', { preValidation: requireAuth, schema: fromSpec('getUserBan') }, async req => {
+    const user = await profileUser(db, req.params.id)
+    if (!user) throw new ApiError(404, { error: 'not found' })
+    return { ban: user.ban && { category: user.ban.category, until: user.ban.until?.toISOString() ?? null } }
+  })
 
   // Public: the sign-up page asks before an account exists. Signed in, your own name is free.
   app.get<Route<'checkNameAvailable'>>(

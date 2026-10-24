@@ -4,6 +4,7 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { createFastify } from './fastify.js'
 import { adminUsersApiPlugin } from './adminUsers.js'
+import { usersApiPlugin } from './users.js'
 
 // Signed in as whoever the x-user header names; without it, not signed in (voices.test.ts's pattern)
 vi.mock('../auth/middleware.js', () => ({
@@ -16,6 +17,9 @@ vi.mock('../auth/middleware.js', () => ({
     done()
   }),
 }))
+
+// users.ts's name check reads the session; signing in through better-auth isn't what's tested here
+vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))
 
 // requireAdmin (auth/admin.ts) reads the db singleton (db/index.ts) directly, not a plugin opt;
 // redirect it to the test schema so a real `role` column decides who is an admin.
@@ -57,9 +61,11 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
     await close()
   })
 
+  const onBanned = vi.fn(async (_userId: string) => {})
   function app() {
     const a = createFastify()
-    a.register(adminUsersApiPlugin, { db })
+    a.register(adminUsersApiPlugin, { db, onBanned })
+    a.register(usersApiPlugin, { db })
     return a
   }
   const asAdmin = { 'x-user': 'admin' }
@@ -286,5 +292,99 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
       await db.deleteFrom('user').where('id', '=', 'admin2').execute()
       await db.updateTable('user').set({ role: 'admin' }).where('id', '=', 'admin').execute()
     }
+  })
+
+  describe('bans', () => {
+    const in7Days = () => new Date(Date.now() + 7 * 86_400_000).toISOString()
+    const ban = (target: string, headers: Record<string, string>, payload: Record<string, unknown>) =>
+      app().inject({ method: 'PUT', url: `/api/admin/users/${target}/ban`, headers, payload })
+    const audit = (action: string, target: string) =>
+      db
+        .selectFrom('admin_audit')
+        .select(['admin_user_id', 'detail'])
+        .where('action', '=', action)
+        .where('target', '=', target)
+        .orderBy('id')
+        .execute()
+
+    beforeAll(async () => {
+      await db
+        .insertInto('user')
+        .values([
+          { id: 'mod', name: 'Mod', email: 'mod@example.com', emailVerified: true, image: null, role: 'moderator' },
+          { id: 'cheat', name: 'Cheat', email: 'cheat@example.com', emailVerified: true, image: null, role: null },
+          { id: 'admin3', name: 'Admin3', email: 'admin3@example.com', emailVerified: true, image: null, role: 'admin' },
+        ])
+        .execute()
+    })
+
+    it('is admin-only: a moderator and a player are refused, and nothing changes', async () => {
+      for (const headers of [{ 'x-user': 'mod' }, asPlayer]) {
+        expect((await ban('cheat', headers, { category: 'cheating', note: null, until: null })).statusCode).toBe(403)
+        expect((await app().inject({ method: 'DELETE', url: '/api/admin/users/cheat/ban', headers })).statusCode).toBe(403)
+      }
+      const row = await db.selectFrom('user').select('banned').where('id', '=', 'cheat').executeTakeFirstOrThrow()
+      expect(row.banned).toBe(false)
+      expect(onBanned).not.toHaveBeenCalled()
+    })
+
+    it("refuses to ban yourself, another admin, or a ban that's already over", async () => {
+      expect((await ban('admin', asAdmin, { category: 'other', note: null, until: null })).statusCode).toBe(409)
+      expect((await ban('admin3', asAdmin, { category: 'other', note: null, until: null })).statusCode).toBe(409)
+      expect((await ban('cheat', asAdmin, { category: 'other', note: null, until: '2020-01-01T00:00:00Z' })).statusCode).toBe(400)
+      expect((await ban('ghost', asAdmin, { category: 'other', note: null, until: null })).statusCode).toBe(404)
+      expect(await audit('user.ban', 'admin3')).toEqual([])
+      expect(onBanned).not.toHaveBeenCalled()
+    })
+
+    it('bans with a category, a note and an end: signs them out, runs the effects, audits it', async () => {
+      await db
+        .insertInto('session')
+        .values({ id: 's1', token: 't1', userId: 'cheat', expiresAt: new Date(Date.now() + 86_400_000) })
+        .execute()
+      const until = in7Days()
+      const res = await ban('cheat', asAdmin, { category: 'cheating', note: '  typed-in 180s  ', until })
+      expect(res.statusCode).toBe(200)
+      expect(JSON.parse(res.body).ban).toEqual({ category: 'cheating', until, note: 'typed-in 180s' })
+      expect(await db.selectFrom('session').select('id').where('userId', '=', 'cheat').execute()).toEqual([])
+      expect(onBanned).toHaveBeenCalledWith('cheat')
+      expect(await audit('user.ban', 'cheat')).toEqual([
+        { admin_user_id: 'admin', detail: { category: 'cheating', note: 'typed-in 180s', until } },
+      ])
+      const list = await app().inject({ method: 'GET', url: '/api/admin/users?q=cheat', headers: asAdmin })
+      expect(JSON.parse(list.body).users[0].ban).toEqual({ category: 'cheating', until, note: 'typed-in 180s' })
+    })
+
+    it("shows the ban on the profile, never the admin's note", async () => {
+      const res = await app().inject({ method: 'GET', url: '/api/users/cheat/ban', headers: asPlayer })
+      expect(res.statusCode).toBe(200)
+      expect(JSON.parse(res.body)).toEqual({ ban: { category: 'cheating', until: expect.any(String) } })
+      expect(res.body).not.toContain('180s')
+    })
+
+    it('ends a timed ban by itself at its expiry', async () => {
+      await db
+        .updateTable('user')
+        .set({ banExpires: new Date(Date.now() - 1000) })
+        .where('id', '=', 'cheat')
+        .execute()
+      const profile = await app().inject({ method: 'GET', url: '/api/users/cheat/ban', headers: asPlayer })
+      expect(JSON.parse(profile.body)).toEqual({ ban: null })
+      const list = await app().inject({ method: 'GET', url: '/api/admin/users?q=cheat', headers: asAdmin })
+      expect(JSON.parse(list.body).users[0].ban).toBeNull()
+    })
+
+    it('unbans, and audits what the ban was', async () => {
+      await ban('cheat', asAdmin, { category: 'spamming', note: null, until: null })
+      const res = await app().inject({ method: 'DELETE', url: '/api/admin/users/cheat/ban', headers: asAdmin })
+      expect(res.statusCode).toBe(200)
+      expect(JSON.parse(res.body).ban).toBeNull()
+      expect(JSON.parse((await app().inject({ method: 'GET', url: '/api/users/cheat/ban', headers: asPlayer })).body)).toEqual({
+        ban: null,
+      })
+      expect(await audit('user.unban', 'cheat')).toEqual([
+        { admin_user_id: 'admin', detail: { was: { category: 'spamming', until: null } } },
+      ])
+    })
   })
 })

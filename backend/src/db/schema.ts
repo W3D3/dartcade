@@ -398,8 +398,17 @@ export interface ProgressionBackfillTable {
   done_at: ColumnType<Date, Date | undefined, never>
 }
 
+/** better-auth's sessions (002_auth.sql); only what our own queries touch */
+export interface AuthSessionTable {
+  id: string
+  token: string
+  userId: string
+  expiresAt: Date
+}
+
 export interface Database {
   user: UserTable
+  session: AuthSessionTable
   boards: BoardsTable
   bridge_install_tokens: BridgeInstallTokensTable
   pairing_codes: PairingCodesTable

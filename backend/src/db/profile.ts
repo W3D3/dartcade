@@ -2,12 +2,15 @@
 import { sql, type Kysely, type NotNull } from 'kysely'
 import type { Database } from './schema.js'
 import { toAvatar, type Avatar } from './users.js'
+import { activeBan, type PublicBan } from '../shared/bans.js'
 
-/** Name, joined, their picture and the stored look (user.preferences.equipped). */
+/** Name, joined, their picture, the stored look (user.preferences.equipped) and the ban in force (never its note). */
 export async function profileUser(
   db: Kysely<Database>,
   userId: string,
-): Promise<{ id: string; name: string; createdAt: Date; avatar: Avatar; equipped: Record<string, unknown> | null } | undefined> {
+): Promise<
+  { id: string; name: string; createdAt: Date; avatar: Avatar; equipped: Record<string, unknown> | null; ban: PublicBan | null } | undefined
+> {
   const row = await db
     .selectFrom('user')
     .select([
@@ -18,11 +21,14 @@ export async function profileUser(
       'avatar_preset',
       'avatar_background',
       'avatar_version',
+      'banned',
+      'banReason',
+      'banExpires',
       sql<Record<string, unknown> | null>`preferences->'equipped'`.as('equipped'),
     ])
     .where('id', '=', userId)
     .executeTakeFirst()
-  return row && { id: row.id, name: row.name, createdAt: row.createdAt, avatar: toAvatar(row), equipped: row.equipped }
+  return row && { id: row.id, name: row.name, createdAt: row.createdAt, avatar: toAvatar(row), equipped: row.equipped, ban: activeBan(row) }
 }
 
 const counted = (db: Kysely<Database>) =>

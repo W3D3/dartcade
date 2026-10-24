@@ -123,6 +123,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         recent: recent.map(g => ({ ...g, finishedAt: g.finishedAt.toISOString() })),
         xp: self ? xp : null,
         collection: self ? { unlocked: unlocked.length, total: PERKS.filter(p => listed(p, unlocked)).length } : null,
+        ban: user.ban && { category: user.ban.category, until: user.ban.until?.toISOString() ?? null },
       }
     },
   )
