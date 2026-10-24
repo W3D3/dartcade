@@ -57,11 +57,28 @@ export function canRemove(lobby: Lobby, p: LobbyPerson, viewerId: string | null)
 export type BoardChoice = { boardId: string | null; label: string; detail: string; current: boolean; online: boolean | null }
 
 /**
- * What the board chip offers the viewer for this person (spec, Decisions → Boards). Your own
- * boards for someone on manual entry; once they have a board only they (a guest's adder)
- * change it, and the board's owner can take it back. Empty: no menu.
+ * The boards the lobby shares, in lobby order: ones someone sits at whose owner is in the
+ * lobby, with the owner's name. Anyone picks one for their own rows (the server's isSharedBoard).
  */
-export function boardChoices(p: LobbyPerson, viewerId: string | null, own: OwnBoard[]): BoardChoice[] {
+export function sharedBoards(lobby: Lobby): { id: string; name: string; online: boolean; ownerName: string }[] {
+  const out: { id: string; name: string; online: boolean; ownerName: string }[] = []
+  for (const p of lobby.people) {
+    if (p.boardId === null || out.some(b => b.id === p.boardId)) continue
+    const owner = lobby.people.find(o => o.userId !== null && o.userId === p.boardOwnerUserId)
+    if (owner) out.push({ id: p.boardId, name: p.boardName ?? 'Board', online: p.boardOnline, ownerName: owner.name })
+  }
+  return out
+}
+
+const onlineText = (online: boolean) => (online ? 'online' : 'offline')
+
+/**
+ * What the board chip offers the viewer for this person (spec, Decisions → Boards, relaxed by
+ * #345). For your own rows: Manual, your boards and the boards the lobby shares. For someone
+ * on Manual: your boards; the host offers theirs to anyone. A board's owner takes it back.
+ * Empty: no menu.
+ */
+export function boardChoices(lobby: Lobby, p: LobbyPerson, viewerId: string | null, own: OwnBoard[]): BoardChoice[] {
   if (viewerId === null) return []
   // A bot never has a board (the server refuses it too): nothing to offer
   if (p.bot !== null) return []
@@ -77,12 +94,24 @@ export function boardChoices(p: LobbyPerson, viewerId: string | null, own: OwnBo
       online: null,
     })
   }
-  if (controls || p.boardId === null) {
+  if (controls || p.boardId === null || isHost(lobby, viewerId)) {
     for (const b of own) {
       choices.push({
         boardId: b.id,
         label: b.name,
-        detail: b.online ? 'Your board · online' : 'Your board · offline',
+        detail: `Your board · ${onlineText(b.online)}`,
+        current: p.boardId === b.id,
+        online: b.online,
+      })
+    }
+  }
+  if (controls) {
+    for (const b of sharedBoards(lobby)) {
+      if (own.some(o => o.id === b.id)) continue
+      choices.push({
+        boardId: b.id,
+        label: b.name,
+        detail: `${b.ownerName}'s board · ${onlineText(b.online)}`,
         current: p.boardId === b.id,
         online: b.online,
       })

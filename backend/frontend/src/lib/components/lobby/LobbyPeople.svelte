@@ -45,7 +45,7 @@
   {#snippet boardOf(p: LobbyPerson)}
     <BoardChip
       person={p}
-      choices={boardChoices(p, viewerId, boards)}
+      choices={boardChoices(lobby, p, viewerId, boards)}
       onpick={(boardId: string | null) => void onupdate(p.id, { boardId })}
       onopen={onboardsopen}
     />
