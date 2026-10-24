@@ -7,6 +7,7 @@ import type { Database } from './schema.js'
 import { holeChecks, type Check } from '../shared/minigolf/checks.js'
 import { holeSchema } from '../shared/minigolf/holeSchema.js'
 import { greenhornCourse } from '../shared/minigolf/courses/greenhorn.js'
+import { kingfisherCourse } from '../shared/minigolf/courses/kingfisher.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
 import type { Hole } from '../shared/minigolf/types.js'
 
@@ -364,6 +365,7 @@ export async function publishedOfficialHoles(db: Kysely<Database>): Promise<Hole
 const OFFICIAL_SEEDS = [
   { course: testCourse, description: 'A short course to try the physics.', difficulty: 1 },
   { course: greenhornCourse, description: 'Nine friendly holes, each with one new trick to learn.', difficulty: 1 },
+  { course: kingfisherCourse, description: 'Nine classic holes that reward a true line and the right weight.', difficulty: 2 },
 ] as const
 
 /** Seeds each official code course once: a course whose id is already in the table is left alone. */

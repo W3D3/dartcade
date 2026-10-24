@@ -19,6 +19,7 @@ import {
   publishedOfficialHoles,
   type CourseContent,
 } from './minigolfCourses.js'
+import { kingfisherCourse } from '../shared/minigolf/courses/kingfisher.js'
 import { greenhornCourse } from '../shared/minigolf/courses/greenhorn.js'
 import { testCourse } from '../shared/minigolf/courses/test.js'
 import type { Hole } from '../shared/minigolf/types.js'
@@ -35,15 +36,19 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('minigolf courses and holes', ()
     await close()
   })
 
-  it('seeds the test and Greenhorn courses, published, with their holes', async () => {
+  it('seeds the official courses, published, with their holes', async () => {
     await seedOfficialCourses(db)
-    for (const seeded of [testCourse, greenhornCourse]) {
+    for (const [seeded, difficulty] of [
+      [testCourse, 1],
+      [greenhornCourse, 1],
+      [kingfisherCourse, 2],
+    ] as const) {
       const course = await getCourse(db, seeded.id)
       expect(course?.draft).toBeNull()
       expect(course?.published).toEqual({
         name: seeded.name,
         description: expect.any(String),
-        difficulty: 1,
+        difficulty,
         holeIds: seeded.holes.map(h => h.id),
       })
       for (const h of seeded.holes) {
