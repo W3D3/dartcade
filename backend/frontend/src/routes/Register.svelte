@@ -86,7 +86,7 @@
         />
         <div class="flex flex-col gap-2">
           <label for="reg-email" class="field-label">Email</label>
-          <Input id="reg-email" type="email" bind:value={email} autocomplete="email" placeholder="you@example.com" required />
+          <Input id="reg-email" type="email" bind:value={email} autocomplete="username" placeholder="you@example.com" required />
         </div>
         <div class="flex flex-col gap-2">
           <label for="reg-password" class="field-label">Password</label>

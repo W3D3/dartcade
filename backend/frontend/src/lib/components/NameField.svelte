@@ -54,7 +54,7 @@
       {id}
       bind:value
       aria-describedby={statusId}
-      autocomplete="username"
+      autocomplete="nickname"
       autocapitalize="off"
       spellcheck="false"
       maxlength={64}
