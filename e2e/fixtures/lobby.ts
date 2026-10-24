@@ -2,12 +2,17 @@ import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
 /** Each worker's admin is shared by the specs that run in it, and some specs start a game they
- *  never finish: clear any game left running, before and after, regardless of run order. */
+ *  never finish: clear any game left running, before and after, regardless of run order. The
+ *  "Game in progress" banner shows any running game, in a lobby or not, once /ws/me says so. */
 export async function endAnyRunningGame(page: Page): Promise<void> {
   await page.goto('/#/')
-  const backToGame = page.getByRole('navigation', { name: 'Main' }).getByRole('link', { name: 'Back to game' })
-  if (!(await backToGame.isVisible().catch(() => false))) return
-  await backToGame.click()
+  const returnToGame = page.getByRole('button', { name: 'Return to game' })
+  const running = await returnToGame.waitFor({ timeout: 2000 }).then(
+    () => true,
+    () => false,
+  )
+  if (!running) return
+  await returnToGame.click()
   await page.waitForURL('**/#/session/**')
   await page.getByRole('button', { name: 'End' }).click()
   await page.getByRole('dialog').getByRole('button', { name: 'End game' }).click()
@@ -23,6 +28,8 @@ export async function startGame(
   page: Page,
   opts: { mode: 'ATC' | 'X01' | 'Minigolf' | '121' | 'Higher Lower'; setup?: (page: Page) => Promise<void>; guests?: string[] },
 ) {
+  // A game still running from an earlier spec keeps Start disabled
+  await endAnyRunningGame(page)
   await page.goto('/#/')
   const main = page.locator('main')
   // The game's card (named "X01: Count down…"): the page may open on a game already, with phone
