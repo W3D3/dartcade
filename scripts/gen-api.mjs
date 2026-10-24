@@ -101,6 +101,7 @@ async function genZod() {
     WledStatusMessageSchema: ab.$defs.WledStatusMessage,
     BmRequestDataSchema: ab.$defs.BmRequestData,
     BmResponseMessageSchema: ab.$defs.BmResponseMessage,
+    BridgeUpdateStatusMessageSchema: ab.$defs.BridgeUpdateStatusMessage,
     FeedEventDataSchema: api.components.schemas.BoardEvent.properties.data,
   }
   const body =

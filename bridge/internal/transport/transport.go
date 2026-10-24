@@ -63,6 +63,8 @@ type Config struct {
 	BridgeVersion string
 	// File that keeps unacked game data across restarts (see persist.go); empty: memory only
 	OutboxPath string
+	// The bridge can update itself (bridge.update), reported in bridge.hello
+	Updatable bool
 }
 
 // Transport manages the WSS connection to the backend.
@@ -219,6 +221,7 @@ func (t *Transport) runConn(ctx context.Context, conn *websocket.Conn) {
 			Arch:          runtime.GOARCH,
 			BmVersion:     t.cfg.BMVersion,
 			BmUrl:         t.cfg.BMUrl,
+			Updatable:     &t.cfg.Updatable,
 		},
 	}
 	if err := write(ctx, conn, hello); err != nil {

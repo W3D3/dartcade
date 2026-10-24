@@ -116,7 +116,11 @@
         "os": { "type": "string" },
         "arch": { "type": "string" },
         "bm_version": { "type": "string" },
-        "bm_url": { "type": "string", "format": "uri" }
+        "bm_url": { "type": "string", "format": "uri" },
+        "updatable": {
+          "type": "boolean",
+          "description": "The bridge can update itself on a bridge.update: it runs as an installed service from the copy its install keeps. Absent (older bridges): false."
+        }
       }
     },
 
@@ -399,6 +403,34 @@
       "required": ["kind", "data"],
       "additionalProperties": false,
       "properties": { "kind": { "type": "string", "const": "wled.found" }, "data": { "$ref": "#/$defs/WledFoundData" } }
+    },
+    "BridgeUpdateData": {
+      "description": "Backend to bridge (kind bridge.update): update to this release. The bridge builds the download URL itself, verifies the signed SHA256SUMS of the release and refuses a version that isn't newer than its own.",
+      "type": "object",
+      "required": ["version"],
+      "additionalProperties": false,
+      "properties": { "version": { "type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$" } }
+    },
+    "BridgeUpdateStatusData": {
+      "type": "object",
+      "required": ["version", "phase"],
+      "additionalProperties": false,
+      "properties": {
+        "version": { "type": "string", "description": "The version being installed." },
+        "phase": {
+          "type": "string",
+          "enum": ["downloading", "verifying", "installing", "restarting", "failed"],
+          "description": "restarting: the new binary is in place and the bridge exits for its service manager to start it; it reconnects with the new version. failed: the old bridge keeps running."
+        },
+        "error": { "type": "string", "description": "Set when phase is failed." }
+      }
+    },
+    "BridgeUpdateStatusMessage": {
+      "description": "Bridge to backend, while a bridge.update runs. Not an event: no envelope, never acked or stored.",
+      "type": "object",
+      "required": ["kind", "data"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "const": "bridge.update.status" }, "data": { "$ref": "#/$defs/BridgeUpdateStatusData" } }
     },
     "WledStatusMessage": {
       "type": "object",
