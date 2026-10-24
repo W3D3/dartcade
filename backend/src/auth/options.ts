@@ -8,6 +8,7 @@ import { deleteMail, resetMail, verifyMail } from '../mail/templates.js'
 import { lastLoginHooks } from './lastLogin.js'
 import { nameHooks } from './nameHooks.js'
 import { termsGate } from './termsGate.js'
+import { bannedSignIn } from './banGate.js'
 import { runAccountCleanup } from './cleanup.js'
 
 export type AuthDeps = { db: Kysely<Database>; mail: MailConfig; mailer: Mailer | null; trustedOrigins: string[] }
@@ -66,7 +67,10 @@ export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
       },
     },
     databaseHooks: { ...nameHooks(db), ...lastLoginHooks(db) },
-    hooks: { before: termsGate },
+    hooks: { before: termsGate, after: bannedSignIn(db) },
+    // Bans go only through PUT/DELETE /api/admin/users/{id}/ban, which writes the audit row and
+    // closes the player's sockets, lobby and game; the admin plugin's own routes would skip that.
+    disabledPaths: ['/admin/ban-user', '/admin/unban-user'],
     trustedOrigins,
     // No `enabled` override: better-auth's own default (NODE_ENV === 'production' only) is what
     // we want — on for real deployments, off for dev and the e2e stack (NODE_ENV=test), where

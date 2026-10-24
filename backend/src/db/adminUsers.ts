@@ -1,7 +1,8 @@
 // Admin-only user listing and role changes (schema/api-v1.yaml, tag admin; api/adminUsers.ts).
-import type { Kysely } from 'kysely'
+import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { toAvatar, type Avatar } from './users.js'
+import { activeBan, type BanCategory, type PublicBan } from '../shared/bans.js'
 
 export type AdminUserRow = {
   id: string
@@ -12,6 +13,8 @@ export type AdminUserRow = {
   createdAt: Date
   lastLoginAt: Date | null
   avatar: Avatar
+  /** The ban in force, with the admin-only note from its audit row */
+  ban: (PublicBan & { note: string | null }) | null
 }
 
 const COLUMNS = [
@@ -27,6 +30,13 @@ const COLUMNS = [
   'avatar_color',
   'avatar_fg_color',
   'avatar_version',
+  'banned',
+  'banReason',
+  'banExpires',
+  // The note is kept only in the ban's admin_audit row, never on `user`: better-auth's own endpoints can't send it
+  sql<
+    string | null
+  >`(SELECT detail->>'note' FROM admin_audit WHERE action = 'user.ban' AND target = "user".id ORDER BY id DESC LIMIT 1)`.as('ban_note'),
 ] as const
 
 const toRow = (r: {
@@ -42,16 +52,24 @@ const toRow = (r: {
   avatar_color: string | null
   avatar_fg_color: string | null
   avatar_version: number
-}): AdminUserRow => ({
-  id: r.id,
-  name: r.name,
-  email: r.email,
-  emailVerified: r.emailVerified,
-  role: r.role === 'admin' || r.role === 'moderator' ? r.role : null,
-  createdAt: r.createdAt,
-  lastLoginAt: r.last_login_at,
-  avatar: toAvatar(r),
-})
+  banned: boolean | null
+  banReason: string | null
+  banExpires: Date | null
+  ban_note: string | null
+}): AdminUserRow => {
+  const ban = activeBan(r)
+  return {
+    id: r.id,
+    name: r.name,
+    email: r.email,
+    emailVerified: r.emailVerified,
+    role: r.role === 'admin' || r.role === 'moderator' ? r.role : null,
+    createdAt: r.createdAt,
+    lastLoginAt: r.last_login_at,
+    avatar: toAvatar(r),
+    ban: ban && { ...ban, note: r.ban_note },
+  }
+}
 
 /** Every user, newest first, at most 200; `q`, if given, matches name or email (case-insensitive, contains). */
 export async function listUsers(db: Kysely<Database>, q?: string): Promise<AdminUserRow[]> {
@@ -92,6 +110,61 @@ export async function setRole(
     if (!user) return 'not-found'
     if (role !== 'admin' && user.role === 'admin' && admins.length <= 1) return 'last-admin'
     await trx.updateTable('user').set({ role }).where('id', '=', id).execute()
+    return 'ok'
+  })
+}
+
+/**
+ * Bans a user until `until` (null: for good): signs them out everywhere and records it in
+ * admin_audit, note included. Admins can't be banned, nor can you ban yourself. Banning someone
+ * already banned replaces their ban. The live effects (sockets, lobby, games) are the caller's.
+ */
+export async function banUser(
+  db: Kysely<Database>,
+  adminUserId: string,
+  id: string,
+  ban: { category: BanCategory; note: string | null; until: Date | null },
+): Promise<'ok' | 'not-found' | 'self' | 'admin'> {
+  if (id === adminUserId) return 'self'
+  return db.transaction().execute(async trx => {
+    const user = await trx.selectFrom('user').select('role').where('id', '=', id).forUpdate().executeTakeFirst()
+    if (!user) return 'not-found'
+    if (user.role === 'admin') return 'admin'
+    await trx.updateTable('user').set({ banned: true, banReason: ban.category, banExpires: ban.until }).where('id', '=', id).execute()
+    await trx.deleteFrom('session').where('userId', '=', id).execute()
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: adminUserId,
+        action: 'user.ban',
+        target: id,
+        detail: JSON.stringify({ category: ban.category, note: ban.note, until: ban.until?.toISOString() ?? null }),
+      })
+      .execute()
+    return 'ok'
+  })
+}
+
+/** Lifts a user's ban (a timed one may have ended already) and records it in admin_audit. */
+export async function unbanUser(db: Kysely<Database>, adminUserId: string, id: string): Promise<'ok' | 'not-found'> {
+  return db.transaction().execute(async trx => {
+    const user = await trx
+      .selectFrom('user')
+      .select(['banned', 'banReason', 'banExpires'])
+      .where('id', '=', id)
+      .forUpdate()
+      .executeTakeFirst()
+    if (!user) return 'not-found'
+    await trx.updateTable('user').set({ banned: false, banReason: null, banExpires: null }).where('id', '=', id).execute()
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: adminUserId,
+        action: 'user.unban',
+        target: id,
+        detail: JSON.stringify({ was: activeBan(user) }),
+      })
+      .execute()
     return 'ok'
   })
 }

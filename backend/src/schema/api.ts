@@ -822,6 +822,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{id}/ban": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Ban an account, for good or until a date (admin)
+         * @description Signs them out everywhere, closes their sockets, takes them out of their lobby and forfeits their running game. Admins can't be banned, nor can you ban yourself (409). Replaces a ban already in force. Their past games stay.
+         */
+        put: operations["banUser"];
+        post?: never;
+        /** Lift an account's ban (admin) */
+        delete: operations["unbanUser"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/flags": {
         parameters: {
             query?: never;
@@ -1453,6 +1476,25 @@ export interface paths {
         get?: never;
         /** Wear unlocked perks on your profile card (only the kinds sent change) */
         put: operations["equipPerks"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/users/{id}/ban": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        /** Whether a player is banned: the ban's public category and end (the profile without progression) */
+        get: operations["getUserBan"];
+        put?: never;
         post?: never;
         delete?: never;
         options?: never;
@@ -2627,6 +2669,43 @@ export interface components {
              */
             lastLoginAt: string | null;
             avatar: components["schemas"]["Avatar"];
+            /** @description The ban in force, with the admin-only note; null if none */
+            ban: {
+                category: components["schemas"]["BanCategory"];
+                /**
+                 * Format: date-time
+                 * @description When it ends; null for good
+                 */
+                until: string | null;
+                /** @description The admin's own note: admins only, never on the profile or at sign-in */
+                note: string | null;
+            } | null;
+        };
+        /**
+         * @description The ban's public category; its line is BAN_CATEGORIES in backend/src/shared/bans.ts
+         * @enum {string}
+         */
+        BanCategory: "cheating" | "trolling" | "spamming" | "harassment" | "other";
+        BanUserRequest: {
+            category: components["schemas"]["BanCategory"];
+            /** @description Why, for admins only */
+            note: string | null;
+            /**
+             * Format: date-time
+             * @description When it ends, in the future; null for good
+             */
+            until: string | null;
+        };
+        UserBan: {
+            /** @description The ban in force (its public category and end); null if none */
+            ban: {
+                category: components["schemas"]["BanCategory"];
+                /**
+                 * Format: date-time
+                 * @description When it ends; null for good
+                 */
+                until: string | null;
+            } | null;
         };
         AdminUserList: {
             users: components["schemas"]["AdminUser"][];
@@ -2876,6 +2955,15 @@ export interface components {
             collection: {
                 unlocked: number;
                 total: number;
+            } | null;
+            /** @description The ban in force (its public category and end); null if none */
+            ban: {
+                category: components["schemas"]["BanCategory"];
+                /**
+                 * Format: date-time
+                 * @description When it ends; null for good
+                 */
+                until: string | null;
             } | null;
         };
         ChallengeSet: {
@@ -4886,6 +4974,64 @@ export interface operations {
             429: components["responses"]["TooManyRequests"];
         };
     };
+    banUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BanUserRequest"];
+            };
+        };
+        responses: {
+            /** @description The banned account */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    unbanUser: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The account, no longer banned */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
     listAdminFlags: {
         parameters: {
             query?: never;
@@ -6003,6 +6149,31 @@ export interface operations {
                     "application/json": components["schemas"]["ErrorResponse"];
                 };
             };
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getUserBan: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The ban in force (null if none) */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserBan"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             429: components["responses"]["TooManyRequests"];
         };
     };
