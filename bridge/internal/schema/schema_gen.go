@@ -6,6 +6,7 @@ import "encoding/json"
 import "fmt"
 import "github.com/go-viper/mapstructure/v2"
 import "reflect"
+import "regexp"
 import "strings"
 import "time"
 import "unicode/utf8"
@@ -443,6 +444,10 @@ type BridgeHelloData struct {
 
 	// Schema corresponds to the JSON schema field "schema".
 	Schema string `json:"schema" yaml:"schema" mapstructure:"schema"`
+
+	// The bridge can update itself on a bridge.update: it runs as an installed
+	// service from the copy its install keeps. Absent (older bridges): false.
+	Updatable *bool `json:"updatable,omitempty,omitzero" yaml:"updatable,omitempty" mapstructure:"updatable,omitempty"`
 }
 
 // UnmarshalJSON implements json.Unmarshaler.
@@ -478,6 +483,139 @@ func (j *BridgeHelloData) UnmarshalJSON(value []byte) error {
 		return fmt.Errorf("field %s: must be equal to %s", "schema", "adbridge/1.0")
 	}
 	*j = BridgeHelloData(plain)
+	return nil
+}
+
+// Backend to bridge (kind bridge.update): update to this release. The bridge
+// builds the download URL itself, verifies the signed SHA256SUMS of the release
+// and refuses a version that isn't newer than its own.
+type BridgeUpdateData struct {
+	// Version corresponds to the JSON schema field "version".
+	Version string `json:"version" yaml:"version" mapstructure:"version"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BridgeUpdateData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["version"]; raw != nil && !ok {
+		return fmt.Errorf("field version in BridgeUpdateData: required")
+	}
+	type Plain BridgeUpdateData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if matched, _ := regexp.MatchString(`^v[0-9]+\.[0-9]+\.[0-9]+$`, string(plain.Version)); !matched {
+		return fmt.Errorf("field %s pattern match: must match %s", "Version", `^v[0-9]+\.[0-9]+\.[0-9]+$`)
+	}
+	*j = BridgeUpdateData(plain)
+	return nil
+}
+
+type BridgeUpdateStatusData struct {
+	// Set when phase is failed.
+	Error *string `json:"error,omitempty,omitzero" yaml:"error,omitempty" mapstructure:"error,omitempty"`
+
+	// restarting: the new binary is in place and the bridge exits for its service
+	// manager to start it; it reconnects with the new version. failed: the old bridge
+	// keeps running.
+	Phase BridgeUpdateStatusDataPhase `json:"phase" yaml:"phase" mapstructure:"phase"`
+
+	// The version being installed.
+	Version string `json:"version" yaml:"version" mapstructure:"version"`
+}
+
+type BridgeUpdateStatusDataPhase string
+
+const BridgeUpdateStatusDataPhaseDownloading BridgeUpdateStatusDataPhase = "downloading"
+const BridgeUpdateStatusDataPhaseFailed BridgeUpdateStatusDataPhase = "failed"
+const BridgeUpdateStatusDataPhaseInstalling BridgeUpdateStatusDataPhase = "installing"
+const BridgeUpdateStatusDataPhaseRestarting BridgeUpdateStatusDataPhase = "restarting"
+const BridgeUpdateStatusDataPhaseVerifying BridgeUpdateStatusDataPhase = "verifying"
+
+var enumValues_BridgeUpdateStatusDataPhase = []interface{}{
+	"downloading",
+	"verifying",
+	"installing",
+	"restarting",
+	"failed",
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BridgeUpdateStatusDataPhase) UnmarshalJSON(value []byte) error {
+	var v string
+	if err := json.Unmarshal(value, &v); err != nil {
+		return err
+	}
+	var ok bool
+	for _, expected := range enumValues_BridgeUpdateStatusDataPhase {
+		if reflect.DeepEqual(v, expected) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return fmt.Errorf("invalid value (expected one of %#v): %#v", enumValues_BridgeUpdateStatusDataPhase, v)
+	}
+	*j = BridgeUpdateStatusDataPhase(v)
+	return nil
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BridgeUpdateStatusData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["phase"]; raw != nil && !ok {
+		return fmt.Errorf("field phase in BridgeUpdateStatusData: required")
+	}
+	if _, ok := raw["version"]; raw != nil && !ok {
+		return fmt.Errorf("field version in BridgeUpdateStatusData: required")
+	}
+	type Plain BridgeUpdateStatusData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = BridgeUpdateStatusData(plain)
+	return nil
+}
+
+// Bridge to backend, while a bridge.update runs. Not an event: no envelope, never
+// acked or stored.
+type BridgeUpdateStatusMessage struct {
+	// Data corresponds to the JSON schema field "data".
+	Data BridgeUpdateStatusData `json:"data" yaml:"data" mapstructure:"data"`
+
+	// Kind corresponds to the JSON schema field "kind".
+	Kind string `json:"kind" yaml:"kind" mapstructure:"kind"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BridgeUpdateStatusMessage) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in BridgeUpdateStatusMessage: required")
+	}
+	if _, ok := raw["kind"]; raw != nil && !ok {
+		return fmt.Errorf("field kind in BridgeUpdateStatusMessage: required")
+	}
+	type Plain BridgeUpdateStatusMessage
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Kind != "bridge.update.status" {
+		return fmt.Errorf("field %s: must be equal to %s", "kind", "bridge.update.status")
+	}
+	*j = BridgeUpdateStatusMessage(plain)
 	return nil
 }
 

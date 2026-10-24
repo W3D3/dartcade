@@ -126,6 +126,10 @@ export interface BridgeHelloData {
   arch: string;
   bm_version: string;
   bm_url: string;
+  /**
+   * The bridge can update itself on a bridge.update: it runs as an installed service from the copy its install keeps. Absent (older bridges): false.
+   */
+  updatable?: boolean;
 }
 /**
  * Board Manager WebSocket connection went up or down.

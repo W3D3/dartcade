@@ -15,3 +15,11 @@ func TestServiceArgs(t *testing.T) {
 		t.Fatalf("empty values must be left out, got %v", got)
 	}
 }
+
+// The unit runs apply-update with the service's own flags: it must take every one of them
+func TestApplyUpdateTakesTheServiceFlags(t *testing.T) {
+	got, err := applyUpdateStateDir(serviceArgs("/state", "http://b:3180", "wss://x/bridge", "debug"))
+	if err != nil || got != "/state" {
+		t.Fatalf("got %q, %v", got, err)
+	}
+}

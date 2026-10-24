@@ -5,12 +5,14 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
 	"time"
 
+	"dartcade/bridge/internal/update"
 	"github.com/charmbracelet/log"
 	"github.com/kardianos/service"
 )
@@ -37,7 +39,11 @@ func (p *program) Start(service.Service) error {
 		p.run(ctx)
 		if ctx.Err() == nil {
 			// the bridge ended on its own: exit non-zero so the service manager restarts it
-			log.Error("the bridge stopped unexpectedly")
+			if restarting.Load() {
+				log.Info("exiting for the service manager to start the updated bridge")
+			} else {
+				log.Error("the bridge stopped unexpectedly")
+			}
 			os.Exit(1)
 		}
 	}()
@@ -54,7 +60,9 @@ func (p *program) Stop(service.Service) error {
 }
 
 // systemdUnit replaces the library's default unit: a dynamic user that owns its state dir and
-// little else, and a short restart delay (the default waits 2 minutes).
+// little else, and a short restart delay (the default waits 2 minutes). The bridge can't write
+// its own binary, so an update it staged in its state dir is installed by ExecStopPost, which
+// runs as root ("+") once the bridge exited and re-verifies the update (update.Apply).
 const systemdUnit = `[Unit]
 Description={{Description}}
 Documentation=https://github.com/W3D3/dartcade
@@ -64,7 +72,9 @@ ConditionFileIsExecutable={{Path | cmdEscape}}
 
 [Service]
 ExecStart={{Path | cmdEscape}}{{range Arguments}} {{. | cmd}}{{end}}
-Restart=always
+ExecStopPost=+{{Path | cmdEscape}} apply-update{{range Arguments}} {{. | cmd}}{{end}}
+{{range EnvVars}}{{.}}
+{{end}}Restart=always
 RestartSec=10
 DynamicUser=yes
 StateDirectory=` + serviceName + `
@@ -92,6 +102,8 @@ func serviceConfig(args []string) *service.Config {
 			"LogOutput":              true,
 			"SystemdScript":          systemdUnit,
 		},
+		// Tells the bridge it runs as the service this install registered, so it may update itself
+		EnvVars: map[string]string{update.EnvVar: "1"},
 	}
 	if runtime.GOOS == "windows" {
 		cfg.UserName = `NT AUTHORITY\LocalService`
@@ -145,7 +157,11 @@ func runServiceCommand(action string, argv []string) error {
 	if action == "install" && *boardURL == "" {
 		*boardURL = defaultBoardURL
 	}
-	svc, err := service.New(&program{}, serviceConfig(serviceArgs(*stateDir, *boardURL, *backendURL, *logLevel)))
+	cfg := serviceConfig(serviceArgs(*stateDir, *boardURL, *backendURL, *logLevel))
+	if runtime.GOOS == "windows" {
+		cfg.Executable = windowsServiceExe(*stateDir)
+	}
+	svc, err := service.New(&program{}, cfg)
 	if err != nil {
 		return err
 	}
@@ -165,6 +181,11 @@ func runServiceCommand(action string, argv []string) error {
 		// Installing again replaces the service, so new settings take effect
 		_ = service.Control(svc, "stop")
 		_ = service.Control(svc, "uninstall")
+		if runtime.GOOS == "windows" {
+			if err := copySelf(cfg.Executable); err != nil {
+				return fmt.Errorf("copy the bridge to %s: %w", cfg.Executable, err)
+			}
+		}
 		if err := service.Control(svc, "install"); err != nil {
 			return withElevationHint(err)
 		}
@@ -178,6 +199,9 @@ func runServiceCommand(action string, argv []string) error {
 			if err := service.Control(svc, "uninstall"); err != nil {
 				return withElevationHint(err)
 			}
+		}
+		if runtime.GOOS == "windows" {
+			_ = os.Remove(cfg.Executable)
 		}
 		if *purge {
 			if err := os.RemoveAll(*stateDir); err != nil {
@@ -195,6 +219,49 @@ func runServiceCommand(action string, argv []string) error {
 		}
 	}
 	return nil
+}
+
+// windowsServiceExe is the copy of the bridge a Windows service runs: in its state dir, which
+// the service account (LocalService) may write, so it can update itself. The copy in Program
+// Files stays the administrator's: no administrator ever runs this one.
+func windowsServiceExe(stateDir string) string {
+	return filepath.Join(stateDir, serviceName+".exe")
+}
+
+// copySelf copies the running binary to dst (a temp file renamed over it). A dst that still runs
+// is renamed away first, which Windows allows (the bridge removes it when it next starts).
+func copySelf(dst string) error {
+	self, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	in, err := os.Open(self)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	tmp := dst + ".tmp"
+	out, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o755)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(out, in)
+	if cerr := out.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		os.Remove(dst + ".old")
+		if rerr := os.Rename(dst, dst+".old"); rerr != nil && !os.IsNotExist(rerr) {
+			err = rerr
+		}
+	}
+	if err == nil {
+		err = os.Rename(tmp, dst)
+	}
+	if err != nil {
+		os.Remove(tmp)
+	}
+	return err
 }
 
 func withElevationHint(err error) error {

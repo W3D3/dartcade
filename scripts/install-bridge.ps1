@@ -39,7 +39,9 @@ if ($Uninstall) {
   return
 }
 
-# A running service holds its .exe open, so take it down before replacing the file.
+# A running service holds its .exe open, so take it down before replacing the file. (Installs
+# since the Update bridge button run a copy in ProgramData instead, which the service updates
+# itself; the install below refreshes that copy from this one.)
 if (Test-Path $exe) { Invoke-Bridge uninstall }
 
 $asset = 'dartcade-bridge_windows_amd64.exe'
