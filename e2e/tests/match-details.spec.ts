@@ -43,6 +43,18 @@ async function openNewestGame(page: Page): Promise<void> {
 
 test('a finished game opens its details from History', async ({ authedPage: page }) => {
   await finishSoloX01(page)
+
+  // Progression is off for players by default: a badge has no profile card, and a click on it
+  // stays on History rather than falling through to the row's link
+  await page.goto('/#/history')
+  const row = page
+    .getByRole('row')
+    .filter({ has: page.getByRole('link', { name: /X01.*details/ }) })
+    .first()
+  await expect(row.getByRole('button')).toHaveCount(0)
+  await row.locator('span.rounded-full').first().click()
+  await expect(page).toHaveURL(/#\/history$/)
+
   await openNewestGame(page)
   await expect(page.getByRole('heading', { name: 'X01' })).toBeVisible()
   await expect(page.getByText('3-dart average')).toBeVisible()

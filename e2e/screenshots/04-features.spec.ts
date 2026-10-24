@@ -97,8 +97,8 @@ test('match details: stats, charts and the heatmap', async ({ browser }) => {
     await page.goto('/#/history')
     // The row's corner: its middle may be a player's profile button
     await page
-      .getByRole('listitem')
-      .filter({ hasText: 'Gerwyn' })
+      .locator('tr, li')
+      .filter({ visible: true, hasText: 'Gerwyn' })
       .first()
       .getByRole('link', { name: /X01.*details/ })
       .click({ position: { x: 8, y: 8 } })
@@ -124,11 +124,27 @@ test('history: compact stats on a phone, the page scrolled', async ({ browser })
   ] as const) {
     const { ctx, page } = await open(browser, 'admin', view)
     await page.goto('/#/history')
-    await expect(page.getByRole('link', { name: /details/ }).first()).toBeVisible()
+    await expect(
+      page
+        .getByRole('link', { name: /details/ })
+        .filter({ visible: true })
+        .first(),
+    ).toBeVisible()
     await shot(page, `history/history-${suffix}.png`)
     await openProfile(page.locator('main'), 'Luke')
     await shot(page, `history/history-profile-${suffix}.png`)
     await page.keyboard.press('Escape')
+    if (suffix === 'desktop') {
+      // Players dragged narrower, giving Game the room (the handle on its header's right edge), with the Reset columns button it brings
+      const handle = (await page.getByRole('separator', { name: 'Resize Players' }).boundingBox())!
+      await page.mouse.move(handle.x + handle.width / 2, handle.y + handle.height / 2)
+      await page.mouse.down()
+      await page.mouse.move(handle.x - 70, handle.y + handle.height / 2, { steps: 6 })
+      await page.mouse.up()
+      await expect(page.getByRole('button', { name: 'Reset columns' })).toBeVisible()
+      await shot(page, 'history/history-resized-desktop.png')
+      await page.getByRole('button', { name: 'Reset columns' }).click()
+    }
     if (suffix === 'phone') {
       await page
         .getByRole('link', { name: /details/ })

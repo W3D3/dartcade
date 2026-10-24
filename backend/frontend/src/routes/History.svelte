@@ -1,12 +1,25 @@
 <script lang="ts">
   import { onMount } from 'svelte'
-  import { ChevronRight, LoaderCircle } from '@lucide/svelte'
+  import { MediaQuery } from 'svelte/reactivity'
+  import { ChevronRight, LoaderCircle, RotateCcw } from '@lucide/svelte'
+  import { createColumnHelper, renderSnippet, type ColumnSizingState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
+  import { DataTable, type Features } from '$lib/components/ui/data-table/index.js'
   import { api, type GameInfo, type GameStats, type GameSummary } from '$lib/api'
   import { getGameView } from '$lib/gameViews'
-  import { formatWhen, historyStat, playerBadges, resultLabel, rulesLine, statTiles, type PlayerBadge } from '$lib/history'
+  import {
+    formatWhen,
+    historyStat,
+    loadColumnSizing,
+    playerBadges,
+    resultLabel,
+    rulesLine,
+    saveColumnSizing,
+    statTiles,
+    type PlayerBadge,
+  } from '$lib/history'
   import { createRequestGuard } from '$lib/requestGuard'
 
   // Guards against a stale response winning a race: a quick filter switch leaves the
@@ -29,6 +42,38 @@
   const tiles = $derived(stats ? statTiles(stats, mode, m => getGameView(m).shortTitle) : [])
   const tilesLabel = $derived(`${mode === null ? 'Your' : getGameView(mode).title} stats, last ${stats?.days ?? 30} days`)
   const filters = $derived([{ id: null, name: 'All' }, ...modes.map(m => ({ id: m.id, name: getGameView(m.id).title }))])
+
+  // Desktops: Game takes the width the others leave and truncates. Players fits three badges up
+  // to 1440px and four from there, where the Board column joins. A column resized by dragging
+  // keeps its width on this device until "Reset columns".
+  const wide = new MediaQuery('min-width: 1440px')
+  const storage = typeof localStorage === 'undefined' ? null : localStorage
+  let columnSizing = $state<ColumnSizingState>(loadColumnSizing(storage))
+  $effect(() => saveColumnSizing(storage, columnSizing))
+
+  const helper = createColumnHelper<Features, GameSummary>()
+  const columns = $derived(
+    helper.columns([
+      helper.display({ id: 'when', header: 'When', size: 110, minSize: 90, cell: c => renderSnippet(whenCell, c.row.original) }),
+      helper.display({ id: 'game', header: 'Game', size: 160, cell: c => renderSnippet(gameCell, c.row.original) }),
+      helper.display({
+        id: 'players',
+        header: 'Players',
+        size: wide.current ? 430 : 320,
+        minSize: 120,
+        cell: c => renderSnippet(playersCell, c.row.original),
+      }),
+      helper.display({ id: 'result', header: 'Result', size: 124, minSize: 90, cell: c => renderSnippet(resultCell, c.row.original) }),
+      helper.display({ id: 'stat', header: 'Key stat', size: 104, minSize: 80, cell: c => renderSnippet(statCell, c.row.original) }),
+      helper.display({ id: 'board', header: 'Board', size: 132, minSize: 80, cell: c => renderSnippet(boardCell, c.row.original) }),
+      helper.display({ id: 'open', header: '', size: 40, enableResizing: false, cell: () => renderSnippet(chevronCell) }),
+    ]),
+  )
+  const rowLabel = (g: GameSummary) => {
+    const when = formatWhen(g.finishedAt, now)
+    const result = resultLabel(g)
+    return `${getGameView(g.mode).title}, ${when.day} ${when.time}${result.text ? `, ${result.text}` : ''}: details`
+  }
 
   async function loadGames(cursor: string | null, token: number) {
     const query = { ...(mode !== null && { mode }), ...(cursor !== null && { cursor }) }
@@ -85,11 +130,13 @@
   })
 </script>
 
-<!-- A player in throw order, opening their profile; your own badge is outlined in the accent colour -->
+<!-- A player in throw order, opening their profile; your own badge is outlined in the accent colour.
+     pointer-events-auto: a badge with no profile card (progression off, a guest, a bot) takes its
+     own click and does nothing, rather than letting it fall through to the row's link. -->
 {#snippet badge(p: PlayerBadge)}
   <ProfilePopover userId={p.userId} name={p.name}>
     <span
-      class="inline-flex h-[28px] items-center gap-[5px] whitespace-nowrap rounded-full border py-0 pl-[5px] pr-[8px] text-[13px] lg:h-[30px] lg:gap-[6px] lg:pl-[7px] lg:pr-[10px] {p.me
+      class="pointer-events-auto inline-flex h-[28px] items-center gap-[5px] whitespace-nowrap rounded-full border py-0 pl-[5px] pr-[8px] text-[13px] lg:h-[30px] lg:gap-[6px] lg:pl-[7px] lg:pr-[10px] {p.me
         ? 'border-accent bg-accent-tint font-bold text-text'
         : 'border-line-2 bg-surface-inset font-medium text-ink-2'}"
     >
@@ -123,6 +170,84 @@
     class="{className} inline-flex h-7 items-center rounded-full bg-live-soft px-3 text-[13px] font-bold uppercase tracking-[0.06em] text-live-text"
     >Invalidated</span
   >
+{/snippet}
+
+{#snippet status(g: GameSummary, className = '')}
+  {#if g.invalidated}{@render invalidatedPill(className)}{:else}{@render resultPill(resultLabel(g), className)}{/if}
+{/snippet}
+
+<!-- The desktop table's cells -->
+{#snippet whenCell(g: GameSummary)}
+  {@const when = formatWhen(g.finishedAt, now)}
+  <span class="flex flex-col gap-0.5">
+    <span class="truncate text-[15px] font-semibold">{when.day}</span>
+    <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
+  </span>
+{/snippet}
+
+{#snippet gameCell(g: GameSummary)}
+  {@const rules = rulesLine(g)}
+  <span class="flex min-w-0 flex-col gap-0.5" title={rules || undefined}>
+    <span class="truncate font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]">{getGameView(g.mode).title}</span>
+    <span class="truncate text-[13px] text-text-muted">{rules}</span>
+  </span>
+{/snippet}
+
+{#snippet playersCell(g: GameSummary)}
+  <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+    {#each playerBadges(g) as p (p.n)}{@render badge(p)}{/each}
+  </span>
+{/snippet}
+
+{#snippet resultCell(g: GameSummary)}
+  {@render status(g)}
+{/snippet}
+
+{#snippet statCell(g: GameSummary)}
+  {@const key = historyStat(g)}
+  {#if key}
+    <span class="flex flex-col gap-0.5">
+      <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>
+      <span class="truncate text-[12px] text-text-dim">{key.label}</span>
+    </span>
+  {/if}
+{/snippet}
+
+{#snippet boardCell(g: GameSummary)}
+  <span class="block truncate text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
+{/snippet}
+
+{#snippet chevronCell()}
+  <ChevronRight size={18} class="text-text-dim" />
+{/snippet}
+
+<!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
+{#snippet narrowRow(g: GameSummary)}
+  {@const when = formatWhen(g.finishedAt, now)}
+  {@const key = historyStat(g)}
+  {@const rules = rulesLine(g)}
+  <div class="flex flex-col gap-1 py-3 pl-4 pr-10 text-text">
+    <div class="flex items-baseline justify-between gap-3">
+      <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
+        <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]">{getGameView(g.mode).title}</span
+        >
+        <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
+      </span>
+      {@render status(g, 'shrink-0')}
+    </div>
+    <div class="flex items-baseline justify-between gap-3">
+      <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
+        >{#each playerBadges(g) as p (p.n)}{@render badge(p)}{/each}</span
+      >
+      {#if key}
+        <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"
+          ><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span
+        >
+      {/if}
+    </div>
+    {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
+    <ChevronRight size={18} class="absolute right-3 top-1/2 -translate-y-1/2 text-text-dim" />
+  </div>
 {/snippet}
 
 <Layout title="History">
@@ -175,97 +300,38 @@
       </dl>
     {/if}
 
-    <section aria-label="Matches" class="flex shrink-0 flex-col overflow-hidden card">
-      <!-- Desktops only: the column headings, and the Board column -->
-      <div
-        class="hidden h-11 items-center gap-4 border-b border-line-2 px-[22px] pr-12 text-[12px] label-caps text-text-dim xl:grid xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px]"
-      >
-        <span>When</span><span>Game</span><span>Players</span><span>Result</span><span>Key stat</span><span>Board</span>
-      </div>
-
+    <section aria-label="Matches" class="flex shrink-0 flex-col gap-3">
+      {#if Object.keys(columnSizing).length > 0}
+        <button
+          type="button"
+          onclick={() => (columnSizing = {})}
+          class="hidden h-9 items-center gap-1.5 self-end rounded-lg border border-line-strong bg-transparent px-3 text-[14px] text-ink-2 hover:text-text lg:inline-flex"
+          ><RotateCcw size={14} /> Reset columns</button
+        >
+      {/if}
       {#if loading}
-        <p class="m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
+        <p class="card m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
           <LoaderCircle size={18} class="animate-spin" /> Loading matches…
         </p>
       {:else if error}
-        <p role="alert" class="m-0 px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
-      {:else if games.length === 0}
-        <p class="m-0 px-[22px] py-10 text-[15px] text-text-muted">No matches in this mode yet.</p>
+        <p role="alert" class="card m-0 px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
       {:else}
-        <ul class="m-0 list-none p-0">
-          {#each games as g (g.id)}
-            {@const when = formatWhen(g.finishedAt, now)}
-            {@const result = resultLabel(g)}
-            {@const key = historyStat(g)}
-            {@const badges = playerBadges(g)}
-            {@const rules = rulesLine(g)}
-            <!-- The link covers the row from underneath, so the badges' profile buttons sit beside it, not inside it -->
-            <li class="relative border-b border-line hover:bg-surface-active">
-              <a
-                href="#/history/{g.id}"
-                aria-label="{getGameView(g.mode).title}, {when.day} {when.time}{result.text ? `, ${result.text}` : ''}: details"
-                class="absolute inset-0 outline-offset-[-2px]"
-              ></a>
-              <div
-                class="pointer-events-none relative px-[22px] pr-12 py-3 lg:min-h-[68px] lg:py-0 text-text [&_button]:pointer-events-auto"
-              >
-                <!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
-                <div class="flex flex-col gap-1 lg:hidden">
-                  <div class="flex items-baseline justify-between gap-3">
-                    <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
-                      <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]"
-                        >{getGameView(g.mode).title}</span
-                      >
-                      <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
-                    </span>
-                    {#if g.invalidated}{@render invalidatedPill('shrink-0')}{:else}{@render resultPill(result, 'shrink-0')}{/if}
-                  </div>
-                  <div class="flex items-baseline justify-between gap-3">
-                    <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
-                      >{#each badges as p (p.n)}{@render badge(p)}{/each}</span
-                    >
-                    {#if key}
-                      <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"
-                        ><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span
-                      >
-                    {/if}
-                  </div>
-                  {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
-                </div>
-
-                <!-- lg and up: a column grid; tablets (up to xl) leave out the Board column -->
-                <div
-                  class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[110px_minmax(0,1fr)_200px_110px_90px] xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4"
-                >
-                  <span class="flex flex-col gap-0.5">
-                    <span class="text-[15px] font-semibold">{when.day}</span>
-                    <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
-                  </span>
-                  <span class="flex min-w-0 flex-col gap-0.5">
-                    <span class="font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]"
-                      >{getGameView(g.mode).title}</span
-                    >
-                    <span class="text-[13px] text-text-muted">{rules}</span>
-                  </span>
-                  <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-2.5">
-                    {#each badges as p (p.n)}{@render badge(p)}{/each}
-                  </span>
-                  <span
-                    >{#if g.invalidated}{@render invalidatedPill()}{:else}{@render resultPill(result)}{/if}</span
-                  >
-                  <span class="flex flex-col gap-0.5">
-                    {#if key}
-                      <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>
-                      <span class="text-[12px] text-text-dim">{key.label}</span>
-                    {/if}
-                  </span>
-                  <span class="hidden xl:inline text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
-                </div>
-                <ChevronRight size={18} class="absolute right-4 top-1/2 -translate-y-1/2 text-text-dim" />
-              </div>
-            </li>
-          {/each}
-        </ul>
+        <DataTable
+          data={games}
+          {columns}
+          rowHref={(g: GameSummary) => `#/history/${g.id}`}
+          {rowLabel}
+          resizable
+          growColumn="game"
+          bind:columnSizing
+          columnVisibility={{ board: wide.current }}
+          {narrowRow}
+          tableClass=""
+          headClass="h-11 px-3 first:pl-[22px] text-[12px] font-normal label-caps text-text-dim"
+          cellClass="h-[68px] px-3 py-2.5 first:pl-[22px] text-text"
+        >
+          {#snippet emptyState()}No matches in this mode yet.{/snippet}
+        </DataTable>
         {#if nextCursor !== null}
           <div class="flex flex-col items-center gap-2 p-4">
             <button
