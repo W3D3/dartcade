@@ -11,6 +11,8 @@
   import { verifyCallback, rememberCredentials } from '$lib/verify'
   import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
   import AuthFooter from '$lib/components/AuthFooter.svelte'
+  import BanNotice from '$lib/components/BanNotice.svelte'
+  import { banFromSignIn, type Ban } from '$lib/bans'
 
   const justReset = new URLSearchParams($querystring ?? '').get('reset') === '1'
   const justDeleted = new URLSearchParams($querystring ?? '').get('deleted') === '1'
@@ -19,11 +21,13 @@
   let password = $state('')
   let keepSignedIn = $state(true)
   let error = $state('')
+  let ban = $state<Ban | null>(null)
   let loading = $state(false)
 
   async function submit() {
     loading = true
     error = ''
+    ban = null
     try {
       const { error: err } = await authClient.signIn.email({ email, password })
       if (err) {
@@ -36,6 +40,8 @@
           void push(`/verify?email=${encodeURIComponent(email)}&sent=1`)
           return
         }
+        ban = banFromSignIn(err)
+        if (ban) return
         error = err.message ?? 'Invalid credentials'
         return
       }
@@ -112,7 +118,9 @@
         </label>
       </div>
 
-      {#if error}
+      {#if ban}
+        <BanNotice {ban} contactEmail={$authInfo.contactEmail} />
+      {:else if error}
         <ErrorText>{error}</ErrorText>
       {/if}
 

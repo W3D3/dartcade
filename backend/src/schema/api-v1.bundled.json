@@ -2318,6 +2318,92 @@
         }
       }
     },
+    "/api/admin/users/{id}/ban": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/AdminUserId"
+        }
+      ],
+      "put": {
+        "operationId": "banUser",
+        "summary": "Ban an account, for good or until a date (admin)",
+        "description": "Signs them out everywhere, closes their sockets, takes them out of their lobby and forfeits their running game. Admins can't be banned, nor can you ban yourself (409). Replaces a ban already in force. Their past games stay.",
+        "tags": [
+          "admin"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BanUserRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The banned account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUser"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      },
+      "delete": {
+        "operationId": "unbanUser",
+        "summary": "Lift an account's ban (admin)",
+        "tags": [
+          "admin"
+        ],
+        "responses": {
+          "200": {
+            "description": "The account, no longer banned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AdminUser"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/admin/flags": {
       "get": {
         "operationId": "listAdminFlags",
@@ -3839,6 +3925,48 @@
                 }
               }
             }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/users/{id}/ban": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        }
+      ],
+      "get": {
+        "operationId": "getUserBan",
+        "summary": "Whether a player is banned: the ban's public category and end (the profile without progression)",
+        "tags": [
+          "users"
+        ],
+        "responses": {
+          "200": {
+            "description": "The ban in force (null if none)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserBan"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
@@ -8038,7 +8166,8 @@
           "role",
           "createdAt",
           "lastLoginAt",
-          "avatar"
+          "avatar",
+          "ban"
         ],
         "additionalProperties": false,
         "properties": {
@@ -8076,6 +8205,100 @@
           },
           "avatar": {
             "$ref": "#/components/schemas/Avatar"
+          },
+          "ban": {
+            "description": "The ban in force, with the admin-only note; null if none",
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "category",
+              "until",
+              "note"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "$ref": "#/components/schemas/BanCategory"
+              },
+              "until": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "When it ends; null for good"
+              },
+              "note": {
+                "type": "string",
+                "nullable": true,
+                "description": "The admin's own note: admins only, never on the profile or at sign-in"
+              }
+            }
+          }
+        }
+      },
+      "BanCategory": {
+        "type": "string",
+        "enum": [
+          "cheating",
+          "trolling",
+          "spamming",
+          "harassment",
+          "other"
+        ],
+        "description": "The ban's public category; its line is BAN_CATEGORIES in backend/src/shared/bans.ts"
+      },
+      "BanUserRequest": {
+        "type": "object",
+        "required": [
+          "category",
+          "note",
+          "until"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/BanCategory"
+          },
+          "note": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1000,
+            "description": "Why, for admins only"
+          },
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When it ends, in the future; null for good"
+          }
+        }
+      },
+      "UserBan": {
+        "type": "object",
+        "required": [
+          "ban"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "ban": {
+            "description": "The ban in force (its public category and end); null if none",
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "category",
+              "until"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "$ref": "#/components/schemas/BanCategory"
+              },
+              "until": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "When it ends; null for good"
+              }
+            }
           }
         }
       },
@@ -8717,7 +8940,8 @@
           "playsMost",
           "recent",
           "xp",
-          "collection"
+          "collection",
+          "ban"
         ],
         "additionalProperties": false,
         "properties": {
@@ -8914,6 +9138,27 @@
               "total": {
                 "type": "integer",
                 "minimum": 0
+              }
+            }
+          },
+          "ban": {
+            "description": "The ban in force (its public category and end); null if none",
+            "type": "object",
+            "nullable": true,
+            "required": [
+              "category",
+              "until"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "category": {
+                "$ref": "#/components/schemas/BanCategory"
+              },
+              "until": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true,
+                "description": "When it ends; null for good"
               }
             }
           }

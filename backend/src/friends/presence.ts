@@ -50,6 +50,15 @@ export class Presence {
     )
   }
 
+  /** Offline now, skipping the grace (a banned account); sockets closing after this change nothing. */
+  drop(userId: string): void {
+    if (this.closed || !this.isOnline(userId)) return
+    clearTimeout(this.leaving.get(userId))
+    this.leaving.delete(userId)
+    this.sockets.delete(userId)
+    this.onChange(userId)
+  }
+
   /** The server stops: clears the grace timers; sockets closing after this start none. */
   close(): void {
     this.closed = true

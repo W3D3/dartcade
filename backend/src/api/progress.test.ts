@@ -70,6 +70,7 @@ beforeEach(() => {
       createdAt: new Date('2026-08-01T00:00:00Z'),
       avatar: { kind: 'preset', preset: 'trophy', color: '#2d6cdf', fgColor: '#ffffff' },
       equipped: { colors: 'colors.ice' },
+      ban: null,
     })
   vi.mocked(modeCounts)
     .mockReset()
@@ -215,6 +216,14 @@ describe('/api/progress', () => {
     })
   })
 
+  it("shows a banned player's ban: its category and end", async () => {
+    const base = await vi.mocked(profileUser).getMockImplementation()?.(undefined as never, 'anna')
+    if (!base) throw new Error('no profile mock')
+    vi.mocked(profileUser).mockResolvedValue({ ...base, ban: { category: 'cheating', until: new Date('2026-11-01T00:00:00Z') } })
+    const res = await app().inject({ method: 'GET', url: '/api/users/anna/profile' })
+    expect(JSON.parse(res.body).ban).toEqual({ category: 'cheating', until: '2026-11-01T00:00:00.000Z' })
+  })
+
   it("shows a friend's streak", async () => {
     vi.mocked(areFriends).mockResolvedValue(true)
     const res = await app().inject({ method: 'GET', url: '/api/users/anna/profile' })
@@ -228,6 +237,7 @@ describe('/api/progress', () => {
       createdAt: new Date(),
       avatar: { kind: 'none' },
       equipped: null,
+      ban: null,
     })
     const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })
     expect(JSON.parse(res.body)).toMatchObject({

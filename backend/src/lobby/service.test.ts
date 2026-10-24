@@ -6,6 +6,7 @@ import { insertBoard } from '../db/queries.js'
 import { boardInOpenLobby } from '../db/lobbies.js'
 import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { setAccountCleanup, runAccountCleanup, cleanUpAccount } from '../auth/cleanup.js'
+import { applyBan } from '../auth/ban.js'
 import { LobbyHub } from './hub.js'
 import { LobbyService } from './service.js'
 import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
@@ -1431,6 +1432,31 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
     function wireCleanup() {
       setAccountCleanup(userId => cleanUpAccount({ engine, lobbies }, userId))
     }
+
+    it("a ban closes the player's sockets, takes them out of the lobby and forfeits their game", async () => {
+      const { id, code } = await lobbies.create('chris')
+      await lobbies.join('lena', id, code)
+      await lobbies.update('chris', id, { nextGame: { gameId: 'x01', config: { startScore: 101 } } })
+      const { sessionId } = await lobbies.start('chris', id, true)
+      const chrisLobby = sock()
+      const chrisMe = sock()
+      const lenaLobby = sock()
+      hub.addLobbySocket(id, chrisLobby, 'chris')
+      hub.addLobbySocket(id, lenaLobby, 'lena')
+      hub.addMeSocket('chris', chrisMe, await lobbies.meMessage('chris'), friendsMsg)
+      const goOffline = vi.fn()
+
+      await applyBan({ engine, lobbies, closeSockets: (u, c, r) => hub.closeUser(u, c, r), goOffline }, 'chris')
+      await lobbies.whenIdle(id)
+
+      expect(chrisLobby.close).toHaveBeenCalledWith(4401, 'banned')
+      expect(chrisMe.close).toHaveBeenCalledWith(4401, 'banned')
+      expect(lenaLobby.close).not.toHaveBeenCalled()
+      expect(goOffline).toHaveBeenCalledWith('chris')
+      expect(await lobbies.current('chris')).toBeNull()
+      expect((await lobbies.view(id))?.hostUserId).toBe('lena')
+      expect(engine.getSession(sessionId)?.forfeited).toEqual([0])
+    })
 
     it("a playing host's cleanup leaves the lobby and forfeits their game: the other member becomes host, lobby stays open", async () => {
       const { id, code } = await lobbies.create('chris')

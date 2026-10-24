@@ -21,6 +21,7 @@ function user(id: string): AdminUser {
     createdAt: '2026-01-01T00:00:00.000Z',
     lastLoginAt: null,
     avatar: { kind: 'none' },
+    ban: null,
   }
 }
 
