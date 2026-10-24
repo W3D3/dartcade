@@ -1,5 +1,6 @@
-// Admin user management: list accounts, set their role (admin, moderator, none), give them XP (schema/api-v1.yaml, tag admin).
+// Admin user management: list accounts, set their role (admin, moderator, none), give them XP, ban them (schema/api-v1.yaml, tag admin).
 import { api, type AdminUser } from '$lib/api'
+import type { BanCategory } from '$shared/bans.js'
 import { createRequestGuard } from '$lib/requestGuard'
 import { xpForLevel } from '$shared/progression.js'
 
@@ -110,6 +111,21 @@ export const XP_QUICK_AMOUNTS = [
 export function grantSummary(g: XpGrant): string {
   const n = g.unlocked.length
   return `Now level ${g.level} · ${g.xp.toLocaleString('en-US')} XP · ${n} new unlock${n === 1 ? '' : 's'}`
+}
+
+/** Ban an account (until: ISO end, null for good). On a refusal (yourself, an admin, a past end), the message to show inline. */
+export async function banUser(
+  id: string,
+  body: { category: BanCategory; note: string | null; until: string | null },
+): Promise<{ user: AdminUser } | { error: string }> {
+  const res = await api.PUT('/api/admin/users/{id}/ban', { params: { path: { id } }, body })
+  return res.data ? { user: res.data } : { error: res.error.error }
+}
+
+/** Lift an account's ban. */
+export async function unbanUser(id: string): Promise<{ user: AdminUser } | { error: string }> {
+  const res = await api.DELETE('/api/admin/users/{id}/ban', { params: { path: { id } } })
+  return res.data ? { user: res.data } : { error: res.error.error }
 }
 
 /** "17 Oct 2026", for the joined column. Blank for an unparsable date. */
