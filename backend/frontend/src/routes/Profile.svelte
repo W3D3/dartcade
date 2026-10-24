@@ -30,6 +30,8 @@
   import { ordinal } from '$lib/fmt'
   import { PERKS, PERK_KINDS, listed } from '$shared/progression.js'
   import { rank } from '$shared/ranked.js'
+  import BanNotice from '$lib/components/BanNotice.svelte'
+  import { fetchBan, type Ban } from '$lib/bans'
 
   let { params = {} }: { params?: { id?: string } } = $props()
 
@@ -40,6 +42,14 @@
   let status = $derived(userId ? statusOf(userId) : null)
   $effect(() => {
     if (userId) refreshProfile(userId)
+  })
+
+  // Without progression there's no profile to load, but a ban still shows
+  let banOnly = $state<Ban | null>(null)
+  $effect(() => {
+    const id = userId
+    banOnly = null
+    if (id && !$progression) void fetchBan(id).then(b => (banOnly = id === userId ? b : banOnly))
   })
 
   const STATUS_TEXT = { online: 'Online', lobby: 'In a lobby', playing: 'Playing', offline: 'Offline' } as const
@@ -58,6 +68,7 @@
     class="flex flex-grow min-h-0 flex-col gap-4 md:gap-6 box-border min-w-0 overflow-y-auto px-4 pt-5 pb-6 md:px-[30px] md:py-7 xl:px-11 xl:py-9"
   >
     {#if !$progression}
+      {#if banOnly}<BanNotice ban={banOnly} />{/if}
       <p class="m-0 text-[15px] text-text-muted">Profiles aren't on for your account yet.</p>
     {:else if !profile || !$profile}
       <div class="flex justify-center py-10 text-text-muted"><LoaderCircle class="animate-spin" size={24} aria-label="Loading" /></div>
@@ -113,6 +124,7 @@
                 {#if dot}<span class="text-text-muted">{STATUS_TEXT[dot]}</span>{/if}
               </div>
               <div class="text-[13px] text-text-muted">{self ? 'You · m' : 'M'}ember since {since(p.memberSince)}</div>
+              {#if p.ban}<BanNotice ban={p.ban} class="self-start" />{/if}
             </div>
             {#if self}
               <div class="flex flex-wrap gap-2">
