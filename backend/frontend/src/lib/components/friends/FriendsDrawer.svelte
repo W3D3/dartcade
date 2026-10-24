@@ -43,7 +43,8 @@
 <Dialog.Root bind:open={() => true, open => !open && close()}>
   <div role="presentation" class="fixed inset-y-0 left-[88px] xl:left-[248px] right-0 z-40 bg-[rgba(8,9,7,0.55)]" onclick={close}></div>
 
-  <Dialog.Content aria-label="Friends" interactOutsideBehavior="ignore" preventScroll={false}>
+  <!-- No focus trap: the account menu opens over the drawer and must stay reachable. -->
+  <Dialog.Content aria-label="Friends" interactOutsideBehavior="ignore" preventScroll={false} trapFocus={false}>
     {#snippet child({ props })}
       <div
         {...props}
