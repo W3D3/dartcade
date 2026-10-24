@@ -455,7 +455,7 @@
       </div>
       <div
         bind:this={eventsEl}
-        class="h-[240px] overflow-y-auto scrollbar-themed box-border p-4 rounded-[10px]
+        class="{$isTablet ? 'h-[240px]' : 'flex-grow min-h-[200px]'} overflow-y-auto scrollbar-themed box-border p-4 rounded-[10px]
              border border-line-2 bg-bg font-mono text-[13px] leading-[1.8]"
       >
         {#each events as ev, i (i)}
@@ -524,7 +524,7 @@
       </Button>
     </header>
 
-    <div class="flex flex-col xl:flex-row gap-4 md:gap-6 xl:flex-grow xl:min-h-0 xl:items-start">
+    <div class="flex flex-col xl:flex-row gap-4 md:gap-6 xl:flex-grow xl:min-h-0">
       <!-- Board grid; tablets add the pairing card to it -->
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 xl:flex-grow xl:grid-rows-2 content-start">
         {#each boards as board (board.id)}

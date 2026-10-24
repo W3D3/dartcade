@@ -25,9 +25,9 @@
     { icon: ChartColumn, title: 'Stats from every dart', text: 'Averages, checkout rate and heatmaps build up on their own.' },
   ])
   const steps = [
-    { title: 'Install the Dartcade bridge', text: 'On the computer that runs your Autodarts Board Manager, same network.' },
-    { title: 'Copy the pairing code', text: 'The bridge prints an 8-character code in its log. A new one comes every 10 minutes.' },
-    { title: 'Enter it here', text: "Name the board and you're done." },
+    { title: 'Pick your system', text: 'Linux, macOS or Windows, on the computer that runs your Autodarts Board Manager.' },
+    { title: 'Run one command', text: 'It installs the Dartcade bridge and signs it in to your account. No code to type.' },
+    { title: 'Name your board', text: 'It shows up here as soon as the bridge connects.' },
   ]
 
   let code = $state('')
@@ -78,8 +78,14 @@
         </li>
       {/each}
     </ol>
+    <button
+      type="button"
+      onclick={() => onpair('')}
+      class="h-[52px] px-[22px] self-start rounded-[10px] border-0 bg-accent text-accent-fg font-display font-bold text-[20px]
+             tracking-[0.06em] uppercase cursor-pointer transition-colors hover:bg-accent-hover">Set up a board</button
+    >
     <a href={BRIDGE_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer" class="self-start text-[14px] font-semibold no-underline"
-      >Download the bridge ›</a
+      >More install options ›</a
     >
     <form
       class="flex flex-col gap-2"
@@ -88,7 +94,7 @@
         onpair(normalizePairingCode(code))
       }}
     >
-      <label for="empty-pair-code" class="text-[14px] font-semibold">Pairing code</label>
+      <label for="empty-pair-code" class="text-[14px] font-semibold">Already have a pairing code?</label>
       <div class="flex gap-2">
         <Input
           id="empty-pair-code"

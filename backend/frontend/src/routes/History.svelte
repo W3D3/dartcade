@@ -166,102 +166,99 @@
         <span>When</span><span>Game</span><span>Players</span><span>Result</span><span>Key stat</span><span>Board</span>
       </div>
 
-      <!-- The column headings above stay put; only the matches (and Load more) scroll -->
-      <div class="min-h-0 flex-1 overflow-y-auto scrollbar-themed">
-        {#if loading}
-          <p class="m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
-            <LoaderCircle size={18} class="animate-spin" /> Loading matches…
-          </p>
-        {:else if error}
-          <p role="alert" class="m-0 px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
-        {:else if games.length === 0}
-          <p class="m-0 px-[22px] py-10 text-[15px] text-text-muted">No matches in this mode yet.</p>
-        {:else}
-          <ul class="m-0 list-none p-0">
-            {#each games as g (g.id)}
-              {@const when = formatWhen(g.finishedAt, now)}
-              {@const result = resultLabel(g)}
-              {@const key = historyStat(g)}
-              {@const badges = playerBadges(g)}
-              {@const rules = rulesLine(g)}
-              <li class="border-b border-line">
-                <a
-                  href="#/history/{g.id}"
-                  aria-label="{getGameView(g.mode).title}, {when.day} {when.time}{result.text ? `, ${result.text}` : ''}: details"
-                  class="relative block px-[22px] pr-12 py-3 lg:min-h-[68px] lg:py-0 text-text no-underline hover:bg-surface-active"
-                >
-                  <!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
-                  <div class="flex flex-col gap-1 lg:hidden">
-                    <div class="flex items-baseline justify-between gap-3">
-                      <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
-                        <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]"
-                          >{getGameView(g.mode).title}</span
-                        >
-                        <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
-                      </span>
-                      {#if g.invalidated}{@render invalidatedPill('shrink-0')}{:else}{@render resultPill(result, 'shrink-0')}{/if}
-                    </div>
-                    <div class="flex items-baseline justify-between gap-3">
-                      <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
-                        >{#each badges as p (p.n)}{@render badge(p)}{/each}</span
-                      >
-                      {#if key}
-                        <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"
-                          ><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span
-                        >
-                      {/if}
-                    </div>
-                    {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
-                  </div>
-
-                  <!-- lg and up: a column grid; tablets (up to xl) leave out the Board column -->
-                  <div
-                    class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[110px_minmax(0,1fr)_200px_110px_90px] xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4"
-                  >
-                    <span class="flex flex-col gap-0.5">
-                      <span class="text-[15px] font-semibold">{when.day}</span>
-                      <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
-                    </span>
-                    <span class="flex min-w-0 flex-col gap-0.5">
-                      <span class="font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]"
+      {#if loading}
+        <p class="m-0 flex items-center gap-2 px-[22px] py-10 text-[15px] text-text-muted">
+          <LoaderCircle size={18} class="animate-spin" /> Loading matches…
+        </p>
+      {:else if error}
+        <p role="alert" class="m-0 px-[22px] py-10 text-[15px] text-text-muted">{error}</p>
+      {:else if games.length === 0}
+        <p class="m-0 px-[22px] py-10 text-[15px] text-text-muted">No matches in this mode yet.</p>
+      {:else}
+        <ul class="m-0 list-none p-0">
+          {#each games as g (g.id)}
+            {@const when = formatWhen(g.finishedAt, now)}
+            {@const result = resultLabel(g)}
+            {@const key = historyStat(g)}
+            {@const badges = playerBadges(g)}
+            {@const rules = rulesLine(g)}
+            <li class="border-b border-line">
+              <a
+                href="#/history/{g.id}"
+                aria-label="{getGameView(g.mode).title}, {when.day} {when.time}{result.text ? `, ${result.text}` : ''}: details"
+                class="relative block px-[22px] pr-12 py-3 lg:min-h-[68px] lg:py-0 text-text no-underline hover:bg-surface-active"
+              >
+                <!-- Narrow screens: title+when / players+stat / rules, badge and stat at the end of each -->
+                <div class="flex flex-col gap-1 lg:hidden">
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="flex min-w-0 items-baseline gap-2 overflow-hidden">
+                      <span class="truncate font-display text-[20px] font-bold uppercase leading-none tracking-[0.02em]"
                         >{getGameView(g.mode).title}</span
                       >
-                      <span class="text-[13px] text-text-muted">{rules}</span>
+                      <span class="shrink-0 whitespace-nowrap text-[12px] text-text-dim">{when.day} · {when.time}</span>
                     </span>
-                    <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-2.5">
-                      {#each badges as p (p.n)}{@render badge(p)}{/each}
-                    </span>
-                    <span
-                      >{#if g.invalidated}{@render invalidatedPill()}{:else}{@render resultPill(result)}{/if}</span
-                    >
-                    <span class="flex flex-col gap-0.5">
-                      {#if key}
-                        <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>
-                        <span class="text-[12px] text-text-dim">{key.label}</span>
-                      {/if}
-                    </span>
-                    <span class="hidden xl:inline text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
+                    {#if g.invalidated}{@render invalidatedPill('shrink-0')}{:else}{@render resultPill(result, 'shrink-0')}{/if}
                   </div>
-                  <ChevronRight size={18} class="absolute right-4 top-1/2 -translate-y-1/2 text-text-dim" />
-                </a>
-              </li>
-            {/each}
-          </ul>
-          {#if nextCursor !== null}
-            <div class="flex flex-col items-center gap-2 p-4">
-              <button
-                type="button"
-                onclick={() => void more()}
-                disabled={loadingMore}
-                class="h-10 rounded-lg border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60"
-              >
-                {loadingMore ? 'Loading…' : 'Load more'}
-              </button>
-              {#if loadMoreError}<p role="alert" class="m-0 text-[13px] text-text-muted">{loadMoreError}</p>{/if}
-            </div>
-          {/if}
+                  <div class="flex items-baseline justify-between gap-3">
+                    <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1"
+                      >{#each badges as p (p.n)}{@render badge(p)}{/each}</span
+                    >
+                    {#if key}
+                      <span class="shrink-0 whitespace-nowrap text-[13px] text-text-muted"
+                        ><span class="font-display text-[18px] font-bold text-text">{key.value}</span> {key.label}</span
+                      >
+                    {/if}
+                  </div>
+                  {#if rules}<span class="truncate text-[13px] text-text-muted">{rules}</span>{/if}
+                </div>
+
+                <!-- lg and up: a column grid; tablets (up to xl) leave out the Board column -->
+                <div
+                  class="hidden lg:grid lg:min-h-[68px] lg:grid-cols-[110px_minmax(0,1fr)_200px_110px_90px] xl:grid-cols-[132px_minmax(0,1fr)_220px_124px_132px_124px] lg:items-center lg:gap-4"
+                >
+                  <span class="flex flex-col gap-0.5">
+                    <span class="text-[15px] font-semibold">{when.day}</span>
+                    <span class="font-mono text-[12px] text-text-dim">{when.time}</span>
+                  </span>
+                  <span class="flex min-w-0 flex-col gap-0.5">
+                    <span class="font-display text-[24px] font-bold uppercase leading-none tracking-[0.02em]"
+                      >{getGameView(g.mode).title}</span
+                    >
+                    <span class="text-[13px] text-text-muted">{rules}</span>
+                  </span>
+                  <span class="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 py-2.5">
+                    {#each badges as p (p.n)}{@render badge(p)}{/each}
+                  </span>
+                  <span
+                    >{#if g.invalidated}{@render invalidatedPill()}{:else}{@render resultPill(result)}{/if}</span
+                  >
+                  <span class="flex flex-col gap-0.5">
+                    {#if key}
+                      <span class="font-display text-[24px] font-bold leading-none">{key.value}</span>
+                      <span class="text-[12px] text-text-dim">{key.label}</span>
+                    {/if}
+                  </span>
+                  <span class="hidden xl:inline text-[14px] text-text-muted">{g.board?.name ?? '–'}</span>
+                </div>
+                <ChevronRight size={18} class="absolute right-4 top-1/2 -translate-y-1/2 text-text-dim" />
+              </a>
+            </li>
+          {/each}
+        </ul>
+        {#if nextCursor !== null}
+          <div class="flex flex-col items-center gap-2 p-4">
+            <button
+              type="button"
+              onclick={() => void more()}
+              disabled={loadingMore}
+              class="h-10 rounded-lg border border-line-strong bg-transparent px-5 text-[15px] text-text disabled:opacity-60"
+            >
+              {loadingMore ? 'Loading…' : 'Load more'}
+            </button>
+            {#if loadMoreError}<p role="alert" class="m-0 text-[13px] text-text-muted">{loadMoreError}</p>{/if}
+          </div>
         {/if}
-      </div>
+      {/if}
     </section>
   </main>
 </Layout>
