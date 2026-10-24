@@ -2,6 +2,7 @@
   // Party: place, player and one column per compact stat row, the better value in lime. A leg's
   // table (`ranked` off) keeps seat order and leaves out the match's places.
   import Avatar from '$lib/components/Avatar.svelte'
+  import ProfilePopover from '$lib/components/progress/ProfilePopover.svelte'
   import type { StatRow } from '$lib/api'
   import { ordinal } from '$lib/fmt'
   import { betterIndexes, formatStat } from '$lib/details/stats'
@@ -28,7 +29,10 @@
           {#if ranked}<td class="px-4 py-3 font-display font-bold text-[20px]">{ordinal(s.placement)}</td>{/if}
           <td class="{ranked ? 'px-2' : 'px-4'} py-3"
             ><span class="flex items-center gap-2"
-              ><Avatar name={s.name} size={28} guest={s.guest} bot={s.bot} /><span class="font-semibold">{s.name}</span
+              ><ProfilePopover userId={s.userId} name={s.name}
+                ><Avatar name={s.name} size={28} guest={s.guest} bot={s.bot} avatar={s.avatar} userId={s.userId} /><span
+                  class="font-semibold whitespace-nowrap">{s.name}</span
+                ></ProfilePopover
               >{#if s.forfeited}<span class="text-[12px] text-danger-text">gave up</span>{/if}</span
             ></td
           >

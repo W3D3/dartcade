@@ -52,9 +52,26 @@ describe('details page helpers', () => {
       ],
     }
     expect(layoutOf(teams)).toBe('teams')
-    expect(detailSides(teams).map(s => [s.name, s.members, s.placement])).toEqual([
-      ['Team A', ['A', 'C'], 1],
-      ['Team B', ['B', 'D'], 2],
+    // A team opens no profile; each member opens their own (seat 0 is the only account here)
+    expect(detailSides(teams).map(s => [s.name, s.userId, s.members, s.placement])).toEqual([
+      [
+        'Team A',
+        null,
+        [
+          { name: 'A', userId: 'me' },
+          { name: 'C', userId: null },
+        ],
+        1,
+      ],
+      [
+        'Team B',
+        null,
+        [
+          { name: 'B', userId: null },
+          { name: 'D', userId: null },
+        ],
+        2,
+      ],
     ])
   })
 
