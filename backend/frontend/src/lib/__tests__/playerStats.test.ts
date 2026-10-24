@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { x01Player, atcPlayer, x01Roll } from '../playerStats.js'
+import { x01Player, atcPlayer, x01Averages, x01Roll } from '../playerStats.js'
 import type { AtcGame, X01Game } from '../api/game-ws'
 
 const visit = (seat: number, scored: number, left: number, darts = 3) => ({ seat, scored, left, darts, bust: false })
@@ -106,6 +106,22 @@ describe('x01Player', () => {
       suggest: true,
     })
     expect([p.avg, p.legAvg]).toEqual(['65.0', '30.0'])
+  })
+
+  it("x01Averages: this leg's average beside the match's in a match of legs", () => {
+    const p = x01Player(game({ pointsScored: [130, 0], dartsThrown: [6, 0], legVisits: [visit(0, 30, 471)] }), 0, {
+      active: false,
+      suggest: true,
+    })
+    expect(x01Averages(p)).toEqual([
+      { label: 'Leg avg', value: '30.0', dim: false },
+      { label: 'Match avg', value: '65.0', dim: true },
+    ])
+  })
+
+  it('x01Averages: one average in a single-leg game, where both are the same', () => {
+    const p = x01Player(game({ firstTo: 1 }), 0, { active: false, suggest: true })
+    expect(x01Averages(p)).toEqual([{ label: 'Avg', value: p.avg, dim: false }])
   })
 
   it('during a bust: no finish, running row marked bust', () => {

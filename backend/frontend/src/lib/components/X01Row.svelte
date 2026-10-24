@@ -1,7 +1,7 @@
 <script lang="ts">
   import LegPips from './LegPips.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Roll } from '$lib/playerStats'
+  import { x01Averages, x01Roll } from '$lib/playerStats'
   import RowShell from './RowShell.svelte'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
@@ -24,10 +24,16 @@
   } = $props()
   // Stacked rows (portrait tablets): only the thrower's stats; the others keep their leg pips
   const stacked = $derived(active ? '' : '@max-lg:hidden')
+  // Narrower rows keep only the averages
+  const stats = $derived([
+    { label: 'Last', value: p.last, narrow: false },
+    ...x01Averages(p).map(a => ({ ...a, narrow: true })),
+    { label: 'Checkout', value: p.checkout, title: `${p.checkoutDarts} darts at a finish`, narrow: false },
+  ])
 </script>
 
 <!-- Tablets, by the row's own width: from 672 px three columns; 512 to 672 px (landscape
-     around 1024) narrower ones without Last and a smaller score; below 512 px (beside the board in portrait) name,
+     around 1024) narrower ones with only the averages and a smaller score; below 512 px (beside the board in portrait) name,
      score and stats stacked, the stats only for the thrower (leg pips for everyone) -->
 <RowShell
   {name}
@@ -50,8 +56,8 @@
   >
 
   <div
-    class="grid grid-cols-[minmax(0,1fr)_64px_64px_auto] gap-3 max-xl:@lg:@max-2xl:grid-cols-[minmax(0,1fr)_56px_auto]
-              xl:grid-cols-[minmax(0,1fr)_90px_90px_auto] xl:gap-5 items-center min-w-0
+    class="grid grid-cols-[minmax(0,1fr)_64px_64px_64px_64px_auto] gap-3 max-xl:@lg:@max-2xl:grid-cols-[minmax(0,1fr)_56px_56px_auto]
+              xl:grid-cols-[minmax(0,1fr)_90px_90px_90px_90px_auto] xl:gap-5 items-center min-w-0
               {active ? '' : '@max-lg:grid-cols-[auto]'}"
   >
     {#if p.showFinish}
@@ -71,11 +77,8 @@
     {:else}
       <span class={stacked}></span>
     {/if}
-    {#each [{ label: 'Last', value: p.last }, { label: 'Avg', value: p.avg }, { label: 'Checkout', value: p.checkout, title: `${p.checkoutDarts} darts at a finish` }] as s (s.label)}
-      <span
-        class="flex flex-col gap-1 {stacked} {s.label !== 'Avg' ? 'max-xl:@lg:@max-2xl:hidden' : ''}"
-        title={'title' in s ? s.title : undefined}
-      >
+    {#each stats as s (s.label)}
+      <span class="flex flex-col gap-1 {stacked} {s.narrow ? '' : 'max-xl:@lg:@max-2xl:hidden'}" title={'title' in s ? s.title : undefined}>
         <span class="text-[12px] label-caps {active ? 'text-text-muted' : 'text-text-dim'}">{s.label}</span>
         <span
           class="font-display font-bold leading-none tabular-nums {active

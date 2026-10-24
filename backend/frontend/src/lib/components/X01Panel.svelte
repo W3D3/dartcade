@@ -3,7 +3,7 @@
   import LegPips from './LegPips.svelte'
   import Chalkboard from './Chalkboard.svelte'
   import RollingNumber from './RollingNumber.svelte'
-  import { x01Roll } from '$lib/playerStats'
+  import { x01Averages, x01Roll } from '$lib/playerStats'
   import type { PillKind } from './pills.js'
   import type { X01PlayerView } from '$lib/playerStats.js'
   import type { SeatLine } from '$lib/remote'
@@ -57,7 +57,7 @@
   {/if}
 
   <div class="flex {solo ? 'gap-9' : 'gap-[18px] xl:gap-9'}">
-    {#each [{ label: solo ? 'Leg avg' : 'Avg', value: solo ? p.legAvg : p.avg }, { label: 'Darts', value: String(p.darts) }, { label: 'Checkout', value: p.checkout, title: `${p.checkoutDarts} darts at a finish` }] as s (s.label)}
+    {#each [...x01Averages(p), { label: 'Darts', value: String(p.darts) }, { label: 'Checkout', value: p.checkout, title: `${p.checkoutDarts} darts at a finish` }] as s (s.label)}
       <span class="flex flex-col gap-1" title={'title' in s ? s.title : undefined}>
         <span class="{solo ? 'text-[13px]' : 'text-[11px] xl:text-[13px]'} label-caps {active ? 'text-text-muted' : 'text-text-dim'}"
           >{s.label}</span

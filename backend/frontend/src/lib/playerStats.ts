@@ -91,6 +91,16 @@ export function x01Player(
   }
 }
 
+/** The averages a player's panel, row or card shows: this leg's beside the match's (dimmed), or
+ *  one "Avg" in a single-leg game, where the two are the same. */
+export function x01Averages(p: Pick<X01PlayerView, 'avg' | 'legAvg' | 'firstTo'>): { label: string; value: string; dim: boolean }[] {
+  if (p.firstTo <= 1) return [{ label: 'Avg', value: p.avg, dim: false }]
+  return [
+    { label: 'Leg avg', value: p.legAvg, dim: false },
+    { label: 'Match avg', value: p.avg, dim: true },
+  ]
+}
+
 /** How the big X01 score (a player's or a team's) rolls: the shown score, a new leg starts it
  *  over, a bust flashes red, a checkout turns lime. */
 export function x01Roll(v: { leg: number; shown: number; current: { bust: boolean } | null }): { value: number } & RollOptions {
