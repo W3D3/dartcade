@@ -1,8 +1,9 @@
 // The win screen after a game: who won, the final standings and the match stats we keep.
-// Placements come from the final snapshot (the server ranks the same way); the per-player
-// X01 stats (average, best checkout) and the legs come from the saved game, once it loads.
-import type { AtcGame, GameDetail, HiloGame, MinigolfGame, Snapshot, X01Game } from './api'
+// Placements come from the final snapshot (the server ranks the same way); the X01 match stats
+// (the details page's, from the server) and the legs come from the saved game, once it loads.
+import type { AtcGame, GameDetail, HiloGame, MinigolfGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
 import { atcPlayer, fmtAvg } from './playerStats.js'
+import { formatStat, statNumber } from './details/stats.js'
 import { atcRules, hiloRules, minigolfRules, x01Rules } from './gameViews/meta.js'
 import { teamsLabel } from './teams.js'
 import { fmtToPar } from './minigolf/match.js'
@@ -101,6 +102,21 @@ export function rank(count: number, winner: number | null, better: (a: number, b
 }
 
 const byPlacement = (cs: Competitor[]) => [...cs].sort((a, b) => a.placement - b.placement)
+const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
+
+// The Win-Duel artboard's match stats: the details page's rows but 140+ and darts thrown (the
+// darts are under each name)
+const DUEL_LEAVES_OUT = new Set(['count140', 'dartsThrown'])
+
+/** A details-page row side by side; the bar leans to the better value (fewer darts for best leg). */
+function duelRow(row: DetailRow, a: Record<string, number>, b: Record<string, number>): StatRow {
+  const [x, y] = [statNumber(row, a) ?? 0, statNumber(row, b) ?? 0]
+  return {
+    label: row.label,
+    values: pair(formatStat(row, a), formatStat(row, b)),
+    share: row.better === 'lower' && x > 0 && y > 0 ? share(y, x) : share(x, y),
+  }
+}
 
 export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetail | null): WinView {
   const g = snapshot.game
@@ -119,11 +135,12 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
   }
   const places = seatsOf.map((s, i) => savedPlace(s) ?? ranked[i])
 
-  const sum = (seats: number[], key: string) => seats.reduce((a, s) => a + (stat(detail, s, key) ?? 0), 0)
   const darts = seatsOf.map(s => s.reduce((a, i) => a + (g.totalDarts[i] ?? 0), 0))
-  // A side's average over all its darts; unknown until the saved game loads
-  const avg = seatsOf.map((s, i) => (detail && darts[i] > 0 ? (sum(s, 'pointsScored') / darts[i]) * 3 : null))
-  const best = seatsOf.map(s => Math.max(0, ...s.map(i => stat(detail, i, 'bestCheckout') ?? 0)))
+  // A side's match stats (a team's in a team game); none until the saved game loads
+  const sideStats = (g.teams ? detail?.stats.teams : detail?.stats.seats) ?? []
+  const values = seatsOf.map((_, i) => sideStats.find(v => v.index === i)?.values ?? {})
+  const num = (i: number, key: string) => (Object.hasOwn(values[i], key) ? values[i][key] : null)
+  const avg = seatsOf.map((_, i) => num(i, 'average'))
 
   const competitors = byPlacement(
     seatsOf.map((seats, i): Competitor => ({
@@ -133,8 +150,14 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
       seats,
       placement: places[i],
       score: legs[i],
-      sub: [plural(legs[i], 'leg'), avg[i] === null ? null : `${fmtAvg(avg[i])} avg`].filter(Boolean).join(' · '),
-      cells: [String(legs[i]), fmtAvg(avg[i]), String(darts[i])],
+      // A duel's score already says the legs: "83.9 avg · 66 darts" (Win-Duel), else "2 legs · 80.8 avg"
+      sub: (seatsOf.length === 2
+        ? [avg[i] === null ? null : `${fmtAvg(avg[i])} avg`, plural(darts[i], 'dart')]
+        : [plural(legs[i], 'leg'), avg[i] === null ? null : `${fmtAvg(avg[i])} avg`]
+      )
+        .filter(Boolean)
+        .join(' · '),
+      cells: [String(legs[i]), fmtAvg(avg[i]), fmtAvg(num(i, 'first9Average'))],
     })),
   )
   const order = competitors.map(c => seatsOf.findIndex(s => s === c.seats))
@@ -172,24 +195,10 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
         }
       : null
 
-  const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
-  const [aw, ar] = r === undefined ? [null, null] : [avg[w], avg[r]]
   const stats: StatRow[] =
     r === undefined
       ? []
-      : [
-          ...(aw !== null && ar !== null ? [{ label: '3-dart average', values: pair(fmtAvg(aw), fmtAvg(ar)), share: share(aw, ar) }] : []),
-          ...(detail
-            ? [
-                {
-                  label: 'Highest finish',
-                  values: pair(best[w] ? String(best[w]) : '—', best[r] ? String(best[r]) : '—'),
-                  share: share(best[w], best[r]),
-                },
-              ]
-            : []),
-          { label: 'Darts thrown', values: pair(String(darts[w]), String(darts[r])), share: share(darts[w], darts[r]) },
-        ]
+      : (detail?.stats.rows ?? []).filter(row => !DUEL_LEAVES_OUT.has(row.key)).map(row => duelRow(row, values[w], values[r]))
 
   const top = competitors.reduce<{ c: Competitor; seat: number; v: number } | null>((acc, c) => {
     for (const seat of c.seats) {
@@ -214,7 +223,7 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
     checkout,
     legs: legs_,
     stats,
-    columns: ['Legs', 'Avg', 'Darts'],
+    columns: ['Legs', 'Avg', 'First 9'],
     highlights: top
       ? [
           {
@@ -247,7 +256,6 @@ export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
   const ranked = competitors.map(c => views[c.seats[0]])
   const w = ranked[0]
   const r = ranked.at(1)
-  const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
   // Hits per dart, for the hit rate's bar
   const rate = (seat: number) => (g.totalDarts[seat] ? (g.hitCounts[seat] ?? 0) / g.totalDarts[seat] : 0)
   const [ws, rs] = competitors.map(c => c.seats[0])
@@ -316,7 +324,6 @@ export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
 
   const w = competitors[0].seats[0]
   const r = competitors.at(1)?.seats[0]
-  const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
   const stats: StatRow[] =
     r === undefined
       ? []
@@ -388,7 +395,6 @@ export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinVie
     })),
   )
   const [ws, rs] = competitors.map(c => c.seats[0])
-  const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
   return {
     mode: 'minigolf',
     layout: competitors.length > 2 ? 'party' : 'duel',
