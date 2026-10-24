@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { sharedBoard, winMeta, winView } from '../winScreen.js'
-import type { GameDetail, HiloGame, Snapshot } from '../api'
+import type { GameDetail, HiloGame, Snapshot, StatRow } from '../api'
 
 const seat = (o: { userId?: string | null; boardName?: string | null; forfeited?: boolean } = {}) => ({
   controllerUserId: 'u1',
@@ -71,6 +71,18 @@ const visit = (seat: number, darts: string[], scored: number, remaining: number)
   bust: false,
 })
 
+// The details page's X01 rows, as the server sends them (x01Stats.ts)
+const statRows: StatRow[] = [
+  { key: 'average', label: '3-dart average', format: 'decimal', better: 'higher', compact: false },
+  { key: 'first9Average', label: 'First 9 average', format: 'decimal', better: 'higher', compact: true },
+  { key: 'checkout', label: 'Checkout', format: 'ratio', better: 'higher', compact: true, value: 'checkoutHits', of: 'checkoutAttempts' },
+  { key: 'highestFinish', label: 'Highest finish', format: 'integer', better: 'higher', compact: true },
+  { key: 'count180', label: '180s', format: 'integer', better: 'higher', compact: false },
+  { key: 'count140', label: '140+', format: 'integer', better: 'higher', compact: false },
+  { key: 'bestLegDarts', label: 'Best leg', format: 'darts', better: 'lower', compact: true },
+  { key: 'dartsThrown', label: 'Darts thrown', format: 'integer', better: null, compact: true },
+]
+
 // Christoph wins 3–1: legs 1, 3 and 4 his (leg 4 checked out 75 with T17 · D12), leg 2 Guest 1's
 const detail = (): GameDetail =>
   ({
@@ -122,6 +134,39 @@ const detail = (): GameDetail =>
         },
       ],
     },
+    stats: {
+      rows: statRows,
+      seats: [
+        {
+          index: 0,
+          values: {
+            average: 83.9,
+            first9Average: 86.4,
+            checkoutHits: 3,
+            checkoutAttempts: 6,
+            highestFinish: 116,
+            count180: 2,
+            count140: 3,
+            bestLegDarts: 15,
+            dartsThrown: 66,
+          },
+        },
+        {
+          index: 1,
+          values: {
+            average: 71.6,
+            first9Average: 80.7,
+            checkoutHits: 1,
+            checkoutAttempts: 4,
+            highestFinish: 60,
+            count180: 0,
+            count140: 1,
+            bestLegDarts: 17,
+            dartsThrown: 65,
+          },
+        },
+      ],
+    },
   }) as unknown as GameDetail
 
 describe('winView', () => {
@@ -139,13 +184,28 @@ describe('winView', () => {
       ['Christoph', 1, 3, false],
       ['Guest 1', 2, 1, true],
     ])
-    expect(v.competitors[0].sub).toBe('3 legs · 83.9 avg')
+    expect(v.competitors[0].sub).toBe('83.9 avg · 66 darts')
     expect(v.scoreLabel).toBe('Legs · first to 3')
+    // The details page's rows but 140+ and darts thrown, as the Win-Duel artboard lists them
     expect(v.stats).toEqual([
       { label: '3-dart average', values: ['83.9', '71.6'], share: expect.closeTo(0.54, 2) },
+      { label: 'First 9 average', values: ['86.4', '80.7'], share: expect.closeTo(0.52, 2) },
+      { label: 'Checkout', values: ['50% · 3/6', '25% · 1/4'], share: expect.closeTo(0.67, 2) },
       { label: 'Highest finish', values: ['116', '60'], share: expect.closeTo(0.66, 2) },
-      { label: 'Darts thrown', values: ['66', '65'], share: expect.closeTo(0.5, 1) },
+      { label: '180s', values: ['2', '0'], share: 1 },
+      // Fewer darts is better: the bar leans to the winner's 15
+      { label: 'Best leg', values: ['15 darts', '17 darts'], share: expect.closeTo(0.53, 2) },
     ])
+  })
+
+  it('X01 duel: a dash and a full bar when the runner-up never finished a leg', () => {
+    const d = detail()
+    d.stats.seats[1].values = { average: 40.2, checkoutHits: 0, checkoutAttempts: 0, dartsThrown: 30 }
+    const v = winView(x01(), d)!
+    const row = (label: string) => v.stats.find(s => s.label === label)
+    expect(row('Best leg')).toEqual({ label: 'Best leg', values: ['15 darts', '—'], share: 1 })
+    expect(row('Highest finish')?.values).toEqual(['116', '—'])
+    expect(row('Checkout')?.values).toEqual(['50% · 3/6', '—'])
   })
 
   it('X01: the final checkout and every leg, with the darts the leg took its winner', () => {
@@ -161,8 +221,8 @@ describe('winView', () => {
 
   it('X01 before the saved game loads: placements and legs from the snapshot, no averages', () => {
     const v = winView(x01(), null)!
-    expect(v.competitors.map(c => c.sub)).toEqual(['3 legs', '1 leg'])
-    expect(v.stats.map(s => s.label)).toEqual(['Darts thrown'])
+    expect(v.competitors.map(c => c.sub)).toEqual(['66 darts', '65 darts'])
+    expect(v.stats).toEqual([])
     expect(v.legs).toEqual([])
     expect(v.checkout).toBeNull()
   })
@@ -181,6 +241,20 @@ describe('winView', () => {
     ])
     expect(v.kicker).toBe('Game shot · leg 4')
     expect(v.note).toBe("3 legs to Lena's 1 · the rest ranked by legs, then by points left in the last leg")
+    expect(v.columns).toEqual(['Legs', 'Avg', 'First 9'])
+    expect(v.stats).toEqual([])
+  })
+
+  it('X01 party: average and first 9 per player from the saved game', () => {
+    const d = detail()
+    d.stats.seats = [86.4, 80.7, 60.1, 45.2].map((first9Average, index) => ({ index, values: { average: 70 - index, first9Average } }))
+    const v = winView(x01({ players: ['Christoph', 'Lena', 'Guest 1', 'Max'] }), d)!
+    expect(v.competitors.map(c => [c.name, c.cells])).toEqual([
+      ['Christoph', ['3', '70.0', '86.4']],
+      ['Lena', ['1', '69.0', '80.7']],
+      ['Guest 1', ['0', '68.0', '60.1']],
+      ['Max', ['0', '67.0', '45.2']],
+    ])
   })
 
   it('X01 teams: a side per team, named after it', () => {
@@ -203,6 +277,34 @@ describe('winView', () => {
     expect(v.competitors.map(c => [c.name, c.members, c.placement])).toEqual([
       ['Team A', ['Christoph', 'Guest 1'], 1],
       ['Team B', ['Lena', 'Max'], 2],
+    ])
+  })
+
+  it("X01 teams: the stats are each team's, not a player's", () => {
+    const d = detail()
+    d.game.players = []
+    d.stats.teams = [
+      { index: 0, values: { average: 64.5, first9Average: 70.2 } },
+      { index: 1, values: { average: 58.1, first9Average: 61.9 } },
+    ]
+    const v = winView(
+      x01({
+        players: ['Christoph', 'Lena', 'Guest 1', 'Max'],
+        game: {
+          winner: 0,
+          legs: [3, 1, 3, 1],
+          teams: [
+            { id: 'A', name: 'Team A', seats: [0, 2], score: 0, legs: 3 },
+            { id: 'B', name: 'Team B', seats: [1, 3], score: 40, legs: 1 },
+          ],
+        },
+      }),
+      d,
+    )!
+    expect(v.competitors[0].sub).toBe('64.5 avg · 126 darts')
+    expect(v.stats.slice(0, 2).map(s => s.values)).toEqual([
+      ['64.5', '58.1'],
+      ['70.2', '61.9'],
     ])
   })
 
