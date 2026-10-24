@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -30,6 +31,8 @@ type Config struct {
 	BridgeID   string `koanf:"bridge_id"`
 	LogLevel   string `koanf:"log_level"`
 	Token      string `koanf:"token"`
+	// InstallToken is the one-time token from the install command; it is swapped for Token on first start.
+	InstallToken string `koanf:"install_token"`
 }
 
 // loadConfig builds Config from: defaults → TOML file → env vars → overrides.
@@ -204,6 +207,28 @@ func hostOf(rawURL string) string {
 		return u.Host
 	}
 	return rawURL
+}
+
+// errInstallTokenRefused means the backend does not know the install token: it was used or has expired.
+var errInstallTokenRefused = errors.New("install token is unknown, used or expired")
+
+// exchangeInstallToken swaps the one-time install token for this bridge's own board token.
+func exchangeInstallToken(ctx context.Context, cfg Config) (string, error) {
+	client, err := api.NewClientWithResponses(toHTTPBase(cfg.BackendURL))
+	if err != nil {
+		return "", fmt.Errorf("install token client: %w", err)
+	}
+	resp, err := client.ExchangeBridgeInstallTokenWithResponse(ctx, api.ExchangeBridgeInstallTokenJSONRequestBody{Token: cfg.InstallToken})
+	if err != nil {
+		return "", fmt.Errorf("install token exchange: %w", err)
+	}
+	if resp.StatusCode() == http.StatusNotFound {
+		return "", errInstallTokenRefused
+	}
+	if resp.JSON201 == nil {
+		return "", fmt.Errorf("install token exchange: unexpected status %d", resp.StatusCode())
+	}
+	return resp.JSON201.Token, nil
 }
 
 func runPairing(ctx context.Context, cfg Config, con *console) (string, error) {

@@ -3,13 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"os"
-	"os/signal"
 	"path/filepath"
+	"runtime"
 	"runtime/debug"
 	"slices"
-	"syscall"
 	"time"
 
 	"dartcade/bridge/internal/bm"
@@ -19,6 +19,7 @@ import (
 	"dartcade/bridge/internal/transport"
 	"dartcade/bridge/internal/wled"
 	"github.com/charmbracelet/log"
+	"github.com/kardianos/service"
 	"github.com/oklog/ulid/v2"
 )
 
@@ -75,6 +76,12 @@ func main() {
 		runReplay(os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && (os.Args[1] == "install" || os.Args[1] == "uninstall") {
+		if err := runServiceCommand(os.Args[1], os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	fs := flag.NewFlagSet("bridge", flag.ExitOnError)
 	boardURL := fs.String("board-url", "", "Board Manager base URL (e.g. http://192.168.1.10:3180)")
@@ -83,6 +90,7 @@ func main() {
 	logLevel := fs.String("log-level", "", "Log level: debug, info, warn, error")
 	verbose := fs.Bool("verbose", false, "Verbose (debug-level) logging")
 	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
+	installToken := fs.String("install-token", "", "One-time token from the dashboard's install command (also DARTCADE_INSTALL_TOKEN); the bridge pairs itself with it")
 	configDir := fs.String("config-dir", "", "Directory holding bridge.toml (also DARTCADE_CONFIG_DIR; default: OS user config dir)")
 	fs.Parse(os.Args[1:])
 
@@ -92,11 +100,12 @@ func main() {
 	cfgPath, _ := configFilePath(*configDir)
 
 	cfg, err := loadConfig(map[string]string{
-		"board_url":   *boardURL,
-		"backend_url": *backendURL,
-		"bridge_id":   *bridgeID,
-		"log_level":   *logLevel,
-		"token":       *token,
+		"board_url":     *boardURL,
+		"backend_url":   *backendURL,
+		"bridge_id":     *bridgeID,
+		"log_level":     *logLevel,
+		"token":         *token,
+		"install_token": *installToken,
 	}, cfgPath)
 	if err != nil {
 		log.Fatal("config error", "err", err)
@@ -108,13 +117,28 @@ func main() {
 	}
 	setLogLevel(level)
 
-	con := newConsole(os.Stdout)
+	out := os.Stdout
+	if runtime.GOOS == "windows" && !service.Interactive() && cfgPath != "" {
+		if f, err := openServiceLog(cfgPath); err == nil {
+			out = f
+			log.SetOutput(f)
+		}
+	}
+	con := newConsole(out)
 	con.banner(buildVersion())
 	log.Debug("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
+	svc, err := service.New(&program{run: func(ctx context.Context) { run(ctx, cfg, cfgPath, con) }}, serviceConfig(nil))
+	if err != nil {
+		log.Fatal("service error", "err", err)
+	}
+	if err := svc.Run(); err != nil {
+		log.Fatal("service error", "err", err)
+	}
+}
 
+// run is the bridge itself: it blocks until ctx is cancelled.
+func run(ctx context.Context, cfg Config, cfgPath string, con *console) {
 	bootID := ulid.Make().String()
 	client := bm.NewClient(cfg.BoardURL)
 
@@ -130,8 +154,32 @@ func main() {
 	initCancel()
 	con.boardFound(hostOf(cfg.BoardURL), client.CameraCount())
 
+	// A saved token wins: the install token is single-use, so once spent it is just left in the config
+	if cfg.Token == "" && cfg.InstallToken != "" {
+		tok, err := exchangeInstallToken(ctx, cfg)
+		switch {
+		case errors.Is(err, errInstallTokenRefused):
+			log.Warn("the install token was already used or has expired, falling back to a pairing code; get a new command from the dashboard to skip it")
+		case ctx.Err() != nil:
+			return
+		case err != nil:
+			log.Fatal("install token exchange failed", "err", err)
+		default:
+			cfg.Token = tok
+			if cfgPath != "" {
+				if err := persistToken(cfgPath, cfg.Token); err != nil {
+					log.Warn("could not persist token — the bridge will need a new install token on restart", "path", cfgPath, "err", err)
+				}
+			}
+			con.pairedOK()
+		}
+	}
+
 	if cfg.Token == "" {
 		pairedToken, err := runPairing(ctx, cfg, con)
+		if ctx.Err() != nil {
+			return
+		}
 		if err != nil {
 			log.Fatal("pairing failed", "err", err)
 		}
