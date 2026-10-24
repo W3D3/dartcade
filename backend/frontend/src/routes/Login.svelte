@@ -8,7 +8,7 @@
   import { authClient, currentUser } from '$lib/auth'
   import { authInfo } from '$lib/authInfo'
   import { sessionStore, takeReturn, peekReturn } from '$lib/returnTo'
-  import { verifyCallback } from '$lib/verify'
+  import { verifyCallback, rememberCredentials } from '$lib/verify'
   import DevUserSwitch from '$lib/components/DevUserSwitch.svelte'
   import AuthFooter from '$lib/components/AuthFooter.svelte'
 
@@ -32,6 +32,7 @@
           // right callbackURL. Don't pass callbackURL to signIn.email itself: the client then
           // does a full-page redirect on success instead of letting us route in the SPA.
           await authClient.sendVerificationEmail({ email, callbackURL: verifyCallback(peekReturn(sessionStore())) })
+          rememberCredentials(email, password)
           void push(`/verify?email=${encodeURIComponent(email)}&sent=1`)
           return
         }
