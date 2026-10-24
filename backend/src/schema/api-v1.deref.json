@@ -22763,7 +22763,7 @@
                     "xp",
                     "level",
                     "streak",
-                    "challengesOpen",
+                    "challengesToClaim",
                     "perks"
                   ],
                   "additionalProperties": false,
@@ -22867,10 +22867,10 @@
                         }
                       }
                     },
-                    "challengesOpen": {
+                    "challengesToClaim": {
                       "type": "integer",
                       "minimum": 0,
-                      "description": "Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count)"
+                      "description": "Daily and weekly challenges finished but not claimed yet (the nav's count)"
                     },
                     "perks": {
                       "type": "object",
@@ -43042,7 +43042,7 @@
           "xp",
           "level",
           "streak",
-          "challengesOpen",
+          "challengesToClaim",
           "perks"
         ],
         "additionalProperties": false,
@@ -43146,10 +43146,10 @@
               }
             }
           },
-          "challengesOpen": {
+          "challengesToClaim": {
             "type": "integer",
             "minimum": 0,
-            "description": "Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count)"
+            "description": "Daily and weekly challenges finished but not claimed yet (the nav's count)"
           },
           "perks": {
             "type": "object",

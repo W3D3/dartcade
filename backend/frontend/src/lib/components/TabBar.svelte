@@ -11,7 +11,7 @@
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
   const tabs = $derived(
-    navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression ? ($progress?.challengesOpen ?? 0) : null),
+    navTabs($activeSessionId, $me?.invites.length ?? 0, $matchmaking, $progression ? ($progress?.challengesToClaim ?? 0) : null),
   )
 </script>
 

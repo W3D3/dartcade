@@ -3611,18 +3611,14 @@ components:
             celebration: { type: string }
     Progress:
       type: object
-      required: [xp, level, streak, challengesOpen, perks]
+      required: [xp, level, streak, challengesToClaim, perks]
       additionalProperties: false
       properties:
         xp: { type: integer, minimum: 0, description: Total XP }
         level: { type: integer, minimum: 1 }
         streak: { $ref: '#/components/schemas/DayStreak' }
-        challengesOpen:
-          {
-            type: integer,
-            minimum: 0,
-            description: "Today's daily challenges not claimed yet, plus this week's ready to claim (the nav's count)",
-          }
+        challengesToClaim:
+          { type: integer, minimum: 0, description: "Daily and weekly challenges finished but not claimed yet (the nav's count)" }
         perks: { $ref: '#/components/schemas/Perks' }
     Equipped:
       type: object
