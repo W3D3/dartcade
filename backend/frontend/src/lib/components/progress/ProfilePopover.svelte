@@ -33,6 +33,8 @@
   <Popover.Root
     bind:open
     onOpenChange={o => {
+      // A click or Esc wins over a hover still waiting to open or close the card
+      clearTimeout(timer)
       if (o && userId) refreshProfile(userId)
     }}
   >
