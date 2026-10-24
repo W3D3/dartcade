@@ -15,7 +15,7 @@
   import { authInfo } from '$lib/authInfo'
   import { nameSendable, type NameStatus } from '$lib/names'
   import { sessionStore, takeReturn, peekReturn } from '$lib/returnTo'
-  import { verifyCallback } from '$lib/verify'
+  import { verifyCallback, rememberCredentials } from '$lib/verify'
 
   let name = $state('')
   let nameStatus = $state<NameStatus>({ kind: 'empty' })
@@ -45,6 +45,7 @@
       // loadOnce's subscribe-triggered fetch may not have resolved yet; wait for a fresh read
       await authInfo.refresh()
       if (get(authInfo).verification) {
+        rememberCredentials(email, password)
         void push(`/verify?email=${encodeURIComponent(email)}`)
         return
       }

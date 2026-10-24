@@ -2,16 +2,17 @@
   // Landing page for the mail Register/Login just triggered. A verification link itself goes
   // straight to its destination (verifyCallback); this page is only "check your inbox" plus resend,
   // or (an expired/invalid link, or no email known at all) a way to get a fresh one.
-  import { querystring } from 'svelte-spa-router'
+  import { onDestroy } from 'svelte'
+  import { push, querystring } from 'svelte-spa-router'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import AuthPanel from '$lib/components/AuthPanel.svelte'
   import AuthHero from '$lib/components/AuthHero.svelte'
   import StepBars from '$lib/components/StepBars.svelte'
-  import { authClient } from '$lib/auth'
-  import { sessionStore, peekReturn } from '$lib/returnTo'
-  import { verifyCallback, cooldownLeft, showEmailField } from '$lib/verify'
+  import { authClient, currentUser } from '$lib/auth'
+  import { sessionStore, peekReturn, takeReturn } from '$lib/returnTo'
+  import { verifyCallback, cooldownLeft, showEmailField, pendingCredentials, forgetCredentials, SIGN_IN_POLL_MS } from '$lib/verify'
 
   const params = new URLSearchParams($querystring ?? '')
   const queryError = params.get('error')
@@ -34,6 +35,42 @@
     }, 1000)
     return () => clearInterval(t)
   })
+
+  // The link may be opened on another device: this one then signs itself in with what was just typed
+  $effect(() => {
+    const credentials = pendingCredentials(email)
+    if (!credentials || queryError) return
+    let busy = false
+    const trySignIn = async () => {
+      if (busy || document.hidden) return
+      busy = true
+      try {
+        const { error: err } = await authClient.signIn.email(credentials)
+        if (err) {
+          // Still unverified: keep waiting. Anything else (wrong password, ...) won't fix itself
+          if (err.code !== 'EMAIL_NOT_VERIFIED') clearInterval(timer)
+          return
+        }
+        clearInterval(timer)
+        forgetCredentials()
+        await currentUser.refresh()
+        void push(takeReturn(sessionStore()))
+      } finally {
+        busy = false
+      }
+    }
+    const tick = () => {
+      void trySignIn()
+    }
+    const timer = setInterval(tick, SIGN_IN_POLL_MS)
+    document.addEventListener('visibilitychange', tick)
+    return () => {
+      clearInterval(timer)
+      document.removeEventListener('visibilitychange', tick)
+    }
+  })
+
+  onDestroy(forgetCredentials)
 
   async function resend() {
     if (!email || cooldown > 0 || loading) return
@@ -73,7 +110,8 @@
           </h1>
           {#if email}
             <p class="m-0 text-[16px] text-text-muted">
-              We sent a link to <strong class="text-text font-semibold">{email}</strong>. Open it on this device to finish signing up.
+              We sent a link to <strong class="text-text font-semibold">{email}</strong>. Open it on any device to finish signing up; this
+              page continues on its own.
             </p>
           {/if}
         {/if}
@@ -97,7 +135,7 @@
           <ErrorText>{resendError}</ErrorText>
         {/if}
 
-        <Button type="submit" variant="primary" disabled={loading || !email || cooldown > 0} class="w-full">
+        <Button type="submit" variant="outline" size="sm" disabled={loading || !email || cooldown > 0} class="self-center">
           {#if queryError}
             Send a new link
           {:else if cooldown > 0}
