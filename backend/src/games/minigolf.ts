@@ -117,7 +117,7 @@ const configMeta: Record<string, ConfigFieldMeta> = {
 // The view carries points as plain [x, y] arrays (the snapshot schema's MinigolfPt)
 type ViewPt = number[]
 const pt = (p: Pt): ViewPt => [p[0], p[1]]
-const roundPt = (p: Pt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
+const roundPt = (p: PathPt): ViewPt => [Math.round(p[0]), Math.round(p[1])]
 // 3D paths carry the ball's height; 2D ones stay [x, y]
 const roundPath = (path: readonly PathPt[]): MinigolfPathPt[] =>
   path.map(([x, y, z]) => (z === undefined ? [Math.round(x), Math.round(y)] : [Math.round(x), Math.round(y), Math.round(z)]))
@@ -413,11 +413,21 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
     })
   },
 
-  detail(_visits, final): MinigolfDetail {
+  detail(visits, final): MinigolfDetail {
+    // Each hole's strokes are in the state that ended it; a forfeited game's open hole is still on the felt
+    const paths: PathPt[][][][] = final.holes.map(() => final.balls.map(() => []))
+    for (const v of visits) if (v.after.lastHole) paths[v.after.lastHole.index] = v.after.lastHole.paths
+    if (!final.finished && !final.paused) paths[final.holeIdx] = final.balls.map(b => b.paths)
     return {
       mode: 'minigolf',
       course: final.courseName,
-      holes: final.holes.map(h => ({ name: h.name, par: h.par })),
+      holes: final.holes.map((h, i) => ({
+        name: h.name,
+        par: h.par,
+        outline: h.outline.map(pt),
+        cup: { at: pt(h.cup.at), r: h.cup.r },
+        paths: paths[i].map(seat => seat.map(path => path.map(roundPt))),
+      })),
       scores: final.scores,
     }
   },
