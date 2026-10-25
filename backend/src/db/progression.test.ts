@@ -44,7 +44,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('unlocked perks', () => {
     )
     expect(held).not.toContain('frame.platinum')
     expect(await hasPerk(db, 'vet', 'frame.gold')).toBe(true)
-    expect(await unlockedPictures(db, 'vet')).toEqual(['logo', 'dart', 'flight', 'board', 'trophy', 'flame'])
+    expect(await unlockedPictures(db, 'vet')).toEqual(['classic', 'chalk', 'arcade', 'bronze', 'chrome', 'hot-streak'])
   })
 
   it('ignores retired perk ids', async () => {

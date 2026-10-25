@@ -28,11 +28,10 @@ export interface UserTable {
   terms_accepted_at: ColumnType<Date | null, Date | null | undefined, Date | null>
   /** 'preset' (the Dartcade mark, default for new accounts), 'none' (bare initials), or an uploaded photo (migration 031). */
   avatar_kind: ColumnType<'none' | 'preset' | 'upload', 'none' | 'preset' | 'upload' | undefined, 'none' | 'preset' | 'upload'>
+  /** The preset's foreground finish (shared/avatarFinishes.ts; migration 038). */
   avatar_preset: string | null
-  /** The preset's background colour (hex), chosen independently of the foreground. */
-  avatar_color: string | null
-  /** The preset's icon colour (hex), chosen independently of the background. */
-  avatar_fg_color: string | null
+  /** The preset's background finish, picked independently of the foreground (migration 038). */
+  avatar_background: string | null
   avatar_image: Buffer | null
   avatar_content_type: string | null
   avatar_version: ColumnType<number, number | undefined, number>

@@ -8,9 +8,9 @@ import { SessionEngine, type EngineStore } from '../session/engine.js'
 import { setAccountCleanup, runAccountCleanup, cleanUpAccount } from '../auth/cleanup.js'
 import { LobbyHub } from './hub.js'
 import { LobbyService } from './service.js'
-import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
+import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
 
-const defaultAvatar = { kind: 'preset' as const, preset: DEFAULT_AVATAR_PRESET, color: DEFAULT_AVATAR_BG, fgColor: DEFAULT_AVATAR_FG }
+const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
 const makeStore = () =>
   ({
@@ -261,17 +261,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('LobbyService', () => {
       hub.addMeSocket('lena', me, await lobbies.meMessage('lena'), friendsMsg)
       await db
         .updateTable('user')
-        .set({ avatar_kind: 'preset', avatar_preset: 'logo', avatar_color: '#3a8f4a', avatar_fg_color: '#ffffff' })
+        .set({ avatar_kind: 'preset', avatar_preset: 'chalk', avatar_background: 'neon' })
         .where('id', '=', 'chris')
         .execute()
       await lobbies.profileChanged('chris')
-      const green = { kind: 'preset', preset: 'logo', color: '#3a8f4a', fgColor: '#ffffff' }
-      expect(lastMsg(ws).lobby.people[0]).toMatchObject({ name: 'Christoph', avatar: green })
-      expect(lastMsg(me).lobby.faces[0]).toMatchObject({ name: 'Christoph', avatar: green })
+      const chalkOnNeon = { kind: 'preset', foreground: 'chalk', background: 'neon' }
+      expect(lastMsg(ws).lobby.people[0]).toMatchObject({ name: 'Christoph', avatar: chalkOnNeon })
+      expect(lastMsg(me).lobby.faces[0]).toMatchObject({ name: 'Christoph', avatar: chalkOnNeon })
       // Back to the default, for the tests after this one
       await db
         .updateTable('user')
-        .set({ avatar_kind: 'preset', avatar_preset: 'logo', avatar_color: '#808080', avatar_fg_color: '#000000' })
+        .set({ avatar_kind: 'preset', avatar_preset: 'classic', avatar_background: 'classic' })
         .where('id', '=', 'chris')
         .execute()
     })

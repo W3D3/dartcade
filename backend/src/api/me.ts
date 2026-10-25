@@ -11,12 +11,11 @@ import {
   setAvatarUpload,
   setInvisible,
   updatePreferences,
-  UnknownAvatarColorError,
-  UnknownAvatarPresetError,
+  UnknownAvatarFinishError,
 } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
 import { hasPerk, unlockedPictures } from '../db/progression.js'
-import { AVATAR_PRESETS, isAvatarPreset } from '../shared/avatarPresets.js'
+import { AVATAR_FINISHES, isAvatarFinish } from '../shared/avatarFinishes.js'
 import { pictureFor } from '../shared/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
@@ -60,7 +59,7 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
       impersonating,
       suggestedName: account.nameNeedsChange ? await suggestName(db, account.name, account.id) : null,
       // Pictures are rewards only while progression is on
-      pictures: (await progressionOn(userId)) ? await unlockedPictures(db, userId) : AVATAR_PRESETS.map(p => p.id),
+      pictures: (await progressionOn(userId)) ? await unlockedPictures(db, userId) : AVATAR_FINISHES.map(f => f.id),
     }
   }
 
@@ -75,15 +74,17 @@ export function meApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error
     }
     if (req.body.invisible !== undefined) await setInvisible(db, req.userId, req.body.invisible)
     if (req.body.avatar !== undefined) {
-      // A picture is a reward: locked ones can't be worn
-      const preset = req.body.avatar.kind === 'preset' ? req.body.avatar.preset : undefined
-      if (preset && isAvatarPreset(preset) && (await progressionOn(req.userId)) && !(await hasPerk(db, req.userId, pictureFor(preset))))
-        throw new ApiError(409, { error: `avatar preset not unlocked yet: ${preset}` })
+      // A picture is a reward: a finish not unlocked yet can't be worn on either layer (unknown ones are setAvatar's 400)
+      const { avatar } = req.body
+      const layers = avatar.kind === 'preset' ? [avatar.foreground, avatar.background] : []
+      if (layers.length > 0 && layers.every(id => id !== undefined && isAvatarFinish(id)) && (await progressionOn(req.userId)))
+        for (const id of new Set(layers))
+          if (id && !(await hasPerk(db, req.userId, pictureFor(id))))
+            throw new ApiError(409, { error: `avatar finish not unlocked yet: ${id}` })
       try {
-        await setAvatar(db, req.userId, req.body.avatar)
+        await setAvatar(db, req.userId, avatar)
       } catch (err) {
-        if (err instanceof UnknownAvatarPresetError) throw new ApiError(400, { error: `unknown avatar preset: ${err.message}` })
-        if (err instanceof UnknownAvatarColorError) throw new ApiError(400, { error: `unknown avatar color: ${err.message}` })
+        if (err instanceof UnknownAvatarFinishError) throw new ApiError(400, { error: `unknown avatar finish: ${err.message}` })
         throw err
       }
       await opts.onAvatarChanged?.(req.userId)

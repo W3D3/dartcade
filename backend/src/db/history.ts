@@ -57,8 +57,7 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
       'gp.forfeited',
       'u.avatar_kind',
       'u.avatar_preset',
-      'u.avatar_color',
-      'u.avatar_fg_color',
+      'u.avatar_background',
       'u.avatar_version',
     ])
     .where('gp.session_id', 'in', ids)
@@ -82,8 +81,7 @@ async function placedSeats(db: Kysely<Database>, ids: string[]): Promise<Map<str
             : toAvatar({
                 avatar_kind: r.avatar_kind,
                 avatar_preset: r.avatar_preset,
-                avatar_color: r.avatar_color,
-                avatar_fg_color: r.avatar_fg_color,
+                avatar_background: r.avatar_background,
                 avatar_version: r.avatar_version ?? 0,
               }),
         bot_level: r.bot_level,

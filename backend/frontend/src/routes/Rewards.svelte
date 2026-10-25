@@ -6,7 +6,6 @@
   import { Check, Lock, LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PerkPreview from '$lib/components/progress/PerkPreview.svelte'
-  import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
   import { fmtXp } from '$lib/progress/view'
@@ -19,7 +18,6 @@
   const level = $derived($progress?.level ?? 1)
   const toGo = $derived($progress ? levelOf($progress.xp).toGo : 0)
   const colors = $derived($progress?.perks.equipped.colors ?? 'colors.dartcade')
-  const avatar = $derived($currentUser?.avatar ?? null)
   const unlocked = $derived($progress?.perks.unlocked ?? [])
   const target = $derived(Number(params.level) || null)
   const tiers = $derived(
@@ -155,7 +153,7 @@
                   class="pv w-[110px] max-sm:shrink-0 sm:w-auto h-[44px] sm:h-[62px] flex flex-wrap items-center justify-center content-center gap-[5px]
                          {shown.length > 2 ? 'dense' : shown.length === 2 ? 'pair' : ''}"
                 >
-                  {#each shown as p (p.id)}<PerkPreview perk={p} {colors} {avatar} />{/each}
+                  {#each shown as p (p.id)}<PerkPreview perk={p} {colors} />{/each}
                   {#if l.perks.length > shown.length}<span class="text-[11px] font-semibold text-text-muted"
                       >+{l.perks.length - shown.length}</span
                     >{/if}
@@ -186,7 +184,7 @@
                 ? ''
                 : 'locked'}"
             >
-              <div class="pv w-12 shrink-0 flex justify-center"><PerkPreview perk={o.perks[0]} {colors} {avatar} short /></div>
+              <div class="pv w-12 shrink-0 flex justify-center"><PerkPreview perk={o.perks[0]} {colors} short /></div>
               <div class="min-w-0 flex flex-col gap-[2px]">
                 <span class="text-[13px] font-semibold">{o.name}</span>
                 <span class="text-[12px] {got ? 'text-accent' : 'text-text-muted'}">{o.when}{got ? ' · unlocked' : ''}</span>

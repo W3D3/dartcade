@@ -47,7 +47,7 @@ export const nextBigLevel = (level: number): number => Math.min(TOP_LEVEL, Math.
 
 export type OffTrack = { perks: Perk[]; name: string; when: string }
 
-/** The rewards earned with the day streak and in ranked, one entry per way to earn them. */
+/** The rewards earned with the day streak, in ranked and by challenges, one entry per way to earn them. */
 export const OFF_TRACK: readonly OffTrack[] = (() => {
   const groups = new Map<string, Perk[]>()
   for (const p of PERKS) {
@@ -55,10 +55,12 @@ export const OFF_TRACK: readonly OffTrack[] = (() => {
     const when = unlockText(p.unlock)
     groups.set(when, [...(groups.get(when) ?? []), p])
   }
-  // Streaks by length, then ranked: ten wins before reaching Gold
+  // Streaks by length, then ranked (ten wins before reaching Gold), then the challenges
   const order = (ps: Perk[]) => {
     const u = ps[0].unlock
-    return 'streak' in u ? u.streak : 'event' in u && u.event === 'rankedWins' ? 1e6 : 1e6 + 1
+    if ('streak' in u) return u.streak
+    if ('event' in u) return u.event === 'rankedWins' ? 1e6 : 1e6 + 1
+    return 1e6 + 2
   }
   return [...groups]
     .map(([when, perks]) => ({ perks, when, name: perks.map(p => p.name).join(' + ') }))

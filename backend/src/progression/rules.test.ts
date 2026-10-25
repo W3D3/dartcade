@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { perk } from '../shared/progression.js'
 import { gameAwards, reachedPerks, type DayTally, type PlayerGame } from './rules.js'
 
 const fresh: DayTally = { games: 0, manualGames: 0, dartXp: 0 }
@@ -76,9 +77,9 @@ describe('reachedPerks', () => {
     expect(ids.sort()).toEqual([
       'banner.chalk-scribbles',
       'colors.pub-green',
-      'picture.dart',
-      'picture.flame',
-      'picture.flight',
+      'picture.arcade',
+      'picture.chalk',
+      'picture.hot-streak',
       'title.oche-regular',
     ])
   })
@@ -86,7 +87,13 @@ describe('reachedPerks', () => {
     expect(reachedPerks({ level: 1, streak: 0, ranked: none })).toEqual([])
     expect(reachedPerks({ level: 1, streak: 0, ranked: { wins: 10, bestRank: 15 } }).map(p => p.id)).toEqual([
       'colors.oche-red',
-      'picture.shield',
+      'picture.crystal',
     ])
+  })
+  it('never reaches a challenge perk (nothing unlocks one yet)', () => {
+    const ids = reachedPerks({ level: 999, streak: 999, ranked: { wins: 999, bestRank: 99 } }).map(p => p.id)
+    expect(ids).toContain('picture.gold')
+    expect(ids).not.toContain('picture.frost')
+    expect(ids.filter(id => 'challenge' in (perk(id)?.unlock ?? {}))).toEqual([])
   })
 })

@@ -133,7 +133,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('035_retired_avatar_presets migr
     await sql`INSERT INTO "user" (id, name, email, avatar_preset, avatar_color, avatar_fg_color) VALUES
       ('u1', 'Star', 'u1@x', 'star', '#2d6cdf', '#ffffff'), ('u2', 'Crown', 'u2@x', 'crown', '#c0392b', '#000000'),
       ('u3', 'Dart', 'u3@x', 'dart', '#3a8f4a', '#ffffff')`.execute(db)
-    await runMigrations(db)
+    await runMigrations(db, { until: '035_retired_avatar_presets.sql' })
   })
 
   afterAll(async () => {
@@ -143,12 +143,71 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('035_retired_avatar_presets migr
   })
 
   it('puts wearers of a retired picture back on the mark, keeping their colours', async () => {
-    const rows = await db.selectFrom('user').select(['id', 'avatar_preset', 'avatar_color', 'avatar_fg_color']).orderBy('id').execute()
+    // The colour columns are gone from 038 on, so not in the typed schema
+    const { rows } = await sql<{
+      id: string
+      avatar_preset: string
+      avatar_color: string
+      avatar_fg_color: string
+    }>`SELECT id, avatar_preset, avatar_color, avatar_fg_color FROM "user" ORDER BY id`.execute(db)
     expect(rows.map(r => [r.id, r.avatar_preset, r.avatar_color, r.avatar_fg_color])).toEqual([
       ['u1', 'logo', '#2d6cdf', '#ffffff'],
       ['u2', 'logo', '#c0392b', '#000000'],
       ['u3', 'dart', '#3a8f4a', '#ffffff'],
     ])
+  })
+})
+
+describe.skipIf(!process.env.TEST_DATABASE_URL)('038_avatar_finishes migration', () => {
+  const SCHEMA_038 = 'mig_038_test'
+  let admin: Kysely<Database>
+  let db: Kysely<Database>
+
+  beforeAll(async () => {
+    admin = createDb(url)
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_038} CASCADE`).execute(admin)
+    await sql.raw(`CREATE SCHEMA ${SCHEMA_038}`).execute(admin)
+    db = createDb(`${url}${url.includes('?') ? '&' : '?'}options=-c%20search_path%3D${SCHEMA_038}`)
+    await runMigrations(db, { until: '037_bridge_install_tokens.sql' })
+    await sql`INSERT INTO "user" (id, name, email, avatar_kind, avatar_preset) VALUES
+      ('u1', 'Flame', 'u1@x', 'preset', 'flame'), ('u2', 'Logo', 'u2@x', 'preset', 'logo'),
+      ('u3', 'Odd', 'u3@x', 'preset', 'target'), ('u4', 'Initials', 'u4@x', 'none', NULL)`.execute(db)
+    await sql`INSERT INTO user_unlocks (user_id, perk_id, source) VALUES
+      ('u1', 'picture.flame', 'streak'), ('u1', 'picture.dart', 'level'), ('u1', 'title.chalker', 'level'),
+      ('u2', 'picture.shield', 'event'), ('u2', 'picture.crystal', 'event')`.execute(db)
+    await runMigrations(db)
+  })
+
+  afterAll(async () => {
+    await db.destroy()
+    await sql.raw(`DROP SCHEMA IF EXISTS ${SCHEMA_038} CASCADE`).execute(admin)
+    await admin.destroy()
+  })
+
+  it('puts each old picture on both layers as its finish', async () => {
+    const rows = await db.selectFrom('user').select(['id', 'avatar_kind', 'avatar_preset', 'avatar_background']).orderBy('id').execute()
+    expect(rows.map(r => [r.id, r.avatar_kind, r.avatar_preset, r.avatar_background])).toEqual([
+      ['u1', 'preset', 'hot-streak', 'hot-streak'],
+      ['u2', 'preset', 'classic', 'classic'],
+      ['u3', 'preset', 'classic', 'classic'],
+      ['u4', 'none', null, null],
+    ])
+  })
+
+  it('renames the picture rewards, keeping one row where the new id was already held', async () => {
+    const rows = await db.selectFrom('user_unlocks').select(['user_id', 'perk_id']).orderBy('user_id').orderBy('perk_id').execute()
+    expect(rows.map(r => [r.user_id, r.perk_id])).toEqual([
+      ['u1', 'picture.chalk'],
+      ['u1', 'picture.hot-streak'],
+      ['u1', 'title.chalker'],
+      ['u2', 'picture.crystal'],
+    ])
+  })
+
+  it('starts new accounts on classic on classic', async () => {
+    await sql`INSERT INTO "user" (id, name, email) VALUES ('u5', 'New', 'u5@x')`.execute(db)
+    const row = await db.selectFrom('user').select(['avatar_preset', 'avatar_background']).where('id', '=', 'u5').executeTakeFirstOrThrow()
+    expect(row).toEqual({ avatar_preset: 'classic', avatar_background: 'classic' })
   })
 })
 

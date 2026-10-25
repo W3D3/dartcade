@@ -44,27 +44,21 @@ describe('Avatar', () => {
     expect(out).not.toContain('lucide-bot')
   })
 
-  it("shows the Dartcade mark on its chosen background and foreground colours instead of the initial, when avatar.kind is 'preset'", () => {
-    const out = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#808080', fgColor: '#000000' } })
-    expect(out).toContain('lucide-dartcade-mark')
+  it("draws the background finish, then the foreground finish, instead of the initial, when avatar.kind is 'preset'", () => {
+    const out = html({ name: 'Lena', avatar: { kind: 'preset', foreground: 'gold', background: 'neon' } })
     expect(out).not.toContain('>L<')
-    expect(out).toContain('background-color: #808080')
-    expect(out).toContain('color: #000000')
     expect(out).not.toContain(avatarColor('Lena'))
+    const bg = out.indexOf('href="#finish-bg-neon"')
+    expect(bg).toBeGreaterThan(-1)
+    expect(out.indexOf('href="#finish-fg-gold"')).toBeGreaterThan(bg)
   })
 
-  it('background and foreground colours are independent — either can change without the other', () => {
-    const out = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#2d6cdf', fgColor: '#ffffff' } })
-    expect(out).toContain('background-color: #2d6cdf')
-    expect(out).toContain('color: #ffffff')
-  })
-
-  it("shows the preset's real colours even under tone='accent' or 'quiet' — a chosen avatar is never hidden behind a forced chip colour", () => {
-    const accent = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#3a8f4a', fgColor: '#ffffff' }, tone: 'accent' })
-    expect(accent).toContain('background-color: #3a8f4a')
+  it("shows the picture as chosen even under tone='accent' or 'quiet' — a chosen avatar is never hidden behind a forced chip colour", () => {
+    const accent = html({ name: 'Lena', avatar: { kind: 'preset', foreground: 'chalk', background: 'lava' }, tone: 'accent' })
+    expect(accent).toContain('#finish-fg-chalk')
     expect(accent).not.toContain('bg-accent')
-    const quiet = html({ name: 'Lena', avatar: { kind: 'preset', preset: 'logo', color: '#3a8f4a', fgColor: '#ffffff' }, tone: 'quiet' })
-    expect(quiet).toContain('background-color: #3a8f4a')
+    const quiet = html({ name: 'Lena', avatar: { kind: 'preset', foreground: 'chalk', background: 'lava' }, tone: 'quiet' })
+    expect(quiet).toContain('#finish-bg-lava')
     expect(quiet).not.toContain('bg-line-3')
   })
 
@@ -89,10 +83,10 @@ describe('Avatar', () => {
     const preset = html({
       name: 'Bot Lvl 4',
       bot: { level: 4 },
-      avatar: { kind: 'preset', preset: 'logo', color: '#808080', fgColor: '#000000' },
+      avatar: { kind: 'preset', foreground: 'classic', background: 'classic' },
     })
     expect(preset).toContain('lucide-bot')
-    expect(preset).not.toContain('lucide-dartcade-mark')
+    expect(preset).not.toContain('#finish-')
     const upload = html({ name: 'Bot Lvl 4', bot: { level: 4 }, userId: 'x', avatar: { kind: 'upload', version: 1 } })
     expect(upload).toContain('lucide-bot')
     expect(upload).not.toContain('<img')

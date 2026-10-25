@@ -200,7 +200,7 @@ export function streakNow(s: StreakState, today: string): number {
 // ---- Cosmetics -------------------------------------------------------------------------------
 // Everything a level, a streak milestone or a deed unlocks is cosmetic: on the profile card a title,
 // a banner, card colours, a frame round the picture and the name's style; profile pictures (the
-// avatar presets of shared/avatarPresets.ts); the sound pack your darts make on the match screen;
+// avatar finishes of shared/avatarFinishes.ts); the sound pack your darts make on the match screen;
 // and the celebration your wins get. Nothing changes a game, a rating or a queue, and the avatar
 // ring is never one (it means online status).
 
@@ -209,8 +209,8 @@ export type PerkKind = (typeof PERK_KINDS)[number]
 /** A kind worn through PUT /api/progress/equip; the picture is the avatar, worn through PATCH /api/me. */
 export type EquipKind = Exclude<PerkKind, 'picture'>
 export const EQUIP_KINDS: readonly EquipKind[] = PERK_KINDS.filter((k): k is EquipKind => k !== 'picture')
-/** What unlocks a perk: a level, a day-streak milestone, or something done once. */
-export type Unlock = { level: number } | { streak: number } | { event: 'rankedWins' | 'rankedGold' }
+/** What unlocks a perk: a level, a day-streak milestone, something done once, or a challenge (its text; nothing unlocks one yet). */
+export type Unlock = { level: number } | { streak: number } | { event: 'rankedWins' | 'rankedGold' } | { challenge: string }
 /** `animated`: it moves (a sweep, a shimmer, a flicker), which makes it one of the bigger rewards. */
 export type Perk = { id: string; kind: PerkKind; name: string; unlock: Unlock; animated?: true }
 
@@ -289,17 +289,28 @@ export const PERKS: readonly Perk[] = [
   { id: 'colors.holo', kind: 'colors', name: 'Holographic', unlock: { level: 50 }, animated: true },
   { id: 'colors.oche-red', kind: 'colors', name: 'Oche red', unlock: { event: 'rankedGold' } },
   { id: 'colors.gold-leaf', kind: 'colors', name: 'Gold leaf', unlock: { streak: 30 } },
-  // Pictures: `picture.<preset>` is the avatar preset of that id
-  { id: 'picture.logo', kind: 'picture', name: 'Dartcade mark', unlock: { level: 1 } },
-  { id: 'picture.dart', kind: 'picture', name: 'Dart', unlock: { level: 3 } },
-  { id: 'picture.flight', kind: 'picture', name: 'Flight', unlock: { level: 5 } },
-  { id: 'picture.board', kind: 'picture', name: 'Board', unlock: { level: 10 } },
-  { id: 'picture.trophy', kind: 'picture', name: 'Trophy', unlock: { level: 25 } },
-  { id: 'picture.crossed-darts', kind: 'picture', name: 'Crossed darts', unlock: { level: 35 } },
-  { id: 'picture.burning-dart', kind: 'picture', name: 'Burning dart', unlock: { level: 45 }, animated: true },
-  { id: 'picture.golden-dart', kind: 'picture', name: 'Golden dart', unlock: { level: 50 } },
-  { id: 'picture.flame', kind: 'picture', name: 'Flame', unlock: { streak: 7 } },
-  { id: 'picture.shield', kind: 'picture', name: 'Shield', unlock: { event: 'rankedWins' } },
+  // Pictures: `picture.<finish>` is the avatar finish of that id (shared/avatarFinishes.ts), on either layer
+  { id: 'picture.classic', kind: 'picture', name: 'Classic', unlock: { level: 1 } },
+  { id: 'picture.chalk', kind: 'picture', name: 'Chalk', unlock: { level: 3 } },
+  { id: 'picture.arcade', kind: 'picture', name: 'Arcade', unlock: { level: 5 } },
+  { id: 'picture.bronze', kind: 'picture', name: 'Bronze', unlock: { level: 10 } },
+  { id: 'picture.chrome', kind: 'picture', name: 'Chrome', unlock: { level: 25 } },
+  { id: 'picture.neon', kind: 'picture', name: 'Neon', unlock: { level: 35 } },
+  { id: 'picture.inferno', kind: 'picture', name: 'Inferno', unlock: { level: 45 }, animated: true },
+  { id: 'picture.gold', kind: 'picture', name: 'Gold', unlock: { level: 50 } },
+  { id: 'picture.hot-streak', kind: 'picture', name: 'Hot streak', unlock: { streak: 7 } },
+  { id: 'picture.crystal', kind: 'picture', name: 'Crystal', unlock: { event: 'rankedWins' } },
+  // Nothing unlocks these yet (there are no achievements): they show what will
+  { id: 'picture.frost', kind: 'picture', name: 'Frost', unlock: { challenge: 'Check out 100+' } },
+  { id: 'picture.carbon', kind: 'picture', name: 'Carbon', unlock: { challenge: 'Play 100 games' } },
+  { id: 'picture.holo', kind: 'picture', name: 'Holo', unlock: { challenge: 'Season 1 reward' } },
+  { id: 'picture.marble', kind: 'picture', name: 'Marble', unlock: { challenge: 'Win 25 ranked games' } },
+  { id: 'picture.lava', kind: 'picture', name: 'Lava', unlock: { challenge: 'Win 5 in a row' } },
+  { id: 'picture.electric', kind: 'picture', name: 'Electric', unlock: { challenge: 'Throw a 180' } },
+  { id: 'picture.galaxy', kind: 'picture', name: 'Galaxy', unlock: { challenge: 'Reach Elite rank' } },
+  { id: 'picture.toxic', kind: 'picture', name: 'Toxic', unlock: { challenge: 'Minigolf hole in one' } },
+  { id: 'picture.walnut', kind: 'picture', name: 'Walnut', unlock: { challenge: 'Play 20 games with friends' } },
+  { id: 'picture.glitch', kind: 'picture', name: 'Glitch', unlock: { challenge: 'Launch week event' } },
   { id: 'frame.none', kind: 'frame', name: 'No frame', unlock: { level: 1 } },
   { id: 'frame.bronze', kind: 'frame', name: 'Bronze', unlock: { level: 10 } },
   { id: 'frame.silver', kind: 'frame', name: 'Silver', unlock: { level: 20 } },
@@ -323,8 +334,8 @@ export const PERKS: readonly Perk[] = [
 export const BIG_KINDS: ReadonlySet<PerkKind> = new Set(['picture', 'frame', 'name', 'sound', 'celebration'])
 export const isBig = (p: Perk): boolean => BIG_KINDS.has(p.kind) || p.animated === true
 
-/** The perk that unlocks avatar preset `preset`. */
-export const pictureFor = (preset: string): string => `picture.${preset}`
+/** The perk that unlocks avatar finish `finish`. */
+export const pictureFor = (finish: string): string => `picture.${finish}`
 
 export const perk = (id: string): Perk | undefined => PERKS.find(p => p.id === id)
 
@@ -354,6 +365,7 @@ const levelOfUnlock = (p: Perk): number => ('level' in p.unlock ? p.unlock.level
 export function unlockText(u: Unlock): string {
   if ('level' in u) return `Level ${u.level}`
   if ('streak' in u) return `${u.streak}-day streak`
+  if ('challenge' in u) return u.challenge
   return { rankedWins: 'Win 10 ranked games', rankedGold: 'Reach ranked Gold' }[u.event]
 }
 

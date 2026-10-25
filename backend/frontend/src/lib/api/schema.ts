@@ -1841,7 +1841,7 @@ export interface components {
         };
         /**
          * Avatar
-         * @description A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo
+         * @description A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo
          */
         Avatar: {
             /** @enum {string} */
@@ -1849,11 +1849,10 @@ export interface components {
         } | {
             /** @enum {string} */
             kind: "preset";
-            preset: string;
-            /** @description The preset's background colour (hex) */
-            color: string;
-            /** @description The preset's icon colour (hex) */
-            fgColor: string;
+            /** @description The finish of the mark in front */
+            foreground: string;
+            /** @description The finish of the disc behind it */
+            background: string;
         } | {
             /** @enum {string} */
             kind: "upload";
@@ -1862,17 +1861,15 @@ export interface components {
         };
         /**
          * AvatarChoice
-         * @description What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset, color and fgColor are required, and each validated against its own known list, when kind is 'preset' — background and foreground chosen independently, so any colour can go with any other. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.
+         * @description What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. foreground and background are required, and each must be a built-in finish, when kind is 'preset'; the two layers are picked independently. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.
          */
         AvatarChoice: {
             /** @enum {string} */
             kind: "none" | "preset";
-            /** @description A built-in preset icon id (Settings shows the choices); required when kind is 'preset' */
-            preset?: string;
-            /** @description A built-in swatch (hex, Settings shows the choices); required when kind is 'preset' */
-            color?: string;
-            /** @description A built-in swatch for the icon itself (hex, Settings shows the choices); required when kind is 'preset' */
-            fgColor?: string;
+            /** @description The finish of the mark in front (Settings shows the choices); required when kind is 'preset' */
+            foreground?: string;
+            /** @description The finish of the disc behind it; required when kind is 'preset' */
+            background?: string;
         };
         FriendRequest: {
             /** @description Their exact name, any case; a leading @ is fine */
@@ -2768,7 +2765,7 @@ export interface components {
             number: number;
         };
         Me: {
-            /** @description The avatar presets you may wear (progression rewards) */
+            /** @description The avatar finishes you may wear, on either layer (progression rewards) */
             pictures: string[];
             id: string;
             /** @description Your handle, shown as @name */

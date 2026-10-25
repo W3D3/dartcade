@@ -3,7 +3,7 @@ import { createFastify } from './fastify.js'
 import { meApiPlugin } from './me.js'
 import { ApiError } from './errors.js'
 import { setupFlags } from '../flags/index.js'
-import { AVATAR_PRESETS } from '../shared/avatarPresets.js'
+import { AVATAR_FINISHES } from '../shared/avatarFinishes.js'
 import * as middleware from '../auth/middleware.js'
 
 vi.mock('../auth/middleware.js', () => ({
@@ -20,8 +20,7 @@ vi.mock('../db/users.js', () => ({
   setAvatarUpload: vi.fn(),
   getPreferences: vi.fn(),
   updatePreferences: vi.fn(),
-  UnknownAvatarPresetError: class UnknownAvatarPresetError extends Error {},
-  UnknownAvatarColorError: class UnknownAvatarColorError extends Error {},
+  UnknownAvatarFinishError: class UnknownAvatarFinishError extends Error {},
 }))
 vi.mock('../users/account.js', () => ({ renameUser: vi.fn(), suggestName: vi.fn() }))
 vi.mock('../db/progression.js', () => ({ hasPerk: vi.fn(), unlockedPictures: vi.fn() }))
@@ -33,8 +32,7 @@ import {
   setAvatarUpload,
   setInvisible,
   updatePreferences,
-  UnknownAvatarColorError,
-  UnknownAvatarPresetError,
+  UnknownAvatarFinishError,
 } from '../db/users.js'
 import { renameUser, suggestName } from '../users/account.js'
 import { hasPerk, unlockedPictures } from '../db/progression.js'
@@ -62,7 +60,7 @@ beforeEach(() => {
   vi.mocked(suggestName).mockReset().mockResolvedValue('Phil.Taylor')
   vi.mocked(renameUser).mockReset().mockResolvedValue('Phil_T')
   vi.mocked(hasPerk).mockReset().mockResolvedValue(true)
-  vi.mocked(unlockedPictures).mockReset().mockResolvedValue(['logo', 'dart'])
+  vi.mocked(unlockedPictures).mockReset().mockResolvedValue(['classic', 'chalk'])
 })
 
 describe('/api/me', () => {
@@ -88,7 +86,7 @@ describe('/api/me', () => {
       suggestedName: 'Phil.Taylor',
       createdAt: '2026-08-01T10:00:00.000Z',
       avatar: { kind: 'none' },
-      pictures: ['logo', 'dart'],
+      pictures: ['classic', 'chalk'],
     })
   })
 
@@ -196,30 +194,31 @@ describe('/api/me', () => {
     const res = await a.inject({
       method: 'PATCH',
       url: '/api/me',
-      payload: { avatar: { kind: 'preset', preset: 'crosshair', color: '#4a6b3a' } },
+      payload: { avatar: { kind: 'preset', foreground: 'chalk', background: 'neon' } },
     })
     expect(res.statusCode).toBe(200)
-    expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', preset: 'crosshair', color: '#4a6b3a' })
+    expect(setAvatar).toHaveBeenCalledWith({}, 'old', { kind: 'preset', foreground: 'chalk', background: 'neon' })
     expect(onChanged).toHaveBeenCalledWith('old')
     expect(onAvatarChanged).toHaveBeenCalledWith('old')
   })
 
-  it('refuses a picture that is not unlocked yet', async () => {
+  it('refuses a picture that is not unlocked yet, on either layer', async () => {
     vi.mocked(setAvatar).mockReset().mockResolvedValue(undefined)
-    vi.mocked(hasPerk).mockResolvedValue(false)
-    const res = await app().inject({
-      method: 'PATCH',
-      url: '/api/me',
-      payload: { avatar: { kind: 'preset', preset: 'trophy', color: '#000000', fgColor: '#ffffff' } },
-    })
-    expect(res.statusCode).toBe(409)
-    expect(hasPerk).toHaveBeenCalledWith({}, 'old', 'picture.trophy')
+    vi.mocked(hasPerk).mockImplementation((_db, _user, id) => Promise.resolve(id !== 'picture.chrome'))
+    for (const avatar of [
+      { kind: 'preset', foreground: 'chrome', background: 'classic' },
+      { kind: 'preset', foreground: 'classic', background: 'chrome' },
+    ]) {
+      const res = await app().inject({ method: 'PATCH', url: '/api/me', payload: { avatar } })
+      expect(res.statusCode).toBe(409)
+    }
+    expect(hasPerk).toHaveBeenCalledWith({}, 'old', 'picture.chrome')
     expect(setAvatar).not.toHaveBeenCalled()
   })
 
   it('lists the pictures you may wear', async () => {
     const res = await app().inject({ method: 'GET', url: '/api/me' })
-    expect(JSON.parse(res.body).pictures).toEqual(['logo', 'dart'])
+    expect(JSON.parse(res.body).pictures).toEqual(['classic', 'chalk'])
   })
 
   it('lets every picture be worn while progression is off', async () => {
@@ -229,30 +228,21 @@ describe('/api/me', () => {
     const res = await app().inject({
       method: 'PATCH',
       url: '/api/me',
-      payload: { avatar: { kind: 'preset', preset: 'trophy', color: '#000000', fgColor: '#ffffff' } },
+      payload: { avatar: { kind: 'preset', foreground: 'chrome', background: 'gold' } },
     })
     expect(res.statusCode).toBe(200)
     expect(setAvatar).toHaveBeenCalled()
-    expect(JSON.parse(res.body).pictures).toEqual(AVATAR_PRESETS.map(p => p.id))
+    expect(JSON.parse(res.body).pictures).toEqual(AVATAR_FINISHES.map(f => f.id))
     expect(unlockedPictures).not.toHaveBeenCalled()
   })
 
-  it('answers 400 for an unknown preset id', async () => {
-    vi.mocked(setAvatar).mockReset().mockRejectedValue(new UnknownAvatarPresetError('nope'))
+  it('answers 400 for an unknown finish, not 409 even when the other layer is locked', async () => {
+    vi.mocked(setAvatar).mockReset().mockRejectedValue(new UnknownAvatarFinishError('nope'))
+    vi.mocked(hasPerk).mockResolvedValue(false)
     const res = await app().inject({
       method: 'PATCH',
       url: '/api/me',
-      payload: { avatar: { kind: 'preset', preset: 'nope', color: '#4a6b3a' } },
-    })
-    expect(res.statusCode).toBe(400)
-  })
-
-  it('answers 400 for an unknown colour', async () => {
-    vi.mocked(setAvatar).mockReset().mockRejectedValue(new UnknownAvatarColorError('#abcdef'))
-    const res = await app().inject({
-      method: 'PATCH',
-      url: '/api/me',
-      payload: { avatar: { kind: 'preset', preset: 'crosshair', color: '#abcdef' } },
+      payload: { avatar: { kind: 'preset', foreground: 'gold', background: 'nope' } },
     })
     expect(res.statusCode).toBe(400)
   })

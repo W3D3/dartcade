@@ -190,8 +190,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
       'p.bot_level',
       'u.avatar_kind',
       'u.avatar_preset',
-      'u.avatar_color',
-      'u.avatar_fg_color',
+      'u.avatar_background',
       'u.avatar_version',
     ])
     .where('p.lobby_id', '=', id)
@@ -251,8 +250,7 @@ export async function loadLobby(db: Kysely<Database>, id: string): Promise<Lobby
           : toAvatar({
               avatar_kind: p.avatar_kind,
               avatar_preset: p.avatar_preset,
-              avatar_color: p.avatar_color,
-              avatar_fg_color: p.avatar_fg_color,
+              avatar_background: p.avatar_background,
               avatar_version: p.avatar_version ?? 0,
             }),
     })),

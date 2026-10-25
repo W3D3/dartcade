@@ -3,13 +3,13 @@
   // (your profile's Customise). An unlocked one is a tap to wear; any of them, locked ones too, can
   // be tried on the card first. Locked ones are dashed and grey, in colour on hover, with what
   // unlocks them.
-  // The picture is your avatar (shared/avatarPresets.ts), worn in the colours you picked in
-  // Settings; the photo reward is uploaded there too.
+  // The picture is your avatar (shared/avatarFinishes.ts): a finish here is worn on both layers
+  // (Settings picks the two apart); the photo is uploaded there too.
   import { Check, Lock, PartyPopper, Play, Trophy, Undo2, Volume2, VolumeX } from '@lucide/svelte'
   import ProfileCard from './ProfileCard.svelte'
   import Avatar from '../Avatar.svelte'
   import { currentUser } from '$lib/auth'
-  import { presetIn, wearPicture } from '$lib/progress/pictures'
+  import { finishAvatar, wearPicture } from '$lib/progress/pictures'
   import SegmentedControl from '../SegmentedControl.svelte'
   import ErrorText from '../ErrorText.svelte'
   import { profileOf, statusOf } from '$lib/progress/profiles'
@@ -39,12 +39,12 @@
   }))
   const perks = $derived(PERKS.filter(p => p.kind === kind))
   const myAvatar = $derived($currentUser?.avatar ?? null)
-  const presetOf = (p: Perk) => p.id.slice('picture.'.length)
+  const finishOf = (p: Perk) => p.id.slice('picture.'.length)
   const look = $derived<Equipped>(trying && trying.kind !== 'picture' ? { ...equipped, [trying.kind]: trying.id } : equipped)
-  const avatar = $derived(trying?.kind === 'picture' ? presetIn(myAvatar, presetOf(trying)) : undefined)
+  const avatar = $derived(trying?.kind === 'picture' ? finishAvatar(finishOf(trying)) : undefined)
   function isOn(p: Perk): boolean {
     if (p.kind !== 'picture') return equipped[p.kind] === p.id
-    return myAvatar?.kind === 'preset' && myAvatar.preset === presetOf(p)
+    return myAvatar?.kind === 'preset' && myAvatar.foreground === finishOf(p) && myAvatar.background === finishOf(p)
   }
 
   // What unlocks it: 'Level 15', '14-day streak'
@@ -73,7 +73,7 @@
     if (busy) return
     busy = true
     trying = null
-    error = (p.kind === 'picture' ? await wearPicture(presetOf(p)) : await equip({ [p.kind]: p.id })) ?? ''
+    error = (p.kind === 'picture' ? await wearPicture(finishOf(p), finishOf(p)) : await equip({ [p.kind]: p.id })) ?? ''
     busy = false
   }
 
@@ -183,7 +183,7 @@
                     style="background: {c.bg}; color: {c.fg}">Aa</span
                   >
                 {:else if p.kind === 'picture'}
-                  <Avatar name="" avatar={presetIn(myAvatar, presetOf(p))} size={40} />
+                  <Avatar name="" avatar={finishAvatar(finishOf(p))} size={40} />
                 {:else if p.kind === 'frame'}
                   <span class="relative m-[9px] flex rounded-full"
                     ><Avatar name={$profile?.name ?? ''} avatar={myAvatar} {userId} size={26} /><CardFrame frame={p.id} /></span

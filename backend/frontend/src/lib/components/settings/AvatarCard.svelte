@@ -1,12 +1,14 @@
 <script lang="ts">
-  // Settings' Profile: your avatar — a picture on a background and foreground colour you pick
-  // independently, or (behind the avatar.upload.enabled flag, off by default: not meant to ship
-  // yet) a photo. Pictures are progression rewards: the Dartcade mark is everyone's, the others
-  // unlock by level, streak or ranked deed (locked ones show what unlocks them). Picking applies at once; "Use initials" opts back out to bare initials.
-  import { Camera, Check, Lock } from '@lucide/svelte'
-  import { AVATAR_COLORS, AVATAR_PRESETS, DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '$shared/avatarPresets.js'
-  import { picturePerk, pictureUnlock, presetIn } from '$lib/progress/pictures'
+  // Settings' Profile: your avatar — the Dartcade mark in one finish (foreground) on a disc in
+  // another (background), each picked on its own, or (behind the avatar.upload.enabled flag, off
+  // by default: not meant to ship yet) a photo. Finishes are progression rewards: Classic is
+  // everyone's, the others unlock by level, streak, ranked deed or challenge (locked ones show what
+  // unlocks them). Picking applies at once; "Use initials" opts back out to bare initials.
+  import { Camera, Lock } from '@lucide/svelte'
+  import { AVATAR_FINISHES, DEFAULT_AVATAR_FINISH } from '$shared/avatarFinishes.js'
+  import { pictureUnlock } from '$lib/progress/pictures'
   import Avatar from '$lib/components/Avatar.svelte'
+  import FinishPicture from '$lib/components/FinishPicture.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { api } from '$lib/api'
   import { currentUser } from '$lib/auth'
@@ -20,9 +22,14 @@
   const userId = $derived($currentUser?.id ?? null)
   const name = $derived($currentUser?.name ?? '')
   const uploadEnabled = flag('avatar.upload.enabled')
-  const pictures = $derived($currentUser?.pictures ?? [DEFAULT_AVATAR_PRESET])
+  const pictures = $derived($currentUser?.pictures ?? [DEFAULT_AVATAR_FINISH])
+  const worn = $derived(avatar.kind === 'preset' ? avatar : { foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH })
+  const LAYERS = [
+    { key: 'foreground', label: 'Foreground' },
+    { key: 'background', label: 'Background' },
+  ] as const
 
-  type PresetChoice = { kind: 'preset'; preset: string; color: string; fgColor: string }
+  type PresetChoice = { kind: 'preset'; foreground: string; background: string }
 
   async function setChoice(choice: { kind: 'none' } | PresetChoice) {
     busy = true
@@ -39,22 +46,9 @@
     }
   }
 
-  /** Picking a background colour keeps the current foreground (and vice versa); a sensible default the first time. */
-  function pickBg(color: string) {
-    void setChoice({
-      kind: 'preset',
-      preset: avatar.kind === 'preset' ? avatar.preset : DEFAULT_AVATAR_PRESET,
-      color,
-      fgColor: avatar.kind === 'preset' ? avatar.fgColor : DEFAULT_AVATAR_FG,
-    })
-  }
-  function pickFg(fgColor: string) {
-    void setChoice({
-      kind: 'preset',
-      preset: avatar.kind === 'preset' ? avatar.preset : DEFAULT_AVATAR_PRESET,
-      color: avatar.kind === 'preset' ? avatar.color : DEFAULT_AVATAR_BG,
-      fgColor,
-    })
+  /** Picking one layer keeps the other as it is (classic the first time). */
+  function pickLayer(layer: 'foreground' | 'background', finish: string) {
+    void setChoice({ kind: 'preset', foreground: worn.foreground, background: worn.background, [layer]: finish })
   }
 
   async function upload(file: File) {
@@ -106,89 +100,47 @@
       {/if}
     </div>
   </div>
-  <div class="flex flex-col gap-2">
-    <span class="text-[12px] font-semibold label-caps text-text-dim">Picture</span>
-    <div class="flex flex-wrap items-center gap-[10px]">
-      {#each AVATAR_PRESETS as p (p.id)}
-        {@const open = pictures.includes(p.id)}
-        {@const selected = avatar.kind === 'preset' && avatar.preset === p.id}
-        <button
-          type="button"
-          aria-label={open
-            ? `Use the ${picturePerk(p.id)?.name ?? p.id} picture`
-            : `${picturePerk(p.id)?.name ?? p.id}: unlocks at ${pictureUnlock(p.id)}`}
-          title={open ? picturePerk(p.id)?.name : `${picturePerk(p.id)?.name}: ${pictureUnlock(p.id)}`}
-          aria-pressed={selected}
-          disabled={busy || !open}
-          onclick={() => void setChoice(presetIn(avatar, p.id))}
-          class="group relative rounded-full disabled:cursor-default {selected
-            ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface-panel'
-            : ''}"
-        >
-          <!-- Locked ones are grey until you look at them -->
-          <span
-            class="flex transition-[filter,opacity] duration-200 {open
-              ? ''
-              : 'opacity-40 grayscale group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0'}"
+  {#each LAYERS as layer (layer.key)}
+    <div class="flex flex-col gap-2">
+      <span class="text-[12px] font-semibold label-caps text-text-dim">{layer.label}</span>
+      <div class="flex flex-wrap items-center gap-[10px]">
+        {#each AVATAR_FINISHES as f (f.id)}
+          {@const open = pictures.includes(f.id)}
+          {@const selected = avatar.kind === 'preset' && worn[layer.key] === f.id}
+          <button
+            type="button"
+            aria-label={open ? `Use ${f.name} for the ${layer.key}` : `${f.name}: ${pictureUnlock(f.id)}`}
+            title={open ? f.name : `${f.name}: ${pictureUnlock(f.id)}`}
+            aria-pressed={selected}
+            disabled={busy || !open}
+            onclick={() => pickLayer(layer.key, f.id)}
+            class="group relative rounded-full disabled:cursor-default {selected
+              ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface-panel'
+              : ''}"
           >
-            <Avatar {name} avatar={presetIn(avatar, p.id)} size={40} />
-          </span>
-          {#if !open}
+            <!-- Locked ones are grey until you look at them -->
             <span
-              class="absolute -right-1 -bottom-1 size-[18px] rounded-full bg-surface-2 border border-line-3 flex items-center justify-center text-text-muted"
-              ><Lock size={10} /></span
+              class="flex transition-[filter,opacity] duration-200 {open
+                ? ''
+                : 'opacity-40 grayscale group-hover:opacity-100 group-hover:grayscale-0 group-focus-visible:opacity-100 group-focus-visible:grayscale-0'}"
             >
-          {/if}
-        </button>
-      {/each}
+              <FinishPicture
+                foreground={layer.key === 'foreground' ? f.id : null}
+                background={layer.key === 'background' ? f.id : null}
+                size={40}
+              />
+            </span>
+            {#if !open}
+              <span
+                class="absolute -right-1 -bottom-1 size-[18px] rounded-full bg-surface-2 border border-line-3 flex items-center justify-center text-text-muted"
+                ><Lock size={10} /></span
+              >
+            {/if}
+          </button>
+        {/each}
+      </div>
     </div>
-  </div>
-  <div class="flex flex-col gap-2">
-    <span class="text-[12px] font-semibold label-caps text-text-dim">Background colour</span>
-    <div class="flex flex-wrap items-center gap-[10px]">
-      {#each AVATAR_COLORS as color (color)}
-        {@const selected = avatar.kind === 'preset' && avatar.color === color}
-        <button
-          type="button"
-          aria-label="Use this background colour"
-          aria-pressed={selected}
-          disabled={busy}
-          onclick={() => pickBg(color)}
-          style="background-color: {color}"
-          class="relative h-7 w-7 rounded-full border border-line disabled:opacity-50 {selected
-            ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface-panel'
-            : ''}"
-        >
-          {#if selected}
-            <Check size={14} class="absolute inset-0 m-auto text-white mix-blend-difference" />
-          {/if}
-        </button>
-      {/each}
-    </div>
-  </div>
-  <div class="flex flex-col gap-2">
-    <span class="text-[12px] font-semibold label-caps text-text-dim">Icon colour</span>
-    <div class="flex flex-wrap items-center gap-[10px]">
-      {#each AVATAR_COLORS as color (color)}
-        {@const selected = avatar.kind === 'preset' && avatar.fgColor === color}
-        <button
-          type="button"
-          aria-label="Use this icon colour"
-          aria-pressed={selected}
-          disabled={busy}
-          onclick={() => pickFg(color)}
-          style="background-color: {color}"
-          class="relative h-7 w-7 rounded-full border border-line disabled:opacity-50 {selected
-            ? 'ring-2 ring-accent ring-offset-2 ring-offset-surface-panel'
-            : ''}"
-        >
-          {#if selected}
-            <Check size={14} class="absolute inset-0 m-auto text-white mix-blend-difference" />
-          {/if}
-        </button>
-      {/each}
-    </div>
-  </div>
+  {/each}
   <button
     type="button"
     onclick={() => void setChoice({ kind: 'none' })}

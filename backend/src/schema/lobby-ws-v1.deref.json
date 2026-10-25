@@ -97,9 +97,8 @@
               "type": "object",
               "required": [
                 "kind",
-                "preset",
-                "color",
-                "fgColor"
+                "foreground",
+                "background"
               ],
               "additionalProperties": false,
               "properties": {
@@ -109,16 +108,13 @@
                     "preset"
                   ]
                 },
-                "preset": {
-                  "type": "string"
-                },
-                "color": {
+                "foreground": {
                   "type": "string",
-                  "description": "The preset's background colour (hex)"
+                  "description": "The finish of the mark in front"
                 },
-                "fgColor": {
+                "background": {
                   "type": "string",
-                  "description": "The preset's icon colour (hex)"
+                  "description": "The finish of the disc behind it"
                 }
               }
             },
@@ -623,9 +619,8 @@
                     "type": "object",
                     "required": [
                       "kind",
-                      "preset",
-                      "color",
-                      "fgColor"
+                      "foreground",
+                      "background"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -635,16 +630,13 @@
                           "preset"
                         ]
                       },
-                      "preset": {
-                        "type": "string"
-                      },
-                      "color": {
+                      "foreground": {
                         "type": "string",
-                        "description": "The preset's background colour (hex)"
+                        "description": "The finish of the mark in front"
                       },
-                      "fgColor": {
+                      "background": {
                         "type": "string",
-                        "description": "The preset's icon colour (hex)"
+                        "description": "The finish of the disc behind it"
                       }
                     }
                   },
@@ -1118,9 +1110,8 @@
                         "type": "object",
                         "required": [
                           "kind",
-                          "preset",
-                          "color",
-                          "fgColor"
+                          "foreground",
+                          "background"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -1130,16 +1121,13 @@
                               "preset"
                             ]
                           },
-                          "preset": {
-                            "type": "string"
-                          },
-                          "color": {
+                          "foreground": {
                             "type": "string",
-                            "description": "The preset's background colour (hex)"
+                            "description": "The finish of the mark in front"
                           },
-                          "fgColor": {
+                          "background": {
                             "type": "string",
-                            "description": "The preset's icon colour (hex)"
+                            "description": "The finish of the disc behind it"
                           }
                         }
                       },
@@ -1636,9 +1624,8 @@
                             "type": "object",
                             "required": [
                               "kind",
-                              "preset",
-                              "color",
-                              "fgColor"
+                              "foreground",
+                              "background"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -1648,16 +1635,13 @@
                                   "preset"
                                 ]
                               },
-                              "preset": {
-                                "type": "string"
-                              },
-                              "color": {
+                              "foreground": {
                                 "type": "string",
-                                "description": "The preset's background colour (hex)"
+                                "description": "The finish of the mark in front"
                               },
-                              "fgColor": {
+                              "background": {
                                 "type": "string",
-                                "description": "The preset's icon colour (hex)"
+                                "description": "The finish of the disc behind it"
                               }
                             }
                           },
@@ -2067,7 +2051,7 @@
               },
               "avatar": {
                 "title": "Avatar",
-                "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                 "oneOf": [
                   {
                     "type": "object",
@@ -2088,9 +2072,8 @@
                     "type": "object",
                     "required": [
                       "kind",
-                      "preset",
-                      "color",
-                      "fgColor"
+                      "foreground",
+                      "background"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -2100,16 +2083,13 @@
                           "preset"
                         ]
                       },
-                      "preset": {
-                        "type": "string"
-                      },
-                      "color": {
+                      "foreground": {
                         "type": "string",
-                        "description": "The preset's background colour (hex)"
+                        "description": "The finish of the mark in front"
                       },
-                      "fgColor": {
+                      "background": {
                         "type": "string",
-                        "description": "The preset's icon colour (hex)"
+                        "description": "The finish of the disc behind it"
                       }
                     }
                   },
@@ -2199,7 +2179,7 @@
         },
         "avatar": {
           "title": "Avatar",
-          "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+          "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
           "oneOf": [
             {
               "type": "object",
@@ -2220,9 +2200,8 @@
               "type": "object",
               "required": [
                 "kind",
-                "preset",
-                "color",
-                "fgColor"
+                "foreground",
+                "background"
               ],
               "additionalProperties": false,
               "properties": {
@@ -2232,16 +2211,13 @@
                     "preset"
                   ]
                 },
-                "preset": {
-                  "type": "string"
-                },
-                "color": {
+                "foreground": {
                   "type": "string",
-                  "description": "The preset's background colour (hex)"
+                  "description": "The finish of the mark in front"
                 },
-                "fgColor": {
+                "background": {
                   "type": "string",
-                  "description": "The preset's icon colour (hex)"
+                  "description": "The finish of the disc behind it"
                 }
               }
             },
@@ -2400,7 +2376,7 @@
               },
               "avatar": {
                 "title": "Avatar",
-                "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                 "oneOf": [
                   {
                     "type": "object",
@@ -2421,9 +2397,8 @@
                     "type": "object",
                     "required": [
                       "kind",
-                      "preset",
-                      "color",
-                      "fgColor"
+                      "foreground",
+                      "background"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -2433,16 +2408,13 @@
                           "preset"
                         ]
                       },
-                      "preset": {
-                        "type": "string"
-                      },
-                      "color": {
+                      "foreground": {
                         "type": "string",
-                        "description": "The preset's background colour (hex)"
+                        "description": "The finish of the mark in front"
                       },
-                      "fgColor": {
+                      "background": {
                         "type": "string",
-                        "description": "The preset's icon colour (hex)"
+                        "description": "The finish of the disc behind it"
                       }
                     }
                   },
@@ -2609,7 +2581,7 @@
                     },
                     "avatar": {
                       "title": "Avatar",
-                      "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                      "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                       "oneOf": [
                         {
                           "type": "object",
@@ -2630,9 +2602,8 @@
                           "type": "object",
                           "required": [
                             "kind",
-                            "preset",
-                            "color",
-                            "fgColor"
+                            "foreground",
+                            "background"
                           ],
                           "additionalProperties": false,
                           "properties": {
@@ -2642,16 +2613,13 @@
                                 "preset"
                               ]
                             },
-                            "preset": {
-                              "type": "string"
-                            },
-                            "color": {
+                            "foreground": {
                               "type": "string",
-                              "description": "The preset's background colour (hex)"
+                              "description": "The finish of the mark in front"
                             },
-                            "fgColor": {
+                            "background": {
                               "type": "string",
-                              "description": "The preset's icon colour (hex)"
+                              "description": "The finish of the disc behind it"
                             }
                           }
                         },
@@ -2848,7 +2816,7 @@
                       },
                       "avatar": {
                         "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                         "oneOf": [
                           {
                             "type": "object",
@@ -2869,9 +2837,8 @@
                             "type": "object",
                             "required": [
                               "kind",
-                              "preset",
-                              "color",
-                              "fgColor"
+                              "foreground",
+                              "background"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -2881,16 +2848,13 @@
                                   "preset"
                                 ]
                               },
-                              "preset": {
-                                "type": "string"
-                              },
-                              "color": {
+                              "foreground": {
                                 "type": "string",
-                                "description": "The preset's background colour (hex)"
+                                "description": "The finish of the mark in front"
                               },
-                              "fgColor": {
+                              "background": {
                                 "type": "string",
-                                "description": "The preset's icon colour (hex)"
+                                "description": "The finish of the disc behind it"
                               }
                             }
                           },
@@ -3108,7 +3072,7 @@
               },
               "avatar": {
                 "title": "Avatar",
-                "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                 "oneOf": [
                   {
                     "type": "object",
@@ -3129,9 +3093,8 @@
                     "type": "object",
                     "required": [
                       "kind",
-                      "preset",
-                      "color",
-                      "fgColor"
+                      "foreground",
+                      "background"
                     ],
                     "additionalProperties": false,
                     "properties": {
@@ -3141,16 +3104,13 @@
                           "preset"
                         ]
                       },
-                      "preset": {
-                        "type": "string"
-                      },
-                      "color": {
+                      "foreground": {
                         "type": "string",
-                        "description": "The preset's background colour (hex)"
+                        "description": "The finish of the mark in front"
                       },
-                      "fgColor": {
+                      "background": {
                         "type": "string",
-                        "description": "The preset's icon colour (hex)"
+                        "description": "The finish of the disc behind it"
                       }
                     }
                   },
@@ -3214,7 +3174,7 @@
                   },
                   "avatar": {
                     "title": "Avatar",
-                    "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                     "oneOf": [
                       {
                         "type": "object",
@@ -3235,9 +3195,8 @@
                         "type": "object",
                         "required": [
                           "kind",
-                          "preset",
-                          "color",
-                          "fgColor"
+                          "foreground",
+                          "background"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -3247,16 +3206,13 @@
                               "preset"
                             ]
                           },
-                          "preset": {
-                            "type": "string"
-                          },
-                          "color": {
+                          "foreground": {
                             "type": "string",
-                            "description": "The preset's background colour (hex)"
+                            "description": "The finish of the mark in front"
                           },
-                          "fgColor": {
+                          "background": {
                             "type": "string",
-                            "description": "The preset's icon colour (hex)"
+                            "description": "The finish of the disc behind it"
                           }
                         }
                       },
@@ -3330,7 +3286,7 @@
                   },
                   "avatar": {
                     "title": "Avatar",
-                    "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                     "oneOf": [
                       {
                         "type": "object",
@@ -3351,9 +3307,8 @@
                         "type": "object",
                         "required": [
                           "kind",
-                          "preset",
-                          "color",
-                          "fgColor"
+                          "foreground",
+                          "background"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -3363,16 +3318,13 @@
                               "preset"
                             ]
                           },
-                          "preset": {
-                            "type": "string"
-                          },
-                          "color": {
+                          "foreground": {
                             "type": "string",
-                            "description": "The preset's background colour (hex)"
+                            "description": "The finish of the mark in front"
                           },
-                          "fgColor": {
+                          "background": {
                             "type": "string",
-                            "description": "The preset's icon colour (hex)"
+                            "description": "The finish of the disc behind it"
                           }
                         }
                       },
@@ -3740,7 +3692,7 @@
                         },
                         "avatar": {
                           "title": "Avatar",
-                          "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                          "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                           "oneOf": [
                             {
                               "type": "object",
@@ -3761,9 +3713,8 @@
                               "type": "object",
                               "required": [
                                 "kind",
-                                "preset",
-                                "color",
-                                "fgColor"
+                                "foreground",
+                                "background"
                               ],
                               "additionalProperties": false,
                               "properties": {
@@ -3773,16 +3724,13 @@
                                     "preset"
                                   ]
                                 },
-                                "preset": {
-                                  "type": "string"
-                                },
-                                "color": {
+                                "foreground": {
                                   "type": "string",
-                                  "description": "The preset's background colour (hex)"
+                                  "description": "The finish of the mark in front"
                                 },
-                                "fgColor": {
+                                "background": {
                                   "type": "string",
-                                  "description": "The preset's icon colour (hex)"
+                                  "description": "The finish of the disc behind it"
                                 }
                               }
                             },
@@ -3979,7 +3927,7 @@
                           },
                           "avatar": {
                             "title": "Avatar",
-                            "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                            "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                             "oneOf": [
                               {
                                 "type": "object",
@@ -4000,9 +3948,8 @@
                                 "type": "object",
                                 "required": [
                                   "kind",
-                                  "preset",
-                                  "color",
-                                  "fgColor"
+                                  "foreground",
+                                  "background"
                                 ],
                                 "additionalProperties": false,
                                 "properties": {
@@ -4012,16 +3959,13 @@
                                       "preset"
                                     ]
                                   },
-                                  "preset": {
-                                    "type": "string"
-                                  },
-                                  "color": {
+                                  "foreground": {
                                     "type": "string",
-                                    "description": "The preset's background colour (hex)"
+                                    "description": "The finish of the mark in front"
                                   },
-                                  "fgColor": {
+                                  "background": {
                                     "type": "string",
-                                    "description": "The preset's icon colour (hex)"
+                                    "description": "The finish of the disc behind it"
                                   }
                                 }
                               },
@@ -4239,7 +4183,7 @@
                   },
                   "avatar": {
                     "title": "Avatar",
-                    "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                    "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                     "oneOf": [
                       {
                         "type": "object",
@@ -4260,9 +4204,8 @@
                         "type": "object",
                         "required": [
                           "kind",
-                          "preset",
-                          "color",
-                          "fgColor"
+                          "foreground",
+                          "background"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -4272,16 +4215,13 @@
                               "preset"
                             ]
                           },
-                          "preset": {
-                            "type": "string"
-                          },
-                          "color": {
+                          "foreground": {
                             "type": "string",
-                            "description": "The preset's background colour (hex)"
+                            "description": "The finish of the mark in front"
                           },
-                          "fgColor": {
+                          "background": {
                             "type": "string",
-                            "description": "The preset's icon colour (hex)"
+                            "description": "The finish of the disc behind it"
                           }
                         }
                       },
@@ -4345,7 +4285,7 @@
                       },
                       "avatar": {
                         "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                         "oneOf": [
                           {
                             "type": "object",
@@ -4366,9 +4306,8 @@
                             "type": "object",
                             "required": [
                               "kind",
-                              "preset",
-                              "color",
-                              "fgColor"
+                              "foreground",
+                              "background"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -4378,16 +4317,13 @@
                                   "preset"
                                 ]
                               },
-                              "preset": {
-                                "type": "string"
-                              },
-                              "color": {
+                              "foreground": {
                                 "type": "string",
-                                "description": "The preset's background colour (hex)"
+                                "description": "The finish of the mark in front"
                               },
-                              "fgColor": {
+                              "background": {
                                 "type": "string",
-                                "description": "The preset's icon colour (hex)"
+                                "description": "The finish of the disc behind it"
                               }
                             }
                           },
@@ -4461,7 +4397,7 @@
                       },
                       "avatar": {
                         "title": "Avatar",
-                        "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+                        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
                         "oneOf": [
                           {
                             "type": "object",
@@ -4482,9 +4418,8 @@
                             "type": "object",
                             "required": [
                               "kind",
-                              "preset",
-                              "color",
-                              "fgColor"
+                              "foreground",
+                              "background"
                             ],
                             "additionalProperties": false,
                             "properties": {
@@ -4494,16 +4429,13 @@
                                   "preset"
                                 ]
                               },
-                              "preset": {
-                                "type": "string"
-                              },
-                              "color": {
+                              "foreground": {
                                 "type": "string",
-                                "description": "The preset's background colour (hex)"
+                                "description": "The finish of the mark in front"
                               },
-                              "fgColor": {
+                              "background": {
                                 "type": "string",
-                                "description": "The preset's icon colour (hex)"
+                                "description": "The finish of the disc behind it"
                               }
                             }
                           },
