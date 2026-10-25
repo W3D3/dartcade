@@ -1,7 +1,18 @@
+import type { Player } from '../session/types.js'
 import { forfeitPlacements } from './ranking.js'
 
 /** What a game that supports teams reads from its config (see the teams design). */
 export type TeamsConfig = { format?: 'singles' | 'teams'; teams?: number[]; teamStart?: 'first' | 'random' }
+
+// Teams are Team A (index 0) and Team B (index 1)
+/** Checks a two-team config: in `'teams'` format, `teams` must have one entry per player and both teams a player. */
+export function validateTwoTeams(cfg: TeamsConfig, players: Player[]): string | null {
+  if (cfg.format !== 'teams') return null
+  const teams = cfg.teams
+  const ok =
+    teams !== undefined && teams.length === players.length && teams.every(t => t === 0 || t === 1) && teams.includes(0) && teams.includes(1)
+  return ok ? null : 'teams need one entry per player, and both teams a player'
+}
 
 export function teamOfSeats(cfg: TeamsConfig, seatCount: number): number[] {
   const own = Array.from({ length: seatCount }, (_, i) => i)
@@ -52,6 +63,14 @@ export function turnOrder(teamOf: number[], startTeam: number, leadSeat?: number
     }
   }
   return order
+}
+
+// The start moves on every leg, whoever won the last one: leg 1 starts at the first
+// position in throw order, leg 2 at the second, and so on, wrapping around. With teams
+// taking turns in `order`, the starting team alternates.
+export function legStart(order: number[], legs: number[]): number {
+  const played = legs.reduce((a, b) => a + b, 0)
+  return played % order.length
 }
 
 /** Placements per seat from placements per team (1-based, ties shared). */

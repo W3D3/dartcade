@@ -5,7 +5,7 @@ import type { Rng } from '../session/rng.js'
 import { pickTarget } from '../bots/accuracy.js'
 import { rankSeats } from './ranking.js'
 import { checkoutHint } from '../shared/checkout.js'
-import { seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, type TeamsConfig } from './teams.js'
+import { legStart, seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, validateTwoTeams, type TeamsConfig } from './teams.js'
 import { x01MatchStats } from './x01Stats.js'
 import { meetsMode, scoreDart } from './outRules.js'
 
@@ -147,14 +147,6 @@ function upNext(s: X01State): number | null {
   return round > s.cfg.maxRounds ? null : nextPlayer
 }
 
-// The start moves on every leg, whoever won the last one: leg 1 starts at the first
-// position in throw order, leg 2 at the second, and so on, wrapping around. With teams
-// taking turns in `order`, the starting team alternates.
-function legStart(order: number[], legs: number[]): number {
-  const played = legs.reduce((a, b) => a + b, 0)
-  return played % order.length
-}
-
 function freshLeg(s: X01State, legs: number[]): Partial<X01State> {
   const teams = teamCount(s.teamOf)
   const turn = legStart(s.order, legs)
@@ -176,15 +168,6 @@ function roundLimitWinner(scores: number[]): number {
 }
 
 const TEAM_IDS = ['A', 'B'] as const
-
-// Teams are Team A (index 0) and Team B (index 1)
-function validateTeams(cfg: X01Config, players: Player[]): string | null {
-  if (cfg.format !== 'teams') return null
-  const teams = cfg.teams
-  const ok =
-    teams !== undefined && teams.length === players.length && teams.every(t => t === 0 || t === 1) && teams.includes(0) && teams.includes(1)
-  return ok ? null : 'teams need one entry per player, and both teams a player'
-}
 
 // `teams` and `teamStart` are set by the lobby, not the setup form
 export const configMeta: Record<Exclude<keyof X01Config, 'teams' | 'teamStart'>, ConfigFieldMeta> = {
@@ -278,7 +261,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   teams: true,
   scoreBased: true,
 
-  validate: validateTeams,
+  validate: validateTwoTeams,
 
   init(cfg: X01Config, players: Player[], rng?: Rng): X01State {
     const n = players.length
