@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<clipPath id="c"><circle cx="60" cy="60" r="60"></circle></clipPath>
+<radialGradient id="vg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0"></stop><stop offset="0.75" stop-color="#000" stop-opacity="0"></stop><stop offset="1" stop-color="#000" stop-opacity="0.45"></stop></radialGradient>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55554f"></stop><stop offset="1" stop-color="#2e2e2a"></stop></linearGradient>
+<filter id="cc" filterUnits="userSpaceOnUse" x="0" y="0" width="120" height="120"><feTurbulence type="fractalNoise" baseFrequency=".55" numOctaves="3" seed="5" result="t"></feTurbulence><feColorMatrix in="t" type="matrix" values=".12 0 0 0 .03  .12 0 0 0 .03  .115 0 0 0 .028  0 0 0 0 1"></feColorMatrix></filter>
+</defs>
+<g clip-path="url(#c)"><rect width="120" height="120" fill="url(#bg)"></rect><g opacity=".9"><rect width="120" height="120" filter="url(#cc)"></rect></g><path d="M0 42H120M0 84H120" stroke="#000" stroke-opacity=".25" stroke-width="1"></path><path d="M14 98c6-6 10 2 16-4s6-8 12-4" fill="none" stroke="#ff4fd8" stroke-opacity=".55" stroke-width="2" stroke-linecap="round"></path><path d="M86 18l6 10 4-8 6 10" fill="none" stroke="#9fe8ff" stroke-opacity=".5" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path><rect width="120" height="120" fill="url(#vg)"></rect></g>
+</svg>

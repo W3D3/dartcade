@@ -1,6 +1,6 @@
-// The built-in profile pictures: the Dartcade ring and bull in one of twenty finishes, drawn in two
-// layers, a background disc and the mark in front (the art is the sprite in
-// frontend/src/lib/assets/finishes.svg, `finish-bg-<id>` and `finish-fg-<id>`). Each layer is picked
+// The built-in profile pictures: the Dartcade ring and bull in one of thirty finishes, drawn in two
+// layers, a background disc and the mark in front (the art is
+// frontend/src/lib/assets/finishes/<id>/{background,foreground}.svg). Each layer is picked
 // on its own. Classic is everyone's; the others unlock through progression (`picture.<id>` in
 // shared/progression.ts PERKS).
 export interface AvatarFinish {
@@ -12,10 +12,20 @@ export const AVATAR_FINISHES: readonly AvatarFinish[] = [
   { id: 'classic', name: 'Classic' },
   { id: 'chalk', name: 'Chalk' },
   { id: 'arcade', name: 'Arcade' },
+  { id: 'origami', name: 'Origami' },
   { id: 'bronze', name: 'Bronze' },
+  { id: 'patch', name: 'Patch' },
+  { id: 'blueprint', name: 'Blueprint' },
+  { id: 'peppermint', name: 'Peppermint' },
+  { id: 'graffiti', name: 'Graffiti' },
   { id: 'chrome', name: 'Chrome' },
+  { id: 'topo', name: 'Topo' },
+  { id: 'circuit', name: 'Circuit' },
   { id: 'neon', name: 'Neon' },
+  { id: 'koi', name: 'Koi pond' },
+  { id: 'stained-glass', name: 'Stained glass' },
   { id: 'inferno', name: 'Inferno' },
+  { id: 'synthwave', name: 'Synthwave' },
   { id: 'gold', name: 'Gold' },
   { id: 'hot-streak', name: 'Hot streak' },
   { id: 'crystal', name: 'Crystal' },

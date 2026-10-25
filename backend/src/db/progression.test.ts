@@ -44,7 +44,22 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('unlocked perks', () => {
     )
     expect(held).not.toContain('frame.platinum')
     expect(await hasPerk(db, 'vet', 'frame.gold')).toBe(true)
-    expect(await unlockedPictures(db, 'vet')).toEqual(['classic', 'chalk', 'arcade', 'bronze', 'chrome', 'hot-streak'])
+    // origami (8) … circuit (30) came to the catalogue after: held at once, with no row
+    expect(await unlockedPictures(db, 'vet')).toEqual([
+      'classic',
+      'chalk',
+      'arcade',
+      'origami',
+      'bronze',
+      'patch',
+      'blueprint',
+      'peppermint',
+      'graffiti',
+      'chrome',
+      'topo',
+      'circuit',
+      'hot-streak',
+    ])
   })
 
   it('ignores retired perk ids', async () => {

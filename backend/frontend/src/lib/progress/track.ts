@@ -31,9 +31,10 @@ export const TOP_LEVEL = Math.max(...PERKS.map(p => levelOf(p) ?? 0))
 export const TRACK: readonly TrackLevel[] = Array.from({ length: TOP_LEVEL }, (_, i) => {
   const level = i + 1
   const perks = PERKS.filter(p => levelOf(p) === level && !NOTHING.has(p.id)).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind))
-  // Three or more is a set: level 1's, and the top level's (named by its title)
-  const set = perks.length > 2
-  const label = level === 1 ? 'Starter set' : set ? (perks.find(p => p.kind === 'title')?.name ?? '') : perks.map(trackName).join(' + ')
+  // Three or more with a title is a set, named by it: level 1's and the top level's
+  const title = perks.length > 2 ? perks.find(p => p.kind === 'title') : undefined
+  const set = title !== undefined
+  const label = level === 1 ? 'Starter set' : title ? title.name : perks.map(trackName).join(' + ')
   const kinds = set ? `${perks.length} rewards` : [...new Set(perks.map(p => KIND_LABEL[p.kind].one))].join(' + ')
   return { level, perks, label, kinds }
 })

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<clipPath id="c"><circle cx="60" cy="60" r="60"></circle></clipPath>
+<radialGradient id="vg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0"></stop><stop offset="0.75" stop-color="#000" stop-opacity="0"></stop><stop offset="1" stop-color="#000" stop-opacity="0.45"></stop></radialGradient>
+<linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f4a6c"></stop><stop offset="1" stop-color="#16263a"></stop></linearGradient>
+<pattern id="tw" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(-35)"><rect width="4" height="2" fill="#fff" fill-opacity=".05"></rect></pattern>
+</defs>
+<g clip-path="url(#c)"><rect width="120" height="120" fill="url(#bg)"></rect><rect width="120" height="120" fill="url(#tw)"></rect><circle cx="60" cy="60" r="45" fill="#1c2a3e"></circle><circle cx="60" cy="60" r="45" fill="none" stroke="#c8b98a" stroke-width="3"></circle><circle cx="60" cy="60" r="42" fill="none" stroke="#efe6c8" stroke-width="1.1" stroke-dasharray="3 2"></circle><rect width="120" height="120" fill="url(#vg)"></rect></g>
+</svg>
