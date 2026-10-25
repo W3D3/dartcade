@@ -25,6 +25,7 @@
   import Ranks from './routes/Ranks.svelte'
   import Progress from './routes/Progress.svelte'
   import Profile from './routes/Profile.svelte'
+  import Customise from './routes/Customise.svelte'
   import Rewards from './routes/Rewards.svelte'
   import Admin from './routes/Admin.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
@@ -99,6 +100,8 @@
     '/progress/rewards': Rewards,
     '/progress/rewards/:level': Rewards,
     '/profile': Profile,
+    // Before /profile/:id; one route (tab optional) so switching tabs keeps the page and its draft
+    '/profile/customise/:tab?': Customise,
     '/profile/:id': Profile,
     '/admin': Admin,
     '/admin/users': AdminUsers,
