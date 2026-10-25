@@ -1,7 +1,10 @@
 // The rewards track (Rewards board): every level up to the top one and what it unlocks, and the
 // rewards off the track (day streak, ranked). Read from the catalogue, $shared/progression.js.
-import { PERKS, unlockText, type Perk, type PerkKind } from '$shared/progression.js'
+import { PERKS, unlockText, type EquipKind, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
+import type { components } from '$lib/api/schema'
 import { KIND_LABEL } from './look'
+
+type Avatar = components['schemas']['Avatar']
 
 // The level 1 "nothing" picks (no frame, plain name, no sounds, the standard win screen) aren't rewards
 const NOTHING = new Set(['frame.none', 'name.plain', 'sound.none', 'celebration.standard'])
@@ -66,3 +69,22 @@ export const OFF_TRACK: readonly OffTrack[] = (() => {
     .map(([when, perks]) => ({ perks, when, name: perks.map(p => p.name).join(' + ') }))
     .sort((a, b) => order(a.perks) - order(b.perks))
 })()
+
+/** What you wear: your card's look and your picture. */
+export type Worn = { equipped: Equipped; avatar: Avatar | undefined }
+
+/** Whether `p` is what you wear: a picture when both layers are its finish. */
+export function isWorn(p: Perk, { equipped, avatar }: Worn): boolean {
+  if (p.kind !== 'picture') return equipped[p.kind] === p.id
+  const finish = p.id.slice('picture.'.length)
+  return avatar?.kind === 'preset' && avatar.foreground === finish && avatar.background === finish
+}
+
+/** What Apply all writes for a reward: its unlocked items not worn yet, the picture's finish apart (PATCH /api/me). */
+export function applyAllPlan(perks: readonly Perk[], unlocked: readonly string[], worn: Worn) {
+  const todo = perks.filter(p => unlocked.includes(p.id) && !isWorn(p, worn))
+  const picture = todo.find(p => p.kind === 'picture')?.id.slice('picture.'.length) ?? null
+  const equip: Partial<Record<EquipKind, string>> = {}
+  for (const p of todo) if (p.kind !== 'picture') equip[p.kind] = p.id
+  return { equip, picture, empty: todo.length === 0 }
+}
