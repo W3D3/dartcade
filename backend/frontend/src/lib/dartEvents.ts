@@ -1,13 +1,44 @@
 // What just happened at the board, read from two consecutive snapshots of the same game: a dart
 // landed (and how), a visit went bust, or the turn moved on. The match screen's sounds (the tones
 // and the thrower's sound pack) play from it.
-import type { AtcGame, X01Game } from '$lib/api/game-ws'
+import type { Dart, Snapshot } from '$lib/api/game-ws'
 
 export type DartSound = 'hit' | 'double' | 'treble' | 'miss' | 'bust'
 export type DartEvent = { kind: DartSound | 'switch'; seat: number }
-/** What the events read of an X01 or Around the Clock game. */
-export type EventGame = Pick<X01Game, 'currentPlayer' | 'currentVisitDarts'> &
-  Partial<Pick<X01Game, 'bustThisVisit'> & Pick<AtcGame, 'currentVisitHits'>>
+/** What the events read of a game: the seat up, the open visit's darts, the seat whose visit just
+ *  went bust (null for none), and which darts hit (left out: a dart that scores is a hit). */
+export type EventGame = {
+  currentPlayer: number
+  currentVisitDarts: Dart[]
+  bust?: number | null
+  currentVisitHits?: boolean[]
+}
+
+/** How each game mode reads as dart events; a mode added to the snapshot must say how it sounds here. */
+function eventGame(s: Snapshot): EventGame {
+  switch (s.gameId) {
+    case 'x01':
+      return { ...s.game, bust: s.game.bustThisVisit ? s.game.currentPlayer : null }
+    case 'atc':
+      return s.game
+    case 'p121':
+      return { ...s.game, bust: s.game.bust ? s.game.currentPlayer : null }
+    case 'hilo': {
+      // A lost life is the bust; the turn has already moved on, so it sounds for the seat that lost it
+      const r = s.game.lastResult
+      return { ...s.game, bust: r && (r.outcome === 'between' || r.outcome === 'miss') ? r.seat : null }
+    }
+    case 'minigolf':
+      // Every dart is a putt
+      return { ...s.game, currentVisitHits: s.game.currentVisitDarts.map(() => true) }
+  }
+}
+
+/** The event between two snapshots of the same game mode; null across modes. */
+export function snapshotEvent(before: Snapshot, after: Snapshot): DartEvent | null {
+  if (before.gameId !== after.gameId) return null
+  return dartEvent(eventGame(before), eventGame(after))
+}
 
 /** Which sound a dart plays under the switches: a treble falls back to the hit when trebles have
  *  none of their own; null when its switch is off. */
@@ -24,12 +55,12 @@ export function dartSound(
 /** The event between `before` and `after`; null when nothing a sound marks happened (a correction, a takeout). */
 export function dartEvent(before: EventGame, after: EventGame): DartEvent | null {
   const seat = after.currentPlayer
-  if (after.bustThisVisit === true && before.bustThisVisit !== true) return { kind: 'bust', seat }
+  if (after.bust != null && before.bust == null) return { kind: 'bust', seat: after.bust }
   const now = after.currentVisitDarts
   if (now.length > before.currentVisitDarts.length) {
     const i = now.length - 1
     const dart = now[i]
-    // Around the Clock: a hit is the target, whatever the bed; X01: anything that scores
+    // Around the Clock: a hit is the target, whatever the bed; otherwise anything that scores
     const hit = after.currentVisitHits ? after.currentVisitHits.at(i) === true : dart.score > 0
     if (!hit) return { kind: 'miss', seat }
     return { kind: dart.segment.multiplier === 3 ? 'treble' : dart.segment.multiplier === 2 ? 'double' : 'hit', seat }
