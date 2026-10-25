@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<filter id="wd" filterUnits="userSpaceOnUse" x="0" y="0" width="120" height="120"><feTurbulence type="fractalNoise" baseFrequency=".015 .22" numOctaves="3" seed="6" result="t"></feTurbulence><feColorMatrix in="t" type="matrix" values=".5 0 0 0 .24  .27 0 0 0 .11  .1 0 0 0 .03  0 0 0 0 1"></feColorMatrix></filter>
+<mask id="rm"><rect width="120" height="120" fill="#000"></rect><circle cx="60" cy="60" r="27" fill="none" stroke="#fff" stroke-width="8.5"></circle></mask>
+<linearGradient id="br" gradientUnits="userSpaceOnUse" x1="40" y1="40" x2="80" y2="80"><stop offset="0" stop-color="#6a4a12"></stop><stop offset="0.3" stop-color="#f2d27a"></stop><stop offset="0.6" stop-color="#b8892a"></stop><stop offset="1" stop-color="#e6c060"></stop></linearGradient>
+<radialGradient id="bd" gradientUnits="userSpaceOnUse" cx="56" cy="56" r="13"><stop offset="0" stop-color="#fff0b8"></stop><stop offset="0.5" stop-color="#d8b048"></stop><stop offset="1" stop-color="#7a5a14"></stop></radialGradient>
+<linearGradient id="gl" gradientUnits="userSpaceOnUse" x1="0" y1="30" x2="0" y2="90"><stop offset="0" stop-color="#fff" stop-opacity="0.25"></stop><stop offset="0.5" stop-color="#fff" stop-opacity="0"></stop></linearGradient>
+<clipPath id="c"><circle cx="60" cy="60" r="60"></circle></clipPath>
+<radialGradient id="glss" cx="0.5" cy="0" r="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.16"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></radialGradient>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".55"></feDropShadow></filter>
+</defs>
+<g clip-path="url(#c)"><g filter="url(#sh)"><circle cx="60" cy="60" r="27" fill="none" stroke="#1a0f07" stroke-width="10.9"></circle><g mask="url(#rm)"><rect width="120" height="120" filter="url(#wd)"></rect></g></g><circle cx="60" cy="60" r="27" fill="none" stroke="url(#gl)" stroke-width="8.5"></circle><circle cx="60" cy="60" r="31.05" fill="none" stroke="url(#br)" stroke-width="1.2"></circle><circle cx="60" cy="60" r="22.95" fill="none" stroke="url(#br)" stroke-width="1.2"></circle><circle cx="60" cy="60" r="12.7" fill="#3a2a0a"></circle><circle cx="60" cy="60" r="11.5" fill="url(#bd)"></circle><path d="M54.5 65.5L65.5 54.5" stroke="#5a4210" stroke-width="2.2" stroke-linecap="round"></path><path d="M54.5 64.5L64.5 54.5" stroke="#fff3c4" stroke-opacity=".5" stroke-width=".7" stroke-linecap="round"></path><ellipse cx="60" cy="14" rx="58" ry="40" fill="url(#glss)"></ellipse></g><circle cx="60" cy="60" r="59.2" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.6"></circle>
+</svg>
