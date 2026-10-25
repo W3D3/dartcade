@@ -1,6 +1,6 @@
 // The rewards track (Rewards board): every level up to the top one and what it unlocks, and the
 // rewards off the track (day streak, ranked). Read from the catalogue, $shared/progression.js.
-import { PERKS, unlockText, type EquipKind, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
+import { PERKS, listed, unlockText, type EquipKind, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
 import type { components } from '$lib/api/schema'
 import { KIND_LABEL } from './look'
 
@@ -50,11 +50,14 @@ export const nextBigLevel = (level: number): number => Math.min(TOP_LEVEL, Math.
 
 export type OffTrack = { perks: Perk[]; name: string; when: string }
 
-/** The rewards earned with the day streak, in ranked and by challenges, one entry per way to earn them. */
-export const OFF_TRACK: readonly OffTrack[] = (() => {
+/**
+ * The rewards earned with the day streak, in ranked and by challenges, one entry per way to earn them:
+ * a challenge one only when you hold it (`held`: perk ids), as nothing unlocks those yet.
+ */
+export function offTrack(held: readonly string[]): OffTrack[] {
   const groups = new Map<string, Perk[]>()
   for (const p of PERKS) {
-    if (levelOf(p) !== null) continue
+    if (levelOf(p) !== null || !listed(p, held)) continue
     const when = unlockText(p.unlock)
     groups.set(when, [...(groups.get(when) ?? []), p])
   }
@@ -68,7 +71,7 @@ export const OFF_TRACK: readonly OffTrack[] = (() => {
   return [...groups]
     .map(([when, perks]) => ({ perks, when, name: perks.map(p => p.name).join(' + ') }))
     .sort((a, b) => order(a.perks) - order(b.perks))
-})()
+}
 
 /** What you wear: your card's look and your picture. */
 export type Worn = { equipped: Equipped; avatar: Avatar | undefined }

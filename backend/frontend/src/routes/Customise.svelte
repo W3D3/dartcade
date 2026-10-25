@@ -37,11 +37,11 @@
   } from '$lib/progress/customise'
   import { equip } from '$lib/progress/equip'
   import { accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass, titleName } from '$lib/progress/look'
-  import { pictureUnlock, wearPicture } from '$lib/progress/pictures'
+  import { pictureUnlock, shownFinishes, wearPicture } from '$lib/progress/pictures'
   import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
   import { progress } from '$lib/progress/store'
   import { AVATAR_FINISHES, DEFAULT_AVATAR_FINISH } from '$shared/avatarFinishes.js'
-  import { PERKS, unlockText, type Equipped, type PerkKind } from '$shared/progression.js'
+  import { PERKS, listed, unlockText, type Equipped, type PerkKind } from '$shared/progression.js'
 
   let { params = {} }: { params?: { tab?: string } } = $props()
 
@@ -79,15 +79,17 @@
 
   type Item = { id: string; name: string; open: boolean; unlock: string }
   const finishes = $derived<Item[]>(
-    AVATAR_FINISHES.map(f => ({
+    shownFinishes([...($currentUser?.pictures ?? []), ...(wornLayers ? [wornLayers.foreground, wornLayers.background] : [])]).map(f => ({
       id: f.id,
       name: f.name,
       open: ($currentUser?.pictures ?? []).includes(f.id),
       unlock: pictureUnlock(f.id),
     })),
   )
+  // What you hold or wear stays listed, even one nothing unlocks yet
+  const held = $derived($progress ? [...$progress.perks.unlocked, ...Object.values($progress.perks.equipped)] : [])
   const perksOf = (kind: PerkKind): Item[] =>
-    PERKS.filter(p => p.kind === kind).map(p => ({
+    PERKS.filter(p => p.kind === kind && listed(p, held)).map(p => ({
       id: p.id,
       name: p.name,
       open: ($progress?.perks.unlocked ?? []).includes(p.id),

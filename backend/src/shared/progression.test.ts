@@ -16,6 +16,8 @@ import {
   DEFAULT_EQUIPPED,
   PERKS,
   isBig,
+  listed,
+  obtainable,
   equippedOf,
   levelPerks,
   nextLevelPerk,
@@ -51,6 +53,16 @@ describe('perks', () => {
   it('has a finish for every picture, and a picture for every finish, in the same order', () => {
     const pictures = PERKS.filter(p => p.kind === 'picture').map(p => p.id)
     expect(AVATAR_FINISHES.map(f => pictureFor(f.id))).toEqual(pictures)
+  })
+
+  it('can earn every reward but the challenge pictures, and lists those only to whoever holds one', () => {
+    expect(PERKS.filter(p => !obtainable(p)).map(p => p.id)).toEqual(
+      ['frost', 'carbon', 'holo', 'marble', 'lava', 'electric', 'galaxy', 'toxic', 'walnut', 'glitch'].map(pictureFor),
+    )
+    const frost = perk('picture.frost')!
+    expect(listed(frost, [])).toBe(false)
+    expect(listed(frost, ['picture.frost'])).toBe(true)
+    expect(listed(perk('picture.gold')!, [])).toBe(true)
   })
 
   it('unlocks by level and streak', () => {

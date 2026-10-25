@@ -234,7 +234,21 @@ describe('/api/progress', () => {
       relation: 'self',
       xp: 6780,
       headToHead: null,
-      collection: { unlocked: levelPerks(1).length + 2, total: PERKS.length },
+      // Leaving out the ten challenge pictures nothing unlocks yet
+      collection: { unlocked: levelPerks(1).length + 2, total: PERKS.length - 10 },
     })
+  })
+
+  it('counts a challenge reward you hold in your collection', async () => {
+    vi.mocked(unlockedPerks).mockResolvedValue(['title.rookie', 'picture.frost'])
+    vi.mocked(profileUser).mockResolvedValue({
+      id: 'chris',
+      name: 'Chris',
+      createdAt: new Date(),
+      avatar: { kind: 'none' },
+      equipped: null,
+    })
+    const res = await app().inject({ method: 'GET', url: '/api/users/chris/profile' })
+    expect(JSON.parse(res.body).collection).toEqual({ unlocked: 2, total: PERKS.length - 9 })
   })
 })

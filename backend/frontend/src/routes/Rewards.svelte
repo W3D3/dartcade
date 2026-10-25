@@ -11,7 +11,7 @@
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
   import { fmtXp } from '$lib/progress/view'
-  import { OFF_TRACK, TOP_LEVEL, TRACK, levelTier, nextBigLevel, type OffTrack, type TrackLevel } from '$lib/progress/track'
+  import { TOP_LEVEL, TRACK, levelTier, nextBigLevel, offTrack, type OffTrack, type TrackLevel } from '$lib/progress/track'
   import { levelOf, type Perk } from '$shared/progression.js'
 
   let { params = {} }: { params?: { level?: string } } = $props()
@@ -194,7 +194,7 @@
           <span class="text-[13px] text-text-muted">Earned with your day streak and in ranked, not by level</span>
         </div>
         <ul class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
-          {#each OFF_TRACK as o (o.when)}
+          {#each offTrack(unlocked) as o (o.when)}
             {@const got = o.perks.every(p => unlocked.includes(p.id))}
             <li class="min-w-0">
               <button

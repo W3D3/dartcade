@@ -28,7 +28,7 @@
   import { progress } from '$lib/progress/store'
   import { getGameView } from '$lib/gameViews'
   import { ordinal } from '$lib/fmt'
-  import { PERKS, PERK_KINDS } from '$shared/progression.js'
+  import { PERKS, PERK_KINDS, listed } from '$shared/progression.js'
   import { rank } from '$shared/ranked.js'
 
   let { params = {} }: { params?: { id?: string } } = $props()
@@ -252,7 +252,7 @@
                 <span class="text-[13px] text-text-muted">Only you see this</span>
               </div>
               {#each PERK_KINDS as kind (kind)}
-                {@const all = PERKS.filter(x => x.kind === kind)}
+                {@const all = PERKS.filter(x => x.kind === kind && listed(x, $progress.perks.unlocked))}
                 {@const have = all.filter(x => $progress.perks.unlocked.includes(x.id)).length}
                 <div class="grid grid-cols-[120px_minmax(0,1fr)_56px] items-center gap-3 text-[14px]">
                   <span>{KIND_LABEL[kind].many}</span>

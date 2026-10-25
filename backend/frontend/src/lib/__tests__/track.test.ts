@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { OFF_TRACK, TOP_LEVEL, TRACK, applyAllPlan, isWorn, levelTier, nextBigLevel } from '../progress/track.js'
-import { DEFAULT_EQUIPPED, PERKS } from '$shared/progression.js'
+import { TOP_LEVEL, TRACK, applyAllPlan, isWorn, levelTier, nextBigLevel, offTrack } from '../progress/track.js'
+import { DEFAULT_EQUIPPED, PERKS, obtainable } from '$shared/progression.js'
 
 describe('the rewards track', () => {
   it('has a level for every step to the top, each unlocking something', () => {
@@ -23,26 +23,22 @@ describe('the rewards track', () => {
   })
 
   it('puts every reward not earned by level off the track, grouped by how it is earned', () => {
-    expect(OFF_TRACK.map(o => [o.name, o.when])).toEqual([
+    const off = offTrack([])
+    expect(off.map(o => [o.name, o.when])).toEqual([
       ['Hot streak', '7-day streak'],
       ['Fortnight', '14-day streak'],
       ['Gold + Gold leaf', '30-day streak'],
       ['Never Misses', '100-day streak'],
       ['Crystal', 'Win 10 ranked games'],
       ['Oche red', 'Reach ranked Gold'],
-      ['Frost', 'Check out 100+'],
-      ['Carbon', 'Play 100 games'],
-      ['Holo', 'Season 1 reward'],
-      ['Marble', 'Win 25 ranked games'],
-      ['Lava', 'Win 5 in a row'],
-      ['Electric', 'Throw a 180'],
-      ['Galaxy', 'Reach Elite rank'],
-      ['Toxic', 'Minigolf hole in one'],
-      ['Walnut', 'Play 20 games with friends'],
-      ['Glitch', 'Launch week event'],
     ])
-    // Everything but the four level 1 "nothing" picks
-    expect(TRACK.flatMap(l => l.perks).length + OFF_TRACK.flatMap(o => o.perks).length).toBe(PERKS.length - 4)
+    // Everything you can earn but the four level 1 "nothing" picks
+    expect(TRACK.flatMap(l => l.perks).length + off.flatMap(o => o.perks).length).toBe(PERKS.filter(obtainable).length - 4)
+  })
+
+  it('lists a challenge reward only to whoever holds it', () => {
+    expect(offTrack(['picture.electric']).map(o => o.when)).toContain('Throw a 180')
+    expect(offTrack([]).map(o => o.when)).not.toContain('Throw a 180')
   })
 })
 
