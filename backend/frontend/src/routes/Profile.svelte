@@ -2,16 +2,13 @@
   // A player's profile (Profile-Self, Profile-Lena, Profile-Anna, Profile-Phone boards): the hero
   // card in their own colours and banner, ranked, averages, recent matches, level, head-to-head,
   // what they play most, and your collection on your own. `#/profile` is yours, `#/profile/:id`
-  // anyone's. Your own looks the way others see it until you press Customise: then your card's
-  // pickers, your XP and your collection open up. Friends see the streak and status; strangers see public games only (the API decides).
+  // anyone's. Your own looks the way others see it, plus your XP and your collection; Customise
+  // opens `#/profile/customise`. Friends see the streak and status; strangers see public games only (the API decides).
   import { ArrowLeft, Flame, LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
-  import { querystring } from 'svelte-spa-router'
-  import { get } from 'svelte/store'
   import Avatar from '$lib/components/Avatar.svelte'
   import StatusRing from '$lib/components/friends/StatusRing.svelte'
   import LevelCard from '$lib/components/progress/LevelCard.svelte'
-  import YourCard from '$lib/components/progress/YourCard.svelte'
   import RankBadge from '$lib/components/ranked/RankBadge.svelte'
   import { currentUser } from '$lib/auth'
   import { flag } from '$lib/flags'
@@ -37,9 +34,6 @@
   let { params = {} }: { params?: { id?: string } } = $props()
 
   const progression = flag('progression.enabled')
-  // Your own profile shows what others see until you customise it
-  // `#/profile?customise` (the rewards track's link) opens with Customise on
-  let customising = $state(new URLSearchParams(get(querystring)).has('customise'))
   const userId = $derived(params.id ?? $currentUser?.id ?? null)
   // One store per player shown; read again when the page opens
   let profile = $derived(userId ? profileOf(userId) : null)
@@ -122,14 +116,10 @@
             </div>
             {#if self}
               <div class="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  aria-expanded={customising}
-                  aria-controls="customise"
-                  onclick={() => (customising = !customising)}
-                  class="rounded-[10px] px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] cursor-pointer {customising
-                    ? 'border border-accent bg-transparent text-accent'
-                    : 'border border-accent bg-accent text-accent-fg'}">{customising ? 'Done' : 'Customise'}</button
+                <a
+                  href="#/profile/customise"
+                  class="rounded-[10px] border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-accent-fg no-underline"
+                  >Customise</a
                 >
                 <a
                   href="#/settings/profile"
@@ -141,12 +131,6 @@
           </div>
         </div>
       </section>
-
-      {#if self && $progress && customising}
-        <div id="customise" class="scroll-mt-4">
-          <YourCard userId={p.id} unlocked={$progress.perks.unlocked} equipped={$progress.perks.equipped} />
-        </div>
-      {/if}
 
       <div class="grid gap-4 md:gap-6 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] items-start">
         <div class="flex flex-col gap-4 md:gap-6 min-w-0">
@@ -228,7 +212,7 @@
         </div>
 
         <div class="flex flex-col gap-4 md:gap-6 min-w-0">
-          {#if self && $progress && customising}
+          {#if self && $progress}
             <LevelCard xp={$progress.xp} title={p.look.title} />
           {:else}
             <section aria-label="Level" class="card box-border flex items-end gap-4 p-[18px] md:p-[22px]">
@@ -261,7 +245,7 @@
             </section>
           {/if}
 
-          {#if self && $progress && customising}
+          {#if self && $progress}
             <section aria-label="Collection" class="card box-border flex flex-col gap-3 p-[18px] md:p-[22px]">
               <div class="flex items-baseline justify-between">
                 <span class="text-[12px] label-caps text-text-dim">Collection</span>
