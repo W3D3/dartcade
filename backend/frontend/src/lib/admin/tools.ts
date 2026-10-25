@@ -1,5 +1,5 @@
 import type { Component } from 'svelte'
-import { Flag, Gamepad2, Map as MapIcon, Server, ToggleRight, Users } from '@lucide/svelte'
+import { Flag, Gamepad2, Map as MapIcon, Palette, Server, ToggleRight, Users } from '@lucide/svelte'
 
 export type AdminTool = {
   href: string
@@ -21,6 +21,7 @@ export const ADMIN_TOOLS: AdminTool[] = [
     icon: Gamepad2,
     moderator: true,
   },
+  { href: '/admin/cosmetics', title: 'Cosmetics', desc: 'Every reward in the game and how it unlocks', icon: Palette },
   { href: '/admin/flags', title: 'Feature flags', desc: 'Turn flags on or off at runtime', icon: ToggleRight },
   { href: '/admin/system', title: 'System', desc: 'Version, runtime, database and live connections', icon: Server },
 ]

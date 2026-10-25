@@ -12,6 +12,8 @@ export const gamesTrail = (gameTitle?: string | null): BreadcrumbItem[] =>
 
 export const systemTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'System' }]
 
+export const cosmeticsTrail = (): BreadcrumbItem[] => [ADMIN, { label: 'Cosmetics' }]
+
 /** `flagKey` set: a flag's details are open, so "Feature flags" becomes a link back to the list. */
 export const flagsTrail = (flagKey?: string | null): BreadcrumbItem[] =>
   flagKey ? [ADMIN, { label: 'Feature flags', href: '#/admin/flags' }, { label: flagKey }] : [ADMIN, { label: 'Feature flags' }]
