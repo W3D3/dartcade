@@ -1995,6 +1995,8 @@ export interface components {
             /** @enum {string} */
             errorCode: "FLAG_NOT_FOUND";
         };
+        /** @description [x, y] on a minigolf hole, millimetres (y down) */
+        MinigolfDetailPt: number[];
         MinigolfDetail: {
             /**
              * @description discriminator enum property added by openapi-typescript
@@ -2007,6 +2009,14 @@ export interface components {
             holes: {
                 name: string;
                 par: number;
+                /** @description The hole's outline, [x, y] in millimetres */
+                outline: components["schemas"]["MinigolfDetailPt"][];
+                cup: {
+                    at: components["schemas"]["MinigolfDetailPt"];
+                    r: number;
+                };
+                /** @description Per seat, every stroke's path on the felt ([x, y], millimetres); empty for a hole not played */
+                paths: components["schemas"]["MinigolfDetailPt"][][][];
             }[];
             /** @description Strokes per hole (in hole order), then per seat; null for a hole not finished */
             scores: (number | null)[][];

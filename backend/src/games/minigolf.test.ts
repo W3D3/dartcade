@@ -262,6 +262,32 @@ describe('minigolf', () => {
     const s = M.init(old as MinigolfConfig, two)
     expect(s.cfg).toMatchObject({ aimAssist: true, shotPreview: false })
   })
+
+  it("details every hole's shapes and each seat's shot paths in 2D, the open hole's too", () => {
+    const s0 = M.init(cfg(), [{ name: 'A' }])
+    const s1 = visit(at(s0, 0, nearCup), bull()) // holes out on hole 1
+    const s2 = emptyTakeout(nextHole(s1)) // one miss on hole 2, then forfeited
+    const record = (start: MinigolfState, after: MinigolfState) => ({
+      visit: 0,
+      seat: 0,
+      leg: 0,
+      phase: 'game' as const,
+      committedAt: '2026-10-01T10:00:00.000Z',
+      darts: [],
+      start,
+      end: start,
+      after,
+    })
+    const d = M.detail([record(s0, s1), record(s1, s2)], s2)
+    const [first, second, third] = d.holes
+    expect(first).toMatchObject({ name: straight.name, outline: straight.outline, cup: straight.cup })
+    expect(first.paths).toHaveLength(1)
+    expect(first.paths[0]).toHaveLength(1)
+    expect(first.paths[0][0].length).toBeGreaterThan(1)
+    expect(first.paths[0][0].every(p => p.length === 2 && p.every(Number.isInteger))).toBe(true)
+    expect(second.paths).toEqual([[[testCourse.holes[1].tee]]])
+    expect(third.paths).toEqual([[]])
+  })
 })
 
 describe('minigolf courses from the course source', () => {

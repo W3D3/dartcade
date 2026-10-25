@@ -2512,6 +2512,12 @@ components:
       properties:
         key: { type: string }
         errorCode: { type: string, enum: [FLAG_NOT_FOUND] }
+    MinigolfDetailPt:
+      type: array
+      description: '[x, y] on a minigolf hole, millimetres (y down)'
+      items: { type: number }
+      minItems: 2
+      maxItems: 2
     MinigolfDetail:
       type: object
       required: [mode, course, holes, scores]
@@ -2524,11 +2530,28 @@ components:
           description: The holes in the order played
           items:
             type: object
-            required: [name, par]
+            required: [name, par, outline, cup, paths]
             additionalProperties: false
             properties:
               name: { type: string }
               par: { type: integer, minimum: 1 }
+              outline:
+                type: array
+                description: The hole's outline, [x, y] in millimetres
+                items: { $ref: '#/components/schemas/MinigolfDetailPt' }
+              cup:
+                type: object
+                required: [at, r]
+                additionalProperties: false
+                properties:
+                  at: { $ref: '#/components/schemas/MinigolfDetailPt' }
+                  r: { type: number }
+              paths:
+                type: array
+                description: "Per seat, every stroke's path on the felt ([x, y], millimetres); empty for a hole not played"
+                items:
+                  type: array
+                  items: { type: array, items: { $ref: '#/components/schemas/MinigolfDetailPt' } }
         scores:
           type: array
           description: 'Strokes per hole (in hole order), then per seat; null for a hole not finished'
