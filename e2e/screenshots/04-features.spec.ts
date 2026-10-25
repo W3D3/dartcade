@@ -1,5 +1,5 @@
 import { test, expect, type Locator } from '@playwright/test'
-import { VIEW, open, shot, hostLobby, leaveLobby, addGuest, startLobbyGame, endGame, dart, entryMode, openHash } from './helpers.js'
+import { VIEW, X01, open, shot, hostLobby, leaveLobby, addGuest, startLobbyGame, endGame, dart, entryMode, openHash } from './helpers.js'
 import { makeZip } from '../../backend/src/caller/zipFixture.js'
 import { makeMp3 } from '../../backend/src/caller/mp3Fixture.js'
 
@@ -200,5 +200,25 @@ test('the caller: settings, voices, checkout calls and the Autodarts guide, in-g
   await game.page.keyboard.press('Escape')
   await endGame(game.page)
   await leaveLobby(game.page)
+  await game.ctx.close()
+})
+
+test('the in-game settings drawer follows the game: Around the Clock and X01', async ({ browser }) => {
+  const game = await open(browser, 'phil', VIEW.desktop)
+  const atc = { gameId: 'atc', config: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' } }
+  for (const [nextGame, file] of [
+    [atc, 'atc'],
+    [X01(), 'x01'],
+  ] as const) {
+    const lobby = await hostLobby(game.page, 'Settings', nextGame)
+    await addGuest(game.page, lobby, 'Sarah')
+    await startLobbyGame(game.page, lobby)
+    await game.page.getByRole('button', { name: 'Game settings' }).click()
+    await expect(game.page.getByRole('dialog').getByText('Sound effects')).toBeVisible()
+    await shot(game.page, `settings-drawer/${file}.png`, { settle: 800 })
+    await game.page.keyboard.press('Escape')
+    await endGame(game.page)
+    await leaveLobby(game.page)
+  }
   await game.ctx.close()
 })
