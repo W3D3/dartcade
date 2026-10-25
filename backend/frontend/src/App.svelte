@@ -34,6 +34,7 @@
   import FinishSprite from '$lib/components/FinishSprite.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
+  import AdminCosmetics from './routes/AdminCosmetics.svelte'
   import { get } from 'svelte/store'
   import { currentUser } from '$lib/auth'
   import { loadAccountSettings } from '$lib/accountSettings'
@@ -109,6 +110,7 @@
     '/admin/games/:id': wrap({ asyncComponent: loadGameDetails, props: { admin: true } }),
     '/admin/flags': AdminFlags,
     '/admin/system': AdminSystem,
+    '/admin/cosmetics': AdminCosmetics,
     '/admin/minigolf': wrap({ asyncComponent: loadMinigolfBench }),
     '/admin/minigolf/courses': minigolfCourses,
     '/admin/minigolf/courses/:id': minigolfCourses,

@@ -1,10 +1,20 @@
 import { describe, it, expect } from 'vitest'
-import { flagsTrail, gamesTrail, minigolfCoursesTrail, minigolfHoleTrail, minigolfBenchTrail, systemTrail, usersTrail } from './breadcrumbs'
+import {
+  cosmeticsTrail,
+  flagsTrail,
+  gamesTrail,
+  minigolfCoursesTrail,
+  minigolfHoleTrail,
+  minigolfBenchTrail,
+  systemTrail,
+  usersTrail,
+} from './breadcrumbs'
 
 describe('usersTrail / systemTrail / minigolfBenchTrail', () => {
   it('is Admin, then the page, with no link on the current page', () => {
     expect(usersTrail()).toEqual([{ label: 'Admin', href: '#/admin' }, { label: 'Users' }])
     expect(systemTrail()).toEqual([{ label: 'Admin', href: '#/admin' }, { label: 'System' }])
+    expect(cosmeticsTrail()).toEqual([{ label: 'Admin', href: '#/admin' }, { label: 'Cosmetics' }])
     expect(minigolfBenchTrail()).toEqual([{ label: 'Admin', href: '#/admin' }, { label: 'Minigolf bench' }])
   })
 })
