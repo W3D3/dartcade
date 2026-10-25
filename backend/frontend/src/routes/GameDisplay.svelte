@@ -30,7 +30,7 @@
   import { accountSettings, writeThrough } from '$lib/accountSettings'
   import { audioContext, createSounds } from '../lib/sounds.js'
   import { createSoundPacks } from '$lib/soundPacks'
-  import { dartEvent, dartSound } from '$lib/dartEvents'
+  import { snapshotEvent, dartSound, type DartEvent } from '$lib/dartEvents'
   import { profileOf } from '$lib/progress/profiles'
   import { callsFor, checkoutFor, createCheckoutMemory, legsOf, requirePart } from '$lib/caller/calls'
   import { createCaller } from '$lib/caller/player'
@@ -52,7 +52,7 @@
   import PhoneX01Card from '../lib/components/PhoneX01Card.svelte'
   import PhoneAtcCard from '../lib/components/PhoneAtcCard.svelte'
   import DartKeypad from '../lib/components/DartKeypad.svelte'
-  import type { AtcGame, NoticeMessage, X01Game } from '$lib/api/game-ws'
+  import type { NoticeMessage } from '$lib/api/game-ws'
   import { authClient } from '$lib/auth'
   import {
     boardCaption,
@@ -210,12 +210,7 @@
         if (checkout && checkoutMemory(checkout, settings.callerCheckoutRepeat)) call.push(requirePart(checkout.remaining))
         if (call.length) void caller.say(call, callerClips, { queue })
       }
-      const g = next.x01 ?? next.atc
-      if (g) {
-        const prev = gameState(snapshot)
-        const pg = prev.x01 ?? prev.atc
-        if (pg) playSounds(pg, g)
-      }
+      if (snapshot) playSounds(snapshotEvent(snapshot, snap))
       // X01 sends its visits with the snapshot; Around the Clock still tracks them here
       if (next.atc) history = trackVisits(history, next.atc)
       snapshot = snap
@@ -265,8 +260,7 @@
     stopWaking()
   })
 
-  function playSounds(before: X01Game | AtcGame, after: X01Game | AtcGame) {
-    const e = dartEvent(before, after)
+  function playSounds(e: DartEvent | null) {
     if (!e) return
     if (e.kind === 'switch') {
       if (settings.soundSwitch) sounds.switchPlayer()
