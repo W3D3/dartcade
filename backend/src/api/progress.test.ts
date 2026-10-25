@@ -68,7 +68,7 @@ beforeEach(() => {
       id: 'anna',
       name: 'Anna',
       createdAt: new Date('2026-08-01T00:00:00Z'),
-      avatar: { kind: 'preset', preset: 'trophy', color: '#2d6cdf', fgColor: '#ffffff' },
+      avatar: { kind: 'preset', foreground: 'chrome', background: 'neon' },
       equipped: { colors: 'colors.ice' },
     })
   vi.mocked(modeCounts)
@@ -199,7 +199,7 @@ describe('/api/progress', () => {
       name: 'Anna',
       relation: 'stranger',
       look: { ...DEFAULT_EQUIPPED, colors: 'colors.ice' },
-      avatar: { kind: 'preset', preset: 'trophy' },
+      avatar: { kind: 'preset', foreground: 'chrome', background: 'neon' },
       level: 14,
       streak: null,
       xp: null,

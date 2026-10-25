@@ -3653,7 +3653,7 @@ components:
         pictures:
           type: array
           items: { type: string }
-          description: 'The avatar presets you may wear (progression rewards)'
+          description: 'The avatar finishes you may wear, on either layer (progression rewards)'
         id: { type: string }
         name: { type: string, description: 'Your handle, shown as @name' }
         email: { type: string }

@@ -4,9 +4,9 @@ import type { Database } from '../db/schema.js'
 import { openTestSchema } from '../db/testSchema.js'
 import { getAccount } from '../db/users.js'
 import { checkName, renameUser, suggestName } from './account.js'
-import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
+import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
 
-const defaultAvatar = { kind: 'preset' as const, preset: DEFAULT_AVATAR_PRESET, color: DEFAULT_AVATAR_BG, fgColor: DEFAULT_AVATAR_FG }
+const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
 const user = (id: string, name: string, flagged = false) => ({
   id,

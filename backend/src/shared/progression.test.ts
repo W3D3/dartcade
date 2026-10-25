@@ -20,9 +20,11 @@ import {
   levelPerks,
   nextLevelPerk,
   streakPerks,
+  perk,
   pictureFor,
+  unlockText,
 } from './progression.js'
-import { AVATAR_PRESETS } from './avatarPresets.js'
+import { AVATAR_FINISHES } from './avatarFinishes.js'
 
 describe('perks', () => {
   // WCAG relative luminance and contrast ratio
@@ -46,9 +48,9 @@ describe('perks', () => {
     for (const p of PERKS.filter(x => x.kind === 'colors')) expect(CARD_COLORS[p.id.slice('colors.'.length)], p.id).toBeDefined()
   })
 
-  it('has an avatar preset for every picture but the photo, and a picture for every preset', () => {
+  it('has a finish for every picture, and a picture for every finish, in the same order', () => {
     const pictures = PERKS.filter(p => p.kind === 'picture').map(p => p.id)
-    expect(AVATAR_PRESETS.map(p => pictureFor(p.id)).sort()).toEqual(pictures.sort())
+    expect(AVATAR_FINISHES.map(f => pictureFor(f.id))).toEqual(pictures)
   })
 
   it('unlocks by level and streak', () => {
@@ -56,16 +58,24 @@ describe('perks', () => {
       'title.rookie',
       'banner.plain',
       'colors.dartcade',
-      'picture.logo',
+      'picture.classic',
       'frame.none',
       'name.plain',
       'sound.none',
       'celebration.standard',
     ])
     expect(levelPerks(2).map(p => p.id)).toContain('title.oche-regular')
-    expect(streakPerks(7).map(p => p.id)).toEqual(['picture.flame'])
+    expect(streakPerks(7).map(p => p.id)).toEqual(['picture.hot-streak'])
     expect(nextLevelPerk(1)?.id).toBe('title.oche-regular')
     expect(nextLevelPerk(50)).toBeNull()
+  })
+
+  it('names what unlocks a perk, a challenge by its own text', () => {
+    expect(unlockText({ level: 15 })).toBe('Level 15')
+    expect(unlockText({ streak: 14 })).toBe('14-day streak')
+    expect(unlockText({ event: 'rankedWins' })).toBe('Win 10 ranked games')
+    expect(unlockText({ challenge: 'Throw a 180' })).toBe('Throw a 180')
+    expect(unlockText(perk('picture.frost')!.unlock)).toBe('Check out 100+')
   })
 
   it('wears the level 1 perks by default, one of each kind', () => {

@@ -2,8 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { openTestSchema } from './testSchema.js'
-import { AVATAR_COLORS, DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
-import { getAccount, getAvatarUpload, setAvatar, setAvatarUpload, UnknownAvatarColorError, UnknownAvatarPresetError } from './users.js'
+import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
+import { getAccount, getAvatarUpload, setAvatar, setAvatarUpload, UnknownAvatarFinishError } from './users.js'
 
 const user = (id: string, name: string) => ({
   id,
@@ -28,68 +28,31 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('avatar', () => {
     await close()
   })
 
-  it('starts on the Dartcade mark, grey on black, with version 0', async () => {
+  it('starts on classic on classic', async () => {
     expect((await getAccount(db, 'lena'))?.avatar).toEqual({
       kind: 'preset',
-      preset: DEFAULT_AVATAR_PRESET,
-      color: DEFAULT_AVATAR_BG,
-      fgColor: DEFAULT_AVATAR_FG,
+      foreground: DEFAULT_AVATAR_FINISH,
+      background: DEFAULT_AVATAR_FINISH,
     })
     expect(await getAvatarUpload(db, 'lena')).toBeUndefined()
   })
 
-  it('sets the background and foreground colours, bumping the version each time', async () => {
-    await setAvatar(db, 'lena', { kind: 'preset', preset: 'logo', color: AVATAR_COLORS[0], fgColor: AVATAR_COLORS[1] })
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({
-      kind: 'preset',
-      preset: 'logo',
-      color: AVATAR_COLORS[0],
-      fgColor: AVATAR_COLORS[1],
-    })
-    await setAvatar(db, 'lena', { kind: 'preset', preset: 'logo', color: AVATAR_COLORS[2], fgColor: AVATAR_COLORS[3] })
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({
-      kind: 'preset',
-      preset: 'logo',
-      color: AVATAR_COLORS[2],
-      fgColor: AVATAR_COLORS[3],
-    })
+  it('sets the foreground and background finishes independently', async () => {
+    await setAvatar(db, 'lena', { kind: 'preset', foreground: 'gold', background: 'neon' })
+    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', foreground: 'gold', background: 'neon' })
+    await setAvatar(db, 'lena', { kind: 'preset', foreground: 'gold', background: 'lava' })
+    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', foreground: 'gold', background: 'lava' })
   })
 
-  it('lets the background and foreground colour change independently', async () => {
-    await setAvatar(db, 'lena', { kind: 'preset', preset: 'logo', color: AVATAR_COLORS[4], fgColor: AVATAR_COLORS[3] })
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({
-      kind: 'preset',
-      preset: 'logo',
-      color: AVATAR_COLORS[4],
-      fgColor: AVATAR_COLORS[3],
-    })
-  })
-
-  it('refuses an unknown preset id, leaving the avatar as it was', async () => {
-    await expect(
-      setAvatar(db, 'lena', { kind: 'preset', preset: 'nope', color: AVATAR_COLORS[0], fgColor: AVATAR_COLORS[1] }),
-    ).rejects.toThrow(UnknownAvatarPresetError)
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({
-      kind: 'preset',
-      preset: 'logo',
-      color: AVATAR_COLORS[4],
-      fgColor: AVATAR_COLORS[3],
-    })
-  })
-
-  it('refuses an unknown background or foreground colour, leaving the avatar as it was', async () => {
-    await expect(setAvatar(db, 'lena', { kind: 'preset', preset: 'logo', color: '#abcdef', fgColor: AVATAR_COLORS[0] })).rejects.toThrow(
-      UnknownAvatarColorError,
+  it('refuses an unknown or missing finish on either layer, leaving the avatar as it was', async () => {
+    await expect(setAvatar(db, 'lena', { kind: 'preset', foreground: 'nope', background: 'neon' })).rejects.toThrow(
+      UnknownAvatarFinishError,
     )
-    await expect(setAvatar(db, 'lena', { kind: 'preset', preset: 'logo', color: AVATAR_COLORS[0], fgColor: '#abcdef' })).rejects.toThrow(
-      UnknownAvatarColorError,
+    await expect(setAvatar(db, 'lena', { kind: 'preset', foreground: 'neon', background: '#abcdef' })).rejects.toThrow(
+      UnknownAvatarFinishError,
     )
-    expect((await getAccount(db, 'lena'))?.avatar).toEqual({
-      kind: 'preset',
-      preset: 'logo',
-      color: AVATAR_COLORS[4],
-      fgColor: AVATAR_COLORS[3],
-    })
+    await expect(setAvatar(db, 'lena', { kind: 'preset', foreground: 'neon' })).rejects.toThrow(UnknownAvatarFinishError)
+    expect((await getAccount(db, 'lena'))?.avatar).toEqual({ kind: 'preset', foreground: 'gold', background: 'lava' })
   })
 
   it('uploads a photo, serving it back with a bumped version; a preset or none clears the bytes', async () => {

@@ -221,7 +221,7 @@
   }
 }
 
-/* Cosmetic motion (lib/progress/look.ts, lib/avatarPresetIcons.ts): banners, card effects, pictures. Still under reduced motion. */
+/* Cosmetic motion (lib/progress/look.ts): banners, card effects, pictures. Still under reduced motion. */
 @layer components {
   .cos-sweep,
   .cos-shimmer,
@@ -269,9 +269,6 @@
     mix-blend-mode: screen;
     animation: cos-holo 8s ease-in-out infinite alternate;
   }
-  .cos-flicker {
-    animation: cos-flicker 1.6s ease-in-out infinite;
-  }
   /* A frame whose shine runs round */
   .cos-spin {
     animation: cos-spin 6s linear infinite;
@@ -312,26 +309,10 @@
       background-position: 100% 100%;
     }
   }
-  @keyframes cos-flicker {
-    0%,
-    100% {
-      transform: scale(1);
-      filter: drop-shadow(0 0 2px #ff6a00);
-    }
-    40% {
-      transform: scale(1.06) rotate(-2deg);
-      filter: drop-shadow(0 0 5px #ffb000);
-    }
-    70% {
-      transform: scale(0.97) rotate(1deg);
-      filter: drop-shadow(0 0 3px #ff3d00);
-    }
-  }
   @media (prefers-reduced-motion: reduce) {
     .cos-sweep::after,
     .cos-shimmer::after,
     .cos-holo::after,
-    .cos-flicker,
     .cos-spin,
     .cos-gold-name {
       animation: none;

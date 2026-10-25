@@ -16,8 +16,7 @@ export async function profileUser(
       'createdAt',
       'avatar_kind',
       'avatar_preset',
-      'avatar_color',
-      'avatar_fg_color',
+      'avatar_background',
       'avatar_version',
       sql<Record<string, unknown> | null>`preferences->'equipped'`.as('equipped'),
     ])

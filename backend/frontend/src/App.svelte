@@ -30,6 +30,7 @@
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
   import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
+  import FinishSprite from '$lib/components/FinishSprite.svelte'
   import AdminFlags from './routes/AdminFlags.svelte'
   import AdminSystem from './routes/AdminSystem.svelte'
   import { get } from 'svelte/store'
@@ -181,6 +182,7 @@
   })
 </script>
 
+<FinishSprite />
 <Tooltip.Provider>
   {#if checked}
     {#if $currentUser?.nameNeedsChange}

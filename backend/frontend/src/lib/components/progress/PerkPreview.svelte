@@ -1,23 +1,20 @@
 <script lang="ts">
   // A reward small, as the rewards track shows it (Rewards board): a title chip, a banner strip, a
   // card colour's "Aa", the picture, a frame's ring, a sound pack, a celebration, the name style.
-  // Banners are drawn in your card's colours and pictures in your avatar's, so it's the real thing.
+  // Banners are drawn in your card's colours, so it's the real thing; a picture is its finish on both layers.
   import { PartyPopper, Volume2 } from '@lucide/svelte'
   import Avatar from '../Avatar.svelte'
   import { bannerClass, bannerStyle, cardColors, colorsClass, frameOf, nameClass } from '$lib/progress/look'
-  import { presetIn } from '$lib/progress/pictures'
+  import { finishAvatar } from '$lib/progress/pictures'
   import type { Perk } from '$shared/progression.js'
-  import type { components } from '$lib/api/schema'
 
   let {
     perk,
     colors,
-    avatar,
     short = false,
   }: {
     perk: Perk
     colors: string
-    avatar: components['schemas']['Avatar'] | null
     /** Where there is no room for a title's name: the chip just says Title */
     short?: boolean
   } = $props()
@@ -43,7 +40,7 @@
     style="background: {c.bg}; color: {c.fg}">Aa</span
   >
 {:else if perk.kind === 'picture'}
-  <Avatar name="" avatar={presetIn(avatar, perk.id.slice('picture.'.length))} size={32} />
+  <Avatar name="" avatar={finishAvatar(perk.id.slice('picture.'.length))} size={32} />
 {:else if perk.kind === 'frame'}
   <span class="size-[34px] box-border rounded-full p-[3px] flex" style="background: {frameOf(perk.id)?.ring}"
     ><span class="flex-1 rounded-full bg-surface-2"></span></span

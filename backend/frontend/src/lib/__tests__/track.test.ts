@@ -11,8 +11,8 @@ describe('the rewards track', () => {
 
   it('names a level by its rewards, a set by its title', () => {
     expect(TRACK[0]).toMatchObject({ label: 'Starter set', kinds: '4 rewards' })
-    expect(TRACK[4]).toMatchObject({ label: 'Flight + Pub green', kinds: 'Picture + Colours' })
-    expect(TRACK[9]).toMatchObject({ label: 'Bronze frame + Board', kinds: 'Frame + Picture' })
+    expect(TRACK[4]).toMatchObject({ label: 'Arcade + Pub green', kinds: 'Picture + Colours' })
+    expect(TRACK[9]).toMatchObject({ label: 'Bronze frame + Bronze', kinds: 'Frame + Picture' })
     expect(TRACK[14]).toMatchObject({ label: 'Pub sounds', kinds: 'Sounds' })
     expect(TRACK[49]).toMatchObject({ label: 'Dartcade Legend', kinds: '8 rewards' })
   })
@@ -24,12 +24,22 @@ describe('the rewards track', () => {
 
   it('puts every reward not earned by level off the track, grouped by how it is earned', () => {
     expect(OFF_TRACK.map(o => [o.name, o.when])).toEqual([
-      ['Flame', '7-day streak'],
+      ['Hot streak', '7-day streak'],
       ['Fortnight', '14-day streak'],
       ['Gold + Gold leaf', '30-day streak'],
       ['Never Misses', '100-day streak'],
-      ['Shield', 'Win 10 ranked games'],
+      ['Crystal', 'Win 10 ranked games'],
       ['Oche red', 'Reach ranked Gold'],
+      ['Frost', 'Check out 100+'],
+      ['Carbon', 'Play 100 games'],
+      ['Holo', 'Season 1 reward'],
+      ['Marble', 'Win 25 ranked games'],
+      ['Lava', 'Win 5 in a row'],
+      ['Electric', 'Throw a 180'],
+      ['Galaxy', 'Reach Elite rank'],
+      ['Toxic', 'Minigolf hole in one'],
+      ['Walnut', 'Play 20 games with friends'],
+      ['Glitch', 'Launch week event'],
     ])
     // Everything but the four level 1 "nothing" picks
     expect(TRACK.flatMap(l => l.perks).length + OFF_TRACK.flatMap(o => o.perks).length).toBe(PERKS.length - 4)

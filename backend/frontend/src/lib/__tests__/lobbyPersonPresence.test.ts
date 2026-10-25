@@ -21,7 +21,7 @@ const person = (over: Partial<LobbyPerson>): LobbyPerson => ({
   team: null,
   presence: null,
   bot: null,
-  avatar: { kind: 'preset', preset: 'logo', color: '#808080', fgColor: '#000000' },
+  avatar: { kind: 'preset', foreground: 'classic', background: 'classic' },
   ...over,
 })
 

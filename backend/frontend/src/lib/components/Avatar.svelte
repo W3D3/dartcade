@@ -1,11 +1,11 @@
 <script lang="ts">
-  // A person's round avatar: their initial, a preset icon (the Dartcade mark, for now) on
-  // independently-chosen background and foreground colours, an uploaded photo, or a robot glyph
+  // A person's round avatar: their initial, a preset (the Dartcade mark in one finish on a disc in
+  // another, drawn by FinishPicture), an uploaded photo, or a robot glyph
   // for a bot (coloured by its level — calm green at Level 1 up to intense red at Level 10 —
   // instead of the name-hash colour). `avatar` (and
   // `userId`, to build the photo's URL) is the profile picture they've set, if any — omit it (or
   // pass 'none') to always show the initial, which is what every caller that hasn't been updated
-  // yet still does. Tones: the default chip (name colour, a preset's own colour, or the bot's
+  // yet still does. Tones: the default chip (name colour, or the bot's
   // level colour), `accent` for the thrower or yourself, `guest` dashed, `quiet` a darker chip
   // (bull off) — these restyle the fallback (initials, or a bot's glyph) the same way for a bot
   // as for a human, except `guest`: a bot has no account either (`userId: null`, same as a
@@ -17,7 +17,7 @@
   // put a StatusRing around the avatar.
   import { Bot as BotIcon } from '@lucide/svelte'
   import { avatarColor } from '$lib/avatarColor'
-  import { AVATAR_PRESET_ART } from '$lib/avatarPresetIcons'
+  import FinishPicture from './FinishPicture.svelte'
   import type { components } from '$lib/api/schema'
   import { botAvatarColor } from '$lib/botAvatarColor'
   import { initial } from '$lib/fmt'
@@ -50,7 +50,7 @@
     userId?: string | null
   } = $props()
 
-  // A real picture (a preset icon+colour, or an uploaded photo) always shows as chosen — tone
+  // A real picture (a preset, or an uploaded photo) always shows as chosen — tone
   // only restyles the fallback chip (initials, or a bot's glyph), never hides a picture that's
   // actually set (Settings' own preview needs to show the real thing, not a forced accent green).
   const hasPicture = $derived(avatar?.kind === 'preset' || avatar?.kind === 'upload')
@@ -73,26 +73,22 @@
             ? `${avatarColor(name)} text-text`
             : TONE[tone],
   )
-  // A preset's background and foreground colours, chosen independently of each other, are hex
-  // values (not Tailwind classes), so they're set as inline styles instead.
-  const presetBg = $derived(!bot && !guest && avatar?.kind === 'preset' ? avatar.color : undefined)
-  const art = $derived(!bot && !guest && avatar?.kind === 'preset' ? AVATAR_PRESET_ART[avatar.preset] : undefined)
-  const presetFg = $derived(!bot && !guest && avatar?.kind === 'preset' ? (art?.color ?? avatar.fgColor) : undefined)
+  const preset = $derived(!bot && !guest && avatar?.kind === 'preset' ? avatar : undefined)
   const px = $derived(size ?? (className ? null : 36))
   const sizeStyle = $derived(px == null ? '' : `width: ${px}px; height: ${px}px; font-size: ${Math.round(px * 0.42)}px;`)
 </script>
 
 <span
   aria-hidden="true"
-  style="{sizeStyle}{presetBg ? `background-color: ${presetBg};` : ''}{presetFg ? `color: ${presetFg};` : ''}"
+  style={sizeStyle}
   class="shrink-0 box-border rounded-full overflow-hidden flex items-center justify-center font-bold {look} {className}"
 >
   {#if bot}
     <BotIcon size="62%" />
   {:else if avatar?.kind === 'upload' && userId}
     <img src="/api/users/{userId}/avatar?v={avatar.version}" alt="" class="w-full h-full object-cover" />
-  {:else if art}
-    <span class="flex size-full items-center justify-center {art.motion ? `cos-${art.motion}` : ''}"><art.icon size="62%" /></span>
+  {:else if preset}
+    <FinishPicture foreground={preset.foreground} background={preset.background} />
   {:else}
     {initial(name)}
   {/if}

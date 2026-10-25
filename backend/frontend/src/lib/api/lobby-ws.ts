@@ -23,15 +23,14 @@ export type Avatar =
     }
   | {
       kind: 'preset'
-      preset: string
       /**
-       * The preset's background colour (hex)
+       * The finish of the mark in front
        */
-      color: string
+      foreground: string
       /**
-       * The preset's icon colour (hex)
+       * The finish of the disc behind it
        */
-      fgColor: string
+      background: string
     }
   | {
       kind: 'upload'
@@ -47,7 +46,7 @@ export type TeamId = 'A' | 'B'
  */
 export type LobbyServerMessage = LobbyMessage | LobbyClosedMessage
 /**
- * A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo
+ * A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo
  */
 export type Avatar1 =
   | {
@@ -55,15 +54,14 @@ export type Avatar1 =
     }
   | {
       kind: 'preset'
-      preset: string
       /**
-       * The preset's background colour (hex)
+       * The finish of the mark in front
        */
-      color: string
+      foreground: string
       /**
-       * The preset's icon colour (hex)
+       * The finish of the disc behind it
        */
-      fgColor: string
+      background: string
     }
   | {
       kind: 'upload'

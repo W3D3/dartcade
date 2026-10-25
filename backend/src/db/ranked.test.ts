@@ -13,9 +13,9 @@ import {
   x01Average,
 } from './ranked.js'
 import { rankIndexFor } from '../shared/ranked.js'
-import { DEFAULT_AVATAR_BG, DEFAULT_AVATAR_FG, DEFAULT_AVATAR_PRESET } from '../shared/avatarPresets.js'
+import { DEFAULT_AVATAR_FINISH } from '../shared/avatarFinishes.js'
 
-const defaultAvatar = { kind: 'preset' as const, preset: DEFAULT_AVATAR_PRESET, color: DEFAULT_AVATAR_BG, fgColor: DEFAULT_AVATAR_FG }
+const defaultAvatar = { kind: 'preset' as const, foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH }
 
 describe.skipIf(!process.env.TEST_DATABASE_URL)('ranked tables', () => {
   let db: Kysely<Database>

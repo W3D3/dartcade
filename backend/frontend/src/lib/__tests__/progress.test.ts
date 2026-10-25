@@ -66,7 +66,7 @@ describe('streak copy', () => {
     )
     expect(t).toEqual([
       { kind: 'freeze', left: 1 },
-      { kind: 'milestone', days: 7, xp: 250, perks: [expect.objectContaining({ id: 'picture.flame' })] },
+      { kind: 'milestone', days: 7, xp: 250, perks: [expect.objectContaining({ id: 'picture.hot-streak' })] },
     ])
   })
   it('toasts the streak extended with its bonus, and challenges done', () => {

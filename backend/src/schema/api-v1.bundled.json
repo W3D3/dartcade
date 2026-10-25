@@ -5234,7 +5234,7 @@
       },
       "Avatar": {
         "title": "Avatar",
-        "description": "A profile picture: none (initials), a built-in preset (an icon on independently-chosen background and foreground colours), or an uploaded photo",
+        "description": "A profile picture: none (initials), a built-in preset (the Dartcade mark in one finish on a disc in another), or an uploaded photo",
         "oneOf": [
           {
             "type": "object",
@@ -5255,9 +5255,8 @@
             "type": "object",
             "required": [
               "kind",
-              "preset",
-              "color",
-              "fgColor"
+              "foreground",
+              "background"
             ],
             "additionalProperties": false,
             "properties": {
@@ -5267,16 +5266,13 @@
                   "preset"
                 ]
               },
-              "preset": {
-                "type": "string"
-              },
-              "color": {
+              "foreground": {
                 "type": "string",
-                "description": "The preset's background colour (hex)"
+                "description": "The finish of the mark in front"
               },
-              "fgColor": {
+              "background": {
                 "type": "string",
-                "description": "The preset's icon colour (hex)"
+                "description": "The finish of the disc behind it"
               }
             }
           },
@@ -5304,7 +5300,7 @@
       },
       "AvatarChoice": {
         "title": "AvatarChoice",
-        "description": "What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. preset, color and fgColor are required, and each validated against its own known list, when kind is 'preset' — background and foreground chosen independently, so any colour can go with any other. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.",
+        "description": "What to set your avatar to via PATCH /api/me; an uploaded photo is set via POST /api/me/avatar instead. foreground and background are required, and each must be a built-in finish, when kind is 'preset'; the two layers are picked independently. Flat rather than oneOf: a oneOf nested in a request body interacts badly with Fastify/Ajv's removeAdditional.",
         "type": "object",
         "required": [
           "kind"
@@ -5318,17 +5314,13 @@
               "preset"
             ]
           },
-          "preset": {
+          "foreground": {
             "type": "string",
-            "description": "A built-in preset icon id (Settings shows the choices); required when kind is 'preset'"
+            "description": "The finish of the mark in front (Settings shows the choices); required when kind is 'preset'"
           },
-          "color": {
+          "background": {
             "type": "string",
-            "description": "A built-in swatch (hex, Settings shows the choices); required when kind is 'preset'"
-          },
-          "fgColor": {
-            "type": "string",
-            "description": "A built-in swatch for the icon itself (hex, Settings shows the choices); required when kind is 'preset'"
+            "description": "The finish of the disc behind it; required when kind is 'preset'"
           }
         }
       },
@@ -8618,7 +8610,7 @@
             "items": {
               "type": "string"
             },
-            "description": "The avatar presets you may wear (progression rewards)"
+            "description": "The avatar finishes you may wear, on either layer (progression rewards)"
           },
           "id": {
             "type": "string"
