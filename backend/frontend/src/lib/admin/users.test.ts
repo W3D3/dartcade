@@ -8,6 +8,7 @@ import {
   saveColumnVisibility,
   roleActions,
   roleChange,
+  grantSummary,
   type AdminUser,
 } from './users'
 
@@ -171,5 +172,12 @@ describe('roleChange', () => {
     })
     expect(roleChange({ ...ann, role: 'admin' }, null, true).body).toContain("You'll lose access")
     expect(roleChange({ ...ann, role: 'moderator' }, null, false)).toMatchObject({ title: 'Remove moderator access?', confirm: 'Remove' })
+  })
+})
+
+describe('grantSummary', () => {
+  it('says the new level, total and unlock count', () => {
+    expect(grantSummary({ xp: 58800, level: 50, unlocked: ['a', 'b'] })).toBe('Now level 50 · 58,800 XP · 2 new unlocks')
+    expect(grantSummary({ xp: 1000, level: 4, unlocked: ['a'] })).toBe('Now level 4 · 1,000 XP · 1 new unlock')
   })
 })

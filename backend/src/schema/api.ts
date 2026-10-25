@@ -844,6 +844,25 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/users/{id}/xp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Give an account XP, to test unlocks (admin) */
+        post: operations["grantUserXp"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/flags": {
         parameters: {
             query?: never;
@@ -2700,6 +2719,17 @@ export interface components {
         SetUserVerifiedRequest: {
             /** @description true: mark the account's email verified; false: unverified */
             verified: boolean;
+        };
+        GrantUserXpRequest: {
+            /** @description XP to add */
+            amount: number;
+        };
+        GrantUserXpResult: {
+            /** @description The account's XP total now */
+            xp: number;
+            level: number;
+            /** @description Perk ids this grant unlocked */
+            unlocked: string[];
         };
         /** @description [min, max], number flags only */
         FlagRange: number[];
@@ -4970,6 +5000,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AdminUser"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    grantUserXp: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["AdminUserId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GrantUserXpRequest"];
+            };
+        };
+        responses: {
+            /** @description The account's new total and level, and what it unlocked */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrantUserXpResult"];
                 };
             };
             400: components["responses"]["BadRequest"];

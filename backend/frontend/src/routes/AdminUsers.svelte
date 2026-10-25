@@ -1,4 +1,4 @@
-<!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none). -->
+<!-- Admin user management (`#/admin/users`): search accounts, set their role (admin, moderator, none), give them XP. -->
 <script lang="ts">
   import { untrack } from 'svelte'
   import { push } from 'svelte-spa-router'
@@ -7,6 +7,8 @@
   import { createColumnHelper, renderSnippet, type SortingState, type ColumnVisibilityState } from '@tanstack/svelte-table'
   import Layout from '$lib/components/Layout.svelte'
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
+  import GrantXpModal from '$lib/components/admin/GrantXpModal.svelte'
+  import { reloadProgress } from '$lib/progress/store'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
@@ -72,6 +74,7 @@
   // The row asking to confirm a promote/demote or verify/unverify, and the one mid-request
   let confirmAction = $state<{ kind: 'role'; user: AdminUser; role: Role } | { kind: 'verified'; user: AdminUser } | null>(null)
   let busyId = $state<string | null>(null)
+  let xpUser = $state<AdminUser | null>(null)
   let rowError = $state<{ id: string; text: string } | null>(null)
 
   // Another admin can't be viewed as (the server refuses), and nor can yourself
@@ -219,6 +222,12 @@
           >
             {user.emailVerified ? 'Mark email as unverified' : 'Mark email as verified'}
           </DropdownMenu.Item>
+          <DropdownMenu.Item
+            onSelect={() => ((rowError = null), (xpUser = user))}
+            class="flex h-10 items-center rounded-lg px-[10px] text-[14px] text-text cursor-pointer outline-none data-[highlighted]:bg-surface-paused"
+          >
+            Give XP
+          </DropdownMenu.Item>
           {#if canViewAs(user)}
             <DropdownMenu.Item
               onSelect={() => void pickViewAs(user)}
@@ -287,6 +296,19 @@
         confirmLabel={user.emailVerified ? 'Mark unverified' : 'Mark verified'}
         onconfirm={() => void confirmPick()}
         oncancel={() => (confirmAction = null)}
+      />
+    {/if}
+    {#if xpUser}
+      <GrantXpModal
+        user={xpUser}
+        onclose={() => (xpUser = null)}
+        ongranted={() => {
+          // Your own XP: the progress bar and your card show it at once
+          if (xpUser?.id === $currentUser.id) {
+            reloadProgress()
+            void currentUser.refresh()
+          }
+        }}
       />
     {/if}
   {/if}

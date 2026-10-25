@@ -174,6 +174,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin users API', { timeout: 20
     await app().inject({ method: 'PUT', url: '/api/admin/users/player/verified', headers: asAdmin, payload: { verified: false } })
   })
 
+  it('gives XP: 403 for a non-admin, 400 for a bad amount, 404 for an unknown id', async () => {
+    const give = (headers: Record<string, string>, payload: Record<string, unknown>, id = 'player') =>
+      app().inject({ method: 'POST', url: `/api/admin/users/${id}/xp`, headers, payload })
+    expect((await give(asPlayer, { amount: 100 })).statusCode).toBe(403)
+    for (const amount of [0, 100_001, 1.5, 'lots']) expect((await give(asAdmin, { amount })).statusCode, String(amount)).toBe(400)
+    expect((await give(asAdmin, { amount: 100 }, 'ghost')).statusCode).toBe(404)
+    const res = await give(asAdmin, { amount: 100 })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toEqual({ xp: 100, level: 1, unlocked: [] })
+  })
+
   it('promotes then demotes a user', async () => {
     const promoted = await app().inject({
       method: 'PUT',

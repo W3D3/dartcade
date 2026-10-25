@@ -1,8 +1,9 @@
+import { randomUUID } from 'node:crypto'
 import { sql, type Kysely, type NotNull } from 'kysely'
 import { z } from 'zod'
 import type { Database } from './schema.js'
-import type { Award, DayTally } from '../progression/rules.js'
-import { PERKS, levelOf, levelPerks, perk, streakPerks, type StreakState } from '../shared/progression.js'
+import { reachedPerks, type Award, type DayTally } from '../progression/rules.js'
+import { PERKS, levelOf, levelPerks, localDate, perk, streakPerks, type StreakState } from '../shared/progression.js'
 
 const StatsSchema = z.record(z.string(), z.number()).catch({})
 
@@ -363,6 +364,51 @@ export async function rankedDeeds(db: Kysely<Database>, userId: string): Promise
 /** Whether the account holds perk `perkId`. */
 export async function hasPerk(db: Kysely<Database>, userId: string, perkId: string): Promise<boolean> {
   return (await unlockedPerks(db, userId)).includes(perkId)
+}
+
+/**
+ * An admin gives an account XP (to test unlocks): a ledger row of kind 'admin' keyed by a fresh id,
+ * so no game's revoke, day tally or streak ever reads it; then the total, the perks the new level
+ * reaches, and an audit row. 'not-found' for an unknown account.
+ */
+export async function grantXp(
+  db: Kysely<Database>,
+  adminId: string,
+  userId: string,
+  amount: number,
+): Promise<{ xp: number; level: number; unlocked: string[] } | 'not-found'> {
+  return db.transaction().execute(async trx => {
+    if (!(await trx.selectFrom('user').select('id').where('id', '=', userId).executeTakeFirst())) return 'not-found'
+    await lockUser(trx, userId)
+    const now = new Date()
+    await trx
+      .insertInto('xp_ledger')
+      .values({
+        user_id: userId,
+        kind: 'admin',
+        source_type: 'admin',
+        source_id: randomUUID(),
+        amount,
+        local_date: localDate(now, await userTimeZone(trx, userId)),
+        meta: JSON.stringify({ adminId }),
+        created_at: now,
+      })
+      .execute()
+    const { before, after } = await addXp(trx, userId, amount)
+    const level = levelOf(after).level
+    const streak = (await getStreak(trx, userId)).current
+    const unlocked = await unlock(trx, userId, reachedPerks({ level, streak, ranked: await rankedDeeds(trx, userId) }), now)
+    await trx
+      .insertInto('admin_audit')
+      .values({
+        admin_user_id: adminId,
+        action: 'user.grantXp',
+        target: userId,
+        detail: JSON.stringify({ amount, before, after, unlocked }),
+      })
+      .execute()
+    return { xp: after, level, unlocked }
+  })
 }
 
 /** The pictures the account may wear: avatar preset ids. */
