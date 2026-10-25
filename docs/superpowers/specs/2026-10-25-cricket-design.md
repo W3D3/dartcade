@@ -144,8 +144,13 @@ rows grey with a "Closed" label (they differ in lightness, not only hue).
 Marks are inline SVG strokes (`pathLength="1"`, `stroke-dashoffset` keyframes). When a dart
 adds marks, only the strokes it added animate: the `/` strokes in (~320 ms), the X's second
 diagonal draws across, the circle draws around from the top (~400 ms); a row that closes fades
-to grey; points scored pop in. Marks present on first render or after a reconnect appear
+to grey. Marks present on first render or after a reconnect appear
 without animating. `prefers-reduced-motion` shows the final state at once.
+
+Points use X01's `RollingNumber` (no "+57" pop): they roll upward (`normal: 'up'`). In standard
+a gain is plain, as in X01. In cut-throat the colours invert: points landing on a player are
+bad, so the roll flashes red (`text-live`, no shake); take-backs stay amber in both modes. This
+needs one new `RollOptions` field, `gain: 'plain' | 'bad'` (default `'plain'`).
 
 Frontend:
 
