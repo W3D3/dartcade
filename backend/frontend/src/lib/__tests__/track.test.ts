@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { OFF_TRACK, TOP_LEVEL, TRACK, levelTier, nextBigLevel } from '../progress/track.js'
-import { PERKS } from '$shared/progression.js'
+import { OFF_TRACK, TOP_LEVEL, TRACK, applyAllPlan, isWorn, levelTier, nextBigLevel } from '../progress/track.js'
+import { DEFAULT_EQUIPPED, PERKS } from '$shared/progression.js'
 
 describe('the rewards track', () => {
   it('has a level for every step to the top, each unlocking something', () => {
@@ -43,5 +43,31 @@ describe('the rewards track', () => {
     ])
     // Everything but the four level 1 "nothing" picks
     expect(TRACK.flatMap(l => l.perks).length + OFF_TRACK.flatMap(o => o.perks).length).toBe(PERKS.length - 4)
+  })
+})
+
+describe('applying a reward', () => {
+  const ten = TRACK[9].perks // Bronze frame + Bronze picture
+  const frame = ten.find(p => p.kind === 'frame')!
+  const picture = ten.find(p => p.kind === 'picture')!
+  const plain = { equipped: DEFAULT_EQUIPPED, avatar: { kind: 'preset', foreground: 'classic', background: 'classic' } as const }
+
+  it('counts a picture as worn only when both layers are its finish', () => {
+    expect(isWorn(picture, plain)).toBe(false)
+    expect(isWorn(picture, { ...plain, avatar: { kind: 'preset', foreground: 'bronze', background: 'classic' } })).toBe(false)
+    expect(isWorn(picture, { ...plain, avatar: { kind: 'preset', foreground: 'bronze', background: 'bronze' } })).toBe(true)
+    expect(isWorn(frame, { ...plain, equipped: { ...DEFAULT_EQUIPPED, frame: frame.id } })).toBe(true)
+  })
+
+  it('applies every unlocked item not worn yet, the picture on both layers', () => {
+    const ids = ten.map(p => p.id)
+    expect(applyAllPlan(ten, ids, plain)).toEqual({ equip: { frame: frame.id }, picture: 'bronze', empty: false })
+    expect(applyAllPlan(ten, [frame.id], plain)).toEqual({ equip: { frame: frame.id }, picture: null, empty: false })
+    expect(applyAllPlan(ten, [], plain).empty).toBe(true)
+    const wearing = {
+      equipped: { ...DEFAULT_EQUIPPED, frame: frame.id },
+      avatar: { kind: 'preset', foreground: 'bronze', background: 'bronze' } as const,
+    }
+    expect(applyAllPlan(ten, ids, wearing)).toEqual({ equip: {}, picture: null, empty: true })
   })
 })

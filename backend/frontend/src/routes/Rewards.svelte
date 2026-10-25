@@ -1,16 +1,18 @@
 <script lang="ts">
   // The rewards track (Rewards board): your level and where the track stands, the next unlock and
   // the next big one, every level to the top in tiers of ten (unlocked ticked, yours outlined,
-  // locked ones grey until hovered or focused), and the rewards off the track. `#/progress/rewards/15`
+  // locked ones grey until hovered or focused), and the rewards off the track; each opens its details
+  // (RewardDetails), where you apply it. `#/progress/rewards/15`
   // opens it at level 15. Behind progression.enabled, like Progress.
   import { Check, Lock, LoaderCircle } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PerkPreview from '$lib/components/progress/PerkPreview.svelte'
+  import RewardDetails from '$lib/components/progress/RewardDetails.svelte'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
   import { fmtXp } from '$lib/progress/view'
-  import { OFF_TRACK, TOP_LEVEL, TRACK, levelTier, nextBigLevel, type TrackLevel } from '$lib/progress/track'
-  import { levelOf } from '$shared/progression.js'
+  import { OFF_TRACK, TOP_LEVEL, TRACK, levelTier, nextBigLevel, type OffTrack, type TrackLevel } from '$lib/progress/track'
+  import { levelOf, type Perk } from '$shared/progression.js'
 
   let { params = {} }: { params?: { level?: string } } = $props()
 
@@ -34,6 +36,23 @@
   const previews = (l: TrackLevel) => (l.perks.length > 2 ? l.perks.filter(p => p.kind !== 'title').slice(0, 3) : l.perks)
   const stateOf = (n: number) => (n === level ? 'unlocked, your level' : n < level ? 'unlocked' : 'locked')
 
+  type Opened = { eyebrow: string; title: string; status: string; got: boolean; perks: readonly Perk[] }
+  let opened = $state<Opened | null>(null)
+  function openLevel(l: TrackLevel) {
+    const got = l.level <= level
+    const left = l.level - level
+    opened = {
+      eyebrow: `Level ${l.level}${l.level === level ? ' · your level' : ''}`,
+      title: l.label,
+      status: got ? 'Unlocked' : `Unlocks at level ${l.level} · ${left} ${left === 1 ? 'level' : 'levels'} to go`,
+      got,
+      perks: l.perks,
+    }
+  }
+  function openOff(o: OffTrack, got: boolean) {
+    opened = { eyebrow: 'Off the track', title: o.name, status: `${got ? 'Unlocked' : 'Locked'} · ${o.when}`, got, perks: o.perks }
+  }
+
   function scrollTo(node: HTMLElement, on: boolean) {
     if (on) node.scrollIntoView({ block: 'center' })
   }
@@ -49,7 +68,7 @@
         <h1 class="m-0 mt-1 font-display font-bold text-[40px] xl:text-[48px] leading-none uppercase tracking-[0.02em]">Rewards</h1>
       </div>
       <a
-        href="#/profile?customise"
+        href="#/profile/customise"
         class="order-last md:order-none rounded-[10px] border border-accent bg-accent px-4 py-[10px] font-display font-bold text-[16px] uppercase tracking-[0.08em] text-accent-fg no-underline hover:bg-accent-hover"
         >Customise your card</a
       >
@@ -122,46 +141,47 @@
             {#each tier.levels as l (l.level)}
               {@const shown = previews(l)}
               {@const tierCls = levelTier(l.level)}
-              <!-- Focusable so a keyboard can reveal a locked one's rewards -->
-              <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-              <li
-                tabindex="0"
-                use:scrollTo={l.level === target}
-                aria-label="Level {l.level}: {l.label}, {stateOf(l.level)}"
-                class="cell group relative box-border min-w-0 flex items-center gap-3 rounded-[12px] border border-line-2 bg-surface-2 px-3 py-2
+              <li class="min-w-0">
+                <button
+                  type="button"
+                  onclick={() => openLevel(l)}
+                  use:scrollTo={l.level === target}
+                  aria-label="Level {l.level}: {l.label}, {stateOf(l.level)}"
+                  class="cell group relative box-border w-full min-w-0 text-left cursor-pointer flex items-center gap-3 rounded-[12px] border border-line-2 bg-surface-2 px-3 py-2
                        sm:h-[162px] sm:flex-col sm:items-stretch sm:gap-[6px] sm:px-[10px] sm:pt-[10px] sm:pb-3
                        {tierCls ? `tier-${tierCls}` : ''} {l.level === level ? 'here' : ''} {l.level > level ? 'locked' : ''} {l.level ===
-                target
-                  ? 'target'
-                  : ''}"
-              >
-                <div class="w-12 max-sm:shrink-0 sm:w-auto flex items-center gap-1 h-[18px]">
-                  <span class="font-display font-bold text-[18px] leading-none">{l.level}</span>
-                  <span class="ml-auto flex">
-                    {#if l.level === level}
-                      <span class="rounded-full bg-accent px-[6px] py-[2px] text-[10px] font-bold tracking-[0.06em] text-accent-fg"
-                        >YOU</span
-                      >
-                    {:else if l.level < level}
-                      <Check size={14} strokeWidth={3} class="text-accent" aria-hidden="true" />
-                    {:else}
-                      <Lock size={13} class="text-text-dim" aria-hidden="true" />
-                    {/if}
-                  </span>
-                </div>
-                <div
-                  class="pv w-[110px] max-sm:shrink-0 sm:w-auto h-[44px] sm:h-[62px] flex flex-wrap items-center justify-center content-center gap-[5px]
-                         {shown.length > 2 ? 'dense' : shown.length === 2 ? 'pair' : ''}"
+                  target
+                    ? 'target'
+                    : ''}"
                 >
-                  {#each shown as p (p.id)}<PerkPreview perk={p} {colors} />{/each}
-                  {#if l.perks.length > shown.length}<span class="text-[11px] font-semibold text-text-muted"
-                      >+{l.perks.length - shown.length}</span
-                    >{/if}
-                </div>
-                <div class="flex-1 min-w-0 flex flex-col gap-[2px] sm:contents">
-                  <div class="text-[13px] font-semibold leading-[1.25] line-clamp-2">{l.label}</div>
-                  <div class="sm:mt-auto text-[11px] uppercase tracking-[0.06em] text-text-muted truncate">{l.kinds}</div>
-                </div>
+                  <span class="w-12 max-sm:shrink-0 sm:w-auto flex items-center gap-1 h-[18px]">
+                    <span class="font-display font-bold text-[18px] leading-none">{l.level}</span>
+                    <span class="ml-auto flex">
+                      {#if l.level === level}
+                        <span class="rounded-full bg-accent px-[6px] py-[2px] text-[10px] font-bold tracking-[0.06em] text-accent-fg"
+                          >YOU</span
+                        >
+                      {:else if l.level < level}
+                        <Check size={14} strokeWidth={3} class="text-accent" aria-hidden="true" />
+                      {:else}
+                        <Lock size={13} class="text-text-dim" aria-hidden="true" />
+                      {/if}
+                    </span>
+                  </span>
+                  <span
+                    class="pv w-[110px] max-sm:shrink-0 sm:w-auto h-[44px] sm:h-[62px] flex flex-wrap items-center justify-center content-center gap-[5px]
+                         {shown.length > 2 ? 'dense' : shown.length === 2 ? 'pair' : ''}"
+                  >
+                    {#each shown as p (p.id)}<PerkPreview perk={p} {colors} />{/each}
+                    {#if l.perks.length > shown.length}<span class="text-[11px] font-semibold text-text-muted"
+                        >+{l.perks.length - shown.length}</span
+                      >{/if}
+                  </span>
+                  <span class="flex-1 min-w-0 flex flex-col gap-[2px] sm:contents">
+                    <span class="text-[13px] font-semibold leading-[1.25] line-clamp-2">{l.label}</span>
+                    <span class="block sm:mt-auto text-[11px] uppercase tracking-[0.06em] text-text-muted truncate">{l.kinds}</span>
+                  </span>
+                </button>
               </li>
             {/each}
           </ol>
@@ -176,19 +196,21 @@
         <ul class="m-0 p-0 list-none grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-2">
           {#each OFF_TRACK as o (o.when)}
             {@const got = o.perks.every(p => unlocked.includes(p.id))}
-            <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-            <li
-              tabindex="0"
-              aria-label="{o.name}: {o.when}, {got ? 'unlocked' : 'locked'}"
-              class="cell group box-border flex items-center gap-3 rounded-[12px] border border-line-2 bg-surface-2 p-3 {got
-                ? ''
-                : 'locked'}"
-            >
-              <div class="pv w-12 shrink-0 flex justify-center"><PerkPreview perk={o.perks[0]} {colors} short /></div>
-              <div class="min-w-0 flex flex-col gap-[2px]">
-                <span class="text-[13px] font-semibold">{o.name}</span>
-                <span class="text-[12px] {got ? 'text-accent' : 'text-text-muted'}">{o.when}{got ? ' · unlocked' : ''}</span>
-              </div>
+            <li class="min-w-0">
+              <button
+                type="button"
+                onclick={() => openOff(o, got)}
+                aria-label="{o.name}: {o.when}, {got ? 'unlocked' : 'locked'}"
+                class="cell group box-border w-full h-full text-left cursor-pointer flex items-center gap-3 rounded-[12px] border border-line-2 bg-surface-2 p-3 {got
+                  ? ''
+                  : 'locked'}"
+              >
+                <span class="pv w-12 shrink-0 flex justify-center"><PerkPreview perk={o.perks[0]} {colors} short /></span>
+                <span class="min-w-0 flex flex-col gap-[2px]">
+                  <span class="text-[13px] font-semibold">{o.name}</span>
+                  <span class="text-[12px] {got ? 'text-accent' : 'text-text-muted'}">{o.when}{got ? ' · unlocked' : ''}</span>
+                </span>
+              </button>
             </li>
           {/each}
         </ul>
@@ -196,6 +218,8 @@
     {/if}
   </main>
 </Layout>
+
+{#if opened}<RewardDetails {...opened} onclose={() => (opened = null)} />{/if}
 
 <style>
   .cell {
