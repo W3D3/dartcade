@@ -2,11 +2,12 @@
   // Settings' Profile: your avatar — the Dartcade mark in one finish (foreground) on a disc in
   // another (background), each picked on its own, or (behind the avatar.upload.enabled flag, off
   // by default: not meant to ship yet) a photo. Finishes are progression rewards: Classic is
-  // everyone's, the others unlock by level, streak, ranked deed or challenge (locked ones show what
-  // unlocks them). Picking applies at once; "Use initials" opts back out to bare initials.
+  // everyone's, the others unlock by level, streak or ranked deed (locked ones show what unlocks them;
+  // the challenge ones nothing unlocks yet are left out unless you hold or wear one). Picking
+  // applies at once; "Use initials" opts back out to bare initials.
   import { Camera, Lock } from '@lucide/svelte'
-  import { AVATAR_FINISHES, DEFAULT_AVATAR_FINISH } from '$shared/avatarFinishes.js'
-  import { pictureUnlock } from '$lib/progress/pictures'
+  import { DEFAULT_AVATAR_FINISH } from '$shared/avatarFinishes.js'
+  import { pictureUnlock, shownFinishes } from '$lib/progress/pictures'
   import Avatar from '$lib/components/Avatar.svelte'
   import FinishPicture from '$lib/components/FinishPicture.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -24,6 +25,7 @@
   const uploadEnabled = flag('avatar.upload.enabled')
   const pictures = $derived($currentUser?.pictures ?? [DEFAULT_AVATAR_FINISH])
   const worn = $derived(avatar.kind === 'preset' ? avatar : { foreground: DEFAULT_AVATAR_FINISH, background: DEFAULT_AVATAR_FINISH })
+  const finishes = $derived(shownFinishes([...pictures, worn.foreground, worn.background]))
   const LAYERS = [
     { key: 'foreground', label: 'Foreground' },
     { key: 'background', label: 'Background' },
@@ -104,7 +106,7 @@
     <div class="flex flex-col gap-2">
       <span class="text-[12px] font-semibold label-caps text-text-dim">{layer.label}</span>
       <div class="flex flex-wrap items-center gap-[10px]">
-        {#each AVATAR_FINISHES as f (f.id)}
+        {#each finishes as f (f.id)}
           {@const open = pictures.includes(f.id)}
           {@const selected = avatar.kind === 'preset' && worn[layer.key] === f.id}
           <button

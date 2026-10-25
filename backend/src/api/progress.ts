@@ -8,7 +8,7 @@ import { headToHead, modeCounts, profileUser, recentGames } from '../db/profile.
 import { getRatings, x01Average } from '../db/ranked.js'
 import { areFriends } from '../db/friends.js'
 import { getPreferences, updatePreferences } from '../db/users.js'
-import { EQUIP_KINDS, PERKS, equippedOf, perk, streakNow, type Equipped } from '../shared/progression.js'
+import { EQUIP_KINDS, PERKS, equippedOf, listed, perk, streakNow, type Equipped } from '../shared/progression.js'
 import { RANKED_MODES } from '../shared/ranked.js'
 import { xpLine } from '../progression/service.js'
 import { addDays, levelOf, localDate } from '../shared/progression.js'
@@ -122,7 +122,7 @@ export function progressApiPlugin(app: FastifyInstance, opts: Opts, done: (err?:
         playsMost: modes.slice(0, 3),
         recent: recent.map(g => ({ ...g, finishedAt: g.finishedAt.toISOString() })),
         xp: self ? xp : null,
-        collection: self ? { unlocked: unlocked.length, total: PERKS.length } : null,
+        collection: self ? { unlocked: unlocked.length, total: PERKS.filter(p => listed(p, unlocked)).length } : null,
       }
     },
   )

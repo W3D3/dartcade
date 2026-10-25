@@ -300,7 +300,7 @@ export const PERKS: readonly Perk[] = [
   { id: 'picture.gold', kind: 'picture', name: 'Gold', unlock: { level: 50 } },
   { id: 'picture.hot-streak', kind: 'picture', name: 'Hot streak', unlock: { streak: 7 } },
   { id: 'picture.crystal', kind: 'picture', name: 'Crystal', unlock: { event: 'rankedWins' } },
-  // Nothing unlocks these yet (there are no achievements): they show what will
+  // Nothing unlocks these yet (there are no achievements), so players don't see them (`obtainable`)
   { id: 'picture.frost', kind: 'picture', name: 'Frost', unlock: { challenge: 'Check out 100+' } },
   { id: 'picture.carbon', kind: 'picture', name: 'Carbon', unlock: { challenge: 'Play 100 games' } },
   { id: 'picture.holo', kind: 'picture', name: 'Holo', unlock: { challenge: 'Season 1 reward' } },
@@ -338,6 +338,11 @@ export const isBig = (p: Perk): boolean => BIG_KINDS.has(p.kind) || p.animated =
 export const pictureFor = (finish: string): string => `picture.${finish}`
 
 export const perk = (id: string): Perk | undefined => PERKS.find(p => p.id === id)
+
+/** Whether a player can earn `p`. Nothing unlocks a challenge yet: true again once its unlock is wired. */
+export const obtainable = (p: Perk): boolean => !('challenge' in p.unlock)
+/** Whether a player sees `p` in the catalogue: one they can earn, or one they hold (`held`: perk ids) anyway. */
+export const listed = (p: Perk, held: readonly string[]): boolean => obtainable(p) || held.includes(p.id)
 
 /** What a player wears: one perk id per kind (the picture is their avatar, set apart). */
 export type Equipped = Record<EquipKind, string>
