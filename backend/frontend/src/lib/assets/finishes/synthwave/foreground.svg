@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<clipPath id="c"><circle cx="60" cy="60" r="60"></circle></clipPath>
+<radialGradient id="glss" cx="0.5" cy="0" r="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.16"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></radialGradient>
+<linearGradient id="sun" gradientUnits="userSpaceOnUse" x1="0" y1="32" x2="0" y2="88"><stop offset="0" stop-color="#fff36b"></stop><stop offset="0.45" stop-color="#ffb347"></stop><stop offset="1" stop-color="#ff3c8a"></stop></linearGradient>
+<clipPath id="cut"><rect x="0" y="0" width="120" height="64"></rect><rect x="0" y="65.4" width="120" height="4.6"></rect><rect x="0" y="71.6" width="120" height="3.8"></rect><rect x="0" y="77" width="120" height="3"></rect><rect x="0" y="81.6" width="120" height="2.4"></rect><rect x="0" y="85.4" width="120" height="1.8"></rect><rect x="0" y="88.6" width="120" height="40"></rect></clipPath>
+</defs>
+<g clip-path="url(#c)"><g clip-path="url(#cut)"><circle cx="60" cy="60" r="27" fill="none" stroke="url(#sun)" stroke-width="8.5"></circle><circle cx="60" cy="60" r="11.5" fill="url(#sun)"></circle></g><circle cx="60" cy="60" r="32.65" fill="none" stroke="#fff36b" stroke-width="0.8" stroke-opacity=".5"></circle><ellipse cx="60" cy="14" rx="58" ry="40" fill="url(#glss)"></ellipse></g><circle cx="60" cy="60" r="59.2" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.6"></circle>
+</svg>

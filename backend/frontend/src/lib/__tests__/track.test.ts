@@ -13,7 +13,10 @@ describe('the rewards track', () => {
     expect(TRACK[0]).toMatchObject({ label: 'Starter set', kinds: '4 rewards' })
     expect(TRACK[4]).toMatchObject({ label: 'Arcade + Pub green', kinds: 'Picture + Colours' })
     expect(TRACK[9]).toMatchObject({ label: 'Bronze frame + Bronze', kinds: 'Frame + Picture' })
-    expect(TRACK[14]).toMatchObject({ label: 'Pub sounds', kinds: 'Sounds' })
+    expect(TRACK[7]).toMatchObject({ label: 'Origami + Ice', kinds: 'Picture + Colours' })
+    expect(TRACK[14]).toMatchObject({ label: 'Blueprint + Pub sounds', kinds: 'Picture + Sounds' })
+    // Three rewards but no title: named by the rewards, not a set
+    expect(TRACK[19]).toMatchObject({ label: 'Floodlights + Silver frame + Graffiti', kinds: 'Banner + Frame + Picture' })
     expect(TRACK[49]).toMatchObject({ label: 'Dartcade Legend', kinds: '8 rewards' })
   })
 
