@@ -97,7 +97,8 @@ Per-team fields are indexed by `teamOf[seat]`; in singles every seat is its own 
 ## History and stats
 
 - `matchStats`: MPR, marks per target, 5-, 7- and 9-mark visits, points scored, legs won.
-- `summarize`: teams placed by legs won, then points in the open leg, then targets opened,
+- `summarize`: teams placed by legs won, then points in the open leg (fewer first in
+  cut-throat), then targets opened,
   so a forfeit mid-leg still ranks everyone.
 - `getLeg` for the details page's leg selector.
 
