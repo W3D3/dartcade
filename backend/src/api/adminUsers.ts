@@ -1,10 +1,11 @@
-// Admin-only user management: list accounts, set their role (schema/api-v1.yaml, tag admin).
+// Admin-only user management: list accounts, set their role, mark them verified, give them XP (schema/api-v1.yaml, tag admin).
 import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAdmin } from '../auth/admin.js'
 import { requireAuth } from '../auth/middleware.js'
 import { listUsers, getUser, setRole, setVerified, type AdminUserRow } from '../db/adminUsers.js'
+import { grantXp } from '../db/progression.js'
 import { ApiError } from './errors.js'
 import { fromSpec } from './spec.js'
 import type { Route } from './route.js'
@@ -54,6 +55,13 @@ export function adminUsersApiPlugin(app: FastifyInstance, opts: Opts, done: (err
       return serialize(user)
     },
   )
+
+  app.post<Route<'grantUserXp'>>('/api/admin/users/:id/xp', { preValidation: adminOnly, schema: fromSpec('grantUserXp') }, async req => {
+    const result = await grantXp(db, req.userId, req.params.id, req.body.amount)
+    if (result === 'not-found') throw new ApiError(404, { error: 'not found' })
+    req.log.info({ targetId: req.params.id, amount: req.body.amount, adminId: req.userId }, 'admin granted user xp')
+    return result
+  })
 
   done()
 }

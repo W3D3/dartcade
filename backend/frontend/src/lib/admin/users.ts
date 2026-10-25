@@ -1,6 +1,7 @@
-// Admin user management: list accounts, and set their role (admin, moderator, none) (schema/api-v1.yaml, tag admin).
+// Admin user management: list accounts, set their role (admin, moderator, none), give them XP (schema/api-v1.yaml, tag admin).
 import { api, type AdminUser } from '$lib/api'
 import { createRequestGuard } from '$lib/requestGuard'
+import { xpForLevel } from '$shared/progression.js'
 
 export type { AdminUser }
 
@@ -88,6 +89,27 @@ export function roleChange(
 export async function setVerified(id: string, verified: boolean): Promise<{ user: AdminUser } | { error: string }> {
   const res = await api.PUT('/api/admin/users/{id}/verified', { params: { path: { id } }, body: { verified } })
   return res.data ? { user: res.data } : { error: res.error.error }
+}
+
+export type XpGrant = { xp: number; level: number; unlocked: string[] }
+
+/** Give an account XP (to test unlocks). On a refusal, the message to show inline. */
+export async function grantXp(id: string, amount: number): Promise<{ grant: XpGrant } | { error: string }> {
+  const res = await api.POST('/api/admin/users/{id}/xp', { params: { path: { id } }, body: { amount } })
+  return res.data ? { grant: res.data } : { error: res.error.error }
+}
+
+// The list doesn't carry an account's XP, so "level 50" is what level 50 costs from zero
+export const XP_QUICK_AMOUNTS = [
+  { label: '+1,000', amount: 1000 },
+  { label: '+10,000', amount: 10_000 },
+  { label: 'To level 50', amount: xpForLevel(50) },
+]
+
+/** "Now level 12 · 3,400 XP · 2 new unlocks", after a grant. */
+export function grantSummary(g: XpGrant): string {
+  const n = g.unlocked.length
+  return `Now level ${g.level} · ${g.xp.toLocaleString('en-US')} XP · ${n} new unlock${n === 1 ? '' : 's'}`
 }
 
 /** "17 Oct 2026", for the joined column. Blank for an unparsable date. */

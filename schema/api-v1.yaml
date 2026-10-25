@@ -1096,6 +1096,30 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/admin/users/{id}/xp:
+    parameters:
+      - $ref: '#/components/parameters/AdminUserId'
+    post:
+      operationId: grantUserXp
+      summary: Give an account XP, to test unlocks (admin)
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GrantUserXpRequest' }
+      responses:
+        '200':
+          description: The account's new total and level, and what it unlocked
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/GrantUserXpResult' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/admin/flags:
     get:
       operationId: listAdminFlags
@@ -3553,6 +3577,20 @@ components:
       additionalProperties: false
       properties:
         verified: { type: boolean, description: "true: mark the account's email verified; false: unverified" }
+    GrantUserXpRequest:
+      type: object
+      required: [amount]
+      additionalProperties: false
+      properties:
+        amount: { type: integer, minimum: 1, maximum: 100000, description: XP to add }
+    GrantUserXpResult:
+      type: object
+      required: [xp, level, unlocked]
+      additionalProperties: false
+      properties:
+        xp: { type: integer, description: The account's XP total now }
+        level: { type: integer }
+        unlocked: { type: array, items: { type: string }, description: Perk ids this grant unlocked }
     FlagRange:
       type: array
       description: '[min, max], number flags only'
