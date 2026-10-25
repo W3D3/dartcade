@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<radialGradient id="bg" cx="0.5" cy="0.5" r="0.75"><stop offset="0" stop-color="#2a1a24"></stop><stop offset="0.6" stop-color="#170e14"></stop><stop offset="1" stop-color="#070407"></stop></radialGradient>
+<pattern id="brick" width="24" height="12" patternUnits="userSpaceOnUse"><path d="M0 .5H24M0 6.5H24M6 .5V6.5M18 6.5V12.5" stroke="#000" stroke-opacity=".45" stroke-width="1"></path></pattern>
+<filter id="b8" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="8"></feGaussianBlur></filter>
+<clipPath id="c"><circle cx="60" cy="60" r="60"></circle></clipPath>
+<radialGradient id="vg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0"></stop><stop offset="0.75" stop-color="#000" stop-opacity="0"></stop><stop offset="1" stop-color="#000" stop-opacity="0.45"></stop></radialGradient>
+</defs>
+<g clip-path="url(#c)"><rect width="120" height="120" fill="url(#bg)"></rect><rect width="120" height="120" fill="url(#brick)"></rect><circle cx="60" cy="60" r="34" fill="#ff4fd8" fill-opacity=".22" filter="url(#b8)"></circle><rect width="120" height="120" fill="url(#vg)"></rect></g>
+</svg>

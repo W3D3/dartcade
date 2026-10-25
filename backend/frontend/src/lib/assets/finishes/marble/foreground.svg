@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<filter id="mb" filterUnits="userSpaceOnUse" x="0" y="0" width="120" height="120"><feTurbulence type="turbulence" baseFrequency=".022 .05" numOctaves="4" seed="12" result="t"></feTurbulence><feColorMatrix in="t" type="matrix" values="-.75 0 0 0 1.06  -.75 0 0 0 1.05  -.7 0 0 0 1.02  0 0 0 0 1"></feColorMatrix></filter>
+<mask id="rm"><rect width="120" height="120" fill="#000"></rect><circle cx="60" cy="60" r="27" fill="none" stroke="#fff" stroke-width="8.5"></circle></mask>
+<linearGradient id="au" gradientUnits="userSpaceOnUse" x1="40" y1="40" x2="80" y2="80"><stop offset="0" stop-color="#7a5a10"></stop><stop offset="0.3" stop-color="#ffe28a"></stop><stop offset="0.6" stop-color="#c08a1c"></stop><stop offset="1" stop-color="#f7cf5a"></stop></linearGradient>
+<radialGradient id="ad" gradientUnits="userSpaceOnUse" cx="56" cy="56" r="13"><stop offset="0" stop-color="#fff3c4"></stop><stop offset="0.5" stop-color="#f2c14e"></stop><stop offset="1" stop-color="#8a6210"></stop></radialGradient>
+<clipPath id="c"><circle cx="60" cy="60" r="60"></circle></clipPath>
+<radialGradient id="glss" cx="0.5" cy="0" r="0.9"><stop offset="0" stop-color="#fff" stop-opacity="0.16"></stop><stop offset="1" stop-color="#fff" stop-opacity="0"></stop></radialGradient>
+<filter id="sh" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#000" flood-opacity=".55"></feDropShadow></filter>
+</defs>
+<g clip-path="url(#c)"><g filter="url(#sh)"><circle cx="60" cy="60" r="27" fill="none" stroke="#c08a1c" stroke-width="10.5"></circle><g mask="url(#rm)"><rect width="120" height="120" filter="url(#mb)"></rect></g></g><circle cx="60" cy="60" r="31.45" fill="none" stroke="url(#au)" stroke-width="0.9"></circle><circle cx="60" cy="60" r="22.55" fill="none" stroke="url(#au)" stroke-width="0.9"></circle><circle cx="60" cy="60" r="12.5" fill="#5a4210"></circle><circle cx="60" cy="60" r="11.5" fill="url(#ad)"></circle><circle cx="60" cy="60" r="28" fill="none" stroke="#fff" stroke-width="1" stroke-opacity=".55" stroke-dasharray="30 200" transform="rotate(195 60 60)"></circle><circle cx="56.5" cy="56.5" r="2.8" fill="#fff" fill-opacity=".6"></circle><ellipse cx="60" cy="14" rx="58" ry="40" fill="url(#glss)"></ellipse></g><circle cx="60" cy="60" r="59.2" fill="none" stroke="#fff" stroke-opacity=".16" stroke-width="1.6"></circle>
+</svg>

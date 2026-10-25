@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+<defs>
+<radialGradient id="bg" cx="0.45" cy="0.4" r="0.8"><stop offset="0" stop-color="#2c3631"></stop><stop offset="0.6" stop-color="#1a211d"></stop><stop offset="1" stop-color="#0b0e0c"></stop></radialGradient>
+<filter id="sm" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="6"></feGaussianBlur></filter>
+<clipPath id="c"><circle cx="60" cy="60" r="60"></circle></clipPath>
+<radialGradient id="vg" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#000" stop-opacity="0"></stop><stop offset="0.75" stop-color="#000" stop-opacity="0"></stop><stop offset="1" stop-color="#000" stop-opacity="0.45"></stop></radialGradient>
+</defs>
+<g clip-path="url(#c)"><rect width="120" height="120" fill="url(#bg)"></rect><g filter="url(#sm)" fill="#efeee6" fill-opacity=".07"><ellipse cx="34" cy="30" rx="26" ry="10" transform="rotate(-14 34 30)"></ellipse><ellipse cx="88" cy="94" rx="30" ry="9" transform="rotate(-8 88 94)"></ellipse></g><g stroke="#efeee6" stroke-opacity=".16" stroke-width="1.4" stroke-linecap="round"><path d="M84 22v10M88 21v10M92 22v10M96 21v10M82 30l16-7"></path><path d="M18 92l12-2M19 97l9-1"></path></g><rect width="120" height="120" fill="url(#vg)"></rect></g>
+</svg>
