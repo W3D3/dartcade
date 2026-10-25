@@ -11,21 +11,20 @@
   import VoiceSelect from './settings/VoiceSelect.svelte'
   import OptionSelect from './settings/OptionSelect.svelte'
   import { BOARD_VIEWS, BOARD_VIEW_LABELS } from '$lib/gameSettings.js'
+  import { drawerRows } from '$lib/gameViews/settings.js'
 
   let { settings = $bindable(), gameId, onclose }: { settings: GameSettings; gameId: string; onclose: () => void } = $props()
 
   const display = [
     { key: 'checkoutSuggestions', label: 'Checkout suggestions', sub: 'In the dart slots when you can finish' },
-    { key: 'visitSum', label: 'Visit sum', sub: 'The running total under the board' },
-    { key: 'chalkboard', label: 'Chalkboard', sub: 'Scored and left for every visit' },
-    { key: 'showMarkers', label: "Other players' targets", sub: 'Around the Clock with 3 or more players' },
-  ] as const
-  const minigolfDisplay = [
+    { key: 'visitSum', label: 'Visit sum', sub: undefined },
+    { key: 'chalkboard', label: 'Chalkboard', sub: undefined },
+    { key: 'showMarkers', label: "Other players' targets", sub: 'Outline their next number on the dartboard' },
     { key: 'aimDial', label: 'Direction wheel', sub: 'Around your ball while you aim' },
     { key: 'slowMotion', label: 'Slow motion', sub: 'When the ball gets close to the cup' },
   ] as const
-  // Other players' targets only exist in Around the Clock; Minigolf has its own
-  const rows = $derived(gameId === 'minigolf' ? minigolfDisplay : display.filter(r => r.key !== 'showMarkers' || gameId === 'atc'))
+  const shown = $derived(drawerRows(gameId))
+  const rows = $derived(display.filter(r => shown.display.includes(r.key)))
   const scoreUpdates: { value: ScoreUpdates; label: string }[] = [
     { value: 'dart', label: 'Every dart' },
     { value: 'visit', label: 'After the visit' },
@@ -40,10 +39,7 @@
     { key: 'soundBall', label: 'Ball' },
     { key: 'soundWin', label: 'Win' },
   ] as const
-  // No bust or treble in Minigolf; the ball's sound only there
-  const sounds = $derived(
-    allSounds.filter(r => (gameId === 'minigolf' ? r.key !== 'soundBust' && r.key !== 'soundTreble' : r.key !== 'soundBall')),
-  )
+  const sounds = $derived(allSounds.filter(r => shown.sounds.includes(r.key)))
 
   // The caller (X01 only) picks from the user's voices, loaded fresh when the drawer opens
   onMount(() => {
@@ -166,7 +162,7 @@
         <SettingSwitch
           id="setting-callerOn"
           label="Caller"
-          sub="Calls each visit"
+          sub="Calls each visit and your checkouts"
           bind:checked={settings.callerOn}
           onchange={() => {
             audioContext()
@@ -201,7 +197,7 @@
           <a href="#/settings/caller" class="self-start min-h-10 inline-flex items-center gap-[6px] text-[14px] font-semibold no-underline">
             Manage voices<ChevronRight size={14} strokeWidth={2.2} />
           </a>
-          <span class="text-[12px] text-text-dim">Import packs and delete them in Settings.</span>
+          <span class="text-[12px] text-text-dim">Import packs, delete them and set caller defaults in Settings.</span>
         </div>
       </section>
     {/if}
