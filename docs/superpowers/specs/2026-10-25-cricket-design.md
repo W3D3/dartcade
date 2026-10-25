@@ -126,16 +126,26 @@ the lobby's game is X01, and `"Level {n}"` for any other game.
 
 ## UI
 
-Canvas artboards come first and are reviewed before any Svelte work. They're based on the
-Match and X01 boards and follow the layout rule (2 players: board centred, a panel each side;
-3 or more: board to the side, stacked rows):
+Canvas artboards come first and are reviewed before any Svelte work (approved: canvas page
+"Game · Cricket"). The marks table is the hero of every screen. Cricket drops the usual
+2-player rule (board centred) at the user's request:
 
-- `Cricket-Duel`: the marks grid down the middle (`/`, `X`, `⊗`), targets highlighted on the
-  board, closed targets dimmed.
-- `Cricket-Party`: 3 or more players or teams.
-- `Cricket-Result`.
-- `Cricket-Details`: MPR, marks per target, leg selector, final grid per leg.
-- `Mobile-Cricket`.
+- `Cricket-Duel`: a left column with the thrower's card, the other player's smaller card and
+  the board (~312 px); the marks table fills the right (Lena | target | Tom, chalkboard
+  order, large rows), with the dart slots and Undo / Next under it.
+- `Cricket-Party`: the target column first, then one column per player; every name fits.
+- `Cricket-Result`: the win screen with the last leg's final marks table.
+- `Cricket-Details`: MPR, marks per target, leg selector, final marks table per leg.
+- `Mobile-Cricket`: 390 px, the table as hero, a compact player strip and a small board.
+
+Table states: scorable cells filled lime with a dark mark, marks in progress in ink, closed
+rows grey with a "Closed" label (they differ in lightness, not only hue).
+
+Marks are inline SVG strokes (`pathLength="1"`, `stroke-dashoffset` keyframes). When a dart
+adds marks, only the strokes it added animate: the `/` strokes in (~320 ms), the X's second
+diagonal draws across, the circle draws around from the top (~400 ms); a row that closes fades
+to grey; points scored pop in. Marks present on first render or after a reconnect appear
+without animating. `prefers-reduced-motion` shows the final state at once.
 
 Frontend:
 
