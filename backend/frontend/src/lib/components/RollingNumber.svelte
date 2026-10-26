@@ -2,14 +2,22 @@
   // ScoreCount on the canvas: a big number on mechanical digit wheels. Each digit sits on its
   // own drum, faded at the top and bottom edge. Down rolls downward and dips; up rolls upward
   // and lifts, in amber when it's a take-back (undo, correction). A bust flashes red, shakes,
-  // then rolls back up. A checkout's 0 turns lime. The value is always the truth: a new one
+  // then rolls back up. A bad gain (cut-throat points) rolls in red, no shake. A checkout's 0 turns lime. The value is always the truth: a new one
   // mid-roll snaps to the old target and rolls on from there. Reduced motion: no rolling or
   // dips, only the colours. Sits inside the element that sets the font, size and colour.
   // At rest it is the plain number; the drums are only there while it rolls.
   import { onDestroy, tick, untrack } from 'svelte'
   import { parseRolling, planChange, planDrums, type Drum, type RollOptions, type Tone } from '$lib/rollingNumber'
 
-  let { value, normal = 'down', reset = 0, bust = false, checkout = false, progress }: { value: string | number } & RollOptions = $props()
+  let {
+    value,
+    normal = 'down',
+    reset = 0,
+    bust = false,
+    checkout = false,
+    progress,
+    gain = 'plain',
+  }: { value: string | number } & RollOptions = $props()
 
   const ROLL = 450
   const SETTLE = 'cubic-bezier(.3, 1.25, .55, 1)'
@@ -71,6 +79,7 @@
       wasBust: last.bust,
       progress: next.progress,
       prevProgress: last.progress,
+      gain,
       reducedMotion: reducedMotion(),
     })
     const from = last.value
@@ -138,7 +147,9 @@
   }
 
   const cell = (i: number) => `translateY(${-i * 100}%)`
-  const color = $derived(tone === 'bust' ? 'text-live' : tone === 'back' ? 'text-warn' : checkout && !wheels ? 'text-accent' : '')
+  const color = $derived(
+    tone === 'bust' || tone === 'bad' ? 'text-live' : tone === 'back' ? 'text-warn' : checkout && !wheels ? 'text-accent' : '',
+  )
 </script>
 
 <span bind:this={root} class="inline-block whitespace-nowrap {color}"

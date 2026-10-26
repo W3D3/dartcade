@@ -2,8 +2,9 @@
 // does (roll, jump, which way, which colour) and how far each digit's drum turns.
 
 export type Dir = 'down' | 'up'
-/** plain: the usual way; back: a take-back (undo, correction), amber; bust: rolled back in red. */
-export type Tone = 'plain' | 'back' | 'bust'
+/** plain: the usual way; back: a take-back (undo, correction), amber; bust: rolled back in red;
+ *  bad: the usual way, but bad news (cut-throat points), red without the shake. */
+export type Tone = 'plain' | 'back' | 'bust' | 'bad'
 export type Change = { kind: 'none' | 'jump' | 'roll'; dir: Dir; tone: Tone }
 
 /** How a rolling number reads its changes (see RollingNumber.svelte). */
@@ -18,6 +19,8 @@ export type RollOptions = {
   checkout?: boolean
   /** Something that only grows in play (ATC: targets done); a drop is a take-back. */
   progress?: number
+  /** How a change the usual way reads: plain, or bad (red, as cut-throat points landing on you). */
+  gain?: 'plain' | 'bad'
 }
 
 /** One digit's drum: `place` 0 is the ones. `steps` is how many cells it turns, negative
@@ -42,6 +45,7 @@ export function planChange(o: {
   /** Something that only grows in play (ATC: targets done); a drop is a take-back. */
   progress?: number
   prevProgress?: number
+  gain?: 'plain' | 'bad'
   reducedMotion?: boolean
 }): Change {
   const a = o.from === null ? null : parseRolling(o.from)
@@ -61,7 +65,7 @@ export function planChange(o: {
   else if (o.wasBust && !o.bust) tone = 'back'
   else if (o.progress !== undefined && o.prevProgress !== undefined && o.progress !== o.prevProgress)
     tone = o.progress < o.prevProgress ? 'back' : 'plain'
-  else tone = dir === o.normal ? 'plain' : 'back'
+  else tone = dir !== o.normal ? 'back' : o.gain === 'bad' ? 'bad' : 'plain'
   return { kind: o.reducedMotion ? 'jump' : 'roll', dir, tone }
 }
 
