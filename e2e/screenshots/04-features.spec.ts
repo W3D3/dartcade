@@ -86,6 +86,23 @@ test('121: a game in progress', async ({ browser }) => {
   await phil.ctx.close()
 })
 
+test('cricket: a duel in progress', async ({ browser }) => {
+  const phil = await open(browser, 'phil', VIEW.wide)
+  const lobby = await hostLobby(phil.page, "Phil's lobby", { gameId: 'cricket', config: {} })
+  await addGuest(phil.page, lobby, 'Lena')
+  await startLobbyGame(phil.page, lobby)
+  await entryMode(phil.page, 'Enter')
+  // Phil opens 20 and 19 and puts two marks on 18
+  for (const d of ['T20', 'T19', 'D18']) await dart(phil.page, d)
+  await entryMode(phil.page, 'Board')
+  await expect(phil.page.locator('td[aria-label="Phil, 18: 2 marks"]')).toBeVisible()
+  await shot(phil.page, 'cricket/cricket.png')
+
+  await endGame(phil.page)
+  await leaveLobby(phil.page)
+  await phil.ctx.close()
+})
+
 test('match details: stats, charts and the heatmap', async ({ browser }) => {
   // The seed's best-of-3 between Michael and Gerwyn: darts thrown like bots, with positions
   for (const [view, suffix] of [
