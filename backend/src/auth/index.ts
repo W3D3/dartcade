@@ -10,6 +10,6 @@ const trustedOrigins =
     .filter(Boolean) ?? []
 
 export const mailConfig = resolveMailConfig(process.env)
-const mailer = createMailer(mailConfig, (message, details) => console.warn(message, details))
+export const mailer = createMailer(mailConfig, (message, details) => console.warn(message, details))
 
 export const auth = betterAuth(authOptions({ db, mail: mailConfig, mailer, trustedOrigins }))

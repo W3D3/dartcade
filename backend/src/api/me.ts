@@ -35,7 +35,7 @@ type Opts = FastifyPluginOptions & {
 const AVATAR_UPLOAD_LIMIT = 512 * 1024
 
 /** A buffer's magic bytes say it's a JPEG (SOI ... EOI) — no image library needed just to check this. */
-function looksLikeJpeg(buf: Buffer): boolean {
+export function looksLikeJpeg(buf: Buffer): boolean {
   return buf.length > 4 && buf[0] === 0xff && buf[1] === 0xd8 && buf[buf.length - 2] === 0xff && buf[buf.length - 1] === 0xd9
 }
 

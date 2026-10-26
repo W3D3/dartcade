@@ -1,7 +1,13 @@
 import nodemailer from 'nodemailer'
 import type { MailConfig } from './config.js'
 
-export type Mail = { to: string; subject: string; text: string; html: string }
+export type Mail = {
+  to: string
+  subject: string
+  text: string
+  html: string
+  attachments?: { filename: string; content: Buffer; contentType: string }[]
+}
 export type Mailer = { send(mail: Mail): void }
 
 /** One SMTP transport for the process; null when the deployment has no mail. Sends without awaiting, so timing never shows whether an address has an account. */

@@ -1,0 +1,11 @@
+<!-- Shared by every mail: the fonts and base text style, the preview line -->
+<mj-head>
+  <mj-title>Dartcade</mj-title>
+  <mj-preview>{{preheader}}</mj-preview>
+  <mj-font name="Barlow Condensed" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700&amp;display=swap" />
+  <mj-font name="Instrument Sans" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500&amp;display=swap" />
+  <mj-attributes>
+    <mj-all font-family="'Instrument Sans', system-ui, Arial, sans-serif" />
+    <mj-text font-size="16px" color="#a3a498" line-height="1.6" />
+  </mj-attributes>
+</mj-head>

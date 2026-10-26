@@ -69,6 +69,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Report a bug or give feedback; mailed to the operator with your account and an optional screenshot */
+        post: operations["sendFeedback"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/legal/{doc}": {
         parameters: {
             query?: never;
@@ -2227,12 +2244,35 @@ export interface components {
             };
         };
         AuthInfo: {
+            /** @description Bug reports can be sent from the app (POST /api/feedback) */
+            feedback: boolean;
             /** @description Password reset and mailed confirmations are available */
             mail: boolean;
             /** @description New accounts confirm their email before signing in */
             verification: boolean;
             /** @description Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set) */
             contactEmail: string | null;
+        };
+        FeedbackReport: {
+            /** @enum {string} */
+            kind: "bug" | "idea" | "other";
+            message: string;
+            /** @description Where the report was sent from, as the browser saw it */
+            context: {
+                /** @description The page's hash route */
+                route: string;
+                userAgent: string;
+                /** @description Width x height in CSS pixels, e.g. 1440x900 */
+                viewport: string;
+                locale: string;
+                /** @description The SPA's build version */
+                version: string;
+                commit: string | null;
+                /** @description The user's open game, if any */
+                sessionId: string | null;
+            };
+            /** @description A JPEG of the page, base64 (no data URL prefix), at most about 2 MB */
+            screenshot?: string;
         };
         LegalDoc: {
             html: string;
@@ -3728,6 +3768,49 @@ export interface operations {
                 };
             };
             429: components["responses"]["TooManyRequests"];
+        };
+    };
+    sendFeedback: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["FeedbackReport"];
+            };
+        };
+        responses: {
+            /** @description Sent */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            /** @description The report (with its screenshot) is over 3 MB */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            429: components["responses"]["TooManyRequests"];
+            /** @description This deployment has no mail or nowhere to send reports (FEEDBACK_EMAIL, LEGAL_CONTACT_EMAIL) */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorResponse"];
+                };
+            };
         };
     };
     getLegalDoc: {

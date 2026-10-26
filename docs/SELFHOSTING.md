@@ -74,6 +74,8 @@ or account-deletion mail, and sign-up skips verification. Pass `SMTP_URL`, `MAIL
 `BETTER_AUTH_URL` (plus `LEGAL_OPERATOR_NAME`, `LEGAL_ADDRESS`, `LEGAL_CONTACT_EMAIL` if you're
 in Austria) through to the backend service, as in `backend/docker-compose.yaml`. See
 [`DEVELOPMENT.md`](../DEVELOPMENT.md#mail-in-production)'s "Mail in production" for details.
+In-app bug reports (the Alpha badge, Settings) are mailed to `FEEDBACK_EMAIL`, or to
+`LEGAL_CONTACT_EMAIL` without it; with neither, the app hides them.
 
 **Admins** (the minigolf course editor, features still behind a flag) are users with
 better-auth's `admin` role. The first one comes from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (see "First
