@@ -17,7 +17,7 @@
     RESTORE_WARNING,
     type Invalidation,
   } from '$lib/admin/games'
-  import Scorecard from '$lib/components/minigolf/Scorecard.svelte'
+  import MinigolfSection from '$lib/components/details/MinigolfSection.svelte'
   import Layout from '$lib/components/Layout.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Button } from '$lib/components/ui/button/index.js'
@@ -189,16 +189,7 @@
             </section>
             <div class="flex-grow min-w-0 flex flex-col gap-4 md:gap-6">
               {#if d.game.mode === 'x01'}<X01Section detail={d} party={layout === 'party'} />{/if}
-              {#if d.detail.mode === 'minigolf'}
-                <section class="flex flex-col gap-3 rounded-2xl border border-line bg-surface-1 p-5" aria-label="Scorecard">
-                  <h2 class="m-0 font-display text-[22px] font-bold uppercase">Scorecard · {d.detail.course}</h2>
-                  <Scorecard
-                    scores={d.detail.scores}
-                    pars={d.detail.holes.map(h => h.par)}
-                    players={[...d.game.players].sort((a, b) => a.seat - b.seat)}
-                  />
-                </section>
-              {/if}
+              {#if d.game.mode === 'minigolf'}<MinigolfSection detail={d} />{/if}
               {#if d.game.mode === 'atc'}
                 <AtcTargets detail={d} />
                 {#if layout === 'party'}
