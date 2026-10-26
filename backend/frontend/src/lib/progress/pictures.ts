@@ -1,6 +1,6 @@
 // Profile pictures as rewards: the avatar finishes (shared/avatarFinishes.ts), each unlocked by a
-// `picture.<id>` perk and worn on either layer, foreground or background. Settings and your
-// profile's Customise both wear one through PATCH /api/me.
+// `picture.<id>` perk and worn on either layer, foreground or background. Your profile's
+// Customise wears one through PATCH /api/me.
 import { get } from 'svelte/store'
 import { api } from '$lib/api/client'
 import { currentUser } from '$lib/auth'

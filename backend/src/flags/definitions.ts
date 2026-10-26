@@ -78,7 +78,7 @@ export const FLAG_META: Record<string, FlagMeta> = {
   },
   'avatar.upload.enabled': {
     kind: 'boolean',
-    description: 'Lets players upload a photo as their avatar in Settings → Profile (presets stay available either way).',
+    description: 'Lets players upload a photo as their avatar through the API. There is no UI for it for now.',
     defaultRule: 'admins',
   },
   'matchmaking.visitSeconds': {

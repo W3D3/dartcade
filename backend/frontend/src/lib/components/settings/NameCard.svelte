@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Settings' Profile: who you are, your name (handle) checked while typing, and how others see
-  // it (Settings board). Saving it changes how friends find you.
+  // Settings' Profile: your name (handle) checked while typing, and how others see it (Settings
+  // board). Saving it changes how friends find you.
   import { Button } from '$lib/components/ui/button/index.js'
   import Avatar from '$lib/components/Avatar.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
@@ -41,22 +41,6 @@
 </script>
 
 <section aria-label="Username" class="box-border p-4 md:p-[22px] card flex flex-col gap-[18px]">
-  {#if own}
-    <div class="flex items-center gap-4">
-      <Avatar
-        name={own}
-        tone="accent"
-        avatar={$currentUser?.avatar}
-        userId={$currentUser?.id}
-        class="w-14 h-14 md:w-[72px] md:h-[72px] text-[24px] md:text-[30px]"
-      />
-      <div class="flex flex-col gap-[3px] min-w-0">
-        <span class="text-[20px] md:text-[22px] font-semibold truncate">{own}</span>
-        <span class="font-mono text-[14px] text-text-muted truncate">@{own}</span>
-      </div>
-    </div>
-    <div class="h-px bg-surface-paused"></div>
-  {/if}
   <form
     class="flex flex-col gap-2"
     onsubmit={e => {
