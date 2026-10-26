@@ -46,6 +46,7 @@ corrected dart replays the open visit cleanly.
 | Game modules (register new ones in `index.ts`) | `backend/src/games/` |
 | 121 Checkout: tries, targets, miss rules, lock; match screen and summary | `backend/src/games/p121.ts` (out rules shared with X01 in `outRules.ts`), all-time best `GET /api/games/best` (`db/history.ts` `getBestStat`); frontend `lib/components/p121/`, `lib/p121/`; behind `gamemode.p121.enabled` |
 | Higher Lower: two bars, lives, misses; match screen and result | `backend/src/games/hilo.ts`; frontend `lib/components/hilo/`, `lib/hilo/`; behind `gamemode.hilo.enabled` |
+| Cricket: marks, standard and cut-throat, legs, bot strategy; match screen and result | `backend/src/games/cricket.ts`, `cricketRules.ts`, `cricketStats.ts`; frontend `lib/components/cricket/`, `lib/cricket/`; behind `gamemode.cricket.enabled` |
 | REST API | `backend/src/api/` |
 | WebSocket gateways | `backend/src/bridge-gw/` (bridge), `backend/src/browser-gw/` (browser) |
 | Auth, DB (Kysely + Postgres, migrations) | `backend/src/auth/` (`bootstrap.ts`: a fresh deployment's first admin, from `ADMIN_EMAIL`/`ADMIN_PASSWORD`, created (or, if `ADMIN_PASSWORD` signs into it, an existing account promoted) on startup while no admin exists; `admin.ts`: `isAdmin`/`requireAdmin`), `backend/src/db/` |
