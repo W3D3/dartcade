@@ -5,22 +5,13 @@
 <script lang="ts">
   import type { MinigolfGame } from '$lib/api'
   import Scorecard from './Scorecard.svelte'
-  import { seatColor } from '$lib/details/chartColors'
+  import HoleShots from './HoleShots.svelte'
   import { teeOffLine } from '$lib/minigolf/scorecard'
-  import { bounds } from '$shared/minigolf/geometry'
-  import type { Pt } from '$shared/minigolf/types'
 
   let { game, players, host, onnext }: { game: MinigolfGame; players: { name: string }[]; host: boolean; onnext: () => void } = $props()
 
   const last = $derived(game.lastHole)
 
-  const pt = (p: number[]): Pt => [p[0] ?? 0, p[1] ?? 0]
-  const pts = (p: number[][]) => p.map(q => `${q[0] ?? 0},${q[1] ?? 0}`).join(' ')
-  const viewBox = $derived.by(() => {
-    if (!last) return '0 0 1 1'
-    const b = bounds(last.hole.outline.map(pt))
-    return `${b.minX - 80} ${b.minY - 80} ${b.maxX - b.minX + 160} ${b.maxY - b.minY + 160}`
-  })
   // The order was re-sorted by the last hole's scores: tees off first by score unless it's still seat order
   const first = $derived(game.order[0])
   const byScore = $derived(game.order.some((s, i) => s !== i))
@@ -40,37 +31,7 @@
       </header>
       <div class="grid gap-6 md:grid-cols-[minmax(0,1fr)_260px]">
         <Scorecard scores={game.scores} pars={game.pars} {players} />
-        <figure class="m-0 flex flex-col gap-2">
-          <svg
-            {viewBox}
-            class="max-h-[300px] w-full rounded-xl bg-bg-deep"
-            role="img"
-            aria-label="Everyone's strokes on hole {last.index + 1}"
-          >
-            <polygon points={pts(last.hole.outline)} fill="#2a7045" stroke="#e9dfc4" stroke-width="20" stroke-linejoin="round" />
-            <circle cx={last.hole.cup.at[0]} cy={last.hole.cup.at[1]} r={last.hole.cup.r} fill="#050604" />
-            {#each last.paths as strokes, seat (seat)}
-              {#each strokes as path, k (k)}
-                <polyline
-                  points={pts(path)}
-                  fill="none"
-                  stroke={seatColor(seat)}
-                  stroke-width="14"
-                  stroke-opacity="0.8"
-                  stroke-linecap="round"
-                />
-              {/each}
-            {/each}
-          </svg>
-          <figcaption class="flex flex-wrap gap-3 text-[13px]">
-            {#each players as p, seat (seat)}
-              <span class="flex items-center gap-1">
-                <span class="inline-block size-3 rounded-full" style:background={seatColor(seat)}></span>
-                {p.name} · {last.scores[seat]}
-              </span>
-            {/each}
-          </figcaption>
-        </figure>
+        <HoleShots hole={last.hole} paths={last.paths} scores={last.scores} {players} label="Everyone's strokes on hole {last.index + 1}" />
       </div>
       <footer class="flex flex-wrap items-center gap-4 rounded-xl bg-surface-2 px-4 py-3">
         <span class="flex flex-col">
