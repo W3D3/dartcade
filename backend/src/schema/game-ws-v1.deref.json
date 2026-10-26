@@ -1726,6 +1726,7 @@
         "status",
         "finishPending",
         "canUndoVisit",
+        "scoreBased",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -2355,6 +2356,10 @@
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
         },
+        "scoreBased": {
+          "type": "boolean",
+          "description": "The game has a running score the caller announces (the game module's scoreBased)."
+        },
         "seats": {
           "type": "array",
           "items": {
@@ -2472,6 +2477,7 @@
         "status",
         "finishPending",
         "canUndoVisit",
+        "scoreBased",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -2777,6 +2783,10 @@
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
         },
+        "scoreBased": {
+          "type": "boolean",
+          "description": "The game has a running score the caller announces (the game module's scoreBased)."
+        },
         "seats": {
           "type": "array",
           "items": {
@@ -2894,6 +2904,7 @@
         "status",
         "finishPending",
         "canUndoVisit",
+        "scoreBased",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -3469,6 +3480,10 @@
         "ownerUserId": {
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
+        },
+        "scoreBased": {
+          "type": "boolean",
+          "description": "The game has a running score the caller announces (the game module's scoreBased)."
         },
         "seats": {
           "type": "array",
@@ -4119,6 +4134,7 @@
         "status",
         "finishPending",
         "canUndoVisit",
+        "scoreBased",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -4680,6 +4696,10 @@
         "ownerUserId": {
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
+        },
+        "scoreBased": {
+          "type": "boolean",
+          "description": "The game has a running score the caller announces (the game module's scoreBased)."
         },
         "seats": {
           "type": "array",
@@ -6407,6 +6427,7 @@
         "status",
         "finishPending",
         "canUndoVisit",
+        "scoreBased",
         "ownerUserId",
         "seats",
         "mySeats"
@@ -7797,6 +7818,10 @@
           "type": "string",
           "description": "The host: starts the bull off, aborts the game."
         },
+        "scoreBased": {
+          "type": "boolean",
+          "description": "The game has a running score the caller announces (the game module's scoreBased)."
+        },
         "seats": {
           "type": "array",
           "items": {
@@ -7918,6 +7943,7 @@
             "status",
             "finishPending",
             "canUndoVisit",
+            "scoreBased",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -8547,6 +8573,10 @@
               "type": "string",
               "description": "The host: starts the bull off, aborts the game."
             },
+            "scoreBased": {
+              "type": "boolean",
+              "description": "The game has a running score the caller announces (the game module's scoreBased)."
+            },
             "seats": {
               "type": "array",
               "items": {
@@ -8664,6 +8694,7 @@
             "status",
             "finishPending",
             "canUndoVisit",
+            "scoreBased",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -8969,6 +9000,10 @@
               "type": "string",
               "description": "The host: starts the bull off, aborts the game."
             },
+            "scoreBased": {
+              "type": "boolean",
+              "description": "The game has a running score the caller announces (the game module's scoreBased)."
+            },
             "seats": {
               "type": "array",
               "items": {
@@ -9086,6 +9121,7 @@
             "status",
             "finishPending",
             "canUndoVisit",
+            "scoreBased",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -9662,6 +9698,10 @@
               "type": "string",
               "description": "The host: starts the bull off, aborts the game."
             },
+            "scoreBased": {
+              "type": "boolean",
+              "description": "The game has a running score the caller announces (the game module's scoreBased)."
+            },
             "seats": {
               "type": "array",
               "items": {
@@ -9779,6 +9819,7 @@
             "status",
             "finishPending",
             "canUndoVisit",
+            "scoreBased",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -11169,6 +11210,10 @@
               "type": "string",
               "description": "The host: starts the bull off, aborts the game."
             },
+            "scoreBased": {
+              "type": "boolean",
+              "description": "The game has a running score the caller announces (the game module's scoreBased)."
+            },
             "seats": {
               "type": "array",
               "items": {
@@ -11286,6 +11331,7 @@
             "status",
             "finishPending",
             "canUndoVisit",
+            "scoreBased",
             "ownerUserId",
             "seats",
             "mySeats"
@@ -11847,6 +11893,10 @@
             "ownerUserId": {
               "type": "string",
               "description": "The host: starts the bull off, aborts the game."
+            },
+            "scoreBased": {
+              "type": "boolean",
+              "description": "The game has a running score the caller announces (the game module's scoreBased)."
             },
             "seats": {
               "type": "array",

@@ -446,6 +446,10 @@ export interface X01Snapshot {
    */
   ownerUserId: string
   /**
+   * The game has a running score the caller announces (the game module's scoreBased).
+   */
+  scoreBased: boolean
+  /**
    * Same order as players.
    */
   seats: SeatInfo[]
@@ -494,6 +498,10 @@ export interface AtcSnapshot {
    */
   ownerUserId: string
   /**
+   * The game has a running score the caller announces (the game module's scoreBased).
+   */
+  scoreBased: boolean
+  /**
    * Same order as players.
    */
   seats: SeatInfo[]
@@ -538,6 +546,10 @@ export interface P121Snapshot {
    * The host: starts the bull off, aborts the game.
    */
   ownerUserId: string
+  /**
+   * The game has a running score the caller announces (the game module's scoreBased).
+   */
+  scoreBased: boolean
   /**
    * Same order as players.
    */
@@ -659,6 +671,10 @@ export interface HiloSnapshot {
    * The host: starts the bull off, aborts the game.
    */
   ownerUserId: string
+  /**
+   * The game has a running score the caller announces (the game module's scoreBased).
+   */
+  scoreBased: boolean
   /**
    * Same order as players.
    */
@@ -885,6 +901,10 @@ export interface MinigolfSnapshot {
    * The host: starts the bull off, aborts the game.
    */
   ownerUserId: string
+  /**
+   * The game has a running score the caller announces (the game module's scoreBased).
+   */
+  scoreBased: boolean
   /**
    * Same order as players.
    */

@@ -201,6 +201,7 @@ const isInt = (n: unknown): n is number => typeof n === 'number' && Number.isInt
 export const hiloGame: GameModule<HiloState, HiloConfig, HiloView, 'hilo', HiloDetail> = {
   id: 'hilo',
   version: 1,
+  scoreBased: true,
   defaultConfig: { startHigh: 41, startLow: 21, lives: 3, t1Zero: false, matchExtremes: true, keepBarsOnLifeLost: false, bullOff: 'off' },
   configMeta,
 

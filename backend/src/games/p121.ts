@@ -287,6 +287,7 @@ export const configMeta: Record<Exclude<keyof P121Config, 'bullOff'>, ConfigFiel
 export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121Detail> = {
   id: 'p121',
   version: 1,
+  scoreBased: true,
   // bullOff is also set by withBullOff once this module is wrapped, same as x01Game.
   defaultConfig: {
     startTarget: 121,

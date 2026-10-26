@@ -276,6 +276,7 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
   },
   configMeta,
   teams: true,
+  scoreBased: true,
 
   validate: validateTeams,
 

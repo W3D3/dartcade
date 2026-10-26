@@ -137,6 +137,8 @@ export interface GameModule<
   configMeta?: Record<string, ConfigFieldMeta>
   /** Can be played in teams: its config takes `format` and `teams` (see games/teams.ts). */
   teams?: true
+  /** Its view has a running score the match screen's caller announces (visit totals, busts, checkouts; see lib/caller/calls.ts). */
+  scoreBased?: true
   /** The team index of every seat (a game with `teams`; in singles the seat itself). */
   teamsOf?(s: S): number[]
   /** Darts count by where they landed (Minigolf): manual darts and corrections without a spot
