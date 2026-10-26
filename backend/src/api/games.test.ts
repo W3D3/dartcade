@@ -16,6 +16,8 @@ vi.mock('../db/history.js', () => ({
   getStatRows: vi.fn().mockResolvedValue([]),
   getViewableGame: vi.fn(),
   getBestStat: vi.fn(),
+  getGameDetail: vi.fn(),
+  saveGameDetail: vi.fn(),
 }))
 vi.mock('../db/queries.js', () => ({ getSessionEvents: vi.fn().mockResolvedValue([]) }))
 vi.mock('../auth/session.js', () => ({ getAuthUser: vi.fn().mockResolvedValue(null) }))

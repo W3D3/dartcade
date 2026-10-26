@@ -12,8 +12,7 @@ import type { XpGainedMessage, XpLine } from '../schema/lobby-ws.js'
 import type { GameEnded } from '../session/engine.js'
 import type { X01Detail } from '../session/types.js'
 import { getFinishedGame } from '../db/history.js'
-import { getSessionEvents } from '../db/queries.js'
-import { buildDetail } from '../history/detail.js'
+import { storedDetail } from '../history/detail.js'
 import { progressChallenges } from './challengeSets.js'
 import { challengeGame } from './facts.js'
 
@@ -105,7 +104,7 @@ export class ProgressionService {
   private async x01Detail(sessionId: string): Promise<X01Detail | null> {
     const game = await getFinishedGame(this.deps.db, sessionId)
     if (!game) return null
-    const built = await buildDetail(game, await getSessionEvents(this.deps.db, sessionId), this.deps.warn)
+    const built = await storedDetail(this.deps.db, game, this.deps.warn)
     return built?.detail.mode === 'x01' ? built.detail : null
   }
 

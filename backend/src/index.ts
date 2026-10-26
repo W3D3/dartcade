@@ -25,6 +25,8 @@ import { seatedGame } from './friends/status.js'
 import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 import { closePool, warmPool } from './games/minigolfPool.js'
 import { ProgressionService } from './progression/service.js'
+import { getFinishedGame } from './db/history.js'
+import { storedDetail } from './history/detail.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -116,6 +118,14 @@ const engine: SessionEngine = new SessionEngine(
     progression.onGameEnded(ended).catch((err: unknown) => {
       warn('xp for a finished game failed', { sessionId: ended.sessionId, error: String(err) })
     })
+    // Nor is the details page, built now so no one's first load waits for the replay
+    if (ended.status === 'finished') {
+      getFinishedGame(db, ended.sessionId)
+        .then(game => game && storedDetail(db, game, warn))
+        .catch((err: unknown) => {
+          warn('storing a finished game detail failed', { sessionId: ended.sessionId, error: String(err) })
+        })
+    }
     return lobbies.onGameEnded(ended).then(() => matchmaking.onGameEnded(ended))
   },
   started => lobbies.onGameStarted(started),

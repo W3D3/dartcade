@@ -14,7 +14,7 @@ vi.mock('../auth/admin.js', () => ({
   requireModerator: vi.fn((_req: any, _reply: any, done: () => void) => done()),
   requireAdmin: vi.fn((_req: any, _reply: any, done: () => void) => done()),
 }))
-vi.mock('../db/history.js', () => ({ getFinishedGame: vi.fn() }))
+vi.mock('../db/history.js', () => ({ getFinishedGame: vi.fn(), getGameDetail: vi.fn(), saveGameDetail: vi.fn() }))
 vi.mock('../db/adminGames.js', () => ({
   listAllGames: vi.fn(),
   invalidateGame: vi.fn(),

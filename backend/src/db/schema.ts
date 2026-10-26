@@ -118,6 +118,14 @@ export interface GameSessionEventsTable {
   board_db_id: string | null
 }
 
+/** A finished game's stored details page (migration 040): `version` is the code that built it. */
+export interface GameDetailsTable {
+  session_id: string
+  version: string
+  detail: ColumnType<components['schemas']['GameDetail']['detail'], string, string>
+  stats: ColumnType<components['schemas']['MatchStats'], string, string>
+}
+
 export interface GameDartsTable {
   session_id: string
   visit: number
@@ -425,6 +433,7 @@ export interface Database {
   game_players: GamePlayersTable
   game_session_events: GameSessionEventsTable
   game_darts: GameDartsTable
+  game_details: GameDetailsTable
   bridge_events: BridgeEventsTable
   lobbies: LobbiesTable
   lobby_people: LobbyPeopleTable
