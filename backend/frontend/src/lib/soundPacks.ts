@@ -1,7 +1,8 @@
 // Sound packs (the `sound.*` perks): what a player's darts sound like on the match screen, played
 // for the thrower's pack. Synthesized with Web Audio, one recipe table per pack; placeholder sounds
-// until recorded ones replace them. Quieter while the caller speaks, so the call stays clear.
-import { audioContext } from './sounds.js'
+// until recorded ones replace them. Each is levelled to the same peak; the effects bus ducks them
+// while the caller speaks, so the call stays clear.
+import { audioContext, effectsBus, effectsGain, TARGET_DB } from './sounds.js'
 import type { DartSound } from './dartEvents.js'
 
 type Filter = { type: BiquadFilterType; freq: number; q?: number }
@@ -71,13 +72,26 @@ export const SOUND_PACKS: Record<string, Pack> = {
   },
 }
 
+/** Each recipe's peak at gain 1 (dBFS), rendered in Chrome; a pack without a double or treble plays
+ *  its hit. A new or changed recipe needs its peak measured again. */
+export const PEAK_DB: Record<string, Partial<Record<DartSound, number>>> = {
+  'sound.pub': { hit: -0.2, miss: -13.7, bust: -4.9 },
+  'sound.arcade': { hit: -18.5, double: -18.5, treble: -18.5, miss: -19, bust: -19 },
+  'sound.stadium': { hit: -10.8, treble: -4.9, miss: -16.3, bust: -11.4 },
+  'sound.legend': { hit: -8.3, double: -6.2, treble: -6.8, miss: -12.8, bust: -8.5 },
+}
+
+/** The gain that brings `sound` of pack `packId` to `TARGET_DB` at full volume. */
+export function levelGain(packId: string, sound: DartSound): number {
+  const peaks = PEAK_DB[packId] ?? {}
+  const peak = peaks[sound in SOUND_PACKS[packId] ? sound : 'hit'] ?? TARGET_DB
+  return 10 ** ((TARGET_DB - peak) / 20)
+}
+
 /** What a pack's preview plays, in order. */
 const PREVIEW: DartSound[] = ['hit', 'treble', 'miss', 'bust']
 const PREVIEW_GAP_S = 0.8
-/** Effects play at this share of their volume while the caller speaks. */
-const DUCKED = 0.3
-
-export function createSoundPacks(volume: () => number, speaking: () => boolean = () => false) {
+export function createSoundPacks(volume: () => number) {
   let noiseBuffer: AudioBuffer | null = null
 
   function synth(ctx: AudioContext, at: number, out: AudioNode): Synth {
@@ -146,13 +160,13 @@ export function createSoundPacks(volume: () => number, speaking: () => boolean =
   /** Plays `sound` in pack `packId` (nothing for 'sound.none' or an unknown pack), `delay` seconds from now. */
   function play(packId: string, sound: DartSound, delay = 0): void {
     const pack = packId in SOUND_PACKS ? SOUND_PACKS[packId] : null
-    const vol = volume() * (speaking() ? DUCKED : 1)
+    const vol = effectsGain(volume())
     if (!pack || vol <= 0) return
     const ctx = audioContext()
     if (!ctx) return
     const out = ctx.createGain()
-    out.gain.value = vol
-    out.connect(ctx.destination)
+    out.gain.value = vol * levelGain(packId, sound)
+    out.connect(effectsBus(ctx))
     ;(pack[sound] ?? pack.hit)(synth(ctx, ctx.currentTime + delay, out))
     // Every recipe is over within 2 s
     setTimeout(() => out.disconnect(), (delay + 3) * 1000)

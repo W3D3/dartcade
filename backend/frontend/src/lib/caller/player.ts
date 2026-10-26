@@ -1,7 +1,7 @@
 // Plays what the caller says: one clip per part of a call, back to back, through the page's
 // AudioContext. Each URL is fetched, decoded and trimmed of silent edges once; a new call cuts off the one playing.
 
-import { audioContext } from '../sounds.js'
+import { audioContext, duckEffects, unduckEffects } from '../sounds.js'
 import { pickClips, type Call } from './calls.js'
 import type { Clips } from './voices.js'
 
@@ -84,6 +84,7 @@ export function createCaller(volume: () => number) {
       }
     }
     playing = []
+    if (endsAt > 0) unduckEffects()
     endsAt = 0
   }
 
@@ -113,7 +114,8 @@ export function createCaller(volume: () => number) {
       gain.connect(ctx.destination)
     }
     gain.gain.value = vol
-    let at = Math.max(ctx.currentTime, endsAt)
+    const from = Math.max(ctx.currentTime, endsAt)
+    let at = from
     for (const buffer of loaded) {
       if (!buffer) continue
       const src = ctx.createBufferSource()
@@ -127,6 +129,8 @@ export function createCaller(volume: () => number) {
       playing.push(src)
     }
     endsAt = at
+    // The sound effects play quieter for exactly the call
+    if (at > from) duckEffects(from, at)
   }
 
   function stop() {
@@ -134,11 +138,5 @@ export function createCaller(volume: () => number) {
     silence()
   }
 
-  /** Whether a call is playing now (sound effects play quieter meanwhile). */
-  function speaking(): boolean {
-    const ctx = audioContext()
-    return ctx !== null && ctx.currentTime < endsAt
-  }
-
-  return { say, stop, speaking }
+  return { say, stop }
 }
