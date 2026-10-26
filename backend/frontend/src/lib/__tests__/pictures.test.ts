@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { finishAvatar, picturePerk, pictureUnlock, shownFinishes } from '../progress/pictures.js'
+import { finishAvatar, picturePerk, pictureUnlock, shownFinishes, splitBasics } from '../progress/pictures.js'
 import { AVATAR_FINISHES } from '$shared/avatarFinishes.js'
 
 describe('profile pictures', () => {
@@ -19,5 +19,13 @@ describe('profile pictures', () => {
     expect(shownFinishes([]).map(f => f.id)).not.toContain('frost')
     expect(shownFinishes(['frost']).map(f => f.id)).toContain('frost')
     expect(shownFinishes(['frost'])).toHaveLength(AVATAR_FINISHES.length - 9)
+  })
+
+  it('splits the basics from the finishes, Classic among the basics', () => {
+    const { basics, finishes } = splitBasics(shownFinishes([]))
+    expect(basics.map(f => f.id)).toEqual(['classic', 'white', 'red', 'sky', 'amber', 'pink', 'violet', 'mint', 'paper'])
+    expect(finishes[0].id).toBe('chalk')
+    expect(finishes.map(f => f.id)).not.toContain('classic')
+    expect(basics.length + finishes.length).toBe(shownFinishes([]).length)
   })
 })

@@ -44,9 +44,17 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('unlocked perks', () => {
     )
     expect(held).not.toContain('frame.platinum')
     expect(await hasPerk(db, 'vet', 'frame.gold')).toBe(true)
-    // origami (8) … circuit (30) came to the catalogue after: held at once, with no row
+    // origami (8) … circuit (30) and the basics came to the catalogue after: held at once, with no row
     expect(await unlockedPictures(db, 'vet')).toEqual([
       'classic',
+      'white',
+      'red',
+      'sky',
+      'amber',
+      'pink',
+      'violet',
+      'mint',
+      'paper',
       'chalk',
       'arcade',
       'origami',

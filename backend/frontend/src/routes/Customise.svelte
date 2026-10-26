@@ -37,7 +37,7 @@
   } from '$lib/progress/customise'
   import { equip } from '$lib/progress/equip'
   import { accentOf, bannerClass, bannerStyle, cardColors, colorsClass, nameClass, titleName } from '$lib/progress/look'
-  import { pictureUnlock, shownFinishes, wearPicture } from '$lib/progress/pictures'
+  import { pictureUnlock, shownFinishes, splitBasics, wearPicture } from '$lib/progress/pictures'
   import { profileOf, refreshProfile, statusOf } from '$lib/progress/profiles'
   import { progress } from '$lib/progress/store'
   import { AVATAR_FINISHES, DEFAULT_AVATAR_FINISH } from '$shared/avatarFinishes.js'
@@ -86,6 +86,7 @@
       unlock: pictureUnlock(f.id),
     })),
   )
+  const rows = $derived(splitBasics(finishes))
   // What you hold or wear stays listed, even one nothing unlocks yet
   const held = $derived($progress ? [...$progress.perks.unlocked, ...Object.values($progress.perks.equipped)] : [])
   const perksOf = (kind: PerkKind): Item[] =>
@@ -187,6 +188,24 @@
       </li>
     {/each}
   </ul>
+{/snippet}
+
+<!-- The basics, compact above the finishes: never locked, so Hide locked leaves them be -->
+{#snippet basicsRow(selected: string | undefined, pick: (id: string) => void, preview: Snippet<[Item]>)}
+  <div class="flex flex-wrap items-center gap-2 px-3 py-[10px] rounded-[12px] bg-surface-1 border border-surface-paused">
+    <span class="min-w-[52px] mr-1 text-[12px] font-semibold text-text-muted">Basics</span>
+    {#each gridItems(rows.basics, hideLocked) as it (it.id)}
+      <CustomiseTile name={it.name} open={it.open} selected={selected === it.id} unlock={it.unlock} compact onpick={() => pick(it.id)}
+        >{@render preview(it)}</CustomiseTile
+      >
+    {/each}
+  </div>
+{/snippet}
+{#snippet basicPreview(it: Item)}
+  <FinishPicture foreground={it.id} class="size-10" />
+{/snippet}
+{#snippet basicDiscPreview(it: Item)}
+  <FinishPicture background={it.id} class="size-10" />
 {/snippet}
 
 {#snippet finishPreview(it: Item)}
@@ -338,8 +357,9 @@
             />
             <section class="{layer === 'foreground' ? 'flex' : 'hidden lg:flex'} flex-col gap-3">
               {@render gridHead('Foreground', 'the mark in the middle', finishes)}
+              {@render basicsRow(layers?.foreground, id => pickLayer('foreground', id), basicPreview)}
               {@render grid(
-                finishes,
+                rows.finishes,
                 'grid-cols-4 sm:grid-cols-5 xl:grid-cols-7',
                 layers?.foreground,
                 id => pickLayer('foreground', id),
@@ -348,8 +368,9 @@
             </section>
             <section class="{layer === 'background' ? 'flex' : 'hidden lg:flex'} flex-col gap-3">
               {@render gridHead('Background', 'the disc behind it', finishes)}
+              {@render basicsRow(layers?.background, id => pickLayer('background', id), basicDiscPreview)}
               {@render grid(
-                finishes,
+                rows.finishes,
                 'grid-cols-4 sm:grid-cols-5 xl:grid-cols-7',
                 layers?.background,
                 id => pickLayer('background', id),

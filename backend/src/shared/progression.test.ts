@@ -55,6 +55,13 @@ describe('perks', () => {
     expect(AVATAR_FINISHES.map(f => pictureFor(f.id))).toEqual(pictures)
   })
 
+  it('gives everyone the basics from the start, and only those pictures', () => {
+    const free = levelPerks(1)
+      .filter(p => p.kind === 'picture')
+      .map(p => p.id)
+    expect(AVATAR_FINISHES.filter(f => f.basic).map(f => pictureFor(f.id))).toEqual(free)
+  })
+
   it('can earn every reward but the challenge pictures, and lists those only to whoever holds one', () => {
     expect(PERKS.filter(p => !obtainable(p)).map(p => p.id)).toEqual(
       ['frost', 'carbon', 'holo', 'marble', 'lava', 'electric', 'galaxy', 'toxic', 'walnut', 'glitch'].map(pictureFor),
@@ -71,6 +78,14 @@ describe('perks', () => {
       'banner.plain',
       'colors.dartcade',
       'picture.classic',
+      'picture.white',
+      'picture.red',
+      'picture.sky',
+      'picture.amber',
+      'picture.pink',
+      'picture.violet',
+      'picture.mint',
+      'picture.paper',
       'frame.none',
       'name.plain',
       'sound.none',
