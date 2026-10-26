@@ -151,6 +151,6 @@ async function autodartsVoice(zip: Uint8Array, entries: ZipEntry[]): Promise<Par
   // Clips may overlap in the MP3, so together they can be far bigger than it
   if (kept.reduce((n, [, bytes]) => n + bytes.length, 0) > CLIPS_MAX) throw new ZipError('That pack unpacks too big')
   const clips: Record<string, Clip[]> = {}
-  for (const [key, bytes] of kept) clips[key] = [{ bytes: bytes.slice(), mime: MIME.mp3 }]
+  for (const [key, bytes] of kept) clips[key] = [{ bytes, mime: MIME.mp3 }]
   return { name: voice.name, lang: voice.lang, total: voice.total, clips }
 }

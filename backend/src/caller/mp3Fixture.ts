@@ -11,7 +11,10 @@ function frame(fill: number, mpeg2 = false): Uint8Array {
   return f
 }
 
-export function makeMp3(o: { frames?: number; id3?: boolean; info?: boolean; tag?: boolean; mpeg2?: boolean } = {}): Uint8Array {
+/** `delay`: an encoder delay (samples) written into the Info frame's LAME tag, as Autodarts' MP3s have (576). */
+export function makeMp3(
+  o: { frames?: number; id3?: boolean; info?: boolean; delay?: number; tag?: boolean; mpeg2?: boolean } = {},
+): Uint8Array {
   const parts: Uint8Array[] = []
   if (o.id3) {
     // An ID3v2 header announcing 20 bytes of tag (syncsafe size), then the 20 bytes
@@ -20,6 +23,11 @@ export function makeMp3(o: { frames?: number; id3?: boolean; info?: boolean; tag
   if (o.info) {
     const info = frame(0xee)
     info.set([0x49, 0x6e, 0x66, 0x6f], 4 + 32) // "Info" after the stereo side info
+    if (o.delay !== undefined) {
+      info.set([0, 0, 0, 0xf], 36 + 4) // flags: frames, bytes, TOC and quality, so the LAME tag is 120 bytes on
+      info.set([0x4c, 0x61, 0x76, 0x63], 36 + 120) // "Lavc", the encoder's name, as Autodarts' say
+      info.set([o.delay >> 4, (o.delay & 15) << 4, 0], 36 + 141) // delay, then 12 bits of padding
+    }
     parts.push(info)
   }
   for (let k = 0; k < (o.frames ?? 100); k++) parts.push(frame(k & 0xff, o.mpeg2))

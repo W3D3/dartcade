@@ -23,7 +23,7 @@ Builds on the caller voice packs design (`2026-10-04-caller-voice-packs-design.m
 - **Cut, not re-encoded.** The server cuts the MP3 on its own frame boundaries. No decoder, no encoder,
   no new dependency. Clips stay 128 kbps stereo: about 10 MB per voice, about 30 MB for all three.
 - **The player trims edge silence** after decoding, for every pack. It covers Autodarts' padding
-  (Hware has about 0.2 s before and 0.35 s after each clip) and the frames added for the bit reservoir.
+  (Hware has about 0.2 s before each clip).
 - **Keys**: `require_N` (N 1–180) is the whole "You require N" phrase, as Autodarts and our reference
   packs name it; `you_require` is a lead-in clip followed by the number clip.
 - **en-adam gets `require_1`–`require_180` and `you_require`**, generated with the existing Kokoro
@@ -175,10 +175,12 @@ pack").
    the `Info`/`Xing` frame. Refuse anything else (not MPEG-1 Layer III, sample rate changes mid-file,
    a broken frame chain).
 4. **End check**: the table's last clip ends within 60 ms of the audio's end (seen: 36 ms).
-5. **Slice** each clip: frames from `floor(offset / frameMs) − 2` to `ceil((offset + duration) /
-   frameMs)`, clamped to the file. The 2 extra frames feed the bit reservoir (frames reach back up to
-   511 bytes, less than 2 frames); they decode as silence or noise inside the previous clip's padding,
-   and the player trims them.
+5. **Slice** each clip. The table counts the samples a decoder keeps; the frames hold them `skip`
+   samples later (the source's LAME encoder delay, 576, plus the decoder's 529). Frames from the one
+   holding `offset + skip` less 3, to the one holding `offset + duration + skip`, clamped to the file.
+   The 3 extra frames feed the bit reservoir (frames reach back up to 511 bytes) and the overlap with
+   the frame before; they hold the end of the previous clip, which is not silent (#362). So each clip
+   gets its own Info frame whose LAME tag has the decoder drop everything outside the table's times.
 6. **Keys**: `"0"`…`"180"` stay; `game_on` → `gameon`, `game_shot` → `gameshot`, `game_shot_match` →
    `matchshot`; `require_N` stays. Anything else is dropped (and counted in "Kept N of M clips").
 7. **Name** the pack from the voice: "Autodarts Dotty (English)", "Autodarts Dotty (German)",
