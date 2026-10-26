@@ -26,7 +26,7 @@ export async function endAnyRunningGame(page: Page): Promise<void> {
  */
 export async function startGame(
   page: Page,
-  opts: { mode: 'ATC' | 'X01' | 'Minigolf' | '121' | 'Higher Lower'; setup?: (page: Page) => Promise<void>; guests?: string[] },
+  opts: { mode: 'ATC' | 'X01' | 'Minigolf' | '121' | 'Higher Lower' | 'Cricket'; setup?: (page: Page) => Promise<void>; guests?: string[] },
 ) {
   // A game still running from an earlier spec keeps Start disabled
   await endAnyRunningGame(page)
