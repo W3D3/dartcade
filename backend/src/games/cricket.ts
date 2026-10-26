@@ -7,18 +7,20 @@ import type {
   BoardEvent,
   Player,
   ConfigFieldMeta,
+  Point,
   SeatResult,
   SummaryContext,
 } from '../session/types.js'
 import { withBullOff } from '../session/withBullOff.js'
 import type { CricketView } from '../session/views.js'
 import type { Rng } from '../session/rng.js'
+import { pointFor } from '../bots/accuracy.js'
 import { validateOptions } from './configMeta.js'
 import { nextTurn, upNext } from './turns.js'
 import { cricketMatchStats } from './cricketStats.js'
 import { rankSeats } from './ranking.js'
 import { legStart, seatPlacements, seatsByTeam, teamCount, teamOfSeats, turnOrder, validateTwoTeams, type TeamsConfig } from './teams.js'
-import { OPEN, TARGETS, emptyMarks, marksFor, applyMarks, legWinner, type CricketMode, type Marks } from './cricketRules.js'
+import { OPEN, TARGETS, cricketTarget, emptyMarks, marksFor, applyMarks, legWinner, type CricketMode, type Marks } from './cricketRules.js'
 
 export type CricketConfig = {
   mode: CricketMode
@@ -294,6 +296,12 @@ export const cricketGame: GameModule<CricketState, CricketConfig, CricketView, '
       legs: s.legs[t],
     }))
     return { ...view, teams }
+  },
+
+  // Reads state directly rather than going through view() — same reasoning as X01's botTarget.
+  botTarget(s: CricketState, seatIndex: number, dartsThrown: number): Point | 'takeout' | null {
+    if (dartsThrown >= 3 || s.legWonBy !== null || s.winner !== null) return 'takeout'
+    return pointFor(cricketTarget(s.board, s.teamOf[seatIndex], s.cfg.mode))
   },
 
   getLeg(s: CricketState): number {

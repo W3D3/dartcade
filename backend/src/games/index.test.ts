@@ -6,6 +6,10 @@ describe('supportsBots', () => {
     expect(supportsBots('x01')).toBe(true)
   })
 
+  it('is true for cricket: its module defines botTarget', () => {
+    expect(supportsBots('cricket')).toBe(true)
+  })
+
   it('is false for atc: it has no botTarget (bots stay x01-only until atc gets one)', () => {
     expect(supportsBots('atc')).toBe(false)
   })

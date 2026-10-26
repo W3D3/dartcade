@@ -50,6 +50,32 @@ export function applyMarks(
   return { board: { ...b, marks, points }, counted: opening + (scored > 0 ? extra : 0), scored }
 }
 
+/** What a bot aims at next: the checkout-style label (`T20` … `T15`, `Bull`) for the target its
+ *  strategy picks. Standard, behind: score on a target it has open while someone else hasn't
+ *  closed it. Otherwise (standard ahead, or cut-throat always): defend the first, in target
+ *  order (20 first, the bull last), that an opponent has open but it doesn't, or close its own
+ *  first unopened target in that order if nothing needs defending. Falls back to T20 when
+ *  nothing matches (everything shut). */
+export function cricketTarget(b: Marks, team: number, mode: CricketMode): string {
+  const n = b.targets.length
+  const others = b.marks.map((_, t) => t).filter(t => t !== team)
+  const mine = (i: number) => b.marks[team][i] >= OPEN
+  const someoneOpen = (i: number) => others.some(t => b.marks[t][i] >= OPEN)
+  const someoneShut = (i: number) => others.some(t => b.marks[t][i] < OPEN)
+  const label = (i: number) => (b.targets[i] === 25 ? 'Bull' : `T${b.targets[i]}`)
+  const first = (ok: (i: number) => boolean) => Array.from({ length: n }, (_, i) => i).find(ok)
+  const scoring = first(i => mine(i) && someoneShut(i))
+  const defend = first(i => !mine(i) && someoneOpen(i))
+  const close = first(i => !mine(i))
+  if (mode === 'standard') {
+    const behind = others.some(t => b.points[t] > b.points[team])
+    const pick = (behind ? scoring : undefined) ?? defend ?? close ?? scoring
+    return pick === undefined ? 'T20' : label(pick)
+  }
+  const pick = defend ?? scoring ?? close
+  return pick === undefined ? 'T20' : label(pick)
+}
+
 /** The team that has won the leg: every target opened and not behind (cut-throat: not ahead). The thrower's team first. */
 export function legWinner(b: Marks, thrower: number, mode: CricketMode): number | null {
   const wins = (t: number) => {

@@ -18,7 +18,7 @@ const TREBLE_20: Point = (() => {
 export const BULL: Point = { x: 0, y: 0 }
 
 /** Board-unit coordinates for the first dart of a checkout label (T20, D12, 25, Bull, …). */
-function pointFor(label: string): Point {
+export function pointFor(label: string): Point {
   if (label === 'Bull') return { x: 0, y: 0 }
   if (label === '25') {
     const r = (R.bull50 + R.bull25) / 2
