@@ -249,7 +249,7 @@ function winnerOf(s: MinigolfState): number | null {
 export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfView, 'minigolf', MinigolfDetail> = {
   id: 'minigolf',
   version: 1,
-  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: false, aimAssist: true, shotPreview: false },
+  defaultConfig: { course: COURSES[0].id, tries: 3, maxStrokes: 6, ballContact: true, aimAssist: true, shotPreview: true },
   configMeta,
   positionalDarts: true,
   noFinishHold: true,
@@ -292,7 +292,8 @@ export const minigolfModule: GameModule<MinigolfState, MinigolfConfig, MinigolfV
       maxStrokes: saved.maxStrokes ?? d.maxStrokes,
       ballContact: saved.ballContact ?? d.ballContact,
       aimAssist: saved.aimAssist ?? d.aimAssist,
-      shotPreview: saved.shotPreview ?? d.shotPreview,
+      // shotPreview came later: a stored config without it keeps playing without, whatever the default is now
+      shotPreview: saved.shotPreview ?? false,
     }
     const course = saved.holes ? { name: saved.courseName ?? '', holes: saved.holes } : getCourse(cfg.course)
     const holes = course ? course.holes : mixedHoles(rng)

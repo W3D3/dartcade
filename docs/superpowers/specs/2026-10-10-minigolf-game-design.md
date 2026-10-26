@@ -21,11 +21,11 @@ the core (holes, dart → putt, `simulateShot`). Designs: `project/Minigolf.dc.h
   (no bull off).
 - **The game ends** after the last hole. Lowest total wins; placements tie on equal totals
   (`rankSeats`).
-- **Ball contact** (`ballContact`, off by default). Off: only your ball is simulated; others are drawn
+- **Ball contact** (`ballContact`, on by default). Off: only your ball is simulated; others are drawn
   faded. On: the resting balls of everyone still on the hole are in the simulation and can be knocked
   around; a ball knocked into the cup is holed with no extra stroke for its owner (and its strokes so
   far are its score).
-- **Shot preview** (`shotPreview`, default off) and **aim assist** (`aimAssist`, default on): see
+- **Shot preview** (`shotPreview`, default on) and **aim assist** (`aimAssist`, default on): see
   `shared/minigolf/shot.ts` and the module. Tries are revealed once they're used up or the darts are
   pulled; with shot preview, each try shows its way up to the first contact meanwhile.
 - **Positions only.** A dart without coords is a miss; manual entry is clicking a spot on the board.
@@ -46,7 +46,7 @@ type MinigolfConfig = {
 }
 ```
 
-Defaults: the first course, `tries: 3`, `maxStrokes: 6`, `ballContact: false`, `aimAssist: true`, `shotPreview: false`. `configMeta`
+Defaults: the first course, `tries: 3`, `maxStrokes: 6`, `ballContact: true`, `aimAssist: true`, `shotPreview: true`. `configMeta`
 labels them for the setup form; `validate` rejects an unknown course.
 
 ## Architecture

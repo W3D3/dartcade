@@ -257,6 +257,10 @@ describe('minigolf', () => {
     expect(assisted.balls[0].at).toEqual(plain.balls[0].at)
   })
 
+  it('starts new games with ball contact and shot preview on', () => {
+    expect(M.defaultConfig).toMatchObject({ ballContact: true, shotPreview: true })
+  })
+
   it('plays a config saved before an option existed with its default', () => {
     const { aimAssist: _a, shotPreview: _p, ...old } = cfg()
     const s = M.init(old as MinigolfConfig, two)
