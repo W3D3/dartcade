@@ -13,6 +13,7 @@
   import { createLobby } from '$lib/lobby/create'
   import AccountMenu from './AccountMenu.svelte'
   import BrandMark from './BrandMark.svelte'
+  import AlphaBadge from './feedback/AlphaBadge.svelte'
   import PreviewBadge from './PreviewBadge.svelte'
   import FriendsNavItem from './friends/FriendsNavItem.svelte'
   import NavTabItem from './NavTabItem.svelte'
@@ -55,6 +56,7 @@
 >
   <div class="shrink-0 flex flex-col items-center gap-2">
     <BrandMark size={28} />
+    <AlphaBadge interactive />
     <PreviewBadge />
   </div>
   <div class="shrink-0 flex flex-col gap-1">

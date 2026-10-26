@@ -7,6 +7,7 @@
   import { ChevronLeft, ChevronRight, Lightbulb, Mic, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import AccountCard from '$lib/components/settings/AccountCard.svelte'
+  import FeedbackCard from '$lib/components/settings/FeedbackCard.svelte'
   import CallerDefaults from '$lib/components/settings/CallerDefaults.svelte'
   import CallerVoices from '$lib/components/settings/CallerVoices.svelte'
   import SoundEffects from '$lib/components/settings/SoundEffects.svelte'
@@ -130,7 +131,10 @@
             <YourCard />
             <NameCard />
           </div>
-          <AccountCard />
+          <div class="flex flex-col gap-4 md:gap-5">
+            <AccountCard />
+            <FeedbackCard />
+          </div>
         </div>
       {:else if shown === 'game'}
         <GamePrefs bind:settings />

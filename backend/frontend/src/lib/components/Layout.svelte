@@ -9,6 +9,7 @@
   import FriendsDrawer from './friends/FriendsDrawer.svelte'
   import InviteToast from './lobby/InviteToast.svelte'
   import UpdateNotice from './UpdateNotice.svelte'
+  import FeedbackDialog from './feedback/FeedbackDialog.svelte'
   import { friendsDrawerOpen } from '$lib/friends/drawer'
 
   let { title, headerAction, children }: { title?: string; headerAction?: Snippet; children: Snippet } = $props()
@@ -29,3 +30,4 @@
 {#if $friendsDrawerOpen}<FriendsDrawer />{/if}
 <InviteToast />
 <UpdateNotice />
+<FeedbackDialog />

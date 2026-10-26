@@ -13,6 +13,8 @@ export const badgeVariants = tv({
       guest:
         'h-[18px] px-[6px] rounded-full border border-line-strong text-ink-2 text-[10px] font-bold tracking-[0.06em] uppercase shrink-0',
       bot: 'h-[18px] px-[6px] rounded-full border border-line-strong text-ink-2 text-[10px] font-bold tracking-[0.06em] uppercase shrink-0',
+      // Beside the logo while the app is in alpha
+      alpha: 'h-[18px] px-[6px] rounded-full border border-accent text-accent text-[10px] font-bold tracking-[0.06em] uppercase shrink-0',
       // Invited, not joined yet
       invited:
         'h-[18px] px-[6px] rounded-full border border-warn-line text-warn text-[10px] font-bold tracking-[0.06em] uppercase shrink-0',
