@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { applyMarks, emptyMarks, legWinner, marksFor, TARGETS, type Marks } from './cricketRules.js'
+import { applyMarks, cricketTarget, emptyMarks, legWinner, marksFor, TARGETS, type Marks } from './cricketRules.js'
 import type { Dart } from '../session/types.js'
 
 const d = (number: number, multiplier: number): Dart =>
@@ -96,5 +96,29 @@ describe('legWinner', () => {
   })
   it('the thrower is checked first', () => {
     expect(legWinner(board([ALL, ALL], [0, 0]), 1, 'standard')).toBe(1)
+  })
+})
+
+describe('cricketTarget', () => {
+  const rows = (a: number[], b: number[]) => [a, b]
+  it.each([
+    ['fresh: the highest target', rows(NONE, NONE), [0, 0], 'standard', 'T20'],
+    ['behind with a scoring target: score', rows([3, 0, 0, 0, 0, 0, 0], NONE), [0, 40], 'standard', 'T20'],
+    ['ahead: defend what they opened', rows([3, 0, 0, 0, 0, 0, 0], [0, 0, 3, 0, 0, 0, 0]), [40, 0], 'standard', 'T18'],
+    ['ahead, nothing to defend: close the next', rows([3, 3, 0, 0, 0, 0, 0], NONE), [40, 0], 'standard', 'T18'],
+    ['the bull last', rows([3, 3, 3, 3, 3, 3, 0], ALL), [0, 0], 'standard', 'Bull'],
+    ['cut-throat: close what can hurt me first', rows([3, 0, 0, 0, 0, 0, 0], [0, 3, 0, 0, 0, 0, 0]), [0, 0], 'cutthroat', 'T19'],
+    ['cut-throat: then pile on', rows([3, 0, 0, 0, 0, 0, 0], NONE), [0, 0], 'cutthroat', 'T20'],
+  ] as const)('%s', (_, marks, points, mode, want) => {
+    expect(
+      cricketTarget(
+        board(
+          marks.map(r => [...r]),
+          [...points],
+        ),
+        0,
+        mode,
+      ),
+    ).toBe(want)
   })
 })

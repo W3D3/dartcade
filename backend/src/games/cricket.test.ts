@@ -4,6 +4,9 @@ import type { CricketConfig, CricketState } from './cricket.js'
 import type { BoardEvent } from '../session/types.js'
 import { refoldVisit } from '../session/refold.js'
 import type { CommittedVisit } from '../session/types.js'
+import { pointFor, throwAt } from '../bots/accuracy.js'
+import { sigmaForLevel } from '../bots/levels.js'
+import { seededRng } from '../session/rng.js'
 
 const cfg: CricketConfig = { mode: 'standard', firstTo: 1, bullOff: 'off', botSpeed: 'normal', format: 'singles' }
 const dart = (number: number, multiplier: number, index = 0): BoardEvent =>
@@ -265,5 +268,49 @@ describe('cricketModule (with a bull off)', () => {
   it('stages a bull off before the game starts', () => {
     const s = cricketModule.init({ ...cfg, bullOff: 'wdc' }, [{ name: 'A' }, { name: 'B' }])
     expect(s.stage).toBe('bulloff')
+  })
+})
+
+describe('botTarget', () => {
+  it('takes out at 3 darts, on a fresh game aims at T20', () => {
+    const s = duo()
+    expect(cricketGame.botTarget!(s, 0, 3)).toBe('takeout')
+    expect(cricketGame.botTarget!(s, 0, 0)).toEqual(pointFor('T20'))
+  })
+
+  it('takes out once the leg is won', () => {
+    let s = play(duo(), [T(20), T(19), T(18)], [MISS, MISS, MISS], [T(17), T(16), T(15)], [MISS, MISS, MISS])
+    s = cricketGame.onBoardEvent(s, opened).state
+    s = cricketGame.onBoardEvent(s, dart(50, 1, 0)).state
+    s = cricketGame.onBoardEvent(s, dart(25, 1, 1)).state
+    expect(s.legWonBy).toBe(0)
+    expect(cricketGame.botTarget!(s, 0, 2)).toBe('takeout')
+  })
+
+  it('takes out once the match is won', () => {
+    const s = sweep(duo())
+    expect(s).toMatchObject({ phase: 'finished', winner: 0 })
+    expect(cricketGame.botTarget!(s, 0, 0)).toBe('takeout')
+  })
+
+  it('a seeded bot-vs-bot game reaches a winner within 300 visits', () => {
+    const rng = seededRng(42)
+    const sigma = sigmaForLevel(5)
+    let s = duo({ firstTo: 2 })
+    let visits = 0
+    while (s.phase !== 'finished' && visits < 300) {
+      s = cricketGame.onBoardEvent(s, opened).state
+      for (let dartsThrown = 0; dartsThrown < 3; dartsThrown++) {
+        const target = cricketGame.botTarget!(s, s.currentPlayer, dartsThrown)
+        if (target === 'takeout' || target === null) break
+        const { segment } = throwAt(target, sigma, rng)
+        s = cricketGame.onBoardEvent(s, dart(segment.number, segment.multiplier)).state
+        if (s.legWonBy !== null) break
+      }
+      s = cricketGame.onBoardEvent(s, takeout).state
+      visits++
+    }
+    expect(s.phase, `expected a winner within 300 visits, got ${visits}`).toBe('finished')
+    expect(s.winner).not.toBeNull()
   })
 })
