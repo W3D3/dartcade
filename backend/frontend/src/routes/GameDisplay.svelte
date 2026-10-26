@@ -104,11 +104,8 @@
   // first snapshot, so "Game on" isn't missed) and again when the voice changes. Calls wait for
   // them; the player drops a call overtaken by a newer one.
   const caller = createCaller(() => settings.volume)
-  // Each thrower's sound pack (their profile's look; none for guests and bots), quieter under a call
-  const packs = createSoundPacks(
-    () => settings.effectsVolume,
-    () => caller.speaking(),
-  )
+  // Each thrower's sound pack (their profile's look; none for guests and bots); the caller ducks it
+  const packs = createSoundPacks(() => settings.effectsVolume)
   let callerClips: Promise<Clips | null> = Promise.resolve(null)
   let checkoutMemory = createCheckoutMemory()
   $effect(() => {

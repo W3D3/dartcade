@@ -24,7 +24,11 @@ class FakeContext {
   currentTime = 0
   destination = {}
   createGain() {
-    return { gain: { value: 1 }, connect: vi.fn(), disconnect: vi.fn() }
+    return {
+      gain: { value: 1, cancelScheduledValues: vi.fn(), setTargetAtTime: vi.fn() },
+      connect: vi.fn(),
+      disconnect: vi.fn(),
+    }
   }
   createBufferSource() {
     const src = {
