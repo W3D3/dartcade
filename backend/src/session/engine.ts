@@ -577,6 +577,7 @@ export class SessionEngine {
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),
       ownerUserId: session.ownerUserId,
+      scoreBased: session.module.scoreBased === true,
       seats: seatViews(session, view),
       mySeats: session.seats.flatMap((s, i) => (s.controllerUserId === view.viewerUserId ? [i] : [])),
       // The status pill follows the board of the seat that's up

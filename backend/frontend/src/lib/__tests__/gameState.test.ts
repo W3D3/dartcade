@@ -10,6 +10,7 @@ const base = {
   status: 'active' as const,
   finishPending: false,
   canUndoVisit: false,
+  scoreBased: false,
   ownerUserId: 'u1',
   lobbyId: null,
   lobbyName: null,

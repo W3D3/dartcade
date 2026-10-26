@@ -58,6 +58,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
     id: game.id,
     version: game.version,
     teams: game.teams,
+    scoreBased: game.scoreBased,
     teamsOf: teamsOf && (s => teamsOf(s.game)),
     // The wrapped game only ever sees its own state; a bull-off throw is handled by the
     // scheduler itself (see backend/src/bots/scheduler.ts), never through this hook.
