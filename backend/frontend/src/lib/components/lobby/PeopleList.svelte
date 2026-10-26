@@ -77,7 +77,7 @@
     {#each moves.people as p, i (p.id)}
       {#snippet grip()}<DragHandle name={p.name} describedby={hintId} />{/snippet}
       <PersonRow person={p} index={i} {lobby} {viewerId} handle={onplace ? grip : undefined}>
-        {#snippet board()}{#if boardOf}{@render boardOf(p)}{:else}<BoardLabel person={p} />{/if}{/snippet}
+        {#snippet board()}{#if boardOf}{@render boardOf(p)}{:else}<BoardLabel person={p} gameId={lobby.nextGame?.gameId} />{/if}{/snippet}
         {#snippet controls()}{#if controlsOf}{@render controlsOf(p, i)}{:else}<PersonStatus
               person={p}
               showReady={!lobby.solo}

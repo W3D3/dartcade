@@ -46,6 +46,7 @@
     <BoardChip
       person={p}
       choices={boardChoices(lobby, p, viewerId, boards)}
+      gameId={lobby.nextGame?.gameId}
       onpick={(boardId: string | null) => void onupdate(p.id, { boardId })}
       onopen={onboardsopen}
     />
@@ -59,7 +60,7 @@
         <AddSomeone exclude={alreadyInOrInvited(lobby)} {onguest} {oninvite} />
       </div>
       {#if supportsBots}
-        <AddBot {onbot} />
+        <AddBot gameId={lobby.nextGame?.gameId} {onbot} />
       {/if}
     </div>
   {/snippet}

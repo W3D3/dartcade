@@ -9,7 +9,7 @@
   import PopoverPanel from './PopoverPanel.svelte'
   import { Popover } from 'bits-ui'
 
-  let { onbot }: { onbot: (level: number) => Promise<boolean> } = $props()
+  let { gameId, onbot }: { gameId?: string; onbot: (level: number) => Promise<boolean> } = $props()
 
   let open = $state(false)
 
@@ -28,7 +28,11 @@
   </Popover.Trigger>
   <PopoverPanel label="Bot difficulty" width={200}>
     {#each Array.from({ length: 10 }, (_, i) => i + 1) as level (level)}
-      <MenuItem label="Level {level}" detail="{averageForLevel(level)} avg" onclick={() => void pick(level)}>
+      <MenuItem
+        label="Level {level}"
+        detail={gameId === 'x01' ? `${averageForLevel(level)} avg` : undefined}
+        onclick={() => void pick(level)}
+      >
         {#snippet leading()}
           <Avatar name="Level {level}" bot={{ level }} size={28} />
         {/snippet}
