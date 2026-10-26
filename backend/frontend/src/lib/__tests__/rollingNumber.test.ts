@@ -141,6 +141,12 @@ describe('planChange', () => {
     })
   })
 
+  it('a gain that is bad (cricket cut-throat) rolls up in red; a take-back stays amber', () => {
+    expect(planChange({ normal: 'up', from: '0', to: '57', gain: 'bad' })).toEqual({ kind: 'roll', dir: 'up', tone: 'bad' })
+    expect(planChange({ normal: 'up', from: '57', to: '0', gain: 'bad' })).toEqual({ kind: 'roll', dir: 'down', tone: 'back' })
+    expect(planChange({ normal: 'up', from: '0', to: '57', gain: 'plain' })).toEqual({ kind: 'roll', dir: 'up', tone: 'plain' })
+  })
+
   it('reduced motion jumps but keeps the colour', () => {
     expect(planChange({ ...base, from: '36', to: '81', reducedMotion: true })).toEqual({ kind: 'jump', dir: 'up', tone: 'back' })
     expect(planChange({ ...base, from: '12', to: '32', bust: true, reducedMotion: true })).toEqual({
