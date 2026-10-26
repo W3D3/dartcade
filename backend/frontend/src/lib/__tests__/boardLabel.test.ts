@@ -30,9 +30,15 @@ describe('BoardLabel', () => {
     expect(out).toContain('Manual entry')
   })
 
-  it("shows a bot's calibrated average instead of Manual entry, even though it also has no board", () => {
-    const out = render(BoardLabel, { props: { person: person({ bot: { level: 6 } }) } }).body
+  it("shows a bot's calibrated average instead of Manual entry, even though it also has no board (X01 only)", () => {
+    const out = render(BoardLabel, { props: { person: person({ bot: { level: 6 } }), gameId: 'x01' } }).body
     expect(out).toContain(`${averageForLevel(6)} avg`)
     expect(out).not.toContain('Manual entry')
+  })
+
+  it("shows a bot's level, not an average, outside X01", () => {
+    const out = render(BoardLabel, { props: { person: person({ bot: { level: 6 } }), gameId: 'cricket' } }).body
+    expect(out).toContain('Level 6')
+    expect(out).not.toContain('avg')
   })
 })

@@ -10,3 +10,12 @@ export function averageForLevel(level: number): number {
   if (i < 0 || i >= LEVEL_AVERAGE.length) throw new Error(`bot level out of range: ${level}`)
   return LEVEL_AVERAGE[i]
 }
+
+/**
+ * What the lobby says about a bot's level: X01's calibrated average is the number that
+ * actually means something there; every other game just names the level, since X01's average
+ * doesn't describe how the bot plays Cricket, Higher Lower, etc.
+ */
+export function botLevelLabel(level: number, gameId: string | undefined): string {
+  return gameId === 'x01' ? `${averageForLevel(level)} avg` : `Level ${Math.round(level)}`
+}

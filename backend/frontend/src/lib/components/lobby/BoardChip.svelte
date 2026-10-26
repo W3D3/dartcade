@@ -11,11 +11,14 @@
   let {
     person,
     choices,
+    gameId,
     onpick,
     onopen,
   }: {
     person: LobbyPerson
     choices: BoardChoice[]
+    /** The next game, to label a bot by (see BoardLabel). */
+    gameId?: string
     /** null: manual entry */
     onpick: (boardId: string | null) => void
     /** The menu opened (refresh the boards' status). */
@@ -24,7 +27,7 @@
 </script>
 
 {#if choices.length === 0}
-  <BoardLabel {person} />
+  <BoardLabel {person} {gameId} />
 {:else}
   <PopoverMenu
     label="Choose a board for {person.name}"
@@ -33,7 +36,7 @@
     triggerClass="max-w-full h-[30px] md:h-[34px] box-border inline-flex items-center gap-[6px] pl-[10px] pr-2 rounded-[8px] border bg-surface-paused text-ink-soft text-[13px] font-semibold
                   {person.boardMovedBy !== null ? 'border-accent-line-strong' : 'border-line-chip'}"
   >
-    {#snippet trigger()}<BoardLabel {person} /><ChevronDown size={14} class="shrink-0" />{/snippet}
+    {#snippet trigger()}<BoardLabel {person} {gameId} /><ChevronDown size={14} class="shrink-0" />{/snippet}
     {#snippet children(close: () => void)}
       {#each choices as c (c.boardId ?? 'manual')}
         <MenuItem
