@@ -249,3 +249,23 @@ export async function getFinishedGame(db: Kysely<Database>, id: string): Promise
   if (seats.length === 0) return undefined
   return toGame(row, seats, null)
 }
+
+/** A finished game's stored detail and match stats, and the version that built them. */
+export async function getGameDetail(db: Kysely<Database>, id: string) {
+  return db.selectFrom('game_details').select(['version', 'detail', 'stats']).where('session_id', '=', id).executeTakeFirst()
+}
+
+/** Stores a finished game's detail and match stats, over any built by another version. */
+export async function saveGameDetail(
+  db: Kysely<Database>,
+  id: string,
+  version: string,
+  built: { detail: unknown; stats: unknown },
+): Promise<void> {
+  const values = { version, detail: JSON.stringify(built.detail), stats: JSON.stringify(built.stats) }
+  await db
+    .insertInto('game_details')
+    .values({ session_id: id, ...values })
+    .onConflict(oc => oc.column('session_id').doUpdateSet(values))
+    .execute()
+}

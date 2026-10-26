@@ -6,10 +6,9 @@ import { gameList } from '../games/index.js'
 import type { AnyGameModule } from '../session/types.js'
 import { requireAuth } from '../auth/middleware.js'
 import { listFinishedGames, getStatRows, getViewableGame, getBestStat, type HistoryGame } from '../db/history.js'
-import { getSessionEvents } from '../db/queries.js'
 import { decodeCursor, encodeCursor } from '../history/cursor.js'
 import { aggregateStats } from '../history/stats.js'
-import { buildDetail } from '../history/detail.js'
+import { storedDetail } from '../history/detail.js'
 import { fromSpec } from './spec.js'
 import { getAuthUser } from '../auth/session.js'
 import { loadFlagUser, modeAvailable } from '../flags/index.js'
@@ -102,7 +101,7 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   app.get<Route<'getGame'>>('/api/games/:id', { preValidation: requireAuth, schema: fromSpec('getGame') }, async (req, reply) => {
     const game = await getViewableGame(db, req.params.id, req.userId)
     if (!game) return reply.code(404).send({ error: 'not found' })
-    const built = await buildDetail(game, await getSessionEvents(db, game.id), (message, details) => {
+    const built = await storedDetail(db, game, (message, details) => {
       req.log.warn({ details }, message)
     })
     if (!built) return reply.code(404).send({ error: 'not found' })

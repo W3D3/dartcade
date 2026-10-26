@@ -14,9 +14,8 @@ import {
   type Invalidation,
 } from '../db/adminGames.js'
 import { getFinishedGame } from '../db/history.js'
-import { getSessionEvents } from '../db/queries.js'
 import { decodeCursor, encodeCursor } from '../history/cursor.js'
-import { buildDetail } from '../history/detail.js'
+import { storedDetail } from '../history/detail.js'
 import { ApiError } from './errors.js'
 import { toSummary } from './games.js'
 import { fromSpec } from './spec.js'
@@ -79,7 +78,7 @@ export function adminGamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err
   app.get<Route<'getAdminGame'>>('/api/admin/games/:id', { preValidation: moderatorOnly, schema: fromSpec('getAdminGame') }, async req => {
     const game = await getFinishedGame(db, req.params.id)
     if (!game) throw new ApiError(404, { error: 'not found' })
-    const built = await buildDetail(game, await getSessionEvents(db, game.id), (message, details) => {
+    const built = await storedDetail(db, game, (message, details) => {
       req.log.warn({ details }, message)
     })
     if (!built) throw new ApiError(404, { error: 'not found' })
