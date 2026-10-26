@@ -1,14 +1,13 @@
 <script lang="ts">
   // Settings' Sounds: every sound effect a match plays, at one volume (set on each device; the
   // caller has its own). Which ones play follows your account. With progression on, darts can play
-  // sound packs instead of the beeps: each thrower's own, or one of yours for everyone
+  // sound packs instead of the beeps: each thrower's own, or one of yours (or the beeps) for everyone
   // (sounds.anyPack: any pack, locked or not).
   import type { GameSettings } from '$lib/gameSettings.js'
   import { audioContext } from '$lib/sounds.js'
-  import { createSoundPacks } from '$lib/soundPacks'
+  import { createSoundPacks, EACH_PACK as EACH, packOptions } from '$lib/soundPacks'
   import { flag } from '$lib/flags'
   import { progress } from '$lib/progress/store'
-  import { PERKS } from '$shared/progression.js'
   import SettingSwitch from '$lib/components/SettingSwitch.svelte'
   import Select from '$lib/components/ui/select/select.svelte'
   import VolumeSlider from './VolumeSlider.svelte'
@@ -25,13 +24,7 @@
   ] as const
 
   const anyPack = flag('sounds.anyPack')
-  const EACH = 'each'
-  const packOptions = $derived([
-    { value: EACH, label: "Each thrower's own" },
-    ...PERKS.filter(p => p.kind === 'sound' && p.id !== 'sound.none')
-      .filter(p => $anyPack || ($progress?.perks.unlocked ?? []).includes(p.id) || p.id === settings.soundPack)
-      .map(p => ({ value: p.id, label: p.name })),
-  ])
+  const options = $derived(packOptions($progress?.perks.unlocked ?? [], $anyPack, settings.soundPack))
   const preview = createSoundPacks(() => settings.effectsVolume)
   function pickPack(v: string) {
     settings.soundPack = v === EACH ? null : v
@@ -71,7 +64,7 @@
           <span id="pref-soundPack" class="text-[15px]">Sound pack for every dart</span>
           <span class="text-[13px] text-text-dim">Yours for every player on this screen, or each thrower's own</span>
         </div>
-        <Select options={packOptions} value={settings.soundPack ?? EACH} onchange={pickPack} label="Sound pack for every dart" />
+        <Select {options} value={settings.soundPack ?? EACH} onchange={pickPack} label="Sound pack for every dart" />
       </div>
     {/if}
   {/if}
