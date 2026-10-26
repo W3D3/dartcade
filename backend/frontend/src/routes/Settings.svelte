@@ -7,12 +7,12 @@
   import { ChevronLeft, ChevronRight, Lightbulb, Mic, Monitor, SlidersHorizontal, User, Volume2 } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import AccountCard from '$lib/components/settings/AccountCard.svelte'
-  import AvatarCard from '$lib/components/settings/AvatarCard.svelte'
   import CallerDefaults from '$lib/components/settings/CallerDefaults.svelte'
   import CallerVoices from '$lib/components/settings/CallerVoices.svelte'
   import SoundEffects from '$lib/components/settings/SoundEffects.svelte'
   import GamePrefs from '$lib/components/settings/GamePrefs.svelte'
   import NameCard from '$lib/components/settings/NameCard.svelte'
+  import YourCard from '$lib/components/settings/YourCard.svelte'
   import BoardsSection from '$lib/components/boards/BoardsSection.svelte'
   import LightsSection from '$lib/components/lights/LightsSection.svelte'
   import { currentUser } from '$lib/auth'
@@ -127,7 +127,7 @@
       {#if shown === 'profile'}
         <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_380px] gap-4 md:gap-5 items-start">
           <div class="flex flex-col gap-4 md:gap-5">
-            <AvatarCard />
+            <YourCard />
             <NameCard />
           </div>
           <AccountCard />
