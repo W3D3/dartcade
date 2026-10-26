@@ -1,15 +1,25 @@
-// The built-in profile pictures: the Dartcade ring and bull in one of thirty finishes, drawn in two
+// The built-in profile pictures: the Dartcade ring and bull in one of 38 finishes, drawn in two
 // layers, a background disc and the mark in front (the art is
 // frontend/src/lib/assets/finishes/<id>/{background,foreground}.svg). Each layer is picked
-// on its own. Classic is everyone's; the others unlock through progression (`picture.<id>` in
-// shared/progression.ts PERKS).
+// on its own. The basics (Classic and eight flat colours) are everyone's; the others unlock
+// through progression (`picture.<id>` in shared/progression.ts PERKS).
 export interface AvatarFinish {
   id: string
   name: string
+  /** One of the basics, unlocked from the start and listed apart in Customise. */
+  basic?: true
 }
 
 export const AVATAR_FINISHES: readonly AvatarFinish[] = [
-  { id: 'classic', name: 'Classic' },
+  { id: 'classic', name: 'Classic', basic: true },
+  { id: 'white', name: 'White', basic: true },
+  { id: 'red', name: 'Red', basic: true },
+  { id: 'sky', name: 'Sky', basic: true },
+  { id: 'amber', name: 'Amber', basic: true },
+  { id: 'pink', name: 'Pink', basic: true },
+  { id: 'violet', name: 'Violet', basic: true },
+  { id: 'mint', name: 'Mint', basic: true },
+  { id: 'paper', name: 'Paper', basic: true },
   { id: 'chalk', name: 'Chalk' },
   { id: 'arcade', name: 'Arcade' },
   { id: 'origami', name: 'Origami' },
@@ -48,3 +58,7 @@ const FINISH_IDS = new Set(AVATAR_FINISHES.map(f => f.id))
 
 /** Whether `id` is one of the built-in finishes. */
 export const isAvatarFinish = (id: string): boolean => FINISH_IDS.has(id)
+
+const BASIC_IDS = new Set(AVATAR_FINISHES.filter(f => f.basic).map(f => f.id))
+/** Whether `id` is one of the basics. */
+export const isBasicFinish = (id: string): boolean => BASIC_IDS.has(id)

@@ -13,7 +13,7 @@ export const TAB_META: Record<Tab, { label: string; sub: string; hint: string }>
   picture: {
     label: 'Picture',
     sub: '',
-    hint: 'Pick any foreground and any background you have unlocked. The card shows the combination.',
+    hint: 'Start with the nine basics, then mix in any finish you unlock. The card shows the combination.',
   },
   frame: {
     label: 'Frame',

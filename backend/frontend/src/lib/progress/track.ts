@@ -3,11 +3,15 @@
 import { PERKS, listed, unlockText, type EquipKind, type Equipped, type Perk, type PerkKind } from '$shared/progression.js'
 import type { components } from '$lib/api/schema'
 import { KIND_LABEL } from './look'
+import { DEFAULT_AVATAR_FINISH, isBasicFinish } from '$shared/avatarFinishes.js'
 
 type Avatar = components['schemas']['Avatar']
 
-// The level 1 "nothing" picks (no frame, plain name, no sounds, the standard win screen) aren't rewards
+// The level 1 "nothing" picks (no frame, plain name, no sounds, the standard win screen) aren't rewards,
+// nor are the basic pictures past Classic: the starter set shows the one you start with
 const NOTHING = new Set(['frame.none', 'name.plain', 'sound.none', 'celebration.standard'])
+const offTrackPerk = (p: Perk): boolean =>
+  NOTHING.has(p.id) || (p.kind === 'picture' && p.id !== `picture.${DEFAULT_AVATAR_FINISH}` && isBasicFinish(p.id.slice('picture.'.length)))
 // A level's rewards in the order the track names them: the showiest first, titles last
 const ORDER: readonly PerkKind[] = ['name', 'celebration', 'banner', 'frame', 'picture', 'sound', 'colors', 'title']
 
@@ -30,7 +34,7 @@ export const TOP_LEVEL = Math.max(...PERKS.map(p => levelOf(p) ?? 0))
 /** Every level from 1 to the top, with what it unlocks. */
 export const TRACK: readonly TrackLevel[] = Array.from({ length: TOP_LEVEL }, (_, i) => {
   const level = i + 1
-  const perks = PERKS.filter(p => levelOf(p) === level && !NOTHING.has(p.id)).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind))
+  const perks = PERKS.filter(p => levelOf(p) === level && !offTrackPerk(p)).sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind))
   // Three or more with a title is a set, named by it: level 1's and the top level's
   const title = perks.length > 2 ? perks.find(p => p.kind === 'title') : undefined
   const set = title !== undefined

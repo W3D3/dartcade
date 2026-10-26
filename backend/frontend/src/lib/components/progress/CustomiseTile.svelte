@@ -1,7 +1,8 @@
 <script lang="ts">
   // One option on the Customise page (Profile-Customise boards): its preview and name. The one in
   // your draft has the accent border and a tick; a locked one is greyed, with a lock badge and what
-  // unlocks it, and can't be picked. `row`: the preview and name side by side (titles).
+  // unlocks it, and can't be picked. `row`: the preview and name side by side (titles); `compact`:
+  // a round tile with the preview alone, named by its tooltip (the Basics row).
   import type { Snippet } from 'svelte'
   import { Check, Lock } from '@lucide/svelte'
 
@@ -12,6 +13,7 @@
     unlock,
     row = false,
     wide = false,
+    compact = false,
     onpick,
     children,
   }: {
@@ -23,6 +25,7 @@
     row?: boolean
     /** The preview fills the tile's width (banners, colours); otherwise it's centred at its own size. */
     wide?: boolean
+    compact?: boolean
     onpick: () => void
     children: Snippet
   } = $props()
@@ -35,10 +38,12 @@
   aria-label={open ? name : `${name}, locked: ${unlock}`}
   title={open ? name : `${name} · ${unlock}`}
   onclick={() => open && onpick()}
-  class="relative w-full h-full min-w-0 box-border flex rounded-[12px] border font-[inherit] text-text text-center
-         {row
-    ? 'flex-row items-center justify-between gap-2 px-3 py-[10px] text-left'
-    : 'flex-col items-center gap-[6px] px-2 pt-[10px] pb-2'}
+  class="relative min-w-0 box-border flex border font-[inherit] text-text text-center
+         {compact
+    ? 'shrink-0 rounded-full p-[6px]'
+    : row
+      ? 'w-full h-full rounded-[12px] flex-row items-center justify-between gap-2 px-3 py-[10px] text-left'
+      : 'w-full h-full rounded-[12px] flex-col items-center gap-[6px] px-2 pt-[10px] pb-2'}
          {!open
     ? 'cursor-default border-surface-inset bg-[#111310]'
     : selected
@@ -66,11 +71,15 @@
       >
     {/if}
   {:else}
-    <span class="max-w-full truncate text-[12px] font-semibold {open ? 'text-text' : 'text-text-muted'}">{name}</span>
-    {#if !open}<span class="text-[10.5px] leading-tight text-text-dim">{unlock}</span>{/if}
+    {#if !compact}
+      <span class="max-w-full truncate text-[12px] font-semibold {open ? 'text-text' : 'text-text-muted'}">{name}</span>
+      {#if !open}<span class="text-[10.5px] leading-tight text-text-dim">{unlock}</span>{/if}
+    {/if}
     {#if selected}
       <span
-        class="absolute top-[6px] right-[6px] size-[18px] rounded-full bg-accent text-accent-fg flex items-center justify-center"
+        class="absolute {compact
+          ? '-top-[3px] -right-[3px]'
+          : 'top-[6px] right-[6px]'} size-[18px] rounded-full bg-accent text-accent-fg flex items-center justify-center"
         aria-hidden="true"><Check size={12} strokeWidth={3} /></span
       >
     {/if}

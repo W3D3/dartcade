@@ -30,7 +30,9 @@ describe('cosmeticGroups', () => {
 
 describe('sourceOf', () => {
   it('says where a cosmetic comes from', () => {
-    expect(sourceOf(perk('title.rookie')!)).toBe('Level track')
+    expect(sourceOf(perk('title.rookie')!)).toBe('Starter')
+    expect(sourceOf(perk('picture.paper')!)).toBe('Starter')
+    expect(sourceOf(perk('title.oche-regular')!)).toBe('Level track')
     expect(sourceOf(perk('title.fortnight')!)).toBe('Streak')
     expect(sourceOf(perk('colors.oche-red')!)).toBe('Ranked')
     expect(sourceOf(perk('picture.frost')!)).toBe('Not unlockable yet')

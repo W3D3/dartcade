@@ -35,8 +35,9 @@ describe('the rewards track', () => {
       ['Crystal', 'Win 10 ranked games'],
       ['Oche red', 'Reach ranked Gold'],
     ])
-    // Everything you can earn but the four level 1 "nothing" picks
-    expect(TRACK.flatMap(l => l.perks).length + off.flatMap(o => o.perks).length).toBe(PERKS.filter(obtainable).length - 4)
+    // Everything you can earn but the four level 1 "nothing" picks and the eight basics past Classic
+    expect(TRACK.flatMap(l => l.perks).length + off.flatMap(o => o.perks).length).toBe(PERKS.filter(obtainable).length - 12)
+    expect(TRACK[0].perks.filter(p => p.kind === 'picture').map(p => p.id)).toEqual(['picture.classic'])
   })
 
   it('lists a challenge reward only to whoever holds it', () => {

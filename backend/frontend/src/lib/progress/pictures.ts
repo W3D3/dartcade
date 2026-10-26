@@ -6,7 +6,7 @@ import { api } from '$lib/api/client'
 import { currentUser } from '$lib/auth'
 import { refreshProfile } from './profiles'
 import { reloadProgress } from './store'
-import { AVATAR_FINISHES, type AvatarFinish } from '$shared/avatarFinishes.js'
+import { AVATAR_FINISHES, isBasicFinish, type AvatarFinish } from '$shared/avatarFinishes.js'
 import { PERKS, listed, pictureFor, unlockText, type Perk } from '$shared/progression.js'
 import type { components } from '$lib/api/schema'
 
@@ -29,6 +29,12 @@ export const shownFinishes = (held: readonly string[]): AvatarFinish[] =>
     const p = picturePerk(f.id)
     return !p || listed(p, held.map(pictureFor))
   })
+
+/** Customise's two picture rows: the basics, then the finishes (each keeps its order). */
+export const splitBasics = <T extends { id: string }>(items: readonly T[]): { basics: T[]; finishes: T[] } => ({
+  basics: items.filter(i => isBasicFinish(i.id)),
+  finishes: items.filter(i => !isBasicFinish(i.id)),
+})
 
 /** Wears `foreground` on `background`; resolves with an error message, or null when done. */
 export async function wearPicture(foreground: string, background: string): Promise<string | null> {

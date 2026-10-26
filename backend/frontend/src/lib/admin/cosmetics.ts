@@ -3,12 +3,12 @@
 import { PERKS, PERK_KINDS, obtainable, unlockText, type Perk, type PerkKind } from '$shared/progression.js'
 import { KIND_LABEL } from '$lib/progress/look'
 
-export type Source = 'Level track' | 'Streak' | 'Ranked' | 'Not unlockable yet'
+export type Source = 'Starter' | 'Level track' | 'Streak' | 'Ranked' | 'Not unlockable yet'
 
-/** Where a cosmetic comes from: a challenge one can't be earned yet. */
+/** Where a cosmetic comes from: everyone's from the start (level 1), or earned; a challenge one can't be earned yet. */
 export function sourceOf(p: Perk): Source {
   if (!obtainable(p)) return 'Not unlockable yet'
-  if ('level' in p.unlock) return 'Level track'
+  if ('level' in p.unlock) return p.unlock.level === 1 ? 'Starter' : 'Level track'
   return 'streak' in p.unlock ? 'Streak' : 'Ranked'
 }
 
