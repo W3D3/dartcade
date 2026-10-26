@@ -93,6 +93,10 @@
       "description": "WLED devices paired to a board, and the light profile that drives them as games change"
     },
     {
+      "name": "feedback",
+      "description": "Bug reports and feedback, mailed to the operator (FEEDBACK_EMAIL)"
+    },
+    {
       "name": "bridge",
       "description": "Operations the Go bridge depends on"
     }
@@ -194,6 +198,59 @@
           },
           "429": {
             "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/feedback": {
+      "post": {
+        "operationId": "sendFeedback",
+        "summary": "Report a bug or give feedback; mailed to the operator with your account and an optional screenshot",
+        "tags": [
+          "feedback"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FeedbackReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Sent"
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "413": {
+            "description": "The report (with its screenshot) is over 3 MB",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "503": {
+            "description": "This deployment has no mail or nowhere to send reports (FEEDBACK_EMAIL, LEGAL_CONTACT_EMAIL)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
           }
         }
       }
@@ -6615,10 +6672,15 @@
         "required": [
           "mail",
           "verification",
-          "contactEmail"
+          "contactEmail",
+          "feedback"
         ],
         "additionalProperties": false,
         "properties": {
+          "feedback": {
+            "type": "boolean",
+            "description": "Bug reports can be sent from the app (POST /api/feedback)"
+          },
           "mail": {
             "type": "boolean",
             "description": "Password reset and mailed confirmations are available"
@@ -6631,6 +6693,85 @@
             "type": "string",
             "nullable": true,
             "description": "Where to reach the operator (LEGAL_CONTACT_EMAIL; null when not set)"
+          }
+        }
+      },
+      "FeedbackReport": {
+        "type": "object",
+        "required": [
+          "kind",
+          "message",
+          "context"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "bug",
+              "idea",
+              "other"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          },
+          "context": {
+            "type": "object",
+            "description": "Where the report was sent from, as the browser saw it",
+            "required": [
+              "route",
+              "userAgent",
+              "viewport",
+              "locale",
+              "version",
+              "commit",
+              "sessionId"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "route": {
+                "type": "string",
+                "maxLength": 500,
+                "description": "The page's hash route"
+              },
+              "userAgent": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "viewport": {
+                "type": "string",
+                "maxLength": 20,
+                "description": "Width x height in CSS pixels, e.g. 1440x900"
+              },
+              "locale": {
+                "type": "string",
+                "maxLength": 50
+              },
+              "version": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "The SPA's build version"
+              },
+              "commit": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 100
+              },
+              "sessionId": {
+                "type": "string",
+                "nullable": true,
+                "maxLength": 100,
+                "description": "The user's open game, if any"
+              }
+            }
+          },
+          "screenshot": {
+            "type": "string",
+            "maxLength": 2800000,
+            "description": "A JPEG of the page, base64 (no data URL prefix), at most about 2 MB"
           }
         }
       },

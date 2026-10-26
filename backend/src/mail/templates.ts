@@ -9,9 +9,18 @@ const esc = (s: string) =>
 
 // Compiled once at module load (ESM top-level await), not per send.
 const __dirname = dirname(fileURLToPath(import.meta.url))
-const layoutSource = readFileSync(join(__dirname, 'templates', 'layout.mjml'), 'utf8')
-const { html: layoutHtml, errors: layoutErrors } = await mjml2html(layoutSource, { validationLevel: 'strict' })
-if (layoutErrors.length) throw new Error(`mail layout failed to compile: ${JSON.stringify(layoutErrors)}`)
+/** Compiles a template in templates/, with its includes (the shared head.mjml). */
+export async function compileTemplate(name: string): Promise<{ html: string; errors: unknown[] }> {
+  const filePath = join(__dirname, 'templates', name)
+  return mjml2html(readFileSync(filePath, 'utf8'), { validationLevel: 'strict', filePath, ignoreIncludes: false })
+}
+async function compiled(name: string): Promise<string> {
+  const { html, errors } = await compileTemplate(name)
+  if (errors.length) throw new Error(`mail template ${name} failed to compile: ${JSON.stringify(errors)}`)
+  return html
+}
+const layoutHtml = await compiled('layout.mjml')
+const feedbackHtml = await compiled('feedback.mjml')
 
 // One pass over the whole template, not one pass per key: a value (e.g. a name) that itself
 // contains "{{url}}" must not get re-scanned and substituted by a later key's replace.
@@ -93,3 +102,35 @@ export const deleteMail = (to: string, name: string, url: string): Mail =>
     url,
     "If you didn't ask for this, ignore this mail and change your password.",
   )
+
+export type FeedbackKind = 'bug' | 'idea' | 'other'
+const KIND_LABEL: Record<FeedbackKind, string> = { bug: 'Bug report', idea: 'Idea', other: 'Feedback' }
+
+/** A user's report to the operator: their message, then what was sent along with it (label, value). */
+export function feedbackMail(
+  to: string,
+  kind: FeedbackKind,
+  name: string,
+  message: string,
+  details: [string, string][],
+  screenshot: Buffer | null,
+): Mail {
+  const heading = `${KIND_LABEL[kind]} from ${name}`
+  const note = screenshot ? 'A screenshot of the page is attached.' : 'No screenshot.'
+  const text = `${heading}\n\n${message}\n\n${details.map(([k, v]) => `${k}: ${v}`).join('\n')}\n\n${note}`
+  const rows = details
+    .map(
+      ([k, v]) =>
+        `<tr style="border-top:1px solid #2a2d27;"><td style="padding:6px 12px 6px 0;color:#828379;white-space:nowrap;vertical-align:top;">${esc(k)}</td><td style="padding:6px 0;color:#efeee6;word-break:break-all;">${esc(v)}</td></tr>`,
+    )
+    .join('')
+  const html = fill(feedbackHtml, {
+    preheader: esc(message.slice(0, 120)),
+    heading: esc(heading),
+    message: esc(message),
+    rows,
+    note: esc(note),
+  })
+  const attachments = screenshot ? [{ filename: 'screenshot.jpg', content: screenshot, contentType: 'image/jpeg' }] : undefined
+  return { to, subject: `Dartcade: ${heading}`, text, html, ...(attachments && { attachments }) }
+}

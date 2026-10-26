@@ -38,10 +38,11 @@ import { envFlagValues, envFlagsOn, setupFlags } from './flags/index.js'
 import { ofrepApiPlugin } from './api/ofrep.js'
 import { parsePreview, previewApiPlugin } from './api/preview.js'
 import { authInfoApiPlugin } from './api/authInfo.js'
+import { feedbackAddress, feedbackApiPlugin } from './api/feedback.js'
 import { legalApiPlugin } from './api/legal.js'
 import { loadLegal, legalValues } from './legal/load.js'
 import { createFastify } from './api/fastify.js'
-import { auth, mailConfig } from './auth/index.js'
+import { auth, mailConfig, mailer } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
@@ -199,11 +200,14 @@ export async function buildApp({ engine, db, lobbies, hub, friends, lights, fron
   await app.register(gamesApiPlugin, { db })
   await app.register(ofrepApiPlugin, { db })
   await app.register(previewApiPlugin, { preview: parsePreview(process.env) })
+  const feedbackTo = feedbackAddress(process.env)
   await app.register(authInfoApiPlugin, {
     mail: mailConfig.smtpUrl !== null,
     verification: mailConfig.verification,
     contactEmail: legalValues(process.env).contactEmail?.trim() || null,
+    feedback: mailer !== null && feedbackTo !== null,
   })
+  await app.register(feedbackApiPlugin, { db, mailer, to: feedbackTo })
   await app.register(legalApiPlugin, { docs: legalDocs })
   // Asked once now, so the Boards page knows of an update on its first load
   const releases = bridgeReleases(buildInfo(process.env).version)

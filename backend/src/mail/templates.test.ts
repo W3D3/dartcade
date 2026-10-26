@@ -1,11 +1,5 @@
-import { readFileSync } from 'fs'
-import { dirname, join } from 'path'
-import { fileURLToPath } from 'url'
-import mjml2html from 'mjml'
 import { describe, it, expect } from 'vitest'
-import { verifyMail, resetMail, deleteMail } from './templates.js'
-
-const __dirname = dirname(fileURLToPath(import.meta.url))
+import { compileTemplate, verifyMail, resetMail, deleteMail } from './templates.js'
 
 describe('mail templates', () => {
   const url = 'https://darts.example/api/auth/verify-email?token=t&callbackURL=%2F%23%2F'
@@ -38,10 +32,10 @@ describe('mail templates', () => {
     expect(del).toContain('#ff5a4f')
     expect(del).not.toContain('background-color:#c6f24e')
   })
-  it('compiles the shared layout with no MJML validation errors', async () => {
-    const source = readFileSync(join(__dirname, 'templates', 'layout.mjml'), 'utf8')
-    const { errors } = await mjml2html(source, { validationLevel: 'strict' })
+  it.each(['layout.mjml', 'feedback.mjml'])('compiles %s and its shared head with no MJML validation errors', async name => {
+    const { html, errors } = await compileTemplate(name)
     expect(errors).toEqual([])
+    expect(html).toContain('Instrument Sans')
   })
   it('has no newline inside any style attribute, and the button stays styled and legible', () => {
     for (const [make, color] of [

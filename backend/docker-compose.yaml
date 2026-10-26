@@ -9,6 +9,7 @@ services:
       # Unset here (empty string) is read as unset: mail stays off, legal placeholders stay as they are.
       SMTP_URL: ${SMTP_URL:-}
       MAIL_FROM: ${MAIL_FROM:-}
+      FEEDBACK_EMAIL: ${FEEDBACK_EMAIL:-}
       EMAIL_VERIFICATION: ${EMAIL_VERIFICATION:-}
       LEGAL_DIR: ${LEGAL_DIR:-}
       LEGAL_OPERATOR_NAME: ${LEGAL_OPERATOR_NAME:-}

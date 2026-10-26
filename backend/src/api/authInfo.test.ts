@@ -3,7 +3,7 @@ import { createFastify } from './fastify.js'
 import { authInfoApiPlugin } from './authInfo.js'
 
 describe('GET /api/auth-info', () => {
-  const get = async (opts: { mail: boolean; verification: boolean; contactEmail: string | null }) => {
+  const get = async (opts: { mail: boolean; verification: boolean; contactEmail: string | null; feedback: boolean }) => {
     const app = createFastify()
     await app.register(authInfoApiPlugin, opts)
     const res = await app.inject({ method: 'GET', url: '/api/auth-info' })
@@ -11,16 +11,16 @@ describe('GET /api/auth-info', () => {
   }
 
   it('answers mail off, verification off when the deployment sends no mail', async () => {
-    expect(await get({ mail: false, verification: false, contactEmail: null })).toEqual({
+    expect(await get({ mail: false, verification: false, contactEmail: null, feedback: false })).toEqual({
       status: 200,
-      body: { mail: false, verification: false, contactEmail: null },
+      body: { mail: false, verification: false, contactEmail: null, feedback: false },
     })
   })
 
   it('answers mail on, verification required when the deployment requires it', async () => {
-    expect(await get({ mail: true, verification: true, contactEmail: 'hi@x.org' })).toEqual({
+    expect(await get({ mail: true, verification: true, contactEmail: 'hi@x.org', feedback: true })).toEqual({
       status: 200,
-      body: { mail: true, verification: true, contactEmail: 'hi@x.org' },
+      body: { mail: true, verification: true, contactEmail: 'hi@x.org', feedback: true },
     })
   })
 })
