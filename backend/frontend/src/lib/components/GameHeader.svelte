@@ -13,6 +13,7 @@
     meta = '',
     boards,
     gameId,
+    scoreBased = false,
     viewMode,
     canEnd,
     endMode = 'end',
@@ -30,6 +31,8 @@
     /** The viewer's own boards currently in use in this game (whoever's seat they're on). */
     boards: Board[]
     gameId: string
+    /** The game has a score the caller announces: the drawer shows the caller. */
+    scoreBased?: boolean
     viewMode: 'board' | 'entry'
     /** Whether the end-of-game control shows at all. */
     canEnd: boolean
@@ -188,5 +191,5 @@
 {/if}
 
 {#if showSettings}
-  <SettingsDrawer bind:settings {gameId} onclose={() => (showSettings = false)} />
+  <SettingsDrawer bind:settings {gameId} {scoreBased} onclose={() => (showSettings = false)} />
 {/if}

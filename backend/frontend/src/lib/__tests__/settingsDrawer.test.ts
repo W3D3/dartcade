@@ -4,7 +4,8 @@ import { render } from 'svelte/server'
 import SettingsDrawer from '../components/SettingsDrawer.svelte'
 import { defaultSettings } from '../gameSettings'
 
-const drawer = (gameId: string) => render(SettingsDrawer, { props: { settings: { ...defaultSettings }, gameId, onclose: () => {} } }).body
+const drawer = (gameId: string, scoreBased = false) =>
+  render(SettingsDrawer, { props: { settings: { ...defaultSettings }, gameId, scoreBased, onclose: () => {} } }).body
 const switches = (html: string) => [...html.matchAll(/id="setting-(\w+)"/g)].map(m => m[1])
 const sounds = (html: string) => [...html.matchAll(/<input type="checkbox"[^>]*>\s*(?:<!---->)?\s*([^<]+?)\s*</g)].map(m => m[1])
 
@@ -16,7 +17,7 @@ describe('settings drawer rows follow the game', () => {
   })
 
   it('X01: checkout, visit sum, chalkboard, score left, bust and the caller', () => {
-    const html = drawer('x01')
+    const html = drawer('x01', true)
     expect(switches(html)).toEqual(
       expect.arrayContaining(['checkoutSuggestions', 'visitSum', 'chalkboard', 'boardView', 'scoreUpdates', 'callerOn']),
     )
@@ -30,9 +31,15 @@ describe('settings drawer rows follow the game', () => {
     expect(sounds(html)).toEqual(['Hit', 'Miss', 'Player switch', 'Ball', 'Win'])
   })
 
-  it('121: checkout suggestions and bust, no X01 board rows', () => {
-    const html = drawer('p121')
-    expect(switches(html)).toEqual(['checkoutSuggestions', 'boardView'])
+  it('121: checkout suggestions, bust and the caller, no X01 board rows', () => {
+    const html = drawer('p121', true)
+    expect(switches(html)).toEqual(['checkoutSuggestions', 'boardView', 'callerOn', 'callerVoice'])
+    expect(sounds(html)).toContain('Bust')
+  })
+
+  it('Higher Lower: a lost life sounds as the bust, and the caller', () => {
+    const html = drawer('hilo', true)
+    expect(switches(html)).toEqual(['boardView', 'callerOn', 'callerVoice'])
     expect(sounds(html)).toContain('Bust')
   })
 

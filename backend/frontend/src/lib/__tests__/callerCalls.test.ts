@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { callsFor, pickClips, checkoutFor, requirePart, createCheckoutMemory, type CallGame } from '../caller/calls.js'
+import { callsFor, callGame, pickClips, checkoutFor, requirePart, createCheckoutMemory, type CallGame } from '../caller/calls.js'
+import type { Snapshot } from '../api/game-ws.js'
 
 const dart = (score: number) => ({ score }) as CallGame['currentVisitDarts'][number]
 const game = (o: Partial<CallGame> = {}): CallGame => ({
@@ -225,5 +226,62 @@ describe('createCheckoutMemory', () => {
     const say = createCheckoutMemory()
     expect(say({ seat: 1, remaining: 121, leg: 0 }, true)).toBe(true)
     expect(say({ seat: 1, remaining: 121, leg: 0 }, true)).toBe(true)
+  })
+})
+
+// Only the fields the caller reads; the rest of a snapshot doesn't matter to it
+const snap = (gameId: Snapshot['gameId'], g: Record<string, unknown>) =>
+  ({
+    gameId,
+    game: { phase: 'game', currentPlayer: 0, visitLocked: false, currentVisitDarts: [], totalVisits: [0, 0], ...g },
+  }) as unknown as Snapshot
+
+describe('callGame: 121 Checkout', () => {
+  const seats = (left: number, other = 121) => [{ left }, { left: other }]
+  const p121 = (o: Record<string, unknown>) =>
+    callGame(snap('p121', { cfg: { outMode: 'double' }, bust: false, visitStartLeft: 121, seats: seats(121), ...o }))!
+
+  it('calls what the visit took off the target, at the third dart', () => {
+    const two = p121({ seats: seats(61), currentVisitDarts: [dart(60), dart(0)] })
+    const three = p121({ seats: seats(41), currentVisitDarts: [dart(60), dart(0), dart(20)] })
+    expect(callsFor(two, three)).toEqual([['80']])
+  })
+
+  it('calls a bust, and a checkout as game shot', () => {
+    const before = p121({ seats: seats(21), currentVisitDarts: [dart(60), dart(40)] })
+    const bust = p121({ seats: seats(21), currentVisitDarts: [dart(60), dart(40), dart(20)], bust: true, visitLocked: true })
+    expect(callsFor(before, bust)).toEqual([['busted', '0']])
+    const made = p121({ seats: seats(0), currentVisitDarts: [dart(60), dart(40), dart(21)], visitLocked: true })
+    expect(callsFor(before, made)).toEqual([['gameshot']])
+  })
+
+  it('says what the next thrower needs at the takeout', () => {
+    const open = p121({ seats: seats(41), currentVisitDarts: [dart(60), dart(0), dart(20)] })
+    const next = p121({ seats: seats(41, 40), visitStartLeft: 40, currentPlayer: 1, totalVisits: [1, 0] })
+    expect(checkoutFor(open, next)).toEqual({ seat: 1, remaining: 40, leg: 0 })
+  })
+})
+
+describe('callGame: Higher Lower', () => {
+  const hilo = (o: Record<string, unknown>) => callGame(snap('hilo', { visitTotal: 0, ...o }))!
+
+  it('calls the visit total at the third dart, and never a checkout', () => {
+    const two = hilo({ visitTotal: 25, currentVisitDarts: [dart(20), dart(5)] })
+    const three = hilo({ visitTotal: 45, currentVisitDarts: [dart(20), dart(5), dart(20)] })
+    expect(callsFor(two, three)).toEqual([['45']])
+    expect(checkoutFor(three, hilo({ visitTotal: 0, currentPlayer: 1, totalVisits: [1, 0] }))).toBeNull()
+  })
+
+  it('calls a visit ended by a miss as busted', () => {
+    const one = hilo({ visitTotal: 20, currentVisitDarts: [dart(20)] })
+    const missed = hilo({ visitTotal: 20, currentVisitDarts: [dart(20), dart(0)], visitLocked: true })
+    expect(callsFor(one, missed)).toEqual([['busted', '0']])
+  })
+})
+
+describe('callGame', () => {
+  it('has no score to call in Around the Clock or minigolf', () => {
+    expect(callGame(snap('atc', {}))).toBeNull()
+    expect(callGame(snap('minigolf', {}))).toBeNull()
   })
 })

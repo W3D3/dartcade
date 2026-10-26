@@ -17,6 +17,8 @@ const rows: Partial<Record<string, DrawerRows>> = {
   atc: { display: ['showMarkers'], sounds: dartSounds },
   minigolf: { display: ['aimDial', 'slowMotion'], sounds: ['soundHit', 'soundMiss', 'soundSwitch', 'soundBall', 'soundWin'] },
   p121: { display: ['checkoutSuggestions'], sounds: withBust },
+  // A lost life plays the bust sound
+  hilo: { display: [], sounds: withBust },
 }
 
 export const drawerRows = (gameId: string): DrawerRows => rows[gameId] ?? { display: [], sounds: dartSounds }
