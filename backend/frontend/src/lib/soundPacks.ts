@@ -4,6 +4,7 @@
 // while the caller speaks, so the call stays clear.
 import { audioContext, effectsBus, effectsGain, TARGET_DB } from './sounds.js'
 import type { DartSound } from './dartEvents.js'
+import { PERKS } from '$shared/progression.js'
 
 type Filter = { type: BiquadFilterType; freq: number; q?: number }
 /** Sound sources, scheduled `delay` seconds after the recipe starts. */
@@ -103,6 +104,20 @@ export function levelGain(packId: string, sound: DartSound): number {
   const peaks = PEAK_DB[packId] ?? {}
   const peak = peaks[sound in SOUND_PACKS[packId] ? sound : 'hit'] ?? TARGET_DB
   return 10 ** ((TARGET_DB - peak) / 20)
+}
+
+/** Settings' "Sound pack for every dart" value for no pick (stored as null). */
+export const EACH_PACK = 'each'
+
+/** That select's options: each thrower's own, the default beeps ('sound.none'), and the packs
+ *  you may pick (unlocked, any with sounds.anyPack, or the one already picked). */
+export function packOptions(unlocked: readonly string[], anyPack: boolean, current: string | null) {
+  return [
+    { value: EACH_PACK, label: "Each thrower's own" },
+    ...PERKS.filter(p => p.kind === 'sound')
+      .filter(p => p.id === 'sound.none' || anyPack || unlocked.includes(p.id) || p.id === current)
+      .map(p => ({ value: p.id, label: p.id === 'sound.none' ? 'Dartcade default' : p.name })),
+  ]
 }
 
 /** What a pack's preview plays, in order. */
