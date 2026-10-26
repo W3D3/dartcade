@@ -22,6 +22,7 @@
     "clsx": "^2.1.1",
     "d3-shape": "^3.2.0",
     "layerchart": "^2.5.2",
+    "modern-screenshot": "^4.7.0",
     "openapi-fetch": "0.17.0",
     "polyclip-ts": "0.16.8",
     "simpleheat": "^0.4.0",
