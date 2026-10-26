@@ -32,7 +32,7 @@
   import { createSoundPacks } from '$lib/soundPacks'
   import { snapshotEvent, dartSound, type DartEvent } from '$lib/dartEvents'
   import { profileOf } from '$lib/progress/profiles'
-  import { callsFor, checkoutFor, createCheckoutMemory, legsOf, requirePart } from '$lib/caller/calls'
+  import { callGame, callsFor, checkoutFor, createCheckoutMemory, legsOf, requirePart } from '$lib/caller/calls'
   import { createCaller } from '$lib/caller/player'
   import { voiceClips, type Clips } from '$lib/caller/voices'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
@@ -96,7 +96,7 @@
   })
   const sounds = createSounds(() => settings.effectsVolume)
 
-  // The caller (X01): the voice's clips start loading as soon as the caller is on (before the
+  // The caller (score-based games): the voice's clips start loading as soon as the caller is on (before the
   // first snapshot, so "Game on" isn't missed) and again when the voice changes. Calls wait for
   // them; the player drops a call overtaken by a newer one.
   const caller = createCaller(() => settings.volume)
@@ -199,14 +199,15 @@
       const next = gameState(snap)
       // A new session starts the caller afresh (the previous game isn't this one's "before")
       const newSession = snapshot?.sessionId !== snap.sessionId
-      const before = newSession ? gameState(null) : gameState(snapshot)
       // A new session starts the checkout memory afresh too, even while the caller was off
       if (newSession) checkoutMemory = createCheckoutMemory()
-      if (next.x01 && settings.callerOn) {
-        const call = callsFor(before.x01, next.x01)
+      const nextCall = snap.scoreBased && settings.callerOn ? callGame(snap) : null
+      if (nextCall) {
+        const beforeCall = newSession || !snapshot ? null : callGame(snapshot)
+        const call = callsFor(beforeCall, nextCall)
         // Only the require call at the takeout: the score call said at the third dart may still be playing
         const queue = !call.length
-        const checkout = settings.callerCheckouts ? checkoutFor(before.x01, next.x01) : null
+        const checkout = settings.callerCheckouts ? checkoutFor(beforeCall, nextCall) : null
         if (checkout && checkoutMemory(checkout, settings.callerCheckoutRepeat)) call.push(requirePart(checkout.remaining))
         if (call.length) void caller.say(call, callerClips, { queue })
       }
@@ -815,6 +816,7 @@
         showViewToggle={!bullOff && !minigolf && !p121Finished && remote.kind === 'play'}
         boards={myBoards}
         {gameId}
+        scoreBased={snapshot.scoreBased}
         {viewMode}
         compact={$isPhone}
         paused={remote.kind === 'waiting'}

@@ -22,7 +22,7 @@
   <SettingSwitch
     id="pref-callerOn"
     label="Caller"
-    sub="Calls each visit in X01"
+    sub="Calls each visit in X01, 121 Checkout and Higher Lower"
     bind:checked={settings.callerOn}
     onchange={() => {
       audioContext()

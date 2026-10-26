@@ -13,7 +13,12 @@
   import { BOARD_VIEWS, BOARD_VIEW_LABELS } from '$lib/gameSettings.js'
   import { drawerRows } from '$lib/gameViews/settings.js'
 
-  let { settings = $bindable(), gameId, onclose }: { settings: GameSettings; gameId: string; onclose: () => void } = $props()
+  let {
+    settings = $bindable(),
+    gameId,
+    scoreBased = false,
+    onclose,
+  }: { settings: GameSettings; gameId: string; scoreBased?: boolean; onclose: () => void } = $props()
 
   const display = [
     { key: 'checkoutSuggestions', label: 'Checkout suggestions', sub: 'In the dart slots when you can finish' },
@@ -41,9 +46,9 @@
   ] as const
   const sounds = $derived(allSounds.filter(r => shown.sounds.includes(r.key)))
 
-  // The caller (X01 only) picks from the user's voices, loaded fresh when the drawer opens
+  // The caller (score-based games) picks from the user's voices, loaded fresh when the drawer opens
   onMount(() => {
-    if (gameId === 'x01') void loadVoiceLibrary()
+    if (scoreBased) void loadVoiceLibrary()
   })
 </script>
 
@@ -156,7 +161,7 @@
       </div>
     </section>
 
-    {#if gameId === 'x01'}
+    {#if scoreBased}
       <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
         <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Caller</h3>
         <SettingSwitch

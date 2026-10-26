@@ -18,7 +18,10 @@ const dialogTag = (html: string) => html.match(/<div[^>]*role="dialog"[^>]*>/g) 
 describe('dialogs', () => {
   it.each([
     ['ConfirmModal', render(ConfirmModal, { props: { title: 'End game?', onconfirm: noop, oncancel: noop } }).body],
-    ['SettingsDrawer', render(SettingsDrawer, { props: { settings: { ...defaultSettings }, gameId: 'x01', onclose: noop } }).body],
+    [
+      'SettingsDrawer',
+      render(SettingsDrawer, { props: { settings: { ...defaultSettings }, gameId: 'x01', scoreBased: true, onclose: noop } }).body,
+    ],
     ['FriendsDrawer', render(FriendsDrawer).body],
   ])('%s is one modal bits-ui dialog', (_, html) => {
     const tags = dialogTag(html)
