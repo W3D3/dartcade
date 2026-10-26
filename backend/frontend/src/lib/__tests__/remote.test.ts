@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import type { SeatInfo, Snapshot } from '$lib/api/game-ws'
 import {
+  picksView,
   boardCaption,
   centerState,
   formatElapsed,
@@ -234,6 +235,18 @@ describe('turnStatus and boardCaption', () => {
     expect(turnStatus(c)).toEqual({ text: 'Paused · waiting for Lena', name: 'Lena', tone: 'paused' })
     expect(boardCaption(c)).toEqual({ text: "Lena's place · no connection", tone: 'paused' })
     expect(boardCaption({ ...c, board: null })?.text).toBe('Lena · no connection')
+  })
+})
+
+describe('picksView', () => {
+  it('lets you pick board or keypad on your turn, also while your board is offline', () => {
+    expect(picksView({ kind: 'play' })).toBe(true)
+    // An offline board: the drawn board still takes manual darts
+    expect(picksView({ kind: 'play-offline', board: 'Dev Board' })).toBe(true)
+  })
+  it('not while someone else is up or everyone waits', () => {
+    expect(picksView({ kind: 'watch', name: 'Lena', board: null })).toBe(false)
+    expect(picksView({ kind: 'watch-offline', name: 'Lena', board: 'Kitchen' })).toBe(false)
   })
 })
 

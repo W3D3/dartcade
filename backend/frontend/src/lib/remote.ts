@@ -66,7 +66,7 @@ export function myBoardsInUse<T extends { id: string; online: boolean }>(snap: S
 export type CenterState =
   /** Your turn, or a local game: as always. */
   | { kind: 'play' }
-  /** Your turn, but your board's bridge is gone: the keypad, with a notice. */
+  /** Your turn, but your board's bridge is gone: darts by hand (keypad or the drawn board), with a notice. */
   | { kind: 'play-offline'; board: string }
   /** Someone else is up: their board live (board null: they enter darts by hand). */
   | { kind: 'watch'; name: string; board: string | null }
@@ -103,6 +103,10 @@ export function centerState(snap: Snapshot | null, viewerUserId: string | null):
 
 /** The bar in place of Undo / Next while someone else is up. */
 export type TurnStatus = { text: string; name: string; tone: 'watch' | 'warn' | 'paused' }
+
+/** Your turn: you pick Board or Enter (keypad). An offline board doesn't force the keypad: the drawn
+ *  board takes manual darts as well. */
+export const picksView = (c: CenterState): boolean => c.kind === 'play' || c.kind === 'play-offline'
 
 export function turnStatus(c: CenterState): TurnStatus | null {
   switch (c.kind) {

@@ -57,6 +57,7 @@
   import {
     boardCaption,
     centerState,
+    picksView,
     isManualTurn,
     myBoard,
     myBoardsInUse,
@@ -327,9 +328,9 @@
   const bots = $derived(snapshot?.seats.map(s => s.bot) ?? [])
   const turn = $derived(turnStatus(remote))
   const caption = $derived(boardCaption(remote))
-  // The keypad: picked with Enter on your turn, or forced while your board is offline.
-  // Someone else's turn always shows the board, live.
-  const keypad = $derived(remote.kind === 'play-offline' || (remote.kind === 'play' && viewMode === 'entry'))
+  // The keypad: picked with Enter on your turn (also while your board is offline: the drawn board
+  // takes manual darts too). Someone else's turn always shows the board, live.
+  const keypad = $derived(picksView(remote) && viewMode === 'entry')
   const darts = $derived(game?.currentVisitDarts ?? [])
   // Camera view: the still of the chosen camera of the board the player up throws on (or null)
   const cameraSrc = $derived(cameraStillUrl(snapshot, settings.boardView, cameraVersions))
@@ -813,7 +814,7 @@
       <GameHeader
         title={bullOff ? 'Bull-off' : view.title}
         meta={bullOff ? `Who throws first in ${view.title}` : view.meta(snapshot)}
-        showViewToggle={!bullOff && !minigolf && !p121Finished && remote.kind === 'play'}
+        showViewToggle={!bullOff && !minigolf && !p121Finished && picksView(remote)}
         boards={myBoards}
         {gameId}
         scoreBased={snapshot.scoreBased}
