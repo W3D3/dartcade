@@ -20,6 +20,9 @@ import {
   deleteBoard,
   searchUsers,
   getUsersByIds,
+  getBoardByBigScreenTokenHash,
+  setBigScreenTokenHash,
+  setBigScreenMode,
 } from './queries.js'
 import { PairingCodeClaimedError } from './errors.js'
 import type { Kysely } from 'kysely'
@@ -463,6 +466,18 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
     it('reads accounts by id', async () => {
       const rows = await getUsersByIds(db, ['u-test-2', 'missing'])
       expect(rows).toEqual([{ id: 'u-test-2', name: 'Test 2' }])
+    })
+  })
+
+  describe('big screen token', () => {
+    it('finds a board by its hash until the hash is cleared, and rejects a bad mode', async () => {
+      await insertBoard(db, { id: 'bs-1', owner_user_id: 'u-test-1', name: 'Hall', token_hash: 'bs-1-hash' })
+      await setBigScreenTokenHash(db, 'bs-1', 'bs-hash')
+      expect((await getBoardByBigScreenTokenHash(db, 'bs-hash'))?.id).toBe('bs-1')
+      await setBigScreenTokenHash(db, 'bs-1', null)
+      expect(await getBoardByBigScreenTokenHash(db, 'bs-hash')).toBeUndefined()
+      await expect(setBigScreenMode(db, 'bs-1', 'sometimes' as never)).rejects.toThrow()
+      await deleteBoard(db, 'bs-1')
     })
   })
 })

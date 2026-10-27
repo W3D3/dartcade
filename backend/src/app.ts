@@ -48,6 +48,8 @@ import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
 import type { MatchmakingService } from './matchmaking/service.js'
+import { bigScreenGwPlugin } from './browser-gw/bigScreen.js'
+import type { BigScreenService } from './bigscreen/service.js'
 import { matchmakingApiPlugin } from './api/matchmaking.js'
 import bundledSpec from './schema/api-v1.bundled.json' with { type: 'json' }
 import { z } from 'zod'
@@ -65,6 +67,8 @@ export type AppDeps = {
   friends: FriendsService
   /** Sends wled scenes/flashes as games change (see lights/service.ts); omitted in tests that don't exercise it. */
   lights?: LightsService
+  /** The big screen's follow service (see bigscreen/service.ts); omitted in tests that don't exercise it. */
+  bigScreen?: BigScreenService
   /** The ranked queue (see matchmaking/service.ts). */
   matchmaking: MatchmakingService
   /** Built frontend to serve; omitted in tests. */
@@ -114,6 +118,7 @@ export async function buildApp({
   hub,
   friends,
   lights,
+  bigScreen,
   matchmaking,
   frontendDist,
   onRoute,
@@ -181,6 +186,7 @@ export async function buildApp({
     db,
     onBoardPresence: boardId => {
       lobbies.onBoardPresence(boardId)
+      bigScreen?.onBoardPresence(boardId)
     },
     onBoardStatus: (ownerUserId, boardId, online) => {
       hub.sendBoardStatus(ownerUserId, boardId, online)
@@ -201,6 +207,7 @@ export async function buildApp({
   })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends, matchmaking })
+  if (bigScreen) await app.register(bigScreenGwPlugin, { db, service: bigScreen })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
   await app.register(meApiPlugin, {
@@ -233,6 +240,7 @@ export async function buildApp({
     getSessionByBoard: boardId => engine.getSessionByBoard(boardId),
     isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId),
     bridgeReleases: releases,
+    bigScreen,
   })
   await app.register(lightsApiPlugin, { db, lights })
   await app.register(pairingApiPlugin, { db })

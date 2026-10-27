@@ -19,6 +19,9 @@ import { bridgeConnections } from './bridge-gw/connections.js'
 import { boardOwner, getLightsEnabled, listWledDevices } from './db/lights.js'
 import { boardInOpenLobby } from './db/lobbies.js'
 import { LightsService } from './lights/service.js'
+import { BigScreenService } from './bigscreen/service.js'
+import { getBoardById } from './db/queries.js'
+import { getPreferences } from './db/users.js'
 import { FriendsService } from './friends/service.js'
 import { MatchmakingService } from './matchmaking/service.js'
 import { seatedGame } from './friends/status.js'
@@ -91,11 +94,35 @@ const lights: LightsService = new LightsService({
     warn(message, details)
   },
 })
+// Big screen: follows boards for /ws/board; reads the engine lazily like lights
+const bigScreen = new BigScreenService({
+  getSessions: () =>
+    engine.getAllSessions().map(s => ({
+      id: s.id,
+      boardIds: [...new Set(s.seats.flatMap(x => x.boardId ?? []))],
+      status: s.status,
+      startedAt: s.createdAt.getTime(),
+      finishedAt: s.finishedAt?.getTime() ?? null,
+      // in-memory sessions don't know about admin invalidation, so an invalidation inside the 60 s hold isn't seen
+      invalidated: false,
+    })),
+  getSnapshot: id => engine.getSnapshot(id),
+  getBoard: async id => {
+    const b = await getBoardById(db, id)
+    return b && { name: b.name, ownerUserId: b.owner_user_id }
+  },
+  isOnline: id => bridgeConnections.isOnline(id),
+  getPrefs: async userId => (await getPreferences(db, userId)) ?? {},
+  warn: err => {
+    warn('big screen push failed', { error: String(err) })
+  },
+})
 // The other callbacks only run after the engine and the lobbies exist
 const engine: SessionEngine = new SessionEngine(
   createEngineStore(db),
   sessionId => {
     pushSnapshot(sessionId, engine)
+    bigScreen.onSessionChanged(sessionId)
     lobbies.onSessionPush(sessionId).catch((err: unknown) => {
       warn('lobby indicator push failed', { sessionId, error: String(err) })
     })
@@ -110,6 +137,7 @@ const engine: SessionEngine = new SessionEngine(
     pushNotice(sessionId, userIds, notice)
   },
   ended => {
+    bigScreen.onSessionChanged(ended.sessionId)
     // Not awaited (like the push callback's lights.onPush): a board going idle is not on the game path
     lights.onGameEnded(ended.sessionId).catch((err: unknown) => {
       warn('lights game-end failed', { sessionId: ended.sessionId, error: String(err) })
@@ -195,7 +223,17 @@ const idleSweep = setInterval(
 )
 idleSweep.unref()
 
-const app = await buildApp({ engine, db, lobbies, hub, friends, lights, matchmaking, frontendDist: join(__dirname, '../frontend/dist') })
+const app = await buildApp({
+  engine,
+  db,
+  lobbies,
+  hub,
+  friends,
+  lights,
+  bigScreen,
+  matchmaking,
+  frontendDist: join(__dirname, '../frontend/dist'),
+})
 // buildApp's setupFlags only set the env defaults; apply what's stored before serving any request
 await setOverrides(await loadOverrides(db))
 warn = (message, details) => {
@@ -205,6 +243,7 @@ warn = (message, details) => {
 app.addHook('onClose', async () => {
   clearInterval(idleSweep)
   matchmaking.close()
+  bigScreen.close()
   friends.close()
   await closePool()
 })

@@ -1,4 +1,5 @@
 import type { BigScreenMessage, BigScreenScreen } from '../shared/bigScreen.js'
+import { WsCloseCode } from '../schema/game-ws.js'
 import { pickScreenSession, type PickInput } from './screen.js'
 
 export type BigScreenDeps = {
@@ -14,18 +15,20 @@ export type BigScreenDeps = {
 }
 
 type Send = (m: BigScreenMessage) => void
-type Followers = { sends: Set<Send>; timer?: ReturnType<typeof setTimeout> }
+type Close = (code: WsCloseCode, reason: string) => void
+type Followers = { sends: Map<Send, { close: Close; viaToken: boolean }>; timer?: ReturnType<typeof setTimeout> }
 
 /** Pushes each followed board's screen to its subscribers. */
 export class BigScreenService {
   private boards = new Map<string, Followers>()
   constructor(private deps: BigScreenDeps) {}
 
-  add(boardId: string, send: Send): () => void {
+  /** `close` ends the subscriber's socket (board gone, token revoked); `viaToken` marks a kiosk, which revoke() cuts off. */
+  add(boardId: string, send: Send, close: Close = () => undefined, viaToken = false): () => void {
     let f = this.boards.get(boardId)
-    if (!f) this.boards.set(boardId, (f = { sends: new Set() }))
+    if (!f) this.boards.set(boardId, (f = { sends: new Map() }))
     const followers = f
-    followers.sends.add(send)
+    followers.sends.set(send, { close, viaToken })
     void this.push(boardId, [send])
     return () => {
       followers.sends.delete(send)
@@ -34,6 +37,11 @@ export class BigScreenService {
         this.boards.delete(boardId)
       }
     }
+  }
+
+  /** Closes the board's token subscribers (token revoked: Forbidden; board deleted: NotFound). Cookie owners stay. */
+  revoke(boardId: string, code: WsCloseCode = WsCloseCode.Forbidden): void {
+    for (const { close, viaToken } of [...(this.boards.get(boardId)?.sends.values() ?? [])]) if (viaToken) close(code, 'token revoked')
   }
 
   onSessionChanged(sessionId: string): void {
@@ -53,7 +61,11 @@ export class BigScreenService {
   private async push(boardId: string, only?: Send[]): Promise<void> {
     try {
       const board = await this.deps.getBoard(boardId)
-      if (!board) return
+      if (!board) {
+        for (const [send, { close }] of this.boards.get(boardId)?.sends ?? [])
+          if (!only || only.includes(send)) close(WsCloseCode.NotFound, 'board not found')
+        return
+      }
       const prefs = await this.deps.getPrefs(board.ownerUserId)
       // Picked after the awaits, so whichever push finishes last sends (and times) the newest state
       const f = this.boards.get(boardId)
@@ -78,7 +90,7 @@ export class BigScreenService {
         prefs,
         screen,
       }
-      for (const send of only ?? f.sends) if (f.sends.has(send)) send(msg)
+      for (const send of only ?? f.sends.keys()) if (f.sends.has(send)) send(msg)
     } catch (err) {
       this.deps.warn?.(err)
     }

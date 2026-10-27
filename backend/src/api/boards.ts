@@ -2,6 +2,8 @@ import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
+import { WsCloseCode } from '../schema/game-ws.js'
+import type { BigScreenService } from '../bigscreen/service.js'
 import { requireAuth } from '../auth/middleware.js'
 import { bridgeConnections, type BmRequest, type BmResponse } from '../bridge-gw/connections.js'
 import {
@@ -51,6 +53,8 @@ type Opts = FastifyPluginOptions & {
   bridgeReleases?: Pick<BridgeReleases, 'offered'>
   /** The boards' Update bridge progress (tests pass their own). */
   bridgeUpdates?: BridgeUpdates
+  /** Cuts off open big-screen token sockets when the token is revoked or the board deleted. */
+  bigScreen?: Pick<BigScreenService, 'revoke'>
 }
 
 // A still asked for by its current version never changes
@@ -74,6 +78,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     liveCameraTimeoutMs = 5000,
     bridgeReleases = { offered: () => null },
     bridgeUpdates = defaultBridgeUpdates,
+    bigScreen,
   } = opts
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
@@ -213,7 +218,10 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { mode } = req.body
       if (!(await ownBoard(id, req.userId, reply))) return reply
       await setBigScreenMode(db, id, mode)
-      if (mode === 'off') await setBigScreenTokenHash(db, id, null)
+      if (mode === 'off') {
+        await setBigScreenTokenHash(db, id, null)
+        bigScreen?.revoke(id)
+      }
       return reply.send({ id, mode })
     },
   )
@@ -288,6 +296,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       // Lobbies first: people on the board go to Manual, and their lobbies see it
       await releaseBoard(id)
       await deleteBoard(db, id)
+      bigScreen?.revoke(id, WsCloseCode.NotFound)
       stills.clear(id)
       return reply.code(204).send()
     },

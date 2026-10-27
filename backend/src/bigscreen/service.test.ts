@@ -79,4 +79,16 @@ describe('BigScreenService', () => {
     expect(got).toHaveLength(n)
     expect(got.at(-1)!.screen.kind).toBe('game')
   })
+
+  it('revoke closes only the token subscribers, with the given code', () => {
+    const tokenClose = vi.fn()
+    const cookieClose = vi.fn()
+    svc.add('b1', () => undefined, tokenClose, true)
+    svc.add('b1', () => undefined, cookieClose)
+    svc.revoke('b1')
+    expect(tokenClose).toHaveBeenCalledWith(4403, expect.any(String))
+    expect(cookieClose).not.toHaveBeenCalled()
+    svc.revoke('b1', 4404)
+    expect(tokenClose).toHaveBeenLastCalledWith(4404, expect.any(String))
+  })
 })

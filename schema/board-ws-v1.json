@@ -1,0 +1,65 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "board-ws/v1",
+  "title": "BoardWs",
+  "description": "Messages the backend pushes on the big-screen WebSocket (/ws/board?boardId=…). It only pushes; the owner's session cookie opens it, or a kiosk sends {type:'auth', token} as its first message. The server closes it with a WsCloseCode from game-ws-v1.json.",
+  "$defs": {
+    "BigScreenScreen": {
+      "title": "BigScreenScreen",
+      "description": "idle: no game. game: the board's running game. result: a game that just finished, held for a minute.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind"],
+          "additionalProperties": false,
+          "properties": { "kind": { "type": "string", "const": "idle" } }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "snapshot"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "type": "string", "const": "game" },
+            "snapshot": { "$ref": "game-ws-v1.json#/$defs/Snapshot" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "snapshot", "until"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "type": "string", "const": "result" },
+            "snapshot": { "$ref": "game-ws-v1.json#/$defs/Snapshot" },
+            "until": { "type": "integer", "description": "Epoch ms when the result is dropped." },
+            "detail": {
+              "type": "object",
+              "additionalProperties": true,
+              "description": "The saved game, what GET /api/games/{id} returns (GameDetail in api-v1.yaml), once it is stored: the match stats and placements."
+            }
+          }
+        }
+      ]
+    },
+    "BigScreenMessage": {
+      "title": "BigScreenMessage",
+      "type": "object",
+      "required": ["type", "board", "prefs", "screen"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "type": "string", "const": "big_screen" },
+        "board": {
+          "type": "object",
+          "required": ["id", "name", "online"],
+          "additionalProperties": false,
+          "properties": { "id": { "type": "string" }, "name": { "type": "string" }, "online": { "type": "boolean" } }
+        },
+        "prefs": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "The board owner's account settings (Preferences in api-v1.yaml)."
+        },
+        "screen": { "$ref": "#/$defs/BigScreenScreen" }
+      }
+    }
+  }
+}
