@@ -3920,7 +3920,7 @@ components:
       description: "The flag's behaviour without a stored override"
       additionalProperties: false
       properties:
-        rule: { type: string, enum: [admins, nobody], description: "Boolean flags only: who it's on for without FLAGS_ON" }
+        rule: { type: string, enum: [admins, nobody, everyone], description: "Boolean flags only: who it's on for without FLAGS_ON" }
         envOn: { type: boolean, description: 'Boolean flags only: turned on for everyone by FLAGS_ON' }
         envValue: { type: number, description: 'Number flags only: set for this deployment by FLAG_VALUES' }
         value: { type: number, description: 'Number flags only: the code default, used without FLAG_VALUES' }
