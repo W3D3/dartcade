@@ -10,6 +10,7 @@ async function registeredRoutes() {
   const routes: { method: string; path: string; operationId?: string }[] = []
   const app = await buildApp({
     engine: {} as any,
+    bigScreen: {} as any,
     db: {} as any,
     lobbies: {} as any,
     hub: {} as any,

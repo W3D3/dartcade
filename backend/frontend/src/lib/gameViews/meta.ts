@@ -3,14 +3,14 @@ import type { AtcGame, X01Game } from '../api/game-ws'
 import { teamsLabel } from '../teams.js'
 import { plural } from '../fmt.js'
 
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+export const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 export type Mode = 'straight' | 'double' | 'master'
 export type X01Rules = { startScore: number; inMode: Mode; outMode: Mode; firstTo: number }
 export type AtcRules = { order: 'asc' | 'desc' | 'random'; finishOn: 'twenty' | 'single_bull' | 'bull'; multiplierAdvances: boolean }
 
-/** The X01 rules as one line, e.g. "501 · Double out · First to 3 legs"; a team game leads with its teams ("Teams 2v2"). */
-export function x01Rules(r: X01Rules, playerCount: number, teams?: string): string {
+/** The X01 rules as parts, e.g. ["501", "Double out", "First to 3 legs"]; a team game leads with its teams ("Teams 2v2"). The last part is the match format. */
+export function x01RuleParts(r: X01Rules, playerCount: number, teams?: string): string[] {
   const parts: string[] = []
   if (teams) parts.push(teams)
   else if (playerCount > 2) parts.push(`${playerCount} players`)
@@ -18,8 +18,11 @@ export function x01Rules(r: X01Rules, playerCount: number, teams?: string): stri
   if (r.inMode !== 'straight') parts.push(`${cap(r.inMode)} in`)
   parts.push(`${cap(r.outMode)} out`)
   parts.push(playerCount === 1 ? 'Practice' : `First to ${r.firstTo} ${r.firstTo === 1 ? 'leg' : 'legs'}`)
-  return parts.join(' · ')
+  return parts
 }
+
+/** The X01 rules as one line, e.g. "501 · Double out · First to 3 legs". */
+export const x01Rules = (r: X01Rules, playerCount: number, teams?: string): string => x01RuleParts(r, playerCount, teams).join(' · ')
 
 /** The 121 rules as one line, e.g. "121 · 10 tries · 9 darts · Double out". */
 export function p121Rules(r: { startTarget: number; tries: number; dartsPerTry: number; outMode: Mode }): string {
@@ -43,14 +46,21 @@ export function atcRules(r: AtcRules, playerCount: number): string {
   return parts.join(' · ')
 }
 
-export function x01Meta(game: X01Game, playerCount: number): string {
+/** The X01 header line in parts: the rules, the match format (their last part) and the leg. */
+export function x01MetaParts(game: X01Game, playerCount: number): { rules: string; format: string; leg: string } {
   const { legs, firstTo, winner } = game
   // Every seat shows its team's legs: count each team once
   const played = (game.teams?.map(t => t.legs) ?? legs).reduce((a, b) => a + b, 0)
   // After the match: the leg in play when it ended (a won final leg, or one cut short by the round limit)
   const finalLegWon = winner !== null && (legs.at(winner) ?? 0) >= firstTo
   const teams = game.teams ? teamsLabel(game.teams) : undefined
-  return `${x01Rules({ ...game.config, firstTo }, playerCount, teams)} · Leg ${finalLegWon ? played : played + 1}`
+  const parts = x01RuleParts({ ...game.config, firstTo }, playerCount, teams)
+  return { rules: parts.join(' · '), format: parts[parts.length - 1], leg: `Leg ${finalLegWon ? played : played + 1}` }
+}
+
+export function x01Meta(game: X01Game, playerCount: number): string {
+  const m = x01MetaParts(game, playerCount)
+  return `${m.rules} · ${m.leg}`
 }
 
 export function atcMeta(game: AtcGame, playerCount: number): string {

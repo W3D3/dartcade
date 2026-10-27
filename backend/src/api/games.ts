@@ -55,6 +55,16 @@ export function toSummary(g: HistoryGame, allIds = false): GameSummary {
   }
 }
 
+/** GET /api/games/{id}'s body for a game; null when its detail can't be built. */
+export async function gameDetailBody(
+  db: Kysely<Database>,
+  game: HistoryGame,
+  warn: (message: string, details: unknown) => void,
+): Promise<components['schemas']['GameDetail'] | null> {
+  const built = await storedDetail(db, game, warn)
+  return built && { game: toSummary(game), detail: built.detail, stats: built.stats }
+}
+
 export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Error) => void): void {
   const { db } = opts
 
@@ -101,11 +111,11 @@ export function gamesApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: Er
   app.get<Route<'getGame'>>('/api/games/:id', { preValidation: requireAuth, schema: fromSpec('getGame') }, async (req, reply) => {
     const game = await getViewableGame(db, req.params.id, req.userId)
     if (!game) return reply.code(404).send({ error: 'not found' })
-    const built = await storedDetail(db, game, (message, details) => {
+    const body = await gameDetailBody(db, game, (message, details) => {
       req.log.warn({ details }, message)
     })
-    if (!built) return reply.code(404).send({ error: 'not found' })
-    return reply.send({ game: toSummary(game), detail: built.detail, stats: built.stats })
+    if (!body) return reply.code(404).send({ error: 'not found' })
+    return reply.send(body)
   })
 
   done()

@@ -3,11 +3,14 @@
 import type { P121Game } from '../api/game-ws'
 import { plural } from '../fmt.js'
 
+/** The try a seat is on, given the tries it has played; the last try stays once all are played. */
+export const tryNumber = (played: number, cfg: { tries: number }): number => Math.min(played + 1, cfg.tries)
+
 /** "Try 4 of 10 · 9 darts · double out"; "Session summary" once the game has finished. */
 export function p121Meta(game: P121Game, seat: number): string {
   if (game.phase === 'finished') return 'Session summary'
   const { cfg } = game
-  const n = Math.min(game.seats[seat].tries.length + 1, cfg.tries)
+  const n = tryNumber(game.seats[seat].tries.length, cfg)
   return `Try ${n} of ${cfg.tries} · ${cfg.dartsPerTry} darts · ${cfg.outMode} out`
 }
 
