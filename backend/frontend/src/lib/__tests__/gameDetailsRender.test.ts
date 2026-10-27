@@ -96,6 +96,18 @@ describe('details components', () => {
     expect(standings).toContain('border-dashed')
   })
 
+  it('phones: long names truncate and the score goes under both sides (#385)', () => {
+    const d = game(2)
+    d.game.players[1].name = 'TRIPLETWENTYTOMMYTHEDARTSKING123'
+    const card = render(ResultCard, { props: { detail: d, sides: detailSides(d) } }).body
+    expect(card).toContain('grid-cols-2 md:grid-cols-[1fr_auto_1fr]')
+    expect(card).toMatch(/max-md:order-last max-md:col-span-2/)
+    expect(card).toMatch(/truncate[^"]*">TRIPLETWENTYTOMMYTHEDARTSKING123</)
+    const table = render(StatsTable, { props: { rows, sides: detailSides(d) } }).body
+    expect(table).toMatch(/min-w-0 truncate">TRIPLETWENTYTOMMYTHEDARTSKING123</)
+    expect(table).toMatch(/max-md:hidden">Match stats</)
+  })
+
   it('hides non-compact rows on phones', () => {
     const out = render(StatsTable, { props: { rows, sides: detailSides(game(2)) } }).body
     expect(out).toMatch(/max-md:hidden[^>]*>[^<]*<span[^>]*>83\.9/)
