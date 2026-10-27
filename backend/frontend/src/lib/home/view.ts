@@ -1,6 +1,5 @@
 // What the Home page says, as plain text from the data it loads (Home board: Your form, Ranked,
 // Friends' lobbies, Friend activity, Jump back in). Design: docs/superpowers/specs/2026-10-27-home-page-design.md
-import { z } from 'zod'
 import type { GameStats, GameSummary } from '$lib/api'
 import type { components } from '$lib/api/schema'
 import { GAME_MODES } from '$lib/gameModes'
@@ -9,7 +8,7 @@ import { playerBadges, resultLabel } from '$lib/history'
 import type { RankedGame, RankedRating } from '$lib/ranked/view'
 import { nextStage, rank } from '$shared/ranked.js'
 
-export type HomeEvent = components['schemas']['HomeActivity']['events'][number]
+export type HomeEvent = components['schemas']['HomeEvent']
 export type HomeLobby = components['schemas']['HomeLobbies']['lobbies'][number]
 
 const NONE = '–'
@@ -21,6 +20,11 @@ export function greeting(now: Date): string {
   return h >= 5 && h < 12 ? 'Good morning' : h >= 12 && h < 18 ? 'Good afternoon' : 'Good evening'
 }
 
+/** "Friday, 16 October". */
+export function longDate(now: Date): string {
+  return `${now.toLocaleDateString('en-GB', { weekday: 'long' })}, ${now.toLocaleDateString('en-GB', { day: 'numeric', month: 'long' })}`
+}
+
 export type Trend = { dir: 'up' | 'down' | 'flat'; delta: number }
 
 /** How far an average moved against the period before, to one decimal; absent without both. */
@@ -30,7 +34,15 @@ export function trend(avg: number | null, previous: number | null): Trend | null
   return { dir: delta > 0 ? 'up' : delta < 0 ? 'down' : 'flat', delta: Math.abs(delta) }
 }
 
-export type FormView = { avg: string; trend: Trend | null; checkout: string; bestCheckout: string; games: string }
+export type FormView = {
+  avg: string
+  trend: Trend | null
+  /** The average of each day with a game, oldest first; `day` is the UTC midnight in ms. */
+  byDay: { day: number; avg: number }[]
+  checkout: string
+  bestCheckout: string
+  games: string
+}
 
 /** Your form: the X01 numbers of the stats period (30 days) and how many games you played in all modes. */
 export function formForm(stats: GameStats): FormView {
@@ -43,6 +55,7 @@ export function formForm(stats: GameStats): FormView {
   return {
     avg: avg ? avg.avg.toFixed(1) : NONE,
     trend: avg ? trend(avg.avg, avg.previousAvg) : null,
+    byDay: (avg?.byDay ?? []).map(d => ({ day: Date.parse(d.day), avg: d.avg })),
     // Games from before the tries were stored have none: a dash, not 0%
     checkout: tries > 0 ? `${Math.round((hits / tries) * 100)}%` : NONE,
     bestCheckout: best ? String(best.max) : NONE,
@@ -65,24 +78,16 @@ export function rankProgress(r: RankedRating): { pct: number; line: string; rang
   return { pct: Math.max(0, Math.min(100, pct)), line: `${next.missing} RP to ${next.rank.name}`, range: `${held.min}–${next.rank.min}` }
 }
 
-const OneEighty = z.object({ count: z.number().int().min(1) })
-const TonOut = z.object({ count: z.number().int().min(1), best: z.number().int() })
-const RankUp = z.object({ rankIndex: z.number().int().min(0) })
-
-/** "Lena" and "hit a 180 in X01"; null for an event whose payload is not what its kind promises. */
-export function activityLine(e: HomeEvent): { who: string; text: string } | null {
-  const line = (text: string) => ({ who: e.name, text })
-  if (e.kind === 'one_eighty') {
-    const p = OneEighty.safeParse(e.payload)
-    return p.success ? line(p.data.count === 1 ? 'hit a 180 in X01' : `hit ${p.data.count} 180s in X01`) : null
+/** What a friend did, after their name: "hit a 180 in X01". */
+export function activityText(e: HomeEvent): string {
+  switch (e.kind) {
+    case 'one_eighty':
+      return e.payload.count === 1 ? 'hit a 180 in X01' : `hit ${e.payload.count} 180s in X01`
+    case 'ton_out':
+      return `checked out ${e.payload.best} in X01${e.payload.count > 1 ? ` (${e.payload.count} ton-plus outs)` : ''}`
+    case 'rank_up':
+      return `reached ${rank(e.payload.rankIndex).name} in ranked`
   }
-  if (e.kind === 'ton_out') {
-    const p = TonOut.safeParse(e.payload)
-    if (!p.success) return null
-    return line(`checked out ${p.data.best} in X01${p.data.count > 1 ? ` (${p.data.count} ton-plus outs)` : ''}`)
-  }
-  const p = RankUp.safeParse(e.payload)
-  return p.success ? line(`reached ${rank(p.data.rankIndex).name} in ranked`) : null
 }
 
 /** "just now", "2 min", "1 h" (same day), "yesterday", "3 d", then "10 Oct". */
@@ -99,8 +104,8 @@ export function relativeTime(then: Date, now: Date): string {
 const modeName = (id: string): string => GAME_MODES.find(m => m.id === id)?.name ?? id
 
 /** "X01 · 501 · 3 people · 2 boards"; what a lobby does not have is left out. */
-export function lobbyLine(l: Pick<HomeLobby, 'mode' | 'label' | 'people' | 'boards'>): string {
-  return [l.mode && modeName(l.mode), l.label, plural(l.people, 'person', 'people'), l.boards > 0 && plural(l.boards, 'board')]
+export function lobbyLine(l: Pick<HomeLobby, 'mode' | 'startScore' | 'people' | 'boards'>): string {
+  return [l.mode && modeName(l.mode), l.startScore, plural(l.people, 'person', 'people'), l.boards > 0 && plural(l.boards, 'board')]
     .filter(Boolean)
     .join(' · ')
 }

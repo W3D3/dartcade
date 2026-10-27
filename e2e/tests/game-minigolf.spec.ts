@@ -27,7 +27,7 @@ test('minigolf: a putt clicked on the board counts once shot', async ({ adminPag
 })
 
 test('minigolf is not offered to players without its flag (admins only for now)', async ({ authedPage: page }) => {
-  await page.goto('/#/')
+  await page.goto('/#/play')
   const main = page.locator('main')
   await expect(main.getByRole('button', { name: /^X01:/ })).toBeVisible()
   await expect(main.locator('button:has-text("Minigolf")')).toHaveCount(0)
