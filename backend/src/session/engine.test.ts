@@ -1578,6 +1578,7 @@ describe('lobby games', () => {
       ],
       teamGame: false,
       userIds: ['chris', 'lena'],
+      boardIds: ['living', 'lenas'],
     })
     expect(engine.getLobbySession('l1')).toBeUndefined()
   })
@@ -1615,6 +1616,7 @@ describe('lobby games', () => {
       results: [],
       teamGame: false,
       userIds: ['chris', 'lena'],
+      boardIds: ['living', 'lenas'],
     })
   })
 
@@ -1651,6 +1653,7 @@ describe('lobby games', () => {
       results: [],
       teamGame: false,
       userIds: ['chris', 'lena'],
+      boardIds: [],
     })
     expect(ended).toHaveBeenCalledTimes(1)
   })

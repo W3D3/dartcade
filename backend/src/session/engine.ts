@@ -39,6 +39,8 @@ export type GameEnded = {
   teamGame: boolean
   /** Every account seated (owner and every seat's controller): who to push /ws/me to. */
   userIds: string[]
+  /** The boards the seats play on (the big screen shows the result there). */
+  boardIds: string[]
 }
 export type EndedFn = (e: GameEnded) => void | Promise<void>
 
@@ -132,6 +134,7 @@ const storedAborted = (row: StoredGameSession): GameEnded => ({
   results: [],
   teamGame: false,
   userIds: storedSeatedUserIds(row),
+  boardIds: [],
 })
 
 /** The seats as one viewer sees them: boards online, controllers connected or since when not. */
@@ -462,6 +465,7 @@ export class SessionEngine {
       results: seatResults.map((r, i) => ({ name: session.players[i].name, placement: r.placement, forfeited: r.forfeited })),
       teamGame: isTeamGame(session),
       userIds: seatedUserIds(session),
+      boardIds: seatBoards(session),
     }
   }
 
