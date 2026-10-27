@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"time"
 
+	"dartcade/bridge/internal/bigscreen"
 	"dartcade/bridge/internal/update"
 	"github.com/charmbracelet/log"
 	"github.com/kardianos/service"
@@ -198,7 +199,9 @@ func runServiceCommand(action string, argv []string) error {
 			return withElevationHint(err)
 		}
 		fmt.Printf("Installed and started %s; it starts at boot and restarts if it stops.\nConfig and pairing: %s\n", serviceName, *stateDir)
+		registerHelper()
 	case "uninstall":
+		unregisterHelper()
 		if _, err := svc.Status(); !errors.Is(err, service.ErrNotInstalled) {
 			_ = service.Control(svc, "stop")
 			if err := service.Control(svc, "uninstall"); err != nil {
@@ -224,6 +227,46 @@ func runServiceCommand(action string, argv []string) error {
 		}
 	}
 	return nil
+}
+
+// registerHelper makes the desktop user's login start the big screen helper. It never fails the
+// install: without a desktop user or a writable home the big screen just isn't set up.
+func registerHelper() {
+	u, err := bigscreen.InvokingUser()
+	if err != nil {
+		fmt.Println("Big screen: not set up (run the install with sudo from your desktop user to enable it).")
+		return
+	}
+	// The installed binary, not the service's copy in its state dir: that one is closed to
+	// the desktop user on Windows. After a self-update the helper may be a build behind; it
+	// copes with that (degraded mode).
+	exe, err := os.Executable()
+	if err == nil {
+		exe, err = filepath.EvalSymlinks(exe)
+	}
+	if err != nil {
+		fmt.Println("Big screen: not set up:", err)
+		return
+	}
+	if err := bigscreen.Register(exe, u, bigscreen.DefaultAddr); err != nil {
+		fmt.Println("Big screen: not set up:", err)
+		return
+	}
+	now := "`" + serviceName + " big-screen-helper &`"
+	if runtime.GOOS == "windows" {
+		now = fmt.Sprintf("`Start-Process \"%s\" big-screen-helper` in PowerShell", exe)
+	}
+	fmt.Printf("Big screen: the helper starts at your next login; to start it now, run %s in your desktop session.\n", now)
+}
+
+func unregisterHelper() {
+	u, err := bigscreen.InvokingUser()
+	if err != nil {
+		return
+	}
+	if err := bigscreen.Unregister(u); err != nil {
+		fmt.Println("Big screen: could not remove the helper's autostart:", err)
+	}
 }
 
 // windowsServiceExe is the copy of the bridge a Windows service runs: in its state dir, which

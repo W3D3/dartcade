@@ -15,6 +15,7 @@ require (
 	github.com/oapi-codegen/runtime v1.2.0
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/santhosh-tekuri/jsonschema/v5 v5.3.1
+	golang.org/x/sys v0.34.0
 )
 
 require (
@@ -43,5 +44,4 @@ require (
 	golang.org/x/crypto v0.32.0 // indirect
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d // indirect
 	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/sys v0.34.0 // indirect
 )

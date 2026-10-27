@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bridgeUrl, detectOs, installCommand } from '../bridgeInstall'
+import { OS_NOTES, bridgeUrl, detectOs, installCommand } from '../bridgeInstall'
 
 describe('bridge install commands', () => {
   it('points the bridge at this server over wss for https and ws for http', () => {
@@ -25,6 +25,12 @@ describe('bridge install commands', () => {
     const win = installCommand('windows', 'K', 'https://x')
     expect(win).toContain('install-bridge.ps1')
     expect(win).toContain('-InstallToken K')
+  })
+
+  it('says every install also sets up Big screen for the desktop user', () => {
+    for (const note of Object.values(OS_NOTES)) {
+      expect(note).toContain('also sets up Big screen for the logged-in desktop user')
+    }
   })
 
   it('picks the OS from the user agent', () => {

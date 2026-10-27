@@ -187,6 +187,31 @@ go test ./...
 go run ./cmd/bridge --help
 ```
 
+## Big screen on the bridge machine
+
+The bridge service has no desktop session, so `bridge install` also registers a helper for the
+desktop user that runs it (the user behind `sudo`, or the current user on Windows). At login the
+helper runs `dartcade-bridge big-screen-helper` and opens the kiosk browser when the service asks.
+
+- Linux: `~/.config/autostart/dartcade-big-screen.desktop`
+- macOS: `~/Library/LaunchAgents/com.dartcade.big-screen.plist`
+- Windows: value `DartcadeBigScreen` in `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`
+  (pointing at the installed exe, not the service's copy in `%ProgramData%\dartcade-bridge`: that
+  folder is closed to the desktop user. After a self-update the helper can be a build behind the
+  service; it copes with that in a degraded mode until the install is run again)
+
+On Windows the value goes into the HKCU of the account that ran the (elevated) install, and
+`uninstall` only removes entries it finds there, so run it as the same user. On Linux and macOS
+a root install writes the file by re-running the bridge as the desktop user, never as root.
+
+`bridge uninstall` removes it. A failed registration only prints a warning; as root without
+`SUDO_USER` nothing is registered. Against the dev stack, run it by hand in your desktop session:
+`cd bridge && go run ./cmd/bridge big-screen-helper` (`--helper-addr` if the bridge listens
+elsewhere than `127.0.0.1:47817`).
+
+Machines that installed a bridge before this existed need the install command from the Boards
+page run once more: registration happens only at install.
+
 ## Regenerate types and clients from the schema
 
 `schema/` holds the hand-written contracts: the adbridge/v1 JSON Schema (bridge↔Board Manager),
