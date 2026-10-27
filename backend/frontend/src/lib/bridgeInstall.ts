@@ -34,9 +34,9 @@ export function installCommand(os: Os, token: string, origin: string): string {
 /** What to know about the command, under it. */
 export const OS_NOTES: Record<Os, string> = {
   linux:
-    'Installs a systemd service: it starts at boot and restarts if it stops. It expects the Board Manager on this machine; if it runs elsewhere, add --board-url http://<ip>:3180.',
+    'Installs a systemd service: it starts at boot and restarts if it stops. It also sets up Big screen for the logged-in desktop user. It expects the Board Manager on this machine; if it runs elsewhere, add --board-url http://<ip>:3180.',
   macos:
-    'Installs a launchd service (it asks for your password): it starts at boot and restarts if it stops. It expects the Board Manager on this machine; if it runs elsewhere, add --board-url http://<ip>:3180.',
+    'Installs a launchd service (it asks for your password): it starts at boot and restarts if it stops. It also sets up Big screen for the logged-in desktop user. It expects the Board Manager on this machine; if it runs elsewhere, add --board-url http://<ip>:3180.',
   windows:
-    'Run it in an Administrator PowerShell. It installs a Windows service that starts at boot and restarts if it stops. It expects the Board Manager on this machine; if it runs elsewhere, add -BoardUrl http://<ip>:3180.',
+    'Run it in an Administrator PowerShell. It installs a Windows service that starts at boot and restarts if it stops. It also sets up Big screen for the logged-in desktop user. It expects the Board Manager on this machine; if it runs elsewhere, add -BoardUrl http://<ip>:3180.',
 }

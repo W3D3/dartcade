@@ -92,6 +92,12 @@ func main() {
 		runBigScreenHelper(os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == bigscreen.HelperFileCommand {
+		if err := bigscreen.RunHelperFile(os.Args[2:]); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "replay" {
 		runReplay(os.Args[2:])
 		return
