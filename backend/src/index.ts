@@ -20,8 +20,7 @@ import { boardOwner, getLightsEnabled, listWledDevices } from './db/lights.js'
 import { boardInOpenLobby } from './db/lobbies.js'
 import { LightsService } from './lights/service.js'
 import { BigScreenService } from './bigscreen/service.js'
-import { getBoardById } from './db/queries.js'
-import { getPreferences } from './db/users.js'
+import { getBoardWithOwnerPrefs } from './db/queries.js'
 import { FriendsService } from './friends/service.js'
 import { MatchmakingService } from './matchmaking/service.js'
 import { seatedGame } from './friends/status.js'
@@ -29,7 +28,7 @@ import { initPhysics3d } from './shared/minigolf/3d/physics3d.js'
 import { closePool, warmPool } from './games/minigolfPool.js'
 import { ProgressionService } from './progression/service.js'
 import { getFinishedGame } from './db/history.js'
-import { storedDetail } from './history/detail.js'
+import { gameDetailBody } from './api/games.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -96,23 +95,15 @@ const lights: LightsService = new LightsService({
 })
 // Big screen: follows boards for /ws/board; reads the engine lazily like lights
 const bigScreen = new BigScreenService({
-  getSessions: () =>
-    engine.getAllSessions().map(s => ({
-      id: s.id,
-      boardIds: [...new Set(s.seats.flatMap(x => x.boardId ?? []))],
-      status: s.status,
-      startedAt: s.createdAt.getTime(),
-      finishedAt: s.finishedAt?.getTime() ?? null,
-      // in-memory sessions don't know about admin invalidation, so an invalidation inside the 60 s hold isn't seen
-      invalidated: false,
-    })),
+  activeOn: id => engine.getSessionByBoard(id)?.id,
   getSnapshot: id => engine.getSnapshot(id),
-  getBoard: async id => {
-    const b = await getBoardById(db, id)
-    return b && { name: b.name, ownerUserId: b.owner_user_id }
+  loadBoard: async id => {
+    const b = await getBoardWithOwnerPrefs(db, id)
+    return b && { name: b.name, prefs: b.preferences ?? {} }
   },
   isOnline: id => bridgeConnections.isOnline(id),
-  getPrefs: async userId => (await getPreferences(db, userId)) ?? {},
+  now: Date.now,
+  setTimer: setTimeout,
   warn: err => {
     warn('big screen push failed', { error: String(err) })
   },
@@ -137,7 +128,6 @@ const engine: SessionEngine = new SessionEngine(
     pushNotice(sessionId, userIds, notice)
   },
   ended => {
-    bigScreen.onSessionChanged(ended.sessionId)
     // Not awaited (like the push callback's lights.onPush): a board going idle is not on the game path
     lights.onGameEnded(ended.sessionId).catch((err: unknown) => {
       warn('lights game-end failed', { sessionId: ended.sessionId, error: String(err) })
@@ -146,14 +136,13 @@ const engine: SessionEngine = new SessionEngine(
     progression.onGameEnded(ended).catch((err: unknown) => {
       warn('xp for a finished game failed', { sessionId: ended.sessionId, error: String(err) })
     })
-    // Nor is the details page, built now so no one's first load waits for the replay
-    if (ended.status === 'finished') {
-      getFinishedGame(db, ended.sessionId)
-        .then(game => game && storedDetail(db, game, warn))
-        .catch((err: unknown) => {
-          warn('storing a finished game detail failed', { sessionId: ended.sessionId, error: String(err) })
-        })
-    }
+    // Nor is the details page, built now so no one's first load waits for the replay; the big screen shows it too
+    const saved =
+      ended.status === 'finished' ? getFinishedGame(db, ended.sessionId).then(game => (game ? gameDetailBody(db, game, warn) : null)) : null
+    saved?.catch((err: unknown) => {
+      warn('storing a finished game detail failed', { sessionId: ended.sessionId, error: String(err) })
+    })
+    bigScreen.onGameEnded(ended.sessionId, ended.boardIds, saved)
     return lobbies.onGameEnded(ended).then(() => matchmaking.onGameEnded(ended))
   },
   started => lobbies.onGameStarted(started),

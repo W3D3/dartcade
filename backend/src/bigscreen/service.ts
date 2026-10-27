@@ -1,4 +1,4 @@
-import type { BigScreenMessage, BigScreenScreen } from '../shared/bigScreen.js'
+import { RESULT_HOLD_MS, type BigScreenMessage, type BigScreenScreen } from '../shared/bigScreen.js'
 import { WsCloseCode } from '../schema/game-ws.js'
 import { pickScreenSession, type PickInput } from './screen.js'
 
@@ -8,6 +8,8 @@ export type BigScreenDeps = {
   getBoard(boardId: string): Promise<{ name: string; ownerUserId: string } | undefined>
   isOnline(boardId: string): boolean
   getPrefs(userId: string): Promise<Record<string, unknown>>
+  /** The saved game of a finished session (GET /api/games/{id}'s body); null when it isn't stored. */
+  getDetail?(sessionId: string): Promise<unknown>
   now?: () => number
   setTimer?: typeof setTimeout
   /** Called when building a push fails; that push is dropped. */
@@ -21,6 +23,8 @@ type Followers = { sends: Map<Send, { close: Close; viaToken: boolean }>; timer?
 /** Pushes each followed board's screen to its subscribers. */
 export class BigScreenService {
   private boards = new Map<string, Followers>()
+  // Per finished session: the detail once fetched (null: none), or the fetch under way. Dropped when the hold ends.
+  private details = new Map<string, { value?: unknown }>()
   constructor(private deps: BigScreenDeps) {}
 
   /** `close` ends the subscriber's socket (board gone, token revoked); `viaToken` marks a kiosk, which revoke() cuts off. */
@@ -54,8 +58,49 @@ export class BigScreenService {
   }
 
   close(): void {
+    this.details.clear()
     for (const f of this.boards.values()) clearTimeout(f.timer)
     this.boards.clear()
+  }
+
+  /** The session's detail if fetched; the first call starts the fetch, which pushes again when it lands. */
+  private detailOf(sessionId: string): unknown {
+    const known = this.details.get(sessionId)
+    if (known) return known.value
+    if (!this.deps.getDetail) return undefined
+    this.details.set(sessionId, {})
+    this.fetchDetail(sessionId, true)
+    return undefined
+  }
+
+  private fetchDetail(sessionId: string, retry: boolean): void {
+    const entry = this.details.get(sessionId)
+    this.deps
+      .getDetail?.(sessionId)
+      .then(value => {
+        if (value != null && this.details.get(sessionId) === entry && entry) {
+          entry.value = value
+          this.onSessionChanged(sessionId)
+        } else if (value == null && retry && entry) {
+          // shortcut: one retry after 2 s when the saved game isn't stored yet, a longer wait shows the result without stats
+          ;(this.deps.setTimer ?? setTimeout)(() => {
+            if (this.details.get(sessionId) === entry) this.fetchDetail(sessionId, false)
+          }, 2000)
+        }
+      })
+      .catch((err: unknown) => {
+        this.deps.warn?.(err)
+      })
+  }
+
+  private pruneDetails(now: number): void {
+    const held = new Set(
+      this.deps
+        .getSessions()
+        .filter(s => s.status === 'finished' && s.finishedAt !== null && s.finishedAt + RESULT_HOLD_MS > now)
+        .map(s => s.id),
+    )
+    for (const id of this.details.keys()) if (!held.has(id)) this.details.delete(id)
   }
 
   private async push(boardId: string, only?: Send[]): Promise<void> {
@@ -74,12 +119,14 @@ export class BigScreenService {
       const pick = pickScreenSession(this.deps.getSessions(), boardId, now)
       clearTimeout(f.timer)
       f.timer = undefined
+      this.pruneDetails(now)
       let screen: BigScreenScreen = { kind: 'idle' }
       const snapshot = pick ? this.deps.getSnapshot(pick.id) : undefined
       if (pick && snapshot !== undefined) {
         if (pick.kind === 'game') screen = { kind: 'game', snapshot }
         else {
-          screen = { kind: 'result', snapshot, until: pick.until }
+          const detail = this.detailOf(pick.id)
+          screen = { kind: 'result', snapshot, until: pick.until, ...(detail ? { detail } : {}) }
           // shortcut: the held result lives in engine memory only, a restart inside the minute shows idle
           f.timer = (this.deps.setTimer ?? setTimeout)(() => void this.push(boardId), Math.max(0, pick.until - now))
         }

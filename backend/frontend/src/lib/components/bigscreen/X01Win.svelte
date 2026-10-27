@@ -2,14 +2,20 @@
   // The X01 match won, on the big screen (Presenter-Win-Landscape, -Party-Landscape, -Portrait, -Party-Portrait).
   import { Crown } from '@lucide/svelte'
   import type { Snapshot } from '$lib/ws'
+  import type { GameDetail } from '$lib/api'
   import type { Orientation } from '$lib/bigscreen/stage'
   import { x01Win, type X01WinStanding } from '$lib/bigscreen/x01View'
-  import { ordinal } from '$lib/fmt'
+  import { ordinal, plural } from '$lib/fmt'
   import Avatar from '$lib/components/Avatar.svelte'
   import BigHeader from './BigHeader.svelte'
 
-  let { snapshot, orientation, countdown }: { snapshot: Snapshot; orientation: Orientation; countdown: string } = $props()
-  const v = $derived(x01Win(snapshot))
+  let {
+    snapshot,
+    orientation,
+    countdown,
+    detail = null,
+  }: { snapshot: Snapshot; orientation: Orientation; countdown: string; detail?: GameDetail | null } = $props()
+  const v = $derived(x01Win(snapshot, detail))
   const landscape = $derived(orientation === 'landscape')
   const second = $derived(v.standings.at(1))
   // 2nd, 1st, 3rd: the winner in the middle; the rest below as rows
@@ -82,7 +88,7 @@
 {/snippet}
 
 {#snippet gameShot()}
-  {#if v.gameShot}
+  {#if v.gameShotText}
     <div
       class="box-border flex flex-none items-center gap-[30px] rounded-3xl border-2 border-[#3a4a20] px-9"
       style="height:{landscape ? 120 : 140}px;background:linear-gradient(90deg,#1d2a0c,#151a0e)"
@@ -91,7 +97,7 @@
         <span class="text-[28px] font-extrabold tracking-[0.14em] text-accent">GAME SHOT</span>
         <span class="whitespace-nowrap text-[28px] text-ink-2">{v.gameShotText}</span>
       </span>
-      <span class="{num} ml-auto whitespace-nowrap text-[88px] leading-none text-accent">{v.gameShot}</span>
+      {#if v.gameShot}<span class="{num} ml-auto whitespace-nowrap text-[88px] leading-none text-accent">{v.gameShot}</span>{/if}
     </div>
   {/if}
 {/snippet}
@@ -126,12 +132,12 @@
 {#snippet podiumView(width: number)}
   <div class="flex flex-none flex-col" style="width:{width}px">
     <div class="flex items-end gap-4">
-      {#each podium as s (s.name)}
+      {#each podium as s (s.place)}
         {@const look = podiumLook(s.place)}
         <div class="flex min-w-0 flex-1 basis-0 flex-col items-center justify-end gap-3.5">
           {@render who(s, look.av, s.place === 1)}
           <span class="{num} whitespace-nowrap uppercase leading-[0.95] {look.name}">{s.name}</span>
-          <span class="whitespace-nowrap text-[26px] text-text-muted">{s.legs === 1 ? '1 leg' : `${s.legs} legs`} · {s.avg} avg</span>
+          <span class="whitespace-nowrap text-[26px] text-text-muted">{plural(s.legs, 'leg')} · {s.avg} avg</span>
           <div
             class="box-border flex w-full justify-center rounded-t-[22px] border-2 border-b-0 pt-3.5 {look.box}"
             style="height:{look.h}px"
@@ -141,7 +147,7 @@
         </div>
       {/each}
     </div>
-    {#each rest as s (s.name)}
+    {#each rest as s (s.place)}
       <div
         class="box-border flex h-[84px] flex-none items-center gap-5 border-2 border-line bg-surface-1 px-[26px] {s === rest.at(-1)
           ? 'rounded-b-[22px]'
@@ -150,7 +156,7 @@
         <span class="{num} text-[44px] text-text-dim">{ordinal(s.place).toUpperCase()}</span>
         <Avatar name={s.name} size={52} tone="quiet" />
         <span class="text-[34px] font-bold">{s.name}</span>
-        <span class="ml-auto whitespace-nowrap text-[26px] text-text-muted">{s.legs} legs · {s.avg} avg</span>
+        <span class="ml-auto whitespace-nowrap text-[26px] text-text-muted">{plural(s.legs, 'leg')} · {s.avg} avg</span>
       </div>
     {/each}
   </div>
@@ -163,7 +169,7 @@
         >FIRST 9</span
       >
     </div>
-    {#each v.standings as s (s.name)}
+    {#each v.standings as s, i (i)}
       <div class="grid grid-cols-[90px_1fr_90px_120px_130px] items-center gap-2.5 border-t-2 border-[#22251f] py-2 {num}">
         <span class="text-[42px] {s.place === 1 ? 'text-accent' : 'text-text-dim'}">{ordinal(s.place).toUpperCase()}</span>
         <span class="truncate font-sans text-[32px]">{s.name}</span>
@@ -191,7 +197,7 @@
   <main class="box-border flex min-h-0 flex-1 flex-col gap-5 {landscape ? 'px-[44px] py-6' : 'px-10 py-[30px]'}">
     {#if v.party}
       <div class="flex flex-none flex-col items-center gap-1.5 text-center">
-        <span class="text-[28px] font-extrabold tracking-[0.16em] text-accent">GAME SHOT</span>
+        <span class="text-[28px] font-extrabold tracking-[0.16em] text-accent">{v.kicker}</span>
         <span class="{num} uppercase leading-[0.9] tracking-[0.01em] {landscape ? 'text-[120px]' : 'text-[124px]'}"
           >{v.winner.name} WINS</span
         >
@@ -234,7 +240,9 @@
   </main>
 
   <div class="flex h-24 flex-none items-center gap-[30px] border-t-2 border-[#1f221c] {landscape ? 'px-[44px]' : 'px-10'}">
-    <span class="whitespace-nowrap text-[28px] text-text-muted">Saved to History</span>
+    <span class="whitespace-nowrap text-[28px] text-text-muted"
+      >Saved to History{landscape ? (v.party ? ' · counts in everyone’s stats' : ' · counts in stats') : ''}</span
+    >
     <span class="ml-auto whitespace-nowrap text-[28px] text-ink-2">
       {cut > 0 ? countdown.slice(0, cut + 1) : countdown}{#if cut > 0}<b class="{num} text-[38px] text-text">{countdown.slice(cut + 1)}</b
         >{/if}

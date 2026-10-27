@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { get } from 'svelte/store'
 import { createBigScreenStore } from '../bigscreen/store.js'
+import snapshot from './fixtures/x01-snapshot.json'
 
 class FakeSocket {
   static opened: FakeSocket[] = []
@@ -81,5 +82,16 @@ describe('createBigScreenStore', () => {
     expect(FakeSocket.opened[0].closed).toBe(true)
     vi.advanceTimersByTime(60_000)
     expect(FakeSocket.opened).toHaveLength(1)
+  })
+
+  it('keeps the saved game of a result when it has the expected shape, else drops it', () => {
+    const s = createBigScreenStore('b1', null, open)
+    const result = (detail: unknown) => ({ ...idle, screen: { kind: 'result', snapshot, until: 1, detail } })
+    const detail = { game: { players: [] }, detail: { mode: 'x01', legs: [] }, stats: { rows: [], seats: [] } }
+    FakeSocket.opened[0].receive(result(detail))
+    expect(get(s.message)?.screen).toMatchObject({ kind: 'result', detail })
+    FakeSocket.opened[0].receive(result({ nonsense: true }))
+    expect(get(s.message)?.screen).toMatchObject({ kind: 'result', detail: undefined })
+    s.destroy()
   })
 })
