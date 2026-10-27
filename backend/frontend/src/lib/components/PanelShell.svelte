@@ -13,6 +13,7 @@
     bot = null,
     active,
     solo = false,
+    portrait = false,
     pill,
     pillInRow = false,
     seat = null,
@@ -25,6 +26,8 @@
     bot?: { level: number } | null
     active: boolean
     solo?: boolean
+    /** The portrait layout: side by side above the board, with the big sizes from `lg` (an upright monitor). */
+    portrait?: boolean
     pill: PillKind | null
     /** Put the pill at the end of the name row (ATC and solo) instead of under it. */
     pillInRow?: boolean
@@ -38,23 +41,27 @@
   } = $props()
 
   // Two players on tablets (md up to xl) get the smaller sizes; one player keeps the desktop ones
-  const nameSize = $derived(solo ? 'text-[22px]' : 'text-[19px] xl:text-[22px]')
+  const nameSize = $derived(solo ? 'text-[22px]' : portrait ? 'text-[19px] lg:text-[26px]' : 'text-[19px] xl:text-[22px]')
+  const avatarSize = $derived(
+    solo
+      ? 'w-10 h-10 text-[17px]'
+      : portrait
+        ? 'w-[34px] h-[34px] text-[14px] lg:w-11 lg:h-11 lg:text-[18px]'
+        : 'w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]',
+  )
 </script>
 
 <section
   aria-label="{name}, {active ? 'throwing' : 'waiting'}"
   class="@container {solo
     ? 'w-[400px] shrink-0 p-6 gap-[18px]'
-    : 'flex-1 p-[18px] gap-3 xl:p-7 xl:gap-[14px]'} min-w-0 min-h-0 box-border rounded-[18px] flex flex-col overflow-hidden
+    : portrait
+      ? 'flex-1 p-[18px] gap-3 lg:p-7 lg:gap-[14px]'
+      : 'flex-1 p-[18px] gap-3 xl:p-7 xl:gap-[14px]'} min-w-0 min-h-0 box-border rounded-[18px] flex flex-col overflow-hidden
          {playerCard(active)}"
 >
   <div class="flex items-center {solo ? 'gap-3' : 'gap-[10px] xl:gap-3'} min-w-0">
-    <Avatar
-      {name}
-      {bot}
-      tone={active ? 'accent' : 'default'}
-      class={solo ? 'w-10 h-10 text-[17px]' : 'w-[34px] h-[34px] text-[14px] xl:w-10 xl:h-10 xl:text-[17px]'}
-    />
+    <Avatar {name} {bot} tone={active ? 'accent' : 'default'} class={avatarSize} />
     <PlayerName
       {name}
       {seat}
