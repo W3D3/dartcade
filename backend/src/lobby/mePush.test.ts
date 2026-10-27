@@ -142,6 +142,7 @@ describe('/ws/me during a lobby game', () => {
       results: [],
       teamGame: false,
       userIds: [],
+      boardIds: [],
     })
     await lobbies.whenIdle('l1')
     await engine.deleteSession(sessionId)

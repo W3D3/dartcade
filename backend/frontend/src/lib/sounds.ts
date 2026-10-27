@@ -51,6 +51,9 @@ export function unduckEffects(): void {
   bus.gain.setTargetAtTime(1, now, DUCK_TAU_S)
 }
 
+/** True while the page's AudioContext exists and is still suspended; never creates or resumes it. */
+export const audioAsleep = (): boolean => shared?.state === 'suspended'
+
 /** The beeps, each at `TARGET_DB`: a beep's tones are full-scale waves, so its gain is its peak. */
 export function createSounds(volume: () => number) {
   function tone(freq: number, dur: number, type: OscillatorType, vol: number, delay = 0) {

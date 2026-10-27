@@ -6,6 +6,7 @@ describe('API docs', () => {
   it('serves our spec for Swagger UI', async () => {
     const app = await buildApp({
       engine: {} as any,
+      bigScreen: {} as any,
       db: {} as any,
       lobbies: {} as any,
       hub: {} as any,
@@ -25,6 +26,7 @@ describe('API docs', () => {
   it('serves working asset links from /api/docs (no trailing slash)', async () => {
     const app = await buildApp({
       engine: {} as any,
+      bigScreen: {} as any,
       db: {} as any,
       lobbies: {} as any,
       hub: {} as any,

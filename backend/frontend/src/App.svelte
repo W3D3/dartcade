@@ -29,6 +29,7 @@
   import Customise from './routes/Customise.svelte'
   import Rewards from './routes/Rewards.svelte'
   import Admin from './routes/Admin.svelte'
+  import BigScreen from './routes/BigScreen.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
   import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
@@ -106,6 +107,7 @@
     // Before /profile/:id; one route (tab optional) so switching tabs keeps the page and its draft
     '/profile/customise/:tab?': Customise,
     '/profile/:id': Profile,
+    '/big-screen/:board': BigScreen,
     '/admin': Admin,
     '/admin/users': AdminUsers,
     '/admin/games': AdminGames,
@@ -137,6 +139,11 @@
     }
     await currentUser.refresh()
     void startFlags(get(currentUser)?.id ?? null)
+    // A kiosk has no session and never goes to the login page; opened from the app it keeps the signed-in user
+    if (currentHash.startsWith('#/big-screen/')) {
+      checked = true
+      return
+    }
     // A join link or QR code opened while signed out shows its lobby first (and comes back after
     // signing in); everything else goes to the login page and comes back here after it
     if (!get(currentUser) && !currentHash.startsWith('#/join/')) {
