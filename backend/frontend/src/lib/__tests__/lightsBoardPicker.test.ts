@@ -14,6 +14,7 @@ const board = (id: string, online = true): Board => ({
   ip: null,
   bmUrl: null,
   bridgeUpdate: { available: null, updatable: false },
+  bigScreen: { mode: 'off', running: false, helper: false },
 })
 
 describe('LightsBoardPicker device counts', () => {

@@ -5,6 +5,7 @@ import { sql } from 'kysely'
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
+import type { BigScreenMode } from '../shared/bigScreen.js'
 import { normalizeName } from '../users/names.js'
 import { PairingCodeClaimedError } from './errors.js'
 import { groupBy } from '../util/groupBy.js'
@@ -368,6 +369,18 @@ export async function deleteBoard(db: Kysely<Database>, id: string): Promise<voi
 
 export async function renameBoard(db: Kysely<Database>, id: string, name: string): Promise<void> {
   await db.updateTable('boards').set({ name }).where('id', '=', id).execute()
+}
+
+export async function setBigScreenMode(db: Kysely<Database>, id: string, mode: BigScreenMode): Promise<void> {
+  await db.updateTable('boards').set({ big_screen_mode: mode }).where('id', '=', id).execute()
+}
+
+export async function setBigScreenTokenHash(db: Kysely<Database>, id: string, hash: string | null): Promise<void> {
+  await db.updateTable('boards').set({ big_screen_token_hash: hash }).where('id', '=', id).execute()
+}
+
+export async function getBoardByBigScreenTokenHash(db: Kysely<Database>, hash: string) {
+  return db.selectFrom('boards').selectAll().where('big_screen_token_hash', '=', hash).executeTakeFirst()
 }
 
 export async function getBoardByTokenHash(db: Kysely<Database>, tokenHash: string) {

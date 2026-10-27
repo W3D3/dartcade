@@ -28,6 +28,8 @@ vi.mock('../db/queries.js', () => ({
   getBoardById: vi.fn().mockResolvedValue(undefined),
   deleteBoard: vi.fn().mockResolvedValue(undefined),
   renameBoard: vi.fn().mockResolvedValue(undefined),
+  setBigScreenMode: vi.fn().mockResolvedValue(undefined),
+  setBigScreenTokenHash: vi.fn().mockResolvedValue(undefined),
   hasActiveSessionOnBoard: vi.fn().mockResolvedValue(false),
 }))
 
@@ -71,6 +73,8 @@ describe('GET /api/boards', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        big_screen_mode: 'off' as const,
+        big_screen_token_hash: null,
       },
     ])
     const app = makeApp()
@@ -180,6 +184,8 @@ describe('GET /api/boards - bridgeVersion', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        big_screen_mode: 'off' as const,
+        big_screen_token_hash: null,
       },
     ])
     vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(true)
@@ -206,6 +212,8 @@ describe('GET /api/boards - bridgeVersion', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        big_screen_mode: 'off' as const,
+        big_screen_token_hash: null,
       },
     ])
     vi.mocked(connections.bridgeConnections).get.mockReturnValue({ bmVersion: '1.0.7', bmUrl: 'http://192.168.0.109:3180' } as any)
@@ -226,6 +234,8 @@ describe('GET /api/boards - bridgeVersion', () => {
         owner_user_id: 'user-1',
         token_hash: 'hash',
         lights_enabled: true,
+        big_screen_mode: 'off' as const,
+        big_screen_token_hash: null,
       },
     ])
     vi.mocked(connections.bridgeConnections).get.mockReturnValue(undefined)
@@ -433,6 +443,8 @@ describe('PATCH /api/boards/:id', () => {
     owner_user_id: 'user-1',
     token_hash: 'hash',
     lights_enabled: true,
+    big_screen_mode: 'off' as const,
+    big_screen_token_hash: null,
   }
 
   it('renames an owned board', async () => {
@@ -458,6 +470,55 @@ describe('PATCH /api/boards/:id', () => {
   })
 })
 
+describe('PATCH /api/boards/:id/big-screen', () => {
+  const row = {
+    id: 'b1',
+    name: 'Board',
+    hardware_id: null,
+    created_at: new Date() as any,
+    owner_user_id: 'user-1',
+    token_hash: 'hash',
+    lights_enabled: true,
+    big_screen_mode: 'off' as const,
+    big_screen_token_hash: null,
+  }
+  const patch = (app: ReturnType<typeof makeApp>, payload: unknown) =>
+    app.inject({ method: 'PATCH', url: '/api/boards/b1/big-screen', payload: payload as any })
+
+  it('sets the mode', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(row)
+    const res = await patch(makeApp(), { mode: 'auto' })
+    expect(res.statusCode).toBe(200)
+    expect(res.json()).toEqual({ id: 'b1', mode: 'auto' })
+    expect(queries.setBigScreenMode).toHaveBeenCalledWith(expect.anything(), 'b1', 'auto')
+    expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
+  })
+
+  it('revokes the token when turned off', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(row)
+    const res = await patch(makeApp(), { mode: 'off' })
+    expect(res.statusCode).toBe(200)
+    expect(queries.setBigScreenTokenHash).toHaveBeenCalledWith(expect.anything(), 'b1', null)
+  })
+
+  it('rejects an unknown mode', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(row)
+    expect((await patch(makeApp(), { mode: 'sideways' })).statusCode).toBe(400)
+  })
+
+  it("returns 403 for another user's board", async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue({ ...row, owner_user_id: 'user-2' })
+    expect((await patch(makeApp(), { mode: 'auto' })).statusCode).toBe(403)
+    expect(queries.setBigScreenMode).not.toHaveBeenCalled()
+  })
+
+  it('lists the setting on each board', async () => {
+    vi.mocked(queries.getBoardsByOwner).mockResolvedValue([row])
+    const res = await makeApp().inject({ method: 'GET', url: '/api/boards' })
+    expect(res.json().boards[0].bigScreen).toEqual({ mode: 'off', running: false, helper: false })
+  })
+})
+
 describe('GET /api/boards/:id/events', () => {
   const row = {
     id: 'board-1',
@@ -467,6 +528,8 @@ describe('GET /api/boards/:id/events', () => {
     owner_user_id: 'user-1',
     token_hash: 'hash',
     lights_enabled: true,
+    big_screen_mode: 'off' as const,
+    big_screen_token_hash: null,
   }
 
   it('returns the recent event feed', async () => {
@@ -496,6 +559,8 @@ describe('boards: spec enforcement', () => {
     owner_user_id: 'user-1',
     token_hash: 'hash',
     lights_enabled: true,
+    big_screen_mode: 'off' as const,
+    big_screen_token_hash: null,
   }
 
   it('checks auth before the body: signed-out + invalid body is 401, not 400', async () => {
@@ -534,6 +599,8 @@ describe('POST /api/boards/:id/bridge-update', () => {
       owner_user_id: 'user-1',
       token_hash: 'hash',
       lights_enabled: true,
+      big_screen_mode: 'off' as const,
+      big_screen_token_hash: null,
     })
   const bridge = (conn: object) =>
     vi.mocked(connections.bridgeConnections).get.mockReturnValue({ helloReceived: true, bridgeUpdatable: true, ...conn } as any)

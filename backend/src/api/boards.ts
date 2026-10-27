@@ -4,7 +4,16 @@ import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
 import { requireAuth } from '../auth/middleware.js'
 import { bridgeConnections, type BmRequest, type BmResponse } from '../bridge-gw/connections.js'
-import { getBoardsByOwner, insertBoard, getBoardById, deleteBoard, renameBoard, hasActiveSessionOnBoard } from '../db/queries.js'
+import {
+  getBoardsByOwner,
+  insertBoard,
+  getBoardById,
+  deleteBoard,
+  renameBoard,
+  setBigScreenMode,
+  setBigScreenTokenHash,
+  hasActiveSessionOnBoard,
+} from '../db/queries.js'
 import { findOwnBoard } from '../boards/own.js'
 import { newBoardToken } from '../boards/token.js'
 import { fromSpec } from './spec.js'
@@ -127,6 +136,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           ip: bm?.hostname ?? null,
           // Full Board Manager origin (incl. port) for linking
           bmUrl: bm?.origin ?? null,
+          bigScreen: { mode: b.big_screen_mode, running: false, helper: false },
           bridgeUpdate: {
             available: bridgeUpdateFor(conn?.bridgeVersion, offered),
             updatable: conn?.bridgeUpdatable ?? false,
@@ -192,6 +202,19 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       if (!(await ownBoard(id, req.userId, reply))) return reply
       await renameBoard(db, id, name)
       return reply.send({ id, name })
+    },
+  )
+
+  app.patch<Route<'setBigScreenMode'>>(
+    '/api/boards/:id/big-screen',
+    { preValidation: requireAuth, schema: fromSpec('setBigScreenMode') },
+    async (req, reply) => {
+      const { id } = req.params
+      const { mode } = req.body
+      if (!(await ownBoard(id, req.userId, reply))) return reply
+      await setBigScreenMode(db, id, mode)
+      if (mode === 'off') await setBigScreenTokenHash(db, id, null)
+      return reply.send({ id, mode })
     },
   )
 

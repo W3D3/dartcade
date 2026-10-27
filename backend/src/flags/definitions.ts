@@ -71,6 +71,11 @@ export const FLAG_META: Record<string, FlagMeta> = {
     description: 'Shows Settings → Lights, so players can pair WLED devices and drive them from games.',
     defaultRule: 'admins',
   },
+  'bigscreen.enabled': {
+    kind: 'boolean',
+    description: "Big screen: a view-only game display that follows a board, optionally on the bridge machine's screen",
+    defaultRule: 'admins',
+  },
   'caller.autodartsImport': {
     kind: 'boolean',
     description: "Lets players import Autodarts' caller voices in Settings → Caller.",
@@ -167,6 +172,12 @@ export function flagDefinitions(
       defaultVariant: 'off',
       disabled: false,
       contextEvaluator: on('lights.enabled', isAdmin),
+    },
+    'bigscreen.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('bigscreen.enabled', isAdmin),
     },
     'caller.autodartsImport': {
       variants: { on: true, off: false },

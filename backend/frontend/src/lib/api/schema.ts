@@ -231,6 +231,25 @@ export interface paths {
         patch: operations["renameBoard"];
         trace?: never;
     };
+    "/api/boards/{id}/big-screen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Set when the board's big screen runs (owner only) */
+        patch: operations["setBigScreenMode"];
+        trace?: never;
+    };
     "/api/boards/{id}/status": {
         parameters: {
             query?: never;
@@ -2632,6 +2651,26 @@ export interface components {
             /** @description Board Manager origin incl. port, e.g. http://192.168.0.109:3180 */
             bmUrl: string | null;
             bridgeUpdate: components["schemas"]["BridgeUpdate"];
+            bigScreen: components["schemas"]["BoardBigScreen"];
+        };
+        BoardBigScreen: {
+            mode: components["schemas"]["BigScreenMode"];
+            /** @description A big-screen window is following the board */
+            running: boolean;
+            /** @description The bridge machine can open the big screen on its own display */
+            helper: boolean;
+        };
+        /**
+         * @description off: never. auto: whenever a game starts on the board. manual: when the owner starts it
+         * @enum {string}
+         */
+        BigScreenMode: "off" | "auto" | "manual";
+        BigScreenModeRequest: {
+            mode: components["schemas"]["BigScreenMode"];
+        };
+        BigScreenModeResponse: {
+            id: string;
+            mode: components["schemas"]["BigScreenMode"];
         };
         BridgeUpdate: {
             /** @description The release this server offers when it is newer than the bridge, e.g. v0.9.2 (never a major above the server's own; a 0.x server also keeps the minor) */
@@ -4229,6 +4268,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RenamedBoard"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    setBigScreenMode: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BigScreenModeRequest"];
+            };
+        };
+        responses: {
+            /** @description The new setting */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BigScreenModeResponse"];
                 };
             };
             400: components["responses"]["BadRequest"];
