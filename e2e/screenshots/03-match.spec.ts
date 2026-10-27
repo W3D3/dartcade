@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
+import type { Browser, Page } from '@playwright/test'
 import {
   VIEW,
   open,
@@ -14,12 +14,26 @@ import {
   dart,
   entryMode,
   openHash,
+  type Who,
 } from './helpers.js'
 
 /** One visit on this page: its darts, then Next player (unless it's the visit still being thrown). */
 async function visit(page: Page, darts: string[], done = true): Promise<void> {
   for (const d of darts) await dart(page, d)
   if (done) await page.getByRole('button', { name: 'Next player' }).click()
+}
+
+/** The game upright, with the board: on a tablet (820×1180) and on a monitor on its side (1080×1920). */
+async function portraitShots(browser: Browser, who: Who, session: string, file: string, name: string): Promise<void> {
+  for (const view of [VIEW.tabletPortrait, VIEW.monitorPortrait]) {
+    const s = await open(browser, who, view)
+    await s.page.goto(`/#/session/${session}`)
+    await expect(s.page.getByText(name).first()).toBeVisible()
+    await entryMode(s.page, 'Board')
+    await expect(s.page.getByRole('button', { name: 'Treble', exact: true })).toHaveCount(0)
+    await shot(s.page, `portrait/${file}-${view.width}x${view.height}.png`)
+    await s.ctx.close()
+  }
 }
 
 test('a duel on a tablet: board and keypad', async ({ browser }) => {
@@ -40,12 +54,7 @@ test('a duel on a tablet: board and keypad', async ({ browser }) => {
   await entryMode(luke.page, 'Board')
   await shot(luke.page, 'tablet/match-duel-board-1180x820.png')
 
-  const portrait = await open(browser, 'luke', VIEW.tabletPortrait)
-  await portrait.page.goto(`/#/session/${session}`)
-  await entryMode(portrait.page, 'Enter')
-  await expect(portrait.page.getByText('Anna').first()).toBeVisible()
-  await shot(portrait.page, 'tablet/match-duel-820x1180.png')
-  await portrait.ctx.close()
+  await portraitShots(browser, 'luke', session, 'x01-duel', 'Anna')
 
   await endGame(luke.page)
   await leaveLobby(luke.page)
@@ -72,10 +81,31 @@ test('a party of four on a tablet', async ({ browser }) => {
   await expect(small.page.getByText('Sophie').first()).toBeVisible()
   await shot(small.page, 'tablet/match-party-1024x768.png')
   await small.ctx.close()
+  await portraitShots(browser, 'phil', session, 'x01-party', 'Sophie')
 
   await endGame(phil.page)
   await leaveLobby(phil.page)
   await phil.ctx.close()
+})
+
+test('around the clock upright', async ({ browser }) => {
+  const michael = await open(browser, 'michael', VIEW.tablet)
+  const lobby = await hostLobby(michael.page, "Michael's lobby", {
+    gameId: 'atc',
+    config: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
+  })
+  await addGuest(michael.page, lobby, 'Anna')
+  const session = await startLobbyGame(michael.page, lobby)
+  await entryMode(michael.page, 'Enter')
+  await visit(michael.page, ['S1', 'S2', 'S3'])
+  await visit(michael.page, ['S1', 'MISS', 'S2'])
+  await visit(michael.page, ['S4', 'S5', 'MISS'])
+  await visit(michael.page, ['S3', 'S4', 'S5'])
+  await visit(michael.page, ['S6'], false)
+  await portraitShots(browser, 'michael', session, 'atc-duel', 'Anna')
+  await endGame(michael.page)
+  await leaveLobby(michael.page)
+  await michael.ctx.close()
 })
 
 test('a remote game waiting for a player', async ({ browser }) => {

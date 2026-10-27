@@ -20,6 +20,8 @@ export const VIEW = {
   /** docs/tablet: 1:1, the size in the file name */
   tablet: { width: 1180, height: 820, scale: 1 },
   tabletPortrait: { width: 820, height: 1180, scale: 1 },
+  /** docs/portrait: a monitor on its side, 1:1 */
+  monitorPortrait: { width: 1080, height: 1920, scale: 1 },
   tablet1024: { width: 1024, height: 768, scale: 1 },
   tablet1024Short: { width: 1024, height: 730, scale: 1 },
   /** 2160×1350 */
