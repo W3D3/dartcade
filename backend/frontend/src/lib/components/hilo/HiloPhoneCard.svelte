@@ -66,7 +66,7 @@
       <span class="text-[15px] font-semibold text-ink-2 truncate {s.out ? 'line-through' : ''}">{name}</span>
       <span class="text-[12px] truncate {lost && !s.out ? 'text-[#e0827a]' : 'text-text-dim'}">{sub}</span>
     </span>
-    <span class="ml-auto"
+    <span class="ml-auto shrink-0"
       ><Hearts lives={s.lives} total={game.cfg.lives} tone={justLost ? 'accent' : 'muted'} {justLost} size="w-5 h-5" /></span
     >
   </section>
