@@ -110,6 +110,105 @@ func (j *BaseEnvelope) UnmarshalJSON(value []byte) error {
 	return nil
 }
 
+// Backend to bridge (kind bigscreen.close): the helper closes the big-screen
+// window.
+type BigScreenCloseData map[string]interface{}
+
+// Backend to bridge (kind bigscreen.open): the helper opens this big-screen page
+// on the board's display.
+type BigScreenOpenData struct {
+	// Url corresponds to the JSON schema field "url".
+	Url string `json:"url" yaml:"url" mapstructure:"url"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BigScreenOpenData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["url"]; raw != nil && !ok {
+		return fmt.Errorf("field url in BigScreenOpenData: required")
+	}
+	type Plain BigScreenOpenData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = BigScreenOpenData(plain)
+	return nil
+}
+
+type BigScreenStatusData struct {
+	// Browser corresponds to the JSON schema field "browser".
+	Browser *string `json:"browser,omitempty,omitzero" yaml:"browser,omitempty" mapstructure:"browser,omitempty"`
+
+	// The helper on the bridge machine's desktop is connected.
+	Helper bool `json:"helper" yaml:"helper" mapstructure:"helper"`
+
+	// A big-screen window is open.
+	Running bool `json:"running" yaml:"running" mapstructure:"running"`
+
+	// Set once, when the helper has just started (a desktop login): auto mode opens
+	// the screen on it.
+	Startup *bool `json:"startup,omitempty,omitzero" yaml:"startup,omitempty" mapstructure:"startup,omitempty"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BigScreenStatusData) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["helper"]; raw != nil && !ok {
+		return fmt.Errorf("field helper in BigScreenStatusData: required")
+	}
+	if _, ok := raw["running"]; raw != nil && !ok {
+		return fmt.Errorf("field running in BigScreenStatusData: required")
+	}
+	type Plain BigScreenStatusData
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	*j = BigScreenStatusData(plain)
+	return nil
+}
+
+// Bridge to backend, when the helper connects, disconnects or its window opens or
+// closes. Not an event: no envelope, never acked or stored.
+type BigScreenStatusMessage struct {
+	// Data corresponds to the JSON schema field "data".
+	Data BigScreenStatusData `json:"data" yaml:"data" mapstructure:"data"`
+
+	// Kind corresponds to the JSON schema field "kind".
+	Kind string `json:"kind" yaml:"kind" mapstructure:"kind"`
+}
+
+// UnmarshalJSON implements json.Unmarshaler.
+func (j *BigScreenStatusMessage) UnmarshalJSON(value []byte) error {
+	var raw map[string]interface{}
+	if err := json.Unmarshal(value, &raw); err != nil {
+		return err
+	}
+	if _, ok := raw["data"]; raw != nil && !ok {
+		return fmt.Errorf("field data in BigScreenStatusMessage: required")
+	}
+	if _, ok := raw["kind"]; raw != nil && !ok {
+		return fmt.Errorf("field kind in BigScreenStatusMessage: required")
+	}
+	type Plain BigScreenStatusMessage
+	var plain Plain
+	if err := json.Unmarshal(value, &plain); err != nil {
+		return err
+	}
+	if plain.Kind != "bigscreen.status" {
+		return fmt.Errorf("field %s: must be equal to %s", "kind", "bigscreen.status")
+	}
+	*j = BigScreenStatusMessage(plain)
+	return nil
+}
+
 // Every raw Board Manager frame, forwarded verbatim (except auth frames, which are
 // dropped). Secrets (api_key, token) are never forwarded. The raw BM payload is in
 // the top-level `raw` field.

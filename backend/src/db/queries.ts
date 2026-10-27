@@ -5,7 +5,7 @@ import { sql } from 'kysely'
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from './schema.js'
-import type { BigScreenMode } from '../shared/bigScreen.js'
+import type { components } from '../schema/api.js'
 import { normalizeName } from '../users/names.js'
 import { PairingCodeClaimedError } from './errors.js'
 import { groupBy } from '../util/groupBy.js'
@@ -371,16 +371,50 @@ export async function renameBoard(db: Kysely<Database>, id: string, name: string
   await db.updateTable('boards').set({ name }).where('id', '=', id).execute()
 }
 
-export async function setBigScreenMode(db: Kysely<Database>, id: string, mode: BigScreenMode): Promise<void> {
-  await db.updateTable('boards').set({ big_screen_mode: mode }).where('id', '=', id).execute()
+/** Sets the mode; off also drops the token in the same UPDATE, so a live token never outlives it. */
+export async function setBigScreenMode(db: Kysely<Database>, id: string, mode: components['schemas']['BigScreenMode']): Promise<void> {
+  await db
+    .updateTable('boards')
+    .set(mode === 'off' ? { big_screen_mode: mode, big_screen_token_hash: null } : { big_screen_mode: mode })
+    .where('id', '=', id)
+    .execute()
 }
 
-export async function setBigScreenTokenHash(db: Kysely<Database>, id: string, hash: string | null): Promise<void> {
-  await db.updateTable('boards').set({ big_screen_token_hash: hash }).where('id', '=', id).execute()
+/** The board's name and its owner's account settings in one query (a big-screen push); undefined: no such board. */
+export async function getBoardWithOwnerPrefs(db: Kysely<Database>, id: string) {
+  return db
+    .selectFrom('boards')
+    .leftJoin('user', 'user.id', 'boards.owner_user_id')
+    .select(['boards.name', 'user.preferences'])
+    .where('boards.id', '=', id)
+    .executeTakeFirst()
+}
+
+/** Stores the big-screen token hash unless the board's mode is off (or the board is gone); false then. Decided in the UPDATE, so a mode-off in between wins. */
+export async function claimBigScreenToken(db: Kysely<Database>, id: string, hash: string): Promise<boolean> {
+  const r = await db
+    .updateTable('boards')
+    .set({ big_screen_token_hash: hash })
+    .where('id', '=', id)
+    .where('big_screen_mode', '<>', 'off')
+    .executeTakeFirst()
+  return r.numUpdatedRows > 0n
+}
+
+/** Drops the board's big-screen token; with `onlyHash`, only if that one is still the board's (a rollback must not wipe a newer token). */
+export async function clearBigScreenToken(db: Kysely<Database>, id: string, onlyHash?: string): Promise<void> {
+  let q = db.updateTable('boards').set({ big_screen_token_hash: null }).where('id', '=', id)
+  if (onlyHash !== undefined) q = q.where('big_screen_token_hash', '=', onlyHash)
+  await q.execute()
 }
 
 export async function getBoardByBigScreenTokenHash(db: Kysely<Database>, hash: string) {
-  return db.selectFrom('boards').selectAll().where('big_screen_token_hash', '=', hash).executeTakeFirst()
+  return db
+    .selectFrom('boards')
+    .selectAll()
+    .where('big_screen_token_hash', '=', hash)
+    .where('big_screen_mode', '<>', 'off')
+    .executeTakeFirst()
 }
 
 export async function getBoardByTokenHash(db: Kysely<Database>, tokenHash: string) {

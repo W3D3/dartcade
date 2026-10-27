@@ -9,6 +9,7 @@ import { WebSocket as WsClient } from 'ws'
 import { BridgeConnections } from './connections.js'
 import { CameraStills, MAX_STILL_BYTES } from '../camera/store.js'
 import { LightsStore } from '../lights/store.js'
+import { BigScreenState } from '../boards/bigScreenState.js'
 import { LobbyHub } from '../lobby/hub.js'
 
 vi.mock('../db/queries.js', () => ({
@@ -647,6 +648,48 @@ describe('wled telemetry from the bridge', () => {
     await flush()
 
     expect(lights.status('board-w4', 'aa')).toMatchObject({ reachable: false, error: 'timeout' })
+  })
+
+  describe('bigscreen.status', () => {
+    const status = (data: object) => Buffer.from(JSON.stringify({ kind: 'bigscreen.status', data }))
+    const setup = async (boardId: string) => {
+      vi.mocked(queries.getBoardByTokenHash).mockResolvedValue({ id: boardId, hardware_id: null, owner_user_id: 'owner-1' } as any)
+      const engine = { onBridgeEvent: vi.fn().mockResolvedValue(undefined), onBoardPresence: vi.fn() } as any
+      const bigScreenState = new BigScreenState()
+      const onBigScreenStartup = vi.fn()
+      const onBoardStatus = vi.fn()
+      const socket = new FakeSocket()
+      handleBridgeConnection(socket as any, { token: 'tok' }, { db: {} as any, engine, bigScreenState, onBigScreenStartup, onBoardStatus })
+      socket.emit('message', Buffer.from(JSON.stringify({ kind: 'bridge.hello', data: {} })))
+      await flush()
+      onBoardStatus.mockClear()
+      return { bigScreenState, onBigScreenStartup, onBoardStatus, socket }
+    }
+    const send = async (socket: FakeSocket, data: object) => {
+      socket.emit('message', status(data))
+      await flush()
+      await flush()
+    }
+
+    it('keeps the report, tells the owner, and asks for an auto open only on a helper startup', async () => {
+      const { bigScreenState, onBigScreenStartup, onBoardStatus, socket } = await setup('board-bs1')
+      await send(socket, { helper: true, running: false })
+      expect(bigScreenState.get('board-bs1')).toEqual({ helper: true, running: false })
+      expect(onBoardStatus).toHaveBeenCalledWith('owner-1', 'board-bs1', true)
+      await send(socket, { helper: true, running: false, startup: false })
+      await send(socket, { helper: false, running: false, startup: true })
+      expect(onBigScreenStartup).not.toHaveBeenCalled()
+      await send(socket, { helper: true, running: false, startup: true })
+      expect(onBigScreenStartup).toHaveBeenCalledWith('board-bs1')
+    })
+
+    it('clears the report when the bridge drops', async () => {
+      const { bigScreenState, socket } = await setup('board-bs2')
+      await send(socket, { helper: true, running: true })
+      socket.emit('close')
+      await flush()
+      expect(bigScreenState.get('board-bs2').running).toBe(false)
+    })
   })
 
   it('drops an invalid wled.status payload silently', async () => {

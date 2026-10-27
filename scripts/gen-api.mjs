@@ -61,6 +61,7 @@ async function genWsFile(name) {
 async function genWs() {
   await genWsFile('game-ws')
   await genWsFile('lobby-ws')
+  await genWsFile('board-ws')
 }
 
 // zod schemas for parsing incoming data. Two rewrites before converting:
@@ -82,6 +83,7 @@ function prepForZod(s) {
 async function genZod() {
   const ws = prepForZod(await $RefParser.dereference(r('schema/game-ws-v1.json')))
   const lobby = prepForZod(await $RefParser.dereference(r('schema/lobby-ws-v1.json')))
+  const board = prepForZod(await $RefParser.dereference(r('schema/board-ws-v1.json')))
   const ab = prepForZod(await $RefParser.dereference(r('schema/adbridge-v1.json')))
   const api = prepForZod(JSON.parse(readFileSync(join(BACKEND_SCHEMA, 'api-v1.deref.json'), 'utf8')))
   const schemas = {
@@ -93,6 +95,7 @@ async function genZod() {
     LobbyServerMessageSchema: lobby.$defs.LobbyServerMessage,
     MeMessageSchema: lobby.$defs.MeMessage,
     MeServerMessageSchema: lobby.$defs.MeServerMessage,
+    BigScreenMessageSchema: board.$defs.BigScreenMessage,
     DartSchema: ab.$defs.Dart,
     DartDetectedDataSchema: ab.$defs.DartDetectedData,
     DartCorrectedDataSchema: ab.$defs.DartCorrectedData,
@@ -100,6 +103,7 @@ async function genZod() {
     CameraStillMessageSchema: ab.$defs.CameraStillMessage,
     WledFoundMessageSchema: ab.$defs.WledFoundMessage,
     WledStatusMessageSchema: ab.$defs.WledStatusMessage,
+    BigScreenStatusMessageSchema: ab.$defs.BigScreenStatusMessage,
     BmRequestDataSchema: ab.$defs.BmRequestData,
     BmResponseMessageSchema: ab.$defs.BmResponseMessage,
     BridgeUpdateStatusMessageSchema: ab.$defs.BridgeUpdateStatusMessage,

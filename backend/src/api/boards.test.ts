@@ -4,6 +4,8 @@ import { boardsApiPlugin } from './boards.js'
 import { CameraStills } from '../camera/store.js'
 import type { Session } from '../session/types.js'
 import { BridgeUpdates } from '../boards/bridgeUpdate.js'
+import { hashBigScreenToken } from '../bigscreen/token.js'
+import { BigScreenState } from '../boards/bigScreenState.js'
 
 vi.mock('../auth/middleware.js', () => ({
   requireAuth: vi.fn((req: any, _reply: any, done: () => void) => {
@@ -33,6 +35,12 @@ vi.mock('../db/queries.js', () => ({
   hasActiveSessionOnBoard: vi.fn().mockResolvedValue(false),
 }))
 
+vi.mock('../flags/index.js', () => ({
+  flagEnabled: vi.fn().mockResolvedValue(true),
+  loadFlagUser: vi.fn().mockResolvedValue(null),
+}))
+
+import * as flags from '../flags/index.js'
 import * as queries from '../db/queries.js'
 import * as connections from '../bridge-gw/connections.js'
 import * as middleware from '../auth/middleware.js'
@@ -49,6 +57,7 @@ function makeApp(
     bridgeReleases?: { offered: () => string | null }
     bridgeUpdates?: BridgeUpdates
     bigScreen?: { revoke: (boardId: string, code?: number) => void }
+    bigScreenState?: BigScreenState
   } = {},
 ) {
   const app = createFastify()
@@ -512,11 +521,12 @@ describe('PATCH /api/boards/:id/big-screen', () => {
     expect(revoke).toHaveBeenCalledWith('b1')
   })
 
-  it('revokes the token when turned off', async () => {
+  it('turns off in one query that also drops the token', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(row)
     const res = await patch(makeApp(), { mode: 'off' })
     expect(res.statusCode).toBe(200)
-    expect(queries.setBigScreenTokenHash).toHaveBeenCalledWith(expect.anything(), 'b1', null)
+    expect(queries.setBigScreenMode).toHaveBeenCalledWith(expect.anything(), 'b1', 'off')
+    expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
   })
 
   it('rejects an unknown mode', async () => {
@@ -534,6 +544,110 @@ describe('PATCH /api/boards/:id/big-screen', () => {
     vi.mocked(queries.getBoardsByOwner).mockResolvedValue([row])
     const res = await makeApp().inject({ method: 'GET', url: '/api/boards' })
     expect(res.json().boards[0].bigScreen).toEqual({ mode: 'off', running: false, helper: false })
+  })
+
+  it('lists what the bridge reported', async () => {
+    vi.mocked(queries.getBoardsByOwner).mockResolvedValue([row])
+    const bigScreenState = new BigScreenState()
+    bigScreenState.set('b1', { helper: true, running: true })
+    const res = await makeApp({ bigScreenState }).inject({ method: 'GET', url: '/api/boards' })
+    expect(res.json().boards[0].bigScreen).toEqual({ mode: 'off', running: true, helper: true })
+  })
+
+  describe('start and stop', () => {
+    const post = (app: ReturnType<typeof makeApp>, op: 'start' | 'stop') =>
+      app.inject({ method: 'POST', url: `/api/boards/b1/big-screen/${op}` })
+    const manual = { ...row, big_screen_mode: 'manual' as const }
+    beforeEach(() => vi.stubEnv('PUBLIC_URL', 'https://dart.test'))
+    const online = () => vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(true)
+
+    it('start stores the hash of a new token and sends the page link', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      online()
+      const res = await post(makeApp(), 'start')
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ running: true })
+      const msg = send.mock.calls[0][1]
+      expect(msg.kind).toBe('bigscreen.open')
+      const [, token] = msg.data.url.split('#/big-screen/b1?k=')
+      expect(token).toMatch(/^[0-9a-f]{64}$/)
+      const hash = vi.mocked(queries.setBigScreenTokenHash).mock.calls[0][2]
+      expect(hash).toBe(hashBigScreenToken(token))
+    })
+
+    it('start is refused when the owner lacks the flag, with nothing minted or sent', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      online()
+      vi.mocked(flags.flagEnabled).mockResolvedValueOnce(false)
+      expect((await post(makeApp(), 'start')).statusCode).toBe(403)
+      expect(send).not.toHaveBeenCalled()
+      expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
+    })
+
+    it('stop closes the window, drops the token and cuts open sockets', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      online()
+      const revoke = vi.fn()
+      const res = await post(makeApp({ bigScreen: { revoke } }), 'stop')
+      expect(res.json()).toEqual({ running: false })
+      expect(send).toHaveBeenCalledWith('b1', { kind: 'bigscreen.close', data: {} })
+      expect(queries.setBigScreenTokenHash).toHaveBeenCalledWith(expect.anything(), 'b1', null)
+      expect(revoke).toHaveBeenCalledWith('b1')
+    })
+
+    it.each(['start', 'stop'] as const)('%s is 409 while the mode is off', async op => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(row)
+      online()
+      expect((await post(makeApp(), op)).statusCode).toBe(409)
+      expect(send).not.toHaveBeenCalled()
+    })
+
+    it('start is 409 while the bridge is offline', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(false)
+      expect((await post(makeApp(), 'start')).statusCode).toBe(409)
+      expect(send).not.toHaveBeenCalled()
+    })
+
+    it('stop still drops the token and cuts sockets while the bridge is offline, sending nothing', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(false)
+      const revoke = vi.fn()
+      const res = await post(makeApp({ bigScreen: { revoke } }), 'stop')
+      expect(res.statusCode).toBe(200)
+      expect(res.json()).toEqual({ running: false })
+      expect(queries.setBigScreenTokenHash).toHaveBeenCalledWith(expect.anything(), 'b1', null)
+      expect(revoke).toHaveBeenCalledWith('b1')
+      expect(send).not.toHaveBeenCalled()
+    })
+
+    it('start cuts the old token sockets before sending the new link', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      online()
+      const revoke = vi.fn()
+      await post(makeApp({ bigScreen: { revoke } }), 'start')
+      expect(revoke).toHaveBeenCalledWith('b1')
+      expect(revoke.mock.invocationCallOrder[0]).toBeLessThan(send.mock.invocationCallOrder[0])
+    })
+
+    it('start is 409 without a public URL, minting nothing', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      online()
+      vi.stubEnv('PUBLIC_URL', '')
+      vi.stubEnv('BETTER_AUTH_URL', '')
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      expect((await post(makeApp(), 'start')).statusCode).toBe(409)
+      expect(send).not.toHaveBeenCalled()
+      expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
+      expect(warn).toHaveBeenCalled()
+      vi.unstubAllEnvs()
+      warn.mockRestore()
+    })
+
+    it.each(['start', 'stop'] as const)("%s is 403 on another user's board", async op => {
+      vi.mocked(queries.getBoardById).mockResolvedValue({ ...manual, owner_user_id: 'user-2' })
+      expect((await post(makeApp(), op)).statusCode).toBe(403)
+    })
   })
 })
 
