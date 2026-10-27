@@ -27,12 +27,15 @@ export type BigScreenState = Omit<BigScreenMessage, 'screen'> & {
 }
 
 /** The saved game, if it has the shape the win views read (a stale tab or a bad one shows without it). */
-function parseDetail(x: unknown): GameDetail | undefined {
-  const d = x as Partial<GameDetail> | null | undefined
-  return d && typeof d === 'object' && Array.isArray(d.game?.players) && Array.isArray(d.stats?.rows) && d.detail
-    ? (d as GameDetail)
-    : undefined
+const DetailShape = z.object({
+  game: z.object({ players: z.array(z.unknown()) }),
+  stats: z.object({ rows: z.array(z.unknown()) }),
+  detail: z.unknown().refine(Boolean),
+})
+function isDetail(x: unknown): x is GameDetail {
+  return DetailShape.safeParse(x).success
 }
+const parseDetail = (x: unknown): GameDetail | undefined => (isDetail(x) ? x : undefined)
 
 function parseMessage(data: unknown): BigScreenState | null {
   const r = MessageSchema.safeParse(data)

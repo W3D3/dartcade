@@ -19,7 +19,7 @@
   const landscape = $derived(orientation === 'landscape')
   const second = $derived(v.standings.at(1))
   // 2nd, 1st, 3rd: the winner in the middle; the rest below as rows
-  const podium = $derived([v.standings[1], v.standings[0], v.standings[2]].filter((s): s is X01WinStanding => s !== undefined))
+  const podium = $derived([v.standings.at(1), v.standings.at(0), v.standings.at(2)].filter((s): s is X01WinStanding => s !== undefined))
   const rest = $derived(v.standings.slice(3))
   // "Board screen in 0:42": the time is picked out in bold
   const cut = $derived(countdown.lastIndexOf(' '))
