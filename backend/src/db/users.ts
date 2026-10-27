@@ -21,6 +21,15 @@ export type Account = {
   avatar: Avatar
 }
 
+/** How the account can sign in (better-auth's account rows): with its password, through Discord, or both. */
+export async function signInMethods(db: Kysely<Database>, userId: string): Promise<('password' | 'discord')[]> {
+  const rows = await db.selectFrom('account').select(['providerId', 'password']).where('userId', '=', userId).execute()
+  return [
+    ...(rows.some(r => r.providerId === 'credential' && r.password) ? (['password'] as const) : []),
+    ...(rows.some(r => r.providerId === 'discord') ? (['discord'] as const) : []),
+  ]
+}
+
 /** The Avatar union shape from the avatar_* columns (migrations 031, 038). */
 export function toAvatar(row: {
   avatar_kind: 'none' | 'preset' | 'upload'

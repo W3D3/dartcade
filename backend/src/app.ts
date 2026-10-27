@@ -43,7 +43,7 @@ import { feedbackAddress, feedbackApiPlugin } from './api/feedback.js'
 import { legalApiPlugin } from './api/legal.js'
 import { loadLegal, legalValues } from './legal/load.js'
 import { createFastify } from './api/fastify.js'
-import { auth, mailConfig, mailer } from './auth/index.js'
+import { auth, discordConfig, mailConfig, mailer } from './auth/index.js'
 import type { LobbyService } from './lobby/service.js'
 import type { LobbyHub } from './lobby/hub.js'
 import type { FriendsService } from './friends/service.js'
@@ -221,6 +221,7 @@ export async function buildApp({
     verification: mailConfig.verification,
     contactEmail: legalValues(process.env).contactEmail?.trim() || null,
     feedback: mailer !== null && feedbackTo !== null,
+    discord: discordConfig !== null,
   })
   await app.register(feedbackApiPlugin, { db, mailer, to: feedbackTo })
   await app.register(legalApiPlugin, { docs: legalDocs })

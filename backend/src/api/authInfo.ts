@@ -4,7 +4,7 @@ import type { Route } from './route.js'
 
 export function authInfoApiPlugin(
   app: FastifyInstance,
-  opts: FastifyPluginOptions & { mail: boolean; verification: boolean; contactEmail: string | null; feedback: boolean },
+  opts: FastifyPluginOptions & { mail: boolean; verification: boolean; contactEmail: string | null; feedback: boolean; discord: boolean },
   done: (err?: Error) => void,
 ): void {
   app.get<Route<'getAuthInfo'>>('/api/auth-info', { schema: fromSpec('getAuthInfo') }, () => ({
@@ -12,6 +12,7 @@ export function authInfoApiPlugin(
     verification: opts.verification,
     contactEmail: opts.contactEmail,
     feedback: opts.feedback,
+    discord: opts.discord,
   }))
   done()
 }

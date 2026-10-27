@@ -2358,6 +2358,8 @@ export interface components {
             };
         };
         AuthInfo: {
+            /** @description Sign in with Discord is on (DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET are set) */
+            discord: boolean;
             /** @description Bug reports can be sent from the app (POST /api/feedback) */
             feedback: boolean;
             /** @description Password reset and mailed confirmations are available */
@@ -2986,6 +2988,8 @@ export interface components {
             number: number;
         };
         Me: {
+            /** @description How you can sign in: with your password, through Discord, or both (Settings hides password steps without one) */
+            signInMethods: ("password" | "discord")[];
             /** @description The avatar finishes you may wear, on either layer (progression rewards) */
             pictures: string[];
             id: string;

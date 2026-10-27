@@ -7,6 +7,7 @@ import { authOptions } from './options.js'
 import { setAccountCleanup } from './cleanup.js'
 import { createMailer } from '../mail/transport.js'
 import type { MailConfig } from '../mail/config.js'
+import { signInMethods } from '../db/users.js'
 
 // The real mailer, over a fake SMTP transport: what reaches sendMail is what would be sent
 const sendMail = vi.fn((_mail: { to: string; subject: string; text: string }) => Promise.resolve())
@@ -113,6 +114,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Sign in with Discord', () => {
     expect(user).toMatchObject({ name: 'Annie.Darts', emailVerified: true })
     expect(user!.terms_accepted_at).toBeInstanceOf(Date)
     expect(await providersOf(user!.id)).toEqual(['discord'])
+    expect(await signInMethods(db, user!.id)).toEqual(['discord'])
     const session = await auth.handler(new Request(`${base}/api/auth/get-session`, { headers: { cookie } }))
     expect(((await session.json()) as { user: { id: string } }).user.id).toBe(user!.id)
   })
@@ -148,6 +150,7 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('Sign in with Discord', () => {
       const { location } = await discordSignIn(auth, profile('2001', { email: 'lena@example.org', verified: true }))
       expect(location).toBe(`${base}/#/`)
       expect(await providersOf(lena.id)).toEqual(['credential', 'discord'])
+      expect(await signInMethods(db, lena.id)).toEqual(['password', 'discord'])
       expect((await userByEmail('lena@example.org'))?.name).toBe('Lena')
     })
 

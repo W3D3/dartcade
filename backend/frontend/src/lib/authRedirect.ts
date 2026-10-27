@@ -18,6 +18,18 @@ const VERIFY_EMAIL_ERRORS = new Set(['TOKEN_EXPIRED', 'INVALID_TOKEN', 'USER_NOT
  */
 export function authRedirect(search: string, hash: string): { hash: string; stripQuery: boolean } {
   const error = new URLSearchParams(search).get('error')
+  // A failed Sign in with Discord comes back to its errorCallbackURL, #/login, the same way
+  if (error && (hash === '#/login' || hash === '#/register'))
+    return { hash: `${hash}?error=${encodeURIComponent(error)}`, stripQuery: true }
   if (!error || hash.startsWith('#/reset') || !VERIFY_EMAIL_ERRORS.has(error)) return { hash, stripQuery: false }
   return { hash: `#/verify?error=${error}`, stripQuery: true }
+}
+
+/** What #/login says about a failed Sign in with Discord (better-auth's callback error codes). */
+export function socialError(code: string): string {
+  if (code === 'account_not_linked')
+    return 'This email already has a Dartcade account, or it isn’t verified on Discord. Sign in with your email and password.'
+  if (code === 'BANNED_USER') return 'This account is banned.'
+  if (code === 'access_denied') return 'Discord sign-in was cancelled.'
+  return 'Couldn’t sign in with Discord. Try again.'
 }
