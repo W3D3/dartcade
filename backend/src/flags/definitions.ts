@@ -25,10 +25,15 @@ function modeRule(o: { mode: 'off' | 'admins' | 'users' | 'on'; userIds: string[
 /** What the admin flags page shows for one flag (schema/api-v1.yaml, api/adminFlags.ts): who an
  *  on/off flag is on for by default, or a number flag's range and code default. */
 export type FlagMeta =
-  | { kind: 'boolean'; description: string; defaultRule: 'admins' | 'nobody' }
+  | { kind: 'boolean'; description: string; defaultRule: 'admins' | 'nobody' | 'everyone' }
   | { kind: 'number'; description: string; range: [number, number]; defaultNumber: number }
 
 export const FLAG_META: Record<string, FlagMeta> = {
+  'home.enabled': {
+    kind: 'boolean',
+    description: 'Makes Home the landing page. Off shows the Play page at the root instead.',
+    defaultRule: 'everyone',
+  },
   'gamemode.minigolf.enabled': {
     kind: 'boolean',
     description: 'Shows Minigolf on the Play page, so players can start Minigolf games.',
@@ -136,6 +141,12 @@ export function flagDefinitions(
   }
   return {
     // Descriptions: FLAG_META above, the single source (shown on the admin flags page).
+    'home.enabled': {
+      variants: { on: true, off: false },
+      defaultVariant: 'off',
+      disabled: false,
+      contextEvaluator: on('home.enabled', () => true),
+    },
     'gamemode.minigolf.enabled': {
       variants: { on: true, off: false },
       defaultVariant: 'off',

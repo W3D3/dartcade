@@ -3076,7 +3076,7 @@ export interface components {
              * @description Boolean flags only: who it's on for without FLAGS_ON
              * @enum {string}
              */
-            rule?: "admins" | "nobody";
+            rule?: "admins" | "nobody" | "everyone";
             /** @description Boolean flags only: turned on for everyone by FLAGS_ON */
             envOn?: boolean;
             /** @description Number flags only: set for this deployment by FLAG_VALUES */
