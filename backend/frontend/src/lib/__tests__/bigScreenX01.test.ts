@@ -265,7 +265,7 @@ describe('x01Win', () => {
     const placed = {
       ...detail,
       game: { ...detail.game, players: detail.game.players.map(p => ({ ...p, placement: 2 - p.seat })) },
-    } as GameDetail
+    }
     expect(x01Win(forfeit, placed).winner.name).toBe('Lena')
   })
 })
@@ -277,7 +277,7 @@ describe('big screen X01 components', () => {
       ['Christoph', 'Lena'],
       ['A', 'B', 'C', 'D'],
     ]) {
-      const { body } = render(X01Live, { props: { snapshot: x01({ players, ...live }), orientation, countdown: '' } })
+      const { body } = render(X01Live, { props: { snapshot: x01({ players, ...live }), orientation } })
       for (const text of ['THROWING', 'THIS VISIT', 'AVG', 'DARTS', 'TO WIN']) expect(body).toContain(text)
       expect(body).not.toContain('<button')
     }

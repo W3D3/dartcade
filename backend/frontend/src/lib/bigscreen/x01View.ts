@@ -170,7 +170,7 @@ export function x01Win(input: Snapshot, detail: GameDetail | null = null): X01Wi
     gameShot: shot ? (w.checkout?.darts ?? null) : null,
     gameShotText: shot ? `${first.name} · ${shot.scored} left · leg ${finishedLeg} in ${plural(legDarts, 'dart')}` : null,
     kicker: w.kicker.toUpperCase(),
-    note: g.firstTo > 1 && second ? `${plural(first.legs, 'leg')} to ${second.name}’s ${second.legs}` : '',
+    note: g.firstTo > 1 && standings.length > 1 ? `${plural(first.legs, 'leg')} to ${second.name}’s ${second.legs}` : '',
     party: isParty(standings.length),
     standings,
   }

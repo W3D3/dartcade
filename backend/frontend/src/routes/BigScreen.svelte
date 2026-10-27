@@ -20,13 +20,22 @@
   import GenericResult from '$lib/components/bigscreen/GenericResult.svelte'
   import X01Live from '$lib/components/bigscreen/X01Live.svelte'
   import X01Win from '$lib/components/bigscreen/X01Win.svelte'
+  import P121Live from '$lib/components/bigscreen/P121Live.svelte'
+  import AtcLive from '$lib/components/bigscreen/AtcLive.svelte'
+  import HiloLive from '$lib/components/bigscreen/HiloLive.svelte'
 
   let { params }: { params: { board: string } } = $props()
 
   type ViewProps = { snapshot: Snapshot; orientation: 'landscape' | 'portrait'; countdown: string; detail: GameDetail | null }
   // Registration point for the per-game live and win views ('x01', 'x01-win', 'atc', 'p121', 'hilo');
   // a key without a component here shows the fallback card.
-  const views: Partial<Record<ViewKey, Component<ViewProps>>> = { x01: X01Live, 'x01-win': X01Win }
+  const views: Partial<Record<ViewKey, Component<ViewProps>>> = {
+    x01: X01Live,
+    'x01-win': X01Win,
+    p121: P121Live,
+    atc: AtcLive,
+    hilo: HiloLive,
+  }
 
   // The board of the route is fixed for the page's life
   // svelte-ignore state_referenced_locally
