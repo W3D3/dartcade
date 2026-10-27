@@ -1,4 +1,5 @@
 import type { BetterAuthOptions } from 'better-auth'
+import { createAuthMiddleware } from 'better-auth/api'
 import { admin, openAPI } from 'better-auth/plugins'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -10,13 +11,22 @@ import { nameHooks } from './nameHooks.js'
 import { termsGate } from './termsGate.js'
 import { bannedSignIn } from './banGate.js'
 import { runAccountCleanup } from './cleanup.js'
+import { passwordlessDelete } from './deleteGate.js'
+import { discordProvider, type DiscordConfig } from './discord.js'
 
-export type AuthDeps = { db: Kysely<Database>; mail: MailConfig; mailer: Mailer | null; trustedOrigins: string[] }
+export type AuthDeps = {
+  db: Kysely<Database>
+  mail: MailConfig
+  mailer: Mailer | null
+  trustedOrigins: string[]
+  /** Unset or null: no Sign in with Discord */
+  discord?: DiscordConfig
+}
 
-/** better-auth's options: email/password with optional verification, and terms acceptance at sign-up. */
+/** better-auth's options: email/password with optional verification, Sign in with Discord if configured, and terms acceptance at sign-up. */
 // No return type annotation: it would widen to BetterAuthOptions and lose the plugins' literal
 // types (e.g. admin()'s and openAPI()'s own auth.api methods); `satisfies` below checks the shape instead.
-export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
+export function authOptions({ db, mail, mailer, trustedOrigins, discord = null }: AuthDeps) {
   return {
     database: { db, type: 'pg' as const },
     emailAndPassword: {
@@ -66,8 +76,20 @@ export function authOptions({ db, mail, mailer, trustedOrigins }: AuthDeps) {
           : undefined,
       },
     },
+    // Sign in with Discord, when the deployment has its app's credentials. Linking a Discord sign-in
+    // to an existing account with the same email stays better-auth's default, which is what we
+    // want: only when Discord reports the email verified (Discord is not a trustedProvider, which
+    // would skip that) and the account's own email is verified too; otherwise the sign-in fails
+    // with account_not_linked, so an unverified Discord email never takes over a password account.
+    socialProviders: discord ? { discord: discordProvider(discord) } : {},
     databaseHooks: { ...nameHooks(db), ...sessionHooks(db) },
-    hooks: { before: termsGate, after: bannedSignIn(db) },
+    hooks: {
+      before: createAuthMiddleware(async ctx => {
+        termsGate(ctx)
+        if (ctx.path === '/delete-user') return passwordlessDelete(ctx)
+      }),
+      after: bannedSignIn(db),
+    },
     // Bans go only through PUT/DELETE /api/admin/users/{id}/ban, which writes the audit row and
     // closes the player's sockets, lobby and game; the admin plugin's own routes would skip that.
     disabledPaths: ['/admin/ban-user', '/admin/unban-user'],
