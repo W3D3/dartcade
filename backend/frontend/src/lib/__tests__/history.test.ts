@@ -215,6 +215,7 @@ describe('statTiles', () => {
     max,
     sum,
     previousAvg,
+    byDay: [],
   })
   const stats = (o: Partial<GameStats> = {}): GameStats => ({
     days: 30,

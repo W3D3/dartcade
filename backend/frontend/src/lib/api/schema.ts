@@ -1522,6 +1522,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/home/lobbies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lobbies your friends host that you may join or see running */
+        get: operations["getHomeLobbies"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/home/activity": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** What your friends did lately (180s, ton-plus outs, rank-ups), newest first */
+        get: operations["getHomeActivity"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/progress/me": {
         parameters: {
             query?: never;
@@ -2062,6 +2096,82 @@ export interface components {
             /** @description The finish of the disc behind it; required when kind is 'preset' */
             background?: string;
         };
+        HomeLobbies: {
+            lobbies: {
+                id: string;
+                name: string;
+                hostName: string;
+                /**
+                 * @description open: waiting to start; in_game: a game is running
+                 * @enum {string}
+                 */
+                state: "open" | "in_game";
+                /** @description The game mode id, from the running game or else the next game; null when none is set */
+                mode: string | null;
+                /** @description X01's start score; null for another mode or none set */
+                startScore: number | null;
+                people: number;
+                /** @description Different boards the people are on */
+                boards: number;
+            }[];
+        };
+        HomeActivity: {
+            events: components["schemas"]["HomeEvent"][];
+        };
+        /** @description What a friend did, with the payload its kind carries */
+        HomeEvent: components["schemas"]["HomeEventOneEighty"] | components["schemas"]["HomeEventTonOut"] | components["schemas"]["HomeEventRankUp"];
+        HomeEventBase: {
+            id: string;
+            userId: string;
+            name: string;
+            avatar: components["schemas"]["Avatar"];
+            /** Format: date-time */
+            at: string;
+        };
+        HomeEventOneEighty: components["schemas"]["HomeEventBase"] & {
+            /** @enum {string} */
+            kind: "one_eighty";
+            payload: {
+                /** @description 180s in the game */
+                count: number;
+            };
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "one_eighty";
+        };
+        HomeEventTonOut: components["schemas"]["HomeEventBase"] & {
+            /** @enum {string} */
+            kind: "ton_out";
+            payload: {
+                /** @description Checkouts of 100 or more in the game */
+                count: number;
+                /** @description Their highest checkout in the game */
+                best: number;
+            };
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "ton_out";
+        };
+        HomeEventRankUp: components["schemas"]["HomeEventBase"] & {
+            /** @enum {string} */
+            kind: "rank_up";
+            payload: {
+                mode: components["schemas"]["RankedMode"];
+                rankIndex: number;
+            };
+        } & {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "rank_up";
+        };
         FriendRequest: {
             /** @description Their exact name, any case; a leading @ is fine */
             name: string;
@@ -2575,6 +2685,15 @@ export interface components {
             nextCursor: string | null;
         };
         StatAggregate: {
+            /** @description The average of each UTC day with a game in the period, oldest first */
+            byDay: {
+                /**
+                 * Format: date
+                 * @description UTC day, like 2026-10-27
+                 */
+                day: string;
+                avg: number;
+            }[];
             avg: number;
             sum: number;
             min: number;
@@ -6501,6 +6620,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RankedProfile"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getHomeLobbies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The lobbies, newest first */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeLobbies"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    getHomeActivity: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The events */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HomeActivity"];
                 };
             };
             401: components["responses"]["Unauthorized"];

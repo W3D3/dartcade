@@ -15,6 +15,17 @@ function counts(rows: StatRow[]) {
   return { matches: rows.length, contested: contested.length, wins: contested.filter(r => r.placement === 1).length }
 }
 
+/** The mean of each UTC day's values, oldest day first. */
+function byDay(rows: StatRow[], key: string): StatAggregate['byDay'] {
+  const days = new Map<string, number[]>()
+  for (const r of rows) {
+    if (!(key in r.stats)) continue
+    const day = r.finishedAt.toISOString().slice(0, 10)
+    days.set(day, [...(days.get(day) ?? []), r.stats[key]])
+  }
+  return [...days].sort(([a], [b]) => a.localeCompare(b)).map(([day, xs]) => ({ day, avg: mean(xs) }))
+}
+
 const valuesOf = (rows: StatRow[], key: string) => rows.flatMap(r => (key in r.stats ? [r.stats[key]] : []))
 
 /**
@@ -41,6 +52,7 @@ export function aggregateStats(rows: StatRow[], days: number, now: Date): GameSt
         max: Math.max(...values),
         sum: values.reduce((a, b) => a + b, 0),
         previousAvg: prev.length > 0 ? mean(prev) : null,
+        byDay: byDay(mine, key),
       }
     }
     modes[mode] = { ...counts(mine), stats }
