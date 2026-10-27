@@ -51,7 +51,7 @@ test('an admin turns 121 on for everyone at runtime, and a player sees it with n
   const card = player.locator('main').getByRole('button', { name: /^121:/ })
 
   // Before: 121 is admins-only, so a plain player's Play page doesn't offer it
-  await player.goto('/#/')
+  await player.goto('/#/play')
   await expect(card).toHaveCount(0)
 
   // The admin opens the flag's row, which opens its details card beside the table, and turns it on for everyone

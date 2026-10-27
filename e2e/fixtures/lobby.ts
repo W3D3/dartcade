@@ -30,7 +30,7 @@ export async function startGame(
 ) {
   // A game still running from an earlier spec keeps Start disabled
   await endAnyRunningGame(page)
-  await page.goto('/#/')
+  await page.goto('/#/play')
   const main = page.locator('main')
   // The game's card (named "X01: Count down…"): the page may open on a game already, with phone
   // chips for the games hidden in it, so match the card and nothing that only reads the same.

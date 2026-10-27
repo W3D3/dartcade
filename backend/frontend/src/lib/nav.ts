@@ -5,7 +5,7 @@ import { indicatorView } from './lobby/format.js'
 export type NavTab = {
   href: string
   label: string
-  icon: 'play' | 'ranked' | 'live' | 'tournaments' | 'progress' | 'history' | 'settings' | 'admin'
+  icon: 'home' | 'play' | 'ranked' | 'live' | 'tournaments' | 'progress' | 'history' | 'settings' | 'admin'
   badge?: number
   /** What the badge counts, read out ('2 pending invites'). */
   badgeLabel?: string
@@ -27,10 +27,11 @@ function liveItem(liveSessionId: string | null, label: string): NavTab {
  * Tournaments (soon) or Progress while progression is on (Mobile-Progress), History; pending
  * invites as a badge on Play.
  */
-export function navTabs(liveSessionId: string | null, invites = 0, ranked = false, progress: number | null = null): NavTab[] {
+export function navTabs(liveSessionId: string | null, invites = 0, ranked = false, progress: number | null = null, home = false): NavTab[] {
   return [
+    ...(home ? [{ href: '/', label: 'Home', icon: 'home' as const }] : []),
     {
-      href: '/',
+      href: '/play',
       label: 'Play',
       icon: 'play',
       ...(invites > 0 ? { badge: invites, badgeLabel: `${invites} pending ${invites === 1 ? 'invite' : 'invites'}` } : {}),
@@ -51,9 +52,10 @@ export function railTabs(
   ranked = false,
   progress: number | null = null,
   admin = false,
+  home = false,
 ): NavTab[] {
   return [
-    ...navTabs(liveSessionId, invites, ranked, progress),
+    ...navTabs(liveSessionId, invites, ranked, progress, home),
     { href: '/settings', label: 'Settings', icon: 'settings' },
     ...(admin ? [{ href: '/admin', label: 'Admin', icon: 'admin' as const }] : []),
   ]
@@ -67,10 +69,17 @@ function dailyBadge(toClaim: number): Pick<NavTab, 'badge' | 'badgeLabel'> {
 }
 
 /** The desktop side nav: the same pages under their long names, then Progress, Settings and Admin (admins and moderators). */
-export function sideLinks(liveSessionId: string | null, ranked = false, admin = false, progress: number | null = null): SideLink[] {
+export function sideLinks(
+  liveSessionId: string | null,
+  ranked = false,
+  admin = false,
+  progress: number | null = null,
+  home = false,
+): SideLink[] {
   const { href, disabled } = liveItem(liveSessionId, 'Live match')
   return [
-    { href: '/', label: 'Play', icon: 'play' },
+    ...(home ? [{ href: '/', label: 'Home', icon: 'home' as const }] : []),
+    { href: '/play', label: 'Play', icon: 'play' },
     ...(ranked ? [{ href: '/matchmaking', label: 'Matchmaking', icon: 'ranked' as const }] : []),
     { href, label: 'Live match', icon: 'live', ...(disabled ? { disabled } : {}) },
     { href: '/tournaments', label: 'Tournaments', icon: 'tournaments', disabled: true, soon: true },

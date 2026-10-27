@@ -5,6 +5,7 @@
   import { onMount } from 'svelte'
   import { Tooltip } from 'bits-ui'
   import CreateSession from './routes/CreateSession.svelte'
+  import Root from './routes/Root.svelte'
   import GameDisplay from './routes/GameDisplay.svelte'
   import Login from './routes/Login.svelte'
   import Register from './routes/Register.svelte'
@@ -79,7 +80,8 @@
   )
 
   const routes = {
-    '/': CreateSession,
+    '/': Root,
+    '/play': CreateSession,
     '/session/:id': GameDisplay,
     '/login': Login,
     '/register': Register,

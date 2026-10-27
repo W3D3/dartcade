@@ -59,6 +59,8 @@ export function createFriendActions(myLobbyId: () => string | null) {
     answer: (id: string, a: 'accept' | 'decline') => once(() => answerRequest(id, a)),
     cancel: (id: string) => once(() => cancelRequest(id)),
     join: (f: Friend) => once(() => (f.status.kind === 'lobby' ? join(f.status.lobbyId, f.status.lobbyName) : Promise.resolve(null))),
+    /** Join a lobby by its id, for a list that is not the friends list (Home's Friends' lobbies). */
+    joinLobby: (lobbyId: string, lobbyName: string) => once(() => join(lobbyId, lobbyName)),
     leaveAndJoin: () => {
       const s = switching
       switching = null
