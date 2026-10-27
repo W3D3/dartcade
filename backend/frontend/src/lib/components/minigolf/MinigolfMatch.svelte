@@ -359,7 +359,7 @@
   >
     {#each playerRows as r (r.seat)}
       <div
-        class="flex shrink-0 items-center gap-3 rounded-[14px] border px-3 py-2 backdrop-blur-md lg:px-4 lg:py-3 {r.active
+        class="flex shrink-0 max-lg:max-w-[80%] items-center gap-3 rounded-[14px] border px-3 py-2 backdrop-blur-md lg:px-4 lg:py-3 {r.active
           ? ''
           : 'border-line bg-surface-1/75'}"
         style:border-color={r.active ? seatColor(r.seat) : undefined}
