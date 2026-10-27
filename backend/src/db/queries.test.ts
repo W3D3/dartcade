@@ -21,7 +21,8 @@ import {
   searchUsers,
   getUsersByIds,
   getBoardByBigScreenTokenHash,
-  setBigScreenTokenHash,
+  claimBigScreenToken,
+  clearBigScreenToken,
   setBigScreenMode,
 } from './queries.js'
 import { PairingCodeClaimedError } from './errors.js'
@@ -470,14 +471,30 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('DB integration', () => {
   })
 
   describe('big screen token', () => {
-    it('finds a board by its hash until the hash is cleared, and rejects a bad mode', async () => {
+    it('finds a board by its hash until it is cleared, and rejects a bad mode', async () => {
       await insertBoard(db, { id: 'bs-1', owner_user_id: 'u-test-1', name: 'Hall', token_hash: 'bs-1-hash' })
-      await setBigScreenTokenHash(db, 'bs-1', 'bs-hash')
+      await setBigScreenMode(db, 'bs-1', 'manual')
+      expect(await claimBigScreenToken(db, 'bs-1', 'bs-hash')).toBe(true)
       expect((await getBoardByBigScreenTokenHash(db, 'bs-hash'))?.id).toBe('bs-1')
-      await setBigScreenTokenHash(db, 'bs-1', null)
+      await clearBigScreenToken(db, 'bs-1')
       expect(await getBoardByBigScreenTokenHash(db, 'bs-hash')).toBeUndefined()
       await expect(setBigScreenMode(db, 'bs-1', 'sometimes' as never)).rejects.toThrow()
       await deleteBoard(db, 'bs-1')
+    })
+
+    it('stores a token only while the mode is not off, and a rollback keeps a newer token', async () => {
+      await insertBoard(db, { id: 'bs-2', owner_user_id: 'u-test-1', name: 'Hall', token_hash: 'bs-2-hash' })
+      // off (the default): a Start that overlapped the mode-off finds it off at write time
+      expect(await claimBigScreenToken(db, 'bs-2', 'old')).toBe(false)
+      expect(await getBoardByBigScreenTokenHash(db, 'old')).toBeUndefined()
+      await setBigScreenMode(db, 'bs-2', 'auto')
+      expect(await claimBigScreenToken(db, 'bs-2', 'old')).toBe(true)
+      expect(await claimBigScreenToken(db, 'bs-2', 'new')).toBe(true)
+      await clearBigScreenToken(db, 'bs-2', 'old') // the first Start's rollback
+      expect((await getBoardByBigScreenTokenHash(db, 'new'))?.id).toBe('bs-2')
+      await clearBigScreenToken(db, 'bs-2', 'new')
+      expect(await getBoardByBigScreenTokenHash(db, 'new')).toBeUndefined()
+      await deleteBoard(db, 'bs-2')
     })
   })
 })

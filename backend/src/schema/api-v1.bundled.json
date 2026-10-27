@@ -709,6 +709,88 @@
         }
       }
     },
+    "/api/boards/{id}/big-screen/start": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardId"
+        }
+      ],
+      "post": {
+        "operationId": "startBigScreen",
+        "summary": "Open the big screen on the board's display (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether the screen is running now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BigScreenRunning"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/big-screen/stop": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardId"
+        }
+      ],
+      "post": {
+        "operationId": "stopBigScreen",
+        "summary": "Close the board's big screen (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "responses": {
+          "200": {
+            "description": "Whether the screen is running now",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BigScreenRunning"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/boards/{id}/status": {
       "parameters": [
         {
@@ -8050,7 +8132,19 @@
           "auto",
           "manual"
         ],
-        "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+        "description": "off: never. auto: opens by itself when the helper on the board machine starts (a desktop login). manual: when the owner presses Start"
+      },
+      "BigScreenRunning": {
+        "type": "object",
+        "required": [
+          "running"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "running": {
+            "type": "boolean"
+          }
+        }
       },
       "BigScreenModeRequest": {
         "type": "object",

@@ -8,6 +8,7 @@ import type { Kysely } from 'kysely'
 import { toNodeHandler } from 'better-auth/node'
 import type { Database } from './db/schema.js'
 import type { SessionEngine } from './session/engine.js'
+import { autoOpenBigScreen } from './boards/bigScreenOpen.js'
 import { bridgeGwPlugin } from './bridge-gw/handler.js'
 import { browserConnections, browserGwPlugin, pushCamera } from './browser-gw/handler.js'
 import { lobbyGwPlugin } from './browser-gw/lobby.js'
@@ -67,8 +68,8 @@ export type AppDeps = {
   friends: FriendsService
   /** Sends wled scenes/flashes as games change (see lights/service.ts); omitted in tests that don't exercise it. */
   lights?: LightsService
-  /** The big screen's follow service (see bigscreen/service.ts); omitted in tests that don't exercise it. */
-  bigScreen?: BigScreenService
+  /** The big screen's follow service (see bigscreen/service.ts). */
+  bigScreen: BigScreenService
   /** The ranked queue (see matchmaking/service.ts). */
   matchmaking: MatchmakingService
   /** Built frontend to serve; omitted in tests. */
@@ -186,11 +187,15 @@ export async function buildApp({
     db,
     onBoardPresence: boardId => {
       lobbies.onBoardPresence(boardId)
-      bigScreen?.onBoardPresence(boardId)
+      bigScreen.onBoardPresence(boardId)
     },
     onBoardStatus: (ownerUserId, boardId, online) => {
       hub.sendBoardStatus(ownerUserId, boardId, online)
     },
+    onBigScreenStartup: boardId =>
+      autoOpenBigScreen(db, boardId, bigScreen, (message, details) => {
+        app.log.warn({ details }, message)
+      }),
     onCameraStill: (boardId, cam, version) => {
       pushCamera(engine, boardId, cam, version)
     },
@@ -207,7 +212,7 @@ export async function buildApp({
   })
   await app.register(browserGwPlugin, { engine, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(lobbyGwPlugin, { lobbies, hub, friends, matchmaking })
-  if (bigScreen) await app.register(bigScreenGwPlugin, { db, service: bigScreen })
+  await app.register(bigScreenGwPlugin, { db, service: bigScreen })
   await app.register(sessionsApiPlugin, { engine, db, isLobbyMember: (lobbyId, userId) => lobbies.isMember(lobbyId, userId) })
   await app.register(usersApiPlugin, { db })
   await app.register(meApiPlugin, {

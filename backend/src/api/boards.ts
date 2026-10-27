@@ -16,6 +16,8 @@ import {
   setBigScreenTokenHash,
   hasActiveSessionOnBoard,
 } from '../db/queries.js'
+import { bigScreenState as defaultBigScreenState, type BigScreenState } from '../boards/bigScreenState.js'
+import { openBigScreen } from '../boards/bigScreenOpen.js'
 import { findOwnBoard } from '../boards/own.js'
 import { newBoardToken } from '../boards/token.js'
 import { fromSpec } from './spec.js'
@@ -55,6 +57,8 @@ type Opts = FastifyPluginOptions & {
   bridgeUpdates?: BridgeUpdates
   /** Cuts off open big-screen token sockets when the token is revoked or the board deleted. */
   bigScreen?: Pick<BigScreenService, 'revoke'>
+  /** What the boards' helpers reported (tests pass their own). */
+  bigScreenState?: BigScreenState
 }
 
 // A still asked for by its current version never changes
@@ -79,6 +83,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     bridgeReleases = { offered: () => null },
     bridgeUpdates = defaultBridgeUpdates,
     bigScreen,
+    bigScreenState = defaultBigScreenState,
   } = opts
 
   /** The board if it exists and belongs to the user; otherwise sends 404/403 and returns null. */
@@ -121,6 +126,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
     return {
       boards: rows.map(b => {
         const conn = bridgeConnections.get(b.id)
+        const screen = bigScreenState.get(b.id)
         const bm = conn?.bmUrl
           ? (() => {
               try {
@@ -141,7 +147,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
           ip: bm?.hostname ?? null,
           // Full Board Manager origin (incl. port) for linking
           bmUrl: bm?.origin ?? null,
-          bigScreen: { mode: b.big_screen_mode, running: false, helper: false },
+          bigScreen: { mode: b.big_screen_mode, running: screen.running, helper: screen.helper },
           bridgeUpdate: {
             available: bridgeUpdateFor(conn?.bridgeVersion, offered),
             updatable: conn?.bridgeUpdatable ?? false,
@@ -218,11 +224,41 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { mode } = req.body
       if (!(await ownBoard(id, req.userId, reply))) return reply
       await setBigScreenMode(db, id, mode)
-      if (mode === 'off') {
-        await setBigScreenTokenHash(db, id, null)
-        bigScreen?.revoke(id)
-      }
+      if (mode === 'off') bigScreen?.revoke(id)
       return reply.send({ id, mode })
+    },
+  )
+
+  // Start and Stop work on the helper through the bridge; neither does anything while the setting is off
+  app.post<Route<'startBigScreen'>>(
+    '/api/boards/:id/big-screen/start',
+    { preValidation: requireAuth, schema: fromSpec('startBigScreen') },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      if (board.big_screen_mode === 'off') return reply.code(409).send({ error: 'the big screen is off for this board' })
+      const res = await openBigScreen(db, board, boardId => bigScreen?.revoke(boardId))
+      if (res === 'disabled') return reply.code(403).send({ error: 'forbidden' })
+      if (res === 'offline') return reply.code(409).send({ error: 'board offline' })
+      if (res === 'no_url') return reply.code(409).send({ error: 'the server has no public URL (PUBLIC_URL) to open' })
+      return reply.send({ running: true })
+    },
+  )
+
+  // Stop always drops the token and cuts open sockets, even when the bridge is away to close the window
+  app.post<Route<'stopBigScreen'>>(
+    '/api/boards/:id/big-screen/stop',
+    { preValidation: requireAuth, schema: fromSpec('stopBigScreen') },
+    async (req, reply) => {
+      const { id } = req.params
+      const board = await ownBoard(id, req.userId, reply)
+      if (!board) return reply
+      if (board.big_screen_mode === 'off') return reply.code(409).send({ error: 'the big screen is off for this board' })
+      await setBigScreenTokenHash(db, id, null)
+      bigScreen?.revoke(id)
+      if (bridgeConnections.isOnline(id)) bridgeConnections.send(id, { kind: 'bigscreen.close', data: {} })
+      return reply.send({ running: false })
     },
   )
 

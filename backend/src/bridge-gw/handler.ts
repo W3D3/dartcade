@@ -9,6 +9,7 @@ import type { Database } from '../db/schema.js'
 import { z } from 'zod'
 import {
   BaseEnvelopeSchema,
+  BigScreenStatusMessageSchema,
   BmResponseMessageSchema,
   BridgeUpdateStatusMessageSchema,
   CameraStillMessageSchema,
@@ -19,6 +20,7 @@ import { cameraStills, type CameraStills } from '../camera/store.js'
 import { lightsStore, type LightsStore, type FoundDevice } from '../lights/store.js'
 import { onceGone } from '../util/socket.js'
 import { hashBoardToken } from '../boards/token.js'
+import { bigScreenState as defaultBigScreenState, type BigScreenState } from '../boards/bigScreenState.js'
 import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../boards/bridgeUpdate.js'
 
 export { bridgeConnections }
@@ -39,6 +41,11 @@ type Opts = FastifyPluginOptions & {
   onBridgeHello?: (boardId: string) => void | Promise<void>
   /** A bridge event was applied to the game. A rejection is logged by callHook, never left unhandled. */
   onBoardEvent?: (boardId: string, kind: string, data: unknown) => void | Promise<void>
+  /** Where the helpers' reports are kept (tests pass their own). */
+  bigScreenState?: BigScreenState
+  /** The board's big-screen helper just started (a desktop login): auto mode opens the screen. A
+   *  rejection is logged by callHook, never left unhandled. */
+  onBigScreenStartup?: (boardId: string) => void | Promise<void>
   /** The lights store has fresh devices for this board, after a scan or a probe. A rejection is
    *  logged by callHook, never left unhandled. */
   onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
@@ -170,9 +177,20 @@ export function handleBridgeConnection(
     onBoardEvent?: (boardId: string, kind: string, data: unknown) => void | Promise<void>
     /** The lights store has fresh devices for this board, after a scan or a probe. */
     onLightsFound?: (boardId: string, devices: FoundDevice[]) => void | Promise<void>
+    /** Where the helpers' reports are kept (tests pass their own). */
+    bigScreenState?: BigScreenState
+    /** The board's big-screen helper just started: auto mode opens the screen. */
+    onBigScreenStartup?: (boardId: string) => void | Promise<void>
   },
 ): void {
-  const { db, engine, stills = cameraStills, lights = lightsStore, bridgeUpdates = defaultBridgeUpdates } = opts
+  const {
+    db,
+    engine,
+    stills = cameraStills,
+    lights = lightsStore,
+    bridgeUpdates = defaultBridgeUpdates,
+    bigScreenState = defaultBigScreenState,
+  } = opts
   // A board came online or dropped: its game and the lobbies using it show it
   const presence = (boardId: string) => {
     engine.onBoardPresence(boardId)
@@ -295,6 +313,17 @@ export function handleBridgeConnection(
           return
         }
 
+        if (earlyKind === 'bigscreen.status') {
+          const m = BigScreenStatusMessageSchema.safeParse(parsed)
+          if (!m.success) return
+          const { startup, ...report } = m.data.data
+          bigScreenState.set(boardDbId, { helper: report.helper, running: report.running })
+          if (ownerUserId) opts.onBoardStatus?.(ownerUserId, boardDbId, true)
+          // Only a helper that has just started opens it: a window the user closed stays closed until Start
+          if (startup && report.helper) callHook('onBigScreenStartup', boardDbId, () => opts.onBigScreenStartup?.(boardDbId))
+          return
+        }
+
         const env = parseEnvelope(parsed)
         if (!env) return
         const { seq, kind, bridge_id: bridgeId, boot_id: bootId, recv_wall: recvWall } = env
@@ -362,6 +391,7 @@ export function handleBridgeConnection(
     if (!bridgeConnections.isOnline(boardDbId)) {
       stills.clear(boardDbId)
       lights.clear(boardDbId)
+      bigScreenState.clear(boardDbId)
     }
     presence(boardDbId)
     // Not at auth: the board's versions and Board Manager URL only arrive with the hello

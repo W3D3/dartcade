@@ -438,6 +438,40 @@
       "additionalProperties": false,
       "properties": { "kind": { "type": "string", "const": "wled.status" }, "data": { "$ref": "#/$defs/WledStatusData" } }
     },
+    "BigScreenOpenData": {
+      "description": "Backend to bridge (kind bigscreen.open): the helper opens this big-screen page on the board's display.",
+      "type": "object",
+      "required": ["url"],
+      "additionalProperties": false,
+      "properties": { "url": { "type": "string", "format": "uri" } }
+    },
+    "BigScreenCloseData": {
+      "description": "Backend to bridge (kind bigscreen.close): the helper closes the big-screen window.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {}
+    },
+    "BigScreenStatusData": {
+      "type": "object",
+      "required": ["helper", "running"],
+      "additionalProperties": false,
+      "properties": {
+        "helper": { "type": "boolean", "description": "The helper on the bridge machine's desktop is connected." },
+        "running": { "type": "boolean", "description": "A big-screen window is open." },
+        "startup": {
+          "type": "boolean",
+          "description": "Set once, when the helper has just started (a desktop login): auto mode opens the screen on it."
+        },
+        "browser": { "type": "string" }
+      }
+    },
+    "BigScreenStatusMessage": {
+      "description": "Bridge to backend, when the helper connects, disconnects or its window opens or closes. Not an event: no envelope, never acked or stored.",
+      "type": "object",
+      "required": ["kind", "data"],
+      "additionalProperties": false,
+      "properties": { "kind": { "type": "string", "const": "bigscreen.status" }, "data": { "$ref": "#/$defs/BigScreenStatusData" } }
+    },
     "BmRequestData": {
       "description": "Backend → bridge (kind bm.request): call the board's Board Manager. The backend never reaches the board's network itself; the bridge makes the call and answers with a bm.response carrying the same id.",
       "type": "object",

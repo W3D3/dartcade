@@ -250,6 +250,44 @@ export interface paths {
         patch: operations["setBigScreenMode"];
         trace?: never;
     };
+    "/api/boards/{id}/big-screen/start": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open the big screen on the board's display (owner only) */
+        post: operations["startBigScreen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/boards/{id}/big-screen/stop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close the board's big screen (owner only) */
+        post: operations["stopBigScreen"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/boards/{id}/status": {
         parameters: {
             query?: never;
@@ -2661,10 +2699,13 @@ export interface components {
             helper: boolean;
         };
         /**
-         * @description off: never. auto: whenever a game starts on the board. manual: when the owner starts it
+         * @description off: never. auto: opens by itself when the helper on the board machine starts (a desktop login). manual: when the owner presses Start
          * @enum {string}
          */
         BigScreenMode: "off" | "auto" | "manual";
+        BigScreenRunning: {
+            running: boolean;
+        };
         BigScreenModeRequest: {
             mode: components["schemas"]["BigScreenMode"];
         };
@@ -4305,6 +4346,60 @@ export interface operations {
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["Forbidden"];
             404: components["responses"]["NotFound"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    startBigScreen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether the screen is running now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BigScreenRunning"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            429: components["responses"]["TooManyRequests"];
+        };
+    };
+    stopBigScreen: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: components["parameters"]["BoardId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Whether the screen is running now */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BigScreenRunning"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
             429: components["responses"]["TooManyRequests"];
         };
     };
