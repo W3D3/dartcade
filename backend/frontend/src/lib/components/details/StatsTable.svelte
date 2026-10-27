@@ -14,11 +14,16 @@
 
 {#if rows.length > 0}
   <section aria-label={title} class="flex flex-col min-h-0 box-border px-4 md:px-6 pt-4 pb-2 card">
-    <div class="grid grid-cols-[1fr_1.3fr_1fr] pb-2 border-b border-line-2">
-      <span class={H}><ProfilePopover userId={left.userId} name={left.name}>{left.name}</ProfilePopover></span>
-      <span class="{H} text-center">{title}</span>
-      <span class="{H} text-right"
-        >{#if right}<ProfilePopover userId={right.userId} name={right.name}>{right.name}</ProfilePopover>{/if}</span
+    <!-- Phones: no title, so long names get the whole row (and truncate) -->
+    <div class="grid grid-cols-2 md:grid-cols-[1fr_1.3fr_1fr] gap-3 md:gap-0 pb-2 border-b border-line-2">
+      <span class="{H} max-md:min-w-0 flex"
+        ><ProfilePopover userId={left.userId} name={left.name}><span class="min-w-0 truncate">{left.name}</span></ProfilePopover></span
+      >
+      <span class="{H} text-center max-md:hidden">{title}</span>
+      <span class="{H} max-md:min-w-0 flex justify-end"
+        >{#if right}<ProfilePopover userId={right.userId} name={right.name}
+            ><span class="min-w-0 truncate">{right.name}</span></ProfilePopover
+          >{/if}</span
       >
     </div>
     {#each rows as row (row.key)}
