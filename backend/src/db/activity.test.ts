@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
 import type { Kysely } from 'kysely'
-import { insertGameSession } from './queries.js'
+import { abortGameSession, finishGameSession, insertGameSession } from './queries.js'
 import { insertFriendRequest, acceptFriendRequest } from './friends.js'
 import { deleteActivityForGame, insertActivity, listFriendActivity, pruneActivity, type ActivityInsert } from './activity.js'
 import { openTestSchema } from './testSchema.js'
@@ -115,5 +115,74 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('friend activity queries', () =>
     const removed = await pruneActivity(db, ago(5))
     expect(removed).toBe(1) // the 8-day-old rank_up on g3
     expect(await pruneActivity(db, ago(5))).toBe(0)
+  })
+})
+
+describe.skipIf(!process.env.TEST_DATABASE_URL)('activity written when a game finishes', () => {
+  let db: Kysely<Database>
+  let close: () => Promise<void>
+  const at = new Date('2026-10-27T20:00:00Z')
+
+  async function game(id: string, mode: string, users: (string | null)[]) {
+    await insertGameSession(db, {
+      id,
+      owner_user_id: 'ann',
+      board_db_id: null,
+      game_id: mode,
+      game_version: 1,
+      rng_seed: 0,
+      config: {},
+      players: users.map((user_id, i) => ({
+        name: user_id ?? `Guest ${i}`,
+        user_id,
+        controller_user_id: 'ann',
+        board_db_id: null,
+        bot_level: null,
+      })),
+    })
+  }
+  const result = (stats: Record<string, number>, i = 0) => ({ placement: i + 1, stats, throwPosition: i, forfeited: false })
+  const rows = (gameId: string) =>
+    db.selectFrom('friend_activity').select(['user_id', 'kind', 'payload']).where('game_id', '=', gameId).orderBy('id').execute()
+
+  beforeAll(async () => {
+    ;({ db, close } = await openTestSchema('home_activity_finish_test'))
+    await db
+      .insertInto('user')
+      .values(['ann', 'bob'].map(id => ({ id, name: id, email: `${id}@example.com`, emailVerified: true, image: null, role: null })))
+      .execute()
+  })
+  afterAll(async () => close())
+
+  it('records the 180s and ton-plus outs of an X01 game, once even if the game finishes twice', async () => {
+    await game('x1', 'x01', ['ann', 'bob'])
+    const results = [result({ count180: 2, tonOuts: 1, bestCheckout: 129 }), result({ average: 40 }, 1)]
+    await finishGameSession(db, 'x1', at, results)
+    await finishGameSession(db, 'x1', at, results)
+    expect(await rows('x1')).toEqual([
+      { user_id: 'ann', kind: 'one_eighty', payload: { count: 2 } },
+      { user_id: 'ann', kind: 'ton_out', payload: { count: 1, best: 129 } },
+    ])
+  })
+
+  it('records nothing for a guest seat or another mode', async () => {
+    await game('x2', 'x01', [null])
+    await finishGameSession(db, 'x2', at, [result({ count180: 1 })])
+    await game('a1', 'atc', ['ann'])
+    await finishGameSession(db, 'a1', at, [result({ count180: 1 })])
+    expect(await rows('x2')).toEqual([])
+    expect(await rows('a1')).toEqual([])
+  })
+
+  it('records nothing for a game a player left by forfeit', async () => {
+    await game('x4', 'x01', ['ann', 'bob'])
+    await finishGameSession(db, 'x4', at, [result({ count180: 1 }), { ...result({}, 1), forfeited: true }])
+    expect(await rows('x4')).toEqual([])
+  })
+
+  it('records nothing for an aborted game', async () => {
+    await game('x3', 'x01', ['ann'])
+    await abortGameSession(db, 'x3', at)
+    expect(await rows('x3')).toEqual([])
   })
 })

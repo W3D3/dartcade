@@ -10,6 +10,8 @@ import { normalizeName } from '../users/names.js'
 import { PairingCodeClaimedError } from './errors.js'
 import { groupBy } from '../util/groupBy.js'
 import { newBoardToken } from '../boards/token.js'
+import { insertActivity } from './activity.js'
+import { finishEvents } from '../activity/events.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -280,6 +282,16 @@ export async function finishGameSession(
         .where('seat', '=', seat)
         .execute()
     }
+    // What friends see on Home; a second finish (a restart rebuilding the game) writes nothing new.
+    const players = await trx
+      .selectFrom('game_players as p')
+      .innerJoin('game_sessions as s', 's.id', 'p.session_id')
+      .select(['s.game_id', 'p.seat', 'p.user_id'])
+      .where('p.session_id', '=', id)
+      .execute()
+    const seats = results.map((r, seat) => ({ ...r, userId: players.find(p => p.seat === seat)?.user_id ?? null }))
+    const mode = players[0]?.game_id
+    if (mode) await insertActivity(trx, finishEvents(id, mode, seats, finishedAt))
   })
 }
 
