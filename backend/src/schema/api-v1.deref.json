@@ -17591,7 +17591,8 @@
                                 "type": "string",
                                 "enum": [
                                   "admins",
-                                  "nobody"
+                                  "nobody",
+                                  "everyone"
                                 ],
                                 "description": "Boolean flags only: who it's on for without FLAGS_ON"
                               },
@@ -17954,7 +17955,8 @@
                           "type": "string",
                           "enum": [
                             "admins",
-                            "nobody"
+                            "nobody",
+                            "everyone"
                           ],
                           "description": "Boolean flags only: who it's on for without FLAGS_ON"
                         },
@@ -50529,7 +50531,8 @@
             "type": "string",
             "enum": [
               "admins",
-              "nobody"
+              "nobody",
+              "everyone"
             ],
             "description": "Boolean flags only: who it's on for without FLAGS_ON"
           },
@@ -50590,7 +50593,8 @@
                 "type": "string",
                 "enum": [
                   "admins",
-                  "nobody"
+                  "nobody",
+                  "everyone"
                 ],
                 "description": "Boolean flags only: who it's on for without FLAGS_ON"
               },
@@ -50743,7 +50747,8 @@
                       "type": "string",
                       "enum": [
                         "admins",
-                        "nobody"
+                        "nobody",
+                        "everyone"
                       ],
                       "description": "Boolean flags only: who it's on for without FLAGS_ON"
                     },

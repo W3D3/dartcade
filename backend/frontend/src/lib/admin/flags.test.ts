@@ -75,6 +75,10 @@ describe('defaultLabel', () => {
   it('is everyone once FLAGS_ON turns it on for this deployment', () => {
     expect(defaultLabel(booleanFlag({ default: { rule: 'admins', envOn: true } }))).toBe('Default (everyone)')
   })
+
+  it('is everyone for a flag that is on for everyone by default', () => {
+    expect(defaultLabel(booleanFlag({ default: { rule: 'everyone', envOn: false } }))).toBe('Default (everyone)')
+  })
 })
 
 describe('flagUsers', () => {

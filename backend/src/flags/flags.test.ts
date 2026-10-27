@@ -33,6 +33,13 @@ describe('flags', () => {
     await setupFlags(new Set())
   })
 
+  it('turns Home on for everyone, unless an admin overrides it off', async () => {
+    expect(await flagEnabled('home.enabled', player)).toBe(true)
+    expect(await flagEnabled('home.enabled', null)).toBe(true)
+    await setOverrides(new Map([['home.enabled', { mode: 'off', userIds: [] }]]))
+    expect(await flagEnabled('home.enabled', player)).toBe(false)
+  })
+
   it('turns matchmaking on for admins only', async () => {
     expect(await flagEnabled('matchmaking.enabled', admin)).toBe(true)
     expect(await flagEnabled('matchmaking.enabled', player)).toBe(false)
@@ -79,6 +86,7 @@ describe('flags', () => {
 
   it('evaluates every flag', async () => {
     expect(await evaluateAll(admin)).toEqual([
+      { key: 'home.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.minigolf.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.p121.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
       { key: 'gamemode.hilo.enabled', value: true, reason: 'TARGETING_MATCH', variant: 'on' },
