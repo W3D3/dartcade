@@ -2,6 +2,8 @@ import { sql, type Kysely } from 'kysely'
 import type { Database } from './schema.js'
 import { groupBy } from '../util/groupBy.js'
 import { toAvatar, type Avatar } from './users.js'
+import { insertActivity, type ActivityInsert } from './activity.js'
+import { rankUpEvent } from '../activity/events.js'
 import {
   PLACEMENT_MATCHES,
   START_RATING,
@@ -206,7 +208,10 @@ export async function recordRankedResult(
     const states = new Map<string, RatingState>(
       rows.map(r => [r.user_id, { rating: r.rating, rankIndex: r.rank_index, matches: r.matches, wins: r.wins, streak: r.streak }]),
     )
+    const climbs: ActivityInsert[] = []
     for (const p of rateGame(states, game.sides)) {
+      const climb = rankUpEvent(game.sessionId, game.mode, p.userId, p.before.rankIndex, p.after.rankIndex, at)
+      if (climb) climbs.push(climb)
       await trx
         .updateTable('ranked_ratings')
         .set({ ...ratingColumns(p.after), updated_at: at })
@@ -228,6 +233,7 @@ export async function recordRankedResult(
         })
         .execute()
     }
+    await insertActivity(trx, climbs)
   })
 }
 
