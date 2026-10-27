@@ -36,6 +36,8 @@ tags:
     description: Invites into lobbies
   - name: voices
     description: Caller voice packs each user imports (only their own; files stored once by content)
+  - name: home
+    description: What the Home page shows beyond your own stats (friends' lobbies and activity)
   - name: friends
     description: Friends and friend requests (live on /ws/me as the friends message)
   - name: ranked
@@ -1956,6 +1958,30 @@ paths:
         '401': { $ref: '#/components/responses/Unauthorized' }
         '429': { $ref: '#/components/responses/TooManyRequests' }
 
+  /api/home/lobbies:
+    get:
+      operationId: getHomeLobbies
+      summary: Lobbies your friends host that you may join or see running
+      tags: [home]
+      responses:
+        '200':
+          {
+            description: 'The lobbies, newest first',
+            content: { application/json: { schema: { $ref: '#/components/schemas/HomeLobbies' } } },
+          }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
+  /api/home/activity:
+    get:
+      operationId: getHomeActivity
+      summary: What your friends did lately (180s, ton-plus outs, rank-ups), newest first
+      tags: [home]
+      responses:
+        '200': { description: The events, content: { application/json: { schema: { $ref: '#/components/schemas/HomeActivity' } } } }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+
   /api/progress/me:
     get:
       operationId: getMyProgress
@@ -2631,6 +2657,101 @@ components:
     FriendList: { $ref: 'common-v1.json#/$defs/FriendList' }
     Avatar: { $ref: 'common-v1.json#/$defs/Avatar' }
     AvatarChoice: { $ref: 'common-v1.json#/$defs/AvatarChoice' }
+    HomeLobbies:
+      type: object
+      required: [lobbies]
+      additionalProperties: false
+      properties:
+        lobbies:
+          type: array
+          items:
+            type: object
+            required: [id, name, hostName, state, mode, startScore, people, boards]
+            additionalProperties: false
+            properties:
+              id: { type: string }
+              name: { type: string }
+              hostName: { type: string }
+              state: { type: string, enum: [open, in_game], description: 'open: waiting to start; in_game: a game is running' }
+              mode:
+                {
+                  type: string,
+                  nullable: true,
+                  description: 'The game mode id, from the running game or else the next game; null when none is set',
+                }
+              startScore: { type: integer, nullable: true, description: "X01's start score; null for another mode or none set" }
+              people: { type: integer, minimum: 0 }
+              boards: { type: integer, minimum: 0, description: 'Different boards the people are on' }
+    HomeActivity:
+      type: object
+      required: [events]
+      additionalProperties: false
+      properties:
+        events:
+          type: array
+          items: { $ref: '#/components/schemas/HomeEvent' }
+    HomeEvent:
+      description: What a friend did, with the payload its kind carries
+      oneOf:
+        - $ref: '#/components/schemas/HomeEventOneEighty'
+        - $ref: '#/components/schemas/HomeEventTonOut'
+        - $ref: '#/components/schemas/HomeEventRankUp'
+      discriminator:
+        propertyName: kind
+        mapping:
+          one_eighty: '#/components/schemas/HomeEventOneEighty'
+          ton_out: '#/components/schemas/HomeEventTonOut'
+          rank_up: '#/components/schemas/HomeEventRankUp'
+    HomeEventBase:
+      type: object
+      required: [id, userId, name, avatar, at]
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        name: { type: string }
+        avatar: { $ref: '#/components/schemas/Avatar' }
+        at: { type: string, format: date-time }
+    HomeEventOneEighty:
+      allOf:
+        - $ref: '#/components/schemas/HomeEventBase'
+        - type: object
+          required: [kind, payload]
+          properties:
+            kind: { type: string, enum: [one_eighty] }
+            payload:
+              type: object
+              required: [count]
+              additionalProperties: false
+              properties:
+                count: { type: integer, minimum: 1, description: 180s in the game }
+    HomeEventTonOut:
+      allOf:
+        - $ref: '#/components/schemas/HomeEventBase'
+        - type: object
+          required: [kind, payload]
+          properties:
+            kind: { type: string, enum: [ton_out] }
+            payload:
+              type: object
+              required: [count, best]
+              additionalProperties: false
+              properties:
+                count: { type: integer, minimum: 1, description: 'Checkouts of 100 or more in the game' }
+                best: { type: integer, description: 'Their highest checkout in the game' }
+    HomeEventRankUp:
+      allOf:
+        - $ref: '#/components/schemas/HomeEventBase'
+        - type: object
+          required: [kind, payload]
+          properties:
+            kind: { type: string, enum: [rank_up] }
+            payload:
+              type: object
+              required: [mode, rankIndex]
+              additionalProperties: false
+              properties:
+                mode: { $ref: '#/components/schemas/RankedMode' }
+                rankIndex: { type: integer, minimum: 0 }
     FriendRequest:
       type: object
       required: [name]
@@ -3418,9 +3539,19 @@ components:
         nextCursor: { type: string, nullable: true }
     StatAggregate:
       type: object
-      required: [avg, min, max, sum, previousAvg]
+      required: [avg, min, max, sum, previousAvg, byDay]
       additionalProperties: false
       properties:
+        byDay:
+          type: array
+          description: 'The average of each UTC day with a game in the period, oldest first'
+          items:
+            type: object
+            required: [day, avg]
+            additionalProperties: false
+            properties:
+              day: { type: string, format: date, description: 'UTC day, like 2026-10-27' }
+              avg: { type: number }
         avg: { type: number }
         sum: { type: number }
         min: { type: number }
