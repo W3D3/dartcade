@@ -18,7 +18,7 @@ func lookFor(present ...string) func(string) (string, error) {
 }
 
 func TestChooseCommand(t *testing.T) {
-	chromiumArgs := []string{"--kiosk", "--user-data-dir=/p", "--autoplay-policy=no-user-gesture-required", "--no-first-run", "--noerrdialogs", "--disable-infobars", "--", "http://u"}
+	chromiumArgs := []string{"--kiosk", "--incognito", "--user-data-dir=/p", "--autoplay-policy=no-user-gesture-required", "--no-first-run", "--noerrdialogs", "--disable-infobars", "--", "http://u"}
 	cases := []struct {
 		name    string
 		look    func(string) (string, error)
@@ -29,7 +29,7 @@ func TestChooseCommand(t *testing.T) {
 	}{
 		{"chromium", lookFor("chromium", "firefox"), "linux", "chromium", chromiumArgs, "chromium"},
 		{"chrome after chromium-browser", lookFor("google-chrome"), "linux", "google-chrome", chromiumArgs, "chrome"},
-		{"firefox only", lookFor("firefox"), "linux", "firefox", []string{"--kiosk", "--profile", "/p", "http://u"}, "firefox"},
+		{"firefox only", lookFor("firefox"), "linux", "firefox", []string{"--kiosk", "--profile", "/p", "--private-window", "http://u"}, "firefox"},
 		{"none linux", lookFor(), "linux", "xdg-open", []string{"http://u"}, "default"},
 		{"none darwin", lookFor(), "darwin", "open", []string{"http://u"}, "default"},
 		{"none windows", lookFor(), "windows", "rundll32", []string{"url.dll,FileProtocolHandler", "http://u"}, "default"},

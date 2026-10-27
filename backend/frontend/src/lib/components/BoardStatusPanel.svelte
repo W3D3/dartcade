@@ -2,6 +2,8 @@
   import { LoaderCircle, Play, RotateCcw, SlidersHorizontal, Square, Sun } from '@lucide/svelte'
   import { api, runBoardAction, type Board, type BoardAction, type BoardStatus } from '$lib/api'
   import { DOT_BG, DOT_TEXT, SPINNING, bmDotColor } from '$lib/boardStatus'
+  import BigScreenButton from '$lib/components/BigScreenButton.svelte'
+  import { flag } from '$lib/flags'
 
   let {
     board,
@@ -60,6 +62,8 @@
   function onkeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') open = false
   }
+
+  const bigScreenOn = flag('bigscreen.enabled')
 
   const isSpinning = $derived(board.online && SPINNING.has(bmStatus?.status ?? ''))
 
@@ -189,6 +193,13 @@
           {/if}
           Calibrate
         </button>
+
+        <BigScreenButton {board} blocked={busy !== null} />
+        {#if $bigScreenOn}
+          <a href="#/big-screen/{board.id}" class="text-[13px] text-center !text-text-muted underline underline-offset-4 hover:!text-text">
+            Open big screen here
+          </a>
+        {/if}
       </div>
     </div>
   {/if}

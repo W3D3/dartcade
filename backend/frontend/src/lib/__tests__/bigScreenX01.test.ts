@@ -58,9 +58,9 @@ function x01(o: { players?: string[]; game?: Record<string, unknown>; status?: s
 describe('x01Live', () => {
   it('flags the thrower and the next seat', () => {
     const v = x01Live(x01())
-    expect(v.seats.map(s => [s.name, s.initial, s.throwing, s.next])).toEqual([
-      ['Christoph', 'C', true, false],
-      ['Lena', 'L', false, true],
+    expect(v.seats.map(s => [s.name, s.throwing, s.next])).toEqual([
+      ['Christoph', true, false],
+      ['Lena', false, true],
     ])
     expect(v.party).toBe(false)
     expect(v.header).toMatchObject({ title: 'X01', meta: '501 · Double out · First to 3 legs · Leg 3' })
@@ -71,15 +71,11 @@ describe('x01Live', () => {
     expect([a.score, a.avg, a.darts, a.legs]).toEqual([141, '72.0', 16, 1])
   })
 
-  it('computes leaves from the visit start and the darts thrown', () => {
+  it('totals the open visit', () => {
     const v = x01Live(x01({ game: { scores: [81, 87], visitStartScores: [141, 87], currentVisitDarts: [dart('T20', 60)] } }))
-    expect(v.visit).toEqual({ darts: ['T20'], total: 60, leaves: 81 })
-  })
-
-  it('has no leaves before the first dart or after a bust', () => {
-    expect(x01Live(x01()).visit).toEqual({ darts: [], total: 0, leaves: null })
-    const bust = x01Live(x01({ game: { bustThisVisit: true, currentVisitDarts: [dart('T20', 60)] } }))
-    expect(bust.visit.leaves).toBeNull()
+    expect(v.visit).toEqual({ total: 60 })
+    expect(v.board.darts).toHaveLength(1)
+    expect(x01Live(x01()).visit).toEqual({ total: 0 })
   })
 
   it('offers a checkout only when a finish is possible', () => {
@@ -244,6 +240,8 @@ describe('x01Win', () => {
   it('hides the game shot when the last visit is not the winner’s', () => {
     expect(x01Win(won(undefined, { legVisits: [{ seat: 1, scored: 3, left: 498, bust: false, darts: 3 }] })).gameShotText).toBeNull()
     expect(x01Win(won()).gameShotText).toBeNull()
+    // a round-limit win leaves points on the board: no game shot
+    expect(x01Win(won(undefined, { legVisits: [{ seat: 0, scored: 60, left: 41, bust: false, darts: 3 }] })).gameShotText).toBeNull()
   })
 
   it('reads the six stat rows and the first 9 from the saved game', () => {

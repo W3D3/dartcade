@@ -35,9 +35,6 @@ var version = "dev"
 // builds that can't see .git (e.g. Docker). Otherwise Go's embedded VCS info is used.
 var commit = ""
 
-// helperAddr is where the bridge listens for the big-screen helper (--helper-addr).
-var helperAddr = bigscreen.DefaultAddr
-
 // buildVersion is the version the bridge reports: the stamped tag for releases,
 // or "dev+<sha>[-dirty]" for untagged builds so they can be told apart.
 func buildVersion() string {
@@ -118,9 +115,8 @@ func main() {
 	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
 	installToken := fs.String("install-token", "", "One-time token from the dashboard's install command (also DARTCADE_INSTALL_TOKEN); the bridge pairs itself with it")
 	configDir := fs.String("config-dir", "", "Directory holding bridge.toml (also DARTCADE_CONFIG_DIR; default: OS user config dir)")
-	fs.StringVar(&helperAddr, "helper-addr", bigscreen.DefaultAddr, "Address the big-screen helper connects to")
+	helperAddr := fs.String("helper-addr", bigscreen.DefaultAddr, "Address the big-screen helper connects to")
 	fs.Parse(os.Args[1:])
-	bigscreen.Version = buildVersion()
 
 	// Resolve the config path once; it's where bridge.toml is read and where
 	// the token + bridge_id are persisted. Mount this dir as a volume to keep a
@@ -156,7 +152,7 @@ func main() {
 	con.banner(buildVersion())
 	log.Debug("autodarts-bridge starting", "bridge_id", cfg.BridgeID)
 
-	svc, err := service.New(&program{run: func(ctx context.Context) { run(ctx, cfg, cfgPath, con) }}, serviceConfig(nil))
+	svc, err := service.New(&program{run: func(ctx context.Context) { run(ctx, cfg, cfgPath, con, *helperAddr) }}, serviceConfig(nil))
 	if err != nil {
 		log.Fatal("service error", "err", err)
 	}
@@ -166,7 +162,7 @@ func main() {
 }
 
 // run is the bridge itself: it blocks until ctx is cancelled.
-func run(ctx context.Context, cfg Config, cfgPath string, con *console) {
+func run(ctx context.Context, cfg Config, cfgPath string, con *console, helperAddr string) {
 	// Ended early by an update: program.Start then exits for the service manager to start the new binary
 	ctx, restart := context.WithCancel(ctx)
 	defer restart()
@@ -246,16 +242,17 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console) {
 		tr.SendStill(st)
 		combined.Add(ctx, st)
 	})
-	lights := wled.New(tr.SendMessage)
+	send := func(v any) { tr.SendMessage(v) }
+	lights := wled.New(send)
 	defer lights.Close()
 	browser := wled.ZeroconfBrowser()
 	lights.SetBrowser(browser) // lets a device that changed IP (a MAC mismatch or a dial error) trigger its own rescan
-	updater.Send, updater.Restart = tr.SendMessage, func() {
+	updater.Send, updater.Restart = send, func() {
 		restarting.Store(true)
 		restart()
 	}
-	bigScreen := &bigscreen.Service{Addr: helperAddr, Send: func(kind string, data any) bool {
-		return tr.TrySendMessage(map[string]any{"kind": kind, "data": data})
+	bigScreen := &bigscreen.Service{Addr: helperAddr, Version: buildVersion(), Send: func(kind string, data any) bool {
+		return tr.SendMessage(map[string]any{"kind": kind, "data": data})
 	}}
 	go func() {
 		if err := bigScreen.Run(ctx); err != nil {
@@ -467,7 +464,7 @@ func runBigScreenHelper(args []string) {
 	fs := flag.NewFlagSet("big-screen-helper", flag.ExitOnError)
 	addr := fs.String("helper-addr", bigscreen.DefaultAddr, "Address of the bridge service")
 	fs.Parse(args)
-	bigscreen.Version = buildVersion()
+	detachConsole()
 	dir, err := os.UserConfigDir()
 	if err != nil {
 		log.Fatal("no config dir for the browser profile", "err", err)
@@ -475,7 +472,7 @@ func runBigScreenHelper(args []string) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer stop()
 	// After an update (version mismatch with the service) it closes its window and starts over as the new binary
-	if err := bigscreen.RunHelperReexec(ctx, *addr, bigscreen.DefaultLauncher(filepath.Join(dir, "dartcade-bridge", "big-screen-browser")), bigscreen.Reexec); err != nil && ctx.Err() == nil {
+	if err := bigscreen.RunHelperReexec(ctx, *addr, bigscreen.DefaultLauncher(filepath.Join(dir, "dartcade-bridge", "big-screen-browser")), buildVersion(), bigscreen.Reexec); err != nil && ctx.Err() == nil {
 		log.Info("big-screen helper stopped", "err", err)
 	}
 }

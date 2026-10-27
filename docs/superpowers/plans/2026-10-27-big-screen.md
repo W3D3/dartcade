@@ -27,6 +27,7 @@
 4. **Helper registration:** Linux XDG autostart `.desktop` file, macOS LaunchAgent, Windows `HKCU\…\Run` value, all written for the invoking desktop user by `bridge install`. No `systemd --user` unit.
 5. **Service ↔ helper channel:** loopback TCP `127.0.0.1:47817` (a `--helper-addr` flag overrides). Any local user could connect; accepted for a dart machine (the token it carries is board-scoped and read-only). `// shortcut:` comment.
 6. Cricket has artboards but is not a game in the repo: skipped.
+7. **The token is visible to local users on the bridge machine.** It is in the browser's command line (`ps`) and crosses the unauthenticated loopback channel. The browser runs private (`--incognito`, `--private-window`) so it stays out of the history. Residual risk accepted for a dart machine: the token is board-scoped, read-only and revoked by Stop, `off` or deleting the board.
 
 ## Global Constraints
 

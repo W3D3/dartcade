@@ -248,11 +248,11 @@ func registerHelper() {
 		fmt.Println("Big screen: not set up:", err)
 		return
 	}
-	if err := bigscreen.Register(exe, u, bigscreen.DefaultAddr); err != nil {
+	if err := bigscreen.Register(exe, u); err != nil {
 		fmt.Println("Big screen: not set up:", err)
 		return
 	}
-	now := "`" + serviceName + " big-screen-helper &`"
+	now := fmt.Sprintf("`%s big-screen-helper &`", exe)
 	if runtime.GOOS == "windows" {
 		now = fmt.Sprintf("`Start-Process \"%s\" big-screen-helper` in PowerShell", exe)
 	}

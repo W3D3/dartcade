@@ -1,41 +1,20 @@
 <script lang="ts">
   // The big screen: a view-only page a TV or kiosk opens at #/big-screen/<board>?k=<token>.
   // The board's socket says what to show (idle, the live game, the held result).
-  import type { Component } from 'svelte'
   import { onDestroy, onMount } from 'svelte'
   import { currentUser } from '$lib/auth'
   import { accountSettings } from '$lib/accountSettings'
   import { loadSettings } from '$lib/gameSettings'
-  import { gameState } from '$lib/gameState'
   import { createBigScreenAudio, createSettingsMemo, kioskSettings } from '$lib/bigscreen/audio'
-  import { viewFor, type ViewKey } from '$lib/bigscreen/select'
+  import { viewFor } from '$lib/bigscreen/select'
   import { createBigScreenStore } from '$lib/bigscreen/store'
   import type { Snapshot } from '$lib/ws'
-  import type { GameDetail } from '$lib/api'
-  import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
   import Stage from '$lib/components/bigscreen/Stage.svelte'
   import Idle from '$lib/components/bigscreen/Idle.svelte'
   import Reconnecting from '$lib/components/bigscreen/Reconnecting.svelte'
   import FallbackCard from '$lib/components/bigscreen/FallbackCard.svelte'
-  import GenericResult from '$lib/components/bigscreen/GenericResult.svelte'
-  import X01Live from '$lib/components/bigscreen/X01Live.svelte'
-  import X01Win from '$lib/components/bigscreen/X01Win.svelte'
-  import P121Live from '$lib/components/bigscreen/P121Live.svelte'
-  import AtcLive from '$lib/components/bigscreen/AtcLive.svelte'
-  import HiloLive from '$lib/components/bigscreen/HiloLive.svelte'
 
   let { params }: { params: { board: string } } = $props()
-
-  type ViewProps = { snapshot: Snapshot; orientation: 'landscape' | 'portrait'; countdown: string; detail: GameDetail | null }
-  // Registration point for the per-game live and win views ('x01', 'x01-win', 'atc', 'p121', 'hilo');
-  // a key without a component here shows the fallback card.
-  const views: Partial<Record<ViewKey, Component<ViewProps>>> = {
-    x01: X01Live,
-    'x01-win': X01Win,
-    p121: P121Live,
-    atc: AtcLive,
-    hilo: HiloLive,
-  }
 
   // The board of the route is fixed for the page's life
   // svelte-ignore state_referenced_locally
@@ -47,6 +26,7 @@
   const store = createBigScreenStore(board, token)
   const message = store.message
   const connected = store.connected
+  const stopped = store.stopped
   onDestroy(() => store.destroy())
 
   // The owner's own settings when signed in here, else the owner's account settings from the message
@@ -62,7 +42,7 @@
   let asleep = $state(false)
   $effect(() => {
     audio?.destroy()
-    audio = createBigScreenAudio({ settings: stable })
+    audio = createBigScreenAudio({ settings: stable, kiosk: !$currentUser })
     return () => audio?.destroy()
   })
   $effect(() => {
@@ -95,8 +75,6 @@
     return `Board screen in ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   })
   const detail = $derived($message?.screen.kind === 'result' ? ($message.screen.detail ?? null) : null)
-  const minigolf = $derived(view?.component === 'minigolf' ? gameState(view.snapshot).minigolf : null)
-  const Registered = $derived(view ? views[view.component] : undefined)
 </script>
 
 <div class="cursor-none">
@@ -104,37 +82,20 @@
     {#snippet children(orientation)}
       {#if view === null}
         <!-- connecting: a blank stage -->
-      {:else if view.component === 'idle'}
+      {:else if view.kind === 'idle'}
         <Idle name={$message?.board.name ?? ''} online={$message?.board.online ?? false} {orientation} />
-      {:else if view.component === 'minigolf' && minigolf && view.snapshot}
-        <MinigolfMatch
-          game={minigolf}
-          players={view.snapshot.players}
-          darts={[]}
-          canThrow={false}
-          locked={true}
-          canUndo={false}
-          next={{ prominent: false, enabled: false }}
-          onUndo={() => undefined}
-          onNext={() => undefined}
-          onBoardClick={() => undefined}
-          host={false}
-          manual={false}
-          onNextHole={() => undefined}
-          {settings}
-        />
-      {:else if Registered && view.snapshot}
-        <Registered snapshot={view.snapshot} {orientation} {countdown} {detail} />
-      {:else if view.component === 'generic-result' && view.snapshot}
-        <GenericResult snapshot={view.snapshot} {countdown} />
-      {:else}
+      {:else if view.kind === 'fallback'}
         <FallbackCard snapshot={view.snapshot} />
+      {:else}
+        <view.component snapshot={view.snapshot} {orientation} {countdown} {detail} {settings} />
       {/if}
     {/snippet}
   </Stage>
-  {#if !$connected}<Reconnecting />{/if}
+  {#if $stopped}
+    <div class="fixed inset-0 flex items-center justify-center text-[40px] text-text-muted" role="status">Stopped</div>
+  {:else if !$connected}<Reconnecting />{/if}
   {#if asleep}
-    <div class="fixed bottom-6 left-6 rounded-full bg-surface-panel/90 px-4 py-1.5 text-[16px] text-text-muted">
+    <div class="fixed bottom-6 left-6 rounded-full bg-surface-panel/90 px-4 py-1.5 text-[16px] text-text-muted" role="status">
       Click or tap to enable sound
     </div>
   {/if}

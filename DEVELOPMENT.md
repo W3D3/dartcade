@@ -209,6 +209,17 @@ a root install writes the file by re-running the bridge as the desktop user, nev
 `cd bridge && go run ./cmd/bridge big-screen-helper` (`--helper-addr` if the bridge listens
 elsewhere than `127.0.0.1:47817`).
 
+The kiosk token is part of the browser's command line and goes over the unauthenticated loopback
+channel, so other local users on that machine can read it. The browser opens private (`--incognito`,
+`--private-window`) to keep it out of the history. The token only lets a socket watch that one
+board and is revoked by Stop, setting the board to off, or deleting it. In `manual` mode a bridge
+self-update closes the screen (the helper re-execs) until Start is pressed again.
+
+To try the page without a bridge, turn on `bigscreen.enabled` for yourself (`#/admin/flags`, or
+`FLAGS_ON`) and open `#/big-screen/<board id>` in a signed-in browser (the board id is in the Boards
+page's URL and API). Settings > Boards has the per-board off/automatic/manual setting; the board
+controls on the match screen have the Start/Stop big screen button and an "Open big screen here" link.
+
 Machines that installed a bridge before this existed need the install command from the Boards
 page run once more: registration happens only at install.
 

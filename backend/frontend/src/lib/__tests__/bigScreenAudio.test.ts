@@ -80,6 +80,16 @@ describe('big screen audio', () => {
     expect(caller.stop).not.toHaveBeenCalled()
   })
 
+  it('loads a custom voice for a signed-in user, the built-in fallback only for a kiosk', () => {
+    const voiceFor = (kiosk: boolean) => {
+      const loadClips = vi.fn((_voice: string | null) => Promise.resolve({}))
+      createBigScreenAudio({ settings: { ...kioskSettings({ callerOn: true }), callerVoice: 'custom:mine' }, kiosk, loadClips })
+      return loadClips.mock.calls[0]?.[0]
+    }
+    expect(voiceFor(false)).toBe('custom:mine')
+    expect(voiceFor(true)).toBeNull()
+  })
+
   it('the settings memo returns the same object for equal prefs', () => {
     const memo = createSettingsMemo()
     const a = memo(kioskSettings({ callerOn: true }))

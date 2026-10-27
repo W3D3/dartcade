@@ -203,8 +203,7 @@
       <PickName />
     {:else}
       <Router {routes} />
-      {#if $currentUser}<ProgressToasts />{/if}
-      {#if $currentUser}<MatchFound />{/if}
+      {#if $currentUser && !$location.startsWith('/big-screen/')}<ProgressToasts /><MatchFound />{/if}
     {/if}
   {/if}
   {#if $currentUser?.impersonating}<ImpersonationBanner name={$currentUser.name} />{/if}

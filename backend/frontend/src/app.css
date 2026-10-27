@@ -15,6 +15,9 @@
   --color-text-muted: #a3a498;
   --color-text-dim: #8f9085;
   --color-accent: #c6f24e;
+  /* The Start/Stop big screen button: stands out from the lime accent */
+  --color-big-screen: #2563eb;
+  --color-big-screen-hover: #1d4ed8;
   --color-accent-fg: #0f100e;
   --color-live: #ff5a4f;
   --color-live-text: #ff8a80;
@@ -50,6 +53,13 @@
   --color-warn-icon: #2a2714;
   --color-accent-line: #44521f;
   --color-surface-paused: #22251f;
+  /* Big screen: the active seat's card, the checkout panel, an unfilled pip, faint slot text */
+  --color-card-active: #161b0f;
+  --color-checkout-from: #1d2a0c;
+  --color-checkout-to: #151a0e;
+  --color-checkout-line: #3a4a20;
+  --color-pip-dim: #55594f;
+  --color-text-faint: #6d7066;
 
   /* Lobby: rows, toggles that are on, chips someone moved */
   --color-surface-row: #1b1d18;
@@ -167,6 +177,11 @@
 
 /* A progress bar's fill: diagonal stripes over its colour (bg-accent, bg-gold). A 45° stripe only
    tiles seamlessly in a square tile, so the stripes are quarters of a 20 px square. */
+/* Big screen: the glow behind the idle and the match-won screens */
+@utility bg-big-glow {
+  background-image: radial-gradient(1200px 800px at 50% 45%, #1a2210, #0b0c0a 70%);
+}
+
 @utility bar-stripes {
   background-image: linear-gradient(135deg, rgba(0, 0, 0, 0.16) 25%, transparent 25% 50%, rgba(0, 0, 0, 0.16) 50% 75%, transparent 75%);
   background-size: 20px 20px;
