@@ -37,7 +37,7 @@
   aria-pressed={on}
   aria-label={label}
   {onclick}
-  class="inline-flex items-center rounded-full cursor-pointer font-[inherit] {look}
+  class="inline-flex items-center max-w-full rounded-full cursor-pointer font-[inherit] {look}
          {size === 'md' ? 'h-10 gap-2 pl-[5px] pr-3 text-[14px]' : 'h-8 gap-1 px-[10px] text-[12px]'}"
 >
   {@render children()}

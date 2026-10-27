@@ -69,7 +69,7 @@
     <div class="flex items-center gap-3">
       <InviteAvatar name={inviter} size={46} offset="ring-offset-surface-active" />
       <span class="flex flex-col gap-[2px] min-w-0">
-        <span id="invite-toast-desc" class="text-[15px] text-ink-2">
+        <span id="invite-toast-desc" class="text-[15px] text-ink-2 wrap-anywhere">
           <strong class="text-text">{inviter}</strong>
           invited you to <span class="md:hidden">{invite.lobbyName}</span><span class="max-md:hidden">play</span>
         </span>
