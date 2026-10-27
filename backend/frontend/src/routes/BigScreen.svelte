@@ -17,13 +17,15 @@
   import Reconnecting from '$lib/components/bigscreen/Reconnecting.svelte'
   import FallbackCard from '$lib/components/bigscreen/FallbackCard.svelte'
   import GenericResult from '$lib/components/bigscreen/GenericResult.svelte'
+  import X01Live from '$lib/components/bigscreen/X01Live.svelte'
+  import X01Win from '$lib/components/bigscreen/X01Win.svelte'
 
   let { params }: { params: { board: string } } = $props()
 
   type ViewProps = { snapshot: Snapshot; orientation: 'landscape' | 'portrait'; countdown: string }
   // Registration point for the per-game live and win views ('x01', 'x01-win', 'atc', 'p121', 'hilo');
   // a key without a component here shows the fallback card.
-  const views: Partial<Record<ViewKey, Component<ViewProps>>> = {}
+  const views: Partial<Record<ViewKey, Component<ViewProps>>> = { x01: X01Live, 'x01-win': X01Win }
 
   // The board of the route is fixed for the page's life
   // svelte-ignore state_referenced_locally
