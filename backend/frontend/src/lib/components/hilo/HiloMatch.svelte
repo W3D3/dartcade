@@ -1,7 +1,8 @@
 <!--
   The Higher Lower match screen (HiLo-Duel, -LifeLost, -Party, -Phone). Two players: a panel either
   side, the scale and the board in the centre, then This visit, the slots and the controls. Three or
-  more: stacked rows, then the board and the scale. Phones: the other players' rows, the thrower's
+  more: stacked rows, then the board and the scale. Portrait screens: the rows on top, the horizontal
+  scale, This visit, the slots and the controls, then the board. Phones: the other players' rows, the thrower's
   card, the horizontal scale, the board, the slots and the controls. A visit that just lost a life
   shows the red banner in place of This visit until the next dart.
 -->
@@ -175,6 +176,18 @@
     {@render board()}
     <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
     {@render controls(true)}
+  </main>
+{:else if layout === 'portrait'}
+  <!-- Upright screens: the players' rows on top, the scale across, this visit, the slots and controls, then the board -->
+  <main class="flex-grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
+    <div class="shrink-0 max-h-[40%] overflow-y-auto flex flex-col gap-3">
+      {#each game.seats as _, i (i)}<HiloRow {...seatProps(i)} />{/each}
+    </div>
+    <HiloScale {game} {marker} orientation="horizontal" />
+    {@render band()}
+    <DartSlots {slots} {onCorrect} bind:openDart />
+    {@render controls(false)}
+    {@render board()}
   </main>
 {:else if layout === 'duel'}
   <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
