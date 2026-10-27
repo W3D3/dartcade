@@ -217,6 +217,35 @@
     </section>
     {@render controls(true)}
   </main>
+{:else if layout === 'portrait'}
+  <!-- Upright screens: the players on top (one or two cards with their ladders side by side, more as rows),
+       then this visit, the slots and the controls, and the board below -->
+  <main class="flex-grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
+    {#if game.seats.length <= 2}
+      <div class="shrink-0 grid gap-3 lg:gap-4 {game.seats.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}">
+        {#each game.seats as _, i (i)}
+          <div class="min-w-0 flex flex-col gap-3">
+            <P121PlayerCard {game} seat={i} name={name(i)} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
+            <P121Ladder {game} seat={i} variant="dots" />
+          </div>
+        {/each}
+      </div>
+    {:else}
+      <div class="shrink-0 max-h-[40%] overflow-y-auto flex flex-col gap-3">{@render rows()}</div>
+    {/if}
+    <div class="shrink-0 grid grid-cols-[minmax(0,1.15fr)_minmax(0,3fr)] gap-[10px] items-start">
+      <div
+        class="h-[58px] md:h-[min(124px,14vh)] box-border rounded-[14px] border border-line bg-surface-1 px-5 flex items-center justify-between"
+      >
+        <span class="text-[13px] font-semibold label-caps text-text-dim">This visit</span>
+        <span class="font-display font-bold text-[min(84px,8vh)] leading-none">{visitSum}</span>
+      </div>
+      <DartSlots {slots} {onCorrect} bind:openDart />
+    </div>
+    {@render controls(false)}
+    {@render madeCard()}
+    {@render board()}
+  </main>
 {:else if layout === 'solo'}
   <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
     <P121PlayerCard {game} seat={0} name={name(0)} active visitDarts={vd(0)} {checkout} />
@@ -236,31 +265,33 @@
 {:else}
   <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
     <div class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3">{@render center(true)}</div>
-    <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-y-auto">
-      {#each game.seats as s, i (i)}
-        <section
-          aria-label="{name(i)}, target {s.target}, {s.left} left"
-          class="rounded-[14px] box-border px-5 py-4 flex flex-col gap-3 {playerCard(i === cp && playing)}"
-        >
-          <div class="flex items-center gap-4 min-w-0">
-            <Avatar name={name(i)} tone={i === cp && playing ? 'accent' : 'default'} size={36} />
-            <span class="text-[19px] font-semibold truncate">{name(i)}</span>
-            {#if s.done}<span class="rounded-full bg-surface-chip px-2 py-[2px] text-[12px] label-caps text-text-muted">done</span>{/if}
-            <span class="ml-auto flex items-baseline gap-[6px]">
-              <span class="text-[12px] label-caps text-text-dim">Target</span>
-              <span class="font-display font-bold text-[28px] text-accent">{s.target}</span>
-            </span>
-            <span class="flex items-baseline gap-[6px] w-[110px] justify-end">
-              <span class="text-[12px] label-caps text-text-dim">Left</span>
-              <span class="font-display font-bold text-[44px] leading-none">{s.left}</span>
-            </span>
-          </div>
-          <P121Ladder {game} seat={i} variant="dots" visitDarts={vd(i)} />
-        </section>
-      {/each}
-    </div>
+    <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-y-auto">{@render rows()}</div>
   </main>
 {/if}
+
+{#snippet rows()}
+  {#each game.seats as s, i (i)}
+    <section
+      aria-label="{name(i)}, target {s.target}, {s.left} left"
+      class="rounded-[14px] box-border px-5 py-4 flex flex-col gap-3 {playerCard(i === cp && playing)}"
+    >
+      <div class="flex items-center gap-4 min-w-0">
+        <Avatar name={name(i)} tone={i === cp && playing ? 'accent' : 'default'} size={36} />
+        <span class="text-[19px] font-semibold truncate">{name(i)}</span>
+        {#if s.done}<span class="rounded-full bg-surface-chip px-2 py-[2px] text-[12px] label-caps text-text-muted">done</span>{/if}
+        <span class="ml-auto flex items-baseline gap-[6px]">
+          <span class="text-[12px] label-caps text-text-dim">Target</span>
+          <span class="font-display font-bold text-[28px] text-accent">{s.target}</span>
+        </span>
+        <span class="flex items-baseline gap-[6px] w-[110px] justify-end">
+          <span class="text-[12px] label-caps text-text-dim">Left</span>
+          <span class="font-display font-bold text-[44px] leading-none">{s.left}</span>
+        </span>
+      </div>
+      <P121Ladder {game} seat={i} variant="dots" visitDarts={vd(i)} />
+    </section>
+  {/each}
+{/snippet}
 
 {#if confirmGiveUp}
   <ConfirmModal
