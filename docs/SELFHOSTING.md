@@ -77,6 +77,14 @@ in Austria) through to the backend service, as in `backend/docker-compose.yaml`.
 In-app bug reports (the Alpha badge, Settings) are mailed to `FEEDBACK_EMAIL`, or to
 `LEGAL_CONTACT_EMAIL` without it; with neither, the app hides them.
 
+**Sign in with Discord**: create an application in the
+[Discord Developer Portal](https://discord.com/developers/applications), add
+`<BETTER_AUTH_URL>/api/auth/callback/discord` under OAuth2 → Redirects, and pass its client ID and
+secret as `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` (as in `backend/docker-compose.yaml`).
+Without them there's no Discord button. See
+[`DEVELOPMENT.md`](../DEVELOPMENT.md#sign-in-with-discord)'s "Sign in with Discord" for the steps
+and how linking, missing emails and account deletion work.
+
 **Admins** (the minigolf course editor, features still behind a flag) are users with
 better-auth's `admin` role. The first one comes from `ADMIN_EMAIL`/`ADMIN_PASSWORD` (see "First
 start"), and admins promote others on `#/admin/users`. Without those variables, sign up, then give

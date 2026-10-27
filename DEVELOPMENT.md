@@ -106,6 +106,7 @@ Backend-only (set automatically by the dev compose, documented here for manual r
 | `MAIL_FROM`                                                   | e.g. `Dartcade <noreply@example.org>`. Required with `SMTP_URL`                                                                                                                                                                                                                                                                                                                                 |
 | `FEEDBACK_EMAIL`                                              | Where in-app bug reports and feedback are mailed (with the user's account, page, browser and an optional screenshot). Unset: `LEGAL_CONTACT_EMAIL`; with neither, or without `SMTP_URL`, the app hides reporting                                                                                                                                                                                |
 | `EMAIL_VERIFICATION`                                          | `required` or `off`. Defaults to `required` when `SMTP_URL` is set and `off` otherwise. `required` without `SMTP_URL` stops startup with an error                                                                                                                                                                                                                                               |
+| `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`                  | Turn on Sign in with Discord: your Discord application's OAuth2 client ID and secret (see "Sign in with Discord" below). Unset: no Discord button. Only one of the two set stops startup with an error                                                                                                                                                                                          |
 | `LEGAL_DIR`                                                   | A folder with `terms.md`, `privacy.md` and `imprint.md` overriding the bundled defaults; each file it lacks falls back to the bundled default                                                                                                                                                                                                                                                   |
 | `LEGAL_OPERATOR_NAME`, `LEGAL_ADDRESS`, `LEGAL_CONTACT_EMAIL` | Fill `{{operator.name}}`, `{{address}}`, `{{contact.email}}` in the legal texts                                                                                                                                                                                                                                                                                                                 |
 | `LEGAL_UPDATED`                                               | The date the legal texts last changed, e.g. `2026-10-17`; fills `{{updated}}` and is returned as each text's `updated`                                                                                                                                                                                                                                                                          |
@@ -137,6 +138,49 @@ keep verification off regardless of `SMTP_URL`.
 An operator in Austria must fill the `LEGAL_*` values (`LEGAL_OPERATOR_NAME`, `LEGAL_ADDRESS`,
 `LEGAL_CONTACT_EMAIL`), or the Imprint page shows its `{{…}}` placeholders publicly instead of
 real text.
+
+### Sign in with Discord
+
+With `DISCORD_CLIENT_ID` and `DISCORD_CLIENT_SECRET` set, the sign-in and register pages show
+**Continue with Discord** (`GET /api/auth-info` reports `discord: true`). Without them nothing
+changes. To set it up:
+
+1. In the [Discord Developer Portal](https://discord.com/developers/applications), click **New
+   Application** and name it (players see this name on Discord's consent screen).
+2. Under **OAuth2**, copy the **Client ID** into `DISCORD_CLIENT_ID`, and **Reset Secret** to get
+   the value for `DISCORD_CLIENT_SECRET`. Keep the secret in your secret store, never in git.
+3. Under **OAuth2 → Redirects**, add `<BETTER_AUTH_URL>/api/auth/callback/discord` for every
+   address the app runs at. Discord wants each one exactly, with no wildcards:
+   - production: `https://dartcade.example.com/api/auth/callback/discord`
+   - local dev (the dev compose's `BETTER_AUTH_URL`): `http://localhost:3000/api/auth/callback/discord`
+   - a PR preview: `https://dartcade-<pr>.wedenig.dev/api/auth/callback/discord`, one per PR.
+     `backend/.sprout.yaml` sets no Discord credentials, so previews have no Discord button unless
+     you add both and that PR's redirect.
+4. Nothing else in the portal: the app asks for the `identify` and `email` scopes itself, and
+   needs no bot.
+
+For local dev, put the two values in `.env` (`.env.example` lists them); `docker-compose.dev.yaml`
+passes them through.
+
+How accounts work with it:
+
+- **New accounts** accept the Terms and Privacy Policy by continuing (the line under the button
+  says so); `terms_accepted_at` is recorded when the account is made. The name comes from the
+  Discord display name (else the username), cut to the name rules and numbered when taken
+  (`Annie Darts` becomes `Annie.Darts`, then `Annie.Darts2`). Players can rename in Settings.
+- **No email on Discord** (phone-only accounts): the account gets the stand-in address
+  `<discord-id>@discord.invalid`. The mailer never sends to a `.invalid` address, so these
+  accounts get no mail and can only sign in through Discord; nobody can sign up with such an
+  address.
+- **An existing account with the same email** is linked to the Discord sign-in only when Discord
+  says the email is verified and the existing account's email is verified too. Otherwise the
+  sign-in fails with "This email already has a Dartcade account", so an unverified Discord email
+  never gets into someone's password account. A Discord account whose email is real can still use
+  Forgot password to add a password.
+- **Deleting an account without a password** can't confirm with a password or a mailed link.
+  Settings sends the player through Discord again; within five minutes of that sign-in the
+  account deletes at once (`backend/src/auth/deleteGate.ts`), with the same cleanup as any other
+  deletion. Accounts with a password delete as before.
 
 ## Running backend tests
 

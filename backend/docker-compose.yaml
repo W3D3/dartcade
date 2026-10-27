@@ -17,6 +17,8 @@ services:
       LEGAL_CONTACT_EMAIL: ${LEGAL_CONTACT_EMAIL:-}
       LEGAL_UPDATED: ${LEGAL_UPDATED:-}
       BETTER_AUTH_URL: ${BETTER_AUTH_URL:-}
+      DISCORD_CLIENT_ID: ${DISCORD_CLIENT_ID:-}
+      DISCORD_CLIENT_SECRET: ${DISCORD_CLIENT_SECRET:-}
     depends_on:
       postgres:
         condition: service_healthy
