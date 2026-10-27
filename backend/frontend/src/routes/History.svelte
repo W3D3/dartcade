@@ -136,7 +136,7 @@
 {#snippet badge(p: PlayerBadge)}
   <ProfilePopover userId={p.userId} name={p.name}>
     <span
-      class="pointer-events-auto inline-flex h-[28px] items-center gap-[5px] whitespace-nowrap rounded-full border py-0 pl-[5px] pr-[8px] text-[13px] lg:h-[30px] lg:gap-[6px] lg:pl-[7px] lg:pr-[10px] {p.me
+      class="pointer-events-auto inline-flex max-w-full h-[28px] items-center gap-[5px] whitespace-nowrap rounded-full border py-0 pl-[5px] pr-[8px] text-[13px] lg:h-[30px] lg:gap-[6px] lg:pl-[7px] lg:pr-[10px] {p.me
         ? 'border-accent bg-accent-tint font-bold text-text'
         : 'border-line-2 bg-surface-inset font-medium text-ink-2'}"
     >
@@ -149,7 +149,7 @@
         bot={p.bot}
         class="size-[18px] text-[8px] lg:size-[22px] lg:text-[9px]"
       />
-      {p.name}
+      <span class="min-w-0 truncate">{p.name}</span>
     </span>
   </ProfilePopover>
 {/snippet}
