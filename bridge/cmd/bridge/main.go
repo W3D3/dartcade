@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"runtime/debug"
@@ -14,6 +15,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"dartcade/bridge/internal/bigscreen"
 	"dartcade/bridge/internal/bm"
 	"dartcade/bridge/internal/camera"
 	"dartcade/bridge/internal/differ"
@@ -32,6 +34,9 @@ var version = "dev"
 // commit is optionally stamped via -ldflags "-X main.commit=<sha>[-dirty]" for
 // builds that can't see .git (e.g. Docker). Otherwise Go's embedded VCS info is used.
 var commit = ""
+
+// helperAddr is where the bridge listens for the big-screen helper (--helper-addr).
+var helperAddr = bigscreen.DefaultAddr
 
 // buildVersion is the version the bridge reports: the stamped tag for releases,
 // or "dev+<sha>[-dirty]" for untagged builds so they can be told apart.
@@ -83,6 +88,10 @@ func main() {
 		runApplyUpdate(os.Args[2:])
 		return
 	}
+	if len(os.Args) > 1 && os.Args[1] == "big-screen-helper" {
+		runBigScreenHelper(os.Args[2:])
+		return
+	}
 	if len(os.Args) > 1 && os.Args[1] == "replay" {
 		runReplay(os.Args[2:])
 		return
@@ -103,7 +112,9 @@ func main() {
 	token := fs.String("token", "", "Bridge authentication token (skips pairing if set)")
 	installToken := fs.String("install-token", "", "One-time token from the dashboard's install command (also DARTCADE_INSTALL_TOKEN); the bridge pairs itself with it")
 	configDir := fs.String("config-dir", "", "Directory holding bridge.toml (also DARTCADE_CONFIG_DIR; default: OS user config dir)")
+	fs.StringVar(&helperAddr, "helper-addr", bigscreen.DefaultAddr, "Address the big-screen helper connects to")
 	fs.Parse(os.Args[1:])
+	bigscreen.Version = buildVersion()
 
 	// Resolve the config path once; it's where bridge.toml is read and where
 	// the token + bridge_id are persisted. Mount this dir as a volume to keep a
@@ -237,7 +248,18 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console) {
 		restarting.Store(true)
 		restart()
 	}
+	bigScreen := &bigscreen.Service{Addr: helperAddr, Send: func(kind string, data any) bool {
+		return tr.TrySendMessage(map[string]any{"kind": kind, "data": data})
+	}}
+	go func() {
+		if err := bigScreen.Run(ctx); err != nil {
+			log.Warn("big-screen helper socket unavailable", "err", err)
+		}
+	}()
 	tr.OnMessage(func(kind string, data json.RawMessage) {
+		if bigScreen.Handle(kind, data) {
+			return
+		}
 		switch kind {
 		case "bm.request":
 			relayBM(ctx, client, tr, data)
@@ -251,7 +273,10 @@ func run(ctx context.Context, cfg Config, cfgPath string, con *console) {
 
 	// And on every (re)connect, so viewers see the board after a restart without waiting for a dart.
 	// WLEDs are only scanned when a user asks (wled.scan), never on a timer or a connect.
-	tr.OnConnect(func() { stills.Trigger(ctx) })
+	tr.OnConnect(func() {
+		bigScreen.Announce()
+		stills.Trigger(ctx)
+	})
 
 	go func() {
 		if err := tr.Start(ctx); err != nil && ctx.Err() == nil {
@@ -428,4 +453,23 @@ func applyUpdateStateDir(argv []string) (string, error) {
 	fs.String("log-level", "", "")
 	err := fs.Parse(argv)
 	return *stateDir, err
+}
+
+// runBigScreenHelper is `bridge big-screen-helper`: it runs in the desktop user's session
+// (autostart) and opens the big screen's kiosk browser for the bridge service.
+func runBigScreenHelper(args []string) {
+	fs := flag.NewFlagSet("big-screen-helper", flag.ExitOnError)
+	addr := fs.String("helper-addr", bigscreen.DefaultAddr, "Address of the bridge service")
+	fs.Parse(args)
+	bigscreen.Version = buildVersion()
+	dir, err := os.UserConfigDir()
+	if err != nil {
+		log.Fatal("no config dir for the browser profile", "err", err)
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer stop()
+	// After an update (version mismatch with the service) it closes its window and starts over as the new binary
+	if err := bigscreen.RunHelperReexec(ctx, *addr, bigscreen.DefaultLauncher(filepath.Join(dir, "dartcade-bridge", "big-screen-browser")), bigscreen.Reexec); err != nil && ctx.Err() == nil {
+		log.Info("big-screen helper stopped", "err", err)
+	}
 }
