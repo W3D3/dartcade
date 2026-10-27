@@ -132,15 +132,18 @@ func StillMessage(st camera.Still) any {
 func (t *Transport) SendStill(st camera.Still) { t.SendMessage(StillMessage(st)) }
 
 // SendMessage queues a telemetry message (no envelope, not stored) on the live connection.
-// It is dropped while the backend is unreachable, or if the queue is full.
-func (t *Transport) SendMessage(v any) {
+// It is dropped while the backend is unreachable, or if the queue is full; the result says
+// whether it was queued.
+func (t *Transport) SendMessage(v any) bool {
 	if !t.connected.Load() {
-		return
+		return false
 	}
 	select {
 	case t.stills <- v:
+		return true
 	default:
 		log.Debug("telemetry queue full, dropping")
+		return false
 	}
 }
 
