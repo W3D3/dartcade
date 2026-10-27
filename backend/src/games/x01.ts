@@ -472,7 +472,8 @@ export const x01Game: GameModule<X01State, X01Config, X01View, 'x01', X01Detail>
           pointsScored: s.pointsScored[i],
           // Only for players who checked out a leg, so min/avg over games stay meaningful
           ...(s.bestCheckout[i] > 0 && { bestCheckout: s.bestCheckout[i] }),
-          // Only when there is something to count, like bestCheckout: the friend activity feed reads these
+          // Only when there is something to count, like bestCheckout: Home reads the checkout rate, the friend feed the rest
+          ...(s.checkoutAttempts[i] > 0 && { checkoutAttempts: s.checkoutAttempts[i], checkoutHits: s.checkoutHits[i] }),
           ...(s.count180[i] > 0 && { count180: s.count180[i] }),
           ...(s.tonOuts[i] > 0 && { tonOuts: s.tonOuts[i] }),
         },
