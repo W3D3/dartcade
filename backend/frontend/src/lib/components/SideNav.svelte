@@ -1,6 +1,6 @@
 <script lang="ts">
   import Wordmark from './Wordmark.svelte'
-  import { Clock, Mail, Radio, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
+  import { Clock, House, Mail, Radio, Settings, ShieldCheck, Swords, Target, TrendingUp, Trophy } from '@lucide/svelte'
   import { location } from 'svelte-spa-router'
   import ConnectBoardCard from './ConnectBoardCard.svelte'
   import LobbyIndicator from './LobbyIndicator.svelte'
@@ -17,9 +17,10 @@
 
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
+  const home = flag('home.enabled', true)
 
   const links = $derived(
-    sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator, $progression ? ($progress?.challengesToClaim ?? 0) : null),
+    sideLinks($activeSessionId, $matchmaking, $currentUser?.isModerator, $progression ? ($progress?.challengesToClaim ?? 0) : null, $home),
   )
 </script>
 
@@ -35,7 +36,9 @@
     {#each links as link (link.href)}
       {@const active = isActiveRoute($location, link.href)}
       <NavLink href={`#${link.href}`} {active} disabled={link.disabled}>
-        {#if link.icon === 'play'}
+        {#if link.icon === 'home'}
+          <House size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
+        {:else if link.icon === 'play'}
           <Target size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />
         {:else if link.icon === 'ranked'}
           <Swords size={20} strokeWidth={1.8} class={active ? 'text-accent' : ''} />

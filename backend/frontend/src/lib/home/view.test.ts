@@ -3,7 +3,7 @@ import type { GameStats, GameSummary } from '$lib/api'
 import type { RankedGame } from '$lib/ranked/view'
 import { NEWS, visibleNews } from './news'
 import { visibleFeatured, type FeaturedSlide } from './featured'
-import { activityLine, formForm, greeting, lastFive, lobbyLine, rankProgress, recentRow, relativeTime, trend, type HomeEvent } from './view'
+import { activityText, formForm, greeting, lastFive, lobbyLine, longDate, rankProgress, recentRow, relativeTime, trend } from './view'
 
 const at = (h: number, m = 0) => new Date(2026, 9, 27, h, m)
 
@@ -21,6 +21,12 @@ describe('greeting', () => {
   })
 })
 
+describe('longDate', () => {
+  it('writes the weekday, then the day and month', () => {
+    expect(longDate(new Date(2026, 9, 16, 21, 0))).toBe('Friday, 16 October')
+  })
+})
+
 describe('trend', () => {
   it('is up, down or flat with the size of the change to one decimal', () => {
     expect(trend(73, 70.94)).toEqual({ dir: 'up', delta: 2.1 })
@@ -35,7 +41,14 @@ describe('trend', () => {
 })
 
 const stats = (modes: GameStats['modes'], matches = 0): GameStats => ({ days: 30, matches, wins: 0, contested: 0, modes })
-const agg = (avg: number, previousAvg: number | null = null, sum = avg, max = avg) => ({ avg, sum, min: avg, max, previousAvg })
+const agg = (avg: number, previousAvg: number | null = null, sum = avg, max = avg, byDay: { day: string; avg: number }[] = []) => ({
+  avg,
+  sum,
+  min: avg,
+  max,
+  previousAvg,
+  byDay,
+})
 
 describe('formForm', () => {
   it('shows the X01 average with its trend, the checkout rate, best checkout and games over all modes', () => {
@@ -57,11 +70,23 @@ describe('formForm', () => {
         42,
       ),
     )
-    expect(form).toEqual({ avg: '73.0', trend: { dir: 'up', delta: 2.1 }, checkout: '33%', bestCheckout: '129', games: '42' })
+    expect(form).toEqual({ avg: '73.0', trend: { dir: 'up', delta: 2.1 }, byDay: [], checkout: '33%', bestCheckout: '129', games: '42' })
+  })
+
+  it('hands on the average of each day as UTC midnights', () => {
+    const byDay = [
+      { day: '2026-10-25', avg: 50 },
+      { day: '2026-10-26', avg: 70 },
+    ]
+    const form = formForm(stats({ x01: { matches: 2, wins: 1, contested: 2, stats: { average: agg(60, null, 120, 60, byDay) } } }, 2))
+    expect(form.byDay).toEqual([
+      { day: Date.UTC(2026, 9, 25), avg: 50 },
+      { day: Date.UTC(2026, 9, 26), avg: 70 },
+    ])
   })
 
   it('shows dashes, not zeros or NaN, without X01 games', () => {
-    expect(formForm(stats({}, 0))).toEqual({ avg: '–', trend: null, checkout: '–', bestCheckout: '–', games: '0' })
+    expect(formForm(stats({}, 0))).toEqual({ avg: '–', trend: null, byDay: [], checkout: '–', bestCheckout: '–', games: '0' })
     expect(formForm(stats({ atc: { matches: 3, wins: 1, contested: 2, stats: {} } }, 3)).avg).toBe('–')
   })
 
@@ -105,34 +130,21 @@ describe('rankProgress', () => {
   })
 })
 
-const event = (kind: HomeEvent['kind'], payload: HomeEvent['payload']): HomeEvent => ({
-  id: '1',
-  userId: 'u',
-  name: 'Lena',
-  avatar: { kind: 'none' },
-  kind,
-  payload,
-  at: '2026-10-27T10:00:00Z',
-})
+const base = { id: '1', userId: 'u', name: 'Lena', avatar: { kind: 'none' }, at: '2026-10-27T10:00:00Z' } as const
 
-describe('activityLine', () => {
+describe('activityText', () => {
   it('says a single 180 and several', () => {
-    expect(activityLine(event('one_eighty', { count: 1 }))).toEqual({ who: 'Lena', text: 'hit a 180 in X01' })
-    expect(activityLine(event('one_eighty', { count: 3 }))?.text).toBe('hit 3 180s in X01')
+    expect(activityText({ ...base, kind: 'one_eighty', payload: { count: 1 } })).toBe('hit a 180 in X01')
+    expect(activityText({ ...base, kind: 'one_eighty', payload: { count: 3 } })).toBe('hit 3 180s in X01')
   })
 
   it('says the highest ton-plus out and, for more than one, how many', () => {
-    expect(activityLine(event('ton_out', { count: 1, best: 129 }))?.text).toBe('checked out 129 in X01')
-    expect(activityLine(event('ton_out', { count: 2, best: 129 }))?.text).toBe('checked out 129 in X01 (2 ton-plus outs)')
+    expect(activityText({ ...base, kind: 'ton_out', payload: { count: 1, best: 129 } })).toBe('checked out 129 in X01')
+    expect(activityText({ ...base, kind: 'ton_out', payload: { count: 2, best: 129 } })).toBe('checked out 129 in X01 (2 ton-plus outs)')
   })
 
   it('names the rank reached', () => {
-    expect(activityLine(event('rank_up', { mode: '1v1', rankIndex: 15 }))?.text).toBe('reached Gold I in ranked')
-  })
-
-  it('skips an event whose payload is not what its kind promises', () => {
-    expect(activityLine(event('ton_out', {}))).toBeNull()
-    expect(activityLine(event('rank_up', { rankIndex: 'x' }))).toBeNull()
+    expect(activityText({ ...base, kind: 'rank_up', payload: { mode: '1v1', rankIndex: 15 } })).toBe('reached Gold I in ranked')
   })
 })
 
@@ -161,12 +173,12 @@ describe('relativeTime', () => {
 
 describe('lobbyLine', () => {
   it('joins the mode, settings, people and boards', () => {
-    expect(lobbyLine({ mode: 'x01', label: '501', people: 3, boards: 2 })).toBe('X01 · 501 · 3 people · 2 boards')
+    expect(lobbyLine({ mode: 'x01', startScore: 501, people: 3, boards: 2 })).toBe('X01 · 501 · 3 people · 2 boards')
   })
 
   it('leaves out what is empty and says one person', () => {
-    expect(lobbyLine({ mode: 'minigolf', label: '', people: 1, boards: 0 })).toBe('Minigolf · 1 person')
-    expect(lobbyLine({ mode: '', label: '', people: 2, boards: 1 })).toBe('2 people · 1 board')
+    expect(lobbyLine({ mode: 'minigolf', startScore: null, people: 1, boards: 0 })).toBe('Minigolf · 1 person')
+    expect(lobbyLine({ mode: null, startScore: null, people: 2, boards: 1 })).toBe('2 people · 1 board')
   })
 })
 

@@ -394,7 +394,7 @@
   // same game again (solo) or marks the host ready (shared) - see rematchStep
   const winButtons = $derived(winActions(snapshot, viewerId))
   const WIN_LABELS: Record<WinAction, string> = { rematch: 'Rematch', lobby: 'Back to lobby', play: 'Back to Play' }
-  const WIN_ROUTES: Record<WinAction, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/' }
+  const WIN_ROUTES: Record<WinAction, string> = { rematch: '/lobby?rematch=1', lobby: '/lobby', play: '/play' }
   async function finishWin(next: WinAction) {
     if (!sessionId) return
     // The host ends the game for everyone; a 404 means it was ended already, which is fine

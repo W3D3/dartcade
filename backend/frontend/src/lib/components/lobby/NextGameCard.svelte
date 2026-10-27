@@ -107,7 +107,7 @@
     {#if game}
       <SettingsToggleButton open={settingsOpen} ontoggle={() => (settingsOpen = !settingsOpen)} class={cls} />
     {/if}
-    <Button variant="outline" size="md" class="font-semibold {cls} {game ? '' : 'col-span-2'}" onclick={() => push('/')}
+    <Button variant="outline" size="md" class="font-semibold {cls} {game ? '' : 'col-span-2'}" onclick={() => push('/play')}
       >{game ? 'Change game' : 'Pick a game'}</Button
     >
   {/snippet}

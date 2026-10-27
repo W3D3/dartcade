@@ -20,6 +20,7 @@
 
   const matchmaking = flag('matchmaking.enabled')
   const progression = flag('progression.enabled')
+  const home = flag('home.enabled', true)
   const tabs = $derived(
     railTabs(
       $activeSessionId,
@@ -27,6 +28,7 @@
       $matchmaking,
       $progression ? ($progress?.challengesToClaim ?? 0) : null,
       $currentUser?.isModerator ?? false,
+      $home,
     ),
   )
   const lobby = $derived(railLobby($me?.lobby ?? null, $me !== null))

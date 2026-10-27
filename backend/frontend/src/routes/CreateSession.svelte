@@ -170,7 +170,7 @@
   )
   const invites = $derived($me?.invites.length ?? 0)
 
-  // "Play on this board" on the Boards page (#/?board=): the lobby page moves your row there
+  // "Play on this board" on the Boards page (#/play?board=): the lobby page moves your row there
   const boardFromLink = new URLSearchParams($querystring ?? '').get('board')
   // New lobby: only while you host a solo lobby with no game running (nobody gets left behind)
   const newLobby = $derived(offersNewLobby($me?.lobby ?? null))

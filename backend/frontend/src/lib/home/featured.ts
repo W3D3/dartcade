@@ -1,7 +1,7 @@
 // Home's Featured banners: new things worth a look. Hand-edited, newest first; a slide shows only
 // to players who have what it advertises (its flag is on for them), so nobody is sent to a page
 // they can't open. Slides for Cricket and Stats from the design are left out: neither has a page yet.
-import minigolfImg from '$lib/assets/games/minigolf.svg'
+import minigolfImg from '$lib/assets/games/minigolf-featured.webp'
 
 export type FeaturedSlide = {
   id: string

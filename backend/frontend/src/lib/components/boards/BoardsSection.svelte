@@ -575,7 +575,7 @@
 {#snippet boardActions()}
   <button
     type="button"
-    onclick={() => push(`/?board=${selectedId}`)}
+    onclick={() => push(`/play?board=${selectedId}`)}
     class="flex-grow h-12 px-[18px] whitespace-nowrap rounded-[10px] border-0 bg-text text-accent-fg text-[15px] font-semibold
            cursor-pointer font-[inherit] transition-opacity hover:opacity-90"
   >
