@@ -956,6 +956,19 @@ describe('checkout darts', () => {
     expect(s.checkoutHits).toEqual([1, 0])
   })
 
+  it('keeps the tries and hits in the seat summary, for the checkout rate over many games', () => {
+    const s = throwAll(on(40, { cfg: { ...defaultCfg, firstTo: 1 } }), [S20, D10])
+    const total = { totalDarts: [2, 0], totalVisits: [1, 0] }
+    expect(x01Game.summarize(x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state, total)[0].stats).toMatchObject({
+      checkoutAttempts: 2,
+      checkoutHits: 1,
+    })
+    // A seat that never faced a finish has neither key
+    expect(x01Game.summarize(x01Game.onBoardEvent(s, { kind: 'takeout.finished', data: {} }).state, total)[1].stats).not.toHaveProperty(
+      'checkoutAttempts',
+    )
+  })
+
   it('a dart on a score that needs more than one dart is not an attempt', () => {
     expect(throwAll(on(170), [T20]).checkoutAttempts).toEqual([0, 0])
     // 41: S1 leaves 40 (not an attempt), then D20 on 40 (attempt, hit)
