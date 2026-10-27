@@ -3,6 +3,7 @@ import { sql, type Kysely } from 'kysely'
 import { createDb } from './index.js'
 import { runMigrations, insertGameSession, finishGameSession, abortGameSession } from './queries.js'
 import { deleteGame, getInvalidation, invalidateGame, listAllGames, restoreGame, type AdminGameFilter } from './adminGames.js'
+import { insertActivity } from './activity.js'
 import { getFinishedGame, getStatRows, getViewableGame, listFinishedGames } from './history.js'
 import { getRatings, onlineAverage, ratingChangeSince, recentRanked, recordRankedResult } from './ranked.js'
 import type { Database } from './schema.js'
@@ -245,6 +246,24 @@ describe.skipIf(!process.env.TEST_DATABASE_URL)('admin game queries', () => {
       expect(await db.selectFrom('game_sessions').select('invalidated_at').where('id', '=', 'g4').executeTakeFirst()).toEqual({
         invalidated_at: null,
       })
+    })
+
+    it('removes the friend activity of the game, and restoring it does not bring the events back', async () => {
+      await db
+        .insertInto('user')
+        .values({ id: 'ev1', name: 'Eve', email: 'eve@example.com', emailVerified: true, image: null, role: null })
+        .execute()
+      await game('ev-a', 'x01', [['Eve', 'ev1']], 'finished', 50)
+      await game('ev-b', 'x01', [['Eve', 'ev1']], 'finished', 60)
+      await insertActivity(db, [
+        { userId: 'ev1', gameId: 'ev-a', kind: 'one_eighty', payload: { count: 1 }, at: t(55) },
+        { userId: 'ev1', gameId: 'ev-b', kind: 'one_eighty', payload: { count: 1 }, at: t(65) },
+      ])
+      await invalidateGame(db, 'ev-a', 'u1', null)
+      const left = () => db.selectFrom('friend_activity').select('game_id').where('user_id', '=', 'ev1').execute()
+      expect(await left()).toEqual([{ game_id: 'ev-b' }])
+      await restoreGame(db, 'ev-a', 'u1')
+      expect(await left()).toEqual([{ game_id: 'ev-b' }])
     })
   })
   describe('restoreGame', () => {
