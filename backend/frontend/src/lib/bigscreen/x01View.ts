@@ -3,8 +3,9 @@ import { checkoutHint } from '$shared/checkout.js'
 import { x01Slots, type Slot } from '../dartSlots.js'
 import { plural, initial } from '../fmt.js'
 import { x01Meta } from '../gameViews/meta.js'
-import { avgOf, checkoutRate } from '../playerStats.js'
-import { sharedBoard, winView } from '../winScreen.js'
+import { avgOf } from '../playerStats.js'
+import { sharedBoard, x01Win as winViewOf } from '../winScreen.js'
+import type { GameDetail } from '../api'
 import type { Snapshot } from '../ws.js'
 
 type X01Snapshot = Extract<Snapshot, { gameId: 'x01' }>
@@ -47,6 +48,8 @@ export type X01LiveView = {
   slots: Slot[]
   checkout: { text: string; route: string } | null
   party: boolean
+  /** Still throwing for the start: no visit, checkout or slots. */
+  bullOff: boolean
 }
 
 export function x01Live(input: Snapshot): X01LiveView {
@@ -55,12 +58,15 @@ export function x01Live(input: Snapshot): X01LiveView {
   const all = sides(snap)
   const darts = g.currentVisitDarts
   const total = darts.reduce((a, d) => a + d.score, 0)
-  const cp = g.currentPlayer
+  const bullOff = g.phase === 'bulloff'
+  // In the bull off the thrower is the bull off's, and there is no visit to finish
+  const cp = bullOff ? (g.bullOff?.currentPlayer ?? g.currentPlayer) : g.currentPlayer
   const score = g.scores[cp] ?? 0
   const opened = g.opened[cp] ?? true
   const meta = x01Meta(g, snap.players.length)
 
-  const hint = !g.bustThisVisit && opened && score > 0 && darts.length < 3 ? checkoutHint(score, g.config.outMode, 3 - darts.length) : null
+  const hint =
+    !bullOff && !g.bustThisVisit && opened && score > 0 && darts.length < 3 ? checkoutHint(score, g.config.outMode, 3 - darts.length) : null
   return {
     header: { title: 'X01', meta, leg: meta.split(' · ').at(-1) ?? '', board: sharedBoard(snap) },
     seats: all.map(s => ({
@@ -71,7 +77,7 @@ export function x01Live(input: Snapshot): X01LiveView {
       darts: sum(g.totalDarts, s.seats),
       legs: s.legs,
       throwing: s.seats.includes(cp),
-      next: g.nextPlayer !== null && s.seats.includes(g.nextPlayer) && !s.seats.includes(cp),
+      next: !bullOff && g.nextPlayer !== null && s.seats.includes(g.nextPlayer) && !s.seats.includes(cp),
     })),
     firstTo: g.firstTo,
     visit: {
@@ -79,15 +85,18 @@ export function x01Live(input: Snapshot): X01LiveView {
       total,
       leaves: darts.length && !g.bustThisVisit ? (g.visitStartScores[cp] ?? score) - total : null,
     },
-    slots: x01Slots({
-      darts,
-      remaining: score,
-      outMode: g.config.outMode,
-      opened,
-      bust: g.bustThisVisit,
-      suggest: true,
-      finishFoot: 'to win',
-    }),
+    bullOff,
+    slots: bullOff
+      ? []
+      : x01Slots({
+          darts,
+          remaining: score,
+          outMode: g.config.outMode,
+          opened,
+          bust: g.bustThisVisit,
+          suggest: true,
+          finishFoot: 'to win',
+        }),
     checkout: hint ? { text: `${score} left · ${plural(3 - darts.length, 'dart')}`, route: hint.join(' · ') } : null,
     party: isParty(all.length),
   }
@@ -104,9 +113,12 @@ export type X01WinView = {
   firstTo: number
   /** The winner against the runner-up; empty with one side. */
   stats: X01WinStat[]
-  /** The finishing darts ("T17 · D12") and the line above them; null when the snapshot no longer holds them. */
+  /** The finishing darts ("T17 · D12"); null until the saved game arrives. */
   gameShot: string | null
+  /** "Christoph · 75 left · leg 4 in 17 darts"; null when the last visit isn't the winner's. */
   gameShotText: string | null
+  /** "GAME SHOT · LEG 3". */
+  kicker: string
   /** "2 legs to Lena's 1"; empty for a single-leg match. */
   note: string
   party: boolean
@@ -114,64 +126,52 @@ export type X01WinView = {
 }
 
 const DASH = '–'
-const ratio = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
+// The artboard shows "50%" and "15" where the details page says "50% · 3/6" and "15 darts"
+const bare = (v: string) => v.split(' · ')[0].replace(/ darts?$/, '')
+const NO_STATS = ['3-DART AVERAGE', 'FIRST 9 AVERAGE', 'CHECKOUT', 'HIGHEST FINISH', '180S', 'BEST LEG']
 
-export function x01Win(input: Snapshot): X01WinView {
+export function x01Win(input: Snapshot, detail: GameDetail | null = null): X01WinView {
   const snap = asX01(input)
   const g = snap.game
+  const w = winViewOf(snap, detail)
   const all = sides(snap)
-  // The win view ranks like the server does (winner, then legs, then points left); a game without a winner keeps seat order
-  const ranked =
-    winView(snap, null)?.competitors.map(c => ({ name: c.name, place: c.placement, seats: c.seats })) ??
-    all.map((s, i) => ({ name: s.name, place: i + 1, seats: s.seats }))
-  const standings: X01WinStanding[] = ranked.map(c => ({
-    place: c.place,
+  const standings: X01WinStanding[] = w.competitors.map(c => ({
+    place: c.placement,
     name: c.name,
-    legs: all.find(s => s.seats === c.seats)?.legs ?? g.legs[c.seats[0]] ?? 0,
+    legs: c.score,
+    // The snapshot always has the average; the first 9 only comes with the saved game
     avg: avgOf(sum(g.pointsScored, c.seats), sum(g.dartsThrown, c.seats)),
-    firstNine: DASH,
+    firstNine: detail ? c.cells[2] : DASH,
     darts: sum(g.totalDarts, c.seats),
   }))
-  const seatsOf = (i: number) => ranked[i].seats
-  const rate = (i: number) => checkoutRate(sum(g.checkoutHits, seatsOf(i)), sum(g.checkoutAttempts, seatsOf(i))).checkout
-  const hitRatio = (i: number) => {
-    const attempts = sum(g.checkoutAttempts, seatsOf(i))
-    return attempts ? sum(g.checkoutHits, seatsOf(i)) / attempts : 0
-  }
-  const points = (i: number) => sum(g.pointsScored, seatsOf(i)) / Math.max(1, sum(g.dartsThrown, seatsOf(i)))
+  const [first, second] = standings
 
+  // The saved game's rows (3-dart average ... best leg) once it is here; dashes until then
   const stats: X01WinStat[] =
-    ranked.length < 2
+    standings.length < 2
       ? []
-      : [
-          { label: '3-DART AVERAGE', values: [standings[0].avg, standings[1].avg], share: ratio(points(0), points(1)) },
-          // The snapshot carries no first 9, highest finish, 180s or best leg: those rows stay empty
-          { label: 'FIRST 9 AVERAGE', values: [DASH, DASH], share: 0.5 },
-          { label: 'CHECKOUT', values: [rate(0), rate(1)], share: ratio(hitRatio(0), hitRatio(1)) },
-          { label: 'HIGHEST FINISH', values: [DASH, DASH], share: 0.5 },
-          { label: '180S', values: [DASH, DASH], share: 0.5 },
-          { label: 'BEST LEG', values: [DASH, DASH], share: 0.5 },
-        ]
+      : detail
+        ? w.stats.map(r => ({ label: r.label.toUpperCase(), values: r.values.map(bare), share: r.share }))
+        : NO_STATS.map((label, i) => ({ label, values: i === 0 ? [first.avg, second.avg] : [DASH, DASH], share: 0.5 }))
 
-  // The finishing visit is only in the snapshot until the takeout commits it
-  const shot = g.winner === null ? [] : g.currentVisitDarts.map(d => d.segment.name || 'Miss')
+  // The finishing visit is the leg's last one (the open visit is empty once the game is won)
+  const last = g.legVisits.at(-1)
+  const winnerSeats = w.competitors[0].seats
   const finishedLeg = all.reduce((a, s) => a + s.legs, 0)
-  const winnerSeats = seatsOf(0)
   const legDarts = g.legVisits.filter(v => winnerSeats.includes(v.seat)).reduce((a, v) => a + v.darts, 0)
-  const second = standings.at(1)
+  const shot = last && g.winner !== null && winnerSeats.includes(last.seat) ? last : undefined
 
   return {
     header: { title: 'X01', meta: x01Meta(g, snap.players.length).split(' · ').slice(0, -1).join(' · '), board: sharedBoard(snap) },
-    winner: standings[0],
+    winner: first,
     legs: standings.map(s => s.legs),
     firstTo: g.firstTo,
     stats,
-    gameShot: shot.length ? shot.join(' · ') : null,
-    gameShotText: shot.length
-      ? `${standings[0].name} · ${g.currentVisitDarts.reduce((a, d) => a + d.score, 0)} left · leg ${finishedLeg} in ${plural(legDarts, 'dart')}`
-      : null,
-    note: g.firstTo > 1 && second ? `${plural(standings[0].legs, 'leg')} to ${second.name}’s ${second.legs}` : '',
-    party: isParty(ranked.length),
+    gameShot: shot ? (w.checkout?.darts ?? null) : null,
+    gameShotText: shot ? `${first.name} · ${shot.scored} left · leg ${finishedLeg} in ${plural(legDarts, 'dart')}` : null,
+    kicker: w.kicker.toUpperCase(),
+    note: g.firstTo > 1 && second ? `${plural(first.legs, 'leg')} to ${second.name}’s ${second.legs}` : '',
+    party: isParty(standings.length),
     standings,
   }
 }

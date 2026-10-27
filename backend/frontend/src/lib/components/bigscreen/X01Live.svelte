@@ -3,6 +3,7 @@
   import type { Snapshot } from '$lib/ws'
   import type { Orientation } from '$lib/bigscreen/stage'
   import { x01Live, type X01LiveSeat } from '$lib/bigscreen/x01View'
+  import { plural } from '$lib/fmt'
   import { boardCheckoutTargets, type Slot } from '$lib/dartSlots'
   import Avatar from '$lib/components/Avatar.svelte'
   import DartBoard from '$lib/components/DartBoard.svelte'
@@ -31,7 +32,7 @@
 </script>
 
 {#snippet pips(s: X01LiveSeat, size: number)}
-  <span class="ml-auto flex gap-2" aria-label="{s.legs} legs won">
+  <span class="ml-auto flex gap-2" aria-label="{plural(s.legs, 'leg')} won">
     {#each { length: v.firstTo } as _, i (i)}
       <span
         class="box-border rounded-full {i < s.legs ? 'bg-accent' : 'border-[3px] border-[#55594f]'}"
@@ -109,22 +110,30 @@
 
 {#snippet visitRow(height: number, totalSize: number)}
   <div class="flex flex-none gap-[18px]" style="height:{height}px">
-    <div class="box-border flex min-w-0 flex-[0.9_1_0] flex-col items-center justify-center rounded-3xl border-2 border-line bg-surface-1">
-      <span class="text-[26px] font-bold tracking-[0.12em] text-text-dim">THIS VISIT</span>
-      <span class="{num} leading-[0.95]" style="font-size:{totalSize}px">{v.visit.total}</span>
-    </div>
-    {#each v.slots as slot, i (i)}
-      <div class="box-border flex min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1.5 rounded-3xl {slotLook[slot.kind]}">
-        {#if slot.label}
-          <span class="{num} leading-[0.9] {slotNum}">{slot.label}</span>
-          {#if slot.kind === 'thrown' || slot.kind === 'miss'}
-            <span class="text-[26px] font-bold tracking-[0.06em]">{slot.points}</span>
-          {:else}
-            <span class="text-[26px] font-bold uppercase tracking-[0.06em] text-text-muted">{slot.foot.toUpperCase()}</span>
-          {/if}
-        {/if}
+    {#if v.bullOff}
+      <div class="box-border flex flex-1 items-center justify-center rounded-3xl border-2 border-line bg-surface-1">
+        <span class="{num} text-[96px] uppercase leading-none tracking-[0.04em] text-text-muted">Bull off</span>
       </div>
-    {/each}
+    {:else}
+      <div
+        class="box-border flex min-w-0 flex-[0.9_1_0] flex-col items-center justify-center rounded-3xl border-2 border-line bg-surface-1"
+      >
+        <span class="text-[26px] font-bold tracking-[0.12em] text-text-dim">THIS VISIT</span>
+        <span class="{num} leading-[0.95]" style="font-size:{totalSize}px">{v.visit.total}</span>
+      </div>
+      {#each v.slots as slot, i (i)}
+        <div class="box-border flex min-w-0 flex-1 basis-0 flex-col items-center justify-center gap-1.5 rounded-3xl {slotLook[slot.kind]}">
+          {#if slot.label}
+            <span class="{num} leading-[0.9] {slotNum}">{slot.label}</span>
+            {#if slot.kind === 'thrown' || slot.kind === 'miss'}
+              <span class="text-[26px] font-bold tracking-[0.06em]">{slot.points}</span>
+            {:else}
+              <span class="text-[26px] font-bold uppercase tracking-[0.06em] text-text-muted">{slot.foot.toUpperCase()}</span>
+            {/if}
+          {/if}
+        </div>
+      {/each}
+    {/if}
   </div>
 {/snippet}
 
@@ -154,14 +163,14 @@
         {#if party}
           <div class="flex h-[430px] flex-none">{@render card(thrower, 170, 34)}</div>
           <div class="flex min-h-0 flex-1 flex-col gap-3.5">
-            {#each others as s (s.name)}{@render row(s)}{/each}
+            {#each others as s, i (i)}{@render row(s)}{/each}
           </div>
           {@render visitRow(170, 104)}
         {:else}
           <div class="flex min-h-0 flex-1 gap-[22px]">
-            {#each v.seats as s (s.name)}{@render card(s, 230, 34)}{/each}
+            {#each v.seats as s, i (i)}{@render card(s, 230, 34)}{/each}
           </div>
-          {#if v.checkout}{@render checkoutBox(v.checkout.route, v.checkout.text, 110)}{/if}
+          {#if v.checkout && !v.bullOff}{@render checkoutBox(v.checkout.route, v.checkout.text, 110)}{/if}
           {@render visitRow(200, 116)}
         {/if}
       </div>
@@ -172,15 +181,15 @@
         <div class="flex h-[560px] flex-none flex-col gap-3.5">
           <div class="flex min-h-0 flex-[2_1_0]">{@render card(thrower, 200, 30)}</div>
           <div class="flex min-h-0 flex-[1.4_1_0] flex-col gap-3">
-            {#each others as s (s.name)}{@render row(s)}{/each}
+            {#each others as s, i (i)}{@render row(s)}{/each}
           </div>
         </div>
       {:else}
         <div class="flex h-[560px] flex-none gap-[22px]">
-          {#each v.seats as s (s.name)}{@render card(s, 230, 30)}{/each}
+          {#each v.seats as s, i (i)}{@render card(s, 230, 30)}{/each}
         </div>
       {/if}
-      {#if v.checkout}{@render checkoutBox(v.checkout.route, v.checkout.text, 100)}{/if}
+      {#if v.checkout && !v.bullOff}{@render checkoutBox(v.checkout.route, v.checkout.text, 100)}{/if}
       {@render visitRow(190, 108)}
       <div class="min-h-0 flex-1">{@render board()}</div>
     </main>

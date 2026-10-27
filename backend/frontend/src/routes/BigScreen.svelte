@@ -11,6 +11,7 @@
   import { viewFor, type ViewKey } from '$lib/bigscreen/select'
   import { createBigScreenStore } from '$lib/bigscreen/store'
   import type { Snapshot } from '$lib/ws'
+  import type { GameDetail } from '$lib/api'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
   import Stage from '$lib/components/bigscreen/Stage.svelte'
   import Idle from '$lib/components/bigscreen/Idle.svelte'
@@ -22,7 +23,7 @@
 
   let { params }: { params: { board: string } } = $props()
 
-  type ViewProps = { snapshot: Snapshot; orientation: 'landscape' | 'portrait'; countdown: string }
+  type ViewProps = { snapshot: Snapshot; orientation: 'landscape' | 'portrait'; countdown: string; detail: GameDetail | null }
   // Registration point for the per-game live and win views ('x01', 'x01-win', 'atc', 'p121', 'hilo');
   // a key without a component here shows the fallback card.
   const views: Partial<Record<ViewKey, Component<ViewProps>>> = { x01: X01Live, 'x01-win': X01Win }
@@ -84,6 +85,7 @@
     const s = Math.max(0, Math.ceil(((until ?? now) - now) / 1000))
     return `Board screen in ${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
   })
+  const detail = $derived($message?.screen.kind === 'result' ? ($message.screen.detail ?? null) : null)
   const minigolf = $derived(view?.component === 'minigolf' ? gameState(view.snapshot).minigolf : null)
   const Registered = $derived(view ? views[view.component] : undefined)
 </script>
@@ -113,7 +115,7 @@
           {settings}
         />
       {:else if Registered && view.snapshot}
-        <Registered snapshot={view.snapshot} {orientation} {countdown} />
+        <Registered snapshot={view.snapshot} {orientation} {countdown} {detail} />
       {:else if view.component === 'generic-result' && view.snapshot}
         <GenericResult snapshot={view.snapshot} {countdown} />
       {:else}
