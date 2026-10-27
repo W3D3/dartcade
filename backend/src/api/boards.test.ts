@@ -48,6 +48,7 @@ function makeApp(
     liveCameraTimeoutMs?: number
     bridgeReleases?: { offered: () => string | null }
     bridgeUpdates?: BridgeUpdates
+    bigScreen?: { revoke: (boardId: string, code?: number) => void }
   } = {},
 ) {
   const app = createFastify()
@@ -112,6 +113,14 @@ describe('POST /api/boards', () => {
 })
 
 describe('DELETE /api/boards/:id', () => {
+  it('cuts off big-screen token sockets with not found', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValueOnce({ id: 'board-1', owner_user_id: 'user-1' } as any)
+    const revoke = vi.fn()
+    const res = await makeApp({ bigScreen: { revoke } }).inject({ method: 'DELETE', url: '/api/boards/board-1' })
+    expect(res.statusCode).toBe(204)
+    expect(revoke).toHaveBeenCalledWith('board-1', 4404)
+  })
+
   it('returns 404 when board not found', async () => {
     const app = makeApp()
     const res = await app.inject({ method: 'DELETE', url: '/api/boards/nope' })
@@ -492,6 +501,15 @@ describe('PATCH /api/boards/:id/big-screen', () => {
     expect(res.json()).toEqual({ id: 'b1', mode: 'auto' })
     expect(queries.setBigScreenMode).toHaveBeenCalledWith(expect.anything(), 'b1', 'auto')
     expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
+  })
+
+  it('cuts off open token sockets when turned off, not for other modes', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValue(row)
+    const revoke = vi.fn()
+    await patch(makeApp({ bigScreen: { revoke } }), { mode: 'auto' })
+    expect(revoke).not.toHaveBeenCalled()
+    await patch(makeApp({ bigScreen: { revoke } }), { mode: 'off' })
+    expect(revoke).toHaveBeenCalledWith('b1')
   })
 
   it('revokes the token when turned off', async () => {
