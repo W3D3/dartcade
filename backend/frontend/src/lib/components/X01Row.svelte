@@ -22,7 +22,7 @@
     pill: PillKind | null
     seat?: SeatLine | null
   } = $props()
-  // Stacked rows (portrait tablets): only the thrower's stats; the others keep their leg pips
+  // Stacked rows (narrow landscape windows; upright screens get the portrait layout): only the thrower's stats, the others keep their leg pips
   const stacked = $derived(active ? '' : '@max-lg:hidden')
   // Narrower rows keep only the averages
   const stats = $derived([
@@ -33,7 +33,7 @@
 </script>
 
 <!-- Tablets, by the row's own width: from 672 px three columns; 512 to 672 px (landscape
-     around 1024) narrower ones with only the averages and a smaller score; below 512 px (beside the board in portrait) name,
+     around 1024) narrower ones with only the averages and a smaller score; below 512 px (beside the board in a narrow window) name,
      score and stats stacked, the stats only for the thrower (leg pips for everyone) -->
 <RowShell
   {name}

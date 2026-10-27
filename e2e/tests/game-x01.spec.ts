@@ -31,3 +31,22 @@ test('X01 manual dart entry shows bust state', async ({ authedPage: page }) => {
   // Bust indicator visible in correction panel or player stats
   await expect(page.locator('text=Bust').first()).toBeVisible()
 })
+
+test('X01 turns to the portrait layout and back without a reload', async ({ authedPage: page }) => {
+  await startGame(page, { mode: 'X01' })
+  await page.setViewportSize({ width: 1180, height: 820 })
+  await expect(page.locator('[data-layout="solo"]')).toBeVisible()
+  await page.getByRole('button', { name: 'Treble', exact: true }).click()
+  await page.click('button[aria-label="Treble 20"]')
+  await page.evaluate(() => ((window as unknown as { notReloaded: boolean }).notReloaded = true))
+
+  // Upright (a tablet turned, or a monitor on its side): the players on top, the board below
+  await page.setViewportSize({ width: 820, height: 1180 })
+  await expect(page.locator('[data-layout="portrait"]')).toBeVisible()
+  await expect(page.getByText('T20', { exact: true })).toBeVisible()
+
+  await page.setViewportSize({ width: 1180, height: 820 })
+  await expect(page.locator('[data-layout="solo"]')).toBeVisible()
+  await expect(page.getByText('T20', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => (window as unknown as { notReloaded?: boolean }).notReloaded)).toBe(true)
+})

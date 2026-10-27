@@ -22,6 +22,8 @@
   import X01Panel from '../lib/components/X01Panel.svelte'
   import AtcPanel from '../lib/components/AtcPanel.svelte'
   import X01Row from '../lib/components/X01Row.svelte'
+  import X01Card from '../lib/components/X01Card.svelte'
+  import AtcCard from '../lib/components/AtcCard.svelte'
   import TeamPanel from '../lib/components/TeamPanel.svelte'
   import AtcRow from '../lib/components/AtcRow.svelte'
   import type { PillKind } from '../lib/components/pills.js'
@@ -44,7 +46,7 @@
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
   import { api, type Board, type Segment, type UserAction } from '$lib/api'
-  import { isNarrowMatch, isPhone, isWide } from '$lib/viewport'
+  import { isNarrowMatch, isPhone, isPortrait, isWide } from '$lib/viewport'
   import { x01Teams } from '$lib/teams'
   import { matchLayout } from '$lib/matchLayout'
   import { canThrowNow, isMyTurn } from '$lib/turn'
@@ -353,7 +355,9 @@
   const teams = $derived(
     x01 ? x01Teams(x01, players, { suggest: settings.checkoutSuggestions, checkout, scoreUpdates: settings.scoreUpdates }) : [],
   )
-  const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch))
+  const layout = $derived(matchLayout(players.length, $isPhone, teams.length > 0, $isNarrowMatch, $isPortrait))
+  // Portrait with teams or three or more: compact cards above the board, which give way to a waiting card
+  const portraitCards = $derived(layout === 'portrait' && (teams.length > 0 || players.length > 2))
   // Around the Clock: seat order. X01: the server names who throws next (null when nobody does)
   const atcNext = $derived((currentPlayer + 1) % Math.max(players.length, 1))
   const nextPlayer = $derived(x01 ? x01.nextPlayer : atcNext)
@@ -610,6 +614,66 @@
   {/if}
 {/snippet}
 
+{#snippet board(minHeight: string, maxWidth: string)}
+  <!-- The board takes the height the column has left (capped by its width) -->
+  <div class="flex-1 {minHeight} w-full [container-type:size] flex items-center justify-center">
+    <div class="relative aspect-square {maxWidth}" style="width: min(100cqw, 100cqh)">
+      <DartBoard
+        {darts}
+        dim={!isX01}
+        target={boardTarget}
+        nextTarget={boardNext}
+        playerMarkers={markers}
+        checkoutTargets={isActive ? checkoutTargets : []}
+        onBoardClick={canThrow && !locked ? addBoardDart : undefined}
+        selectedDart={correcting}
+        onDartMove={canThrow ? moveDart : undefined}
+        {cameraSrc}
+      />
+      <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
+    </div>
+  </div>
+{/snippet}
+
+{#snippet portraitCenter()}
+  <!-- Portrait (Match-Vertical): this visit and the slots in one strip, the controls, then the board fills the rest -->
+  {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} />{/if}
+  <div class="shrink-0 grid gap-[10px] items-start {settings.visitSum ? 'grid-cols-[minmax(0,1.15fr)_minmax(0,3fr)]' : 'grid-cols-1'}">
+    {#if settings.visitSum}<VisitBand {band} visit={visitKey} compact />{/if}
+    <DartSlots {slots} {popIndex} onCorrect={correct} bind:openDart={correcting} />
+  </div>
+  {#if keypad}
+    <div class="flex-1 min-h-0">
+      <DartKeypad
+        onDart={canThrow ? addManualDart : () => {}}
+        dartCount={darts.length}
+        {locked}
+        disabled={!canThrow}
+        {canUndo}
+        onUndo={undo}
+        nextLabel={next.label}
+        nextEnabled={next.enabled}
+        nextProminent={next.prominent}
+        onNext={advance}
+      />
+    </div>
+  {:else}
+    {#if turn}
+      <TurnStatusBar status={turn} />
+    {:else}
+      <ControlBar {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} onUndo={undo} onNext={advance} />
+    {/if}
+    {#if remote.kind === 'waiting' && portraitCards}
+      <!-- The cards have no room for it: the waiting card takes the board's place -->
+      <div class="flex-1 min-h-0 flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
+    {:else}
+      {#if caption}<BoardCaption {caption} />{/if}
+      {@render board('min-h-[200px]', '')}
+      {#if legend.length}<BoardLegend items={legend} />{/if}
+    {/if}
+  {/if}
+{/snippet}
+
 {#snippet phoneCenter()}
   {#if remote.kind === 'play-offline'}<OfflineNotice board={remote.board} compact />{/if}
   <!-- Phones: everything fits without scrolling; the board, keypad or waiting card takes what's left -->
@@ -617,23 +681,7 @@
     <div class="flex-1 min-h-[160px] flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(true)}</div>
   {:else if !keypad}
     {#if caption}<BoardCaption {caption} compact />{/if}
-    <div class="flex-1 min-h-[160px] w-full [container-type:size] flex items-center justify-center">
-      <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
-        <DartBoard
-          {darts}
-          dim={!isX01}
-          target={boardTarget}
-          nextTarget={boardNext}
-          playerMarkers={markers}
-          checkoutTargets={isActive ? checkoutTargets : []}
-          onBoardClick={canThrow && !locked ? addBoardDart : undefined}
-          selectedDart={correcting}
-          onDartMove={canThrow ? moveDart : undefined}
-          {cameraSrc}
-        />
-        <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
-      </div>
-    </div>
+    {@render board('min-h-[160px]', '')}
   {/if}
   <!-- relative: the board view's correction picker opens above this row, over the board, full width -->
   <div class="relative shrink-0 grid gap-2 items-start {settings.visitSum ? 'grid-cols-[minmax(0,3fr)_minmax(0,1fr)]' : 'grid-cols-1'}">
@@ -685,24 +733,7 @@
     <div class="flex-1 min-h-0 flex rounded-[16px] bg-surface-panel border border-line-2">{@render waitingCard(false)}</div>
   {:else}
     {#if caption}<BoardCaption {caption} />{/if}
-    <!-- The board takes the height the column has left (capped by its width) -->
-    <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
-      <div class="relative aspect-square {variant === 'duel' ? 'max-w-[400px] xl:max-w-none' : ''}" style="width: min(100cqw, 100cqh)">
-        <DartBoard
-          {darts}
-          dim={!isX01}
-          target={boardTarget}
-          nextTarget={boardNext}
-          playerMarkers={markers}
-          checkoutTargets={isActive ? checkoutTargets : []}
-          onBoardClick={canThrow && !locked ? addBoardDart : undefined}
-          selectedDart={correcting}
-          onDartMove={canThrow ? moveDart : undefined}
-          {cameraSrc}
-        />
-        <BoardViewToggle bind:settings {snapshot} {cameraVersions} />
-      </div>
-    </div>
+    {@render board('min-h-0', variant === 'duel' ? 'max-w-[400px] xl:max-w-none' : '')}
     {#if legend.length}<BoardLegend items={legend} />{/if}
   {/if}
 
@@ -739,6 +770,7 @@
       p={x01Players[i]}
       active={i === currentPlayer && isActive}
       solo={layout === 'solo'}
+      portrait={layout === 'portrait'}
       pill={pillFor(i, false)}
       seat={lines[i] ?? null}
       chalkboard={settings.chalkboard}
@@ -751,6 +783,7 @@
       p={atcPlayers[i]}
       active={i === currentPlayer && isActive}
       solo={layout === 'solo'}
+      portrait={layout === 'portrait'}
       pill={pillFor(i, false)}
       seat={lines[i] ?? null}
       waiting={isWaiting ? seatWaiting : undefined}
@@ -785,7 +818,7 @@
   {/if}
 {/snippet}
 
-<div class="flex flex-col h-dvh bg-bg text-text overflow-hidden">
+<div class="flex flex-col h-dvh bg-bg text-text overflow-hidden" data-layout={layout}>
   {#if !snapshot}
     <div class="flex-1 flex items-center justify-center">
       <span class="text-text-muted text-lg">Connecting…</span>
@@ -1002,6 +1035,49 @@
             {/if}
           </div>
           <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
+        </main>
+      {:else if layout === 'portrait'}
+        <main class="flex-grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
+          <!-- The players side by side on top (many scroll, the thrower kept in view), the board below -->
+          <div
+            bind:this={phonePlayers}
+            class="shrink-0 max-h-[45%] overflow-y-auto grid gap-3 lg:gap-4 {players.length === 1 && !teams.length
+              ? 'grid-cols-1'
+              : 'grid-cols-2'}"
+          >
+            {#if teams.length}
+              {#each teams as team, t (team.id)}
+                <div data-up={team.active ? upKey : undefined} class="flex min-w-0">{@render teamPanel(t, true)}</div>
+              {/each}
+            {:else}
+              {#each players as player, i (i)}
+                <div data-up={i === currentPlayer ? upKey : undefined} class="flex min-w-0">
+                  {#if !portraitCards}
+                    {@render panel(i)}
+                  {:else if isX01}
+                    <X01Card
+                      name={player.name}
+                      bot={bots[i] ?? null}
+                      p={x01Players[i]}
+                      active={i === currentPlayer && isActive}
+                      pill={pillFor(i, true)}
+                      seat={lines[i] ?? null}
+                    />
+                  {:else}
+                    <AtcCard
+                      name={player.name}
+                      bot={bots[i] ?? null}
+                      p={atcPlayers[i]}
+                      active={i === currentPlayer && isActive}
+                      pill={pillFor(i, true)}
+                      seat={lines[i] ?? null}
+                    />
+                  {/if}
+                </div>
+              {/each}
+            {/if}
+          </div>
+          {@render portraitCenter()}
         </main>
       {:else if layout === 'solo'}
         <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">

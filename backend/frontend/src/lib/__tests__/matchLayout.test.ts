@@ -32,3 +32,13 @@ describe('two players on a narrow screen', () => {
     expect(matchLayout(2, true, false, true)).toBe('phone')
   })
 })
+
+describe('portrait screens', () => {
+  it('get the portrait layout for any player count and for teams', () => {
+    expect([1, 2, 3, 6].map(n => matchLayout(n, false, false, false, true))).toEqual(['portrait', 'portrait', 'portrait', 'portrait'])
+    expect(matchLayout(4, false, true, true, true)).toBe('portrait')
+  })
+  it('phones keep the phone layout upright', () => {
+    expect(matchLayout(2, true, false, true, true)).toBe('phone')
+  })
+})
