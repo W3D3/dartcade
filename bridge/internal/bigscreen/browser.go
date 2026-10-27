@@ -1,6 +1,7 @@
 package bigscreen
 
 import (
+	"os"
 	"os/exec"
 	"runtime"
 )
@@ -48,16 +49,16 @@ func firefoxCandidates(goos string) []string {
 }
 
 // chooseCommand picks the browser: Chromium or Chrome (own profile, kiosk), then Firefox
-// (kiosk), else the OS opener with the default browser, which can't be told to go kiosk or killed.
+// (kiosk; both private, so the token never lands in the history), else the OS opener with the default browser, which can't be told to go kiosk or killed.
 func chooseCommand(lookPath func(string) (string, error), goos, profile, url string) (name string, args []string, browser string) {
 	for _, c := range chromiumCandidates(goos) {
 		if _, err := lookPath(c.bin); err == nil {
-			return c.bin, []string{"--kiosk", "--user-data-dir=" + profile, "--autoplay-policy=no-user-gesture-required", "--no-first-run", "--noerrdialogs", "--disable-infobars", "--", url}, c.name
+			return c.bin, []string{"--kiosk", "--incognito", "--user-data-dir=" + profile, "--autoplay-policy=no-user-gesture-required", "--no-first-run", "--noerrdialogs", "--disable-infobars", "--", url}, c.name
 		}
 	}
 	for _, bin := range firefoxCandidates(goos) {
 		if _, err := lookPath(bin); err == nil {
-			return bin, []string{"--kiosk", "--profile", profile, url}, "firefox"
+			return bin, []string{"--kiosk", "--profile", profile, "--private-window", url}, "firefox"
 		}
 	}
 	switch goos {
@@ -75,6 +76,10 @@ type osLauncher struct{ profileDir string }
 func DefaultLauncher(profileDir string) Launcher { return osLauncher{profileDir} }
 
 func (l osLauncher) Launch(url string) (*Running, error) {
+	// Firefox, unlike Chromium, won't create a missing --profile directory
+	if err := os.MkdirAll(l.profileDir, 0o700); err != nil {
+		return nil, err
+	}
 	name, args, browser := chooseCommand(exec.LookPath, runtime.GOOS, l.profileDir, url)
 	cmd := exec.Command(name, args...)
 	setProcessGroup(cmd)

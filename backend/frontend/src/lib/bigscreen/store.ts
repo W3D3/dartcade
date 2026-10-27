@@ -1,24 +1,14 @@
 // The big screen's socket: /ws/board pushes what to show. Unlike the game socket it never sends
 // anyone to the login page; a kiosk has no session and proves itself with its token instead.
-import { z } from 'zod'
 import { writable, type Readable } from 'svelte/store'
-import type { BigScreenMessage } from '$shared/bigScreen'
 import { reconnectingSocket, type OpenSocket } from '../reconnectingSocket.js'
-import { parseSnapshot, type Snapshot } from '../ws.js'
+import type { Snapshot } from '../ws.js'
+import { WsCloseCode } from '../api/game-ws.js'
+import { BigScreenMessageSchema } from '../api/zod.js'
+import type { BigScreenMessage } from '../api/board-ws.js'
 import type { GameDetail } from '../api'
 
-const MessageSchema = z.object({
-  type: z.literal('big_screen'),
-  board: z.object({ id: z.string(), name: z.string(), online: z.boolean() }),
-  prefs: z.record(z.string(), z.unknown()).catch({}),
-  screen: z.discriminatedUnion('kind', [
-    z.object({ kind: z.literal('idle') }),
-    z.object({ kind: z.literal('game'), snapshot: z.unknown() }),
-    z.object({ kind: z.literal('result'), snapshot: z.unknown(), until: z.number(), detail: z.unknown().optional() }),
-  ]),
-})
-
-/** A message with its snapshot checked against the schema. */
+/** A message with the saved game of a result typed (the schema leaves it an open object). */
 export type BigScreenState = Omit<BigScreenMessage, 'screen'> & {
   screen:
     | { kind: 'idle' }
@@ -26,41 +16,23 @@ export type BigScreenState = Omit<BigScreenMessage, 'screen'> & {
     | { kind: 'result'; snapshot: Snapshot; until: number; detail?: GameDetail }
 }
 
-/** The saved game, if it has the shape the win views read (a stale tab or a bad one shows without it). */
-const DetailShape = z.object({
-  game: z.object({ players: z.array(z.unknown()) }),
-  stats: z.object({ rows: z.array(z.unknown()) }),
-  detail: z.unknown().refine(Boolean),
-})
-function isDetail(x: unknown): x is GameDetail {
-  return DetailShape.safeParse(x).success
-}
-const parseDetail = (x: unknown): GameDetail | undefined => (isDetail(x) ? x : undefined)
-
 function parseMessage(data: unknown): BigScreenState | null {
-  const r = MessageSchema.safeParse(data)
-  if (!r.success) return null
-  const { screen, ...base } = r.data
-  if (screen.kind === 'idle') return { ...base, screen }
+  const r = BigScreenMessageSchema.safeParse(data)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- the schema types the saved game of a result as an open object; it is a GameDetail
+  if (r.success) return r.data as BigScreenState
   // A snapshot this build cannot read (a stale tab) shows as idle rather than a broken page
-  const snapshot = parseSnapshot(screen.snapshot)
-  if (!snapshot) return { ...base, screen: { kind: 'idle' } }
-  return {
-    ...base,
-    screen:
-      screen.kind === 'game'
-        ? { kind: 'game', snapshot }
-        : { kind: 'result', snapshot, until: screen.until, detail: parseDetail(screen.detail) },
-  }
+  const base = BigScreenMessageSchema.omit({ screen: true }).safeParse(data)
+  return base.success ? { ...base.data, screen: { kind: 'idle' } } : null
 }
 
 export function createBigScreenStore(
   boardId: string,
   token: string | null,
   open?: OpenSocket,
-): { message: Readable<BigScreenState | null>; connected: Readable<boolean>; destroy(): void } {
+): { message: Readable<BigScreenState | null>; connected: Readable<boolean>; stopped: Readable<boolean>; destroy(): void } {
   const message = writable<BigScreenState | null>(null)
   const connected = writable(false)
+  const stopped = writable(false)
   const socket = reconnectingSocket(
     `/ws/board?boardId=${encodeURIComponent(boardId)}`,
     {
@@ -73,12 +45,19 @@ export function createBigScreenStore(
         const m = parseMessage(data)
         if (m) message.set(m)
       },
-      onClose: () => {
+      onClose: code => {
         connected.set(false)
+        // The token was revoked or the board is gone: retrying won't help
+        const name: string | undefined = WsCloseCode[code]
+        if (name === 'Unauthorized' || name === 'Forbidden' || name === 'NotFound') {
+          message.set(null)
+          stopped.set(true)
+          return 'stop'
+        }
         return undefined
       },
     },
     open,
   )
-  return { message, connected, destroy: () => socket.stop() }
+  return { message, connected, stopped, destroy: () => socket.stop() }
 }

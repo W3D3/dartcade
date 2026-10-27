@@ -12,6 +12,7 @@
   import { Badge } from '$lib/components/ui/badge/index.js'
   import { Toast } from '$lib/components/ui/toast/index.js'
   import PairBoardModal from '$lib/components/PairBoardModal.svelte'
+  import BigScreenSetup from './BigScreenSetup.svelte'
   import BoardCard from '$lib/components/boards/BoardCard.svelte'
   import PairBoardCard from '$lib/components/boards/PairBoardCard.svelte'
   import BoardsEmpty from '$lib/components/boards/BoardsEmpty.svelte'
@@ -36,6 +37,7 @@
 
   // WLED device count per board, for the card chip and the selected board's detail row
   const lightsOn = flag('lights.enabled')
+  const bigScreenOn = flag('bigscreen.enabled')
   let lightsCounts = $state<Partial<Record<string, number>>>({})
   // Guards against a slower, superseded fetch overwriting a fresher one (same idea as
   // LightsSection's lightsReq)
@@ -503,6 +505,9 @@
         <dt class="text-text-muted">Paired</dt>
         <dd class="m-0">{fmtDate(selected.createdAt)}</dd>
       </div>
+      {#if $bigScreenOn}
+        <BigScreenSetup board={selected} blocked={busy !== null} onchanged={refetchBoards} />
+      {/if}
       {#if $lightsOn}
         {@const n = lightsCounts[selected.id]}
         <div class="flex justify-between items-center gap-3 py-3 border-b border-line-2">
@@ -617,7 +622,7 @@
 
     <div class="flex flex-col xl:flex-row gap-4 md:gap-6 xl:flex-grow xl:min-h-0 xl:items-start">
       <!-- Board grid; tablets add the pairing card to it -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 xl:flex-grow xl:grid-rows-2 content-start">
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4 xl:flex-grow auto-rows-min content-start">
         {#each boards as board (board.id)}
           <BoardCard
             {board}

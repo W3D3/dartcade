@@ -191,5 +191,5 @@
 {/if}
 
 {#if showSettings}
-  <SettingsDrawer bind:settings {gameId} {scoreBased} onclose={() => (showSettings = false)} />
+  <SettingsDrawer bind:settings {gameId} {scoreBased} bigScreenBoardId={boards[0]?.id ?? null} onclose={() => (showSettings = false)} />
 {/if}

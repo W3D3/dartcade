@@ -1,4 +1,4 @@
-import type { FastifyInstance, FastifyPluginOptions } from 'fastify'
+import type { FastifyInstance, FastifyPluginOptions, FastifyReply } from 'fastify'
 import { ulid } from 'ulid'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
@@ -13,11 +13,10 @@ import {
   deleteBoard,
   renameBoard,
   setBigScreenMode,
-  setBigScreenTokenHash,
   hasActiveSessionOnBoard,
 } from '../db/queries.js'
 import { bigScreenState as defaultBigScreenState, type BigScreenState } from '../boards/bigScreenState.js'
-import { openBigScreen } from '../boards/bigScreenOpen.js'
+import { openBigScreen, stopBigScreen } from '../boards/bigScreenOpen.js'
 import { findOwnBoard } from '../boards/own.js'
 import { newBoardToken } from '../boards/token.js'
 import { fromSpec } from './spec.js'
@@ -31,6 +30,7 @@ import { bridgeUpdates as defaultBridgeUpdates, type BridgeUpdates } from '../bo
 
 /** How long the bridge may take to answer a Board Manager call (its own HTTP timeout is 10 s). */
 const BM_TIMEOUT_MS = 12_000
+const bigScreenOff = (reply: FastifyReply) => reply.code(409).send({ error: 'the big screen is off for this board' })
 
 // Board Manager's /api/state, as far as we pass it on: each field falls back on its own
 const BmStateSchema = z
@@ -56,7 +56,7 @@ type Opts = FastifyPluginOptions & {
   /** The boards' Update bridge progress (tests pass their own). */
   bridgeUpdates?: BridgeUpdates
   /** Cuts off open big-screen token sockets when the token is revoked or the board deleted. */
-  bigScreen?: Pick<BigScreenService, 'revoke'>
+  bigScreen: Pick<BigScreenService, 'revoke'>
   /** What the boards' helpers reported (tests pass their own). */
   bigScreenState?: BigScreenState
 }
@@ -224,7 +224,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { mode } = req.body
       if (!(await ownBoard(id, req.userId, reply))) return reply
       await setBigScreenMode(db, id, mode)
-      if (mode === 'off') bigScreen?.revoke(id)
+      if (mode === 'off') await stopBigScreen(db, id, bigScreen)
       return reply.send({ id, mode })
     },
   )
@@ -237,8 +237,10 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { id } = req.params
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
-      if (board.big_screen_mode === 'off') return reply.code(409).send({ error: 'the big screen is off for this board' })
-      const res = await openBigScreen(db, board, boardId => bigScreen?.revoke(boardId))
+      const res = await openBigScreen(db, board, bigScreen, (message, details) => {
+        req.log.warn({ details }, message)
+      })
+      if (res === 'off') return bigScreenOff(reply)
       if (res === 'disabled') return reply.code(403).send({ error: 'forbidden' })
       if (res === 'offline') return reply.code(409).send({ error: 'board offline' })
       if (res === 'no_url') return reply.code(409).send({ error: 'the server has no public URL (PUBLIC_URL) to open' })
@@ -254,10 +256,8 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       const { id } = req.params
       const board = await ownBoard(id, req.userId, reply)
       if (!board) return reply
-      if (board.big_screen_mode === 'off') return reply.code(409).send({ error: 'the big screen is off for this board' })
-      await setBigScreenTokenHash(db, id, null)
-      bigScreen?.revoke(id)
-      if (bridgeConnections.isOnline(id)) bridgeConnections.send(id, { kind: 'bigscreen.close', data: {} })
+      if (board.big_screen_mode === 'off') return bigScreenOff(reply)
+      await stopBigScreen(db, id, bigScreen)
       return reply.send({ running: false })
     },
   )
@@ -332,7 +332,7 @@ export function boardsApiPlugin(app: FastifyInstance, opts: Opts, done: (err?: E
       // Lobbies first: people on the board go to Manual, and their lobbies see it
       await releaseBoard(id)
       await deleteBoard(db, id)
-      bigScreen?.revoke(id, WsCloseCode.NotFound)
+      await stopBigScreen(db, id, bigScreen, WsCloseCode.NotFound)
       stills.clear(id)
       return reply.code(204).send()
     },

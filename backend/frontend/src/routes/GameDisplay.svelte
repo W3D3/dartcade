@@ -34,9 +34,10 @@
   import { accountSettings, writeThrough } from '$lib/accountSettings'
   import { audioContext, createSounds } from '../lib/sounds.js'
   import { createSoundPacks } from '$lib/soundPacks'
-  import { snapshotEvent, dartSound, type DartEvent } from '$lib/dartEvents'
+  import { snapshotEvent, type DartEvent } from '$lib/dartEvents'
   import { profileOf } from '$lib/progress/profiles'
-  import { callGame, callsFor, checkoutFor, createCheckoutMemory, legsOf, requirePart } from '$lib/caller/calls'
+  import { legsOf } from '$lib/caller/calls'
+  import { createSnapshotCaller, playDartSound } from '$lib/caller/snapshotCaller'
   import { createCaller } from '$lib/caller/player'
   import { voiceClips, type Clips } from '$lib/caller/voices'
   import { emptyHistory, trackVisits, type VisitHistory } from '../lib/visitHistory.js'
@@ -47,6 +48,8 @@
   import { x01Player, atcPlayer, x01Roll } from '../lib/playerStats.js'
   import { atcTargetSegment, atcLeaders } from '../lib/atc.js'
   import { labelToSegment } from '../lib/dartUtils.js'
+  import { me } from '$lib/lobby/sockets'
+  import { debounced } from '$lib/utils'
   import { api, type Board, type Segment, type UserAction } from '$lib/api'
   import { isNarrowMatch, isPhone, isPortrait, isWide } from '$lib/viewport'
   import { x01Teams } from '$lib/teams'
@@ -107,7 +110,7 @@
   // Each thrower's sound pack (their profile's look; none for guests and bots); the caller ducks it
   const packs = createSoundPacks(() => settings.effectsVolume)
   let callerClips: Promise<Clips | null> = Promise.resolve(null)
-  let checkoutMemory = createCheckoutMemory()
+  const snapshotCaller = createSnapshotCaller({ settings: () => settings, caller, clips: () => callerClips })
   $effect(() => {
     const on = settings.callerOn
     const voice = settings.callerVoice
@@ -140,6 +143,16 @@
   // The viewer's own boards (fetched once), for the status/controls panel on whichever of
   // them are playing in this game (see myBoards below)
   let myOwnBoards = $state<Board[]>([])
+  let unsubBoardStatus: (() => void) | undefined
+  async function loadOwnBoards() {
+    try {
+      const { data } = await api.GET('/api/boards')
+      if (data) myOwnBoards = data.boards
+    } catch {
+      /* keep the list */
+    }
+  }
+  const refetchOwn = debounced(() => void loadOwnBoards(), 300)
   let unsubNotice: (() => void) | null = null
   let unsubError: (() => void) | null = null
   let unsubConnected: (() => void) | null = null
@@ -198,20 +211,7 @@
         viewModeSetByUser = true
       }
       const next = gameState(snap)
-      // A new session starts the caller afresh (the previous game isn't this one's "before")
-      const newSession = snapshot?.sessionId !== snap.sessionId
-      // A new session starts the checkout memory afresh too, even while the caller was off
-      if (newSession) checkoutMemory = createCheckoutMemory()
-      const nextCall = snap.scoreBased && settings.callerOn ? callGame(snap) : null
-      if (nextCall) {
-        const beforeCall = newSession || !snapshot ? null : callGame(snapshot)
-        const call = callsFor(beforeCall, nextCall)
-        // Only the require call at the takeout: the score call said at the third dart may still be playing
-        const queue = !call.length
-        const checkout = settings.callerCheckouts ? checkoutFor(beforeCall, nextCall) : null
-        if (checkout && checkoutMemory(checkout, settings.callerCheckoutRepeat)) call.push(requirePart(checkout.remaining))
-        if (call.length) void caller.say(call, callerClips, { queue })
-      }
+      snapshotCaller.onSnapshot(snapshot, snap)
       if (snapshot) playSounds(snapshotEvent(snapshot, snap))
       // X01 sends its visits with the snapshot; Around the Clock still tracks them here
       if (next.atc) history = trackVisits(history, next.atc)
@@ -242,14 +242,15 @@
         viewerId = r.data?.user.id ?? null
       })
       .catch(() => undefined)
-    api
-      .GET('/api/boards')
-      .then(({ data }) => {
-        myOwnBoards = data?.boards ?? []
-      })
-      .catch(() => undefined)
+    void loadOwnBoards()
+    // A bridge reports back (/ws/me), e.g. the big screen started or stopped: the board controls follow
+    unsubBoardStatus = me.boardStatus.subscribe(msg => {
+      if (msg) refetchOwn.call()
+    })
   })
   onDestroy(() => {
+    unsubBoardStatus?.()
+    refetchOwn.cancel()
     unsubSnap?.()
     unsubNotice?.()
     unsubError?.()
@@ -263,21 +264,13 @@
   })
 
   function playSounds(e: DartEvent | null) {
-    if (!e) return
-    if (e.kind === 'switch') {
-      if (settings.soundSwitch) sounds.switchPlayer()
-      return
-    }
-    // The switches decide whether a dart sounds and which; a sound pack (yours for everyone, or
-    // the thrower's own) only replaces the beep
-    const sound = dartSound(e.kind, settings)
-    if (!sound) return
-    const pack = settings.soundEffects ? (settings.soundPack ?? seatSounds[e.seat] ?? 'sound.none') : 'sound.none'
-    if (pack !== 'sound.none') packs.play(pack, sound)
-    else if (sound === 'bust') sounds.bust()
-    else if (sound === 'miss') sounds.miss()
-    else if (sound === 'treble') sounds.treble()
-    else sounds.hit()
+    // A sound pack (yours for everyone, or the thrower's own) only replaces the beep
+    playDartSound(e, settings, sounds, (ev, sound) => {
+      const pack = settings.soundEffects ? (settings.soundPack ?? seatSounds[ev.seat] ?? 'sound.none') : 'sound.none'
+      if (pack === 'sound.none') return false
+      packs.play(pack, sound)
+      return true
+    })
   }
 
   // ── Game state ────────────────────────────────────────────────────────────

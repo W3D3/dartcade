@@ -4,7 +4,7 @@ import { boardsApiPlugin } from './boards.js'
 import { CameraStills } from '../camera/store.js'
 import type { Session } from '../session/types.js'
 import { BridgeUpdates } from '../boards/bridgeUpdate.js'
-import { hashBigScreenToken } from '../bigscreen/token.js'
+import { hashBoardToken } from '../boards/token.js'
 import { BigScreenState } from '../boards/bigScreenState.js'
 
 vi.mock('../auth/middleware.js', () => ({
@@ -31,7 +31,8 @@ vi.mock('../db/queries.js', () => ({
   deleteBoard: vi.fn().mockResolvedValue(undefined),
   renameBoard: vi.fn().mockResolvedValue(undefined),
   setBigScreenMode: vi.fn().mockResolvedValue(undefined),
-  setBigScreenTokenHash: vi.fn().mockResolvedValue(undefined),
+  claimBigScreenToken: vi.fn().mockResolvedValue(true),
+  clearBigScreenToken: vi.fn().mockResolvedValue(undefined),
   hasActiveSessionOnBoard: vi.fn().mockResolvedValue(false),
 }))
 
@@ -61,7 +62,7 @@ function makeApp(
   } = {},
 ) {
   const app = createFastify()
-  app.register(boardsApiPlugin, { db: {} as any, ...opts })
+  app.register(boardsApiPlugin, { db: {} as any, bigScreen: { revoke: vi.fn() }, ...opts })
   return app
 }
 
@@ -130,6 +131,13 @@ describe('DELETE /api/boards/:id', () => {
     expect(revoke).toHaveBeenCalledWith('board-1', 4404)
   })
 
+  it('closes the kiosk window of the board', async () => {
+    vi.mocked(queries.getBoardById).mockResolvedValueOnce({ id: 'board-1', owner_user_id: 'user-1' } as any)
+    send.mockClear()
+    await makeApp().inject({ method: 'DELETE', url: '/api/boards/board-1' })
+    expect(send).toHaveBeenCalledWith('board-1', { kind: 'bigscreen.close', data: {} })
+  })
+
   it('returns 404 when board not found', async () => {
     const app = makeApp()
     const res = await app.inject({ method: 'DELETE', url: '/api/boards/nope' })
@@ -184,7 +192,7 @@ describe('DELETE /api/boards/:id', () => {
     vi.mocked(queries.getBoardById).mockResolvedValue({ id: 'board-1', owner_user_id: 'user-1' } as any)
     const releaseBoard = vi.fn().mockResolvedValue(undefined)
     const app = createFastify()
-    app.register(boardsApiPlugin, { db: {} as any, releaseBoard })
+    app.register(boardsApiPlugin, { db: {} as any, releaseBoard, bigScreen: { revoke: vi.fn() } })
     expect((await app.inject({ method: 'DELETE', url: '/api/boards/board-1' })).statusCode).toBe(204)
     expect(releaseBoard).toHaveBeenCalledWith('board-1')
     expect(releaseBoard.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(queries.deleteBoard).mock.invocationCallOrder[0])
@@ -509,24 +517,28 @@ describe('PATCH /api/boards/:id/big-screen', () => {
     expect(res.statusCode).toBe(200)
     expect(res.json()).toEqual({ id: 'b1', mode: 'auto' })
     expect(queries.setBigScreenMode).toHaveBeenCalledWith(expect.anything(), 'b1', 'auto')
-    expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
+    expect(queries.clearBigScreenToken).not.toHaveBeenCalled()
   })
 
   it('cuts off open token sockets when turned off, not for other modes', async () => {
+    send.mockClear()
     vi.mocked(queries.getBoardById).mockResolvedValue(row)
     const revoke = vi.fn()
     await patch(makeApp({ bigScreen: { revoke } }), { mode: 'auto' })
     expect(revoke).not.toHaveBeenCalled()
+    expect(send).not.toHaveBeenCalled()
+    vi.mocked(connections.bridgeConnections).isOnline.mockReturnValueOnce(true)
     await patch(makeApp({ bigScreen: { revoke } }), { mode: 'off' })
-    expect(revoke).toHaveBeenCalledWith('b1')
+    expect(revoke).toHaveBeenCalledWith('b1', undefined)
+    expect(send).toHaveBeenCalledWith('b1', { kind: 'bigscreen.close', data: {} })
   })
 
-  it('turns off in one query that also drops the token', async () => {
+  it('turning off also drops the token', async () => {
     vi.mocked(queries.getBoardById).mockResolvedValue(row)
     const res = await patch(makeApp(), { mode: 'off' })
     expect(res.statusCode).toBe(200)
     expect(queries.setBigScreenMode).toHaveBeenCalledWith(expect.anything(), 'b1', 'off')
-    expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
+    expect(queries.clearBigScreenToken).toHaveBeenCalledWith(expect.anything(), 'b1')
   })
 
   it('rejects an unknown mode', async () => {
@@ -571,8 +583,8 @@ describe('PATCH /api/boards/:id/big-screen', () => {
       expect(msg.kind).toBe('bigscreen.open')
       const [, token] = msg.data.url.split('#/big-screen/b1?k=')
       expect(token).toMatch(/^[0-9a-f]{64}$/)
-      const hash = vi.mocked(queries.setBigScreenTokenHash).mock.calls[0][2]
-      expect(hash).toBe(hashBigScreenToken(token))
+      const hash = vi.mocked(queries.claimBigScreenToken).mock.calls[0][2]
+      expect(hash).toBe(hashBoardToken(token))
     })
 
     it('start is refused when the owner lacks the flag, with nothing minted or sent', async () => {
@@ -581,7 +593,7 @@ describe('PATCH /api/boards/:id/big-screen', () => {
       vi.mocked(flags.flagEnabled).mockResolvedValueOnce(false)
       expect((await post(makeApp(), 'start')).statusCode).toBe(403)
       expect(send).not.toHaveBeenCalled()
-      expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
+      expect(queries.claimBigScreenToken).not.toHaveBeenCalled()
     })
 
     it('stop closes the window, drops the token and cuts open sockets', async () => {
@@ -591,8 +603,8 @@ describe('PATCH /api/boards/:id/big-screen', () => {
       const res = await post(makeApp({ bigScreen: { revoke } }), 'stop')
       expect(res.json()).toEqual({ running: false })
       expect(send).toHaveBeenCalledWith('b1', { kind: 'bigscreen.close', data: {} })
-      expect(queries.setBigScreenTokenHash).toHaveBeenCalledWith(expect.anything(), 'b1', null)
-      expect(revoke).toHaveBeenCalledWith('b1')
+      expect(queries.clearBigScreenToken).toHaveBeenCalledWith(expect.anything(), 'b1')
+      expect(revoke).toHaveBeenCalledWith('b1', undefined)
     })
 
     it.each(['start', 'stop'] as const)('%s is 409 while the mode is off', async op => {
@@ -602,6 +614,25 @@ describe('PATCH /api/boards/:id/big-screen', () => {
       expect(send).not.toHaveBeenCalled()
     })
 
+    it('start is 409 when the mode was switched off meanwhile, sending nothing', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      online()
+      vi.mocked(queries.claimBigScreenToken).mockResolvedValueOnce(false)
+      const revoke = vi.fn()
+      expect((await post(makeApp({ bigScreen: { revoke } }), 'start')).statusCode).toBe(409)
+      expect(send).not.toHaveBeenCalled()
+      expect(revoke).not.toHaveBeenCalled()
+    })
+
+    it('a failed send rolls back only its own token', async () => {
+      vi.mocked(queries.getBoardById).mockResolvedValue(manual)
+      online()
+      send.mockReturnValueOnce(false)
+      expect((await post(makeApp(), 'start')).statusCode).toBe(409)
+      const hash = vi.mocked(queries.claimBigScreenToken).mock.calls[0][2]
+      expect(queries.clearBigScreenToken).toHaveBeenCalledWith(expect.anything(), 'b1', hash)
+    })
+
     it('start is 409 while the bridge is offline', async () => {
       vi.mocked(queries.getBoardById).mockResolvedValue(manual)
       vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(false)
@@ -609,16 +640,15 @@ describe('PATCH /api/boards/:id/big-screen', () => {
       expect(send).not.toHaveBeenCalled()
     })
 
-    it('stop still drops the token and cuts sockets while the bridge is offline, sending nothing', async () => {
+    it('stop still drops the token and cuts sockets while the bridge is offline', async () => {
       vi.mocked(queries.getBoardById).mockResolvedValue(manual)
       vi.mocked(connections.bridgeConnections).isOnline.mockReturnValue(false)
       const revoke = vi.fn()
       const res = await post(makeApp({ bigScreen: { revoke } }), 'stop')
       expect(res.statusCode).toBe(200)
       expect(res.json()).toEqual({ running: false })
-      expect(queries.setBigScreenTokenHash).toHaveBeenCalledWith(expect.anything(), 'b1', null)
-      expect(revoke).toHaveBeenCalledWith('b1')
-      expect(send).not.toHaveBeenCalled()
+      expect(queries.clearBigScreenToken).toHaveBeenCalledWith(expect.anything(), 'b1')
+      expect(revoke).toHaveBeenCalledWith('b1', undefined)
     })
 
     it('start cuts the old token sockets before sending the new link', async () => {
@@ -635,13 +665,10 @@ describe('PATCH /api/boards/:id/big-screen', () => {
       online()
       vi.stubEnv('PUBLIC_URL', '')
       vi.stubEnv('BETTER_AUTH_URL', '')
-      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
       expect((await post(makeApp(), 'start')).statusCode).toBe(409)
       expect(send).not.toHaveBeenCalled()
-      expect(queries.setBigScreenTokenHash).not.toHaveBeenCalled()
-      expect(warn).toHaveBeenCalled()
+      expect(queries.claimBigScreenToken).not.toHaveBeenCalled()
       vi.unstubAllEnvs()
-      warn.mockRestore()
     })
 
     it.each(['start', 'stop'] as const)("%s is 403 on another user's board", async op => {

@@ -1,12 +1,14 @@
 // What the big screen shows for X01, computed from the snapshot alone (the kiosk has no saved game to read).
 import { checkoutHint } from '$shared/checkout.js'
-import { x01Slots, type Slot } from '../dartSlots.js'
-import { plural, initial } from '../fmt.js'
-import { x01Meta } from '../gameViews/meta.js'
+import { boardCheckoutTargets, x01Slots } from '../dartSlots.js'
+import { plural } from '../fmt.js'
+import { x01MetaParts } from '../gameViews/meta.js'
 import { avgOf } from '../playerStats.js'
 import { sharedBoard, x01Win as winViewOf } from '../winScreen.js'
 import type { GameDetail } from '../api'
 import type { Snapshot } from '../ws.js'
+import { isParty } from './rowScale.js'
+import { toTiles, type BoardProps, type SlotTile } from './tiles.js'
 
 type X01Snapshot = Extract<Snapshot, { gameId: 'x01' }>
 
@@ -16,8 +18,6 @@ function asX01(snap: Snapshot): X01Snapshot {
 }
 
 const sum = (xs: number[], seats: number[]) => seats.reduce((a, i) => a + (xs[i] ?? 0), 0)
-/** From three seats on the big screen uses the party layout. */
-const isParty = (sides: number) => sides > 2
 
 /** A seat, or a team in a team game: one side of the match. */
 function sides(snap: X01Snapshot) {
@@ -29,7 +29,6 @@ function sides(snap: X01Snapshot) {
 
 export type X01LiveSeat = {
   name: string
-  initial: string
   score: number
   avg: string
   darts: number
@@ -39,13 +38,14 @@ export type X01LiveSeat = {
 }
 
 export type X01LiveView = {
+  /** `meta` is the whole line, `leg` its last part (the portrait header). */
   header: { title: string; meta: string; leg: string; board: string | null }
   seats: X01LiveSeat[]
   firstTo: number
-  /** The open visit: its darts, their total, and what the thrower is left with (null before a dart, or after a bust). */
-  visit: { darts: string[]; total: number; leaves: number | null }
+  visit: { total: number }
   /** The three dart slots of the visit, with the suggested finish. */
-  slots: Slot[]
+  slots: SlotTile[]
+  board: BoardProps
   checkout: { text: string; route: string } | null
   party: boolean
   /** Still throwing for the start: no visit, checkout or slots. */
@@ -63,15 +63,25 @@ export function x01Live(input: Snapshot): X01LiveView {
   const cp = bullOff ? (g.bullOff?.currentPlayer ?? g.currentPlayer) : g.currentPlayer
   const score = g.scores[cp] ?? 0
   const opened = g.opened[cp] ?? true
-  const meta = x01Meta(g, snap.players.length)
+  const meta = x01MetaParts(g, snap.players.length)
 
   const hint =
     !bullOff && !g.bustThisVisit && opened && score > 0 && darts.length < 3 ? checkoutHint(score, g.config.outMode, 3 - darts.length) : null
+  const slots = bullOff
+    ? []
+    : x01Slots({
+        darts,
+        remaining: score,
+        outMode: g.config.outMode,
+        opened,
+        bust: g.bustThisVisit,
+        suggest: true,
+        finishFoot: 'to win',
+      })
   return {
-    header: { title: 'X01', meta, leg: meta.split(' · ').at(-1) ?? '', board: sharedBoard(snap) },
+    header: { title: 'X01', meta: `${meta.rules} · ${meta.leg}`, leg: meta.leg, board: sharedBoard(snap) },
     seats: all.map(s => ({
       name: s.name,
-      initial: initial(s.name),
       score: s.score,
       avg: avgOf(sum(g.pointsScored, s.seats), sum(g.dartsThrown, s.seats)),
       darts: sum(g.totalDarts, s.seats),
@@ -80,23 +90,10 @@ export function x01Live(input: Snapshot): X01LiveView {
       next: !bullOff && g.nextPlayer !== null && s.seats.includes(g.nextPlayer) && !s.seats.includes(cp),
     })),
     firstTo: g.firstTo,
-    visit: {
-      darts: darts.map(d => d.segment.name || 'Miss'),
-      total,
-      leaves: darts.length && !g.bustThisVisit ? (g.visitStartScores[cp] ?? score) - total : null,
-    },
+    visit: { total },
     bullOff,
-    slots: bullOff
-      ? []
-      : x01Slots({
-          darts,
-          remaining: score,
-          outMode: g.config.outMode,
-          opened,
-          bust: g.bustThisVisit,
-          suggest: true,
-          finishFoot: 'to win',
-        }),
+    slots: toTiles(slots),
+    board: { darts, checkoutTargets: boardCheckoutTargets(slots, true) },
     checkout: hint ? { text: `${score} left · ${plural(3 - darts.length, 'dart')}`, route: hint.join(' · ') } : null,
     party: isParty(all.length),
   }
@@ -106,7 +103,8 @@ export type X01WinStanding = { place: number; name: string; legs: number; avg: s
 export type X01WinStat = { label: string; values: string[]; /** The first side's share of the bar, 0..1. */ share: number }
 
 export type X01WinView = {
-  header: { title: string; meta: string; board: string | null }
+  /** `meta` is the rules; `format` the match format, their last part (the portrait header). */
+  header: { title: string; meta: string; format: string; board: string | null }
   winner: X01WinStanding
   /** Legs per side, winner first. */
   legs: number[]
@@ -159,10 +157,11 @@ export function x01Win(input: Snapshot, detail: GameDetail | null = null): X01Wi
   const winnerSeats = w.competitors[0].seats
   const finishedLeg = all.reduce((a, s) => a + s.legs, 0)
   const legDarts = g.legVisits.filter(v => winnerSeats.includes(v.seat)).reduce((a, v) => a + v.darts, 0)
-  const shot = last && g.winner !== null && winnerSeats.includes(last.seat) ? last : undefined
+  const shot = last && g.winner !== null && winnerSeats.includes(last.seat) && last.left === 0 ? last : undefined
 
+  const { rules, format } = x01MetaParts(g, snap.players.length)
   return {
-    header: { title: 'X01', meta: x01Meta(g, snap.players.length).split(' · ').slice(0, -1).join(' · '), board: sharedBoard(snap) },
+    header: { title: 'X01', meta: rules, format, board: sharedBoard(snap) },
     winner: first,
     legs: standings.map(s => s.legs),
     firstTo: g.firstTo,

@@ -58,6 +58,24 @@ describe('createBigScreenStore', () => {
     s.destroy()
   })
 
+  it('stops for good and clears the message when the token is refused', () => {
+    const s = createBigScreenStore('b1', 'abc', open)
+    FakeSocket.opened[0].receive(idle)
+    FakeSocket.opened[0].onclose?.({ code: 4403 })
+    expect(get(s.stopped)).toBe(true)
+    expect(get(s.message)).toBeNull()
+    vi.advanceTimersByTime(60_000)
+    expect(FakeSocket.opened).toHaveLength(1)
+    s.destroy()
+  })
+
+  it('does not stop on an abnormal close', () => {
+    const s = createBigScreenStore('b1', 'abc', open)
+    FakeSocket.opened[0].onclose?.({ code: 1006 })
+    expect(get(s.stopped)).toBe(false)
+    s.destroy()
+  })
+
   it('sends nothing without a token', () => {
     const s = createBigScreenStore('b1', null, open)
     FakeSocket.opened[0].onopen?.()
@@ -84,14 +102,11 @@ describe('createBigScreenStore', () => {
     expect(FakeSocket.opened).toHaveLength(1)
   })
 
-  it('keeps the saved game of a result when it has the expected shape, else drops it', () => {
+  it('keeps the saved game of a result', () => {
     const s = createBigScreenStore('b1', null, open)
-    const result = (detail: unknown) => ({ ...idle, screen: { kind: 'result', snapshot, until: 1, detail } })
     const detail = { game: { players: [] }, detail: { mode: 'x01', legs: [] }, stats: { rows: [], seats: [] } }
-    FakeSocket.opened[0].receive(result(detail))
+    FakeSocket.opened[0].receive({ ...idle, screen: { kind: 'result', snapshot, until: 1, detail } })
     expect(get(s.message)?.screen).toMatchObject({ kind: 'result', detail })
-    FakeSocket.opened[0].receive(result({ nonsense: true }))
-    expect(get(s.message)?.screen).toMatchObject({ kind: 'result', detail: undefined })
     s.destroy()
   })
 })

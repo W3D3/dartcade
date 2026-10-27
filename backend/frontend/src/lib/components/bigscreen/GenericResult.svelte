@@ -18,7 +18,7 @@
     <div class="text-[44px] text-text-muted">wins</div>
   {/if}
   <ol class="m-0 flex list-none flex-col gap-3 p-0 text-[48px]">
-    {#each rows as r (`${r.placement} ${r.name}`)}
+    {#each rows as r, i (i)}
       <li><span class="font-display font-bold text-text-muted">{ordinal(r.placement)}</span> {r.name}</li>
     {/each}
   </ol>

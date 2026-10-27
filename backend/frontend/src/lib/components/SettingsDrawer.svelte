@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { ChevronRight, X } from '@lucide/svelte'
+  import { ChevronRight, MonitorPlay, X } from '@lucide/svelte'
   // Game settings as a drawer on the right, below the header (Settings-InGame board).
   import { onMount } from 'svelte'
   import { Dialog } from 'bits-ui'
@@ -14,14 +14,18 @@
   import OptionSelect from './settings/OptionSelect.svelte'
   import SegmentedControl from './SegmentedControl.svelte'
   import { BOARD_VIEWS, BOARD_VIEW_LABELS } from '$lib/gameSettings.js'
+  import { flag } from '$lib/flags'
   import { drawerRows } from '$lib/gameViews/settings.js'
 
   let {
     settings = $bindable(),
     gameId,
     scoreBased = false,
+    bigScreenBoardId = null,
     onclose,
-  }: { settings: GameSettings; gameId: string; scoreBased?: boolean; onclose: () => void } = $props()
+  }: { settings: GameSettings; gameId: string; scoreBased?: boolean; bigScreenBoardId?: string | null; onclose: () => void } = $props()
+
+  const bigScreenOn = flag('bigscreen.enabled')
 
   const display = [
     { key: 'checkoutSuggestions', label: 'Checkout suggestions', sub: 'In the dart slots when you can finish' },
@@ -171,6 +175,18 @@
           </a>
           <span class="text-[12px] text-text-dim">Import packs, delete them and set caller defaults in Settings.</span>
         </div>
+      </section>
+    {/if}
+
+    {#if bigScreenBoardId && $bigScreenOn}
+      <section class="py-[18px] border-t border-line-2 flex flex-col gap-3">
+        <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Big screen</h3>
+        <a
+          href="#/big-screen/{bigScreenBoardId}"
+          class="self-start min-h-10 inline-flex items-center gap-2 text-[14px] font-semibold no-underline"
+        >
+          <MonitorPlay size={16} />Show the big screen in this window
+        </a>
       </section>
     {/if}
 
