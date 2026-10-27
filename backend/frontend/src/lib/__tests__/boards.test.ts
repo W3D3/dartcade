@@ -13,6 +13,7 @@ const board = (over: Partial<Board> = {}): Board => ({
   ip: '192.168.1.42',
   bmUrl: 'http://192.168.1.42:3180',
   bridgeUpdate: { available: null, updatable: true },
+  bigScreen: { mode: 'off', running: false, helper: false },
   ...over,
 })
 

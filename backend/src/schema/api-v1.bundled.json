@@ -658,6 +658,57 @@
         }
       }
     },
+    "/api/boards/{id}/big-screen": {
+      "parameters": [
+        {
+          "$ref": "#/components/parameters/BoardId"
+        }
+      ],
+      "patch": {
+        "operationId": "setBigScreenMode",
+        "summary": "Set when the board's big screen runs (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BigScreenModeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BigScreenModeResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          }
+        }
+      }
+    },
     "/api/boards/{id}/status": {
       "parameters": [
         {
@@ -7919,7 +7970,8 @@
           "createdAt",
           "ip",
           "bmUrl",
-          "bridgeUpdate"
+          "bridgeUpdate",
+          "bigScreen"
         ],
         "additionalProperties": false,
         "properties": {
@@ -7963,6 +8015,68 @@
           },
           "bridgeUpdate": {
             "$ref": "#/components/schemas/BridgeUpdate"
+          },
+          "bigScreen": {
+            "$ref": "#/components/schemas/BoardBigScreen"
+          }
+        }
+      },
+      "BoardBigScreen": {
+        "type": "object",
+        "required": [
+          "mode",
+          "running",
+          "helper"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/BigScreenMode"
+          },
+          "running": {
+            "type": "boolean",
+            "description": "A big-screen window is following the board"
+          },
+          "helper": {
+            "type": "boolean",
+            "description": "The bridge machine can open the big screen on its own display"
+          }
+        }
+      },
+      "BigScreenMode": {
+        "type": "string",
+        "enum": [
+          "off",
+          "auto",
+          "manual"
+        ],
+        "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+      },
+      "BigScreenModeRequest": {
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/BigScreenMode"
+          }
+        }
+      },
+      "BigScreenModeResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/BigScreenMode"
           }
         }
       },

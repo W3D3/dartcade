@@ -3267,7 +3267,8 @@
                           "createdAt",
                           "ip",
                           "bmUrl",
-                          "bridgeUpdate"
+                          "bridgeUpdate",
+                          "bigScreen"
                         ],
                         "additionalProperties": false,
                         "properties": {
@@ -3357,6 +3358,34 @@
                                     "nullable": true
                                   }
                                 }
+                              }
+                            }
+                          },
+                          "bigScreen": {
+                            "type": "object",
+                            "required": [
+                              "mode",
+                              "running",
+                              "helper"
+                            ],
+                            "additionalProperties": false,
+                            "properties": {
+                              "mode": {
+                                "type": "string",
+                                "enum": [
+                                  "off",
+                                  "auto",
+                                  "manual"
+                                ],
+                                "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+                              },
+                              "running": {
+                                "type": "boolean",
+                                "description": "A big-screen window is following the board"
+                              },
+                              "helper": {
+                                "type": "boolean",
+                                "description": "The bridge machine can open the big screen on its own display"
                               }
                             }
                           }
@@ -4013,6 +4042,277 @@
           },
           "409": {
             "description": "Conflicts with the current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/boards/{id}/big-screen": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      ],
+      "patch": {
+        "operationId": "setBigScreenMode",
+        "summary": "Set when the board's big screen runs (owner only)",
+        "tags": [
+          "boards"
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "auto",
+                      "manual"
+                    ],
+                    "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new setting",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "mode"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "auto",
+                        "manual"
+                      ],
+                      "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "The request doesn't match the spec",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Not signed in",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "The resource belongs to another user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "title": "ErrorResponse",
+                  "type": "object",
+                  "required": [
+                    "error"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "path",
+                          "message"
+                        ],
+                        "additionalProperties": false,
+                        "properties": {
+                          "path": {
+                            "type": "string"
+                          },
+                          "message": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not found",
             "content": {
               "application/json": {
                 "schema": {
@@ -45315,7 +45615,8 @@
           "createdAt",
           "ip",
           "bmUrl",
-          "bridgeUpdate"
+          "bridgeUpdate",
+          "bigScreen"
         ],
         "additionalProperties": false,
         "properties": {
@@ -45407,6 +45708,111 @@
                 }
               }
             }
+          },
+          "bigScreen": {
+            "type": "object",
+            "required": [
+              "mode",
+              "running",
+              "helper"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "off",
+                  "auto",
+                  "manual"
+                ],
+                "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+              },
+              "running": {
+                "type": "boolean",
+                "description": "A big-screen window is following the board"
+              },
+              "helper": {
+                "type": "boolean",
+                "description": "The bridge machine can open the big screen on its own display"
+              }
+            }
+          }
+        }
+      },
+      "BoardBigScreen": {
+        "type": "object",
+        "required": [
+          "mode",
+          "running",
+          "helper"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "auto",
+              "manual"
+            ],
+            "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+          },
+          "running": {
+            "type": "boolean",
+            "description": "A big-screen window is following the board"
+          },
+          "helper": {
+            "type": "boolean",
+            "description": "The bridge machine can open the big screen on its own display"
+          }
+        }
+      },
+      "BigScreenMode": {
+        "type": "string",
+        "enum": [
+          "off",
+          "auto",
+          "manual"
+        ],
+        "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+      },
+      "BigScreenModeRequest": {
+        "type": "object",
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "auto",
+              "manual"
+            ],
+            "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+          }
+        }
+      },
+      "BigScreenModeResponse": {
+        "type": "object",
+        "required": [
+          "id",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "auto",
+              "manual"
+            ],
+            "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
           }
         }
       },
@@ -45514,7 +45920,8 @@
                 "createdAt",
                 "ip",
                 "bmUrl",
-                "bridgeUpdate"
+                "bridgeUpdate",
+                "bigScreen"
               ],
               "additionalProperties": false,
               "properties": {
@@ -45604,6 +46011,34 @@
                           "nullable": true
                         }
                       }
+                    }
+                  }
+                },
+                "bigScreen": {
+                  "type": "object",
+                  "required": [
+                    "mode",
+                    "running",
+                    "helper"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "mode": {
+                      "type": "string",
+                      "enum": [
+                        "off",
+                        "auto",
+                        "manual"
+                      ],
+                      "description": "off: never. auto: whenever a game starts on the board. manual: when the owner starts it"
+                    },
+                    "running": {
+                      "type": "boolean",
+                      "description": "A big-screen window is following the board"
+                    },
+                    "helper": {
+                      "type": "boolean",
+                      "description": "The bridge machine can open the big screen on its own display"
                     }
                   }
                 }
