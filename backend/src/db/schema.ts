@@ -256,6 +256,17 @@ export interface FriendshipsTable {
   responded_at: ColumnType<Date | null, Date | null | undefined, Date | null>
 }
 
+/** Something a user did that their friends see on Home (migration 043). */
+export interface FriendActivityTable {
+  /** BIGSERIAL; node-postgres returns it as a string */
+  id: Generated<string>
+  user_id: string
+  game_id: string
+  kind: string
+  payload: unknown
+  created_at: Date
+}
+
 /** A player's rating in one ranked mode (migration 020). */
 export interface RankedRatingsTable {
   user_id: string
@@ -451,6 +462,7 @@ export interface Database {
   voice_packs: VoicePacksTable
   voice_pack_clips: VoicePackClipsTable
   friendships: FriendshipsTable
+  friend_activity: FriendActivityTable
   ranked_ratings: RankedRatingsTable
   ranked_results: RankedResultsTable
   minigolf_holes: MinigolfHolesTable
