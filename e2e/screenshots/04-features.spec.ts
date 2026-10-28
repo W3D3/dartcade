@@ -5,15 +5,14 @@ import { makeMp3 } from '../../backend/src/caller/mp3Fixture.js'
 
 // The features that shipped after the first screenshots: Minigolf, 121, match details, matchmaking, the caller
 
-/** A player's profile card, opened from the keyboard on their first visible name in `within`. */
+/** A player's profile card, previewed by hovering their first visible name in `within`. */
 async function openProfile(within: Locator, name: string): Promise<void> {
-  const trigger = within
-    .getByRole('button', { name: `${name}: profile` })
+  await within
+    .getByRole('link', { name: `${name}: profile` })
     .filter({ visible: true })
     .first()
-  await trigger.focus()
-  await trigger.press('Enter')
-  await expect(within.page().getByRole('dialog').getByRole('link', { name: 'Profile' })).toBeVisible()
+    .hover()
+  await expect(within.page().getByRole('dialog', { name: `${name}, profile` })).toBeVisible()
 }
 
 test('minigolf: a hole in 3D, and the course editor', async ({ browser }) => {

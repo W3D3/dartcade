@@ -79,25 +79,26 @@ test("a player's badge opens their profile card, in History and on the details p
 
   await page.goto('/#/history')
   const badge = page
-    .getByRole('button', { name: `${name}: profile` })
+    .getByRole('link', { name: `${name}: profile` })
     .filter({ visible: true })
     .first()
-  // From the keyboard: Enter opens the card, Esc closes it and gives focus back
-  await badge.focus()
-  await page.keyboard.press('Enter')
-  const card = page.getByRole('dialog')
-  await expect(card.getByRole('link', { name: 'Profile' })).toBeVisible()
+  // Hovering the name previews the card; the name itself is the link to the profile
+  await badge.hover()
+  const card = page.getByRole('dialog', { name: `${name}, profile` })
+  await expect(card).toBeVisible()
   await expect(page).toHaveURL(/#\/history$/)
-  await page.keyboard.press('Escape')
+  await page.mouse.move(0, 0)
   await expect(card).toBeHidden()
-  await expect(badge).toBeFocused()
+  await badge.click()
+  await expect(page).toHaveURL(/#\/profile\/[^/]+$/)
 
+  await page.goto('/#/history')
   await openNewestGame(page)
   await page
     .getByRole('region', { name: 'Result', exact: true })
-    .getByRole('button', { name: `${name}: profile` })
-    .click()
-  await expect(page.getByRole('dialog').getByRole('link', { name: 'Profile' })).toBeVisible()
+    .getByRole('link', { name: `${name}: profile` })
+    .hover()
+  await expect(card).toBeVisible()
 })
 
 test('an unknown game id shows a not-available page', async ({ authedPage: page }) => {
