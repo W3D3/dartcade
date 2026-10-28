@@ -4,6 +4,7 @@
   // accent, title, level, rank and (for friends) day streak, and three numbers. A
   // player's name previews it on hover, and your profile and the Progress page show yours as a live preview (`look`
   // and `avatar` override the stored ones).
+  import { fmtAvg } from '$lib/playerStats'
   import { Flame } from '@lucide/svelte'
   import StatusRing from '../friends/StatusRing.svelte'
   import Avatar from '../Avatar.svelte'
@@ -72,7 +73,7 @@
     <dl class="m-0 mt-4 grid grid-cols-3 gap-2 border-t border-line-2 pt-[14px]">
       <div class="flex flex-col gap-[3px]">
         <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">3-dart avg</dt>
-        <dd class="m-0 font-display font-bold text-[26px] leading-none">{profile.average?.toFixed(1) ?? '—'}</dd>
+        <dd class="m-0 font-display font-bold text-[26px] leading-none">{fmtAvg(profile.average ?? null)}</dd>
       </div>
       <div class="flex flex-col gap-[3px] min-w-0">
         <dt class="text-[11px] uppercase tracking-[0.08em] opacity-70">Favourite</dt>
