@@ -2,6 +2,7 @@
   // Joining a lobby by its code: typed, or from a join link or QR code (#/join/K7Q4MD). It shows
   // which lobby the code opens first; someone in another lobby can leave it first. Signed out, a
   // link shows its invite (InviteLink) with sign-in and sign-up that come back here.
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { untrack } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
   import Layout from '$lib/components/Layout.svelte'
@@ -129,7 +130,7 @@
           class="h-[60px] box-border px-4 bg-surface-2 border-2 rounded-[12px] text-text font-mono text-[26px] tracking-[0.16em] text-center uppercase
                {missing || failed ? 'border-live' : 'border-accent'}"
         />
-        {#if missing}<span class="text-[13px] text-live-text">No open lobby with that code. Check it with the host.</span>{/if}
+        {#if missing}<ErrorText class="text-[13px]">No open lobby with that code. Check it with the host.</ErrorText>{/if}
         {#if failed}
           <span class="text-[13px] text-live-text"
             >Couldn't check the code.

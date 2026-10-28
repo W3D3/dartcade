@@ -2,6 +2,7 @@
   // Settings' Boards section (Boards, Tablet-Boards, Mobile-Boards boards): your boards, the
   // selected one's cameras, controls and live events, and pairing. With none yet, the
   // Settings-Boards-Empty onboarding.
+  import ErrorText from '$lib/components/ErrorText.svelte'
   import { Download, ExternalLink, LoaderCircle, Pencil, Play, Plus, RotateCcw, Square, Sun } from '@lucide/svelte'
   import { onMount, onDestroy } from 'svelte'
   import { push, querystring } from 'svelte-spa-router'
@@ -636,7 +637,7 @@
         <!-- Tablets: a Selected bar under the grid; cameras and live events open under it -->
         <div class="flex flex-col gap-2">
           <SelectedBoardBar board={selected} name={barName} actions={boardActions} details={boardDetails} />
-          {#if unpairError}<p class="m-0 text-[13px] text-live-text">{unpairError}</p>{/if}
+          {#if unpairError}<ErrorText class="text-[13px]">{unpairError}</ErrorText>{/if}
         </div>
       {:else if selected}
         <aside
@@ -652,7 +653,7 @@
           </div>
           {@render boardDetails()}
           {#if unpairError}
-            <p class="m-0 -mb-2 text-[13px] text-live-text">{unpairError}</p>
+            <ErrorText class="-mb-2 text-[13px]">{unpairError}</ErrorText>
           {/if}
           <div class="flex gap-3">{@render boardActions()}</div>
         </aside>
