@@ -4,6 +4,7 @@
 -->
 <script lang="ts">
   import { createCopy } from '$lib/clipboard.svelte'
+  import { Slider } from '$lib/components/ui/slider/index.js'
   import { DEFAULT_PHYSICS, type Physics } from '$shared/minigolf/physics'
   import { powerAt } from '$shared/minigolf/shot'
 
@@ -40,11 +41,11 @@
 
 <section class="flex flex-col gap-3" aria-label="Physics">
   {#each FIELDS as f (f.key)}
-    <label class="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-[14px]">
+    <div class="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 text-[14px]">
       <span class="text-text-muted">{f.label}</span>
       <span class="tabular-nums {physics[f.key] !== DEFAULT_PHYSICS[f.key] ? 'text-accent' : ''}">{physics[f.key]}</span>
-      <input type="range" class="col-span-2 accent-[#c6f24e]" min={f.min} max={f.max} step={f.step} bind:value={physics[f.key]} />
-    </label>
+      <Slider bind:value={physics[f.key]} min={f.min} max={f.max} step={f.step} label={f.label} class="col-span-2" />
+    </div>
   {/each}
   <!-- How far a putt rolls on flat felt for each distance from the bull -->
   <figure class="m-0 flex flex-col gap-1">
