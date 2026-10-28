@@ -2,6 +2,7 @@
   // Settings' Caller: whether the caller is on, its voice and volume (Settings-Caller board). On and
   // the voice follow the account; a match's game settings drawer still changes them on that device.
   // The volume is the device's (sound effects have their own, under Sounds).
+  import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
   import type { GameSettings } from '$lib/gameSettings.js'
   import { voiceLibrary } from '$lib/caller/voices.js'
   import { audioContext } from '$lib/sounds.js'
@@ -12,13 +13,12 @@
   let { settings = $bindable() }: { settings: GameSettings } = $props()
 </script>
 
-<section aria-labelledby="caller-defaults" class="box-border p-4 md:p-[22px] card flex flex-col gap-5">
-  <div class="flex flex-col gap-1">
-    <h2 id="caller-defaults" class="m-0 text-[17px] font-semibold">Caller defaults</h2>
-    <p class="m-0 text-[13px] leading-[1.5] text-text-dim">
-      Used in every match on every board. Caller on/off and the voice can still be changed mid-game.
-    </p>
-  </div>
+<SettingsCard
+  id="caller-defaults"
+  title="Caller defaults"
+  description="Used in every match on every board. Caller on/off and the voice can still be changed mid-game."
+  class="gap-5"
+>
   <SettingSwitch
     id="pref-callerOn"
     label="Caller"
@@ -56,4 +56,4 @@
   </div>
   <VolumeSlider bind:value={settings.volume} label="Caller volume" />
   <p class="m-0 -mt-3 text-[12px] text-text-dim">Set on each device. Sound effects have their own volume under Sounds.</p>
-</section>
+</SettingsCard>
