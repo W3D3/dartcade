@@ -871,7 +871,8 @@
         "scoreBased",
         "ownerUserId",
         "seats",
-        "mySeats"
+        "mySeats",
+        "results"
       ],
       "additionalProperties": false,
       "properties": {
@@ -917,6 +918,13 @@
         },
         "status": {
           "$ref": "#/$defs/SessionStatus"
+        },
+        "results": {
+          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/$defs/SeatPlace"
+          }
         },
         "finishPending": {
           "type": "boolean",
@@ -970,7 +978,8 @@
         "scoreBased",
         "ownerUserId",
         "seats",
-        "mySeats"
+        "mySeats",
+        "results"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1016,6 +1025,13 @@
         },
         "status": {
           "$ref": "#/$defs/SessionStatus"
+        },
+        "results": {
+          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/$defs/SeatPlace"
+          }
         },
         "finishPending": {
           "type": "boolean",
@@ -1069,7 +1085,8 @@
         "scoreBased",
         "ownerUserId",
         "seats",
-        "mySeats"
+        "mySeats",
+        "results"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1115,6 +1132,13 @@
         },
         "status": {
           "$ref": "#/$defs/SessionStatus"
+        },
+        "results": {
+          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/$defs/SeatPlace"
+          }
         },
         "finishPending": {
           "type": "boolean",
@@ -1389,7 +1413,8 @@
         "scoreBased",
         "ownerUserId",
         "seats",
-        "mySeats"
+        "mySeats",
+        "results"
       ],
       "additionalProperties": false,
       "properties": {
@@ -1435,6 +1460,13 @@
         },
         "status": {
           "$ref": "#/$defs/SessionStatus"
+        },
+        "results": {
+          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/$defs/SeatPlace"
+          }
         },
         "finishPending": {
           "type": "boolean",
@@ -2115,7 +2147,8 @@
         "scoreBased",
         "ownerUserId",
         "seats",
-        "mySeats"
+        "mySeats",
+        "results"
       ],
       "additionalProperties": false,
       "properties": {
@@ -2161,6 +2194,13 @@
         },
         "status": {
           "$ref": "#/$defs/SessionStatus"
+        },
+        "results": {
+          "description": "Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.",
+          "type": ["array", "null"],
+          "items": {
+            "$ref": "#/$defs/SeatPlace"
+          }
         },
         "finishPending": {
           "type": "boolean",
@@ -2370,6 +2410,22 @@
         },
         "action": {
           "$ref": "#/$defs/UserAction"
+        }
+      }
+    },
+    "SeatPlace": {
+      "title": "SeatPlace",
+      "description": "A seat's final place: 1 for the winner; tied seats share one; a forfeit (a team's, in a team game) ranks last.",
+      "type": "object",
+      "required": ["placement", "forfeited"],
+      "additionalProperties": false,
+      "properties": {
+        "placement": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "forfeited": {
+          "type": "boolean"
         }
       }
     }

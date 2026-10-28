@@ -573,6 +573,8 @@ export class SessionEngine {
       lobbyName: session.lobbyName,
       players: session.players,
       status: session.status,
+      // The places the server saves, so no screen re-ranks the seats itself
+      results: session.status === 'finished' ? results(session).map(r => ({ placement: r.placement, forfeited: r.forfeited })) : null,
       finishPending: session.status === 'active' && ((session.takeoutHeld === true && takeoutWins(session)) || awaitsFinish(session)),
       canUndoVisit:
         session.status === 'active' && session.undoable.length > 0 && !session.openVisitEvents.some(e => e.kind === 'dart.detected'),

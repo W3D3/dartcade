@@ -8,6 +8,7 @@ const base = {
   players: [{ name: 'A' }],
   bmStatus: null,
   status: 'active' as const,
+  results: null,
   finishPending: false,
   canUndoVisit: false,
   scoreBased: false,

@@ -14,7 +14,7 @@ const seat = (o: { userId?: string | null; boardName?: string | null; forfeited?
   bot: null,
 })
 
-function x01(o: { players?: string[]; game?: Record<string, unknown>; guests?: number[] } = {}): Snapshot {
+function x01(o: { players?: string[]; game?: Record<string, unknown>; guests?: number[]; places?: number[] } = {}): Snapshot {
   const names = o.players ?? ['Christoph', 'Guest 1']
   const n = names.length
   return {
@@ -45,6 +45,8 @@ function x01(o: { players?: string[]; game?: Record<string, unknown>; guests?: n
     },
     bmStatus: null,
     status: 'finished',
+    // The server's places (results() in replay.ts)
+    results: names.map((_, i) => ({ placement: o.places?.[i] ?? i + 1, forfeited: false })),
     finishPending: false,
     canUndoVisit: false,
     ownerUserId: 'u1',
@@ -229,7 +231,11 @@ describe('winView', () => {
 
   it('X01 party: the rest ranked by legs, then by points left', () => {
     const v = winView(
-      x01({ players: ['Christoph', 'Lena', 'Guest 1', 'Max'], game: { legs: [3, 1, 0, 0], scores: [0, 32, 245, 152] } }),
+      x01({
+        players: ['Christoph', 'Lena', 'Guest 1', 'Max'],
+        game: { legs: [3, 1, 0, 0], scores: [0, 32, 245, 152] },
+        places: [1, 2, 4, 3],
+      }),
       null,
     )!
     expect(v.layout).toBe('party')
@@ -364,7 +370,7 @@ function hilo(
   players: string[],
   seats: HiloSeatFixture[],
   winner: number | null,
-  o: { guests?: number[] } = {},
+  o: { guests?: number[]; places?: number[] } = {},
 ): Snapshot & { game: HiloGame } {
   return {
     type: 'snapshot',
@@ -400,6 +406,7 @@ function hilo(
     },
     bmStatus: null,
     status: 'finished',
+    results: players.map((_, i) => ({ placement: o.places?.[i] ?? seats[i]?.place ?? i + 1, forfeited: seats[i]?.forfeited ?? false })),
     finishPending: false,
     canUndoVisit: false,
     ownerUserId: 'u1',
@@ -493,10 +500,7 @@ describe('hiloWin', () => {
     ])
   })
 
-  it('a 3+ player forfeit: a seat still in ranks ahead of one already out, mirroring compareSeats', () => {
-    // hilo.ts's compareSeats puts every seat still in ahead of every seat that's out, same as
-    // here: A (in, 3 lives) must rank ahead of B (out, engine place 3), even though B's place
-    // is a smaller number than "no place yet".
+  it("a 3+ player forfeit: follows the server's places, a seat still in ahead of one already out", () => {
     const snap = hilo(
       ['A', 'B', 'C'],
       [
@@ -505,6 +509,7 @@ describe('hiloWin', () => {
         { lives: 1, place: null, forfeited: true },
       ],
       null,
+      { places: [1, 2, 3] },
     )
     const v = winView(snap, null)!
     expect(v.competitors.map(c => [c.name, c.placement])).toEqual([
@@ -523,6 +528,7 @@ describe('hiloWin', () => {
         { lives: 1, place: null, forfeited: true },
       ],
       null,
+      { places: [1, 1, 3] },
     )
     const v = winView(snap, null)!
     expect(v.competitors.map(c => [c.name, c.placement])).toEqual([

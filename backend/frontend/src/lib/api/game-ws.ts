@@ -438,6 +438,10 @@ export interface X01Snapshot {
   bmStatus: BmStatus | null
   status: SessionStatus
   /**
+   * Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.
+   */
+  results: SeatPlace[] | null
+  /**
    * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
    */
   finishPending: boolean
@@ -466,6 +470,16 @@ export interface Player {
   name: string
 }
 /**
+ * A seat's final place: 1 for the winner; tied seats share one; a forfeit (a team's, in a team game) ranks last.
+ *
+ * This interface was referenced by `GameWs`'s JSON-Schema
+ * via the `definition` "SeatPlace".
+ */
+export interface SeatPlace {
+  placement: number
+  forfeited: boolean
+}
+/**
  * This interface was referenced by `GameWs`'s JSON-Schema
  * via the `definition` "AtcSnapshot".
  */
@@ -489,6 +503,10 @@ export interface AtcSnapshot {
    */
   bmStatus: BmStatus | null
   status: SessionStatus
+  /**
+   * Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.
+   */
+  results: SeatPlace[] | null
   /**
    * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
    */
@@ -538,6 +556,10 @@ export interface P121Snapshot {
    */
   bmStatus: BmStatus | null
   status: SessionStatus
+  /**
+   * Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.
+   */
+  results: SeatPlace[] | null
   /**
    * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
    */
@@ -663,6 +685,10 @@ export interface HiloSnapshot {
    */
   bmStatus: BmStatus | null
   status: SessionStatus
+  /**
+   * Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.
+   */
+  results: SeatPlace[] | null
   /**
    * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
    */
@@ -893,6 +919,10 @@ export interface MinigolfSnapshot {
    */
   bmStatus: BmStatus | null
   status: SessionStatus
+  /**
+   * Each seat's place once the game has finished (won, or ended by a forfeit), in seat order, as the server saves it; null until then.
+   */
+  results: SeatPlace[] | null
   /**
    * The open visit wins the game: it waits for the Finish button (a takeout from the user), so its darts can still be corrected.
    */

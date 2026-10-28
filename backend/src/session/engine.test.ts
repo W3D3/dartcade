@@ -418,12 +418,18 @@ describe('onBridgeEvent', () => {
 
     it('Finish ends the game', async () => {
       const { store, engine, sessionId } = await checkedOut()
+      // The snapshot carries the places only once the game has finished
+      expect(engine.getSnapshot(sessionId)!.results).toBeNull()
       await engine.onUserAction(sessionId, 'user-1', { type: 'takeout' })
       expect(store.finishSession).toHaveBeenCalledWith(sessionId, expect.any(Date), [
         expect.objectContaining({ placement: 1 }),
         expect.objectContaining({ placement: 2 }),
       ])
       expect(engine.getSnapshot(sessionId)!.status).toBe('finished')
+      expect(engine.getSnapshot(sessionId)!.results).toEqual([
+        { placement: 1, forfeited: false },
+        { placement: 2, forfeited: false },
+      ])
     })
 
     it('a correction that no longer wins lets the board take out again', async () => {
@@ -1233,6 +1239,11 @@ describe('forfeit', () => {
       expect.objectContaining({ placement: 1, forfeited: false }),
     ])
     expect(engine.getSnapshot(sessionId)?.status).toBe('finished')
+    // The same places the server saved, so the win screen ranks the forfeit last too
+    expect(engine.getSnapshot(sessionId)?.results).toEqual([
+      { placement: 2, forfeited: true },
+      { placement: 1, forfeited: false },
+    ])
     expect(engine.getSessionByUser('lena')).toBeUndefined()
   })
 

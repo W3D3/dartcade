@@ -1,6 +1,6 @@
 // The win screen after a game: who won, the final standings and the match stats we keep.
-// Placements come from the final snapshot (the server ranks the same way); the X01 match stats
-// (the details page's, from the server) and the legs come from the saved game, once it loads.
+// Placements are the server's (the final snapshot's `results`); the X01 match stats (the details
+// page's, from the server) and the legs come from the saved game, once it loads.
 import type { AtcGame, GameDetail, HiloGame, MinigolfGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { formatStat, statNumber } from './details/stats.js'
@@ -85,16 +85,8 @@ export function sharedBoard(snapshot: Snapshot): string | null {
   return names.size === 1 ? (only ?? null) : null
 }
 
-/** Places 1..n: the winner first, the rest by `better` (ties share a place). */
-export function rank(count: number, winner: number | null, better: (a: number, b: number) => number): number[] {
-  const order = Array.from({ length: count }, (_, i) => i).sort((a, b) => (a === winner ? -1 : b === winner ? 1 : better(a, b)))
-  const places = new Array<number>(count)
-  order.forEach((c, i) => {
-    const prev = order[i - 1]
-    places[c] = i > 0 && c !== winner && prev !== winner && better(prev, c) === 0 ? places[prev] : i + 1
-  })
-  return places
-}
+/** The server's place per seat, in seat order (a finished game's snapshot always carries them). */
+export const placesOf = (snapshot: Snapshot): number[] => snapshot.players.map((_, i) => snapshot.results?.[i]?.placement ?? i + 1)
 
 const byPlacement = (cs: Competitor[]) => [...cs].sort((a, b) => a.placement - b.placement)
 const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
@@ -120,15 +112,9 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
   const winnerSide = g.winner === null ? null : sideOf(g.winner)
   // Every seat of a side carries its legs and score
   const legs = seatsOf.map(s => g.legs[s[0]] ?? 0)
-  const left = seatsOf.map(s => g.scores[s[0]] ?? 0)
-  // The saved game's placements once it loads (they know who forfeited); a side shares its best seat's
-  const saved = detail?.game.players
-  const ranked = rank(seatsOf.length, winnerSide, (a, b) => legs[b] - legs[a] || left[a] - left[b])
-  const savedPlace = (seats: number[]) => {
-    const found = seats.flatMap(i => saved?.find(p => p.seat === i)?.placement ?? [])
-    return found.length ? Math.min(...found) : null
-  }
-  const places = seatsOf.map((s, i) => savedPlace(s) ?? ranked[i])
+  // A side shares its best seat's place
+  const place = placesOf(snapshot)
+  const places = seatsOf.map(s => Math.min(...s.map(i => place[i])))
 
   const darts = seatsOf.map(s => s.reduce((a, i) => a + (g.totalDarts[i] ?? 0), 0))
   // A side's match stats (a team's in a team game); none until the saved game loads
@@ -235,7 +221,7 @@ export function x01Win(snapshot: Snapshot & { game: X01Game }, detail: GameDetai
 export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
   const g = snapshot.game
   const views = snapshot.players.map((_, i) => atcPlayer(g, i))
-  const places = rank(views.length, g.winner, (a, b) => views[b].done - views[a].done || views[a].darts - views[b].darts)
+  const places = placesOf(snapshot)
   const competitors = byPlacement(
     views.map((v, i): Competitor => ({
       name: snapshot.players[i].name,
@@ -285,21 +271,7 @@ export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
   const g = snapshot.game
   const n = snapshot.players.length
   const forfeited = snapshot.seats.map(s => s.forfeited)
-  const live = n - forfeited.filter(Boolean).length
-  // Mirrors the engine's own compareSeats (hilo.ts): among the seats that didn't forfeit, one
-  // still in always ranks ahead of one that's out (even if a forfeit ends the game before the
-  // module ever sets a winner); among the ones still in, more lives first; among the ones out,
-  // by their engine place (equivalently, the later out first). Forfeited seats always rank
-  // after every seat that didn't forfeit, sharing last place.
-  const better = (a: number, b: number) => {
-    if (forfeited[a] !== forfeited[b]) return forfeited[a] ? 1 : -1
-    const sa = g.seats[a]
-    const sb = g.seats[b]
-    if (sa.out !== sb.out) return sa.out ? 1 : -1
-    return sa.out ? (sa.place ?? 0) - (sb.place ?? 0) : sb.lives - sa.lives
-  }
-  const ranked = rank(n, g.winner, better)
-  const places = g.seats.map((_, i) => (forfeited[i] ? live + 1 : ranked[i]))
+  const places = placesOf(snapshot)
 
   const competitors = byPlacement(
     g.seats.map((s, i): Competitor => {
@@ -375,8 +347,7 @@ export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
 export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinView {
   const g = snapshot.game
   const aces = (seat: number) => g.scores.filter(row => row[seat] === 1).length
-  // Lowest total wins; equal totals share a place
-  const places = rank(snapshot.players.length, null, (a, b) => g.totals[a] - g.totals[b])
+  const places = placesOf(snapshot)
   const competitors = byPlacement(
     snapshot.players.map((p, i): Competitor => ({
       name: p.name,
@@ -418,7 +389,7 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
   // Higher Lower's own engine always names a winner once it finishes a game by play; a forfeit
   // ends the session without the module ever running, so its winner stays null. Status
   // 'finished' with no winner is therefore always a forfeit here, and the win screen still
-  // shows: hiloWin ranks the forfeited seat last from snapshot.seats[i].forfeited.
+  // shows, with the server's places (the forfeited seat last).
   switch (snapshot.gameId) {
     case 'hilo':
       return hiloWin(snapshot)
