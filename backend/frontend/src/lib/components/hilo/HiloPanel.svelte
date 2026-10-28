@@ -11,7 +11,7 @@
   import Hearts from '$lib/components/hilo/Hearts.svelte'
   import { ordinal, plural } from '$lib/fmt'
   import { needsLine, outcomeText } from '$lib/hilo/view'
-  import { playerCard } from '$lib/playerCard'
+  import { LOST_CARD, playerCard } from '$lib/playerCard'
 
   let {
     game,
@@ -37,7 +37,7 @@
   const lit = $derived(active || justLost)
   // The open visit's row, once a dart is in
   const throwing = $derived(active && game.currentVisitDarts.length > 0)
-  const card = $derived(justLost ? 'bg-[#1d1513] border-2 border-live' : playerCard(active))
+  const card = $derived(justLost ? LOST_CARD : playerCard(active))
   // Lit (thrower, life lost) or quiet colours for a visit's result
   const resultTone = (lost: boolean) => (lost ? (lit ? 'text-live-text' : 'text-[#e0827a]') : lit ? 'text-accent' : 'text-[#a7c45a]')
   const state = $derived(justLost ? 'just lost a life' : active ? 'throwing' : upNext ? 'up next' : s.out ? 'out' : 'waiting')
