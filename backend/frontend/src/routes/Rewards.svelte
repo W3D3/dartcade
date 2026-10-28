@@ -4,6 +4,7 @@
   // locked ones grey until hovered or focused), and the rewards off the track; each opens its details
   // (RewardDetails), where you apply it. `#/progress/rewards/15`
   // opens it at level 15. Behind progression.enabled, like Progress.
+  import { Progress } from '$lib/components/ui/progress/index.js'
   import { Check, Lock } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
   import PageLoading from '$lib/components/PageLoading.svelte'
@@ -96,16 +97,13 @@
           <span class="font-display font-bold text-[72px] md:text-[88px] leading-[0.8]">{level}</span>
           <div class="flex-1 min-w-0 flex flex-col gap-[10px]">
             <span class="text-[12px] label-caps text-text-dim">Level · {Math.min(level, TOP_LEVEL)} of {TOP_LEVEL} unlocked</span>
-            <div
-              role="progressbar"
+            <Progress
               aria-label="Rewards track"
-              aria-valuemin={0}
-              aria-valuemax={TOP_LEVEL}
-              aria-valuenow={Math.min(level, TOP_LEVEL)}
-              class="h-[10px] rounded-full bg-bg overflow-hidden"
-            >
-              <div class="h-full rounded-full bg-accent" style="width: {(Math.min(level, TOP_LEVEL) / TOP_LEVEL) * 100}%"></div>
-            </div>
+              value={Math.min(level, TOP_LEVEL)}
+              max={TOP_LEVEL}
+              class="h-[10px] rounded-full bg-bg"
+              fill="rounded-full bg-accent"
+            />
             <span class="text-[13px] text-text-muted">{fmtXp(toGo)} XP to level {level + 1}</span>
           </div>
         </section>
