@@ -24,6 +24,6 @@
 <Modal {title} subtitle={body} onclose={oncancel} showClose={false} dismissOnBackdrop={true} widthClass="max-w-[380px]" zClass="z-[200]">
   {#snippet footer()}
     <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={oncancel}>{cancelLabel}</Button>
-    <Button variant="accent" size="lg" class="flex-1 {danger ? 'bg-live text-[#fff]' : ''}" onclick={onconfirm}>{confirmLabel}</Button>
+    <Button variant={danger ? 'danger' : 'accent'} size="lg" class="flex-1" onclick={onconfirm}>{confirmLabel}</Button>
   {/snippet}
 </Modal>
