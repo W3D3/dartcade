@@ -10,7 +10,7 @@
   import Hearts from '$lib/components/hilo/Hearts.svelte'
   import { ordinal, plural } from '$lib/fmt'
   import { needsLine, outcomeText } from '$lib/hilo/view'
-  import { playerCard } from '$lib/playerCard'
+  import { LOST_CARD, playerCard } from '$lib/playerCard'
 
   let {
     game,
@@ -32,9 +32,7 @@
   const last = $derived(s.visits.at(-1))
   const lost = $derived(last?.outcome === 'between' || last?.outcome === 'miss')
   const outLabel = $derived(`Out${s.place ? ` · ${ordinal(s.place)}` : ''}`)
-  const card = $derived(
-    s.out ? 'bg-[#121411] border border-dashed border-line-2' : justLost ? 'bg-[#1d1513] border-2 border-live' : playerCard(active),
-  )
+  const card = $derived(s.out ? 'bg-[#121411] border border-dashed border-line-2' : justLost ? LOST_CARD : playerCard(active))
   const state = $derived(s.out ? outLabel.toLowerCase() : justLost ? 'just lost a life' : active ? 'throwing' : upNext ? 'up next' : null)
 </script>
 

@@ -9,7 +9,7 @@
   import Hearts from '$lib/components/hilo/Hearts.svelte'
   import { ordinal, plural } from '$lib/fmt'
   import { needsLine, outcomeText } from '$lib/hilo/view'
-  import { playerCard } from '$lib/playerCard'
+  import { LOST_CARD, playerCard } from '$lib/playerCard'
 
   let {
     game,
@@ -58,7 +58,7 @@
   <section
     aria-label="{name}, {sub ? `${sub}, ` : ''}{lives}"
     class="shrink-0 h-[58px] box-border px-[14px] rounded-[12px] flex items-center gap-[10px] {justLost
-      ? 'bg-[#1d1513] border-2 border-live'
+      ? LOST_CARD
       : playerCard(false)} {s.out ? 'opacity-60' : ''}"
   >
     <Avatar {name} size={32} />
