@@ -1,47 +1,10 @@
 // Formatting for the History page: one finished game per row, plus the stat tiles.
 import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
-import { atcRules, hiloRules, minigolfRules, p121Rules, x01Rules } from './gameViews/meta.js'
-import { COURSES } from '$shared/minigolf/courses/index'
+import { rulesOf } from './gameViews/rules.js'
 import { dayMonth, ordinal, startOfDay } from './fmt.js'
 
 const DAY_MS = 86_400_000
-const ModeSchema = z.enum(['straight', 'double', 'master'])
-const X01ConfigSchema = z.object({ startScore: z.number(), inMode: ModeSchema, outMode: ModeSchema, firstTo: z.number() })
-const AtcConfigSchema = z.object({
-  order: z.enum(['asc', 'desc', 'random']),
-  finishOn: z.enum(['twenty', 'single_bull', 'bull']),
-  multiplierAdvances: z.boolean(),
-})
-const P121ConfigSchema = z.object({ startTarget: z.number(), tries: z.number(), dartsPerTry: z.number(), outMode: ModeSchema })
-const HiloConfigSchema = z.object({ startHigh: z.number(), startLow: z.number(), lives: z.number() })
-const MinigolfConfigSchema = z.object({
-  course: z.string(),
-  tries: z.number(),
-  ballContact: z.boolean(),
-  courseName: z.string().optional(),
-  holes: z.array(z.unknown()).optional(),
-})
-
-/**
- * A finished minigolf game's course: its name and hole count. Its config carries both (copied
- * from the published course); a game from before courses moved to the database has only the
- * code course's id ("Mixed course": 9 of all its holes).
- */
-export function minigolfCourse(c: { course: string; courseName?: string; holes?: unknown[] }): { name: string; holes: number } {
-  const code = COURSES.find(x => x.id === c.course)
-  const name = c.courseName ?? code?.name ?? (c.course === 'mixed' ? 'Mixed course' : 'Course')
-  if (c.holes) return { name, holes: c.holes.length }
-  if (code) return { name, holes: code.holes.length }
-  return {
-    name,
-    holes: Math.min(
-      9,
-      COURSES.reduce((n, x) => n + x.holes.length, 0),
-    ),
-  }
-}
-
 /** "Today" / "Yesterday" / "24 Sep", and the time, in the viewer's time zone. */
 export function formatWhen(iso: string, now: Date): { day: string; time: string } {
   const d = new Date(iso)
@@ -53,30 +16,7 @@ export function formatWhen(iso: string, now: Date): { day: string; time: string 
 
 /** The rules the game was played with; empty for a mode this frontend doesn't know. */
 export function rulesLine(game: GameSummary): string {
-  const n = game.players.length
-  if (game.mode === 'x01') {
-    const c = X01ConfigSchema.safeParse(game.config)
-    return c.success ? x01Rules(c.data, n) : ''
-  }
-  if (game.mode === 'atc') {
-    const c = AtcConfigSchema.safeParse(game.config)
-    return c.success ? atcRules(c.data, n) : ''
-  }
-  if (game.mode === 'p121') {
-    const c = P121ConfigSchema.safeParse(game.config)
-    return c.success ? p121Rules(c.data) : ''
-  }
-  if (game.mode === 'hilo') {
-    const c = HiloConfigSchema.safeParse(game.config)
-    return c.success ? hiloRules(c.data) : ''
-  }
-  if (game.mode === 'minigolf') {
-    const c = MinigolfConfigSchema.safeParse(game.config)
-    if (!c.success) return ''
-    const course = minigolfCourse(c.data)
-    return minigolfRules(c.data, course.name, course.holes, n)
-  }
-  return ''
+  return rulesOf(game.mode, game.config, game.players.length)
 }
 
 const mine = (game: GameSummary): GameSeat | undefined => game.players.find(p => p.seat === game.mySeat)

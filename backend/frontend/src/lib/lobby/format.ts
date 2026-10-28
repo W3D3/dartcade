@@ -1,7 +1,7 @@
 // Text for the lobby screens: the join code and link, game summaries, the lobby history.
 import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } from '../api/lobby-ws'
 import type { ConfigFieldMeta } from '../api'
-import { hiloRules, minigolfRules, p121Rules, x01Rules, type Mode } from '../gameViews/meta.js'
+import { rulesOf } from '../gameViews/rules.js'
 import { teamSizesLabel } from '../teams.js'
 import { gameTitle } from '$shared/gameNames'
 import { dayMonth, pad2, startOfDay } from '../fmt.js'
@@ -40,8 +40,6 @@ const ATC_ORDER: Record<string, string> = { asc: '1–20', desc: '20–1', rando
 const ATC_FINISH: Record<string, string> = { twenty: 'finish on 20', single_bull: 'finish on 25', bull: 'finish on bull' }
 const BULL_OFF: Record<string, string> = { wdc: 'Bull off (WDC)', pdc: 'Bull off (PDC)' }
 const str = (v: unknown) => (typeof v === 'string' ? v : '')
-const int = (v: unknown) => (typeof v === 'number' && Number.isInteger(v) ? v : null)
-const mode = (v: unknown, fallback: Mode): Mode => (v === 'straight' || v === 'double' || v === 'master' ? v : fallback)
 
 /**
  * One line about the next game's settings: "501 · Double in · Double out · First to 2 legs
@@ -63,38 +61,13 @@ export function nextGameSummary(
 function rulesLine(game: NextGame | null, defaults: Record<string, unknown>, meta: Partial<Record<string, ConfigFieldMeta>>): string {
   if (!game) return ''
   const c = { ...defaults, ...game.config }
-  if (game.gameId === 'x01') {
-    const start = int(c.startScore)
-    if (start === null) return ''
-    const legs = int(c.firstTo) ?? 3
-    const rules = x01Rules(
-      { startScore: start, inMode: mode(c.inMode, 'straight'), outMode: mode(c.outMode, 'straight'), firstTo: legs },
-      2,
-    )
-    const bullOff = BULL_OFF[str(c.bullOff)]
-    return bullOff ? `${rules} · ${bullOff}` : rules
-  }
-  if (game.gameId === 'p121') {
-    const [startTarget, tries, dartsPerTry] = [int(c.startTarget), int(c.tries), int(c.dartsPerTry)]
-    if (startTarget === null || tries === null || dartsPerTry === null) return ''
-    const rules = p121Rules({ startTarget, tries, dartsPerTry, outMode: mode(c.outMode, 'double') })
-    const bullOff = BULL_OFF[str(c.bullOff)]
-    return bullOff ? `${rules} · ${bullOff}` : rules
-  }
-  if (game.gameId === 'hilo') {
-    const [startHigh, startLow, lives] = [int(c.startHigh), int(c.startLow), int(c.lives)]
-    if (startHigh === null || startLow === null || lives === null) return ''
-    const rules = hiloRules({ startHigh, startLow, lives })
-    const bullOff = BULL_OFF[str(c.bullOff)]
-    return bullOff ? `${rules} · ${bullOff}` : rules
-  }
+  // The lobby's own shorter wording: "Random order · finish on bull"
   if (game.gameId === 'atc') return [ATC_ORDER[str(c.order)], ATC_FINISH[str(c.finishOn)]].filter(Boolean).join(' · ')
-  if (game.gameId === 'minigolf') {
-    // Its holes are only known once the game copies them at start
-    const course = meta.course?.options?.find(o => o.value === c.course)?.label ?? 'Course'
-    return minigolfRules({ tries: int(c.tries) ?? 3, ballContact: c.ballContact === true }, course, null, 2)
-  }
-  return ''
+  // A minigolf course's holes are only known once the game copies them at start
+  const name = meta.course?.options?.find(o => o.value === c.course)?.label ?? 'Course'
+  const rules = rulesOf(game.gameId, c, 2, { course: { name, holes: null } })
+  const bullOff = BULL_OFF[str(c.bullOff)]
+  return rules && bullOff ? `${rules} · ${bullOff}` : rules
 }
 
 /** "X01 · 501 · Double out · First to 3 legs", or "No game picked yet". */

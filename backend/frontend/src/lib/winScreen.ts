@@ -4,7 +4,7 @@
 import type { AtcGame, GameDetail, HiloGame, MinigolfGame, Snapshot, StatRow as DetailRow, X01Game } from './api'
 import { atcPlayer, fmtAvg } from './playerStats.js'
 import { formatStat, statNumber } from './details/stats.js'
-import { atcRules, hiloRules, minigolfRules, x01Rules } from './gameViews/meta.js'
+import { rulesOf } from './gameViews/rules.js'
 import { teamsLabel } from './teams.js'
 import { fmtToPar } from './minigolf/match.js'
 import { outcomeText } from './hilo/view.js'
@@ -69,18 +69,13 @@ export function winMeta(snapshot: Snapshot): string {
   if (snapshot.gameId === 'x01') {
     const g = snapshot.game
     const teams = g.teams ? teamsLabel(g.teams) : undefined
-    return x01Rules({ ...g.config, firstTo: g.firstTo }, n, teams) + (teams ? '' : vs)
+    return rulesOf('x01', { ...g.config, firstTo: g.firstTo }, n, { teams }) + (teams ? '' : vs)
   }
   if (snapshot.gameId === 'minigolf') {
     const g = snapshot.game
-    return minigolfRules(g.config, g.courseName, g.holeCount, n) + vs
+    return rulesOf('minigolf', g.config, n, { course: { name: g.courseName, holes: g.holeCount } }) + vs
   }
-  if (snapshot.gameId === 'p121') {
-    const g = snapshot.game
-    return `121 · ${g.cfg.tries} tries · ${g.cfg.dartsPerTry} darts` + vs
-  }
-  if (snapshot.gameId === 'hilo') return hiloRules(snapshot.game.cfg) + vs
-  return atcRules(snapshot.game.cfg, n) + vs
+  return rulesOf(snapshot.gameId, snapshot.game.cfg, n) + vs
 }
 
 /** The board everyone threw on; null when the seats used different boards (or none). */
