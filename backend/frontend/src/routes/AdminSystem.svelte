@@ -5,9 +5,10 @@
   import { push } from 'svelte-spa-router'
   import { Copy, RefreshCw } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import PageMain from '$lib/components/PageMain.svelte'
+  import PageTitle from '$lib/components/PageTitle.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { currentUser } from '$lib/auth'
   import { SPA_BUILD, commitUrl, isStale, serverVersion, shortCommit } from '$lib/version'
@@ -77,13 +78,9 @@
 
 <Layout title="System">
   {#if $currentUser?.isAdmin}
-    <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
+    <PageMain>
       <header class="flex flex-wrap items-end justify-between gap-3">
-        <div class="hidden md:flex flex-col gap-[6px]">
-          <Breadcrumb items={systemTrail()} />
-          <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">System</h1>
-          <p class="m-0 text-[15px] text-text-muted">What this server runs, and what it's doing right now</p>
-        </div>
+        <PageTitle as="div" trail={systemTrail()} title="System" sub="What this server runs, and what it's doing right now" />
         <div class="flex items-center gap-2">
           <Button variant="outline" size="md" aria-label="Refresh" class="w-11 px-0" onclick={() => void refresh()}>
             <RefreshCw size={16} />
@@ -195,6 +192,6 @@
           </section>
         </div>
       {/if}
-    </main>
+    </PageMain>
   {/if}
 </Layout>

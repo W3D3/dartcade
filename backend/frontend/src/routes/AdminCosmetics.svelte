@@ -4,9 +4,10 @@
   import { push } from 'svelte-spa-router'
   import { Search } from '@lucide/svelte'
   import Layout from '$lib/components/Layout.svelte'
+  import PageMain from '$lib/components/PageMain.svelte'
+  import PageTitle from '$lib/components/PageTitle.svelte'
   import PerkPreview from '$lib/components/progress/PerkPreview.svelte'
   import { Badge } from '$lib/components/ui/badge/index.js'
-  import { Breadcrumb } from '$lib/components/ui/breadcrumb/index.js'
   import { currentUser } from '$lib/auth'
   import { cosmeticsTrail } from '$lib/admin/breadcrumbs'
   import { cosmeticGroups, sourceOf } from '$lib/admin/cosmetics'
@@ -23,12 +24,8 @@
 
 <Layout title="Cosmetics">
   {#if $currentUser?.isAdmin}
-    <main class="flex min-h-0 flex-grow flex-col gap-[14px] md:gap-[22px] overflow-y-auto box-border p-4 md:p-[34px_32px] xl:p-[34px_44px]">
-      <header class="hidden md:flex flex-col gap-[6px]">
-        <Breadcrumb items={cosmeticsTrail()} />
-        <h1 class="m-0 font-display font-bold text-[48px] leading-none uppercase tracking-[0.02em]">Cosmetics</h1>
-        <p class="m-0 text-[15px] text-text-muted">Every reward in the game, and how it unlocks</p>
-      </header>
+    <PageMain>
+      <PageTitle trail={cosmeticsTrail()} title="Cosmetics" sub="Every reward in the game, and how it unlocks" />
 
       <label class="flex h-11 w-full max-w-[380px] items-center gap-2 rounded-[10px] border border-line-3 px-3 text-text-muted">
         <Search size={16} />
@@ -68,6 +65,6 @@
       {:else}
         <p class="m-0 text-[14px] text-text-muted">No cosmetics match "{q}".</p>
       {/each}
-    </main>
+    </PageMain>
   {/if}
 </Layout>
