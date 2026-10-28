@@ -166,6 +166,14 @@ function rankWinner(s: P121State): number {
 
 type Run = { length: number; from: number; to: number }
 
+// A seat's made tries, with the highest target made and the average darts per made try (both
+// undefined before the first)
+function seatTotals(seat: P121Seat) {
+  const made = seat.tries.filter(t => t.made)
+  if (made.length === 0) return { made, highestMade: undefined, avgDarts: undefined }
+  return { made, highestMade: Math.max(...made.map(t => t.target)), avgDarts: made.reduce((sum, t) => sum + t.darts, 0) / made.length }
+}
+
 // The longest run of consecutive made tries; on equal lengths the later run wins (>= keeps it).
 function bestRun(tries: P121Try[]): Run | null {
   let best: Run | null = null
@@ -397,9 +405,7 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
 
   view(s: P121State): P121View {
     const seats = s.seats.map(seat => {
-      const made = seat.tries.filter(t => t.made)
-      const highestMade = made.length ? Math.max(...made.map(t => t.target)) : null
-      const avgDarts = made.length ? made.reduce((sum, t) => sum + t.darts, 0) / made.length : null
+      const { made, highestMade = null, avgDarts = null } = seatTotals(seat)
       return {
         target: seat.target,
         left: seat.left,
@@ -442,18 +448,15 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
   summarize(s: P121State, { totalDarts }): SeatResult[] {
     const placements = rankSeats(s.seats.length, s.winner, (a, b) => compareSeats(s.seats[a], s.seats[b]))
     return s.seats.map((seat, i) => {
-      const made = seat.tries.filter(t => t.made)
+      const totals = seatTotals(seat)
       return {
         placement: placements[i],
         stats: {
-          checkouts: made.length,
+          checkouts: totals.made.length,
           tries: seat.tries.length,
           dartsThrown: totalDarts[i] ?? 0,
           bestRun: bestRun(seat.tries)?.length ?? 0,
-          ...(made.length > 0 && {
-            highestMade: Math.max(...made.map(t => t.target)),
-            avgDarts: made.reduce((sum, t) => sum + t.darts, 0) / made.length,
-          }),
+          ...(totals.highestMade !== undefined && { highestMade: totals.highestMade, avgDarts: totals.avgDarts }),
         },
       }
     })
@@ -463,7 +466,7 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
     return {
       mode: 'p121',
       seats: final.seats.map(seat => {
-        const made = seat.tries.filter(t => t.made)
+        const { made } = seatTotals(seat)
         return {
           tries: seat.tries,
           doubles: doubles(seat),
@@ -480,14 +483,14 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
     return {
       rows: MATCH_STATS_ROWS,
       seats: final.seats.map((seat, index) => {
-        const made = seat.tries.filter(t => t.made)
+        const { made, highestMade, avgDarts } = seatTotals(seat)
         return {
           index,
           values: values({
             tries: seat.tries.length,
             checkouts: made.length,
-            highestMade: made.length > 0 ? Math.max(...made.map(t => t.target)) : undefined,
-            avgDarts: made.length > 0 ? made.reduce((sum, t) => sum + t.darts, 0) / made.length : undefined,
+            highestMade,
+            avgDarts,
             fastest: made.length > 0 ? Math.min(...made.map(t => t.darts)) : undefined,
           }),
         }
