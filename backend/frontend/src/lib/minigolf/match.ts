@@ -139,6 +139,12 @@ export function rollFor(g: MinigolfGame): Roll | null {
   }
 }
 
+/** The last stroke's roll while it still has to play before the win screen (`rolled`: the key that already did); null once it has, or with none. */
+export function pendingRoll(g: MinigolfGame | null, rolled: string | null): string | null {
+  const key = g?.finished ? (rollFor(g)?.key ?? null) : null
+  return key !== null && key !== rolled ? key : null
+}
+
 /** The cup a roll slows down near: its own hole's, which isn't the shown one once the stroke ended it. */
 export function rollCup(g: MinigolfGame, roll: Roll): number[] {
   return roll.hole === g.holeIdx || !g.lastHole ? g.hole.cup.at : g.lastHole.hole.cup.at

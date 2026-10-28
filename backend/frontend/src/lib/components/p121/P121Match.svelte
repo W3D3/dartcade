@@ -40,6 +40,7 @@
     checkout,
     keypad = false,
     onDart = () => {},
+    viewOnly = false,
   }: {
     game: P121Game
     players: { name: string }[]
@@ -53,13 +54,15 @@
     onUndo: () => void
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    onCorrect: (dartIndex: number, label: string) => void
+    onCorrect?: (dartIndex: number, label: string) => void
     onGiveUp: () => void
     settings: GameSettings
     checkout?: CheckoutPrefs
     /** The header's Enter view: the keypad takes the board's place. */
     keypad?: boolean
     onDart?: (segment: Segment) => void
+    /** The big screen: no Undo, Next or Give up, nothing to tap. */
+    viewOnly?: boolean
   } = $props()
 
   const cp = $derived(game.currentPlayer)
@@ -128,24 +131,26 @@
 {/snippet}
 
 {#snippet controls(compact: boolean)}
-  <div class="flex items-center gap-3">
-    <div class="flex-1 min-w-0">
-      {#if !keypad}
-        <ControlBar
-          {compact}
-          {canUndo}
-          label={nextLabel}
-          prominent={next.prominent}
-          primary={made}
-          enabled={next.enabled}
-          {onUndo}
-          {onNext}
-        />
-      {/if}
+  {#if !viewOnly}
+    <div class="flex items-center gap-3">
+      <div class="flex-1 min-w-0">
+        {#if !keypad}
+          <ControlBar
+            {compact}
+            {canUndo}
+            label={nextLabel}
+            prominent={next.prominent}
+            primary={made}
+            enabled={next.enabled}
+            {onUndo}
+            {onNext}
+          />
+        {/if}
+      </div>
+      <!-- Phones: no room beside Undo and Next; it sits by the ladder instead -->
+      {#if layout !== 'phone'}{@render giveUp()}{/if}
     </div>
-    <!-- Phones: no room beside Undo and Next; it sits by the ladder instead -->
-    {#if layout !== 'phone'}{@render giveUp()}{/if}
-  </div>
+  {/if}
 {/snippet}
 
 {#snippet madeCard()}

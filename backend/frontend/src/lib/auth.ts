@@ -1,7 +1,7 @@
 import { createAuthClient } from 'better-auth/svelte'
 import { adminClient } from 'better-auth/client/plugins'
 import { loadOnce } from './loadOnce.js'
-import { createApi } from './api/client.js'
+import { quietApi } from './api/client.js'
 import { clearBests } from './p121/best.js'
 import type { components } from './api/schema'
 
@@ -12,7 +12,6 @@ export const authClient = createAuthClient({ plugins: [adminClient()] })
 export type CurrentUser = components['schemas']['Me']
 
 // A 401 here means "signed out", not "go to the sign-in page": App decides where to go
-const quietApi = createApi({ onUnauthorized: () => undefined })
 
 /** Who's signed in, loaded once for the whole app (refreshed on sign-in and after changes, cleared on sign-out). */
 export const currentUser = loadOnce<CurrentUser | null>(async () => {

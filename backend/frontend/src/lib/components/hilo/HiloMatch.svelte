@@ -36,6 +36,7 @@
     onCorrect,
     keypad = false,
     onDart = () => {},
+    viewOnly = false,
   }: {
     game: HiloGame
     players: { name: string }[]
@@ -49,10 +50,12 @@
     onUndo: () => void
     onNext: () => void
     onBoardClick: (hit: { segment: Segment; coords: { x: number; y: number } }) => void
-    onCorrect: (dartIndex: number, label: string) => void
+    onCorrect?: (dartIndex: number, label: string) => void
     /** The header's Enter view: the keypad takes the board's place. */
     keypad?: boolean
     onDart?: (segment: Segment) => void
+    /** The big screen: no Undo or Next, nothing to tap. */
+    viewOnly?: boolean
   } = $props()
 
   const cp = $derived(game.currentPlayer)
@@ -132,7 +135,7 @@
 {/snippet}
 
 {#snippet controls(compact: boolean)}
-  {#if !keypad}
+  {#if !keypad && !viewOnly}
     <ControlBar {compact} {canUndo} label={next.label} prominent={next.prominent} enabled={next.enabled} {onUndo} {onNext} />
   {/if}
 {/snippet}

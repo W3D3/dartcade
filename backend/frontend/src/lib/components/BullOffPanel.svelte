@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isPhone } from '$lib/viewport'
+  import { isPhone, isPortrait } from '$lib/viewport'
   // Bull off for any game wrapped with withBullOff: one dart each, closest to
   // the centre throws first. Driven entirely by the snapshot's `bullOff` view.
   import Avatar from './Avatar.svelte'
@@ -16,6 +16,7 @@
     bots = [],
     bullOff,
     manual,
+    viewOnly = false,
     send,
   }: {
     players: { name: string }[]
@@ -24,6 +25,8 @@
     bullOff: BullOffView
     /** No board attached: darts are entered by clicking the board. */
     manual: boolean
+    /** The big screen: the status only, no buttons. */
+    viewOnly?: boolean
     send: (action: UserAction) => void
   } = $props()
 
@@ -202,7 +205,7 @@
   <div class="flex-1 min-h-0 w-full [container-type:size] flex items-center justify-center">
     <div class="relative aspect-square" style="width: min(100cqw, 100cqh)">
       <DartBoard {zoom} overlay={marks} onBoardClick={manual && !result && !currentThrow ? onBoardClick : undefined} />
-      {#if canZoom}
+      {#if canZoom && !viewOnly}
         <Button variant="outline" class="absolute top-0 right-0 bg-surface-2" onclick={() => (zoomOverride = !zoomedIn)}>
           {zoomedIn ? 'Zoom out' : 'Zoom in'}
         </Button>
@@ -218,7 +221,9 @@
         Reverse order: {rethrowOrder.map(name).join(', ')}
       </span>
     </div>
-    <Button variant="primary" class="w-full" onclick={() => send({ type: 'bulloff_rethrow' })}>Throw again</Button>
+    {#if !viewOnly}
+      <Button variant="primary" class="w-full" onclick={() => send({ type: 'bulloff_rethrow' })}>Throw again</Button>
+    {/if}
   {:else if result}
     <div role="status" class="flex items-center justify-between gap-3 px-5 py-4 rounded-[14px] bg-surface-2 border border-line-2">
       <span class="flex flex-col gap-1 min-w-0">
@@ -229,10 +234,12 @@
         <span class="font-display font-bold text-[40px] leading-none tabular-nums">0:0{countdown}</span>
       {/if}
     </div>
-    <div class="flex gap-3">
-      <Button variant="outline" class="h-[54px]" onclick={() => send({ type: 'bulloff_rethrow' })}>Throw again</Button>
-      <Button variant="primary" class="flex-grow" onclick={() => send({ type: 'bulloff_start' })}>Start now</Button>
-    </div>
+    {#if !viewOnly}
+      <div class="flex gap-3">
+        <Button variant="outline" class="h-[54px]" onclick={() => send({ type: 'bulloff_rethrow' })}>Throw again</Button>
+        <Button variant="primary" class="flex-grow" onclick={() => send({ type: 'bulloff_start' })}>Start now</Button>
+      </div>
+    {/if}
   {:else}
     <div role="status" class="flex items-center justify-between gap-4 px-5 py-3 rounded-[14px] bg-surface-2 border border-line-2">
       <span class="flex flex-col gap-[2px]">
@@ -246,30 +253,30 @@
     </div>
 
     <div class="flex items-center gap-3">
-      <Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'undo_dart' })}>Undo</Button>
+      {#if !viewOnly}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'undo_dart' })}>Undo</Button>{/if}
       {#if manual}
         <span class="flex-grow text-center text-[14px] text-text-muted">
           {currentThrow ? `${name(current)} has thrown` : `Click where ${name(current)}'s dart landed`}
         </span>
-        <Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'takeout' })}>Next</Button>
+        {#if !viewOnly}<Button variant="outline" disabled={!currentThrow} onclick={() => send({ type: 'takeout' })}>Next</Button>{/if}
       {:else}
         <span class="flex-grow text-center text-[14px] text-text-muted">
           {currentThrow ? 'Pull the dart to continue' : `${name(current)}: one dart at the bull`}
         </span>
       {/if}
-      <Button variant="ghost" onclick={() => send({ type: 'bulloff_skip' })}>Skip</Button>
+      {#if !viewOnly}<Button variant="ghost" onclick={() => send({ type: 'bulloff_skip' })}>Skip</Button>{/if}
     </div>
   {/if}
 {/snippet}
 
-{#snippet duelCard(p: number)}
+{#snippet duelCard(p: number, compact = false)}
   {@const t = bullOff.throws[p]}
   {@const throwing = !result && p === current}
   {@const pos = rank(p)}
   {@const lead = throwing || pos === 0}
   <section
     aria-label={name(p)}
-    class="flex-1 min-w-0 box-border p-7 rounded-[18px] flex flex-col gap-6
+    class="flex-1 min-w-0 box-border rounded-[18px] flex flex-col {compact ? 'p-5 gap-3' : 'p-7 gap-6'}
            {lead ? ACTIVE_CARD : 'bg-surface-2 border border-line-2'}"
   >
     <div class="flex items-center gap-3">
@@ -284,7 +291,7 @@
     </div>
     <span class="flex items-baseline gap-[10px] font-display font-bold">
       <span
-        class="text-[150px] leading-[0.8] tracking-[-0.02em]
+        class="{compact ? 'text-[104px]' : 'text-[150px]'} leading-[0.8] tracking-[-0.02em]
                    {!t ? 'text-line-3' : pos === 0 && t.mm != null ? 'text-accent' : 'text-text'}">{fmtMm(t)}</span
       >
       {#if t?.mm != null}<span class="text-[48px] text-text-muted">mm</span>{/if}
@@ -293,7 +300,18 @@
   </section>
 {/snippet}
 
-{#if duel && !$isPhone}
+{#if duel && $isPortrait && !$isPhone}
+  <!-- Portrait (a monitor or tablet turned upright): the two players side by side on top, the board fills the rest -->
+  <div class="flex-grow min-h-0 box-border p-5 flex flex-col gap-4">
+    <div class="shrink-0 flex gap-4">
+      {@render duelCard(0, true)}
+      {@render duelCard(1, true)}
+    </div>
+    <aside class="flex-1 min-h-0 flex flex-col gap-3" aria-label="Board">
+      {@render boardAndStatus()}
+    </aside>
+  </div>
+{:else if duel && !$isPhone}
   <div class="flex-grow min-h-0 box-border p-[20px_24px] flex gap-6">
     {@render duelCard(0)}
     <aside class="w-[min(40%,560px)] flex-shrink-0 flex flex-col gap-3" aria-label="Board">
@@ -302,10 +320,11 @@
     {@render duelCard(1)}
   </div>
 {:else}
-  <div class="flex-grow min-h-0 box-border p-4 md:p-[20px_24px] flex flex-col md:flex-row gap-3 md:gap-6">
+  <div class="flex-grow min-h-0 box-border flex flex-col {$isPortrait ? 'p-5 gap-4' : 'p-4 md:p-[20px_24px] md:flex-row gap-3 md:gap-6'}">
     <!-- Players (phones: above the board, scrolling if many) -->
     <section
-      class="shrink-0 max-h-[40%] overflow-y-auto md:max-h-none md:overflow-visible md:shrink md:flex-1 min-w-0 flex flex-col gap-3"
+      class="shrink-0 max-h-[40%] overflow-y-auto min-w-0 flex flex-col gap-3
+             {$isPortrait ? '' : 'md:max-h-none md:overflow-visible md:shrink md:flex-1'}"
       aria-label="Bull off players"
     >
       <div class="flex items-baseline justify-between">
@@ -373,7 +392,8 @@
 
     <!-- Board + status -->
     <aside
-      class="flex-1 min-h-[220px] md:min-h-0 md:flex-none md:w-[min(46%,560px)] md:flex-shrink-0 flex flex-col gap-3"
+      class="flex-1 min-h-[220px] flex flex-col gap-3
+             {$isPortrait ? '' : 'md:min-h-0 md:flex-none md:w-[min(46%,560px)] md:flex-shrink-0'}"
       aria-label="Board"
     >
       {@render boardAndStatus()}

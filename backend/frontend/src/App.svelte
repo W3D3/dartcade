@@ -30,6 +30,7 @@
   import Rewards from './routes/Rewards.svelte'
   import Admin from './routes/Admin.svelte'
   import BigScreen from './routes/BigScreen.svelte'
+  import BigScreenFrame from './routes/BigScreenFrame.svelte'
   import AdminUsers from './routes/AdminUsers.svelte'
   import AdminGames from './routes/AdminGames.svelte'
   import ImpersonationBanner from '$lib/components/admin/ImpersonationBanner.svelte'
@@ -108,6 +109,7 @@
     '/profile/customise/:tab?': Customise,
     '/profile/:id': Profile,
     '/big-screen/:board': BigScreen,
+    '/big-screen-frame': BigScreenFrame,
     '/admin': Admin,
     '/admin/users': AdminUsers,
     '/admin/games': AdminGames,
@@ -140,7 +142,7 @@
     await currentUser.refresh()
     void startFlags(get(currentUser)?.id ?? null)
     // A kiosk has no session and never goes to the login page; opened from the app it keeps the signed-in user
-    if (currentHash.startsWith('#/big-screen/')) {
+    if (currentHash.startsWith('#/big-screen')) {
       checked = true
       return
     }
@@ -172,11 +174,16 @@
     if ($location.startsWith('/login')) currentUser.set(null)
   })
 
+  // The big screen page and its frame (a kiosk, or the owner's preview) need none of the app's extras: the
+  // per-user socket, the name prompt, the banner; the frame not even the account's settings (the page has them)
+  const bigScreen = $derived($location.startsWith('/big-screen'))
+  const bigScreenFrame = $derived($location.startsWith('/big-screen-frame'))
+
   // Account-wide settings follow the signed-in user (sign-in, sign-out, a switch of user)
   let settingsUser: string | null | undefined
   $effect(() => {
     const id = $currentUser?.id ?? null
-    if (id === settingsUser) return
+    if (bigScreenFrame || id === settingsUser) return
     settingsUser = id
     void loadAccountSettings(id, deviceStore())
     if (id) void syncTimeZone()
@@ -189,6 +196,7 @@
   let meUserId: string | null = null
   $effect(() => {
     const id = $currentUser?.id ?? null
+    if (bigScreen) return
     if (id === meUserId && (id === null || me.running())) return
     me.stop()
     meUserId = id
@@ -199,12 +207,12 @@
 <FinishSprite />
 <Tooltip.Provider>
   {#if checked}
-    {#if $currentUser?.nameNeedsChange}
+    {#if $currentUser?.nameNeedsChange && !bigScreen}
       <PickName />
     {:else}
       <Router {routes} />
-      {#if $currentUser && !$location.startsWith('/big-screen/')}<ProgressToasts /><MatchFound />{/if}
+      {#if $currentUser && !bigScreen}<ProgressToasts /><MatchFound />{/if}
     {/if}
   {/if}
-  {#if $currentUser?.impersonating}<ImpersonationBanner name={$currentUser.name} />{/if}
+  {#if $currentUser?.impersonating && !bigScreen}<ImpersonationBanner name={$currentUser.name} />{/if}
 </Tooltip.Provider>

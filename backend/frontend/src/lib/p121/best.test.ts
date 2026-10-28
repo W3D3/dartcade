@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { get } from 'svelte/store'
 
 const GET = vi.fn()
-vi.mock('$lib/api', () => ({ api: { GET: (...args: unknown[]) => GET(...args) } }))
+vi.mock('$lib/api/client', () => ({ quietApi: { GET: (...args: unknown[]) => GET(...args) } }))
 const { bestStat, clearBests } = await import('./best.js')
 
 const settle = () => new Promise(r => setTimeout(r, 0))

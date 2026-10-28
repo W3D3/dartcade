@@ -25,3 +25,6 @@ export function createApi({ baseUrl = '', fetch, onUnauthorized }: ApiOptions = 
 }
 
 export const api = createApi()
+
+/** For callers that handle a 401 themselves ("signed out" is an answer there, not a reason to open the sign-in page). */
+export const quietApi = createApi({ onUnauthorized: () => undefined })
