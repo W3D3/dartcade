@@ -1,5 +1,6 @@
 <script lang="ts">
   // Settings' Profile: the account itself (Settings board). Read-only for now, plus Sign out.
+  import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
   import { LogOut } from '@lucide/svelte'
   import { currentUser, signOut } from '$lib/auth'
   import DeleteAccount from './DeleteAccount.svelte'
@@ -14,11 +15,7 @@
 </script>
 
 {#if user}
-  <section aria-labelledby="account-title" class="box-border p-4 md:p-[22px] card flex flex-col gap-[14px]">
-    <div class="flex flex-col gap-1">
-      <h2 id="account-title" class="m-0 text-[17px] font-semibold">Account</h2>
-      <p class="m-0 text-[13px] leading-[1.5] text-text-dim">Only your username can be changed for now.</p>
-    </div>
+  <SettingsCard id="account-title" title="Account" description="Only your username can be changed for now.">
     <dl class="m-0 flex flex-col">
       <div class="flex items-center justify-between gap-3 min-h-12 border-t border-surface-paused">
         <dt class="text-[14px] text-text-muted">Email</dt>
@@ -47,5 +44,5 @@
     </button>
     <div class="h-px bg-surface-paused"></div>
     <DeleteAccount />
-  </section>
+  </SettingsCard>
 {/if}

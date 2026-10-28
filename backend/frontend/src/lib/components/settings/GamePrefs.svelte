@@ -2,6 +2,7 @@
   // Settings' Game preferences (Settings-Game board): the account-wide switches a match's game
   // settings drawer also changes (on that device only), and X01's New game defaults for the Play
   // page, offered with X01's own options. Only rows with a setting behind them.
+  import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
   import { parseSettings, type GameSettings } from '$lib/gameSettings.js'
   import { gameModes } from '$lib/gameModes'
   import SettingSwitch from '$lib/components/SettingSwitch.svelte'
@@ -40,11 +41,12 @@
 
   <div class="flex flex-col gap-4 md:gap-5">
     {#if x01}
-      <section aria-labelledby="new-game-defaults" class="box-border p-4 md:p-[22px] card flex flex-col gap-4">
-        <div class="flex flex-col gap-1">
-          <h2 id="new-game-defaults" class="m-0 text-[17px] font-semibold">New game defaults</h2>
-          <p class="m-0 text-[13px] leading-[1.5] text-text-dim">Pre-filled on Play for X01. You can still change them per game.</p>
-        </div>
+      <SettingsCard
+        id="new-game-defaults"
+        title="New game defaults"
+        description="Pre-filled on Play for X01. You can still change them per game."
+        class="gap-4"
+      >
         <fieldset class="m-0 p-0 border-0 flex flex-col gap-2">
           <legend class="mb-2 text-[15px] text-text-muted">X01 start score</legend>
           <SegmentedControl options={x01.startScore.options ?? []} value={settings.x01StartScore} onchange={v => set('x01StartScore', v)} />
@@ -65,7 +67,7 @@
             onchange={v => set('x01BullOff', v)}
           />
         </fieldset>
-      </section>
+      </SettingsCard>
     {/if}
   </div>
 </div>

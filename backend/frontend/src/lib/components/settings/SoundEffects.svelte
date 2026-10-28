@@ -3,6 +3,7 @@
   // caller has its own). Which ones play follows your account. With progression on, darts can play
   // sound packs instead of the beeps: each thrower's own, or one of yours for everyone
   // (sounds.anyPack: any pack, locked or not).
+  import SettingsCard from '$lib/components/settings/SettingsCard.svelte'
   import type { GameSettings } from '$lib/gameSettings.js'
   import { audioContext } from '$lib/sounds.js'
   import { createSoundPacks } from '$lib/soundPacks'
@@ -42,13 +43,12 @@
   }
 </script>
 
-<section aria-labelledby="sound-effects" class="box-border p-4 md:p-[22px] card flex flex-col gap-5 max-w-[720px]">
-  <div class="flex flex-col gap-1">
-    <h2 id="sound-effects" class="m-0 text-[17px] font-semibold">Sound effects</h2>
-    <p class="m-0 text-[13px] leading-[1.5] text-text-dim">
-      Volume is set on each device and plays quieter while the caller speaks; the switches follow your account.
-    </p>
-  </div>
+<SettingsCard
+  id="sound-effects"
+  title="Sound effects"
+  description="Volume is set on each device and plays quieter while the caller speaks; the switches follow your account."
+  class="gap-5 max-w-[720px]"
+>
   <VolumeSlider bind:value={settings.effectsVolume} label="Effects volume" />
   <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3">
     {#each sounds as row (row.key)}
@@ -75,4 +75,4 @@
       </div>
     {/if}
   {/if}
-</section>
+</SettingsCard>
