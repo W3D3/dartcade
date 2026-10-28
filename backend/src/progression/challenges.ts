@@ -3,6 +3,7 @@
 // Concept: the Progression page's Challenges section.
 import { seededRng, type Rng } from '../shared/rng.js'
 import { addDays, daysBetween } from '../shared/progression.js'
+import { gameTitle } from '../shared/gameNames.js'
 
 export type Period = 'daily' | 'weekly'
 export type Difficulty = 'easy' | 'medium' | 'hard'
@@ -98,21 +99,13 @@ const tons = (g: ChallengeGame, min: number) => g.visits.filter(v => !v.bust && 
 const finishedOn = (g: ChallengeGame) => g.checkouts.flatMap(c => (isDouble(c.last) && c.last.n <= 20 ? [c.last.n] : []))
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
-export const MODE_NAMES: Record<string, string> = {
-  x01: 'X01',
-  atc: 'Around the Clock',
-  p121: '121',
-  minigolf: 'Minigolf',
-  hilo: 'Higher Lower',
-}
-
 /** "Try something": a mode you haven't played for 14 days. Its id is `d.try.<mode>`. */
 export const tryTemplate = (mode: string): Template => ({
   id: `d.try.${mode}`,
   period: 'daily',
   difficulty: 'easy',
   metric: `try.${mode}`,
-  title: () => `Play a game of ${MODE_NAMES[mode] ?? mode}`,
+  title: () => `Play a game of ${gameTitle(mode)}`,
   base: 1,
   step: once(g => g.qualifies && g.mode === mode),
 })

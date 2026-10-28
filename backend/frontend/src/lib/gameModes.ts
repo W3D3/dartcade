@@ -4,6 +4,7 @@ import { api, type GameInfo } from '$lib/api'
 import { derived } from 'svelte/store'
 import { flag } from './flags.js'
 import { loadOnce } from './loadOnce.js'
+import { GAME_NAMES } from '$shared/gameNames'
 
 import x01Img from './assets/games/x01.svg'
 import atcImg from './assets/games/atc.svg'
@@ -45,8 +46,24 @@ export type GameMode = {
 }
 
 export const GAME_MODES: GameMode[] = [
-  { id: 'x01', glyph: 'X01', name: 'X01', desc: 'Count down from 501. Finish on a double.', cat: 'classic', img: x01Img, available: true },
-  { id: 'atc', glyph: 'ATC', name: 'ATC', desc: 'Around the Clock: 1 to 20, then the bull.', cat: 'classic', img: atcImg, available: true },
+  {
+    id: 'x01',
+    glyph: 'X01',
+    name: GAME_NAMES.x01.title,
+    desc: 'Count down from 501. Finish on a double.',
+    cat: 'classic',
+    img: x01Img,
+    available: true,
+  },
+  {
+    id: 'atc',
+    glyph: 'ATC',
+    name: GAME_NAMES.atc.short,
+    desc: 'Around the Clock: 1 to 20, then the bull.',
+    cat: 'classic',
+    img: atcImg,
+    available: true,
+  },
   {
     id: 'cricket',
     name: 'Cricket',
@@ -58,7 +75,7 @@ export const GAME_MODES: GameMode[] = [
   {
     id: 'minigolf',
     glyph: 'Par 3',
-    name: 'Minigolf',
+    name: GAME_NAMES.minigolf.title,
     desc: 'Your dart is the putter. Sink it under par.',
     cat: 'arcade',
     img: minigolfImg,
@@ -68,7 +85,7 @@ export const GAME_MODES: GameMode[] = [
   {
     id: 'p121',
     glyph: '121',
-    name: '121',
+    name: GAME_NAMES.p121.title,
     desc: 'Check out 121 in nine darts, then go higher.',
     cat: 'practice',
     img: p121Img,
@@ -94,7 +111,7 @@ export const GAME_MODES: GameMode[] = [
   {
     id: 'hilo',
     glyph: 'HiLo',
-    name: 'Higher Lower',
+    name: GAME_NAMES.hilo.title,
     desc: 'Land above the high bar or below the low bar.',
     cat: 'practice',
     img: hiloImg,

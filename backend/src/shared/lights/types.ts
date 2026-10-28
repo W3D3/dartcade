@@ -1,7 +1,9 @@
 // Types shared by the backend's light service and the frontend's light settings UI.
 // Dependency-free, like the rest of $shared.
 
-export type GameId = 'x01' | 'atc' | 'p121' | 'hilo' | 'minigolf'
+import type { GameId } from '../gameNames.js'
+
+export type { GameId }
 
 export type Trigger =
   | { kind: 'turn'; seat: number }
