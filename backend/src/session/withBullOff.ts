@@ -1,5 +1,6 @@
 import type { BoardEvent, Effect, GameModule, Player, UserAction } from './types.js'
 import type { BullOffViewField } from './views.js'
+import { validateOptions } from '../games/configMeta.js'
 import {
   clearCurrentBullOffThrow,
   initBullOff,
@@ -51,6 +52,15 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
     return { state: r.state === s.game ? s : { ...s, game: r.state }, effects: r.effects }
   }
 
+  const bullOffMeta = game.configMeta?.bullOff ?? {
+    label: 'Bull off',
+    tooltip: 'Who throws first. One dart each, closest to the centre starts.',
+    options: [
+      { value: 'off', label: 'Off' },
+      { value: 'wdc', label: 'WDC' },
+      { value: 'pdc', label: 'PDC' },
+    ],
+  }
   const teamsOf = game.teamsOf?.bind(game)
   const botTarget = game.botTarget?.bind(game)
   const matchStats = game.matchStats?.bind(game)
@@ -83,15 +93,7 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
     defaultConfig: { bullOff: 'off', ...game.defaultConfig },
     configMeta: {
       ...game.configMeta,
-      bullOff: game.configMeta?.bullOff ?? {
-        label: 'Bull off',
-        tooltip: 'Who throws first. One dart each, closest to the centre starts.',
-        options: [
-          { value: 'off', label: 'Off' },
-          { value: 'wdc', label: 'WDC' },
-          { value: 'pdc', label: 'PDC' },
-        ],
-      },
+      bullOff: bullOffMeta,
     },
 
     prepareConfig: game.prepareConfig?.bind(game),
@@ -99,7 +101,8 @@ export function withBullOff<S, Cfg extends BullOffGameConfig, V extends object, 
 
     validate(cfg, players) {
       if (enabled(cfg) && players.length < 2) return 'bull off needs at least two players'
-      return game.validate?.(cfg, players) ?? null
+      // Missing plays without a bull off, as enabled() reads it
+      return game.validate?.(cfg, players) ?? validateOptions(cfg, { bullOff: bullOffMeta }, { allowMissing: true })
     },
 
     init(cfg, players, rng, version) {

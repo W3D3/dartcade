@@ -20,6 +20,7 @@ import type { OutMode } from './outRules.js'
 import { checkoutHint } from '../shared/checkout.js'
 import { rankSeats } from './ranking.js'
 import { row, values } from './matchStats.js'
+import { validateOptions } from './configMeta.js'
 
 export type P121Config = {
   startTarget: number
@@ -300,13 +301,9 @@ export const p121Game: GameModule<P121State, P121Config, P121View, 'p121', P121D
   },
   configMeta,
 
-  // Configs come from the client: each field must be one of its options (strict, so '121' isn't 121)
+  // Configs come from the client: each field must be one of its options
   validate(cfg: P121Config): string | null {
-    const values: Record<string, unknown> = cfg
-    for (const [key, meta] of Object.entries(configMeta)) {
-      if (!meta.options?.some(o => o.value === values[key])) return `Unknown ${meta.label.toLowerCase()}`
-    }
-    return null
+    return validateOptions(cfg, configMeta)
   },
 
   init(cfg: P121Config, players: Player[]): P121State {

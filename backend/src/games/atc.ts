@@ -5,6 +5,7 @@ import { shuffle, type Rng } from '../session/rng.js'
 import { rankSeats } from './ranking.js'
 import { atcMatchStats, atcProgress } from './atcProgress.js'
 import { nextTargetIndex } from '../shared/atc.js'
+import { validateOptions } from './configMeta.js'
 
 // 2: a multiplier walks on to the bull instead of stopping before it (#343), and a reversed or
 // shuffled game ending on 20 can be won
@@ -149,6 +150,11 @@ export const atcModule: GameModule<ATCState, ATCConfig, AtcView, 'atc', AtcDetai
   version: VERSION,
   defaultConfig: { throwAgainOnAllHit: false, finishOn: 'single_bull', multiplierAdvances: false, order: 'asc' },
   configMeta,
+
+  // Configs come from the client: each field must be one of its options; missing plays its default
+  validate(cfg: ATCConfig): string | null {
+    return validateOptions(cfg, configMeta, { allowMissing: true })
+  },
 
   init(cfg: ATCConfig, players: Player[], rng?: Rng, version = VERSION): ATCState {
     const sequence = buildSequence(cfg, rng)
