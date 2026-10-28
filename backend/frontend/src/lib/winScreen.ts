@@ -88,6 +88,18 @@ export function sharedBoard(snapshot: Snapshot): string | null {
 /** The server's place per seat, in seat order (a finished game's snapshot always carries them). */
 export const placesOf = (snapshot: Snapshot): number[] => snapshot.players.map((_, i) => snapshot.results?.[i]?.placement ?? i + 1)
 
+/** One player's side (not a team): who they are and their place; the mode fills the rest. */
+function soloCompetitor(snapshot: Snapshot, seat: number, places: number[], c: Pick<Competitor, 'score' | 'sub' | 'cells'>): Competitor {
+  return {
+    name: snapshot.players[seat].name,
+    guest: snapshot.seats[seat]?.userId === null,
+    members: [],
+    seats: [seat],
+    placement: places[seat],
+    ...c,
+  }
+}
+
 const byPlacement = (cs: Competitor[]) => [...cs].sort((a, b) => a.placement - b.placement)
 const share = (a: number, b: number) => (a + b > 0 ? a / (a + b) : 0.5)
 
@@ -223,16 +235,13 @@ export function atcWin(snapshot: Snapshot & { game: AtcGame }): WinView {
   const views = snapshot.players.map((_, i) => atcPlayer(g, i))
   const places = placesOf(snapshot)
   const competitors = byPlacement(
-    views.map((v, i): Competitor => ({
-      name: snapshot.players[i].name,
-      guest: snapshot.seats[i]?.userId === null,
-      members: [],
-      seats: [i],
-      placement: places[i],
-      score: v.done,
-      sub: `${v.done} of ${v.total} · ${plural(v.darts, 'dart')}`,
-      cells: [String(v.done), String(v.darts), v.hitRate],
-    })),
+    views.map((v, i) =>
+      soloCompetitor(snapshot, i, places, {
+        score: v.done,
+        sub: `${v.done} of ${v.total} · ${plural(v.darts, 'dart')}`,
+        cells: [String(v.done), String(v.darts), v.hitRate],
+      }),
+    ),
   )
   const ranked = competitors.map(c => views[c.seats[0]])
   const w = ranked[0]
@@ -274,18 +283,13 @@ export function hiloWin(snapshot: Snapshot & { game: HiloGame }): WinView {
   const places = placesOf(snapshot)
 
   const competitors = byPlacement(
-    g.seats.map((s, i): Competitor => {
+    g.seats.map((s, i) => {
       const livesLeft = `${plural(s.lives, 'life', 'lives')} left`
-      return {
-        name: snapshot.players[i].name,
-        guest: snapshot.seats[i]?.userId === null,
-        members: [],
-        seats: [i],
-        placement: places[i],
+      return soloCompetitor(snapshot, i, places, {
         score: s.lives,
         sub: places[i] === 1 ? livesLeft : s.out ? `Out in round ${s.outRound}` : forfeited[i] ? 'Forfeited' : livesLeft,
         cells: [String(s.lives), String(barsMoved(g, i)), s.outRound !== null ? String(s.outRound) : '–'],
-      }
+      })
     }),
   )
 
@@ -349,16 +353,13 @@ export function minigolfWin(snapshot: Snapshot & { game: MinigolfGame }): WinVie
   const aces = (seat: number) => g.scores.filter(row => row[seat] === 1).length
   const places = placesOf(snapshot)
   const competitors = byPlacement(
-    snapshot.players.map((p, i): Competitor => ({
-      name: p.name,
-      guest: snapshot.seats[i]?.userId === null,
-      members: [],
-      seats: [i],
-      placement: places[i],
-      score: g.totals[i],
-      sub: `${plural(g.totals[i], 'stroke')} · ${fmtToPar(g.toPar[i])}`,
-      cells: [String(g.totals[i]), fmtToPar(g.toPar[i]), String(aces(i))],
-    })),
+    snapshot.players.map((_, i) =>
+      soloCompetitor(snapshot, i, places, {
+        score: g.totals[i],
+        sub: `${plural(g.totals[i], 'stroke')} · ${fmtToPar(g.toPar[i])}`,
+        cells: [String(g.totals[i]), fmtToPar(g.toPar[i]), String(aces(i))],
+      }),
+    ),
   )
   const [ws, rs] = competitors.map(c => c.seats[0])
   return {
