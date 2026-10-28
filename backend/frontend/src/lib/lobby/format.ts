@@ -3,20 +3,11 @@ import type { LobbyAccess, LobbyActivity, LobbyPerson, LobbySummary, NextGame } 
 import type { ConfigFieldMeta } from '../api'
 import { hiloRules, minigolfRules, p121Rules, x01Rules, type Mode } from '../gameViews/meta.js'
 import { teamSizesLabel } from '../teams.js'
+import { gameTitle } from '$shared/gameNames'
 import { dayMonth, pad2, startOfDay } from '../fmt.js'
 
-const GAME_NAMES: Record<string, string> = {
-  x01: 'X01',
-  atc: 'Around the Clock',
-  minigolf: 'Minigolf',
-  p121: '121',
-  hilo: 'Higher Lower',
-}
-
 /** The mode's name ("X01", "Around the Clock"); the id itself for a mode we don't know. */
-export function gameName(gameId: string): string {
-  return GAME_NAMES[gameId] ?? gameId
-}
+export const gameName = gameTitle
 
 /** K7Q4MD → K7Q4-MD, the way people read it out. */
 export function formatCode(code: string): string {
