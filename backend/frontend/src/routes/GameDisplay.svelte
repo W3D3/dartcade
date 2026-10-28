@@ -293,7 +293,7 @@
   const minigolf = $derived(current.minigolf)
   const p121 = $derived(current.p121)
   const hilo = $derived(current.hilo)
-  const game = $derived(x01 ?? atc ?? minigolf ?? p121 ?? hilo)
+  const game = $derived(snapshot?.game ?? null)
   const isX01 = $derived(x01 !== null)
   // 121 ends on its session summary (P121Summary), not the win screen
   const p121Finished = $derived(p121 !== null && snapshot?.status === 'finished')
@@ -337,16 +337,9 @@
   const hits = $derived(atc?.currentVisitHits ?? [])
   const bust = $derived(x01?.bustThisVisit === true)
   // The visit is over (bust, checkout, win): no more darts until the next player
-  const locked = $derived(
-    x01?.visitLocked === true ||
-      minigolf?.visitLocked === true ||
-      p121?.visitLocked === true ||
-      hilo?.visitLocked === true ||
-      winner !== null,
-  )
-  const bullOff = $derived(
-    x01?.phase === 'bulloff' ? x01.bullOff : p121?.phase === 'bulloff' ? p121.bullOff : hilo?.phase === 'bulloff' ? hilo.bullOff : null,
-  )
+  // Read from the game's own fields, so a new game with a lockable visit or a bull off needs no line here
+  const locked = $derived((game !== null && 'visitLocked' in game && game.visitLocked) || winner !== null)
+  const bullOff = $derived(game !== null && 'phase' in game && game.phase === 'bulloff' ? game.bullOff : null)
   // Checkout preferences: this device's for now; per player (from each seat's account) once they
   // can be set in Settings
   const checkout = $derived({ favouriteDouble: settings.favouriteDouble })

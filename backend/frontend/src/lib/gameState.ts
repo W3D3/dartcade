@@ -1,19 +1,23 @@
 // The snapshot's game, narrowed by game id (the generated Snapshot type is a union on gameId).
-import type { AtcGame, HiloGame, MinigolfGame, P121Game, Snapshot, X01Game } from './api/game-ws'
+import type { Snapshot } from './api/game-ws'
+import type { GameId } from '$shared/gameNames'
 
-export type GameState =
-  | { x01: X01Game; atc: null; minigolf: null; p121: null; hilo: null }
-  | { x01: null; atc: AtcGame; minigolf: null; p121: null; hilo: null }
-  | { x01: null; atc: null; minigolf: MinigolfGame; p121: null; hilo: null }
-  | { x01: null; atc: null; minigolf: null; p121: P121Game; hilo: null }
-  | { x01: null; atc: null; minigolf: null; p121: null; hilo: HiloGame }
-  | { x01: null; atc: null; minigolf: null; p121: null; hilo: null }
+/** Each game id's game state, from the snapshot union. */
+export type Games = { [S in Snapshot as S['gameId']]: S['game'] }
 
-export function gameState(snapshot: Snapshot | null): GameState {
-  if (snapshot?.gameId === 'x01') return { x01: snapshot.game, atc: null, minigolf: null, p121: null, hilo: null }
-  if (snapshot?.gameId === 'atc') return { x01: null, atc: snapshot.game, minigolf: null, p121: null, hilo: null }
-  if (snapshot?.gameId === 'minigolf') return { x01: null, atc: null, minigolf: snapshot.game, p121: null, hilo: null }
-  if (snapshot?.gameId === 'p121') return { x01: null, atc: null, minigolf: null, p121: snapshot.game, hilo: null }
-  if (snapshot?.gameId === 'hilo') return { x01: null, atc: null, minigolf: null, p121: null, hilo: snapshot.game }
-  return { x01: null, atc: null, minigolf: null, p121: null, hilo: null }
+/** The snapshot's game under its id, null under every other (all null without a snapshot). */
+export type GameState = { [K in keyof Games]: Games[K] | null }
+
+// The server's game ids and the shared names must match both ways, or every per-game table misses one
+type Same<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false
+const _sameIds: Same<Snapshot['gameId'], GameId> = true
+
+export function gameState(s: Snapshot | null): GameState {
+  return {
+    x01: s?.gameId === 'x01' ? s.game : null,
+    atc: s?.gameId === 'atc' ? s.game : null,
+    minigolf: s?.gameId === 'minigolf' ? s.game : null,
+    p121: s?.gameId === 'p121' ? s.game : null,
+    hilo: s?.gameId === 'hilo' ? s.game : null,
+  }
 }

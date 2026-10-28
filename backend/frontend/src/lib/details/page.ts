@@ -4,6 +4,7 @@ import type { GameDetail, GameSeat } from '../api'
 import { profileId, rulesLine } from '../history.js'
 import { MONTHS, pad2 } from '../fmt.js'
 import { atcResult } from './atc.js'
+import { isGameId, type GameId } from '$shared/gameNames'
 
 /** A player on a side, and whose profile their name opens (null: none to open). */
 export type DetailMember = { name: string; userId: string | null }
@@ -80,21 +81,32 @@ export function detailSides(d: GameDetail): DetailSide[] {
   }))
 }
 
-export function headline(d: GameDetail, sides: DetailSide[]): { big: string; caption: string } {
-  if (d.game.mode === 'x01') {
+type Headline = { big: string; caption: string }
+const NO_HEADLINE: Headline = { big: '', caption: '' }
+
+/** Each mode's result card headline: the score in big type and what it counts. */
+const HEADLINE = {
+  x01: (d, sides) => {
     const firstTo = typeof d.game.config.firstTo === 'number' ? d.game.config.firstTo : null
     const legs = sides.map(s => (Object.hasOwn(s.values, 'legsWon') ? s.values.legsWon : 0))
     return { big: legs.join('–'), caption: firstTo === null ? 'Legs' : `Legs · first to ${firstTo}` }
-  }
-  if (d.game.mode === 'atc') {
+  },
+  atc: (_d, sides) => {
     const winner = sides.find(s => s.placement === 1) ?? sides[0]
     return { big: '', caption: atcResult(winner.values) }
-  }
-  if (d.game.mode === 'minigolf' && d.detail.mode === 'minigolf') {
+  },
+  minigolf: (d, sides) => {
+    if (d.detail.mode !== 'minigolf') return NO_HEADLINE
     const strokes = sides.map(s => (Object.hasOwn(s.values, 'strokes') ? s.values.strokes : 0))
     return { big: strokes.join('–'), caption: `Strokes · ${d.detail.holes.length} holes on ${d.detail.course}` }
-  }
-  return { big: '', caption: '' }
+  },
+  // Their result sections carry the result: no headline
+  p121: () => NO_HEADLINE,
+  hilo: () => NO_HEADLINE,
+} satisfies Record<GameId, (d: GameDetail, sides: DetailSide[]) => Headline>
+
+export function headline(d: GameDetail, sides: DetailSide[]): Headline {
+  return isGameId(d.game.mode) ? HEADLINE[d.game.mode](d, sides) : NO_HEADLINE
 }
 
 export function metaLine(d: GameDetail): string {

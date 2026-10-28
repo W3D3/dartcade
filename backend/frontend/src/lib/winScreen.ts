@@ -419,11 +419,22 @@ export function winView(snapshot: Snapshot | null, detail: GameDetail | null): W
   // ends the session without the module ever running, so its winner stays null. Status
   // 'finished' with no winner is therefore always a forfeit here, and the win screen still
   // shows: hiloWin ranks the forfeited seat last from snapshot.seats[i].forfeited.
-  if (snapshot.gameId === 'hilo') return hiloWin(snapshot)
-  if (snapshot.game.winner === null) return null
-  if (snapshot.gameId === 'x01') return x01Win(snapshot, detail?.detail.mode === 'x01' ? detail : null)
-  if (snapshot.gameId === 'minigolf') return minigolfWin(snapshot)
-  // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
-  if (snapshot.gameId === 'p121') return null
-  return atcWin(snapshot)
+  switch (snapshot.gameId) {
+    case 'hilo':
+      return hiloWin(snapshot)
+    case 'x01':
+      return snapshot.game.winner === null ? null : x01Win(snapshot, detail?.detail.mode === 'x01' ? detail : null)
+    case 'minigolf':
+      return snapshot.game.winner === null ? null : minigolfWin(snapshot)
+    case 'atc':
+      return snapshot.game.winner === null ? null : atcWin(snapshot)
+    // 121 gets its own summary screen (P121Summary) in place of WinScreen; see the design spec.
+    case 'p121':
+      return null
+    default: {
+      // A new game id fails to compile here until it says how it wins
+      const _unknown: never = snapshot
+      return null
+    }
+  }
 }

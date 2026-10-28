@@ -2,6 +2,7 @@
 import { z } from 'zod'
 import type { GameSeat, GameStats, GameSummary } from './api'
 import { rulesOf } from './gameViews/rules.js'
+import { isGameId, type GameId } from '$shared/gameNames'
 import { dayMonth, ordinal, startOfDay } from './fmt.js'
 
 const DAY_MS = 86_400_000
@@ -64,31 +65,28 @@ export function resultLabel(game: GameSummary): { text: string; won: boolean } {
   return { text: `${won ? 'Won' : 'Lost'}${legs}`, won }
 }
 
-/** The one number the list shows per game mode. */
-export function historyStat(game: GameSummary): { value: string; label: string } | null {
-  const me = mine(game)
-  if (!me) return null
-  if (game.mode === 'x01') {
+type ListStat = { value: string; label: string } | null
+const value = (v: number | undefined, label: string): ListStat => (v === undefined ? null : { value: String(v), label })
+
+/** Each mode's one number in the list, from your seat's stats. */
+const LIST_STAT = {
+  x01: me => {
     const avg = stat(me, 'average')
     return avg === undefined ? null : { value: avg.toFixed(1), label: '3-dart avg' }
-  }
-  if (game.mode === 'atc') {
-    const darts = stat(me, 'dartsThrown')
-    return darts === undefined ? null : { value: String(darts), label: 'darts to finish' }
-  }
-  if (game.mode === 'p121') {
-    const high = stat(me, 'highestMade')
-    return high === undefined ? null : { value: String(high), label: 'highest made' }
-  }
-  if (game.mode === 'hilo') {
+  },
+  atc: me => value(stat(me, 'dartsThrown'), 'darts to finish'),
+  p121: me => value(stat(me, 'highestMade'), 'highest made'),
+  hilo: me => {
     const livesLeft = stat(me, 'livesLeft')
-    return livesLeft === undefined ? null : { value: String(livesLeft), label: livesLeft === 1 ? 'life left' : 'lives left' }
-  }
-  if (game.mode === 'minigolf') {
-    const strokes = stat(me, 'strokes')
-    return strokes === undefined ? null : { value: String(strokes), label: 'strokes' }
-  }
-  return null
+    return value(livesLeft, livesLeft === 1 ? 'life left' : 'lives left')
+  },
+  minigolf: me => value(stat(me, 'strokes'), 'strokes'),
+} satisfies Record<GameId, (me: GameSeat) => ListStat>
+
+/** The one number the list shows per game mode. */
+export function historyStat(game: GameSummary): ListStat {
+  const me = mine(game)
+  return me && isGameId(game.mode) ? LIST_STAT[game.mode](me) : null
 }
 
 export type Tile = { label: string; value: string; note: string | null; trend: 'up' | 'down' | null }
@@ -126,12 +124,16 @@ export function statTiles(s: GameStats, mode: string | null, title: (mode: strin
   }
   const m = modeStats(s, mode)
   const head = [plain(`${title(mode)} matches · ${s.days} days`, String(m?.matches ?? 0)), won(m?.wins ?? 0, m?.contested ?? 0)]
-  if (mode === 'x01') {
+  return isGameId(mode) ? [...head, ...MODE_TILES[mode](s)] : head
+}
+
+/** Each mode's own tiles after its matches and wins. */
+const MODE_TILES = {
+  x01: s => {
     const avg = modeStat(s, 'x01', 'average')
     const checkout = modeStat(s, 'x01', 'bestCheckout')
     const delta = avg && avg.previousAvg !== null ? avg.avg - avg.previousAvg : null
     return [
-      ...head,
       {
         label: '3-dart average',
         value: avg ? avg.avg.toFixed(1) : NONE,
@@ -140,36 +142,33 @@ export function statTiles(s: GameStats, mode: string | null, title: (mode: strin
       },
       plain('Best checkout', checkout ? String(checkout.max) : NONE),
     ]
-  }
-  if (mode === 'atc') {
+  },
+  atc: s => {
     const finish = modeStat(s, 'atc', 'dartsToFinish')
     return [
-      ...head,
       plain('Best finish', finish ? String(finish.min) : NONE, finish ? 'darts' : null),
       plain('Average finish', finish ? String(Math.round(finish.avg)) : NONE, finish ? 'darts' : null),
     ]
-  }
-  if (mode === 'p121') {
+  },
+  p121: s => {
     const high = modeStat(s, 'p121', 'highestMade')
     const checkouts = modeStat(s, 'p121', 'checkouts')
-    return [...head, plain('Highest made', high ? String(high.max) : NONE), plain('Checkouts', checkouts ? String(checkouts.sum) : NONE)]
-  }
-  if (mode === 'hilo') {
+    return [plain('Highest made', high ? String(high.max) : NONE), plain('Checkouts', checkouts ? String(checkouts.sum) : NONE)]
+  },
+  hilo: s => {
     const high = modeStat(s, 'hilo', 'highestSet')
     const low = modeStat(s, 'hilo', 'lowestSet')
-    return [...head, plain('Highest set', high ? String(high.max) : NONE), plain('Lowest set', low ? String(low.min) : NONE)]
-  }
-  if (mode === 'minigolf') {
+    return [plain('Highest set', high ? String(high.max) : NONE), plain('Lowest set', low ? String(low.min) : NONE)]
+  },
+  minigolf: s => {
     const strokes = modeStat(s, 'minigolf', 'strokes')
     const aces = modeStat(s, 'minigolf', 'holesInOne')
     return [
-      ...head,
       plain('Best round', strokes ? String(strokes.min) : NONE, strokes ? 'strokes' : null),
       plain('Holes in one', aces ? String(aces.sum) : NONE),
     ]
-  }
-  return head
-}
+  },
+} satisfies Record<GameId, (s: GameStats) => Tile[]>
 
 const COLUMNS_KEY = 'dartcade_history_columns_v1'
 const ColumnSizingSchema = z.record(z.string(), z.number().positive())
