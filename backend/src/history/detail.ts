@@ -59,8 +59,5 @@ export async function buildDetail(game: HistoryGame, events: LoggedInput[], warn
   const { visits } = await replayPooled(session, events, warn)
   const final = session.committedState
   const stats = mod.matchStats?.(visits, final) ?? noStats()
-  if (mod.id === 'x01') return { detail: mod.detail(visits, final), stats }
-  if (mod.id === 'atc') return { detail: mod.detail(visits, final), stats }
-  if (mod.id === 'minigolf') return { detail: mod.detail(visits, final), stats }
   return { detail: mod.detail(visits, final), stats }
 }
