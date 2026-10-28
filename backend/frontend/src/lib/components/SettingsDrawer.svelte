@@ -9,6 +9,7 @@
   import { loadVoiceLibrary, voiceLibrary } from '$lib/caller/voices.js'
   import { audioContext } from '$lib/sounds.js'
   import SettingSwitch from './SettingSwitch.svelte'
+  import VolumeSlider from './settings/VolumeSlider.svelte'
   import VoiceSelect from './settings/VoiceSelect.svelte'
   import OptionSelect from './settings/OptionSelect.svelte'
   import { BOARD_VIEWS, BOARD_VIEW_LABELS } from '$lib/gameSettings.js'
@@ -139,19 +140,7 @@
 
     <section class="py-[18px] border-t border-line-2 flex flex-col gap-4">
       <h3 class="m-0 text-[12px] font-semibold label-caps text-text-dim">Sound effects</h3>
-      <label class="flex items-center gap-3">
-        <span class="text-[15px] w-20">Volume</span>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value={Math.round(settings.effectsVolume * 100)}
-          oninput={e => (settings.effectsVolume = Number(e.currentTarget.value) / 100)}
-          class="flex-1 accent-accent"
-        />
-        <span class="font-mono text-[13px] text-text-muted w-11 text-right">{Math.round(settings.effectsVolume * 100)}%</span>
-      </label>
+      <VolumeSlider bind:value={settings.effectsVolume} />
       <div class="grid grid-cols-2 gap-x-4">
         {#each sounds as row (row.key)}
           <label class="h-11 flex items-center gap-3 cursor-pointer text-[15px]">

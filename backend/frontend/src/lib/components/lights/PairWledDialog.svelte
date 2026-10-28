@@ -8,6 +8,7 @@
   import { Modal } from '$lib/components/ui/modal/index.js'
   import { Button } from '$lib/components/ui/button/index.js'
   import { Input } from '$lib/components/ui/input/index.js'
+  import { Slider } from '$lib/components/ui/slider/index.js'
   import OptionSelect from '$lib/components/settings/OptionSelect.svelte'
   import ErrorText from '$lib/components/ErrorText.svelte'
   import { api, type Board, type FoundWledDevice, type WledDevice } from '$lib/api'
@@ -218,15 +219,7 @@
           <span id="pair-bri" class="text-[12px] font-semibold text-text-dim">Max brightness</span>
           <span class="font-mono text-[13px] text-text">{percent}%</span>
         </div>
-        <input
-          type="range"
-          min="1"
-          max="100"
-          value={percent}
-          aria-labelledby="pair-bri"
-          oninput={e => (pairing.maxBri = maxBriFromPercent(Number(e.currentTarget.value)))}
-          class="flex-1 accent-accent"
-        />
+        <Slider min={1} value={percent} labelledby="pair-bri" onchange={(v: number) => (pairing.maxBri = maxBriFromPercent(v))} />
         <span class="text-[12px] text-text-dim">Caps every rule, so a small power supply never gets overloaded.</span>
       </div>
     {/if}
