@@ -8,6 +8,8 @@ import { minigolfModule } from './minigolf.js'
 import { p121Game, type P121Config } from './p121.js'
 import { hiloGame, type HiloConfig } from './hilo.js'
 import type { BoardEvent } from '../session/types.js'
+import { gameList } from './index.js'
+import { seededRng } from '../session/rng.js'
 
 const addFormats = addFormatsModule.default
 const ajv = new Ajv({ strict: false, allErrors: true })
@@ -23,6 +25,21 @@ const dart = {
 } as const
 
 describe('module detail() matches schema/api-v1.yaml', () => {
+  // Every registered game on a fresh state, so a new one is checked without a case of its own
+  // here: its detail as GameDetail's `detail`, its match stats as MatchStats.
+  // Minigolf plays the built-in test course (no database).
+  const configFor = (id: string): Record<string, unknown> => (id === 'minigolf' ? { course: 'test' } : {})
+  it.each(gameList.map(m => [m.id, m] as const))('%s, fresh', (id, mod) => {
+    const state = mod.init({ ...mod.defaultConfig, ...configFor(id) }, [{ name: 'A' }, { name: 'B' }], seededRng(1))
+    const validateDetail = ajv.compile(spec.components.schemas.GameDetail.properties.detail)
+    const d = mod.detail([], state)
+    expect(validateDetail(d), JSON.stringify(validateDetail.errors)).toBe(true)
+    if (mod.matchStats) {
+      const validateStats = ajv.compile(schemas.MatchStats)
+      expect(validateStats(mod.matchStats([], state)), JSON.stringify(validateStats.errors)).toBe(true)
+    }
+  })
+
   it('X01Detail', () => {
     const s = x01Game.init(
       {
