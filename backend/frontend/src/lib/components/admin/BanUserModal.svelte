@@ -88,6 +88,6 @@
   {#if formError || error}<ErrorText>{formError || error}</ErrorText>{/if}
   {#snippet footer()}
     <Button variant="outline" size="lg" class="flex-1 text-[15px]" onclick={oncancel}>Cancel</Button>
-    <Button variant="accent" size="lg" class="flex-1 bg-live text-[#fff]" onclick={submit}>Ban</Button>
+    <Button variant="danger" size="lg" class="flex-1" onclick={submit}>Ban</Button>
   {/snippet}
 </Modal>
