@@ -245,10 +245,7 @@
     {/if}
 
     {#if hoveredDot}
-      <div
-        class="pointer-events-none absolute z-10 whitespace-nowrap rounded-[10px] border border-line-popover bg-surface-inset px-2.5 py-1.5 text-[13px] text-text shadow-tooltip"
-        style={tooltipStyle(hoveredDot)}
-      >
+      <div class="pointer-events-none absolute z-10 chart-tooltip" style={tooltipStyle(hoveredDot)}>
         {hoveredDot.label}
       </div>
     {/if}
