@@ -3,13 +3,10 @@ import { render } from 'svelte/server'
 import GameSettings from '../components/GameSettings.svelte'
 import { configMeta, x01Game } from '../../../../src/games/x01.js'
 
-// SegmentedControl's Tooltip option pulls in bits-ui's whole barrel (Select included), whose
-// select-viewport.svelte crashes this toolchain's SSR CSS preprocessing outside the main pipeline
-// (a pre-existing Vite 6 / @sveltejs/vite-plugin-svelte 5 issue, unrelated to this component).
-// Stubbing it out sidesteps the crash; the tooltip branch isn't used here anyway.
-vi.mock('bits-ui', () => ({
+// The bot speed options carry tooltips, which need the Tooltip.Provider that App mounts
+vi.mock('bits-ui', async importOriginal => ({
+  ...(await importOriginal<typeof import('bits-ui')>()),
   Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-  Popover: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
 }))
 
 describe('GameSettings botSpeed field', () => {

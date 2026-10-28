@@ -1,13 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import { render } from 'svelte/server'
 import GameSettings from '../components/GameSettings.svelte'
 import { minigolfModule } from '../../../../src/games/minigolf.js'
-
-// See gameSettingsBotSpeed.test.ts: bits-ui's barrel crashes SSR here
-vi.mock('bits-ui', () => ({
-  Tooltip: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-  Popover: { Root: () => {}, Trigger: () => {}, Portal: () => {}, Content: () => {} },
-}))
 
 describe("GameSettings' Minigolf courses", () => {
   const props = {
