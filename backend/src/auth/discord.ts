@@ -1,7 +1,7 @@
 import type { DiscordOptions, DiscordProfile } from 'better-auth/social-providers'
 import type { Kysely } from 'kysely'
 import type { Database } from '../db/schema.js'
-import { cleanName } from '../users/names.js'
+import { tryCleanName } from '../users/names.js'
 import { suggestName } from '../users/account.js'
 
 export type DiscordConfig = { clientId: string; clientSecret: string } | null
@@ -20,12 +20,7 @@ export const placeholderEmail = (discordId: string) => `${discordId}@discord.inv
 
 /** The Discord display name, else the username, cut to the name rules. */
 export function discordName(profile: Pick<DiscordProfile, 'global_name' | 'username'>): string {
-  for (const raw of [profile.global_name, profile.username]) {
-    // cleanName falls back to "player" when too little of a name is left: try the username first
-    const name = raw ? cleanName(raw) : ''
-    if (name && name !== 'player') return name
-  }
-  return 'player'
+  return tryCleanName(profile.global_name ?? '') ?? tryCleanName(profile.username) ?? 'player'
 }
 
 /** better-auth's Discord provider (scopes identify and email, its defaults). */

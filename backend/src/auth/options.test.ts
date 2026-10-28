@@ -57,6 +57,7 @@ describe('the Discord profile', () => {
     expect(discordName({ global_name: 'Annie Darts', username: 'annie' })).toBe('Annie.Darts')
     expect(discordName({ global_name: null, username: 'annie_99' })).toBe('annie_99')
     expect(discordName({ global_name: '🎯', username: 'annie' })).toBe('annie')
+    expect(discordName({ global_name: '🎯', username: 'x' })).toBe('player')
     expect(discordName({ global_name: 'A very long display name indeed', username: 'x' })).toBe('A.very.long.display.')
   })
 
