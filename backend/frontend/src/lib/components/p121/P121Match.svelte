@@ -10,6 +10,7 @@
   import ConfirmModal from '$lib/components/ConfirmModal.svelte'
   import ControlBar from '$lib/components/ControlBar.svelte'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
+  import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
   import Avatar from '$lib/components/Avatar.svelte'
   import P121Ladder from '$lib/components/p121/P121Ladder.svelte'
@@ -180,73 +181,70 @@
   {@render madeCard()}
 {/snippet}
 
-{#if layout === 'phone'}
-  <main class="flex-grow min-h-0 overflow-y-auto box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2">
-    <P121PlayerCard {game} seat={cp} name={name(cp)} active visitDarts={vd(cp)} variant="phone" {checkout} />
-    <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
-    {@render board()}
-    {@render madeCard()}
-    <section class="shrink-0 flex flex-col gap-2" aria-label="Target ladder">
-      <div class="flex items-center justify-between gap-2">
-        <span class="text-[12px] font-semibold label-caps text-text-dim">Target ladder · {cur.made} of {cur.tries.length} made</span>
-        {@render giveUp()}
-      </div>
-      <P121Ladder {game} seat={cp} variant="dots" />
-    </section>
-    {@render controls(true)}
-  </main>
-{:else if layout === 'portrait'}
-  <!-- Upright screens: the players on top (one or two cards with their ladders side by side, more as rows),
-       then this visit, the slots and the controls, and the board below -->
-  <main class="flex-grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
-    {#if game.seats.length <= 2}
-      <div class="shrink-0 grid gap-3 lg:gap-4 {game.seats.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}">
-        {#each game.seats as _, i (i)}
-          <div class="min-w-0 flex flex-col gap-3">
-            <P121PlayerCard {game} seat={i} name={name(i)} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
-            <P121Ladder {game} seat={i} variant="dots" />
-          </div>
-        {/each}
-      </div>
-    {:else}
-      <div class="shrink-0 max-h-[40%] overflow-y-auto flex flex-col gap-3">{@render rows()}</div>
-    {/if}
-    <div class="shrink-0 grid grid-cols-[minmax(0,1.15fr)_minmax(0,3fr)] gap-[10px] items-start">
-      <div
-        class="h-[58px] md:h-[min(124px,14vh)] box-border rounded-[14px] border border-line bg-surface-1 px-5 flex items-center justify-between"
-      >
-        <span class="text-[13px] font-semibold label-caps text-text-dim">This visit</span>
-        <span class="font-display font-bold text-[min(84px,8vh)] leading-none">{visitSum}</span>
-      </div>
-      <DartSlots {slots} {onCorrect} bind:openDart />
+{#snippet phoneLayout()}
+  <P121PlayerCard {game} seat={cp} name={name(cp)} active visitDarts={vd(cp)} variant="phone" {checkout} />
+  <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
+  {@render board()}
+  {@render madeCard()}
+  <section class="shrink-0 flex flex-col gap-2" aria-label="Target ladder">
+    <div class="flex items-center justify-between gap-2">
+      <span class="text-[12px] font-semibold label-caps text-text-dim">Target ladder · {cur.made} of {cur.tries.length} made</span>
+      {@render giveUp()}
     </div>
-    {@render controls(false)}
-    {@render madeCard()}
-    {@render board()}
-  </main>
-{:else if layout === 'solo'}
-  <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-    <P121PlayerCard {game} seat={0} name={name(0)} active visitDarts={vd(0)} {checkout} />
-    <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-[14px]">{@render center(false)}</div>
-    <P121SessionPanel {game} seat={0} visitDarts={vd(0)} />
-  </main>
-{:else if layout === 'duel'}
-  <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-    {#each [0, 1] as i (i)}
-      <div class="w-[300px] xl:w-[380px] shrink-0 min-h-0 flex flex-col gap-3 {i === 1 ? 'order-3' : ''}">
-        <P121PlayerCard {game} seat={i} name={name(i)} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
-        <P121Ladder {game} seat={i} variant="dots" />
-      </div>
-    {/each}
-    <div class="order-2 flex-1 min-w-0 min-h-0 flex flex-col gap-3">{@render center(false)}</div>
-  </main>
-{:else}
-  <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-    <div class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3">{@render center(true)}</div>
-    <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-y-auto">{@render rows()}</div>
-  </main>
-{/if}
+    <P121Ladder {game} seat={cp} variant="dots" />
+  </section>
+  {@render controls(true)}
+{/snippet}
 
+{#snippet portraitLayout()}
+  {#if game.seats.length <= 2}
+    <div class="shrink-0 grid gap-3 lg:gap-4 {game.seats.length === 2 ? 'grid-cols-2' : 'grid-cols-1'}">
+      {#each game.seats as _, i (i)}
+        <div class="min-w-0 flex flex-col gap-3">
+          <P121PlayerCard {game} seat={i} name={name(i)} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
+          <P121Ladder {game} seat={i} variant="dots" />
+        </div>
+      {/each}
+    </div>
+  {:else}
+    <div class="shrink-0 max-h-[40%] overflow-y-auto flex flex-col gap-3">{@render rows()}</div>
+  {/if}
+  <div class="shrink-0 grid grid-cols-[minmax(0,1.15fr)_minmax(0,3fr)] gap-[10px] items-start">
+    <div
+      class="h-[58px] md:h-[min(124px,14vh)] box-border rounded-[14px] border border-line bg-surface-1 px-5 flex items-center justify-between"
+    >
+      <span class="text-[13px] font-semibold label-caps text-text-dim">This visit</span>
+      <span class="font-display font-bold text-[min(84px,8vh)] leading-none">{visitSum}</span>
+    </div>
+    <DartSlots {slots} {onCorrect} bind:openDart />
+  </div>
+  {@render controls(false)}
+  {@render madeCard()}
+  {@render board()}
+{/snippet}
+
+{#snippet soloLayout()}
+  <P121PlayerCard {game} seat={0} name={name(0)} active visitDarts={vd(0)} {checkout} />
+  <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-[14px]">{@render center(false)}</div>
+  <P121SessionPanel {game} seat={0} visitDarts={vd(0)} />
+{/snippet}
+
+{#snippet duelLayout()}
+  {#each [0, 1] as i (i)}
+    <div class="w-[300px] xl:w-[380px] shrink-0 min-h-0 flex flex-col gap-3 {i === 1 ? 'order-3' : ''}">
+      <P121PlayerCard {game} seat={i} name={name(i)} active={i === cp && playing} visitDarts={vd(i)} variant="side" {checkout} />
+      <P121Ladder {game} seat={i} variant="dots" />
+    </div>
+  {/each}
+  <div class="order-2 flex-1 min-w-0 min-h-0 flex flex-col gap-3">{@render center(false)}</div>
+{/snippet}
+
+{#snippet partyLayout()}
+  <div class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3">{@render center(true)}</div>
+  <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-y-auto">{@render rows()}</div>
+{/snippet}
+
+<MatchFrame {layout} phone={phoneLayout} portrait={portraitLayout} solo={soloLayout} duel={duelLayout} party={partyLayout} />
 {#snippet rows()}
   {#each game.seats as s, i (i)}
     <section

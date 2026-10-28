@@ -8,6 +8,7 @@
   import { afterGameRoute, endControl, leaveRefused, winActions, type WinAction } from '../lib/endControl.js'
   import { getGameView } from '../lib/gameViews/index.js'
   import BoardOrKeypad from '../lib/components/match/BoardOrKeypad.svelte'
+  import MatchFrame from '../lib/components/match/MatchFrame.svelte'
   import GameHeader from '../lib/components/GameHeader.svelte'
   import BullOffPanel from '../lib/components/BullOffPanel.svelte'
   import MinigolfMatch from '$lib/components/minigolf/MinigolfMatch.svelte'
@@ -773,6 +774,173 @@
   {/if}
 {/snippet}
 
+{#snippet phoneLayout()}
+  <!-- Everyone in seat order; the thrower's entry is the active one (card on the board, a row with the keypad).
+       Many players scroll, and the thrower is kept in view. -->
+  <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
+    {#if teams.length}
+      <!-- Teams: side by side, compact; with the keypad on a short screen only the throwing team's -->
+      <div class="grid grid-cols-2 gap-2 items-stretch">
+        {#each teams as team, t (team.id)}
+          <div
+            data-up={team.active ? upKey : undefined}
+            class="flex min-w-0 {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}"
+          >
+            {@render teamPanel(t, true)}
+          </div>
+        {/each}
+      </div>
+    {:else}
+      {#each players as player, i (i)}
+        {@const up = i === currentPlayer}
+        {@const line = lines[i] ?? null}
+        <div data-up={up ? upKey : undefined} class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
+          {#if up && !keypad}
+            {#if isX01}
+              <PhoneX01Card name={player.name} p={x01Players[i]} pill={pillFor(i, false)} seat={line} chalkboard={settings.chalkboard} />
+            {:else}
+              <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
+            {/if}
+          {:else if isX01}
+            <PhonePlayerRow
+              active={up}
+              name={player.name}
+              bot={bots[i] ?? null}
+              you={line?.you ?? false}
+              pill={up ? null : pillFor(i, true)}
+              sub={rowSub(
+                up
+                  ? x01Players[i]?.canFinish
+                    ? `Throwing · can finish ${x01Players[i]?.canFinish}`
+                    : 'Throwing'
+                  : i === nextPlayer
+                    ? x01Players[i]?.canFinish
+                      ? `Up next · can finish ${x01Players[i]?.canFinish}`
+                      : 'Up next'
+                    : `Avg ${x01Players[i]?.avg ?? '0.0'}`,
+                line,
+              )}
+              valueLabel="Left"
+              value={String(x01Players[i]?.shown ?? '')}
+              roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
+              legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }}
+            />
+          {:else}
+            <PhonePlayerRow
+              active={up}
+              name={player.name}
+              bot={bots[i] ?? null}
+              you={line?.you ?? false}
+              pill={up ? null : pillFor(i, true)}
+              sub={rowSub(
+                up
+                  ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`
+                  : i === nextPlayer
+                    ? 'Up next'
+                    : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`,
+                line,
+              )}
+              valueLabel="Target"
+              value={atcPlayers[i]?.target ?? ''}
+              roll={{ normal: 'up', progress: atcPlayers[i]?.done }}
+            />
+          {/if}
+        </div>
+      {/each}
+    {/if}
+  </div>
+  <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
+{/snippet}
+
+{#snippet portraitLayout()}
+  <!-- The players side by side on top (many scroll, the thrower kept in view), the board below -->
+  <div
+    bind:this={phonePlayers}
+    class="shrink-0 max-h-[45%] overflow-y-auto grid gap-3 lg:gap-4 {players.length === 1 && !teams.length ? 'grid-cols-1' : 'grid-cols-2'}"
+  >
+    {#if teams.length}
+      {#each teams as team, t (team.id)}
+        <div data-up={team.active ? upKey : undefined} class="flex min-w-0">{@render teamPanel(t, true)}</div>
+      {/each}
+    {:else}
+      {#each players as player, i (i)}
+        <div data-up={i === currentPlayer ? upKey : undefined} class="flex min-w-0">
+          {#if !portraitCards}
+            {@render panel(i)}
+          {:else if isX01}
+            <X01Card
+              name={player.name}
+              bot={bots[i] ?? null}
+              p={x01Players[i]}
+              active={i === currentPlayer && isActive}
+              pill={pillFor(i, true)}
+              seat={lines[i] ?? null}
+            />
+          {:else}
+            <AtcCard
+              name={player.name}
+              bot={bots[i] ?? null}
+              p={atcPlayers[i]}
+              active={i === currentPlayer && isActive}
+              pill={pillFor(i, true)}
+              seat={lines[i] ?? null}
+            />
+          {/if}
+        </div>
+      {/each}
+    {/if}
+  </div>
+  {@render portraitCenter()}
+{/snippet}
+
+{#snippet soloLayout()}
+  {@render panel(0)}
+  <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
+{/snippet}
+
+{#snippet teamsLayout()}
+  <div class="col-start-1 row-start-1 min-w-0 min-h-0 flex">{@render teamPanel(0, !$isWide)}</div>
+  <div class="col-start-2 row-start-1 min-h-0 flex flex-col gap-3 {$isWide ? '' : 'row-span-2'}">
+    {@render center($isWide ? 'duel' : 'party')}
+  </div>
+  <div class="min-w-0 min-h-0 flex {$isWide ? 'col-start-3 row-start-1' : 'col-start-1 row-start-2'}">
+    {@render teamPanel(1, !$isWide)}
+  </div>
+{/snippet}
+
+{#snippet duelLayout()}
+  {@render duelPanel(0)}
+  <div class="flex-1 min-w-0 xl:w-[560px] xl:flex-none min-h-0 flex flex-col gap-[10px] xl:gap-3">{@render center('duel')}</div>
+  {@render duelPanel(1)}
+{/snippet}
+
+{#snippet partyLayout()}
+  <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
+    {#each players as player, i (i)}
+      {#if isX01}
+        <X01Row
+          name={player.name}
+          bot={bots[i] ?? null}
+          p={x01Players[i]}
+          active={i === currentPlayer && isActive}
+          pill={pillFor(i, true)}
+          seat={lines[i] ?? null}
+        />
+      {:else}
+        <AtcRow
+          name={player.name}
+          bot={bots[i] ?? null}
+          p={atcPlayers[i]}
+          active={i === currentPlayer && isActive}
+          pill={pillFor(i, true)}
+          seat={lines[i] ?? null}
+        />
+      {/if}
+    {/each}
+  </div>
+  <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
+{/snippet}
+
 <div class="flex flex-col h-dvh bg-bg text-text overflow-hidden" data-layout={layout}>
   {#if !snapshot}
     <div class="flex-1 flex items-center justify-center">
@@ -905,188 +1073,22 @@
         <main class="flex-grow flex items-center justify-center">
           <p class="text-text-muted">Unsupported game</p>
         </main>
-      {:else if layout === 'phone'}
-        <main
-          class="flex-grow min-h-0 overflow-hidden box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2"
-        >
-          <!-- Everyone in seat order; the thrower's entry is the active one (card on the board, a row with the keypad).
-             Many players scroll, and the thrower is kept in view. -->
-          <div bind:this={phonePlayers} class="shrink-0 max-h-[55%] overflow-y-auto flex flex-col gap-2">
-            {#if teams.length}
-              <!-- Teams: side by side, compact; with the keypad on a short screen only the throwing team's -->
-              <div class="grid grid-cols-2 gap-2 items-stretch">
-                {#each teams as team, t (team.id)}
-                  <div
-                    data-up={team.active ? upKey : undefined}
-                    class="flex min-w-0 {!team.active && keypad ? '[@media(max-height:599px)]:hidden' : ''}"
-                  >
-                    {@render teamPanel(t, true)}
-                  </div>
-                {/each}
-              </div>
-            {:else}
-              {#each players as player, i (i)}
-                {@const up = i === currentPlayer}
-                {@const line = lines[i] ?? null}
-                <div data-up={up ? upKey : undefined} class={!up && keypad ? '[@media(max-height:599px)]:hidden' : ''}>
-                  {#if up && !keypad}
-                    {#if isX01}
-                      <PhoneX01Card
-                        name={player.name}
-                        p={x01Players[i]}
-                        pill={pillFor(i, false)}
-                        seat={line}
-                        chalkboard={settings.chalkboard}
-                      />
-                    {:else}
-                      <PhoneAtcCard name={player.name} p={atcPlayers[i]} pill={pillFor(i, false)} seat={line} />
-                    {/if}
-                  {:else if isX01}
-                    <PhonePlayerRow
-                      active={up}
-                      name={player.name}
-                      bot={bots[i] ?? null}
-                      you={line?.you ?? false}
-                      pill={up ? null : pillFor(i, true)}
-                      sub={rowSub(
-                        up
-                          ? x01Players[i]?.canFinish
-                            ? `Throwing · can finish ${x01Players[i]?.canFinish}`
-                            : 'Throwing'
-                          : i === nextPlayer
-                            ? x01Players[i]?.canFinish
-                              ? `Up next · can finish ${x01Players[i]?.canFinish}`
-                              : 'Up next'
-                            : `Avg ${x01Players[i]?.avg ?? '0.0'}`,
-                        line,
-                      )}
-                      valueLabel="Left"
-                      value={String(x01Players[i]?.shown ?? '')}
-                      roll={x01Players[i] ? x01Roll(x01Players[i]) : {}}
-                      legs={{ total: x01Players[i]?.firstTo ?? 1, won: x01Players[i]?.legsWon ?? 0 }}
-                    />
-                  {:else}
-                    <PhonePlayerRow
-                      active={up}
-                      name={player.name}
-                      bot={bots[i] ?? null}
-                      you={line?.you ?? false}
-                      pill={up ? null : pillFor(i, true)}
-                      sub={rowSub(
-                        up
-                          ? `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`
-                          : i === nextPlayer
-                            ? 'Up next'
-                            : `${atcPlayers[i]?.done ?? 0} of ${atcPlayers[i]?.total ?? 0} done`,
-                        line,
-                      )}
-                      valueLabel="Target"
-                      value={atcPlayers[i]?.target ?? ''}
-                      roll={{ normal: 'up', progress: atcPlayers[i]?.done }}
-                    />
-                  {/if}
-                </div>
-              {/each}
-            {/if}
-          </div>
-          <div class="flex-1 min-h-0 flex flex-col gap-2">{@render phoneCenter()}</div>
-        </main>
-      {:else if layout === 'portrait'}
-        <main class="flex-grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
-          <!-- The players side by side on top (many scroll, the thrower kept in view), the board below -->
-          <div
-            bind:this={phonePlayers}
-            class="shrink-0 max-h-[45%] overflow-y-auto grid gap-3 lg:gap-4 {players.length === 1 && !teams.length
-              ? 'grid-cols-1'
-              : 'grid-cols-2'}"
-          >
-            {#if teams.length}
-              {#each teams as team, t (team.id)}
-                <div data-up={team.active ? upKey : undefined} class="flex min-w-0">{@render teamPanel(t, true)}</div>
-              {/each}
-            {:else}
-              {#each players as player, i (i)}
-                <div data-up={i === currentPlayer ? upKey : undefined} class="flex min-w-0">
-                  {#if !portraitCards}
-                    {@render panel(i)}
-                  {:else if isX01}
-                    <X01Card
-                      name={player.name}
-                      bot={bots[i] ?? null}
-                      p={x01Players[i]}
-                      active={i === currentPlayer && isActive}
-                      pill={pillFor(i, true)}
-                      seat={lines[i] ?? null}
-                    />
-                  {:else}
-                    <AtcCard
-                      name={player.name}
-                      bot={bots[i] ?? null}
-                      p={atcPlayers[i]}
-                      active={i === currentPlayer && isActive}
-                      pill={pillFor(i, true)}
-                      seat={lines[i] ?? null}
-                    />
-                  {/if}
-                </div>
-              {/each}
-            {/if}
-          </div>
-          {@render portraitCenter()}
-        </main>
-      {:else if layout === 'solo'}
-        <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-          {@render panel(0)}
-          <div class="flex-1 min-w-[380px] min-h-0 flex flex-col gap-3">{@render center('solo')}</div>
-        </main>
-      {:else if layout === 'teams'}
-        <!-- A panel per team either side of the board; narrower screens stack them left of it, compact,
-           and a waiting card takes the board's place (as in the party layout) -->
-        <main
-          class="flex-grow min-h-0 box-border px-7 py-6 grid gap-6
-                   {$isWide ? 'grid-cols-[minmax(0,1fr)_560px_minmax(0,1fr)] grid-rows-1' : 'grid-cols-[minmax(0,1fr)_480px] grid-rows-2'}"
-        >
-          <div class="col-start-1 row-start-1 min-w-0 min-h-0 flex">{@render teamPanel(0, !$isWide)}</div>
-          <div class="col-start-2 row-start-1 min-h-0 flex flex-col gap-3 {$isWide ? '' : 'row-span-2'}">
-            {@render center($isWide ? 'duel' : 'party')}
-          </div>
-          <div class="min-w-0 min-h-0 flex {$isWide ? 'col-start-3 row-start-1' : 'col-start-1 row-start-2'}">
-            {@render teamPanel(1, !$isWide)}
-          </div>
-        </main>
-      {:else if layout === 'duel'}
-        <main class="flex-grow min-h-0 box-border {mainPad} flex">
-          {@render duelPanel(0)}
-          <div class="flex-1 min-w-0 xl:w-[560px] xl:flex-none min-h-0 flex flex-col gap-[10px] xl:gap-3">{@render center('duel')}</div>
-          {@render duelPanel(1)}
-        </main>
       {:else}
-        <main class="flex-grow min-h-0 box-border {mainPad} flex">
-          <div class="flex-1 min-w-0 min-h-0 grid gap-3 overflow-y-auto" style:grid-template-rows={rowTemplate}>
-            {#each players as player, i (i)}
-              {#if isX01}
-                <X01Row
-                  name={player.name}
-                  bot={bots[i] ?? null}
-                  p={x01Players[i]}
-                  active={i === currentPlayer && isActive}
-                  pill={pillFor(i, true)}
-                  seat={lines[i] ?? null}
-                />
-              {:else}
-                <AtcRow
-                  name={player.name}
-                  bot={bots[i] ?? null}
-                  p={atcPlayers[i]}
-                  active={i === currentPlayer && isActive}
-                  pill={pillFor(i, true)}
-                  seat={lines[i] ?? null}
-                />
-              {/if}
-            {/each}
-          </div>
-          <aside class="w-[400px] xl:w-[480px] shrink-0 min-h-0 flex flex-col gap-3" aria-label="Board">{@render center('party')}</aside>
-        </main>
+        <MatchFrame
+          {layout}
+          phone={phoneLayout}
+          portrait={portraitLayout}
+          solo={soloLayout}
+          teams={teamsLayout}
+          duel={duelLayout}
+          party={partyLayout}
+          phoneScroll={false}
+          side={{
+            duel: `${mainPad} flex`,
+            party: `${mainPad} flex`,
+            teams: `px-7 py-6 grid gap-6 ${$isWide ? 'grid-cols-[minmax(0,1fr)_560px_minmax(0,1fr)] grid-rows-1' : 'grid-cols-[minmax(0,1fr)_480px] grid-rows-2'}`,
+          }}
+        />
       {/if}
     {/if}
   {/if}

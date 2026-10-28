@@ -11,6 +11,7 @@
   import type { HiloGame } from '$lib/api/game-ws'
   import ControlBar from '$lib/components/ControlBar.svelte'
   import BoardOrKeypad from '$lib/components/match/BoardOrKeypad.svelte'
+  import MatchFrame from '$lib/components/match/MatchFrame.svelte'
   import DartSlots from '$lib/components/DartSlots.svelte'
   import HiloPanel from '$lib/components/hilo/HiloPanel.svelte'
   import HiloPhoneCard from '$lib/components/hilo/HiloPhoneCard.svelte'
@@ -146,43 +147,42 @@
   {@render controls(false)}
 {/snippet}
 
-{#if layout === 'phone'}
-  <main class="flex-grow min-h-0 overflow-y-auto box-border px-4 pt-3 pb-[calc(12px+env(safe-area-inset-bottom))] flex flex-col gap-2">
-    <div class="shrink-0 max-h-[30%] overflow-y-auto flex flex-col gap-2">
-      {#each game.seats as _, i (i)}
-        {#if i !== cp || !playing}<HiloPhoneCard {...seatProps(i)} />{/if}
-      {/each}
-    </div>
-    {#if playing}<HiloPhoneCard {...seatProps(cp)} />{/if}
-    <HiloScale {game} {marker} orientation="horizontal" />
-    {#if banner}{@render band()}{/if}
-    {@render board()}
-    <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
-    {@render controls(true)}
-  </main>
-{:else if layout === 'portrait'}
-  <!-- Upright screens: the players' rows on top, the scale across, this visit, the slots and controls, then the board -->
-  <main class="flex-grow min-h-0 box-border px-5 pt-4 pb-5 gap-3 lg:px-7 lg:pt-6 lg:pb-7 lg:gap-[18px] flex flex-col">
-    <div class="shrink-0 max-h-[40%] overflow-y-auto flex flex-col gap-3">
-      {#each game.seats as _, i (i)}<HiloRow {...seatProps(i)} />{/each}
-    </div>
-    <HiloScale {game} {marker} orientation="horizontal" />
-    {@render band()}
-    <DartSlots {slots} {onCorrect} bind:openDart />
-    {@render controls(false)}
-    {@render board()}
-  </main>
-{:else if layout === 'duel'}
-  <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-    <HiloPanel {...seatProps(0)} />
-    <div class="flex-[0_1_706px] min-w-0 min-h-0 flex flex-col gap-3">{@render center()}</div>
-    <HiloPanel {...seatProps(1)} />
-  </main>
-{:else}
-  <main class="flex-grow min-h-0 box-border px-7 py-6 flex gap-6">
-    <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-y-auto">
-      {#each game.seats as _, i (i)}<HiloRow {...seatProps(i)} />{/each}
-    </div>
-    <aside aria-label="Board and scale" class="w-[400px] xl:w-[622px] shrink-0 min-h-0 flex flex-col gap-3">{@render center()}</aside>
-  </main>
-{/if}
+{#snippet phoneLayout()}
+  <div class="shrink-0 max-h-[30%] overflow-y-auto flex flex-col gap-2">
+    {#each game.seats as _, i (i)}
+      {#if i !== cp || !playing}<HiloPhoneCard {...seatProps(i)} />{/if}
+    {/each}
+  </div>
+  {#if playing}<HiloPhoneCard {...seatProps(cp)} />{/if}
+  <HiloScale {game} {marker} orientation="horizontal" />
+  {#if banner}{@render band()}{/if}
+  {@render board()}
+  <div class="relative shrink-0"><DartSlots {slots} {onCorrect} bind:openDart showPopover={!keypad} popoverAbove /></div>
+  {@render controls(true)}
+{/snippet}
+
+{#snippet portraitLayout()}
+  <div class="shrink-0 max-h-[40%] overflow-y-auto flex flex-col gap-3">
+    {#each game.seats as _, i (i)}<HiloRow {...seatProps(i)} />{/each}
+  </div>
+  <HiloScale {game} {marker} orientation="horizontal" />
+  {@render band()}
+  <DartSlots {slots} {onCorrect} bind:openDart />
+  {@render controls(false)}
+  {@render board()}
+{/snippet}
+
+{#snippet duelLayout()}
+  <HiloPanel {...seatProps(0)} />
+  <div class="flex-[0_1_706px] min-w-0 min-h-0 flex flex-col gap-3">{@render center()}</div>
+  <HiloPanel {...seatProps(1)} />
+{/snippet}
+
+{#snippet partyLayout()}
+  <div class="flex-1 min-w-0 min-h-0 flex flex-col gap-3 overflow-y-auto">
+    {#each game.seats as _, i (i)}<HiloRow {...seatProps(i)} />{/each}
+  </div>
+  <aside aria-label="Board and scale" class="w-[400px] xl:w-[622px] shrink-0 min-h-0 flex flex-col gap-3">{@render center()}</aside>
+{/snippet}
+
+<MatchFrame {layout} phone={phoneLayout} portrait={portraitLayout} duel={duelLayout} party={partyLayout} />
